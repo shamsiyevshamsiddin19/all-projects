@@ -20,6 +20,26 @@
   ];
   var BOTTOM = ['home', 'kun', 'languages', 'sport', '__more__'];
 
+  /* Bo'lim belgisi — chiziqli ikonka o'rniga RANGLI RASM (assets/img/nav/).
+     Ilgari hamma bo'lim bir xil yashil chiziqli ikonka bilan turardi:
+     menyuga qaraganda bo'limlar bir-biridan ajralmasdi. Rasmlar ~60 KB,
+     serverning o'zida turadi (tashqi CDN'ga bog'liq emas, oflaynda ham
+     ko'rinadi). Rasm topilmasa — eski ikonkaga qaytadi, ya'ni yangi
+     bo'lim qo'shilsa menyu baribir buzilmaydi. */
+  var NAV_IMG = {
+    home: 1, goals: 1, stats: 1, tarix: 1, fanlar: 1, languages: 1, coding: 1,
+    sport: 1, boost: 1, kun: 1, arxiv: 1, qoidalar: 1, settings: 1, pomodoro: 1
+  };
+  var NAV_IMG_V = '?v=20260818';       // rasm almashtirilsa shu raqam oshiriladi
+
+  function navIcon(v, ic, size) {
+    if (NAV_IMG[v]) {
+      return '<img class="nav-img" src="assets/img/nav/' + v + '.png' + NAV_IMG_V +
+        '" alt="" style="width:' + size + 'px;height:' + size + 'px">';
+    }
+    return '<span data-icon="' + ic + '" data-icon-size="' + size + '"></span>';
+  }
+
   /* Foydalanuvchi yashirgan bo'limlar (Sozlamalardan boshqariladi).
      'home' va 'settings' hech qachon yashirilmaydi — aks holda qaytib bo'lmaydi. */
   function hiddenSet() {
@@ -40,7 +60,7 @@
     var el = document.getElementById('side-nav');
     el.innerHTML = visibleNav().map(function (i) {
       return '<button class="side-link" data-nav="' + i.v + '" data-act="go" data-arg=\'' + App.arg({ v: i.v }) + '\'>' +
-        '<span data-icon="' + i.ic + '" data-icon-size="20"></span>' + i.n + '</button>';
+        navIcon(i.v, i.ic, 22) + i.n + '</button>';
     }).join('');
     
     // Global harakat tugmalari
@@ -52,7 +72,7 @@
       pbtn.style.marginTop = 'auto';
       pbtn.style.background = 'var(--accent-soft)';
       pbtn.style.color = 'var(--accent)';
-      pbtn.innerHTML = '<span data-icon="clock" data-icon-size="20"></span>Pomodoro';
+      pbtn.innerHTML = navIcon('pomodoro', 'clock', 22) + 'Pomodoro';
       pbtn.setAttribute('data-act', 'pomoToggle');
       el.appendChild(pbtn);
     }
@@ -69,7 +89,7 @@
       }
       var i = NAV.find(function (x) { return x.v === v; });
       return '<a data-nav="' + v + '" data-act="go" data-arg=\'' + App.arg({ v: v }) + '\'>' +
-        '<span data-icon="' + i.ic + '" data-icon-size="21"></span>' + (i.bn || i.n) + '</a>';
+        navIcon(v, i.ic, 26) + (i.bn || i.n) + '</a>';
     }).join('');
     App.icons(el);
   }
@@ -84,7 +104,7 @@
     var html = items.map(function (v) {
       var i = NAV.find(function (x) { return x.v === v; });
       return '<button class="list-row" data-act="goClose" data-arg=\'' + App.arg({ v: v }) + '\'>' +
-        '<span class="li-ic" data-icon="' + i.ic + '" data-icon-size="16"></span>' +
+        '<span class="li-ic nav-ic-img">' + navIcon(v, i.ic, 20) + '</span>' +
         '<div class="li-main"><div class="li-title">' + i.n + '</div></div>' +
         '<span class="li-chev" data-icon="arrowLeft" data-icon-size="16" style="transform:rotate(180deg)"></span></button>';
     }).join('');
@@ -128,14 +148,36 @@
   // Storage bridge tayyor bo'lgach ishga tushiramiz (localStorage server bilan sinxron)
   function afterAuth() {
     if (window.RemoteStorageBridge && window.RemoteStorageBridge.whenReady) {
-      var done = false;
+      var done = false, safetyFired = false;
       var go = function () { if (done) return; done = true; boot(); };
-      window.RemoteStorageBridge.whenReady().then(go).catch(go);
-      setTimeout(go, 4000); // xavfsizlik: baribir ishga tushiramiz
+      window.RemoteStorageBridge.whenReady().then(function () {
+        go();
+        /* Xavfsizlik chegarasi (pastda, 4000ms) ALLAQACHON ishga tushirgan
+           bo'lsa — bootstrap SEKIN javob berdi, ya'ni ilova localStorage
+           hali TO'LIQ sinxronlanmagan holda chizilgan. Masalan foydalanuvchi
+           qo'shgan maxsus tillar (custom_langs) ko'rinmay qolardi va hech
+           qachon o'zi tuzalmasdi — yangi sahifaga o'tilgunga qadar. Endi
+           bootstrap oxiri kelganda joriy bo'lim QAYTA chiziladi. */
+        if (safetyFired) { try { App.reload(); } catch (e) {} }
+      }).catch(go);
+      setTimeout(function () { safetyFired = true; go(); }, 4000);
     } else {
       boot();
     }
   }
+
+  /* Ko'prik endi mahalliy SURATdan darhol tayyor bo'ladi (remote-storage.js),
+     ya'ni yuqoridagi `whenReady()` tarmoqni kutmaydi. Serverdagi holat orqa
+     fonda kelib SURATDAN FARQ qilsa — menyu va joriy bo'lim qayta chiziladi.
+     Odatda farq bo'lmaydi va foydalanuvchi hech narsa sezmaydi; boshqa
+     qurilmada o'zgarish bo'lgan bo'lsa, u bir lahzada o'zi paydo bo'ladi. */
+  window.addEventListener('remote-storage:refreshed', function () {
+    try {
+      buildSidebar();
+      buildBottom();
+      App.reload();
+    } catch (e) {}
+  });
 
   /* ============================================================
      BO'LIMLAR ORASIDA JEST BILAN O'TISH
@@ -209,7 +251,7 @@
     el.innerHTML = '<div class="nd-strip">' + list.map(function (v, i) {
       var item = NAV.find(function (x) { return x.v === v; }) || { n: v, ic: 'home' };
       return '<div class="nd-item' + (i === DIAL.idx ? ' on' : '') + '">' +
-        '<span class="nd-ic" data-icon="' + item.ic + '" data-icon-size="20"></span>' +
+        '<span class="nd-ic">' + navIcon(item.v || v, item.ic, 24) + '</span>' +
         '<span class="nd-n">' + App.esc(item.n) + '</span></div>';
     }).join('') + '</div>';
     App.icons(el);
@@ -348,6 +390,13 @@
 
   // Service worker
   if ('serviceWorker' in navigator) {
+    /* SW o'qish javoblarini keshdan DARHOL beradi, yangisini esa orqa fonda
+       oladi. Yangisi eskisidan farq qilsa shu xabar keladi — joriy bo'lim
+       o'zi jimgina yangilanadi (foydalanuvchi hech narsa bosmaydi). */
+    navigator.serviceWorker.addEventListener('message', function (e) {
+      if (e.data && e.data.type === 'data-updated') App._onDataUpdated();
+    });
+
     window.addEventListener('load', function () {
       navigator.serviceWorker.register('service-worker.js').then(function (reg) {
         /* Kesh yetarlimi? Brauzer joy bo'shatish uchun uni tozalab yuborishi

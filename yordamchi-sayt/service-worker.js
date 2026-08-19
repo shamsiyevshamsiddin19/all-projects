@@ -5,14 +5,16 @@
  *     ilova internetsiz ham ochiladi (avval hech bo'lmasa bir marta kirilgan bo'lsa).
  *  2) Statik fayllar — stale-while-revalidate: darhol keshdan beriladi, orqa
  *     fonda yangilanadi.
- *  3) API O'QISH so'rovlari — network-first: internet bo'lsa yangisi, bo'lmasa
- *     oxirgi muvaffaqiyatli javob keshdan beriladi. Odatda faqat GET, ammo
+ *  3) API O'QISH so'rovlari — stale-while-revalidate: keshdagi javob DARHOL
+ *     beriladi (bo'lim kutdirmaydi), yangisi orqa fonda olinadi va FARQ
+ *     bo'lsagina sahifaga `data-updated` xabari boradi. Keshda hali bo'lmasa
+ *     — tarmoqdan, internet yo'q bo'lsa oflayn javob. Odatda faqat GET, ammo
  *     Boostday o'qishlari POST bilan ketadi, shuning uchun tanasi natijaga
  *     ta'sir qilmaydigan bir nechta POST o'qishga ham ruxsat berilgan
  *     (`CACHEABLE_POST`). YOZISH so'rovlari HECH QACHON keshlanmaydi —
  *     offline'da ular xato beradi va ilova o'z navbatiga qo'yadi.
  */
-const VERSION = '20260812new6';
+const VERSION = '20260819v6';
 const SHELL_CACHE = 'yordamchi-shell-' + VERSION;
 const DATA_CACHE = 'yordamchi-data-' + VERSION;
 
@@ -93,6 +95,15 @@ self.addEventListener('activate', (e) => {
 /* Sahifa "keshni tekshir" desa ham tiklaymiz (qo'shimcha himoya). */
 self.addEventListener('message', (e) => {
   if (e.data === 'precache') e.waitUntil(precache());
+
+  /* Ilova biror narsani YOZGANDAN keyin yuboradi: o'qish keshi eskirdi,
+     keyingi o'qish tarmoqdan olinsin. Keshni tanlab tozalashdan ko'ra
+     butunlay bo'shatgan afzal — bir amal bir nechta ro'yxatga ta'sir
+     qilishi mumkin (mavzu qo'shilsa `get_topics` ham, `get_structure` ham
+     eskiradi), va yozuvdan keyin bitta qo'shimcha so'rov sezilmaydi. */
+  if (e.data && e.data.type === 'invalidate-data') {
+    e.waitUntil(caches.delete(DATA_CACHE));
+  }
 });
 
 /* ============================================================
@@ -151,6 +162,72 @@ function isApi(url) {
   return url.pathname === '/api' || url.pathname.startsWith('/api/');
 }
 
+/* ============================================================
+   API O'QISHLARI — STALE-WHILE-REVALIDATE
+   Ilgari bu yer NETWORK-FIRST edi: har safar Learn (yoki boshqa)
+   bo'limiga kirilganda sahifa spinner chizib, Stokgolmdagi serverdan
+   javob kelguncha KUTARDI. Ma'lumot keshda turgan bo'lsa ham.
+
+   Endi: keshdagi javob DARHOL beriladi (kutish nolga tushadi), yangisi
+   esa orqa fonda olinadi. Yangi tana eskisidan FARQ qilsagina sahifaga
+   `data-updated` xabari yuboriladi va u o'sha joyni qayta chizadi.
+   Farq bo'lmasa — foydalanuvchi hech narsa sezmaydi.
+
+   Ikki istisno:
+     * `storage_bootstrap` — ilovaning O'ZIDA surat bor (remote-storage.js),
+       bu yerda eski javob berilsa ikki qavat eskilik hosil bo'lardi.
+     * YOZUV amallari — umuman keshlanmaydi va muvaffaqiyatli yozuvdan
+       keyin ilova `invalidate-data` yuborib, o'qish keshini bekor qiladi
+       (aks holda qo'shilgan mavzu ro'yxatda eski holicha ko'rinardi).
+   ============================================================ */
+const NO_SWR = new Set(['storage_bootstrap']);
+
+async function notifyClients(msg) {
+  const all = await self.clients.matchAll({ type: 'window' });
+  all.forEach((c) => c.postMessage(msg));
+}
+
+/* Tarmoqdan olib keshga yozadi. Eski tana berilgan bo'lsa va yangisi
+   undan farq qilsa — sahifani ogohlantiradi. */
+async function revalidate(req, key, cachedText) {
+  try {
+    const r = await fetch(req);
+    if (!r || r.status !== 200) return;
+    const copy = r.clone();
+    const text = await r.text();
+    const c = await caches.open(DATA_CACHE);
+    await c.put(key, copy);
+    if (typeof cachedText === 'string' && text !== cachedText) {
+      await notifyClients({
+        type: 'data-updated',
+        action: new URL(req.url).searchParams.get('action') || ''
+      });
+    }
+  } catch (e) {
+    /* Internet yo'q — keshdagi javob o'z holicha to'g'ri qoladi. */
+  }
+}
+
+/* Keshda yo'q (birinchi marta): tarmoqdan olamiz, bo'lmasa oflayn javob. */
+async function networkFirst(req, key) {
+  try {
+    const r = await fetch(req);
+    if (r && r.status === 200) {
+      const copy = r.clone();
+      const c = await caches.open(DATA_CACHE);
+      await c.put(key, copy);
+    }
+    return r;
+  } catch (e) {
+    const c = await caches.open(DATA_CACHE);
+    const cached = await c.match(key);
+    return cached || new Response(
+      JSON.stringify({ success: false, error: 'Oflayn: bu ma\'lumot hali keshlanmagan.', offline: true }),
+      { status: 503, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   const url = new URL(req.url);
@@ -174,24 +251,37 @@ self.addEventListener('fetch', (e) => {
   if (isApi(url)) {
     if (!READ_ACTIONS.has(action)) return;       // yozuv yoki noma'lum — tegmaymiz
     const key = dataCacheKey(req.url);
-    e.respondWith(
-      fetch(req)
-        .then((r) => {
-          if (r && r.status === 200) {
-            const copy = r.clone();
-            caches.open(DATA_CACHE).then((c) => c.put(key, copy));
-          }
-          return r;
-        })
-        .catch(() =>
-          caches.open(DATA_CACHE)
-            .then((c) => c.match(key))
-            .then((cached) => cached || new Response(
-              JSON.stringify({ success: false, error: 'Oflayn: bu ma\'lumot hali keshlanmagan.', offline: true }),
-              { status: 503, headers: { 'Content-Type': 'application/json' } }
-            ))
-        )
-    );
+
+    if (NO_SWR.has(action)) {
+      e.respondWith(networkFirst(req, key));
+      return;
+    }
+
+    /* `waitUntil` SINXRON chaqirilishi shart (hodisa hali "faol" bo'lganda),
+       shuning uchun orqa fon vazifasi shu yerda va'da bilan ushlab turiladi. */
+    let releaseKeepAlive;
+    e.waitUntil(new Promise((resolve) => { releaseKeepAlive = resolve; }));
+
+    e.respondWith((async () => {
+      try {
+        const c = await caches.open(DATA_CACHE);
+        const cached = await c.match(key);
+
+        if (cached) {
+          /* Keshdagi javob DARHOL ketadi; yangisi orqa fonda tekshiriladi. */
+          const cachedText = await cached.clone().text();
+          revalidate(req, key, cachedText).finally(releaseKeepAlive);
+          return cached;
+        }
+
+        const fresh = await networkFirst(req, key);
+        releaseKeepAlive();
+        return fresh;
+      } catch (err) {
+        releaseKeepAlive();
+        throw err;
+      }
+    })());
     return;
   }
 

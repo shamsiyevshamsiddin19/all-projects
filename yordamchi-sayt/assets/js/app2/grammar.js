@@ -72,18 +72,103 @@
       if (!subCount[path]) { subCount[path] = 0; subOrder.push(path); }
       subCount[path]++;
     });
+
+    // "Maxsus mavzular" har doim eng tepada (1-o'rinda) turadi!
+    subOrder.sort(function (a, b) {
+      var aIsM = /^M[.)\s]|^maxsus/i.test(a);
+      var bIsM = /^M[.)\s]|^maxsus/i.test(b);
+      if (aIsM && !bIsM) return -1;
+      if (!aIsM && bIsM) return 1;
+      return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+    });
+
     return {
       folders: subOrder.map(function (p) { return { path: p, name: lastSeg(p), count: subCount[p] }; }),
       root: direct
     };
   }
 
-  function topicRow(t, lang) {
-    return '<div class="list-row">' +
-      '<span class="li-ic" data-icon="book" data-icon-size="15"></span>' +
-      '<button class="li-main li-btn" data-act="go" data-arg=\'' + App.arg({ v: 'grammar_topic', p: { id: t.id, lang: lang } }) + '\'>' +
-      '<div class="li-title">' + App.esc(t.name) + '</div></button>' +
-      '<button class="icon-btn ghost" style="width:30px;height:30px" data-act="topicManage" data-arg=\'' + App.arg({ id: t.id, name: t.name, folder: t.folder || '', lang: lang }) + '\'><span data-icon="edit" data-icon-size="14"></span></button></div>';
+  function getTopicImage(name, folder, lang) {
+    if (lang === 'coding') {
+      var s = ((name || '') + ' ' + (folder || '')).toLowerCase();
+      if (s.indexOf('format') >= 0 || s.indexOf('fayl') >= 0) return 'assets/img/coding/files.jpg';
+      if (s.indexOf('terminal') >= 0 || s.indexOf('linux') >= 0) return 'assets/img/coding/terminal.jpg';
+      if (s.indexOf('regex') >= 0 || s.indexOf('string') >= 0) return 'assets/img/coding/regex.jpg';
+      if (s.indexOf('python') >= 0) return 'assets/img/coding/python.jpg';
+      if (s.indexOf('git') >= 0 || s.indexOf('github') >= 0) return 'assets/img/coding/git.jpg';
+      if (s.indexOf('aiogram') >= 0 && (s.indexOf('django') >= 0 || s.indexOf('postgres') >= 0)) return 'assets/img/coding/fullstack.jpg';
+      if (s.indexOf('aiogram') >= 0 || s.indexOf('bot') >= 0) return 'assets/img/coding/aiogram.jpg';
+      if (s.indexOf('django') >= 0 || s.indexOf('backend') >= 0 || s.indexOf('web') >= 0) return 'assets/img/coding/django.jpg';
+      return 'assets/img/coding/python.jpg';
+    }
+    return 'assets/img/vocab/book.jpg';
+  }
+
+  function getFolderImage(folderName, path, lang) {
+    if (lang === 'coding') {
+      var s = ((folderName || '') + ' ' + (path || '')).toLowerCase();
+      if (s.indexOf('format') >= 0 || s.indexOf('fayl') >= 0) return 'assets/img/coding/files.jpg';
+      if (s.indexOf('terminal') >= 0 || s.indexOf('linux') >= 0) return 'assets/img/coding/terminal.jpg';
+      if (s.indexOf('python') >= 0) return 'assets/img/coding/python.jpg';
+      if (s.indexOf('git') >= 0) return 'assets/img/coding/git.jpg';
+      if (s.indexOf('aiogram') >= 0 || s.indexOf('bot') >= 0) return 'assets/img/coding/aiogram.jpg';
+      if (s.indexOf('django') >= 0 || s.indexOf('backend') >= 0 || s.indexOf('web') >= 0) return 'assets/img/coding/django.jpg';
+      return 'assets/img/vocab/folder.jpg';
+    }
+    return 'assets/img/vocab/folder.jpg';
+  }
+
+  /* Nom boshidagi tartib raqami yoki harfni (masalan: M. Maxsus mavzular) ajratadi */
+    function folderBadgeHtml(f, lang, i) {
+    var fp = splitNum(f.name, i + 1);
+    if (lang === 'coding') {
+      var s = (f.name || '').toLowerCase();
+      if (s.indexOf('format') >= 0 || s.indexOf('fayl') >= 0) {
+        return '<span class="chat-av" style="background:#0b0f19;overflow:hidden;padding:0;display:flex;align-items:center;justify-content:center"><img src="assets/img/coding/files.jpg" style="width:100%;height:100%;object-fit:cover;border-radius:12px" alt="Formatlar"></span>';
+      }
+      if (s.indexOf('linux') >= 0 || s.indexOf('terminal') >= 0) {
+        return '<span class="chat-av" style="background:#fff;padding:6px;display:flex;align-items:center;justify-content:center"><img src="assets/icons/tech/linux-original.svg" style="width:100%;height:100%;object-fit:contain" alt="Linux"></span>';
+      }
+      if (s.indexOf('python') >= 0) {
+        return '<span class="chat-av" style="background:#fff;padding:6px;display:flex;align-items:center;justify-content:center"><img src="assets/icons/tech/python-original.svg" style="width:100%;height:100%;object-fit:contain" alt="Python"></span>';
+      }
+      if (s.indexOf('git') >= 0) {
+        return '<span class="chat-av" style="background:#fff;padding:6px;display:flex;align-items:center;justify-content:center"><img src="assets/icons/tech/git-original.svg" style="width:100%;height:100%;object-fit:contain" alt="Git"></span>';
+      }
+      if (s.indexOf('telegram') >= 0 || s.indexOf('aiogram') >= 0 || s.indexOf('bot') >= 0) {
+        return '<span class="chat-av" style="background:#fff;padding:6px;display:flex;align-items:center;justify-content:center"><img src="assets/icons/tech/telegram-original.svg" style="width:100%;height:100%;object-fit:contain" alt="Telegram"></span>';
+      }
+      if (s.indexOf('django') >= 0 || s.indexOf('backend') >= 0 || s.indexOf('postgres') >= 0) {
+        return '<span class="chat-av" style="background:#fff;padding:6px;display:flex;align-items:center;justify-content:center"><img src="assets/icons/tech/django-original.svg" style="width:100%;height:100%;object-fit:contain" alt="Django"></span>';
+      }
+    }
+    var isSpecial = fp.num === 'M' || /maxsus/i.test(f.name);
+    var avColor = isSpecial ? 'color:var(--danger,#ff3b30);' : 'color:var(--accent,#007aff);';
+    return '<span class="chat-av chat-av-num" style="background:#fff;' + avColor + 'font-size:18px;font-weight:800">' + App.esc(fp.num) + '</span>';
+  }
+
+  function splitNum(name, fallback) {
+    var s = String(name || '').trim();
+    var mLetter = s.match(/^([A-Za-zА-Яа-я])\s*[.)\-]\s*(.+)$/);
+    if (mLetter) return { num: mLetter[1].toUpperCase(), title: mLetter[2].trim() };
+    var m = s.match(/^(\d{1,3})\s*[.)\-]?\s+(.+)$/);
+    if (m && m[2].trim()) return { num: String(parseInt(m[1], 10)), title: m[2].trim() };
+    if (/^maxsus\b/i.test(s)) return { num: 'M', title: s };
+    return { num: String(fallback), title: s };
+  }
+
+  function topicRow(t, lang, idx) {
+    var p = splitNum(t.name, idx);
+    return '<div class="chat-item">' +
+      '<button class="chat-row" data-act="go" data-arg=\'' + App.arg({ v: 'grammar_topic', p: { id: t.id, lang: lang } }) + '\'>' +
+      '<span class="chat-av chat-av-num" style="background:#fff;color:var(--accent,#007aff);font-size:18px;font-weight:800">' + App.esc(p.num) + '</span>' +
+      '<span class="chat-main">' +
+        '<span class="chat-title">' + App.esc(p.title) + '</span>' +
+        '<span class="chat-sub">Mavzuni o\'qish</span>' +
+      '</span>' +
+      '<span class="chat-arrow" data-icon="arrowLeft" data-icon-size="16"></span></button>' +
+      '<button class="icon-btn ghost" style="width:34px;height:34px;flex-shrink:0" data-act="topicManage" data-arg=\'' + App.arg({ id: t.id, name: t.name, folder: t.folder || '', lang: lang }) + '\'><span data-icon="edit" data-icon-size="15"></span></button>' +
+      '</div>';
   }
 
   /* ---------- Mavzular ro'yxati ---------- */
@@ -116,18 +201,27 @@
 
         var html = '';
         if (g.folders.length) {
-          html += g.folders.map(function (f) {
-            return '<button class="list-row" data-act="go" data-arg=\'' +
+          html += '<div class="chat-list">' + g.folders.map(function (f, i) {
+            var fp = splitNum(f.name, i + 1);
+            var isSpecial = fp.num === 'M' || /maxsus/i.test(f.name);
+            var avColor = isSpecial ? 'color:var(--danger,#ff3b30);' : 'color:var(--accent,#007aff);';
+            var titleStyle = isSpecial ? ' style="color:var(--danger,#ff3b30);font-weight:700"' : '';
+
+            return '<div class="chat-item">' +
+              '<button class="chat-row" data-act="go" data-arg=\'' +
               App.arg({ v: 'grammar', p: { lang: lang, folder: f.path } }) + '\'>' +
-              '<span class="li-ic" style="background:var(--accent-soft);color:var(--accent)" data-icon="archive" data-icon-size="15"></span>' +
-              '<div class="li-main"><div class="li-title">' + App.esc(f.name) + '</div>' +
-              '<div class="li-sub">' + f.count + ' ta mavzu</div></div>' +
-              '<span class="li-chev" data-icon="arrowLeft" data-icon-size="16" style="transform:rotate(180deg)"></span></button>';
-          }).join('');
+              folderBadgeHtml(f, lang, i) +
+              '<span class="chat-main">' +
+                '<span class="chat-title"' + titleStyle + '>' + App.esc(fp.title) + '</span>' +
+                '<span class="chat-sub">' + f.count + ' ta mavzu</span>' +
+              '</span>' +
+              '<span class="chat-arrow" data-icon="arrowLeft" data-icon-size="16"></span></button>' +
+              '</div>';
+          }).join('') + '</div>';
         }
         if (g.root.length) {
-          if (g.folders.length) html += '<div class="list-label">' + (folder ? 'Mavzular' : 'Papkasiz') + '</div>';
-          html += g.root.map(function (t) { return topicRow(t, lang); }).join('');
+          if (g.folders.length) html += '<div class="list-label" style="margin-top:16px">' + (folder ? 'Mavzular' : 'Papkasiz') + '</div>';
+          html += '<div class="chat-list">' + g.root.map(function (t, i) { return topicRow(t, lang, i + 1); }).join('') + '</div>';
         }
         box.innerHTML = html;
         App.icons(box);
@@ -221,27 +315,33 @@
     var game = topic.game_content && window.GrammarGames
       ? GrammarGames.parse(topic.game_type || 'fill', topic.game_content) : null;
 
+    /* Tepadagi "Matn / Test / O'yin" paneli OLIB TASHLANDI (foydalanuvchi
+       so'rovi: darslik o'qiyotganda test va o'yin kerak emas, panel esa har
+       safar ekranning eng tepasidan joy olardi).
+
+       Test va o'yin YO'QOTILMADI — ikkalasi ham tepadagi ✏ menyusidan
+       ochiladi va ma'lumoti bazada o'z joyida turadi. Matndan boshqa
+       bo'limga o'tilganda tepada "Matnga qaytish" tugmasi chiqadi. */
     box.innerHTML =
-      '<div class="seg" style="margin-bottom:14px">' +
-      ['matn', 'test', 'oyin'].map(function (t) {
-        var label = t === 'matn' ? 'Matn' : (t === 'test' ? 'Test' + (tests.length ? ' (' + tests.length + ')' : '') : 'O\'yin');
-        return '<button class="' + (TAB === t ? 'active' : '') + '" data-tab="' + t + '">' + label + '</button>';
-      }).join('') + '</div>' +
+      (TAB === 'matn' ? ''
+        : '<button class="btn sec" id="tb-matn" style="margin-bottom:12px">← Matnga qaytish</button>') +
       '<div id="topic-tab"></div>';
 
-    box.querySelectorAll('.seg button').forEach(function (b) {
-      b.onclick = function () { TAB = b.getAttribute('data-tab'); renderTopicBody(page, topic, lang, id); };
-    });
+    var backMatn = App.el('tb-matn');
+    if (backMatn) backMatn.onclick = function () {
+      TAB = 'matn'; renderTopicBody(page, topic, lang, id);
+    };
 
     var t = App.el('topic-tab');
-    if (TAB === 'matn') renderMatnTab(t, page, topic, lang, id);
+    if (TAB === 'matn') renderMatnTab(t, page, topic, lang, id, tests.length);
     else if (TAB === 'test') renderTestTab(t, page, topic, lang, id, tests);
     else renderGameTab(t, page, topic, lang, id, game);
     App.icons(box);
   }
 
   /* --- Matn (markdown) --- */
-  function renderMatnTab(t, page, topic, lang, id) {
+  function renderMatnTab(t, page, topic, lang, id, nTests) {
+    nTests = nTests || 0;
     t.innerHTML =
       (topic.content
         ? '<div class="md-content">' + mdToHtml(topic.content) + '</div>'
@@ -255,9 +355,21 @@
         (topic.content
           ? '<button class="list-row" id="mt-dl-sh"><span class="li-ic" data-icon="download" data-icon-size="15"></span>' +
             '<div class="li-main"><div class="li-title">.md faylni yuklab olish</div></div></button>'
-          : '');
+          : '') +
+        /* Panel olib tashlangani uchun test/o'yinga yagona yo'l shu menyu */
+        '<button class="list-row" id="mt-test"><span class="li-ic" data-icon="list" data-icon-size="15"></span>' +
+        '<div class="li-main"><div class="li-title">Test</div>' +
+        '<div class="li-sub">' + (nTests ? nTests + ' ta savol' : 'hali yo\'q') + '</div></div></button>' +
+        '<button class="list-row" id="mt-game"><span class="li-ic" data-icon="play" data-icon-size="15"></span>' +
+        '<div class="li-main"><div class="li-title">O\'yin</div></div></button>';
       var sh = App.sheet(html, { title: topic.name });
       App.icons(sh);
+      sh.querySelector('#mt-test').onclick = function () {
+        App.closeSheet(); TAB = 'test'; renderTopicBody(page, topic, lang, id);
+      };
+      sh.querySelector('#mt-game').onclick = function () {
+        App.closeSheet(); TAB = 'oyin'; renderTopicBody(page, topic, lang, id);
+      };
       sh.querySelector('#mt-edit-sh').onclick = function () {
         App.closeSheet();
         openMatnEditor(page, topic, lang, id);

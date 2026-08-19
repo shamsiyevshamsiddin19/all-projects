@@ -3,6 +3,11 @@
 from __future__ import annotations
 
 import base64
+import gzip
+import os
+import subprocess
+from datetime import datetime
+from starlette.responses import Response
 import io
 import json
 import logging
@@ -173,3 +178,104 @@ def _update_manifest_version(version: str) -> bool:
         return True
     except Exception:
         return False
+
+
+# --- PostgreSQL ma'lumotlar bazasi zaxirasi va tiklash ---
+
+async def db_export(request: Request):
+    """PostgreSQL ma'lumotlar bazasining to'liq .sql zaxirasini yuklab berish."""
+    env = os.environ.copy()
+    if settings.DB_PASS:
+        env["PGPASSWORD"] = settings.DB_PASS
+    
+    cmd = [
+        "pg_dump",
+        "-h", settings.DB_HOST or "127.0.0.1",
+        "-p", str(settings.DB_PORT or 5432),
+        "-U", settings.DB_USER or "yordamchi",
+        "--clean",
+        "--if-exists",
+        "--no-owner",
+        "--no-privileges",
+        settings.DB_NAME or "yordamchi",
+    ]
+    
+    try:
+        proc = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=180)
+    except Exception as e:
+        logger.exception("pg_dump bajarishda xato")
+        raise ApiError(f"Zaxira olishda xatolik: {e}", 500)
+    
+    if proc.returncode != 0:
+        err = proc.stderr.decode("utf-8", errors="replace")
+        logger.error(f"pg_dump xatosi: {err}")
+        raise ApiError(f"Zaxira olishda xatolik: {err[:200]}", 500)
+    
+    sql_data = proc.stdout
+    now_str = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    filename = f"yordamchi_baza_zaxira_{now_str}.sql"
+    
+    return Response(
+        content=sql_data,
+        media_type="application/sql",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "no-cache",
+            "Content-Length": str(len(sql_data)),
+        }
+    )
+
+
+async def db_import(request: Request):
+    """Foydalanuvchi yuklagan .sql (yoki .sql.gz, .dump, .db) fayldan PostgreSQL bazasini to'liq qayta tiklash."""
+    form = await request.form()
+    upload = form.get("file") or form.get("db_file") or form.get("backup")
+    if not upload:
+        raise ApiError("Zaxira fayli yuborilmadi.", 400)
+    
+    filename = getattr(upload, "filename", "") or "backup.sql"
+    content = await upload.read()
+    if not content:
+        raise ApiError("Fayl bo'sh.", 400)
+    
+    # Agar fayl gzip bo'lsa ochamiz
+    if filename.endswith(".gz") or (len(content) > 2 and content[:2] == b"\x1f\x8b"):
+        try:
+            content = gzip.decompress(content)
+        except Exception as e:
+            raise ApiError(f"Gzip faylni ochishda xatolik: {e}", 400)
+    
+    # SQL skriptini tekshiramiz
+    sql_text = content.decode("utf-8", errors="replace")
+    if len(sql_text.strip()) < 10:
+        raise ApiError("Yaroqsiz SQL fayli.", 400)
+    
+    env = os.environ.copy()
+    if settings.DB_PASS:
+        env["PGPASSWORD"] = settings.DB_PASS
+        
+    cmd = [
+        "psql",
+        "-h", settings.DB_HOST or "127.0.0.1",
+        "-p", str(settings.DB_PORT or 5432),
+        "-U", settings.DB_USER or "yordamchi",
+        "-d", settings.DB_NAME or "yordamchi",
+    ]
+    
+    try:
+        proc = subprocess.run(cmd, input=content, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=300)
+    except Exception as e:
+        logger.exception("psql restore xatosi")
+        raise ApiError(f"psql xatosi: {e}", 500)
+    
+    if proc.returncode != 0:
+        err = proc.stderr.decode("utf-8", errors="replace")
+        logger.error(f"psql restore xatosi: {err}")
+        raise ApiError(f"Bazani tiklashda xatolik yuz berdi: {err[:300]}", 500)
+    
+    logger.info(f"Baza muvaffaqiyatli tiklandi: {filename}, {len(content)} bayt")
+    return success({
+        "message": "Ma'lumotlar bazasi muvaffaqiyatli tiklandi!",
+        "filename": filename,
+        "size_bytes": len(content),
+    })

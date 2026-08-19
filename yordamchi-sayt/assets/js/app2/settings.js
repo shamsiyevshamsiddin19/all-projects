@@ -67,11 +67,23 @@
         '<div class="li-sub">Kerak bo\'lmaganini yashirish</div></div>' +
         '<span class="li-chev" data-icon="arrowLeft" data-icon-size="16" style="transform:rotate(180deg)"></span></button>' +
 
-        '<div class="list-label">Ma\'lumotlar</div>' +
-        '<button class="list-row" data-act="exportAll">' +
+        '<div class="list-label">Ma\'lumotlar bazasi (Zaxira va Tiklash)</div>' +
+        '<button class="list-row" data-act="dbExport">' +
         '<span class="li-ic" data-icon="upload" data-icon-size="15" style="transform:rotate(180deg)"></span>' +
-        '<div class="li-main"><div class="li-title">Zaxira nusxa olish</div>' +
-        '<div class="li-sub">Maqsad, lug\'at, test va sozlamalar — JSON fayl</div></div>' +
+        '<div class="li-main"><div class="li-title">To\'liq bazani yuklab olish (.sql)</div>' +
+        '<div class="li-sub">Barcha jadvallar, darslar, lug\'at va ma\'lumotlar zaxirasi</div></div>' +
+        '<span class="li-chev" data-icon="arrowLeft" data-icon-size="16" style="transform:rotate(180deg)"></span></button>' +
+
+        '<button class="list-row" data-act="dbImportPrompt">' +
+        '<span class="li-ic" data-icon="upload" data-icon-size="15"></span>' +
+        '<div class="li-main"><div class="li-title">Ma\'lumotlar bazasini tiklash</div>' +
+        '<div class="li-sub">Kompyuterdagi .sql fayldan bazani qayta tiklash</div></div>' +
+        '<span class="li-chev" data-icon="arrowLeft" data-icon-size="16" style="transform:rotate(180deg)"></span></button>' +
+
+        '<button class="list-row" data-act="exportAll">' +
+        '<span class="li-ic" data-icon="list" data-icon-size="15"></span>' +
+        '<div class="li-main"><div class="li-title">Lokal sozlamalar zaxirasi (JSON)</div>' +
+        '<div class="li-sub">Brauzer sozlamalari va kesh fayli</div></div>' +
         '<span class="li-chev" data-icon="arrowLeft" data-icon-size="16" style="transform:rotate(180deg)"></span></button>' +
 
         '<div class="list-label">Xavfsizlik</div>' +
@@ -80,7 +92,7 @@
         '<div class="li-main"><div class="li-title" style="color:var(--danger)">Tizimdan chiqish</div></div></button>' +
 
         '<p class="muted" style="text-align:center;font-size:12px;margin:34px 0 8px">Yordamchi</p>' +
-        '<input type="file" id="av-file" hidden accept="image/*"><input type="file" id="icon-file" hidden accept="image/*">';
+        '<input type="file" id="av-file" hidden accept="image/*"><input type="file" id="icon-file" hidden accept="image/*"><input type="file" id="db-restore-file" hidden accept=".sql,.gz,.dump,.db,.txt">';
 
       App.icons(page);
       renderDeadlines();
@@ -92,6 +104,36 @@
         var f = e.target.files[0]; if (!f) return;
         resizeImage(f, 320, function (data) { localStorage.setItem('user_avatar', data); App.toast('✅ Rasm saqlandi'); App.reload(); });
       };
+      var dbInp = App.el('db-restore-file');
+      if (dbInp) {
+        dbInp.onchange = function (e) {
+          var f = e.target.files[0];
+          if (!f) return;
+          App.toast('⏳ Baza tiklanmoqda, iltimos kuting...');
+          var fd = new FormData();
+          fd.append('file', f);
+          fetch('/api?action=db_import', {
+            method: 'POST',
+            body: fd
+          })
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            if (res.success) {
+              App.toast('✅ Ma\'lumotlar bazasi muvaffaqiyatli tiklandi!');
+              setTimeout(function () { App.reload(); }, 1200);
+            } else {
+              App.toast('❌ Xatolik: ' + (res.error || 'Tiklab bo\'lmadi'));
+            }
+          })
+          .catch(function (err) {
+            App.toast('❌ Xatolik: ' + err.message);
+          })
+          .finally(function () {
+            dbInp.value = '';
+          });
+        };
+      }
+
       App.el('icon-file').onchange = function (e) {
         var f = e.target.files[0]; if (!f) return;
         resizeImage(f, 512, function (data) {
@@ -137,6 +179,29 @@
     var bio = App.el('set-bio').value.trim();
     if (bio) localStorage.setItem('user_bio', bio); else localStorage.removeItem('user_bio');
     App.closeSheet(); App.toast('✅ Saqlandi'); App.reload();
+  };
+
+  /* To'liq PostgreSQL ma'lumotlar bazasini .sql fayl qilib yuklab olish */
+  App.actions.dbExport = function () {
+    App.toast('📦 Baza zaxirasi tayyorlanmoqda...');
+    var a = document.createElement('a');
+    a.href = '/api?action=db_export';
+    a.download = '';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { a.remove(); }, 1000);
+  };
+
+  /* Bazani .sql fayldan qayta tiklash */
+  App.actions.dbImportPrompt = function () {
+    App.confirm(
+      '⚠️ Diqqat! Ushbu amal kompyuteringizdagi .sql zaxira faylidan ma\'lumotlar bazasini to\'liq qayta tiklaydi. Davom etasizmi?',
+      function () {
+        var inp = App.el('db-restore-file');
+        if (inp) inp.click();
+      },
+      { danger: true, yes: 'Faylni tanlash' }
+    );
   };
 
   /* To'liq zaxira: serverdagi asosiy ma'lumot + brauzerdagi sozlamalar bitta JSON faylga */

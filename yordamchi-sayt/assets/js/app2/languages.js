@@ -7,10 +7,20 @@
      shuning uchun oflaynda ham ko'rinadi va tezroq yuklanadi.
      Manba: Devicon (MIT). Yuklab olingan: 138 ta. */
   var DEVICON = 'assets/icons/tech/';
+  /* Ikonka manzillarida versiya. Sabab: bu fayllar (bayroqlar, devicon SVG'lari)
+     `?v=` siz so'ralardi, nginx esa ularni uzoq keshlar edi — almashtirilgan
+     ikonka foydalanuvchiga yetib bormasdi (2026-08-17 da bayroqlar shu sababdan
+     ko'rinmadi). Ikonka almashtirilsa SHU raqamni oshirish kifoya. */
+  var ICON_V = '?v=20260819v2';
   /* Texnologiya logolari — nomdan avtomatik topiladi (Devicon).
      Taxalluslar ham bor: 'js' -> javascript, 'k8s' -> kubernetes.
      Logo yuklanmasa (404) — rangli harf plitkasi ko'rsatiladi. */
   var LANG_ICONS = {
+    'aiogram': { img: DEVICON + 'aiogram-original.svg', color: '#24A1DE' },
+    'aiogram3': { img: DEVICON + 'aiogram-original.svg', color: '#24A1DE' },
+    'aiogram 3': { img: DEVICON + 'aiogram-original.svg', color: '#24A1DE' },
+    'telegram': { img: DEVICON + 'telegram-original.svg', color: '#24A1DE' },
+    'telegram bot': { img: DEVICON + 'aiogram-original.svg', color: '#24A1DE' },
     'python': { img: DEVICON + 'python-original.svg', color: '#3776AB' },
     'py': { img: DEVICON + 'python-original.svg', color: '#3776AB' },
     'javascript': { img: DEVICON + 'javascript-original.svg', color: '#F7DF1E' },
@@ -235,7 +245,7 @@
     var ic = findIcon(name);
     var harf = App.esc((name || '?').charAt(0).toUpperCase());
     if (ic) {
-      return '<img src="' + ic.img + '" style="width:' + s + 'px;height:' + s + 'px" onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\'">' +
+      return '<img src="' + ic.img + ICON_V + '" style="width:' + s + 'px;height:' + s + 'px" onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\'">' +
         '<span style="display:none;width:' + s + 'px;height:' + s + 'px;border-radius:' + rad + 'px;background:' + ic.color + ';color:#fff;font-weight:700;font-size:' + fs + 'px;align-items:center;justify-content:center">' + harf + '</span>';
     }
     var c = hashColor(name || '');
@@ -280,7 +290,7 @@
     // Ilgari 'http' bilan boshlanishiga qaralardi; logolar serverga
     // ko'chirilgach ular lokal yo'lga aylandi va bu tekshiruv buzilardi.
     var iconHtml = /\.(svg|png|jpe?g|webp)$/i.test(ic)
-      ? '<img src="' + ic + '" alt="">'
+      ? '<img src="' + ic + ICON_V + '" alt="">'
       : '<span class="chat-av-ic" data-icon="' + ic + '" data-icon-size="22"></span>';
 
     return '<button class="chat-row" data-act="go" data-arg=\'' + App.arg({ v: v, p: params || {} }) + '\'>' +
@@ -295,16 +305,15 @@
   /* Custom til — xuddi shu chat uslubi, lekin yonida boshqarish tugmasi bor.
      Tugma qatorning ICHIDA bo'lolmaydi (button ichida button), shuning uchun
      ikkalasi `.chat-item` o'ramida yonma-yon turadi. */
+  /* Custom til — xuddi asosiy tillar kabi yagona chat uslubida (`.chat-row` + `.chat-arrow`) */
   function customLangCard(l) {
-    return '<div class="chat-item">' +
-      '<button class="chat-row" data-act="go" data-arg=\'' + App.arg({ v: 'grammar', p: { lang: l.id } }) + '\'>' +
+    return '<button class="chat-row" data-act="go" data-arg=\'' + App.arg({ v: 'grammar', p: { lang: l.id } }) + '\'>' +
       '<span class="chat-av">' + iconHtml(l.name) + '</span>' +
       '<span class="chat-main">' +
         '<span class="chat-title">' + App.esc(l.name) + '</span>' +
         '<span class="chat-sub">Mavzular, testlar va o\'yinlar</span>' +
-      '</span></button>' +
-      '<button class="icon-btn ghost" data-act="langManage" data-arg=\'' + App.arg({ id: l.id, name: l.name }) + '\' style="flex-shrink:0"><span data-icon="edit" data-icon-size="15"></span></button>' +
-      '</div>';
+      '</span>' +
+      '<span class="chat-arrow" data-icon="arrowLeft" data-icon-size="16"></span></button>';
   }
 
   /* ---------- CRUD ---------- */

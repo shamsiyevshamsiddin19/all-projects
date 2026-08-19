@@ -214,6 +214,10 @@ async def api_entry(request: Request):
     if action == "reja_file":
         file_id = int(q.get("id") or 0) if str(q.get("id") or "").isdigit() else 0
         return reja.serve(request, file_id, q.get("token", ""), str(q.get("download") or "") == "1")
+    if action == "db_export":
+        return await misc.db_export(request)
+    if action == "db_import":
+        return await misc.db_import(request)
 
     body = await _read_json_body(request)
 

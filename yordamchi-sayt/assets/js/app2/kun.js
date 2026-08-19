@@ -512,6 +512,10 @@
      ========================================================= */
   var SEL_DATE = null;          // 'YYYY-MM-DD'
   var OPEN_PLAN = null;         // vaqt chizig'ida ochiq turgan Boostday reja id
+  /* Bosh sahifadagi "Kunlik statistika" halqasidan kelinganda ochilishi
+     kerak bo'lgan BO'LIM NOMI (`?open=...`). Nom bo'yicha ishlaymiz, chunki
+     `BoostDay.dayGroups()` guruhlarni nom bo'yicha yig'adi va planId bermaydi. */
+  var WANT_OPEN = '';
 
   /* Ko'rinish rejimi: 'list' — kunlik vaqt chizig'i, 'grid' — haftalik jadval.
      Tanlov localStorage'da (remote-storage server bilan sinxronlaydi). */
@@ -542,6 +546,7 @@
       }
       SEL_DATE = sel || todayKey();
       OPEN_PLAN = null;
+      WANT_OPEN = String(params.open || '').trim();
       var mode = kunView();
 
       page.innerHTML =
@@ -713,6 +718,19 @@
     var d = parseKey(SEL_DATE);
     HIDDEN_DUP = 0;
     var items = sortItems(localItems(SEL_DATE).concat(lmsItems(SEL_DATE), boostItems(SEL_DATE)));
+
+    /* Bosh sahifadan `?open=<bo'lim nomi>` bilan kelingan bo'lsa — o'sha
+       bo'limni DARHOL ochiq holda chizamiz (foydalanuvchi qidirib
+       o'tirmasin). Faqat BIR MARTA: keyin oddiy bosish bilan
+       ochib-yopish ishlayveradi. */
+    if (WANT_OPEN) {
+      var wanted = null;
+      items.forEach(function (x) {
+        if (!wanted && x.src === 'boost_group' && String(x.groupName || '') === WANT_OPEN) wanted = x;
+      });
+      if (wanted) OPEN_PLAN = wanted.planId + '|' + wanted.groupName;
+      WANT_OPEN = '';
+    }
     var dupNote = HIDDEN_DUP
       ? '<div class="kun-note">' + HIDDEN_DUP + ' ta qo\'lda kiritilgan dars LMS bilan takrorlangani uchun ' +
         'ko\'rsatilmadi. <button class="lib-cr" data-act="kunCleanDup">Butunlay tozalash</button></div>'
@@ -759,6 +777,15 @@
 
     box.innerHTML = html;
     App.icons(box);
+
+    /* Ochiq bo'lim ekrandan tashqarida qolishi mumkin (kun uzun bo'lsa) —
+       uni yumshoq surib ko'rsatamiz. */
+    if (OPEN_PLAN) {
+      var openEl = box.querySelector('.kun-tasks');
+      if (openEl && openEl.previousElementSibling) {
+        try { openEl.previousElementSibling.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {}
+      }
+    }
   }
 
   /* =========================================================

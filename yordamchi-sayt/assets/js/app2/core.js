@@ -95,6 +95,8 @@
             if (r.status === 503) throw new Error('OFFLINE_503');
             throw new Error((j && (j.error || j.message)) || ('HTTP ' + r.status));
           }
+          /* Yozuv o'tdi — service worker'dagi o'qish keshi endi eskirdi. */
+          App._invalidateData(action);
           return j;
         });
       }).catch(function(e) {
@@ -115,6 +117,34 @@
         }
         throw e;
       });
+    },
+
+    /* ---- Kesh muvofiqligi (service worker bilan) ----
+       SW o'qish javoblarini "avval kesh, keyin yangilash" tartibida beradi
+       — bo'limlar shu sabab kutmasdan ochiladi. Ammo biror narsa YOZILGANDAN
+       keyin eski kesh noto'g'ri bo'lib qoladi (masalan yangi mavzu ro'yxatda
+       ko'rinmasdi), shuning uchun yozuvdan so'ng SW ga "keshni bo'shat"
+       deymiz va keyingi o'qish tarmoqdan keladi. */
+    _invalidateData: function (action) {
+      try {
+        if ((window.READ_ACTIONS || []).indexOf(action) >= 0) return;   // o'qish — tegmaymiz
+        var sw = navigator.serviceWorker && navigator.serviceWorker.controller;
+        if (sw) sw.postMessage({ type: 'invalidate-data' });
+      } catch (e) {}
+    },
+
+    /* SW orqa fonda yangi ma'lumot topsa shu chaqiriladi. Sahifani
+       shovqinsiz qayta chizamiz — lekin faqat foydalanuvchi ish ustida
+       bo'lmaganda: ochiq oyna (sheet) yoki matn kiritish jarayonini
+       uzib yuborish yaramaydi. */
+    _onDataUpdated: function () {
+      if (App._sheet) return;
+      var a = document.activeElement;
+      if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
+      clearTimeout(App._duT);
+      App._duT = setTimeout(function () {
+        try { App.reload(); } catch (e) {}
+      }, 60);
     },
 
     _enqueueOffline: function(action, payload, opts) {
@@ -400,20 +430,12 @@
   });
   App.actions = {};
 
-  /* Orqaga tugmasi */
-  window.addEventListener('popstate', function (e) {
-    App.closeSheet();
-    var st = e.state;
-    if (st && st.view) App.go(st.view, st.params, { silent: true });
-    else App.go('home', {}, { silent: true });
-  });
-
-  App.boot = function () {
-    pageEl = document.getElementById('page');
-    var start = 'home', params = {};
-    var m = (location.hash || '').match(/^#\/([\w-]+)(?:\?(.*))?$/);
+  function parseCurrentUrl() {
+    var view = 'home', params = {};
+    var hash = location.hash || '';
+    var m = hash.match(/^#\/?([\w-]+)(?:\?(.*))?$/);
     if (m) {
-      if (views[m[1]]) start = m[1];
+      if (views[m[1]]) view = m[1];
       if (m[2]) {
         m[2].split('&').forEach(function (pair) {
           if (!pair) return;
@@ -423,8 +445,32 @@
           params[k] = v;
         });
       }
+    } else if (location.search) {
+      try {
+        var sp = new URLSearchParams(location.search);
+        if (sp.get('v') && views[sp.get('v')]) view = sp.get('v');
+        sp.forEach(function (v, k) { if (k !== 'v') params[k] = v; });
+      } catch (e) {}
     }
-    App.go(start, params, { silent: true });
+    return { view: view, params: params };
+  }
+
+  /* Orqaga tugmasi */
+  window.addEventListener('popstate', function (e) {
+    App.closeSheet();
+    var st = e.state;
+    if (st && st.view && views[st.view]) {
+      App.go(st.view, st.params || {}, { silent: true });
+    } else {
+      var u = parseCurrentUrl();
+      App.go(u.view, u.params, { silent: true });
+    }
+  });
+
+  App.boot = function () {
+    pageEl = document.getElementById('page');
+    var u = parseCurrentUrl();
+    App.go(u.view, u.params, { silent: true });
   };
 
   window.App = App;

@@ -45,10 +45,16 @@ def _save_dict_order(lang: str, order: list[str]) -> None:
     )
 
 
+import re
+
+def _nat_key(text):
+    return [int(c) if c.isdigit() else c.lower() for c in re.split(r'(\d+)', str(text))]
+
 def get_dict_data(request: Request, body: dict, lang: str):
     lang = _clean_dict_lang(lang)
     items = db.fetch_all(
-        "SELECT category, word_ru, word_uz FROM dictionary_words WHERE lang = :l ORDER BY category, sort_order, id",
+        "SELECT category, word_ru, word_uz, COALESCE(note, '') AS note, COALESCE(example, '') AS example "
+        "FROM dictionary_words WHERE lang = :l ORDER BY sort_order, id",
         {"l": lang},
     )
     order = _get_dict_order(lang)
@@ -59,6 +65,7 @@ def get_dict_data(request: Request, body: dict, lang: str):
     for category in known:
         if category not in order:
             order.append(category)
+    order.sort(key=_nat_key)
     return success({"items": items, "order": order})
 
 
@@ -79,14 +86,16 @@ def save_dict_cat(request: Request, body: dict):
                 continue
             ru = s(word.get("ru"))
             uz = s(word.get("uz"))
+            note = s(word.get("note") or word.get("izoh") or "")
+            example = s(word.get("example") or word.get("misol") or word.get("ex") or "")
             if ru == "" and uz == "":
                 continue
             conn.execute(
                 text(
-                    "INSERT INTO dictionary_words (lang, category, word_ru, word_uz, sort_order) "
-                    "VALUES (:l, :c, :ru, :uz, :so)"
+                    "INSERT INTO dictionary_words (lang, category, word_ru, word_uz, note, example, sort_order) "
+                    "VALUES (:l, :c, :ru, :uz, :note, :ex, :so)"
                 ),
-                {"l": lang, "c": category, "ru": ru, "uz": uz, "so": index},
+                {"l": lang, "c": category, "ru": ru, "uz": uz, "note": note, "ex": example, "so": index},
             )
             saved += 1
 

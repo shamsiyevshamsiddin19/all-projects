@@ -667,7 +667,11 @@
       if (window.BoostDay && BoostDay.dayGroups) {
         try {
           BoostDay.dayGroups(ymd, dayOfWeek).forEach(function (g) {
-            if (g.total) parts.push({ name: g.name, total: g.total, done: g.done, color: g.color, go: { v: 'boost' }, items: g.items });
+            /* Halqa bosilsa KUN HISOBIga o'tib, o'sha bo'limni ochiq holda
+               ko'rsatamiz (ilgari umumiy Boostday ro'yxatiga olib borardi va
+               foydalanuvchi kerakli bo'limni qaytadan qidirishi kerak edi). */
+            if (g.total) parts.push({ name: g.name, total: g.total, done: g.done,
+              color: g.color, go: { v: 'kun', p: { date: ymd, open: g.name } }, items: g.items });
           });
         } catch (e) {}
       }

@@ -165,6 +165,16 @@ button{ font-family:inherit; cursor:pointer; }
   background:transparent; border:none; text-align:left; width:100%;
 }
 .side-link .app-icon{ color:var(--hint); }
+
+/* Menyu bo'limlarining rangli rasm belgilari (assets/img/nav/).
+   `object-fit:contain` — rasm cho'zilmasin; `flex-shrink:0` — nom uzun
+   bo'lsa ham belgi kichraymasin. Faol bo'limda biroz yorqinroq. */
+.nav-img{ flex-shrink:0; object-fit:contain; display:block; opacity:.9; }
+.side-link.active .nav-img,
+.botnav a.active .nav-img{ opacity:1; }
+.botnav a .nav-img{ margin:0 auto; }
+.list-row .li-ic.nav-ic-img{ background:none; padding:0; }
+
 .side-link:hover{ background:var(--card); color:var(--text); }
 /* LeetCode'da tanlangan bo'lim KO'K emas — yumshoq kulrang "tabletka"
    fon va oq matn bilan ajratiladi. Ko'k aksent faqat havola/harakat
@@ -310,9 +320,37 @@ button{ font-family:inherit; cursor:pointer; }
 .chat-row:active{ background:var(--card-2); }
 @media (hover:hover){ .chat-row:hover{ background:var(--card-2); } }
 
+.chat-av-wrap{
+  position:relative; width:52px; height:52px; flex-shrink:0; display:inline-block;
+}
+.chat-av-wrap .chat-av{ width:100%; height:100%; }
+.chat-num-badge{
+  position:absolute; bottom:-2px; right:-2px;
+  min-width:20px; height:20px; padding:0 4px;
+  border-radius:10px;
+  background:var(--accent, #007aff);
+  color:#fff;
+  font-size:11px; font-weight:800;
+  display:inline-flex; align-items:center; justify-content:center;
+  box-shadow:0 2px 5px rgba(0,0,0,0.35);
+  border:2px solid var(--bg-card, #1c1c1e);
+  z-index:3;
+  pointer-events:none;
+}
+
 .chat-av{
   width:52px; height:52px; border-radius:50%; overflow:hidden; flex-shrink:0;
   background:var(--card-2); display:flex; align-items:center; justify-content:center;
+}
+.chat-av-num{
+  background:#ffffff !important;
+  color:var(--accent, #007aff) !important;
+  font-weight:800 !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  box-shadow:0 1px 4px rgba(0,0,0,0.15) !important;
+  letter-spacing:-0.5px;
 }
 .chat-av img{ width:100%; height:100%; object-fit:cover; display:block; }
 .chat-av-ic{ color:var(--hint); }
@@ -329,6 +367,8 @@ button{ font-family:inherit; cursor:pointer; }
 .chat-arrow{ color:var(--border); flex-shrink:0; transform:rotate(180deg); }
 
 @media (max-width:400px){
+  .chat-av-wrap{ width:46px; height:46px; }
+  .chat-num-badge{ min-width:18px; height:18px; font-size:10px; padding:0 3px; bottom:-2px; right:-2px; }
   .chat-av{ width:46px; height:46px; }
   .chat-title{ font-size:14.5px; }
   .chat-sub{ font-size:11.5px; }
@@ -512,7 +552,7 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 /* ---------- Toast ---------- */
 #toast{
   position:fixed; left:50%; bottom:calc(var(--nav-h) + var(--safe-b) + 16px); transform:translateX(-50%) translateY(20px);
-  z-index:120; max-width:88%; padding:12px 18px; border-radius:12px;
+  z-index:2000; max-width:88%; padding:12px 18px; border-radius:12px;
   background:var(--card-2); color:var(--text); font-size:13.5px; font-weight:600;
   box-shadow:0 8px 30px rgba(0,0,0,.4); opacity:0; pointer-events:none; transition:all .25s ease;
 }
@@ -521,10 +561,10 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 @media (min-width:920px){ #toast{ bottom:26px; } }
 
 /* ---------- Bottom sheet / modal ---------- */
-.sheet-back{ position:fixed; inset:0; z-index:100; background:rgba(0,0,0,.5); opacity:0; pointer-events:none; transition:opacity .25s; }
+.sheet-back{ position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.5); opacity:0; pointer-events:none; transition:opacity .25s; }
 .sheet-back.show{ opacity:1; pointer-events:auto; }
 .sheet{
-  position:fixed; left:0; right:0; bottom:0; z-index:101;
+  position:fixed; left:0; right:0; bottom:0; z-index:1001;
   background:var(--bg-elev); border-radius:22px 22px 0 0;
   padding:8px 18px calc(20px + var(--safe-b));
   max-height:92vh; overflow-y:auto; transform:translateY(102%); transition:transform .28s cubic-bezier(.3,.9,.3,1);
@@ -593,6 +633,20 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 .list-row:last-child{ border-bottom:none; }
 .list-row .li-ic{ width:29px; height:29px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:var(--accent-soft); color:var(--accent); }
 .list-row .li-main{ flex:1; min-width:0; }
+
+/* Mavzu/bob tartib raqami — Telegram suhbat ro'yxatidagi dumaloq belgi kabi.
+   `li-ic` (bir xil ikonka) o'rniga ishlatiladi: ro'yxat uzun bo'lganda
+   raqam qaysi darsda turganingizni bir qarashda ko'rsatadi.
+   `tabular-nums` — 1 va 11 bir xil kenglikda tursin, qatorlar tekis chiqsin. */
+.list-row .li-num{
+  width:32px; height:32px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  background:#fff; color:#16202b;
+  font-weight:700; font-size:13.5px; line-height:1;
+  font-variant-numeric:tabular-nums;
+  border:1px solid var(--border);
+}
+
 /* Qator ichidagi bosiladigan qism. MUHIM: qator <div> bo'lishi shart —
    <button> ichida <button> yozilsa brauzer tashqisini majburan yopib,
    ikkinchi tugmani qatordan pastga tushirib yuboradi. */

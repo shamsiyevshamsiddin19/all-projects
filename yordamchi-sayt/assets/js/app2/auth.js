@@ -104,6 +104,10 @@
           }).catch(function () {})
         : Promise.resolve();
 
+      /* Chiqishda "oxirgi safar kirgan edingiz" eslatmasi ham o'chadi —
+         aks holda qayta yuklanganda ilova bir lahza ochilib ko'rinardi. */
+      gateRemember(false);
+
       post({ amal: 'chiqish' }).catch(function () {})
         .then(function () { return clearData; })
         .then(function () { location.reload(); });
@@ -122,21 +126,72 @@
       setTimeout(go, 4000); // xavfsizlik: server javob bermasa ham ochiladi
     } else { go(); }
   }
+  /* ---------- Oxirgi kirish holatini eslab qolish ----------
+     `sessiya_tekshir` — ilova ochilishidagi UCHINCHI majburiy kutish edi:
+     javob kelmaguncha splash ekran turardi, ya'ni har ochilishda serverga
+     bir borib-kelish. Endi oxirgi natija shu qurilmada saqlanadi va ilova
+     uni ishonib DARHOL ochiladi; tekshiruv esa orqa fonda ketadi.
+
+     Bu FAQAT ijobiy natija uchun eslab qolinadi (kirgan yoki himoya
+     o'chirilgan). Orqa fondagi tekshiruv "kirmagansiz" desa — kirish
+     ekrani o'sha zahoti chiqadi va eslatma o'chiriladi. Shu orada ko'ringan
+     ma'lumot ayni shu qurilmaning o'z suratidan olinadi, ya'ni yangi
+     ma'lumot ochilib qolmaydi. Saqlanadigan narsa — bitta bayroq, hech
+     qanday shaxsiy ma'lumot yoki parol emas. */
+  var GATE_KEY = 'auth_gate_ok_v1';
+
+  function gateRemember(ok) {
+    try {
+      if (window.RemoteStorageBridge && window.RemoteStorageBridge.localSet) {
+        window.RemoteStorageBridge.localSet(GATE_KEY, ok ? '1' : null);
+      }
+    } catch (e) {}
+  }
+
+  function gateRemembered() {
+    try {
+      return !!(window.RemoteStorageBridge &&
+                window.RemoteStorageBridge.localGet &&
+                window.RemoteStorageBridge.localGet(GATE_KEY) === '1');
+    } catch (e) { return false; }
+  }
+
   window.Auth = {
     data: Auth,
     /* bootstrap.js shu orqali ishga tushadi */
     gate: function (onReady) {
       startApp = onReady;
+
+      /* Oxirgi safar hammasi joyida bo'lgan bo'lsa — kutmaymiz. */
+      var opened = false;
+      var open = function () { if (opened) return; opened = true; onReady(); };
+      if (gateRemembered()) open();
+
       post({ amal: 'sessiya_tekshir' }).then(function (j) {
         Auth.checked = true;
-        if (j.kirganmi) { Auth.user = j; onReady(); return; }
+
+        if (j.kirganmi) { Auth.user = j; gateRemember(true); open(); return; }
+
         // Hali akkaunt yo'q — himoya yoqilgan/yoqilmaganidan qat'i nazar ilk sozlash ko'rsatiladi.
-        if (!j.sozlanganmi) { hideSplash(); setupScreen(); return; }
-        if (!j.himoya) { onReady(); return; }        // himoya o'chirilgan — ochiq rejim
-        hideSplash(); loginScreen();
-      }).catch(function () { onReady(); });          // server javob bermasa bloklab qo'ymaymiz
+        if (!j.sozlanganmi) { gateRemember(false); showLocked(setupScreen); return; }
+        if (!j.himoya) { gateRemember(true); open(); return; }   // himoya o'chirilgan — ochiq rejim
+
+        gateRemember(false); showLocked(loginScreen);
+      }).catch(function () {
+        /* Server javob bermadi (internet yo'q yoki uzilish) — bloklab
+           qo'ymaymiz, eskisidek ochamiz. Eslatmaga TEGMAYMIZ: tarmoq
+           nosozligi kirish holati haqida hech narsa demaydi. */
+        open();
+      });
     }
   };
+
+  /* Orqa fondagi tekshiruv "ruxsat yo'q" desa: ilova allaqachon ochilgan
+     bo'lsa ham uni yopib, kerakli ekranni ko'rsatamiz. */
+  function showLocked(screenFn) {
+    hideSplash();
+    screenFn();
+  }
 
   function hideSplash() {
     var sp = document.getElementById('splash');

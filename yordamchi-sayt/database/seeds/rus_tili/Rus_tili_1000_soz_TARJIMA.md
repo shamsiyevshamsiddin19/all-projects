@@ -1,0 +1,1033 @@
+# Rus tili — Eng ko'p ishlatiladigan 1000 ta so'z (Mukammal o'zbekcha tarjimalari bilan)
+
+> Ushbu lug'at rus tilidagi eng muhim va faol 1000 ta so'zning to'liq, aniq va kontekstga mos o'zbekcha tarjimalarini o'z ichiga oladi.
+
+## 1-100
+
+- **а** — esa, ammo
+- **говорить** — gapirmoq
+- **думать** — o'ylamoq
+- **какой** — qanday, qaysi
+- **не** — emas, -ma (inkor)
+- **по** — bo'yicha, orqali
+- **смотреть** — qaramoq, ko'rmoq
+- **хороший** — yaxshi
+- **брать** — olmoq
+- **год** — yil
+- **если** — agar
+- **когда** — qachon, ...da
+- **нет** — yo'q
+- **потому** — chunki
+- **так** — shunday, shunday qilib
+- **хорошо** — yaxshi, xo'p
+- **бы** — edi, -sa edi
+- **да** — ha
+- **еще** — yana, hali
+- **который** — qaysiki, qaysi
+- **но** — lekin, biroq
+- **почему** — sabab nima
+- **такой** — bunday, shunday
+- **хотеть** — xohlamoq, istamoq
+- **быть** — bo'lmoq
+- **давать** — bermoq
+- **же** — axir, esa
+- **кто** — kim
+- **новый** — yangi
+- **поэтому** — shuning uchun
+- **там** — u yerda
+- **человек** — inson, odam
+- **в** — ichida, -da
+- **даже** — hatto, hattoki
+- **за** — orqasida, uchun
+- **ли** — -mi (so'roq)
+- **ну** — qani, xo'sh
+- **при** — huzurida, paytida
+- **твой** — sening
+- **что** — nima, -ki
+- **ваш** — sizning
+- **делать** — qilmoq, bajarmoq
+- **здесь** — bu yerda
+- **много** — ko'p
+- **нужный** — kerakli, zarur
+- **просто** — oddiy, shunchaki
+- **теперь** — endi, hozir
+- **чтобы** — uchun, maqsadida
+- **весь** — butun, hamma
+- **дело** — ish, yumush
+- **знать** — xabardor bo'lmoq
+- **можно** — mumkin
+- **о** — haqida
+- **раз** — marta
+- **то** — o'sha, u holda
+- **это** — bu
+- **видеть** — ko'rmoq
+- **день** — kun
+- **и** — va
+- **мой** — mening
+- **он** — u (erkak)
+- **с** — bilan, -dan
+- **тоже** — ham, shuningdek
+- **этот** — bu, ushbu
+- **вот** — mana, ana
+- **для** — uchun
+- **идти** — bormoq, yurmoq
+- **мочь** — qila olmoq
+- **она** — u (ayol)
+- **самый** — eng (orttirma)
+- **только** — faqat, faqatgina
+- **я** — men
+- **время** — vaqt
+- **до** — gacha
+- **из** — -dan, ichidan
+- **музыка** — musiqa
+- **они** — ular
+- **свой** — o'zining, o'z
+- **тот** — o'sha, ana u
+- **все** — hamma, barcha
+- **должен** — kerak, majbur
+- **или** — yoki
+- **мы** — biz
+- **от** — -dan
+- **себя** — o'zini, o'ziga
+- **ты** — sen
+- **вы** — siz, sizlar
+- **друг** — do'stim
+- **к** — ga, tomon
+- **на** — ustida, -ga
+- **очень** — juda, nihoyatda
+- **сейчас** — hozir, ayni paytda
+- **у** — huzurida, -da (bor)
+- **где** — qayerda
+- **другой** — boshqa, o'zga
+- **как** — qanday, kabi
+- **наш** — bizning
+- **первый** — birinchi
+- **сказать** — demoq, aytmoq
+- **уже** — allaqachon, endi
+
+## 101-200
+
+- **без** — -siz (inkor old qo'shimchasi)
+- **второй** — ikkinchi
+- **именно** — aynan, xuddi
+- **любой** — istalgan
+- **никто** — hech kim
+- **последний** — oxirgi, so'nggi
+- **рука** — qo'l
+- **также** — shuningdek, ham
+- **более** — ko'proq, ortiq
+- **город** — shahar
+- **иметь** — ega bo'lmoq
+- **мама** — onajon
+- **ничто** — hech narsa
+- **потом** — keyin, so'ng
+- **сам** — o'zi, shaxsan o'zi
+- **тогда** — o'shanda, u holda
+- **больше** — ko'proq, kattaroq
+- **готовый** — tayyor
+- **интересный** — qiziqarli
+- **машина** — mashina
+- **нравиться** — yoqmoq
+- **правда** — rost, haqiqat
+- **сегодня** — bugun
+- **тут** — bu yerda, shu yerda
+- **большой** — katta, ulkan
+- **далеко** — uzoq, olis
+- **использовать** — foydalanmoq, ishlatmoq
+- **место** — joy, o'rin
+- **писать** — yozmoq
+- **привет** — salom
+- **следующий** — keyingi, navbatdagi
+- **час** — soat (vaqt o'lchovi)
+- **быстро** — tezda
+- **дать** — bermoq (bir marta)
+- **их** — ularning
+- **мир** — dunyo, tinchlik
+- **под** — ostida, tagida
+- **прийти** — yetib kelmoq
+- **слово** — so'z
+- **часть** — qism, bo'lak
+- **важный** — muhim, ahamiyatli
+- **действительно** — haqiqatan ham, rostdan
+- **каждый** — har bir, har
+- **момент** — lahza, fursat, payt
+- **пожалуйста** — iltimos, marhamat
+- **про** — haqida, to'g'risida
+- **случай** — hodisa, holat, vaziyat
+- **чем** — ...ga qaraganda, ...dan ko'ra
+- **вещь** — buyum, narsa
+- **деньги** — pul, mablag'
+- **казаться** — tuyulmoq, ko'rinmoq
+- **надо** — kerak, lozim
+- **пойти** — yo'lga chiqmoq
+- **проблема** — muammo, masala
+- **слышать** — eshitmoq
+- **через** — orqali, o'tib
+- **вид** — tur, ko'rinish, manzara
+- **дом** — uy, xonadon
+- **какой-то** — qandaydir, allaqanday
+- **найти** — topmoq
+- **пока** — hozircha, xayr
+- **просить** — so'ramoq, o'tinmoq
+- **собираться** — to'planmoq, niyat qilmoq
+- **что-то** — nimadir, bir narsa
+- **видео** — video
+- **его** — uning (erkak)
+- **конец** — oxir, yakun
+- **например** — masalan, misol uchun
+- **получить** — olmoq
+- **пытаться** — harakat qilmoq, urinmoq
+- **спасибо** — minnatdorchilik
+- **являться** — hisoblanmoq, bo'lmoq
+- **вода** — suv
+- **жизнь** — hayot, umr
+- **конечно** — albatta, shubhasiz
+- **начать** — boshlamoq
+- **помочь** — yordamlashmoq
+- **работа** — ish
+- **стать** — bo'lmoq, aylanmoq
+- **вообще** — umuman, aslini olganda
+- **жить** — yashamoq, istiqomat qilmoq
+- **кто-то** — kimdir, allakim
+- **немного** — biroz, salgina, ozroq
+- **понимать** — tushunmoq, anglamoq
+- **работать** — ishlamoq
+- **сторона** — tomon, taraf
+- **вопрос** — savol
+- **игра** — o'yin
+- **ладно** — mayli, xo'p, kelishdik
+- **ни** — na ... na ... (inkor)
+- **понять** — tushunmoq
+- **ребенок** — bolakay
+- **считать** — hisoblamoq, deb bilmoq
+- **всегда** — doim, har doim
+- **играть** — o'ynamoq
+- **любить** — sevmoq, yaxshi ko'rmoq
+- **никогда** — hech qachon
+- **после** — keyin, so'ng
+- **ребята** — bolalar, yigitlar, o'rtoqlar
+- **сюда** — bu yerga, bu yoqqa
+
+## 201-300
+
+- **бог** — xudo, tangri
+- **девушка** — qiz, qiz bola
+- **канал** — kanal (media/suv)
+- **мужчина** — erkak kishi
+- **остаться** — qolmoq
+- **похожий** — o'xshash
+- **семья** — oila
+- **точно** — aniq, rostdan
+- **ведь** — axir, nafotki
+- **ее** — uning (ayol)
+- **количество** — miqdor, son
+- **надеяться** — ishonmoq
+- **отец** — ota
+- **право** — huquq, haq-huquq
+- **сила** — kuch, quvvat, qudrat
+- **туда** — u yerga, u yoqqa
+- **вернуться** — qaytmoq, qaytib kelmoq
+- **ждать** — kutmoq
+- **компания** — kompaniya, shirkati
+- **назад** — orqaga, oldin (vaqt)
+- **отличный** — juda zo'r, a'lo
+- **пробовать** — tatib ko'rmoq, urinmoq
+- **система** — tizim, sistema
+- **тысяча** — ming (1000)
+- **вместе** — hamkorlikda
+- **женщина** — ayol kishi
+- **красивый** — chiroyli
+- **настоящий** — haqiqiy
+- **отношение** — munosabat, aloqa
+- **происходить** — sodir bo'lmoq
+- **слишком** — haddan tashqari, o'ta
+- **узнать** — bilib olmoq
+- **возможность** — imkoniyat
+- **забыть** — unutmoq
+- **куда** — qayerga
+- **находиться** — turmoq
+- **парень** — yigit, o'smir
+- **пройти** — o'tib ketmoq
+- **сложный** — qiyin, murakkab
+- **уровень** — daraja
+- **выбрать** — tanlamoq
+- **затем** — so'ngra, keyin
+- **купить** — sotib olmoq
+- **начинать** — boshlamoq
+- **перед** — oldida, ro'parasida
+- **простить** — kechirmoq
+- **слушать** — tinglamoq, eshitmoq
+- **хотя** — garchi, qaramay
+- **выглядеть** — ko'rinmoq, qiyofada bo'lmoq
+- **зачем** — nega, nima maqsadda
+- **либо** — yoki, yo bo'lmasa
+- **неделя** — haftalik
+- **плохой** — yomon, noxush
+- **прямо** — to'g'riga
+- **снова** — yana, qaytadan
+- **часто** — tez-tez, doimiy
+- **выйти** — tashqariga chiqmoq
+- **значить** — anglatmoq, ma'no bermoq
+- **лицо** — yuz
+- **некоторый** — ba'zi, ayrim
+- **показать** — ko'rsatib bermoq
+- **равный** — teng, barobar
+- **сразу** — darhol, shu zahoti
+- **чувствовать** — his qilmoq, sezmoq
+- **высокий** — baland
+- **из-за** — tufayli, sababli
+- **лучший** — eng yaxshi
+- **ночь** — tun, kecha
+- **полный** — to'la, to'liq
+- **разный** — turfa xil
+- **ставить** — qo'ymoq, o'rnatmoq
+- **язык** — til (nutq/a'zo)
+- **главный** — asosiy, bosh
+- **имя** — ism, nom
+- **маленький** — kichik, mayda
+- **образ** — obraz, qiyofa
+- **помнить** — eslamoq, yodda saqlamoq
+- **рано** — erta, barvaqt
+- **стоить** — turmoq (narxi), arziydi
+- **глаз** — ko'z
+- **информация** — ma'lumot, axborot
+- **между** — o'rtasida, oralig'ida
+- **общий** — umumiy, barchaga tegishli
+- **помощь** — yordam, ko'mak
+- **рассказать** — aytib bermoq, hikoya qilmoq
+- **стоять** — turmoq (tik turish)
+- **голова** — bosh, kalla
+- **история** — tarix, hikoya
+- **месяц** — oy (vaqt/kalendar)
+- **один** — bir (1), yolg'iz
+- **пора** — vaqt bo'ldi, payt
+- **решить** — yechmoq
+- **страна** — mamlakat, yurt
+- **данные** — ma'lumotlar, faktlar
+- **итак** — shunday qilib, xullas
+- **минута** — daqiqa
+- **оставить** — qoldirmoq
+- **порядок** — tartib, qoida
+- **сайт** — sayt, veb-sayt
+- **тип** — namuna
+
+## 301-400
+
+- **бояться** — qo'rqmoq
+- **достаточно** — yetarli, yetarlicha
+- **лишь** — faqatgina
+- **обычно** — odatda
+- **получиться** — o'xshab chiqmoq
+- **путь** — yo'l, safar
+- **спать** — uxlamoq
+- **форма** — shakl, forma
+- **брат** — aka, uka
+- **ехать** — bormoq (transportda)
+- **любовь** — muhabbat
+- **огромный** — ulkan, juda katta
+- **понравиться** — yoqib qolmoq
+- **рад** — xursand, shod
+- **способ** — usul, yo'l
+- **ходить** — yurmoq, qatnamoq
+- **верить** — ishonmoq
+- **заниматься** — mashg'ul bo'lmoq
+- **материал** — material, xomashyo, mato
+- **оно** — u (o'rta jins)
+- **почти** — deyarli, sal qolsa
+- **результат** — samara
+- **телефон** — telefon
+- **цвет** — rang, tus
+- **вести** — boshlamoq, olib bormoq
+- **звать** — chaqirmoq, nomlamoq
+- **наверное** — ehtimol, chamasi
+- **опять** — yana, qaytadan
+- **прийтись** — to'g'ri kelmoq, majbur bo'lmoq
+- **решение** — qaror, yechim
+- **тело** — tana, gavda
+- **цель** — maqsad, mo'ljal
+- **внимание** — diqqat
+- **звонить** — qo'ng'iroq qilmoq
+- **над** — ustida, tepasida
+- **основной** — asosiy, bosh
+- **принцип** — tamoyil, prinsip
+- **российский** — rossiya, rossiyalik
+- **тема** — mavzu
+- **цена** — narx, baho
+- **возможный** — mumkin bo'lgan, ehtimoliy
+- **идея** — fikr
+- **называть** — nomlamoq
+- **оставаться** — qolmoq
+- **принять** — qabul qilmoq
+- **сидеть** — o'tirmoq
+- **терять** — yo'qotmoq
+- **число** — son, sana
+- **война** — urush, janjal
+- **искать** — qidirmoq, izlamoq
+- **начало** — boshlanish, ibtido
+- **ответ** — javob
+- **приходить** — kelmoq, tashrif buyurmoq
+- **сильно** — kuchli, qattiq
+- **том** — o'sha (kelishikda), jild (kitob)
+- **читать** — o'qimoq
+- **группа** — guruh
+- **карта** — xarita, karta
+- **нельзя** — mumkin emas, taqiqlanadi
+- **открыть** — ochib qo'ymoq
+- **причина** — sabab, vaj
+- **ситуация** — vaziyat, holat
+- **точка** — nuqta
+- **школа** — maktab
+- **далее** — keyinroq, davomi
+- **качество** — sifat
+- **необходимый** — zarur, lozim
+- **папа** — dada, ota
+- **продолжать** — davom ettirmoq
+- **следовать** — ergashmoq, amal qilmoq
+- **убить** — o'ldirmoq
+- **эй** — hey, hoy
+- **данный** — ushbu, mazkur
+- **книга** — kitob
+- **никакой** — hech qanday, hech bir
+- **пара** — juft, juftlik, ikki dona
+- **проект** — loyiha, proyekt
+- **случиться** — yuz bermoq
+- **уверенный** — ishonchi komil, dadil
+- **добавить** — qo'shmoq
+- **команда** — jamoa, buyruq
+- **нога** — oyoq
+- **план** — reja
+- **произойти** — sodir bo'lmoq
+- **сначала** — avvaliga, boshida
+- **уйти** — ketib qolmoq
+- **довольно** — yetarli, ancha, birmuncha
+- **комната** — xona
+- **номер** — nomer
+- **подумать** — o'ylab qaramoq
+- **простой** — oddiy, sodda
+- **совсем** — umuman, butunlay
+- **утро** — tong
+- **доллар** — dollar ($)
+- **кстати** — darvoqe, aytgancha
+- **область** — viloyat, soha
+- **получать** — olmoq, qabul qilmoq
+- **против** — qarshi
+- **создать** — yaratmoq, tuzmoq
+- **фильм** — film, kino
+
+## 401-500
+
+- **аплодисменты** — qarsaklar
+- **действие** — harakat, ta'sir
+- **иногда** — ba'zan, gohida
+- **небольшой** — kichikroq, uncha katta bo'lmagan
+- **получаться** — o'xshamoq, chiqmoq
+- **программа** — dastur, programma
+- **связь** — aloqa, bog'liqlik
+- **счет** — hisob
+- **белый** — oq (rang)
+- **держать** — ushlab turmoq
+- **как-то** — qanaqadir, negadir
+- **обычный** — oddiy, odatiy
+- **помогать** — yordamlashmoq
+- **продукт** — mahsulot, oziq-ovqat
+- **сердце** — yurak, qalb
+- **сын** — o'g'il, farzand
+- **будто** — go'yo, xuddi
+- **добрый** — mehribon, ezgu, xayrli
+- **класс** — sinf, a'lo daraja
+- **обязательно** — albatta, shart
+- **понятный** — tushunarli
+- **проходить** — o'tmoq, bo'lib o'tmoq
+- **сильный** — kuchli, baquvvat
+- **уж** — axir, allaqachon
+- **бывать** — bo'lib turmoq, uchramoq
+- **долго** — uzoq vaqt
+- **комментарий** — izoh, sharh
+- **однако** — biroq, ammo
+- **попасть** — yetib kelmoq, tushmoq
+- **процент** — foiz (%)
+- **скоро** — tez orada, yaqinda
+- **умереть** — vafot etmoq, o'lmoq
+- **вариант** — boshqa yo'l
+- **домой** — uyga
+- **красный** — qizil (rang)
+- **остальной** — qolgan, boshqa
+- **появиться** — paydo bo'lmoq
+- **процесс** — jarayon
+- **смысл** — ma'no
+- **условие** — shart, sharoit
+- **вечер** — oqshom, kechqurun
+- **дорога** — yo'l, ko'cha
+- **кроме** — ...dan tashqari
+- **падать** — yiqilmoq, tushmoq
+- **правило** — qoida
+- **пусть** — mayli, qo'y
+- **снимать** — yechmoq, suratga olmoq
+- **уходить** — ketmoq
+- **внутри** — ichida, ichkarida
+- **дорогой** — qimmatbaho, qadrli, aziz
+- **крутой** — zo'r, qoyilmaqom, tik
+- **песня** — qo'shiq
+- **правильно** — to'g'ri
+- **размер** — o'lcham, razmer
+- **сообщение** — xabar, ma'lumot
+- **центр** — markaz
+- **во** — ichida, -da
+- **еда** — ovqat, taom
+- **легкий** — yengil
+- **платить** — to'lamoq
+- **представить** — tasavvur qilmoq, tanishtirmoq
+- **родитель** — ota-ona
+- **состояние** — holat, kayfiyat, boylik
+- **черный** — qora
+- **вроде** — kabi, go'yoki, o'xshash
+- **единственный** — yagona, birgina
+- **магазин** — do'kon, magazin
+- **поехать** — jo'namoq
+- **приехать** — yetib kelmoq (transportda)
+- **россия** — Rossiya
+- **спросить** — so'ramoq
+- **чуть** — sal, salgina, biroz
+- **всего** — jami, bor-yo'g'i
+- **жена** — xotin, rafiqa, ayoli
+- **мало** — kam, oz
+- **позволить** — imkoniyat bermoq
+- **пример** — misol, namuna
+- **рубль** — rubl (pul)
+- **становиться** — paydo bo'lmoq
+- **выходить** — chiqmoq
+- **завтра** — ertaga
+- **мать** — ona
+- **поздно** — kech, kech qolib
+- **принимать** — qabul qilmoq
+- **русский** — ruscha, rus tili/odami
+- **стараться** — harakat qilmoq
+- **дверь** — eshik
+- **земля** — yer, tuproq, zamin
+- **менее** — kamroq, kam
+- **показывать** — ko'rsatmoq
+- **приятный** — yoqimli, shirin
+- **свет** — nur
+- **старый** — eski
+- **девочка** — qizcha, qiz bola
+- **известный** — mashhur, taniqli
+- **миллион** — million
+- **полностью** — to'liq, to'la-to'kis
+- **провести** — o'tkazmoq (tadbir/vaqt)
+- **связать** — bog'lamoq, ulamoq
+- **строить** — qurmoq, bino qilmoq
+
+## 501-600
+
+- **ага** — ha, shunday (og'zaki)
+- **документ** — hujjat
+- **линия** — chiziq
+- **наконец** — oxiri, nihoyat
+- **плохо** — yomon
+- **проверить** — tekshirmoq
+- **собака** — it
+- **уметь** — bilmoq
+- **бизнес** — biznes
+- **душа** — jon, qalb, yurak
+- **личный** — shaxsiy
+- **насколько** — qanchalik, qay darajada
+- **плюс** — ortiqcha, plyus, afzallik
+- **проводить** — o'tkazmoq (vaqt/tadbir)
+- **собственный** — o'zining, xususiy
+- **установить** — o'rnatmoq, belgilamoq
+- **вкусный** — mazali, shirin
+- **есть** — yemoq, bor (mavjud)
+- **любимый** — sevimli, yoqimli
+- **низкий** — past, past bo'yli
+- **подобный** — shunga o'xshash, bunday
+- **прошлый** — o'tgan, avvalgi
+- **совершенно** — mutlaqo, butunlay
+- **функция** — vazifa, funksiya
+- **возможно** — ehtimol
+- **живой** — tirik, jonli
+- **масло** — yog', sariyog'
+- **новость** — yangilik
+- **подождать** — kutib turmoq
+- **разве** — nahotki, rostdanmi
+- **ссылка** — havola (link)
+- **хватать** — yetmoq, ushlab olmoq
+- **волос** — soch, tuk
+- **задача** — topshiriq, vazifa, masala
+- **менять** — almashtirmoq, o'zgartirmoq
+- **нормальный** — normal, odatiy, yaxshi
+- **подходить** — to'g'ri kelmoq, yaqinlashmoq
+- **рассказывать** — so'zlab bermoq
+- **статья** — maqola, modda (qonun)
+- **хотеться** — ko'ngil tusamoq
+- **вперед** — oldinga, olg'a
+- **закончить** — tamomlamoq
+- **мера** — chora, o'lchov
+- **означать** — anglatmoq, bildirish
+- **позволять** — imkon bermoq
+- **рынок** — bozor
+- **стена** — devor
+- **хоть** — hech bo'lmasa, garchi
+- **встреча** — uchrashuv
+- **звук** — tovush, ovoz
+- **метр** — metr
+- **оказаться** — bo'lib chiqmoq
+- **поскольку** — chunki, shu sababli
+- **рядом** — yonida, yonma-yon
+- **странный** — g'alati, ajablanarli
+- **целый** — butun, to'liq
+- **всякий** — har qanday, turli
+- **значение** — ma'no, ahamiyat
+- **модель** — model, andoza
+- **около** — yonida, yaqinida, chamasi
+- **постоянно** — doimiy ravishda
+- **сделать** — bajarib qo'ymoq
+- **существовать** — mavjud bo'lmoq, yashamoq
+- **что-нибудь** — biror narsa
+- **выбирать** — tanlamoq
+- **извинить** — kechirmoq
+- **молодой** — yosh, navqiron
+- **опыт** — tajriba, sinov
+- **правильный** — to'g'ri, durust
+- **секунда** — bir soniya
+- **счастливый** — baxtiyor, baxtli
+- **чувство** — tuyg'u, hissiyot
+- **выбор** — tanlov
+- **изменить** — o'zgartirmoq, xiyonat qilmoq
+- **муж** — er, turmush o'rtog'i
+- **особенно** — ayniqsa, xususan
+- **пре** — o'ta, juda (old qo'shimcha)
+- **серьезный** — jiddiy, og'ir-bosiq
+- **течение** — oqim, davomiylik
+- **где-то** — qayerdadir, chamasi
+- **использование** — foydalanish, qo'llash
+- **название** — nom, sarlavha
+- **ответить** — javob bermoq
+- **представлять** — tasavvur etmoq
+- **сестра** — opa, singil
+- **третий** — uchinchi
+- **давно** — allaqachon, ancha oldin
+- **камера** — kamera, fotoapparat
+- **назвать** — nomlamoq, atamoq
+- **ошибка** — xato, adashish
+- **прекрасный** — go'zal
+- **скорее** — tezroq, aksincha
+- **тяжелый** — og'ir, mashaqqatli
+- **движение** — harakat, qatnov
+- **курс** — kurs, yo'nalish
+- **называться** — atalmoq, nomlanmoq
+- **пить** — ichmoq
+- **примерно** — taxminan, chamasi
+- **смерть** — o'lim
+- **улица** — ko'cha
+
+## 601-700
+
+- **абсолютно** — mutlaqo, batamom
+- **власть** — hokimiyat, kuch
+- **заметить** — payqamoq
+- **мальчик** — o'g'il bola
+- **отвечать** — javob bermoq
+- **предлагать** — taklif qilmoq
+- **совет** — maslahat, kengash
+- **удобный** — qulay, shinam
+- **автомобиль** — avtomobil, mashina
+- **вместо** — evaziga
+- **занять** — egallamoq
+- **милый** — yoqimli, shirin, aziz
+- **откуда** — qayerdan
+- **предложение** — taklif, gap (grammatika)
+- **создавать** — yaratmoq
+- **ум** — aql, idrok, zehn
+- **банк** — bank (moliya)
+- **военный** — harbiy
+- **здравствовать** — omon bo'lmoq (salomlashish)
+- **мнение** — fikr
+- **отлично** — a'lo, juda yaxshi
+- **прежде** — avval, ilgari
+- **список** — ro'yxat
+- **учиться** — o'qimoq, tahsil olmoq
+- **бежать** — yugurmoq
+- **вокруг** — atrofida, tevaragida
+- **значит** — demak, ya'ni
+- **мысль** — fikr, o'y
+- **отправить** — yubormoq
+- **президент** — prezident
+- **спрашивать** — so'ramoq
+- **факт** — dalil, fakt
+- **безопасность** — xavfsizlik
+- **врач** — shifokor, do'xtir
+- **изменение** — o'zgarish
+- **народ** — xalq, omma
+- **отсюда** — bu yerdan
+- **привести** — keltirmoq, olib kelmoq
+- **средний** — o'rtacha, o'rta
+- **честно** — rostgo'ylik bilan, to'g'risi
+- **близкий** — yaqin, qadrdon
+- **вчера** — kecha, kechagi kun
+- **итог** — yakun, xulosa
+- **нормально** — yaxshi, joyida, normal
+- **очередь** — navbat
+- **принести** — keltirmoq
+- **стол** — stol
+- **шаг** — qadam, odim
+- **блин** — quymoq, attang (og'zaki)
+- **голос** — ovoz, tovush
+- **квартира** — xonadon, kvartira
+- **носить** — taqmoq, kiyib yurmoq
+- **подойти** — yaqiniga bormoq
+- **рабочий** — ishchi, ishga oid
+- **столько** — shuncha, shunchalik ko'p
+- **шанс** — imkoniyat, fursat
+- **большинство** — ko'pchilik, aksariyat
+- **готовить** — pishirmoq, tayyorlamoq
+- **класть** — qo'ymoq (yotqizib)
+- **объект** — ob'yekt, bino, narsa
+- **покупать** — xarid qilmoq
+- **ради** — uchun, haqqi-hurmati
+- **страница** — sahifa, bet
+- **штука** — dona, narsa, buyum
+- **бросить** — tashlamoq, uloqtirmoq
+- **дерево** — daraxt, yog'och
+- **клиент** — mijoz, xaridor
+- **объяснить** — izohlamoq
+- **поле** — dala, maydon
+- **различный** — har xil, turfa
+- **страшный** — qo'rqinchli, mudhish
+- **элемент** — element, bo'lak
+- **будущее** — kelajak
+- **допустить** — yo'l qo'ymoq, ruxsat bermoq
+- **кнопка** — tugma, knopka
+- **ожидать** — kutmoq, umid qilmoq
+- **полезный** — foydali, zararsiz
+- **район** — tuman, hudud
+- **суд** — sud, mahkama
+- **верный** — sodiq, to'g'ri
+- **дочь** — qiz (farzand)
+- **кожа** — teri, charm
+- **ой** — voy, oh
+- **половина** — yarim, yarmi
+- **режим** — rejim, tartib
+- **товар** — mahsulot, buyum
+- **версия** — versiya, talqin
+- **закон** — qonun-qoida
+- **короткий** — qisqa, kalta
+- **окно** — oyna, deraza
+- **пользователь** — foydalanuvchi
+- **сеть** — tarmoq
+- **трудный** — qiyin, murakkab
+- **вкус** — ta'm, did
+- **закрыть** — yopib qo'ymoq
+- **кровь** — qon
+- **оружие** — qurol-yarog'
+- **пользоваться** — foydalanmoq
+- **снять** — yechmoq, ijaraga olmoq
+- **убивать** — o'ldirmoq
+
+## 701-800
+
+- **адрес** — manzil, adres
+- **воздух** — havo
+- **дополнительный** — qo'shimcha
+- **легко** — osongina
+- **палец** — barmoq
+- **реально** — chinakam
+- **сон** — tush, uyqu
+- **урок** — dars, saboq
+- **английский** — inglizcha, ingliz tili
+- **войти** — ichkariga kirmoq
+- **желать** — tilamoq
+- **лежать** — yotmoq
+- **перейти** — kesib o'tmoq
+- **реальный** — haqiqiy, real
+- **соответственно** — mos ravishda, shunga ko'ra
+- **услуга** — xizmat
+- **благодаря** — tufayli, sababli, sharofati bilan
+- **все-таки** — baribir, shunga qaramay
+- **зайти** — kirib o'tmoq
+- **метод** — usul, metod
+- **период** — davr
+- **речь** — nutq, so'z
+- **спасти** — qutqarmoq
+- **устройство** — qurilma, moslama
+- **бой** — jang, olishuv
+- **встречаться** — uchrashib turmoq
+- **запись** — yozuv, qayd
+- **мешать** — xalaqit bermoq
+- **письмо** — xat, maktub
+- **род** — jins (grammatika), avlod, urug'
+- **среди** — orasida, o'rtasida
+- **фотография** — fotosurat, rasm
+- **боль** — og'riq, azob
+- **выиграть** — yutmoq, g'olib bo'lmoq
+- **защита** — himoya, mudofaa
+- **мозг** — miya
+- **повод** — bahona
+- **рождение** — tug'ilish
+- **срок** — muddat
+- **ход** — yurish, harakatlanish
+- **вдруг** — to'satdan, birdaniga
+- **выход** — chiqish joyi, yo'li
+- **здоровый** — sog'lom, baquvvat
+- **начаться** — boshlanmoq
+- **подарок** — sovg'a, tuhfa
+- **роль** — rol, vazifa
+- **стиль** — uslub, stil
+- **холодный** — muzli
+- **великий** — buyuk, ulug'
+- **герой** — qahramon
+- **здоровье** — salomatlik, sog'liq
+- **невозможный** — imkonsiz, ilojsiz
+- **поддержка** — qo'llab-quvvatlash, madad
+- **ряд** — qator
+- **суть** — mohiyat, asosiy ma'no
+- **член** — a'zo, qatnashchi
+- **вернуть** — qaytarib bermoq
+- **господин** — janob
+- **игрок** — o'yinchi, futbolchi
+- **одежда** — kiyim-kechak
+- **пол** — jinsi (erkak/ayol)
+- **сей** — ushbu, bu
+- **сэр** — ser (murojaat)
+- **энергия** — quvvat, energiya
+- **взгляд** — qarash, nazar
+- **гость** — mehmon
+- **иначе** — aks holda, boshqacha
+- **определенный** — aniq, ma'lum bir
+- **полиция** — politsiya
+- **серия** — qism, seriya
+- **территория** — hudud, maydon
+- **ясный** — ochiq, ravshan, oydin
+- **видно** — ko'rinib turibdi, aftidan
+- **двигаться** — harakatlanmoq, siljimoq
+- **инструмент** — asbob, uskuna, vosita
+- **организация** — tashkilot, uyushma
+- **послушать** — tinglab ko'rmoq
+- **скорость** — tezlik, sur'at
+- **тратить** — sarflamoq, xarajat qilmoq
+- **включать** — yoqmoq, o'z ichiga olmoq
+- **действовать** — harakat qilmoq, ta'sir qilmoq
+- **касаться** — tegishli bo'lmoq
+- **основа** — asos, poydevor
+- **практически** — amalda, deyarli
+- **событие** — voqea, hodisa
+- **угол** — burchak
+- **внутренний** — ichki
+- **доктор** — shifokor, doktor
+- **коротко** — qisqacha
+- **отдать** — berib yubormoq, qaytarmoq
+- **приготовить** — tayyorlamoq (ovqat)
+- **современный** — zamonaviy
+- **удар** — zarba, urish
+- **возвращаться** — qaytib kelmoq
+- **дома** — uyda
+- **крупный** — yirik, katta
+- **относиться** — munosabatda bo'lmoq
+- **развитие** — rivojlanish, taraqqiyot
+- **создание** — yaratilish, ijod
+- **управление** — boshqaruv, ma'muriyat
+
+## 801-900
+
+- **база** — baza
+- **добавлять** — qo'shmoq, ilova qilmoq
+- **камень** — tosh
+- **обещать** — va'da bermoq
+- **поиск** — qidiruv, izlash
+- **решать** — hal qilmoq
+- **сумма** — summa
+- **файл** — fayl, hujjat
+- **бого** — xudo yo'lida
+- **добро** — ezgulik, yaxshilik
+- **классный** — ajoyib, zo'r
+- **огонь** — olov, o't
+- **положение** — holat, vaziyat, nizom
+- **рост** — bo'y, o'sish
+- **сцена** — sahna
+- **фото** — fotosurat
+- **больший** — kattaroq
+- **жаль** — afsus, attang
+- **ключ** — kalit, buloq
+- **опасный** — xavfli
+- **появляться** — paydo bo'lib turmoq
+- **рыба** — baliq
+- **таки** — baribir, shunda ham
+- **хватить** — yetarli bo'lmoq
+- **век** — asr (100 yil)
+- **желание** — istak, xohish
+- **код** — kod, maxfiy raqam
+- **операция** — operatsiya, amaliyot
+- **прав** — haq, to'g'ri aytadi
+- **свободный** — erkin, bo'sh (vaqt)
+- **текст** — matn, tekst
+- **черт** — jin, iblis (og'zaki)
+- **верно** — to'g'ri, aniq
+- **животное** — hayvon
+- **кое-что** — ba'zi narsalar, allanima
+- **описание** — tasvir, ta'rif
+- **придумать** — o'ylab topmoq
+- **смеяться** — kulmoq
+- **температура** — harorat, temperatura
+- **чистый** — toza, ozoda
+- **вниз** — pastga, quyiga
+- **зависеть** — bog'liq bo'lmoq
+- **компьютер** — kompyuter
+- **открывать** — ochmoq
+- **приложение** — ilova (mobil/dastur)
+- **собрать** — yig'moq, to'plamoq
+- **тест** — test, sinov
+- **чувак** — jo'ra, og'ayni, oshna
+- **возраст** — yosh (inson yoshi)
+- **заказ** — buyurtma
+- **минус** — kamchilik, minus
+- **петь** — kuylamoq, ashula aytmoq
+- **продажа** — sotuv, savdo
+- **согласный** — rozi, undosh (tovush)
+- **технология** — texnologiya
+- **шоу** — shou, tomosha
+- **вызвать** — chaqirmoq
+- **закончиться** — tugamoq
+- **мистер** — janob, mister
+- **планировать** — rejalashtirmoq
+- **продать** — sotmoq
+- **сожаление** — afsus, pushaymon
+- **точный** — aniq, puxta
+- **экран** — ekran, monitor
+- **выполнять** — bajarmoq
+- **заставить** — majburlamoq
+- **намного** — ancha, ancha ko'p
+- **победить** — g'alaba qozonmoq
+- **просмотр** — ko'rish, tomosha
+- **социальный** — ijtimoiy
+- **требовать** — talab qilmoq
+- **эффект** — samara, ta'sir, effekt
+- **гораздо** — ancha, ancha ko'proq
+- **звучать** — jaranglamoq
+- **направление** — yo'nalish
+- **поверить** — ishonmoq
+- **прямой** — to'g'ri
+- **специальный** — maxsus
+- **требоваться** — talab qilinmoq
+- **государственный** — davlatga qarashli
+- **зеленый** — yashil (rang)
+- **настолько** — shunchalik, shu darajada
+- **поддерживать** — qo'llab-quvvatlamoq
+- **разговаривать** — suhbatlashmoq
+- **справиться** — uddasidan chiqmoq
+- **указать** — ko'rsatmoq, belgilamoq
+- **граница** — chegara
+- **зрение** — ko'rish qobiliyati
+- **начинаться** — boshlanmoq
+- **подписать** — imzolamoq
+- **разговор** — suhbat, gaplashish
+- **старший** — katta, yoshi ulug'
+- **украина** — Ukraina
+- **детский** — bolalar, bolalarga oid
+- **интернет** — internet
+- **немножко** — ozgina, bir oz
+- **позиция** — mavqe, pozitsiya, o'rin
+- **расти** — o'smoq
+- **стоимость** — qiymat, narx
+- **учить** — o'rgatmoq
+
+## 901-1000
+
+- **американский** — amerika, amerikalik
+- **впервые** — birinchi marta, ilk bor
+- **домашний** — uy, xonadoniy
+- **источник** — manba
+- **насчет** — borasida, haqida
+- **поймать** — tutmoq, ushlab olmoq
+- **самолет** — samolyot
+- **съесть** — yemoq
+- **армия** — armiya, qo'shin
+- **встретиться** — uchrashmoq
+- **естественный** — tabiiy, o'z-o'zidan
+- **контроль** — nazorat
+- **небо** — osmon
+- **политика** — siyosat
+- **сантиметр** — santimetr (sm)
+- **техника** — texnika, asbob
+- **ах** — oh, eh (undov)
+- **входить** — kirmoq
+- **заходить** — kirib o'tmoq
+- **корабль** — kema
+- **образование** — ta'lim, ma'lumot
+- **популярный** — mashhur, ommabop
+- **свидание** — uchrashuv (sevishganlar)
+- **убрать** — yig'ishtirmoq
+- **блок** — blok, qism
+- **вызывать** — chaqirmoq, sabab bo'lmoq
+- **звезда** — yulduz
+- **кофе** — qahva, kofe
+- **обратно** — orqaga, qaytib
+- **похоже** — shekilli, o'xshaydi
+- **сегодняшний** — bugungi
+- **удаться** — muvaffaq bo'lmoq
+- **бумага** — qog'oz
+- **выпить** — ichib olmoq
+- **здание** — bino, inshoot
+- **край** — chet, chekka, o'lka
+- **оставлять** — qoldirmoq
+- **правый** — o'ng, to'g'ri (haq)
+- **слой** — qatlam, qavat
+- **успеть** — ulgurmoq
+- **быстрый** — chaqqon, tezkor
+- **выполнить** — bajarmoq, ado etmoq
+- **знак** — belgi, ishora
+- **кухня** — oshxona
+- **отдельный** — alohida, bo'lak
+- **предложить** — taklif etmoq
+- **служба** — xizmat, xizmat vazifasi
+- **успех** — muvaffaqiyat, yutuq
+- **вверх** — yuqoriga, tepaga
+- **глава** — bob, rahbar, boshliq
+- **знакомиться** — tanishmoq
+- **куча** — to'da, uyum
+- **открытый** — ochiq, oshkora
+- **предмет** — buyum, narsa, fan
+- **собственно** — aslida, o'z navbatida
+- **целое** — butun, yaxlit
+- **вес** — vazn, og'irlik
+- **гора** — tog', cho'qqi
+- **знакомый** — tanish
+- **левый** — chap, chap tomon
+- **отличаться** — farq qilmoq, ajralib turmoq
+- **продавать** — sotmoq
+- **состав** — tarkib
+- **этап** — bosqich, palla
+- **веселый** — quvnoq, xushchaqchaq
+- **горячий** — issiq, qaynoq
+- **зона** — zona, hudud
+- **лист** — varaq
+- **память** — xotira
+- **производство** — ishlab chiqarish
+- **составлять** — tashkil qilmoq, tuzmoq
+- **яйцо** — tuxum
+- **видеться** — uchrashmoq
+- **государство** — davlat, mamlakat
+- **идеальный** — ideal, mukammal
+- **местный** — mahalliy
+- **передать** — yetkazib bermoq
+- **пункт** — punkt
+- **средства** — mablag'lar, vositalar
+- **включить** — o't oldirmoq, yoqmoq
+- **делиться** — bo'lishmoq, ulashmoq
+- **измениться** — o'zgarib qolmoq
+- **молодец** — ofarin
+- **персонаж** — qahramon (asar/film)
+- **разница** — farq, tafovut
+- **средство** — vosita, dori-darmon
+- **внешний** — tashqi
+- **деталь** — detal, mayda qism
+- **иной** — boshqacha, o'zgacha
+- **море** — dengiz
+- **победа** — g'alaba, zafar
+- **рекомендовать** — tavsiya qilmoq
+- **супер** — super, ajoyib
+- **вон** — ana, ana u yerda
+- **длинный** — uzun, cho'ziq
+- **исследование** — tadqiqot
+- **мясо** — go'sht
+- **поверхность** — sirt, yuza
+- **ролик** — videorolik
+- **счастье** — baxt

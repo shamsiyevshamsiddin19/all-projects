@@ -462,6 +462,100 @@
         }
     }
 
+    /* ---------- MAHALLIY SURAT (ilova DARHOL ochilishi uchun) ----------
+       Bu ko'prik localStorage'ni butunlay o'z ustiga oladi: o'qishlar
+       `state.cache` dan keladi, u esa `storage_bootstrap` javobi bilan
+       to'ladi. Shu sababli ilova javob KELMAGUNCHA hech narsa ko'rsata
+       olmasdi — splash ekran turaverardi (bootstrap.js da 4 soniyagacha
+       kutish chegarasi bor edi). Ochilishdagi "kutish" aynan shundan.
+
+       Yechim: oxirgi ma'lum holat qurilmaning O'ZIDA surat sifatida
+       saqlanadi. Keyingi ochilishda u SINXRON o'qiladi va ilova darhol
+       chiziladi; server javobi orqa fonda keladi va farq bo'lsagina
+       `remote-storage:refreshed` hodisasi bilan qayta chizdiradi.
+
+       Surat kaliti `__remote_storage_` bilan boshlanadi, ya'ni
+       `isInternalKey()` uni ichki deb biladi: `listNativeKeys()` ko'rmaydi,
+       demak sinxronizatsiyaga ham, `purgeNativeStorage()` ga ham tushmaydi. */
+    var snapshotKey = '__remote_storage_snapshot_v1';
+    var snapshotTimer = null;
+
+    function readSnapshot() {
+        if (!canPatchStorage) {
+            return null;
+        }
+
+        try {
+            var raw = nativeGetItem.call(window.localStorage, snapshotKey);
+            if (!raw) {
+                return null;
+            }
+
+            var parsed = JSON.parse(raw);
+            return parsed && typeof parsed.items === 'object' ? parsed.items : null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function writeSnapshot() {
+        if (!canPatchStorage || !state.syncEnabled) {
+            return;
+        }
+
+        try {
+            nativeSetItem.call(
+                window.localStorage,
+                snapshotKey,
+                JSON.stringify({ at: Date.now(), items: state.cache || {} })
+            );
+        } catch (error) {
+            /* Kvota to'lsa surat saqlanmaydi — ilova baribir ishlayveradi,
+               faqat keyingi ochilish yana serverni kutadi. */
+            logger.warn('Storage snapshot could not be saved', {
+                error: error.message,
+            });
+        }
+    }
+
+    function scheduleSnapshot() {
+        clearTimeout(snapshotTimer);
+        snapshotTimer = setTimeout(writeSnapshot, 400);
+    }
+
+    /* Server holatini surat ustiga qo'yadi. Hali yuborilmagan mahalliy
+       o'zgarishlar (`state.queue`) YO'QOLMAYDI — ular server qiymatining
+       ustidan yoziladi, aks holda foydalanuvchi endigina yozgan narsa
+       orqa fondagi javob kelishi bilan yo'q bo'lardi. */
+    function applyServerItems(items) {
+        var next = Object.assign({}, items || {});
+
+        Object.keys(state.queue).forEach(function (key) {
+            if (state.queue[key].type === 'delete') {
+                delete next[key];
+            } else {
+                next[key] = state.queue[key].value;
+            }
+        });
+
+        var changed = JSON.stringify(next) !== JSON.stringify(state.cache || {});
+        state.cache = next;
+        return changed;
+    }
+
+    function emitRefreshed() {
+        try {
+            window.dispatchEvent(new CustomEvent('remote-storage:refreshed'));
+        } catch (error) {
+            /* Eski brauzerlar uchun (CustomEvent konstruktor yo'q) */
+            try {
+                var legacy = document.createEvent('Event');
+                legacy.initEvent('remote-storage:refreshed', false, false);
+                window.dispatchEvent(legacy);
+            } catch (inner) {}
+        }
+    }
+
     function fetchBootstrap() {
         var url = state.endpoint + '?action=storage_bootstrap&t=' + Date.now();
 
@@ -536,27 +630,70 @@
             return state.bootstrapPromise;
         }
 
-        state.bootstrapPromise = fetchBootstrap().then(function (json) {
-            var localWrites = state.cache || {};
-            state.cache = Object.assign({}, json.items || {}, localWrites);
+        /* 1-qadam — SURAT. Bo'lsa, tarmoqni umuman kutmaymiz: ilova shu
+           zahoti chizila boshlaydi. Sahifa ochilgandan buyon yozilgan
+           qiymatlar (agar bo'lsa) suratdan ustun turadi. */
+        var snapshot = readSnapshot();
+        var instant = false;
+
+        if (snapshot) {
+            state.cache = Object.assign({}, snapshot, state.cache || {});
             state.ready = true;
+            instant = true;
             restorePendingBackups();
             migrateLegacyLocalStorage();
+            logger.info('Storage snapshot loaded instantly', {
+                keys: cacheKeys().length,
+            });
+        }
+
+        /* 2-qadam — SERVER. Surat bo'lsa bu ORQA FONDA ketadi va hech kim
+           uni kutmaydi; bo'lmasa (birinchi kirish) eski xatti-harakat. */
+        var network = fetchBootstrap().then(function (json) {
+            var changed = false;
+
+            if (instant) {
+                changed = applyServerItems(json.items);
+            } else {
+                var localWrites = state.cache || {};
+                state.cache = Object.assign({}, json.items || {}, localWrites);
+                state.ready = true;
+                restorePendingBackups();
+                migrateLegacyLocalStorage();
+            }
+
+            writeSnapshot();
             logger.info('Server storage loaded', {
                 keys: cacheKeys().length,
             });
+
+            if (instant && changed) {
+                emitRefreshed();
+            }
+
             return state;
         }).catch(function (error) {
             state.ready = true;
-            state.syncEnabled = false;
             state.cache = state.cache || {};
-            migrateLegacyLocalStorage();
-            logger.error('Server storage bootstrap failed, memory-only mode enabled', {
+
+            /* Surat BOR bo'lsa xotira rejimiga o'tmaymiz: ma'lumot to'g'ri,
+               shunchaki internet yo'q. Yozuvlar navbatda qolib, ulanish
+               tiklanganda yuboriladi. Surat bo'lmagandagina (hech narsa
+               bilmaymiz) eski xavfsiz rejimga tushamiz. */
+            if (!instant) {
+                state.syncEnabled = false;
+                migrateLegacyLocalStorage();
+            }
+
+            logger.error('Server storage bootstrap failed', {
                 error: error.message,
+                offlineWithSnapshot: instant,
             });
+
             return state;
         });
 
+        state.bootstrapPromise = instant ? Promise.resolve(state) : network;
         return state.bootstrapPromise;
     }
 
@@ -801,6 +938,9 @@
 
             state.cache[key] = stringValue;
             rememberKeyVersion(key, stamp);
+            /* Surat yangilanib boradi — keyingi ochilishda ilova aynan shu
+               holatni tarmoqsiz, darhol ko'rsatadi. */
+            scheduleSnapshot();
 
             if (state.syncEnabled) {
                 state.queue[key] = {
@@ -852,6 +992,7 @@
             delete state.cache[key];
             rememberKeyVersion(key, stamp);
             forgetPendingKey(key);
+            scheduleSnapshot();
 
             if (state.syncEnabled) {
                 state.queue[key] = {
@@ -901,6 +1042,13 @@
 
             state.cache = {};
             writePendingOps([]);
+            /* Surat ham darhol tozalanadi — aks holda sahifa yangilanganda
+               endigina o'chirilgan ma'lumot suratdan qaytib kelardi. */
+            try {
+                if (canPatchStorage) {
+                    nativeRemoveItem.call(window.localStorage, snapshotKey);
+                }
+            } catch (error) {}
             state.clearStamp = stamp;
             broadcastStorageMessage({
                 kind: 'storage-clear',
@@ -984,6 +1132,35 @@
         return bootstrap();
     }
 
+    /* ---------- FAQAT SHU QURILMADA qoladigan qiymatlar ----------
+       Ba'zi narsalar serverga sinxronlanmasligi kerak, lekin sahifa
+       yangilanganda ham saqlanishi shart (masalan oxirgi kirish holati:
+       auth.js undan foydalanib ilovani serverni KUTMASDAN ochadi).
+       Oddiy `localStorage` bu yerda yaramaydi — u butunlay shu ko'prik
+       ostida va har yozuv serverga ketadi. Shuning uchun ichki kalit
+       ostida TO'G'RIDAN-TO'G'RI brauzer xotirasiga yozamiz: `__remote_storage_`
+       prefiksi tufayli `isInternalKey()` uni ichki deb biladi, ya'ni
+       sinxronlashga ham, `purgeNativeStorage()` ga ham tushmaydi. */
+    var localOnlyPrefix = '__remote_storage_local_';
+
+    function localOnlyGet(name) {
+        if (!canPatchStorage) return null;
+        try {
+            return nativeGetItem.call(window.localStorage, localOnlyPrefix + name);
+        } catch (error) { return null; }
+    }
+
+    function localOnlySet(name, value) {
+        if (!canPatchStorage) return;
+        try {
+            if (value === null || value === undefined) {
+                nativeRemoveItem.call(window.localStorage, localOnlyPrefix + name);
+            } else {
+                nativeSetItem.call(window.localStorage, localOnlyPrefix + name, String(value));
+            }
+        } catch (error) {}
+    }
+
     window.RemoteStorageBridge = {
         bootstrap: bootstrap,
         whenReady: whenReady,
@@ -991,6 +1168,8 @@
         flush: flushQueue,
         flushSync: flushQueueSync,
         state: state,
+        localGet: localOnlyGet,
+        localSet: localOnlySet,
     };
 
     setupTabSync();
