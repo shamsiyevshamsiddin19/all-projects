@@ -1,0 +1,12 @@
+[Unit]
+Description=Yordamchi zaxirasini har kuni ishga tushirish
+
+[Timer]
+# Har kuni ertalab 03:30 (server vaqti bo'yicha)
+OnCalendar=*-*-* 03:30:00
+# Server o'chiq bo'lgan bo'lsa, yoqilgach o'tkazib yuborilgan zaxirani oladi
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

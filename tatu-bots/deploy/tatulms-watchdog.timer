@@ -1,0 +1,11 @@
+[Unit]
+Description=tatulmsbot watchdog — har 2 daqiqada tekshiradi
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=2min
+AccuracySec=15s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

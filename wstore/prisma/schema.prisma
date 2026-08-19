@@ -1,0 +1,258 @@
+// wstore.uz — raqamli mahsulotlar marketi
+// PostgreSQL + Prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Auth.js (NextAuth) modellari ----------
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  role          Role      @default(BUYER)
+  balance       Decimal   @default(0) @db.Decimal(12, 2)
+
+  // Referal tizimi — har bir foydalanuvchining o'z kodi bor, kim orqali
+  // kelganini ham eslab qolamiz (birinchi xaridida taklif qilganga bonus).
+  referralCode      String  @unique @default(cuid())
+  referredById      String?
+  referredBy        User?   @relation("Referrals", fields: [referredById], references: [id])
+  referrals         User[]  @relation("Referrals")
+  referralBonusPaid Boolean @default(false)
+
+  accounts      Account[]
+  sessions      Session[]
+  products      Product[] @relation("SellerProducts")
+  orders        Order[]
+  reviews       Review[]
+  wishlist      Wishlist[]
+  reports       Report[]
+  withdrawals   Withdrawal[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ---------- Domen modellari ----------
+model Category {
+  id       String    @id @default(cuid())
+  name     String
+  slug     String    @unique
+  icon     String    @default("box")
+  products Product[]
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String
+  price       Decimal  @db.Decimal(12, 2)
+
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+
+  // "Saytlar" (website) uchun kichik yo'nalish: portfolio | teacher | edu | pharmacy | restaurant | other
+  subcategory String?
+
+  techStack   String[] // ["React","Python"] — filter uchun
+  features    String[] @default([]) // mahsulot xususiyatlari (mahsulot sahifasida ro'yxat)
+  coverImage  String
+  screenshots String[]
+  fileKey     String   // R2 dagi .zip kaliti (mijozga chiqmaydi)
+  demoUrl     String?
+  telegramUsername String? // loyiha egasining Telegram username'i (buyurtma uchun)
+
+  rating      Float    @default(0)
+  salesCount  Int      @default(0)
+
+  sellerId    String
+  seller      User     @relation("SellerProducts", fields: [sellerId], references: [id])
+
+  // DRAFT (yaratildi, 5000 e'lon to'lovi kutilmoqda) -> PENDING (to'landi, moderatsiyada) -> ACTIVE | REJECTED
+  status            Status             @default(DRAFT)
+  orders            Order[]
+  reviews           Review[]
+  listingPayments   ClickTransaction[] @relation("ListingPayments")
+  wishlistedBy      Wishlist[]
+  reports           Report[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Order {
+  id                String             @id @default(cuid())
+  buyerId           String
+  buyer             User               @relation(fields: [buyerId], references: [id])
+  productId         String
+  product           Product            @relation(fields: [productId], references: [id])
+  amount            Decimal            @db.Decimal(12, 2) // so'mda — Click uchun aniq belgilangan summa
+  status            PayStatus          @default(PENDING)
+  provider          String? // payme | click | uzum
+  downloadToken     String? // xavfsiz yuklab olish uchun
+  clickTransactions ClickTransaction[]
+  createdAt         DateTime           @default(now())
+}
+
+// Click to'lovlari — ikkala turi ham: mahsulot xaridi (PURCHASE) va sotuvchi e'lon to'lovi (LISTING).
+// Raqamli "id" Click merchant_trans_id ichiga ("WSTP"/"WSTL" + id) qo'yiladi — PHP ko'prik faqat
+// prefiksni tekshirib, qolgan qismini shu id sifatida uzatadi (subtitr/baza ko'prigi bilan bir xil naqsh).
+model ClickTransaction {
+  id              Int       @id @default(autoincrement())
+  kind            ClickKind
+
+  orderId         String?
+  order           Order?    @relation(fields: [orderId], references: [id])
+
+  productId       String?
+  product         Product?  @relation("ListingPayments", fields: [productId], references: [id])
+
+  amount          Decimal   @db.Decimal(12, 2) // so'mda, yaratilganda qat'iy belgilanadi
+  status          PayStatus @default(PENDING)
+  clickTransId    String?
+  merchantTransId String? // ma'lumot uchun ("WSTP123" / "WSTL45")
+
+  createdAt       DateTime  @default(now())
+  paidAt          DateTime?
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int
+  comment   String
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([productId, userId]) // bir foydalanuvchi bitta mahsulotga bitta izoh (qayta yozsa yangilanadi)
+}
+
+// Xaridorning "sevimlilar" ro'yxati.
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+}
+
+// Mahsulot/sotuvchi ustidan shikoyat — admin /admin/reports'da ko'radi.
+model Report {
+  id         String       @id @default(cuid())
+  productId  String
+  product    Product      @relation(fields: [productId], references: [id])
+  reporterId String
+  reporter   User         @relation(fields: [reporterId], references: [id])
+  reason     String
+  comment    String?
+  status     ReportStatus @default(OPEN)
+  createdAt  DateTime     @default(now())
+}
+
+// Sotuvchining pul yechib olish so'rovi — karta raqami orqali admin qo'lda to'laydi.
+model Withdrawal {
+  id         String           @id @default(cuid())
+  sellerId   String
+  seller     User             @relation(fields: [sellerId], references: [id])
+  amount     Decimal          @db.Decimal(12, 2) // so'mda
+  cardNumber String
+  status     WithdrawalStatus @default(PENDING)
+  createdAt  DateTime         @default(now())
+  paidAt     DateTime?
+}
+
+enum WithdrawalStatus {
+  PENDING
+  PAID
+  REJECTED
+}
+
+// Server xatoliklarini o'z bazasida kuzatish (tashqi Sentry shart emas).
+model ErrorLog {
+  id        String   @id @default(cuid())
+  message   String
+  stack     String?
+  context   String? // qaysi route/joyda yuz berdi
+  createdAt DateTime @default(now())
+}
+
+enum ReportStatus {
+  OPEN
+  RESOLVED
+}
+
+enum Role {
+  BUYER
+  SELLER
+  ADMIN
+}
+
+enum Status {
+  DRAFT
+  PENDING
+  ACTIVE
+  REJECTED
+  PAUSED // sotuvchi vaqtincha ko'rinishdan yashirgan (qayta moderatsiyasiz ACTIVE'ga qaytadi)
+}
+
+enum PayStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum ClickKind {
+  PURCHASE
+  LISTING
+}

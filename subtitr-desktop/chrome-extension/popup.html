@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      width: 380px;
+      margin: 0;
+      padding: 14px;
+      background: #0a0a0a;
+      color: #fff;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 13px;
+    }
+    .head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .head img { width: 28px; height: 28px; border-radius: 7px; }
+    .head b { font-size: 15px; }
+    .hint { color: #aaa; font-size: 11.5px; margin-bottom: 12px; line-height: 1.4; }
+    .item {
+      background: #141414;
+      border: 1px solid #222;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 8px;
+    }
+    .item .type {
+      display: inline-block;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #E6B800;
+      margin-bottom: 5px;
+    }
+    .item .url {
+      font-size: 11px;
+      color: #ccc;
+      word-break: break-all;
+      max-height: 32px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    button {
+      background: #fff; color: #000; border: none;
+      border-radius: 8px; padding: 7px 12px;
+      font-weight: 600; font-size: 12px; cursor: pointer;
+      font-family: inherit;
+    }
+    button:hover { opacity: 0.85; }
+    button.ghost { background: transparent; color: #fff; border: 1px solid #333; }
+    .empty { color: #888; text-align: center; padding: 24px 0; line-height: 1.5; }
+    .pageurl { margin-top: 6px; padding-top: 12px; border-top: 1px solid #1c1c1c; }
+    .copied { color: #4ade80; font-size: 11px; margin-left: 8px; }
+  </style>
+</head>
+<body>
+  <div class="head">
+    <img src="icon128.png" alt="" />
+    <b>Subtitr Grabber</b>
+  </div>
+  <div class="hint">
+    Topilgan video havolasini nusxalab, Subtitr Desktop ilovasidagi havola
+    maydoniga <b>Ctrl+V</b> bilan joylashtiring.
+  </div>
+  <div id="list"></div>
+  <div class="pageurl">
+    <button id="copyPage" class="ghost">Sahifa havolasini nusxalash</button>
+    <span id="pageMsg" class="copied" style="display:none">Nusxalandi ✓</span>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

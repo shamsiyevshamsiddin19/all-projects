@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Rang tokenlari — "R G B" formatida (Tailwind rgb(var(..) / <alpha-value>)
+   bilan ishlashi uchun), standart qorong'i tema. */
+:root {
+  color-scheme: dark;
+  --bg: 11 11 15;
+  --surface: 21 21 28;
+  --surface-2: 28 28 37;
+  --border: 38 38 49;
+  --border-strong: 51 51 63;
+  --muted: 138 138 149;
+  --fg: 255 255 255;
+  --accent: 109 94 246;
+  --accent-hover: 91 76 224;
+  --gold: 230 180 80;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: 255 255 255;
+  --surface: 247 247 249;
+  --surface-2: 238 238 242;
+  --border: 226 226 232;
+  --border-strong: 209 209 218;
+  --muted: 107 107 118;
+  --fg: 17 17 22;
+  --accent: 109 94 246;
+  --accent-hover: 91 76 224;
+  --gold: 176 121 15;
+}
+
+html,
+body {
+  background-color: rgb(var(--bg));
+  color: rgb(var(--fg));
+}
+
+/* nozik scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--border));
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--border-strong));
+}

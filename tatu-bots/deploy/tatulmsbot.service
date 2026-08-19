@@ -1,0 +1,33 @@
+[Unit]
+Description=TUIT LMS bot (@tatulmsbot)
+After=network-online.target
+Wants=network-online.target
+# Crash bo'lsa cheksiz qayta urinish (hech qachon "to'xtab qolmaydi")
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=opc
+WorkingDirectory=/opt/tatu-bots
+ExecStart=/opt/tatu-bots/.venv/bin/python /opt/tatu-bots/run.py
+Restart=always
+RestartSec=8
+Environment=PYTHONUNBUFFERED=1
+# Serverni bo'g'masligi uchun: bitta yadroning ko'pi bilan 60% (sshd/sessiyabot nafas oladi)
+CPUQuota=60%
+CPUWeight=40
+Nice=5
+IOWeight=40
+# glibc arena bloat'ini kamaytirish — RSS sezilarli pasayadi (zaif server)
+Environment=MALLOC_ARENA_MAX=2
+Environment=PYTHONMALLOC=malloc
+# Toza yopilish (aiogram SIGINT'ni ushlaydi -> DB yopiladi)
+KillSignal=SIGINT
+TimeoutStopSec=25
+# Zaif server (498MB RAM) — yumshoq RAM cheklovi (kill emas, sekinlashtirish)
+MemoryHigh=180M
+MemoryMax=300M
+OOMPolicy=continue
+
+[Install]
+WantedBy=multi-user.target

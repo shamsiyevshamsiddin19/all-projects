@@ -1,0 +1,43 @@
+# ─── SIRLAR (hech qachon yuklanmasin!) ───
+.env
+.env.local
+*.pem
+*.key
+
+# ─── Python ───
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# ─── Ma'lumotlar bazasi va zaxiralar ───
+_backups/
+*.sql
+*.sql.gz
+*.db
+*.sqlite3
+
+# ─── Generatsiya chiqindilari va namunalar ───
+_samples_out/
+samples/
+SINOV_*.docx
+SINOV_*.pptx
+SINOV_*.png
+SINOV_*.pdf
+/tmp/
+tmp/
+
+# ─── Hujjat chiqindilari (test) ───
+*.docx
+*.pptx
+*.pdf
+!docs/**/*.py
+
+# ─── IDE / OS ───
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log

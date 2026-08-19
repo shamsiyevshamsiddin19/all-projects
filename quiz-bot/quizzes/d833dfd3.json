@@ -1,0 +1,1798 @@
+{
+  "id": "d833dfd3",
+  "name": "suniy intilekt",
+  "owner_id": 7883409434,
+  "created": 1783321290,
+  "questions": [
+    {
+      "text": "Sintaktik tahlilda qanday gaplar aniqlanadi?",
+      "options": [
+        "Leksik gaplar",
+        "Grammatik tuzilishga asoslangan gaplar",
+        "Semantik gaplar",
+        "Nominal gaplar"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Lemmatizatsiya jarayoni to‘g‘ri keltirilgan qatorni toping.",
+      "options": [
+        "So‘zni ildizga keltirish va grammatik shaklini aniqlash",
+        "So‘zning ildizini olish",
+        "So‘zning sintaktik vazifasini aniqlash",
+        "So‘zning leksik ma'nosini aniqlash"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "NLP ning birinchi bosqichi qanday nomlanadi?",
+      "options": [
+        "Sintaktik tahlil",
+        "Morfologik tahlil",
+        "Tokenizatsiya",
+        "Semantik tahlil"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Lingvistik analizatorni qanday turlarga bo‘lib o‘rganish mumkin?",
+      "options": [
+        "Morfologik, leksik, pragmatik",
+        "Morfologik, leksik, sintaktik",
+        "Semantik, pragmatik, leksik",
+        "Morfologik, sintaktik, semantik, leksik"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Sinonimlarning turlari qaysi tahlil doirasida ko‘rib chiqiladi?",
+      "options": [
+        "Morfologik tahlil",
+        "Morfologik tahlil",
+        "Pragmatik tahlil",
+        "Semantik tahlil"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Semantik tahlil nima?",
+      "options": [
+        "So‘zlarni turkumlarga ajratish",
+        "Matnning ma'nosini tahlil qilish",
+        "So‘zlarni grammatik shaklda ajratish",
+        "Matnning sintaktik tuzilishini aniqlash"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "POST teglash jarayoni nimani anglatadi?",
+      "options": [
+        "So‘zlarning ma'nosini aniqlash",
+        "So‘z turkumlarini aniqlash",
+        "Gapni semantik tahlil qilish",
+        "So‘zlarning ildizlarini aniqlash"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Gap turlarini aniqlash qaysi tahlilga tegishli?",
+      "options": [
+        "Semantik tahlil",
+        "Morfologik tahlil",
+        "Leksik tahlil",
+        "Sintaktik tahlil"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Leksik semantikada qaysi tushuncha asosiy hisoblanadi?",
+      "options": [
+        "Ma'no",
+        "Sintaktik tuzilma",
+        "So‘z turkumi",
+        "Ildiz shakli"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Sintaktik tahlil qaysi bosqichdan keyin amalga oshiriladi?",
+      "options": [
+        "Tokenizatsiya",
+        "Semantik tahlil",
+        "Lemmatizatsiya",
+        "Morfologik tahlil"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Parser tushunchasi nimani anglatadi?",
+      "options": [
+        "Matnni shifrlash vositasi",
+        "So‘z turkumlarini aniqlovchi vosita",
+        "Matnni semantik tahlil qilish vositasi",
+        "Sintaktik tahlilni amalga oshiruvchi dastur"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Morfologik tahlilning birinchi bosqichi qaysi?",
+      "options": [
+        "Semantik tahlil",
+        "So‘zlarni ajratish",
+        "Leksik tahlil",
+        "Gapning sintaktik tuzilishini aniqlash"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Gap tahlili quyidagilarning qaysilarini o‘z ichiga oladi?",
+      "options": [
+        "Morfologik va sintaktik tahlil",
+        "Leksik va semantik tahlil",
+        "Morfologik va leksik tahlil",
+        "Sintaktik va semantik tahlil"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Morfologik tahlilni amalga oshirish uchun qaysi kutubxonalardan foydalaniladi?",
+      "options": [
+        "TensorFlow, Keras",
+        "Pandas, Matplotlib",
+        "NLTK, spaCy",
+        "OpenCV, NumPy"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Stemming jarayoni nimani anglatadi?",
+      "options": [
+        "So‘zlarning turkumlarini aniqlash",
+        "So‘zning ildiz shaklini aniqlash",
+        "So‘zning sintaktik vazifasini aniqlash",
+        "So‘zning leksik ma'nosini aniqlash"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Sintaktik tahlilning asosiy vazifalaridan biri nima?",
+      "options": [
+        "So‘zlar orasidagi sinonimlarni topish",
+        "Gapning ma'nosini tushunish",
+        "Gapning grammatik tuzilishini aniqlash",
+        "Gapdagi so‘zlarni turkumlarga ajratish"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Morfologik tahlilda so‘z birikmalari qanday aniqlanadi?",
+      "options": [
+        "So‘zlarning leksik ma'nosini aniqlash",
+        "Gapning sintaktik tuzilishini aniqlash",
+        "So‘zlarning semantik aloqasini aniqlash",
+        "So‘zning turkumlari va shakllari orqali"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Tokenizatsiya jarayoni to‘g‘ri keltirilgan qatorni toping.",
+      "options": [
+        "Matndagi so‘zlarni turkumlarga ajratish",
+        "Gapning grammatik tuzilishini aniqlash",
+        "Matndagi semantik ma'nolarni tahlil qilish",
+        "Matnni so‘zlarga ajratish"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Sintaktik tahlilda qaysi bo‘laklarni aniqlash mumkin?",
+      "options": [
+        "Gapdagi semantik elementlarni",
+        "So‘z turkumlari, gap tarkibi",
+        "Sinonimlarni",
+        "Gapdagi semantik elementlarni"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Leksik tahlilning asosiy maqsadi nima?",
+      "options": [
+        "Gapdagi sintaktik bo‘laklarni aniqlash",
+        "Matnni so‘zlarga ajratish",
+        "So‘zlarning ma'nosini aniqlash",
+        "Gapni grammatika jihatidan tahlil qilish"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Bugungi kunda qanday sintaktik analizatorlardan foydalanilmoqda?",
+      "options": [
+        "Shift-reduce parserlari",
+        "All of the above",
+        "Dependency parserlar",
+        "Lexical parserlar"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Xomskiy grammatikasi nima?",
+      "options": [
+        "Tabiiy tilni qayta ishlashda foydalaniladigan semantik tizim",
+        "Grammatik strukturalarni tavsiflash uchun yaratilgan model",
+        "Matnni so‘zlarga ajratish qoidalari",
+        "Mashina o‘rganish algoritmi"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Lingvistik analizatorlarning turlari orasida so‘zlarning tuzilishini o‘rganadi.",
+      "options": [
+        "Sintaktik analizator",
+        "Morfologik analizator",
+        "Semantik analizator",
+        "Pragmatik analizator"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "NLP nima va qaysi sohalarda qo'llaniladi?",
+      "options": [
+        "Tabiiy tilni qayta ishlash, matn tahlili, chat botlar, tarjimonlar",
+        "Sun'iy intellekt tizimlari, avtomatik tarqatish",
+        "Mashina o‘rganish, robototexnika",
+        "Ixtiyoriy tilni qayta ishlash, kompyuter tizimlarini boshqarish"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Sintaktik tahlil algoritmlari nimalarga asoslanadi?",
+      "options": [
+        "So‘z turkumlariga asoslangan algoritmlar",
+        "Grammatika qoidalari va strukturalar",
+        "Matnni tasvirlash qoidalari",
+        "Semantik tahlil asoslari"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Grammatikaning dastlabki matematik modeli kim tomonidan taklif etilgan?",
+      "options": [
+        "John McCarthy",
+        "Alan Turing",
+        "Noam Chomsky",
+        "Marvin Minsky"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Leksik semantika nimani anglatadi?",
+      "options": [
+        "So‘zlarning grammatik tahlili",
+        "So‘zlarning fonetik o‘xshashligini aniqlash",
+        "So‘zlarni so‘z turkumlariga ajratish",
+        "So‘zlarning ma'no va kontekstga asoslangan tahlili"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Qo‘shma gaplarni aniqlash qaysi tahlil turiga kiradi?",
+      "options": [
+        "Pragmatik tahlil",
+        "Morfologik tahlil",
+        "Sintaktik tahlil",
+        "Semantik tahlil"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Tabiiy tilni qayta ishlash texnologiyasida gap tahlili nima?",
+      "options": [
+        "Gapdagi sinonimlarni aniqlash",
+        "Gapdagi so‘zlarning o‘rnini o‘zgartirish",
+        "Gapning strukturasini aniqlash",
+        "Gapni semantik tahlil qilish"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "NLP ning bosqichlari to‘g‘ri keltirilgan qatorni toping.",
+      "options": [
+        "Morfologik tahlil → Sintaktik tahlil → Tokenizatsiya → Semantik tahlil",
+        "Tokenizatsiya → Morfologik tahlil → Sintaktik tahlil → Semantik tahlil",
+        "Tokenizatsiya → Sintaktik tahlil → Morfologik tahlil → Semantik tahlil",
+        "Sintaktik tahlil → Morfologik tahlil → Tokenizatsiya → Semantik tahlil"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Ma'lumotlar nima?",
+      "options": [
+        "Natijalar va xulosalar",
+        "Faktlar va raqamlar",
+        "Mashina o‘rganish algoritmlari",
+        "Tushunchalar va fikrlar"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Bilimlar bazasining samaradorligini oshirish uchun nima qilish mumkin?",
+      "options": [
+        "Bilimlarni saqlash tizimini o‘zgartirish",
+        "Ma'lumotlarni yangilash va takomillashtirish",
+        "Modelni takomillashtirish",
+        "Bilimlarni tahlil qilish va tartibga solish"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Matnni ajratib olishda qanday yondashuvlar mavjud?",
+      "options": [
+        "So‘z ajratish, morfologik analiz",
+        "Klasterlash, tasniflash",
+        "Vizualizatsiya, tahlil",
+        "Regresiya va analitika"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Bilimlarni ajratib olishda maʼlumotlar qazib olish (Data mining) nima uchun ishlatiladi?",
+      "options": [
+        "Tasvirlarni tahlil qilish uchun",
+        "Yangi ma'lumotlarni kiritish uchun",
+        "Matnlarni tarjima qilish uchun",
+        "Yashirin bilimlarni aniqlash va tuzish uchun"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Bilim hosil bo‘lishining to‘g‘ri ketma-ketligi qanday?",
+      "options": [
+        "Ma'lumot → Axborot → Bilim",
+        "Bilim → Axborot → Ma'lumot",
+        "Axborot → Bilim → Ma'lumot",
+        "Ma'lumot → Bilim → Axborot"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Samarali bilimlar bazasi qanday tuziladi?",
+      "options": [
+        "Faqat ma'lumotlar va qoidalar bilan",
+        "Yangi bilimlar va algoritmlar asosida",
+        "Ma'lumotlar va tizim interfeysi orqali",
+        "Ma'lumotlar, qoidalar va metodlar asosida"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Ekspert tizimlarida qaysi qoidalar qo'llaniladi?",
+      "options": [
+        "Protsessual qoidalar",
+        "\"Agar-u holda\" (if-then) shartlari",
+        "Grammatika qoidalari",
+        "Matematik qoidalar"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Bilimlar bazasi nima?",
+      "options": [
+        "Model yaratish jarayoni",
+        "Ma'lumotlar bazasi",
+        "Yangi bilimlarni o‘rganish jarayoni",
+        "Bilimlarni saqlash va boshqarish tizimi"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Bayes teoremasi nimaga asoslanadi?",
+      "options": [
+        "Tasniflash algoritmlariga",
+        "Statistika va hisobotga",
+        "Matematik formulalar asosida",
+        "Ehtimollik nazariyasiga"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "\"Data mining\"ning asosiy vazifasi nima?",
+      "options": [
+        "Ma'lumotlarni yig‘ish",
+        "Ma'lumotlarni kodlash",
+        "Yashirin va foydali bilimlarni aniqlash",
+        "Ma'lumotlarni vizualizatsiya qilish"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Bilimlar bazasi nimalarni o‘z ichiga oladi?",
+      "options": [
+        "Bilimlar, faktlar va qoidalar",
+        "Ma'lumotlar bazasidagi xatoliklar",
+        "Ma'lumotlar va natijalar",
+        "Qoidalar va protseduralar"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Semantik tarmoq modeli qanday ishlaydi?",
+      "options": [
+        "Ehtimolliklarni tahlil qilish",
+        "Fizik tasvirlarni tahlil qilish",
+        "Matnni avtomatik tarzda tarjima qilish",
+        "Ma'lumotlarni tashkillashtirish va ularga semantik bog‘lanishlarni kiritish"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Bilimlarni ifodalash qanday modellari mavjud?",
+      "options": [
+        "Model yaratish va kodlash modellari",
+        "Grammatika va sintaktik modellari",
+        "Mashina o‘rganish modellari",
+        "Semantik tarmoq modeli, Freym model, Ijrochi model"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Ekspert tizimlarida foydalanuvchi interfeysi qanday vazifani bajaradi?",
+      "options": [
+        "Ma'lumotlarni so‘zlashtirish",
+        "Bilimlarni saqlash",
+        "Ma'lumotlarni tahlil qilish",
+        "Foydalanuvchi bilan tizimni bog‘lash"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Semantik tarmoq modeli qanday ishlaydi?",
+      "options": [
+        "Ma'lumotlarni tashkillashtirish va ularga semantik bog‘lanishlarni kiritish",
+        "Matnni avtomatik tarzda tarjima qilish",
+        "Fizik tasvirlarni tahlil qilish",
+        "Ehtimolliklarni tahlil qilish"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Axborot bu -?",
+      "options": [
+        "Ma'lumotlar, ular maqsadga yo‘naltirilgan holda ishlov berilgan",
+        "Faoliyatlar va qarorlar",
+        "Matematik modellarga asoslangan ma'lumotlar",
+        "Algoritmik yechimlar"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Bilimlarning qanday turlari mavjud?",
+      "options": [
+        "Matematik va fizik bilimlar",
+        "Tadqiqot va tajriba bilimlari",
+        "Formal va informal bilimlar",
+        "Mahsulot va xizmat bilimlari"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Mantiqiy model qanday ifodalanadi?",
+      "options": [
+        "Grammatika qoidalari asosida",
+        "Matematik usullar orqali",
+        "Yevklid masofasi orqali",
+        "Tavsiflovchi formulalar orqali"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Bilimlarni ajratib olishda qaysi usullar ishlatiladi?",
+      "options": [
+        "Klasterlash, tasniflash, assotsiatsiya",
+        "Fizik testlar, model yaratish",
+        "Ma'lumotlarni to‘plash, tahlil qilish",
+        "Mantiqiy ifodalash, semantik tahlil"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Bilimlarni ajratib olishda nimalar amalga oshiriladi?",
+      "options": [
+        "Ma'lumotlar yig‘ish va saqlash",
+        "Yashirin bilimlarni aniqlash",
+        "Fizik testlar o‘tkazish",
+        "Matnni tarjima qilish"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "\"Agar-u holda\" (if-then) sharti qaysi modelda ishlaydi?",
+      "options": [
+        "Bayes modelida",
+        "Ekspert tizimlarida",
+        "Freym modelida",
+        "Semantik tarmoq modelida"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Ekspert tizimlarining asosiy komponentalari qaysilar?",
+      "options": [
+        "Ma'lumotlar bazasi, kodlash va model",
+        "Bilimlar bazasi, model, kodlash tizimi",
+        "Foydalanuvchi interfeysi, tizim resurslari, serverlar",
+        "Bilimlar bazasi, chiqish mexanizmi, foydalanuvchi interfeysi"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Bilim bu nima?",
+      "options": [
+        "Bilimlarni yaratish jarayonlari",
+        "Fikrlar va farazlar",
+        "Tabiat qonunlari va matematik formulalar",
+        "Axborot va tajriba asosida qilingan xulosalar"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Bayes teoremasi qaysi sohada qo'llaniladi?",
+      "options": [
+        "Mashina o‘rganish va ehtimollik hisoblash",
+        "Tabiatshunoslik",
+        "Fizika va kimyo",
+        "Foydalanuvchi interfeysi dizayni"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Freym modelida nima saqlanadi?",
+      "options": [
+        "Qarorlar va qoidalar",
+        "Mantiqiy ifodalar",
+        "Bilimlar va ularning bog‘lanishlari",
+        "Ma'lumotlar to‘plami"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Bilimlarni ajratib olishda qaysi texnologiyalar ishlatiladi?",
+      "options": [
+        "Dasturlash, tahlil",
+        "NLP, mashina o‘rganish",
+        "Sun'iy intellekt, mashina tarjimasi",
+        "Biometrik texnologiyalar"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Freym modelida nima saqlanadi?",
+      "options": [
+        "Qarorlar va qoidalar",
+        "Bilimlar va ularning bog‘lanishlari",
+        "Mantiqiy ifodalar",
+        "Ma'lumotlar to‘plami"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Produksion modellar qanday ishlaydi?",
+      "options": [
+        "Mantiqiy ifodalarga asoslanadi",
+        "Tabiat qonunlariga asoslanadi",
+        "Ma'lumotlarni yig‘ish va qayta ishlash",
+        "\"Agar-u holda\" shartlariga asoslanadi"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Protsessual bilim nima?",
+      "options": [
+        "Vazifalarni bajarish uchun kerakli bilimlar",
+        "Mashina o‘rganish natijalarini chiqarish",
+        "Ma'lumotlar bazasidan ma'lumotlarni olish jarayoni",
+        "Ma'lumotlarni yaxshilash jarayoni"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Ma'lumotlar bazasi bilan ekspert tizimi o‘rtasidagi farq nima?",
+      "options": [
+        "Ma'lumotlar bazasi faqat saqlash, ekspert tizimi qaror qabul qiladi",
+        "Ma'lumotlar bazasi va ekspert tizimi bir xil ishlaydi",
+        "Ekspert tizimi faqat saqlash, ma'lumotlar bazasi qaror qabul qiladi",
+        "Ikki tizim ham faqat ma'lumotlarni saqlaydi"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Qaror daraxti qanday ishlaydi?",
+      "options": [
+        "Ma'lumotlar bazasini boshqaradi",
+        "Qarorlarni qabul qilish uchun qoidalar tarmog‘ini yaratadi",
+        "Ma'lumotlarni ajratish orqali tasniflashni amalga oshiradi",
+        "Klasterlashni amalga oshiradi"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Mashina o‘rganishning asosiy maqsadi nima?",
+      "options": [
+        "Avtomatik ravishda tajriba asosida o‘rganish",
+        "Katta hajmdagi ma'lumotlarni saqlash",
+        "Har doim yangi ma'lumotlar olish",
+        "Yangi algoritmlarni yaratish"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Random forest nima?",
+      "options": [
+        "Kategoriyalash uchun ishlatiladi",
+        "Faqat lineyer model asosida ishlaydi",
+        "Ko‘p qaror daraxtlaridan tashkil topgan model",
+        "Ma'lumotlarni klasterlash uchun ishlatiladi"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Kuchli o‘rganish nima uchun ishlatiladi?",
+      "options": [
+        "Aniq algoritmlar yaratishda",
+        "Murakkab masalalarni hal qilishda",
+        "Yangi kategoriya yaratishda",
+        "Oddiy tahlilni amalga oshirishda"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Ma'lumotlarni klasterlash nima?",
+      "options": [
+        "Ma'lumotlarni alohida toifalarga ajratish",
+        "Ma'lumotlarni chiziqlarga ajratish",
+        "Oxshash ma'lumotlarni guruhlarga ajratish",
+        "Yangi kategoriya yaratish"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "GPT modeli nima?",
+      "options": [
+        "Kengaytirilgan matn yaratish uchun ishlatiladigan model",
+        "Kontekstga asoslangan matnni tushunish modeli",
+        "Sentiment tahlilini amalga oshiradigan model",
+        "Ma'lumotlarni klasterlash modelidir"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Ekspert tizimlarida bilimlar qanday taqdim etiladi?",
+      "options": [
+        "Vizual grafikalar orqali",
+        "Tizim resurslari orqali",
+        "Ma'lumotlar bazasi orqali",
+        "Qoidalar va protseduralar orqali"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Neyronning asosiy vazifasi nima?",
+      "options": [
+        "Signalni qabul qilish va qayta ishlash",
+        "Signalni yuborish va tarqatish",
+        "Faoliyatlar ro‘yxatini tuzish",
+        "Yangi bilimlar hosil qilish"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Neural network nima?",
+      "options": [
+        "Avtomatik ravishda o‘rganishni amalga oshiruvchi tizim",
+        "Faqat tasniflashni amalga oshiruvchi tizim",
+        "Ma'lumotlarni faqat saqlaydigan tizim",
+        "Xatoliklarni to‘g‘rilash tizimi"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Ekspert tizimlaridan foydalanishning asosiy afzalligi nima?",
+      "options": [
+        "Tizim foydalanuvchisiga tez va aniq maslahatlar berish",
+        "Yangi bilimlarni tezda hosil qilish",
+        "Foydalanuvchi interfeysi moslashuvchanligi",
+        "Kam resurs bilan ishlash imkoniyati"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "K-means algoritmi qanday ishlaydi?",
+      "options": [
+        "Yangi kategoriya bilan klasterlashni amalga oshiradi",
+        "Statik natijalarni chiqarish orqali guruhlaydi",
+        "Yangi tasnifni yaratish uchun toifalashni amalga oshiradi",
+        "Ma'lumotlarni k guruhga ajratadi, markazlarni yangilaydi"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Neyron tarmoqning qaysi qatlamida natija olinadi?",
+      "options": [
+        "Chiqish qatlamida",
+        "Har bir qatlamda alohida natija olinadi",
+        "Yashirin qatlamda",
+        "Kirish qatlamida"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Klasifikatsiya algoritmlarining misollari qaysilar?",
+      "options": [
+        "PCA, LDA, Naiv Bayes",
+        "K-means, SVM, XGBoost",
+        "Naiv Bayes, KNN, SVM",
+        "Random Forest, KNN, Linear Regression"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Klasterlash algoritmlarining misollaridan biri nima?",
+      "options": [
+        "Naiv Bayes",
+        "SVM",
+        "K-means",
+        "Logistic Regression"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Ekspert tizimining asosiy qismi bu?",
+      "options": [
+        "Tahlil va vizualizatsiya moduli",
+        "Foydalanuvchi interfeysi",
+        "Mijozlar bazasi",
+        "Bilimlar bazasi"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "KNN algoritmi qanday ishlaydi?",
+      "options": [
+        "Lineyer model asosida tasniflash",
+        "Mahalliy qo‘shni nuqtalar asosida tasniflash",
+        "Klasterlash asosida tasniflash",
+        "Har bir toifani o‘rganish asosida tasniflash"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Quyidagilardan qaysi biri aktivlashtirish funksiyasi emas?",
+      "options": [
+        "Sigmoid",
+        "ReLU",
+        "Logarifmik",
+        "Tangensial"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Boshqa algoritmlarni mukammallashtirishda qanday metodlar ishlatiladi?",
+      "options": [
+        "Giperparametrlarni sozlash, bagging",
+        "Klasterlash, qidiruv",
+        "Yangi parametrlarni qo‘shish",
+        "To‘liq ma'lumotlar bazasini tahlil qilish"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Mashina o‘rganish qanday metodlarga bo‘linadi?",
+      "options": [
+        "Faoliyatga asoslangan o‘rganish",
+        "Faqat nazoratli o‘rganish",
+        "Nazoratli, nazoratsiz va kuchli o‘rganish",
+        "Matnli o‘rganish"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Hozirgi kunda NLP uchun ishlatiladigan mashhur modellar qaysilar?",
+      "options": [
+        "SVM, PCA, K-means",
+        "BERT, GPT, T5",
+        "LSTM, CNN, SVM",
+        "Naiv Bayes, KNN, Random Forest"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Qo‘llaniladigan eng mashhur NLP kutubxonalari qaysilar?",
+      "options": [
+        "OpenCV, TensorFlow",
+        "NLTK, spaCy, Gensim",
+        "Scikit-learn, Matplotlib",
+        "Pandas, NumPy"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Neural network qanday ishlaydi?",
+      "options": [
+        "Kirish va chiqish o‘rtasida o‘rganish jarayonini amalga oshiradi",
+        "Naqshlarni aniqlash uchun ishlatiladi",
+        "Ma'lumotlarni tahlil qiladi va ma'lumotlarni qayta ishlashni amalga oshiradi",
+        "Klasterlash orqali tasniflashni amalga oshiradi"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "BERT modeli nima?",
+      "options": [
+        "Matnni yaratish modeli",
+        "Tahlil qilish uchun tasvirlarni ishlatadigan model",
+        "Ma'lumotlarni klasterlash modeli",
+        "Kontekstga asoslangan matnni tushunish modeli"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Sun'iy neyron qanday maqsadda ishlatiladi?",
+      "options": [
+        "Tizim resurslarini boshqarish",
+        "Ma'lumotlarni tartibga solish",
+        "Musteri xizmatlarini yaratish",
+        "Yashirin naqshlarni aniqlash va qarorlar qabul qilish"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "SVM algoritmi nima?",
+      "options": [
+        "Ma'lumotlarni klasterlash orqali tasniflash",
+        "Kategoriyalash uchun naiv Bayesni ishlatish",
+        "Yangi ma'lumotlarni toifalash uchun eng yaxshi ajratuv chiziqlarini topish",
+        "Yangi ma'lumotlarni k-means algoritmi bilan guruhlarga ajratish"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Kuchli o‘rganishning muammolari nimalardan iborat?",
+      "options": [
+        "Tarmoqni optimallashtirish",
+        "Minimal vaqt talab etilishi",
+        "To‘g‘ri ta'lim ma'lumotlarini olish, ko‘p vaqt talab etilishi",
+        "Kam resurs bilan ishlash"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Ekspert tizimi qanday muammolarni hal qilishda samarali?",
+      "options": [
+        "Yangi texnologiyalarni o‘rganish",
+        "Faqat kompyuter dasturlarini yaratish",
+        "Murakkab va noma'lum muammolarni hal qilishda",
+        "Ma'lumotlar bazasini boshqarish"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Neyron tarmoq qanday biologik tizimdan ilhomlangan?",
+      "options": [
+        "Inson miya",
+        "Mikroorganizm tizimi",
+        "O‘simliklar hujayralari",
+        "Hayvonlarning nerv tizimi"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Deep learning nima?",
+      "options": [
+        "Oddiy algoritmlar asosida o‘rganish",
+        "Ma'lumotlarni aniq tahlil qilish",
+        "Kategoriyalashni amalga oshirish",
+        "Kengaytirilgan neyron tarmoqlaridan foydalangan o‘rganish"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Ekspert tizimi qanday ishlaydi?",
+      "options": [
+        "Faqat matematik hisobotlarni tayyorlaydi",
+        "Bilimlar bazasidan ma'lumotlarni olib, foydalanuvchiga yechim taklif etadi",
+        "Faoliyatlar ro‘yxatini yaratadi",
+        "Yangi bilimlarni hosil qiladi"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Ikki tomonlama qidiruvning (Bidirectional Search) asosiy afzalligi nima?",
+      "options": [
+        "Faqat bir tomonlama ishlaydi",
+        "Hech qanday afzalligi yo‘q",
+        "Xotira talab etadi",
+        "Qidiruvni tezlashtiradi"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Axborotsiz qidiruv algoritmlarining umumiy xususiyati qaysi?",
+      "options": [
+        "Ma'lumotlar to'liq bilib olinmaydi",
+        "Qidiruv jarayonida ko'proq vaqt talab etiladi",
+        "Hech qanday yordamchi ma'lumotlardan foydalanilmaydi",
+        "Faqat qat'iy qoidalar asosida ishlaydi"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Mustahkamlangan o'qitish usuli qaysi sohalarda keng qo'llaniladi?",
+      "options": [
+        "Raqamli marketingda",
+        "Tibbiyotda",
+        "Texnologiyada",
+        "O'yinlar va robototexnikada"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Text mining nima?",
+      "options": [
+        "Matnni sinflarga ajratish",
+        "Matnlarni tahlil qilish va ulardan bilimlar olish jarayoni",
+        "Matnni normallashtirish",
+        "Ma'lumotlarni klasterlash"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Matnni to‘g‘rilash va aniqlikni oshirishda qanday metodlar qo‘llaniladi?",
+      "options": [
+        "Ma'lumotlarni vizualizatsiya qilish",
+        "Sentiment tahlili, klasterlash",
+        "Satrlarni qisqartirish",
+        "Grammatik tahlil, lemmatizatsiya"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Chuqurlik bilan cheklangan qidiruvning asosiy afzalligi nima?",
+      "options": [
+        "Resurslar bilan samarali ishlaydi",
+        "Har doim samarali ishlaydi",
+        "Har doim to'g'ri natija beradi",
+        "Ko'p vaqt talab etadi"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Chiziqli qidiruv -bu?",
+      "options": [
+        "Ma'lumotlarni qismli qidirish",
+        "Ma'lumotlarni tasodifiy ravishda qidirish",
+        "Ma'lumotlarni birma-bir tekshirish jarayoni",
+        "Hech qanday qidiruv jarayoni emas"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Teng masshtabda joylashtirish-bu?",
+      "options": [
+        "Ma'lumotlarni vizualizatsiya qilish",
+        "Ma'lumotlarni tozalash",
+        "Ma'lumotlarni tahlil qilish",
+        "Ma'lumotlarni bir-biriga teng bo‘lgan o‘lchamda ko'rsatish jarayoni"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Stemming va lemmatizatsiya farqi nima?",
+      "options": [
+        "Lemmatizatsiya faqat matnni tahlil qiladi",
+        "Stemming faqat ma'lumotlarni normalizatsiya qiladi",
+        "Stemming so‘z ildizini olib, lemmatizatsiya to‘g‘ri leksik shaklni beradi",
+        "Stemming va lemmatizatsiya bir xil jarayonlardir"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Sentiment tahlilini qaysi algoritmlar amalga oshiradi?",
+      "options": [
+        "PCA, LDA, K-means",
+        "Naiv Bayes, K-means",
+        "KNN, SVM, Linear Regression",
+        "Naiv Bayes, LSTM, BERT"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "NLP da sentiment tahlili nima?",
+      "options": [
+        "Matnni tasniflash",
+        "Matnning hissiy holatini aniqlash",
+        "Klasterlash orqali matnlarni guruhlarga ajratish",
+        "Matndan yangi ma'lumotlarni chiqarish"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Maʼlumotlarni tozalash yoki maʼlumotlarni oldindan qayta ishlash (data cleaning) - bu?",
+      "options": [
+        "Ma'lumotlarni saqlash",
+        "Noto'g'ri, yo'qolgan yoki keraksiz ma'lumotlarni tozalash jarayoni",
+        "Ma'lumotlarni tahlil qilish jarayoni",
+        "Ma'lumotlarni vizualizatsiya qilish jarayoni"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Maʼlumotlarni siqish (data compression) - bu?",
+      "options": [
+        "Ma'lumotlarni saqlash",
+        "Ma'lumotlarni hajmini kamaytirish jarayoni",
+        "Ma'lumotlarni o'zgartirish",
+        "Ma'lumotlarni tahlil qilish"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Text miningda qaysi usullar ishlatiladi?",
+      "options": [
+        "Naiv Bayes, SVM",
+        "Faollikni baholash, regresiya",
+        "Klasterlash, vizualizatsiya",
+        "Klasterlash, tasniflash, sentiment tahlili"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "NLP da named entity recognition nima?",
+      "options": [
+        "Matnni tasniflash",
+        "Matndagi klasterlarni aniqlash",
+        "Sentimentni tahlil qilish",
+        "Matnda ma'lum bir shaxs, joy yoki tashkilotni aniqlash"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "NLP da lemmatizatsiya nima?",
+      "options": [
+        "So‘zning ildiz shaklini olish jarayoni",
+        "Matnni tahlil qilish",
+        "Ma'lumotlarni normalizatsiya qilish",
+        "So‘zning asosiy shaklini olish jarayoni"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Chuqurlik bilan cheklangan qidiruv (DLS) qanday afzallikka ega?",
+      "options": [
+        "Resurslar bilan samarali ishlaydi",
+        "Yangi ma'lumotlardan foydalanish imkoniyati yuqori",
+        "Hech qanday afzallik yo‘q",
+        "Ko'p vaqt talab etadi"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "NLP’da kontekstual ma'lumotlarni qanday tahlil qilish mumkin?",
+      "options": [
+        "KNN yordamida",
+        "Naiv Bayes yordamida",
+        "BERT kabi modellar yordamida",
+        "Stemming va lemmatizatsiya yordamida"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Mashina o‘rganishda ehtimollik va statistika qanday ishlatiladi?",
+      "options": [
+        "Kutilgan natijalarni bashorat qilish",
+        "Klasterlashni amalga oshirish",
+        "Yangi parametrlarni sozlash",
+        "Ma'lumotlarni transformatsiya qilish"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Qiymatlarni diskretlashtirish - bu?",
+      "options": [
+        "Ma'lumotlarni tahlil qilish jarayoni",
+        "Ma'lumotlarni tozalash jarayoni",
+        "Ma'lumotlarni normallashtirish",
+        "Uzunlik, vazn yoki boshqa davomli o'zgaruvchilarni ma'lum bir oralig'ga qisqartirish jarayoni"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "NLP tahlilida ma'lumotlar preprotsessing jarayoni nima?",
+      "options": [
+        "Ma'lumotlarni tozalash, normalizatsiya qilish",
+        "Ma'lumotlarni tahlil qilish",
+        "Faollikni baholash",
+        "Matnni lemmatizatsiya qilish"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Mashinali o'qitishning qaysi turi belgilangan(yorliqlangan) ma'lumotlardan foydalanadi?",
+      "options": [
+        "Mustahkamlangan o'qitish",
+        "Nazoratsiz o'qitish",
+        "Nazoratli o'qitish",
+        "Yoritilgan o'qitish"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Ma'lumotlarni qidirish algoritmlari (Data search) -bu?",
+      "options": [
+        "Ma'lumotlarni tez va samarali tarzda topish jarayoni",
+        "Ma'lumotlarni tahlil qilish",
+        "Ma'lumotlarni saqlash jarayoni",
+        "Ma'lumotlarni tozalash"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Qiymatlarni tabiiy bogʻlash (Data binning) - bu?",
+      "options": [
+        "Faollikni baholash",
+        "Ma'lumotlarni ma'lum oraliqlarga bo'lish jarayoni",
+        "Ma'lumotlarni kategoriyalash",
+        "Ma'lumotlarni tozalash jarayoni"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Kenglik-birinchi qidiruv (BFS) qanday ma’lumot tuzilmasidan foydalanadi?",
+      "options": [
+        "Matritsadan",
+        "Faqat ro‘yxatdan",
+        "Hech qanday ma'lumot tuzilmasi talab qilinmaydi",
+        "Graf yoki daraxt strukturasidan"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Teng chastotali bog‘lash (Binning)-bu?",
+      "options": [
+        "Ma'lumotlarni statistik tahlil qilish",
+        "Ma'lumotlarni normalizatsiya qilish",
+        "Ma'lumotlarni saqlash",
+        "Ma'lumotlarni teng sonli guruhlarga bo‘lish jarayoni"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Oʻrtacha/median rejimdan foydalanish ma'lumotlarni qayta ishlashning qaysi bosqichi hisoblanadi?",
+      "options": [
+        "Transformatsiya qilish",
+        "Vizualizatsiya qilish",
+        "Tahlil qilish",
+        "Tozalash"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "O'qituvchisiz o'qitish qanday ma'lumotlardan foydalanadi?",
+      "options": [
+        "Belgilangan ma'lumotlar",
+        "Yalpi ma'lumotlar",
+        "Jamoa tomonidan tasdiqlangan ma'lumotlar",
+        "Yorliqlanmagan ma'lumotlar"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Chuqurlikdagi birinchi qidiruv (Depth first search yoki DFS) algoritmi qaysi kamchilikka ega?",
+      "options": [
+        "Tez bajarilmaydi",
+        "Ko'p xotira talab qiladi",
+        "Yangi ma'lumotlardan foydalanilmaydi",
+        "Avtomatik ravishda ishlamaydi"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Gradiyent tushish algoritmining asosiy vazifasi nima?",
+      "options": [
+        "Modelni yangilash",
+        "Modelni oddiylashtirish",
+        "Xatolikni minimallashtirish uchun parametrlarni optimallashtirish",
+        "Modelni murakkablashtirish"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Stoxastik Gradiyent pastlash qachon ishlatiladi?",
+      "options": [
+        "Modelni yanada murakkablashtirish uchun",
+        "Butun trening to'plami bilan gradiyent yangilanishi",
+        "Har bir ma'lumot nuqtasi uchun gradiyent yangilanishi",
+        "Kichik o'lchovdagi ma'lumotlar bilan ishlash"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Haqiqiy ijobiylar (True Positive TP) qanday ma'no anglatadi?",
+      "options": [
+        "Model to'g'ri salbiy natijani berdi",
+        "Model noto'g'ri salbiy natijani berdi",
+        "Model noto'g'ri ijobiy natijani berdi",
+        "Model to'g'ri ijobiy natijani berdi"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Shovqin modelda qanday rol o'ynaydi?",
+      "options": [
+        "Modelning umumlashtirish qobiliyatini pasaytiradi",
+        "Modelni yanada murakkablashtiradi",
+        "Ma'lumotlarni yaxshilaydi",
+        "Modelni optimallashtiradi"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Bias (ozod had) qanday ahamiyatga ega?",
+      "options": [
+        "Modelni oddiylashtiradi",
+        "Modelni murakkablashtiradi",
+        "Modelni sozlashda qaysidir xatolikni kamaytiradi",
+        "Modelni tartibga soladi"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Mini-Batch Gradiyent pastlash algoritmi qanday afzalliklarga ega?",
+      "options": [
+        "Modelni oddiylashtiradi",
+        "Tezroq natijalarga erishish imkonini beradi",
+        "Modelni kompleks qiladi",
+        "Modelni optimal natijalarga keltiradi"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Normallashtirish orqali qiymatlar qaysi oraliqqa keltiriladi?",
+      "options": [
+        "1 va 10 oralig'ida",
+        "0 va 1 oralig'ida",
+        "-1 va 1 oralig'ida",
+        "-5 va 5 oralig'ida"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Normallashtirishning asosiy maqsadi nima?",
+      "options": [
+        "Ma'lumotlarni baholash",
+        "Ma'lumotlarni saqlash",
+        "Ma'lumotlarni yagona o'lchovlarga keltirish",
+        "Ma'lumotlarni sinflarga ajratish"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Chiziqli regressiya qaysi turdagi qiymatlarni bashorat qilish uchun ishlatiladi?",
+      "options": [
+        "Uzluksiz qiymatlar",
+        "Diskret qiymatlar",
+        "Tasniflangan qiymatlar",
+        "Kategoriyalar"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "O‘qituvchili o‘qitishda mashinalar qanday ma’lumotlardan foydalanadi?",
+      "options": [
+        "Belgilangan (yorliqlangan) ma'lumotlar",
+        "Belgilanmagan ma'lumotlar",
+        "Soddalashtirilgan ma'lumotlar",
+        "Ma'lumotlar to'plami"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Quyidagi ma'lumotning normallashtirilgan qiymatini hisoblang: Xi=5, Xmin=1, Xmax=10",
+      "options": [
+        "0.75",
+        "0.444",
+        "0.5",
+        "1"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Notoʻg‘ri negativlar (False Negative FN) qanday ma'no anglatadi?",
+      "options": [
+        "Model noto'g'ri salbiy natijani berdi",
+        "Model to'g'ri salbiy natijani berdi",
+        "Model to'g'ri ijobiy natijani berdi",
+        "Model noto'g'ri ijobiy natijani berdi"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Aniqlikni (Precision) hisoblash-bu?",
+      "options": [
+        "Noto'g'ri salbiy natijalarni jami salbiy natijalar soniga bo'lish",
+        "Noto'g'ri ijobiy natijalarni jami ijobiy natijalar soniga bo'lish",
+        "To'g'ri ijobiy natijalarni jami ijobiy natijalar soniga bo'lish",
+        "To'g'ri ijobiy natijalarni jami salbiy natijalar soniga bo'lish"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Haqiqiy negativlar (True Negative TN) qanday ma'no anglatadi?",
+      "options": [
+        "Model to'g'ri ijobiy natijani berdi",
+        "Model noto'g'ri ijobiy natijani berdi",
+        "Model to'g'ri salbiy natijani berdi",
+        "Model noto'g'ri salbiy natijani berdi"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Stoxastik Gradiyent pastlash algoritmi qanday ishlaydi?",
+      "options": [
+        "Har bir iteratsiyada faqat biror kichik to'plam bilan ishlaydi",
+        "Har bir ma'lumot nuqtasi uchun gradiyentni yangilaydi",
+        "Modelning faqat qisman xatoliklarini hisoblaydi",
+        "Butun ma'lumotlar to'plamidan foydalanadi"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Notoʻg‘ri pozitivlar (False Positive FP) qanday ma'no anglatadi?",
+      "options": [
+        "Model noto'g'ri ijobiy natijani berdi",
+        "Model noto'g'ri salbiy natijani berdi",
+        "Model to'g'ri salbiy natijani berdi",
+        "Model to'g'ri ijobiy natijani berdi"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Chiziqli regressiyada qiymat funksiyasi qanday asosiy maqsadni bajaradi?",
+      "options": [
+        "Modelni soddalashtirish",
+        "Modelni murakkablashtirish",
+        "Yaxshi fit (moslashish)ni ta'minlash",
+        "Modelni optimallashtirish"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Variance qanday muammo bilan bog'liq?",
+      "options": [
+        "O'rgatish ma'lumotlaridan haddan tashqari moslashish",
+        "Modelning murakkabligi",
+        "O'rgatish ma'lumotlaridan yomon moslashish",
+        "Modelni qayta tiklash"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Standartlashtirish jarayonida μ nimani ifodalaydi?",
+      "options": [
+        "Me'yor",
+        "O'rtacha qiymat",
+        "Og'irlik",
+        "Varians"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Chiziqli regressiyada gradiyent va bias qiymatlari qanday aniqlanadi?",
+      "options": [
+        "Xatolikni kamaytirish uchun o'zgartirishlar qilish",
+        "Ma'lumotlarni tezda qayta ishlash orqali",
+        "Gradiyentni va biasni xatolik funksiyasiga asoslanib optimallashtirish",
+        "O'zgartirishlar kiritish orqali modelni test qilish"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Gradiyent tushishning qanday turlari mavjud?",
+      "options": [
+        "Oddiy va murakkab",
+        "Faqat batch",
+        "Yalpi va o'zgaruvchan",
+        "Batch, Mini-Batch, Stoxastik"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Mashinali o‘qitishda loss funksiyasining vazifasi nima?",
+      "options": [
+        "Modelni mukammallashtirish",
+        "Modelning xatolik darajasini o'lchash",
+        "Modelni baholash",
+        "O'qitishning natijalarini tasniflash"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Chalkashlik matritsasi (Confusion Matrix) asosan qaysi masalalarni yechishda foydalaniladi?",
+      "options": [
+        "Normalizatsiya masalalari",
+        "Klassifikatsiya masalalari",
+        "Klasterlash masalalari",
+        "Regresiya masalalari"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Gradiyent pastlashning asosiy maqsadi nima?",
+      "options": [
+        "Modelni yaratish",
+        "Modelni o'zgartirish",
+        "Xatolikni minimallashtirish",
+        "Modelni maksimal darajada yangilash"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Batch Gradiyent pastlash algoritmi qachon ishlatiladi?",
+      "options": [
+        "Modelni optimallashtirishda",
+        "Modelni sinovdan o'tkazishda",
+        "Butun trening to'plami bilan ishlashda",
+        "Bir ma'lumot bilan ishlashda"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Normallashtirishning asosiy vazifasi nima?",
+      "options": [
+        "Modelni optimallashtirish",
+        "Ma'lumotlarni yagona o'lchovlarga keltirish",
+        "Modelning aniqligini oshirish",
+        "Ma'lumotlarni saqlash"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Batch Gradiyent pastlashda qanday kamchilik mavjud?",
+      "options": [
+        "Yaxshi natijalarga erishish uchun ko'p vaqt talab etadi",
+        "Tez ishlaydi",
+        "Modelni to'liq o'qitadi",
+        "Natijalar doimiy ravishda yomonlashadi"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Normallashtirish nima uchun qo'llaniladi?",
+      "options": [
+        "Ma'lumotlarni o'zgartirish",
+        "Ma'lumotlarni tozalash",
+        "Natijalarni saqlash",
+        "Ma'lumotlarning turli o'lchovlarini yagona o'lchovlarga keltirish"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Oʻrta kvadratik xatolik (Mean Squared Error MSE) asosiy vazifasi nima?",
+      "options": [
+        "Modelni optimallashtirish",
+        "Modelni yangilash",
+        "Modelning xatoliklarini o'lchash",
+        "Modelni baholash"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Mini-Batch Gradiyent pastlashda \"b\" nimani anglatadi?",
+      "options": [
+        "Kichik hajmdagi ma'lumotlar",
+        "Batch o'lchami",
+        "Gradiyentni yangilash usuli",
+        "O'rtacha qiymat"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Oldinga harakatlanuvchi neyron tarmoqda qatlamlar orasidagi funksiyalarni qanday ataladi?",
+      "options": [
+        "Biaslar",
+        "Aktivatsiya funksiyalari",
+        "Sigmoid funksiyalar",
+        "Gradiyentlar"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Sigmoid funksiyasining qiymatlari qaysi oraliqda bo‘ladi?",
+      "options": [
+        "0 va 1",
+        "0 va +∞",
+        "-1 va 1",
+        "-∞ va +∞"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Logistik regressiyaning asosiy vazifasi qanday?",
+      "options": [
+        "Ikkilamchi tasniflash masalalarini hal qilish",
+        "Kategorik qiymatlarni bashorat qilish",
+        "Uzluksiz qiymatlarni bashorat qilish",
+        "Xatoliklarni kamaytirish"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "SVM algoritmi qanday muammoni hal qilishda ishlatiladi?",
+      "options": [
+        "Klassifikatsiya",
+        "Regresiya",
+        "Klasterlash",
+        "O'zgarishlarni aniqlash"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Polinomial regressiyaning qaysi darajasi murakkab modelni ifodalaydi?",
+      "options": [
+        "Statik daraja",
+        "Past daraja",
+        "O'rtacha daraja",
+        "Yuqori daraja"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Ko‘p qatlamli perseptronning (KQP) asosiy maqsadi nima?",
+      "options": [
+        "Modelni optimallashtirish",
+        "Murakkab munosabatlarni modellashtirish",
+        "Oddiy muammolarni hal qilish",
+        "Xatoliklarni kamaytirish"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Gradiyent tushish algoritmi nima uchun ishlatiladi?",
+      "options": [
+        "Modelning parametrlarini o'zgartirish",
+        "Ma'lumotlarni tahlil qilish",
+        "Modelni faollashtirish",
+        "Modelning xatolik funksiyasini minimallashtirish"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Chuqur o‘qitishda neyron tarmoq qanday usuldan foydalanib o‘rganadi?",
+      "options": [
+        "Kategorik o'qitish",
+        "Backpropagation (orqaga tarqatish) usuli",
+        "Regresyon usuli",
+        "Klasterlash usuli"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Back Propagation Error (BP) algoritmi nima?",
+      "options": [
+        "Modeldagi xatolikni orqaga tarqatish",
+        "Aktivatsiyani optimallashtirish",
+        "Ma'lumotni qayta ishlash",
+        "Modelni optimallashtirish"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "O'rta kvadratik xatolik (MSE) funksiyasi qanday ishlaydi?",
+      "options": [
+        "Modelni baholash",
+        "Modelning prognozlari va haqiqiy qiymatlar o'rtasidagi farqni kvadratlash",
+        "Xatoliklarni kamaytirish",
+        "O'rtacha qiymatni hisoblash"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "K-NN algoritmi qaysi muammolarni hal qilishda keng qo'llaniladi?",
+      "options": [
+        "Klassifikatsiya va regressiya",
+        "Tasniflash",
+        "Klasterlash",
+        "Optimallashtirish"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Regulyarizatsiya nima?",
+      "options": [
+        "Modelning haddan tashqari moslashishini oldini olish uchun qo'llaniladigan texnika",
+        "Modelni optimallashtirish",
+        "Ma'lumotlarning o'lchamini oshirish",
+        "Modelni tezlashtirish uchun qo'llaniladigan usul"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Ridge regressiyasi qanday usul?",
+      "options": [
+        "L1 regulyarizatsiyasi",
+        "Kategorik regressiya",
+        "Polinomial regressiya",
+        "L2 regulyarizatsiyasi"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Oldinga harakatlanuvchi neyron tarmoqda qaysi qatlam kirish ma’lumotlarini qabul qiladi?",
+      "options": [
+        "Yashirin qatlam",
+        "Aktivatsiya qatlam",
+        "Chiqish qatlam",
+        "Kirish qatlam"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "K-Means Clustering qanday turdagi algoritm?",
+      "options": [
+        "O'zgaruvchan algoritm",
+        "Klasterlash algoritmi",
+        "Tasniflash algoritmi",
+        "Regresyon algoritmi"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "SVM algoritmida qaror chegarasini qanday ataladi?",
+      "options": [
+        "Optimal o'lchov",
+        "Qaror o'lchovi",
+        "Giperplan",
+        "Ikkilamchi faza"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Chuqur o‘qitish algoritmlarida ishlatiladigan neyron tarmoqlari qaysi qatlamlardan iborat?",
+      "options": [
+        "Kirish va chiqish qatlamlari",
+        "Yalpi qatlamlar",
+        "Kirish, yashirin va chiqish qatlamlari",
+        "Faqat yashirin qatlamlar"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Lasso regressiyasining afzalligi nima?",
+      "options": [
+        "Kam xatolikni beradi",
+        "O'zgaruvchilarni tanlab olish imkoniyatini beradi",
+        "Tez ishlaydi",
+        "Ko'p o'zgaruvchilarni qo'llaydi"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Chuqur o‘qitish nima?",
+      "options": [
+        "Ma'lumotlarni tahlil qilish",
+        "Modelni oddiylashtirish",
+        "Modelni tezlashtirish",
+        "Neyron tarmoqlarini o'rganish usuli"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Neyron tarmoqlaridagi faollashtirish funksiyasi nima?",
+      "options": [
+        "Modelning umumlashtirishini ta'minlash",
+        "Neyronning chiqishini hisoblash",
+        "Xatolikni aniqlash",
+        "Modelni optimallashtirish"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Ensemble learning nima?",
+      "options": [
+        "Ma'lumotlarni optimallashtirish",
+        "Yangi model yaratish",
+        "Bir nechta modelning natijalarini birlashtirish",
+        "Modelni tezlashtirish"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "SVM algoritmida giperplan yordamida nima aniqlanadi?",
+      "options": [
+        "Modelni sinovdan o'tkazish",
+        "Modelning umumlashtirish qobiliyati",
+        "Qaror chegarasi",
+        "Modelning xatolik darajasi"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Evklid masofasining asosiy vazifasi nima?",
+      "options": [
+        "Ma'lumotlar orasidagi masofani o'lchash",
+        "Klasterlarni aniqlash",
+        "Modelning xatoliklarini o'lchash",
+        "Yaqin qo'shnilarni tanlash"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "K-NN algoritmida test ma'lumotlari qanday tasniflanadi?",
+      "options": [
+        "Yalpi hisob-kitob orqali",
+        "Ikkita ma'lumotning orasidagi masofa asosida",
+        "O'rgatish to'plamiga qarab",
+        "O'rgatish ma'lumotlariga eng yaqin bo'lgan qo'shnilar asosida"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "K-Means klasterlash algoritmining to‘g‘ri vazifalaridan biri qaysi?",
+      "options": [
+        "Tasniflash natijalarini olish",
+        "Modelni baholash",
+        "Ma'lumotlarni klasterlarga ajratish",
+        "Ma'lumotlarni regressiya qilish"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Chuqur o‘qitish tarmoqlarining \"chuqurligi\" nimani anglatadi?",
+      "options": [
+        "Yashirin qatlamlarning tezligi",
+        "Modelning o'lchami",
+        "Modelning murakkabligi",
+        "Neyron tarmog‘idagi qatlamlar soni"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Polinomial regressiyaning asosiy vazifasi nima?",
+      "options": [
+        "Kattaroq va murakkab o'zgarishlarni modellashtirish",
+        "Xatoliklarni kamaytirish",
+        "Modelni soddalashtirish",
+        "Oddiy regressiya modellari yaratish"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "K-NN algoritmidagi Evklid masofasi nima uchun ishlatiladi?",
+      "options": [
+        "Ma'lumotlarni tasniflash",
+        "Test ma'lumotlarini tartiblash",
+        "Kiritilgan nuqtalar orasidagi masofani hisoblash",
+        "Modelning optimal parametrlarini aniqlash"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Boshlang‘ich klaster markazlari qanday tanlanadi?",
+      "options": [
+        "Yaqin qiymatlar asosida",
+        "Tasodifiy tanlov",
+        "O'rtacha qiymatlarni hisoblash",
+        "Eng katta o'lchovdan foydalanish"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Support Vector Machine (SVM) algoritmi qaysi hollarda ishlatiladi?",
+      "options": [
+        "Klassifikatsiya masalalarini hal qilish",
+        "Regresyon masalalarini hal qilish",
+        "Klasterlash",
+        "O'zgaruvchan parametrlarni hisoblash"
+      ],
+      "correct": 0
+    }
+  ]
+}

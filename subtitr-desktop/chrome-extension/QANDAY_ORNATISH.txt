@@ -1,0 +1,31 @@
+Subtitr Grabber — Chrome kengaytmasini o'rnatish
+=================================================
+
+Bu kengaytma kino/video saytlaridagi yashirin video oqim havolalarini
+(m3u8, mp4) aniqlab, bir bosishda nusxalab beradi. Keyin uni Subtitr
+Desktop ilovasiga joylashtirib, video yuklaysiz.
+
+O'RNATISH (bir marta):
+1. Chrome'ni oching.
+2. Manzil qatoriga yozing:  chrome://extensions
+3. O'ng yuqoridagi "Developer mode" (Dasturchi rejimi) ni YOQING.
+4. "Load unpacked" (Ochilgan holda yuklash) tugmasini bosing.
+5. Shu "chrome-extension" papkasini tanlang.
+6. Tayyor — asboblar panelida logo paydo bo'ladi.
+
+ISHLATISH:
+1. Istalgan kino saytini oching va videoni O'YNATING (Play bosing).
+   (Video o'ynaganda oqim havolasi aniqlanadi.)
+2. Chrome asboblar panelidagi Subtitr logosini bosing.
+3. Topilgan havola yonidagi "Nusxa olish" ni bosing.
+4. Subtitr Desktop ilovasini oching, havola maydoniga Ctrl+V bilan
+   joylashtiring va "Videoni yuklash" yoki "Yuklab + yozish" ni bosing.
+
+MASLAHAT:
+- Agar ro'yxat bo'sh bo'lsa: videoni bir necha soniya o'ynating, keyin
+  kengaytma oynasini qayta oching.
+- Bir nechta havola chiqsa, odatda eng yuqoridagi (HLS m3u8) to'g'ri keladi.
+- "Sahifa havolasini nusxalash" — oddiy saytlar (YouTube va h.k.) uchun.
+
+ESLATMA: DRM bilan himoyalangan platformalar (Netflix, Disney+ va h.k.)
+ishlamaydi — bu texnik va qonuniy jihatdan mumkin emas.

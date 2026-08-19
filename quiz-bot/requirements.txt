@@ -1,0 +1,6 @@
+aiogram>=3.7,<4
+aiohttp>=3.9
+asyncpg>=0.29
+python-dotenv>=1.0
+# Ixtiyoriy: natija kartochkasi (sertifikat) rasmi uchun. Bo'lmasa matnli natija ishlaydi.
+Pillow>=10.0

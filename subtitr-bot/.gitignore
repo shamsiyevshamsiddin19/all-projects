@@ -1,0 +1,41 @@
+# --- Maxfiy (HECH QACHON commit qilinmasin) ---
+.env
+.env.local
+*.session
+*.pem
+*.key
+# YouTube/Instagram login cookie'lari
+cookies.txt
+*cookies*.txt
+www.*_cookies*.txt
+# Ma'lumotlar bazasi (foydalanuvchi ma'lumotlari)
+*.db
+*.sqlite
+*.sqlite3
+# Server tunnel URL va zaxiralar
+.tunnel_url
+_backups/
+
+# --- Ishchi/vaqtinchalik fayllar ---
+tmp/
+downloads/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# --- Natija/media fayllar ---
+*.mp4
+*.wav
+*.mp3
+*.ogg
+*.srt
+*.ass
+*.name
+*.title
+
+# --- IDE/OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

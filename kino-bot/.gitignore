@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+kino_export.json
+kino.zip
+*.log

@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Subtitr Grabber",
+  "version": "1.0.0",
+  "description": "Sahifadagi video oqim havolalarini (m3u8 / mp4) aniqlab, Subtitr Desktop uchun nusxalaydi.",
+  "permissions": ["webRequest", "storage", "tabs"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Subtitr Grabber",
+    "default_icon": { "128": "icon128.png" }
+  },
+  "icons": { "128": "icon128.png" }
+}

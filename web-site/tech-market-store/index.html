@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TECH.MARKET - E-Commerce</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Icons: Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <link rel="stylesheet" href="./assets/css/style.css">
+</head>
+<body>
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="container top-bar-inner">
+            <div class="top-bar-left">
+                <span class="top-bar-item"><i class="ph ph-shield-check"></i> TechMarket Commerce - Always free delivery</span>
+                <span class="top-bar-item"><i class="ph ph-medal"></i> Quality guarantee of products</span>
+                <span class="top-bar-item"><i class="ph ph-arrow-counter-clockwise"></i> Fast return program</span>
+                <span class="top-bar-item">No additional fees</span>
+            </div>
+            <div class="top-bar-right">
+                <a href="#" class="top-bar-item"><i class="ph ph-truck"></i> Track Your Order</a>
+                <span class="top-bar-item"><i class="ph ph-gift"></i> Bonus Upto 5%</span>
+                <div class="dropdown">
+                    <span class="dropdown-toggle">🇺🇸 English (US) <i class="ph ph-caret-down"></i></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="main-header">
+        <div class="container header-inner">
+            <div class="logo">
+                <h1>TECH<span>.MARKET</span></h1>
+            </div>
+            
+            <div class="header-search-area">
+                <button class="departments-btn">
+                    <i class="ph ph-list"></i> All Departments <i class="ph ph-caret-down"></i>
+                </button>
+                <form class="search-form">
+                    <input type="text" placeholder="Search for products...">
+                    <div class="category-select">
+                        <span class="dropdown-toggle">All Categories <i class="ph ph-caret-down"></i></span>
+                    </div>
+                    <button type="submit" class="search-btn">Search</button>
+                </form>
+            </div>
+
+            <div class="header-actions">
+                <a href="#" class="action-btn"><i class="ph ph-arrows-left-right"></i></a>
+                <a href="#" class="action-btn"><i class="ph ph-heart"></i></a>
+                <a href="#" class="action-btn cart-btn">
+                    <div class="cart-icon">
+                        <i class="ph ph-shopping-cart"></i>
+                        <span class="badge">2</span>
+                    </div>
+                </a>
+                <div class="user-account">
+                    <i class="ph ph-user"></i>
+                    <div class="user-info">
+                        <span class="greeting">Hi, John</span>
+                        <span class="balance">$2,315.99 <i class="ph ph-caret-down"></i></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Breadcrumbs -->
+    <div class="breadcrumbs">
+        <div class="container">
+            <a href="#">Home</a> <i class="ph ph-caret-right"></i>
+            <a href="#">Smartphones & Tablets</a> <i class="ph ph-caret-right"></i>
+            <a href="#">Smartphones</a> <i class="ph ph-caret-right"></i>
+            <span class="current">Smartphone Accessories</span>
+        </div>
+    </div>
+
+    <!-- Main Layout -->
+    <div class="container main-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-widget categories-widget">
+                <div class="widget-header">
+                    <h3>All Categories <i class="ph ph-caret-right"></i></h3>
+                </div>
+                <ul class="category-list">
+                    <li><a href="#">Computers & Laptops <span>(40)</span></a></li>
+                    <li class="active has-children">
+                        <a href="#">Laptops <span>(14)</span> <i class="ph ph-caret-down"></i></a>
+                        <ul class="sub-category-list">
+                            <li><a href="#">Business <span>(10)</span></a></li>
+                            <li><a href="#">Touch Screen <span>(3)</span></a></li>
+                            <li><a href="#">Gaming <span>(4)</span></a></li>
+                            <li><a href="#">Refurbished <span>(25)</span></a></li>
+                        </ul>
+                    </li>
+                    <li><a href="#">Ultrabooks <span>(06)</span></a></li>
+                    <li><a href="#">Notebooks <span>(09)</span></a></li>
+                    <li><a href="#">Desktop PCs <span>(14)</span></a></li>
+                    <li><a href="#">Mac Computers <span>(3)</span></a></li>
+                    <li><a href="#">All in One PC <span>(6)</span></a></li>
+                    <li><a href="#">Gaming <span>(11)</span></a></li>
+                    <li><a href="#">Peripherals <span>(21)</span></a></li>
+                    <li><a href="#">Speakers <span>(14)</span></a></li>
+                    <li><a href="#">Printers & Inks <span>(6)</span></a></li>
+                    <li><a href="#">Routers <span>(06)</span></a></li>
+                    <li><a href="#">PC Components <span>(22)</span></a></li>
+                </ul>
+            </div>
+
+            <!-- Promotion Banners -->
+            <div class="sidebar-banner power-bank-banner">
+                <div class="banner-content">
+                    <h4>1000 mAh</h4>
+                    <p>Power Bank Pro</p>
+                    <div class="price">$ 34.99</div>
+                    <a href="#" class="btn-outline">Buy Now</a>
+                </div>
+            </div>
+
+            <div class="sidebar-banner accessories-banner">
+                <div class="banner-content">
+                    <p>New Arrivals in</p>
+                    <h4>Accessories</h4>
+                    <p>at Best prices</p>
+                    <a href="#" class="btn-outline">View all</a>
+                </div>
+            </div>
+
+            <!-- Features -->
+            <div class="sidebar-widget features-widget">
+                <div class="feature-item">
+                    <i class="ph ph-truck"></i>
+                    <div>
+                        <h5>Free Delivery</h5>
+                        <p>from $50</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <i class="ph ph-chat-circle-text"></i>
+                    <div>
+                        <h5>99 % Customer</h5>
+                        <p>Feedbacks</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <i class="ph ph-arrows-clockwise"></i>
+                    <div>
+                        <h5>365 Days</h5>
+                        <p>for free return</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <i class="ph ph-credit-card"></i>
+                    <div>
+                        <h5>Payment</h5>
+                        <p>Secure System</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <i class="ph ph-tag"></i>
+                    <div>
+                        <h5>Only Best</h5>
+                        <p>Brands</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <!-- Computers & Laptops Categories -->
+            <section class="content-section">
+                <h2>Computers & Laptops Categories</h2>
+                <div class="categories-grid">
+                    <a href="#" class="category-card"><div class="cat-img img-laptops"></div><span>Laptops</span></a>
+                    <a href="#" class="category-card"><div class="cat-img img-ultrabooks"></div><span>Ultrabooks</span></a>
+                    <a href="#" class="category-card"><div class="cat-img img-notebooks"></div><span>Notebooks</span></a>
+                    <a href="#" class="category-card"><div class="cat-img img-desktop"></div><span>Desktop PCs</span></a>
+                    <a href="#" class="category-card"><div class="cat-img img-mac"></div><span>Mac Computers</span></a>
+                    <a href="#" class="category-card"><div class="cat-img img-aio"></div><span>All in One PC</span></a>
+                    <a href="#" class="category-card"><div class="cat-img img-gaming"></div><span>Gaming</span></a>
+                    <a href="#" class="category-card"><div class="cat-img img-peripherals"></div><span>Peripherals</span></a>
+                    <a href="#" class="category-card"><div class="cat-img img-speakers"></div><span>Speakers</span></a>
+                    <a href="#" class="category-card"><div class="cat-img img-printers"></div><span>Printers & Inks</span></a>
+                    <a href="#" class="category-card"><div class="cat-img img-routers"></div><span>Routers</span></a>
+                    <a href="#" class="category-card"><div class="cat-img img-components"></div><span>PC Components</span></a>
+                </div>
+            </section>
+
+            <!-- Featured Brands -->
+            <section class="content-section">
+                <div class="section-header">
+                    <h2>Featured Brands</h2>
+                    <a href="#" class="view-all">View all <i class="ph ph-caret-right"></i></a>
+                </div>
+                <div class="brands-grid">
+                    <a href="#" class="brand-card">Connect</a>
+                    <a href="#" class="brand-card">Envato</a>
+                    <a href="#" class="brand-card">Kinova</a>
+                    <a href="#" class="brand-card">Yoko</a>
+                    <a href="#" class="brand-card">Galaxy</a>
+                </div>
+                <div class="carousel-dots">
+                    <span class="dot active"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </div>
+            </section>
+
+            <!-- Best Offers in Ultrabooks -->
+            <section class="content-section">
+                <div class="section-header">
+                    <h2>Best Offers in Ultrabooks</h2>
+                    <a href="#" class="view-all">View all <i class="ph ph-caret-right"></i></a>
+                </div>
+                <div class="products-grid">
+                    <div class="product-card"><div class="product-img img-placeholder"></div><div class="product-info"><div class="price-row"><span class="price">$339.00</span><span class="old-price">$449.00</span></div><h3 class="product-title">Virtual Reality Headset</h3><div class="rating"><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><span>(18)</span></div></div></div>
+                    <div class="product-card"><div class="product-img img-placeholder"></div><div class="product-info"><div class="price-row"><span class="price">$759.00</span><span class="old-price">$899.00</span></div><h3 class="product-title">VR Virtual Reality Headset for Smartphone</h3><div class="rating"><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph ph-star"></i><span>(24)</span></div></div></div>
+                    <div class="product-card"><div class="product-img img-placeholder"></div><div class="product-info"><div class="price-row"><span class="price">$649.00</span><span class="old-price">$839.00</span></div><h3 class="product-title">Virtual Cardboard</h3><div class="rating"><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph ph-star-half"></i><span>(12)</span></div></div></div>
+                    <div class="product-card"><div class="product-img img-placeholder"></div><div class="product-info"><div class="price-row"><span class="price">$199.89</span><span class="old-price">$329.99</span></div><h3 class="product-title">360° Viewing Immersive VR Headset</h3><div class="rating"><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph ph-star"></i><span>(36)</span></div></div></div>
+                    <div class="product-card"><div class="product-img img-placeholder"></div><div class="product-info"><div class="price-row"><span class="price">$665.00</span><span class="old-price">$899.00</span></div><h3 class="product-title">Headset Game For iOS</h3><div class="rating"><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i><span>(21)</span></div></div></div>
+                    <div class="product-card"><div class="product-img img-placeholder"></div><div class="product-info"><div class="price-row"><span class="price">$299.00</span><span class="old-price">$449.00</span></div><h3 class="product-title">VRBOX 2nd Gen 3D VR Headset 3D</h3><div class="rating"><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><span>(14)</span></div></div></div>
+                </div>
+                <div class="carousel-dots">
+                    <span class="dot active"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </div>
+            </section>
+            
+            <!-- Top Selling VR Headsets -->
+            <section class="content-section">
+                <div class="section-header">
+                    <h2>Top Selling VR Headsets</h2>
+                    <a href="#" class="view-all">View all <i class="ph ph-caret-right"></i></a>
+                </div>
+                <div class="products-grid">
+                    <div class="product-card"><div class="product-img img-placeholder"></div><div class="product-info"><div class="price-row"><span class="price">$339.00</span><span class="old-price">$449.00</span></div><h3 class="product-title">Virtual Reality Headset</h3><div class="rating"><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><span>(18)</span></div></div></div>
+                    <div class="product-card"><div class="product-img img-placeholder"></div><div class="product-info"><div class="price-row"><span class="price">$759.00</span><span class="old-price">$899.00</span></div><h3 class="product-title">VR Virtual Reality Headset</h3><div class="rating"><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph ph-star"></i><span>(24)</span></div></div></div>
+                    <div class="product-card"><div class="product-img img-placeholder"></div><div class="product-info"><div class="price-row"><span class="price">$649.00</span><span class="old-price">$839.00</span></div><h3 class="product-title">Virtual Cardboard</h3><div class="rating"><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph ph-star-half"></i><span>(12)</span></div></div></div>
+                    <div class="product-card"><div class="product-img img-placeholder"></div><div class="product-info"><div class="price-row"><span class="price">$199.89</span><span class="old-price">$329.99</span></div><h3 class="product-title">360° Viewing Immersive VR Headset</h3><div class="rating"><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph ph-star"></i><span>(36)</span></div></div></div>
+                    <div class="product-card"><div class="product-img img-placeholder"></div><div class="product-info"><div class="price-row"><span class="price">$665.00</span><span class="old-price">$899.00</span></div><h3 class="product-title">VRBOX 2nd Gen Lens VR Headset 3D</h3><div class="rating"><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i><span>(21)</span></div></div></div>
+                    <div class="product-card"><div class="product-img img-placeholder"></div><div class="product-info"><div class="price-row"><span class="price">$299.00</span><span class="old-price">$449.00</span></div><h3 class="product-title">Glasses VR Box WiFi Headphone</h3><div class="rating"><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><span>(14)</span></div></div></div>
+                </div>
+            </section>
+
+            <!-- Recently viewed products -->
+            <section class="content-section recently-viewed">
+                <div class="section-header">
+                    <h2>Recently viewed products</h2>
+                    <a href="#" class="view-all">View all <i class="ph ph-caret-right"></i></a>
+                </div>
+                <div class="recent-grid">
+                    <div class="recent-card"><div class="recent-img img-placeholder"></div><div class="recent-info"><div class="price-row"><span class="price">$875.00</span><span class="old-price">$915.00</span></div><h4 class="product-title">Yoga 5 14" OLED Notebook</h4><div class="rating"><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph ph-star"></i> <span>(28)</span></div></div></div>
+                    <div class="recent-card"><div class="recent-img img-placeholder"></div><div class="recent-info"><div class="price-row"><span class="price">$49.89</span></div><h4 class="product-title">Strong Low Bass Stereo Headphones</h4><div class="rating"><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i> <span>(14)</span></div></div></div>
+                    <div class="recent-card"><div class="recent-img img-placeholder"></div><div class="recent-info"><div class="price-row"><span class="price">$199.00</span></div><h4 class="product-title">Headset 3D Glasses VR Box</h4><div class="rating"><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph ph-star"></i> <span>(16)</span></div></div></div>
+                    <div class="recent-card"><div class="recent-img img-placeholder"></div><div class="recent-info"><div class="price-row"><span class="price">$26.99</span><span class="old-price">$34.99</span></div><h4 class="product-title">S100 Wireless Bluetooth Headphone</h4><div class="rating"><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph ph-star"></i> <span>(35)</span></div></div></div>
+                    <div class="recent-card"><div class="recent-img img-placeholder"></div><div class="recent-info"><div class="price-row"><span class="price">$280.99</span></div><h4 class="product-title">Fitness and Activity Tracker</h4><div class="rating"><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i> <span>(8)</span></div></div></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Brands Carousel -->
+    <div class="pre-footer-brands">
+        <div class="container brands-carousel">
+            <a href="#" class="nav-btn"><i class="ph ph-caret-left"></i></a>
+            <div class="brands-logos">
+                <span>YOKO</span>
+                <span>KINOVA</span>
+                <span>SPEEDWAY</span>
+                <span>Connect</span>
+                <span>GALAXY</span>
+                <span>HANDSPOT</span>
+            </div>
+            <a href="#" class="nav-btn"><i class="ph ph-caret-right"></i></a>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <!-- Newsletter -->
+        <div class="newsletter-section">
+            <div class="container newsletter-inner">
+                <div class="newsletter-text">
+                    <i class="ph ph-envelope-simple"></i>
+                    <div>
+                        <h4>Sign up for Newsletter</h4>
+                        <p>...and receive $10 coupon for first shopping</p>
+                    </div>
+                </div>
+                <form class="newsletter-form">
+                    <input type="email" placeholder="Enter your email address">
+                    <button type="submit">Sign up</button>
+                    <span class="unsubscribe">Unsubscribe</span>
+                </form>
+                <div class="social-links">
+                    <a href="#"><i class="ph ph-facebook-logo"></i></a>
+                    <a href="#"><i class="ph ph-twitter-logo"></i></a>
+                    <a href="#"><i class="ph ph-google-logo"></i></a>
+                    <a href="#"><i class="ph ph-vimeo-logo"></i></a>
+                    <a href="#"><i class="ph ph-instagram-logo"></i></a>
+                    <a href="#"><i class="ph ph-rss-simple"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Links -->
+        <div class="footer-links-section">
+            <div class="container footer-links-inner">
+                <div class="footer-col about-col">
+                    <div class="logo">
+                        <h2>TECH<span>.MARKET</span></h2>
+                    </div>
+                    <div class="contact-info">
+                        <i class="ph ph-headset"></i>
+                        <div>
+                            <p>GOT QUESTIONS? CALL US 24/7</p>
+                            <h4>801 017 197</h4>
+                        </div>
+                    </div>
+                    <p class="address">17 Princess Road, London, Greater London, NW1 8JR, UK</p>
+                    <a href="#" class="find-map"><i class="ph ph-map-pin"></i> Find us on map</a>
+                </div>
+                
+                <div class="footer-col payments-col">
+                    <h4>WE USING SAFE PAYMENTS</h4>
+                    <div class="payment-icons">
+                        <i class="ph-fill ph-mastercard-logo"></i>
+                        <i class="ph-fill ph-visa-logo"></i>
+                        <i class="ph-fill ph-paypal-logo"></i>
+                    </div>
+                    <p>Secured by</p>
+                    <div class="security-icons">
+                        <span class="norton">Norton</span>
+                        <span class="mcafee">McAfee</span>
+                    </div>
+                </div>
+
+                <div class="footer-col links-col">
+                    <h4>FIND IT FAST</h4>
+                    <ul>
+                        <li><a href="#">Laptops, Ultrabooks & Computers</a></li>
+                        <li><a href="#">Cameras & Photography</a></li>
+                        <li><a href="#">Smart Phones & Tablets</a></li>
+                        <li><a href="#">Video Games & Consoles</a></li>
+                        <li><a href="#">TV & Audio</a></li>
+                        <li><a href="#">Gadgets</a></li>
+                        <li><a href="#">Car Electronics & GPS</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-col links-col">
+                    <h4 class="invisible-header">...</h4>
+                    <ul>
+                        <li><a href="#">Printers & Inks</a></li>
+                        <li><a href="#">Software</a></li>
+                        <li><a href="#">Office Supplies</a></li>
+                        <li><a href="#">Computer Components</a></li>
+                        <li><a href="#">Virtual Reality</a></li>
+                        <li><a href="#">Smartwatches</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-col links-col">
+                    <h4>CUSTOMER CARE</h4>
+                    <ul>
+                        <li><a href="#">My Account</a></li>
+                        <li><a href="#">Track your Order</a></li>
+                        <li><a href="#">Wishlist</a></li>
+                        <li><a href="#">Customer Service</a></li>
+                        <li><a href="#">Returns/Exchange</a></li>
+                        <li><a href="#">FAQs</a></li>
+                        <li><a href="#">Product Support</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <div class="container">
+                <p>Copyright © 2024 Tech-Market eCommerce. All Rights Reserved.</p>
+                <div class="made-by">
+                    Made with <i class="ph-fill ph-heart"></i> by bcube
+                </div>
+                <a href="#" class="scroll-top"><i class="ph ph-arrow-up"></i></a>
+            </div>
+        </div>
+    </footer>
+    <script src="./assets/js/main.js"></script>
+</body>
+</html>

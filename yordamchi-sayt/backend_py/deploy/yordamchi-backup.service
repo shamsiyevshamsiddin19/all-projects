@@ -1,0 +1,12 @@
+[Unit]
+Description=Yordamchi bazasining kunlik zaxirasi
+After=postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=oneshot
+User=postgres
+ExecStart=/opt/yordamchi/backup.sh
+# 945MB RAM'li serverda zaxira boshqa xizmatlarni siqib qo'ymasin
+Nice=10
+IOSchedulingClass=idle

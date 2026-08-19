@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subtitr AI — Videolarga avtomatik subtitr</title>
+    <meta name="description" content="Videolaringizga sun'iy intellekt orqali avtomatik subtitr yozish boti. O'zbek tilida tarjima, ikki qatlamli (dual) subtitr va SRT yuklab olish.">
+    <meta name="keywords" content="ai subtitr uzbek, videoga yozuv qo'shish, tarjima subtitr bot, srt yuklab olish, ai tarjima video, telegram bot subtitr">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Subtitr AI — Videolarga avtomatik subtitr">
+    <meta property="og:description" content="Videolarga o'zbek tilida 1 daqiqada subtitr qo'shing. Bepul sinab ko'ring.">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#06080a">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/landing.css">
+</head>
+<body>
+    <!-- Background layers -->
+    <div class="bg-aurora" aria-hidden="true"></div>
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="bg-noise" aria-hidden="true"></div>
+
+    <!-- Navbar -->
+    <div class="navbar-wrapper">
+        <nav class="navbar glass" id="navbar">
+            <a href="#" class="logo"><span class="logo-mark"></span>Subtitr<span class="logo-ai">AI</span></a>
+            <div class="nav-links">
+                <a href="#how-it-works">Qanday ishlaydi</a>
+                <a href="#modes">Rejimlar</a>
+                <a href="#tech">Texnologiya</a>
+                <a href="#pricing">Narxlar</a>
+            </div>
+            <a href="#" class="btn btn-primary cta-bot" target="_blank">Boshlash</a>
+        </nav>
+    </div>
+
+    <!-- Hero Section -->
+    <header class="hero">
+        <div class="container hero-grid">
+            <div class="hero-content">
+                <div class="badge reveal">
+                    <span class="badge-dot"></span>
+                    Groq Whisper · Gemini · ChatGPT bilan ishlaydi
+                </div>
+                <h1 class="reveal">Videolaringizga <span class="grad">aqlli subtitr</span> — bir daqiqada</h1>
+                <p class="reveal">Videoni yuboring, AI nutqni eshitadi va unga mukammal tarjima qilingan, ekranga aniq joylashtirilgan subtitr yozib beradi. Istalgan til, istalgan format.</p>
+                <div class="hero-actions reveal">
+                    <a href="#" class="btn btn-primary btn-lg cta-bot magnetic" target="_blank">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 4.3 2.6 11.7c-1.1.4-1.1 1.9 0 2.3l4.9 1.6 1.9 5.7c.3.9 1.4 1.1 2 .4l2.6-2.7 4.9 3.6c.8.6 1.9.1 2.1-.8l3-15.9c.2-1.1-.9-2-2.1-1.6Z"/></svg>
+                        Telegram'da boshlash
+                    </a>
+                    <a href="#how-it-works" class="btn btn-secondary btn-lg">Qanday ishlaydi?</a>
+                </div>
+                <div class="hero-meta reveal">
+                    <div class="hero-avatars"><span>A</span><span>M</span><span>J</span><span>+</span></div>
+                    <span>Minglab kontent yaratuvchilar ishonadi</span>
+                </div>
+            </div>
+
+            <!-- Product visual -->
+            <div class="hero-visual reveal-scale">
+                <div class="player glass-strong tilt">
+                    <div class="player-screen">
+                        <div class="player-glow"></div>
+                        <div class="play-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>
+                        <div class="wave"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+                        <div class="caption">
+                            <div class="cap-orig">You won't believe how easy this is.</div>
+                            <div class="cap-trans">Bu naqadar oson ekaniga ishonmaysiz.</div>
+                        </div>
+                    </div>
+                    <div class="player-bar">
+                        <span class="chip live"><span class="chip-dot"></span>AI tahlil qilmoqda</span>
+                        <span class="chip">00:12 / 00:48</span>
+                    </div>
+                </div>
+                <div class="float-chip float-1">✓ .SRT tayyor</div>
+                <div class="float-chip float-2">🌐 3 tilga tarjima</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Stats band -->
+    <section class="section stats-section">
+        <div class="container">
+            <div class="stats-grid reveal" data-stagger>
+                <div class="stat-box reveal">
+                    <div class="stat-num"><span class="counter" data-target="100">0</span><span class="stat-sym">+</span></div>
+                    <div class="stat-label">Qo'llab-quvvatlanadigan til</div>
+                </div>
+                <div class="stat-box reveal">
+                    <div class="stat-num"><span class="counter" data-target="60">0</span><span class="stat-sym">s</span></div>
+                    <div class="stat-label">O'rtacha ishlov vaqti</div>
+                </div>
+                <div class="stat-box reveal">
+                    <div class="stat-num"><span class="counter" data-target="6">0</span></div>
+                    <div class="stat-label">Subtitr rejimi</div>
+                </div>
+                <div class="stat-box reveal">
+                    <div class="stat-num"><span class="counter" data-target="99">0</span><span class="stat-sym">%</span></div>
+                    <div class="stat-label">Tarjima aniqligi</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Trusted By (marquee) -->
+    <section class="trusted-by reveal">
+        <div class="container">
+            <p class="trusted-text">Kontent yaratiladigan platformalar uchun moslangan</p>
+        </div>
+        <div class="marquee">
+            <div class="marquee-track">
+                <span>YouTube</span><span>Instagram Reels</span><span>TikTok</span><span>CapCut</span><span>Premiere Pro</span><span>Telegram</span>
+                <span>YouTube</span><span>Instagram Reels</span><span>TikTok</span><span>CapCut</span><span>Premiere Pro</span><span>Telegram</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modes (Rejimlar) -->
+    <section id="modes" class="section">
+        <div class="container">
+            <div class="section-header reveal">
+                <span class="eyebrow">Rejimlar</span>
+                <h2>Bitta video, oltita imkoniyat</h2>
+                <p>O'z ehtiyojingizga qarab subtitr formatini tanlang.</p>
+            </div>
+
+            <div class="usecases-grid" data-stagger>
+                <div class="usecase-card spot reveal">
+                    <div class="uc-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+                    <h3>Original subtitr</h3>
+                    <p>Video o'zining asl tilida subtitr qilinadi va ekranga o'qish qulay qilib joylashtiriladi.</p>
+                </div>
+                <div class="usecase-card spot reveal">
+                    <div class="uc-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg></div>
+                    <h3>Tarjima subtitr</h3>
+                    <p>AI asl tilni o'zi aniqlab, siz xohlagan tilga (o'zbek, rus, ingliz) to'liq tarjima qiladi.</p>
+                </div>
+                <div class="usecase-card spot reveal">
+                    <div class="uc-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+                    <h3>Ikki qatlam (dual)</h3>
+                    <p>Ta'lim va kurslar uchun: tepada asl til, pastida tarjima — ikkalasi birga ko'rsatiladi.</p>
+                </div>
+                <div class="usecase-card spot reveal">
+                    <div class="uc-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
+                    <h3>.SRT fayl</h3>
+                    <p>Tayyor .srt faylini yuklab oling va Premiere Pro yoki CapCut'da o'zingiz biriktiring.</p>
+                </div>
+                <div class="usecase-card spot reveal">
+                    <div class="uc-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+                    <h3>Matn (transkript)</h3>
+                    <p>Videodagi barcha gaplar bitta toza matnga — txt va chiroyli PDF ko'rinishida.</p>
+                </div>
+                <div class="usecase-card spot reveal">
+                    <div class="uc-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M12 7a4 4 0 0 1 4-4h6v14h-7a3 3 0 0 0-3 3"/></svg></div>
+                    <h3>Lug'at</h3>
+                    <p>Videodagi so'zlar tarjimasi bilan lug'at qilib — til o'rganuvchilar uchun ideal.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tech Deep Dive -->
+    <section id="tech" class="section alt-bg tech-section">
+        <div class="container">
+            <div class="tech-content">
+                <div class="tech-text reveal-l">
+                    <span class="eyebrow">Arxitektura</span>
+                    <h2>Ishonchli, ko'p pog'onali AI tarmoq</h2>
+                    <p>Biz bitta API'ga bog'lanib qolmaganmiz. Tizim yuqori sifat va uzilishsizlikni ta'minlash uchun fallback zanjiri va navbat mexanizmidan foydalanadi.</p>
+                    <ul class="tech-list">
+                        <li><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span><div><b>Audio tanish</b> — Groq Whisper V3 bilan millisekund aniqligida transkripsiya.</div></li>
+                        <li><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span><div><b>Neyrotarjima (fallback)</b> — <i>Gemini → ChatGPT → Claude</i> zanjiri. Uzilishlar bo'lmaydi.</div></li>
+                        <li><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span><div><b>Navbat tizimi</b> — Celery + Redis worker'lari yuzlab videoni ustuvor navbat orqali uzilishsiz ishlaydi.</div></li>
+                    </ul>
+                </div>
+                <div class="tech-visual reveal-r">
+                    <div class="code-window glass-strong">
+                        <div class="code-head"><span class="dot red"></span><span class="dot yel"></span><span class="dot grn"></span> <span class="code-title">server.log</span></div>
+                        <div class="code-body">
+                            <code><span class="c-dim">[INFO]</span> Job #9182 qabul qilindi <span class="c-dim">(Premium)</span></code>
+                            <code><span class="c-dim">[INFO]</span> Groq Whisper transkripsiya... <span class="c-ok">DONE</span></code>
+                            <code><span class="c-warn">[WARN]</span> Gemini limiti tugadi!</code>
+                            <code><span class="c-dim">[INFO]</span> Fallback → ChatGPT... <span class="c-ok">OK</span></code>
+                            <code><span class="c-dim">[INFO]</span> Vaqt sinxronlash (CRF=22)... 00:01:23</code>
+                            <code class="success"><span class="c-ok">[SUCCESS]</span> Video render qilindi va yuborildi! ✓</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Mini App Section -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header reveal">
+                <span class="eyebrow">Mini App</span>
+                <h2>Bot cheklovlaridan tashqariga chiqing</h2>
+                <p>Telegram Mini App orqali katta fayllar va jonli uslub tahriri.</p>
+            </div>
+            <div class="steps-grid two reveal" data-stagger>
+                <div class="step-card spot reveal">
+                    <div class="card-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+                    <h3>2GB gacha fayllar</h3>
+                    <p>Telegram bot limitiga (20MB) tushib qolmang. Mini App orqali to'g'ridan-to'g'ri 2GB gacha videoni xavfsiz yuklang.</p>
+                </div>
+                <div class="step-card spot reveal">
+                    <div class="card-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+                    <h3>Jonli uslub tahrirchisi</h3>
+                    <p>Matn rangi, qora kontur, orqa fon va harf qalinligini jonli ko'rib turib o'zgartiring va o'z uslubingizni saqlang.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How it Works -->
+    <section id="how-it-works" class="section alt-bg">
+        <div class="container">
+            <div class="section-header reveal">
+                <span class="eyebrow">Jarayon</span>
+                <h2>Uch qadam — natija tayyor</h2>
+                <p>Hech qanday montaj bilim talab qilinmaydi.</p>
+            </div>
+            <div class="steps-grid" data-stagger>
+                <div class="step-card num-card spot reveal">
+                    <div class="step-num">01</div>
+                    <h3>Video yuboring</h3>
+                    <p>Telegram botga fayl yoki ijtimoiy tarmoq havolasini jo'nating. Qolganini o'zi yuklab oladi.</p>
+                </div>
+                <div class="step-card num-card spot reveal">
+                    <div class="step-num">02</div>
+                    <h3>Rejim va tilni tanlang</h3>
+                    <p>Tarjimami yoki asl tilidami? Interfeysdan kerakli rejimni tanlash kifoya.</p>
+                </div>
+                <div class="step-card num-card spot reveal">
+                    <div class="step-num">03</div>
+                    <h3>Natijani oling</h3>
+                    <p>Bir necha soniyada ichiga yozuv qo'shilgan tayyor MP4 hamda SRT faylni qabul qilasiz.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="section testimonials">
+        <div class="container">
+            <div class="section-header reveal">
+                <span class="eyebrow">Fikrlar</span>
+                <h2>Professionallar nima deydi</h2>
+                <p>AI yordamida ishlari yengillashgan kontent yaratuvchilar.</p>
+            </div>
+            <div class="testim-grid" data-stagger>
+                <div class="testim-card spot reveal">
+                    <div class="stars">★★★★★</div>
+                    <p class="review">"Oldin 10 daqiqalik videoga subtitr yozish uchun yarim kunim ketardi. Hozir botga tashlayman, choy ichib kelgunimcha tayyor! Tarjima aniqligiga qoyil."</p>
+                    <div class="user-info">
+                        <div class="avatar">A</div>
+                        <div class="details"><h4>Azizbek R.</h4><span>YouTube kontent yaratuvchi</span></div>
+                    </div>
+                </div>
+                <div class="testim-card spot reveal">
+                    <div class="stars">★★★★★</div>
+                    <p class="review">"Kurslarimni rus tilidan o'zbekchaga o'girish uchun 'Ikki qatlamli' rejim juda asqatdi. Talabalarimga ham juda ma'qul keldi."</p>
+                    <div class="user-info">
+                        <div class="avatar">M</div>
+                        <div class="details"><h4>Madina K.</h4><span>Mentor va o'qituvchi</span></div>
+                    </div>
+                </div>
+                <div class="testim-card spot reveal">
+                    <div class="stars">★★★★★</div>
+                    <p class="review">"SRT faylini berishi eng katta plyus. Videoni o'zim Premiere Pro'da teraman, matnni esa shu botdan tushirib olaman."</p>
+                    <div class="user-info">
+                        <div class="avatar">J</div>
+                        <div class="details"><h4>Jamshid T.</h4><span>Video montaj ustasi</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section id="pricing" class="section pricing-section alt-bg">
+        <div class="pricing-bg-text" aria-hidden="true">Tariflar</div>
+        <div class="container">
+            <div class="section-header reveal">
+                <span class="eyebrow">Narxlar</span>
+                <h2>Oddiy, shaffof oylik obuna</h2>
+                <p>Har qanday budjet uchun. Istalgan vaqt bekor qiling.</p>
+            </div>
+
+            <div class="pricing-grid" data-stagger>
+                <div class="price-card spot reveal">
+                    <h3>BEPUL</h3>
+                    <div class="price">0<small>so'm</small></div>
+                    <div class="price-sub">Doim bepul</div>
+                    <ul class="features-list">
+                        <li><i class="ck"></i> Kuniga 3 ta video</li>
+                        <li><i class="ck"></i> 5 daqiqagacha davomiylik</li>
+                        <li><i class="ck"></i> Original rejim (.srt bilan)</li>
+                        <li class="muted-li"><i class="ck off"></i> Tarjima rejimlari</li>
+                        <li class="muted-li"><i class="ck off"></i> Uslubni tahrirlash</li>
+                    </ul>
+                    <a href="#" class="btn btn-secondary cta-bot" target="_blank">Bepul sinash</a>
+                </div>
+
+                <div class="price-card popular spot reveal">
+                    <div class="popular-badge">★ Tavsiya etiladi</div>
+                    <h3>BASIC</h3>
+                    <div class="price"><span id="ppBasic">30 000</span><small>so'm / oy</small></div>
+                    <div class="price-sub" id="pdBasic">~1 000 so'm / kun</div>
+                    <ul class="features-list">
+                        <li><i class="ck on"></i> Kuniga 10 ta video</li>
+                        <li><i class="ck on"></i> 30 daqiqagacha davomiylik</li>
+                        <li><i class="ck on"></i> Barcha 6 ta rejim</li>
+                        <li><i class="ck on"></i> Sifatli AI tarjima (Gemini/ChatGPT)</li>
+                        <li><i class="ck on"></i> Subtitr uslubini sozlash</li>
+                    </ul>
+                    <a href="#" class="btn btn-primary cta-bot magnetic" target="_blank">Obuna bo'lish</a>
+                </div>
+
+                <div class="price-card spot reveal">
+                    <h3>PREMIUM</h3>
+                    <div class="price"><span id="ppPrem">60 000</span><small>so'm / oy</small></div>
+                    <div class="price-sub" id="pdPrem">~2 000 so'm / kun</div>
+                    <ul class="features-list">
+                        <li><i class="ck"></i> Cheksiz video</li>
+                        <li><i class="ck"></i> 30+ daqiqa (Mini App)</li>
+                        <li><i class="ck"></i> Ustuvor navbat (VIP)</li>
+                        <li><i class="ck"></i> Claude — yuqori sifatli tarjima</li>
+                        <li><i class="ck"></i> Tayyor dizayn presetlari</li>
+                    </ul>
+                    <a href="#" class="btn btn-secondary cta-bot" target="_blank">Obuna bo'lish</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="section">
+        <div class="container">
+            <div class="section-header reveal">
+                <span class="eyebrow">Savol-javob</span>
+                <h2>Ko'p beriladigan savollar</h2>
+                <p>Texnik va tashkiliy savollarga javoblar.</p>
+            </div>
+
+            <div class="faq-list reveal" data-stagger>
+                <div class="faq-item reveal">
+                    <h4 class="faq-q">Qaysi tillarni qo'llab-quvvatlaydi? <span class="arr">+</span></h4>
+                    <div class="faq-a"><p>AI 100 dan ortiq tilni tushunadi. Tarjima esa o'zbek, rus va ingliz tillariga amalga oshiriladi.</p></div>
+                </div>
+                <div class="faq-item reveal">
+                    <h4 class="faq-q">Tarjima sifati qanday? <span class="arr">+</span></h4>
+                    <div class="faq-a"><p>Maxsus neyrotarjimon ishlatamiz — bu oddiy lug'aviy emas, mantiqiy va kontekstli tarjima.</p></div>
+                </div>
+                <div class="faq-item reveal">
+                    <h4 class="faq-q">Maxfiylik ta'minlanadimi? <span class="arr">+</span></h4>
+                    <div class="faq-a"><p>Videolaringiz ishlanib bo'lgach darhol serverdan to'liq o'chiriladi.</p></div>
+                </div>
+                <div class="faq-item reveal">
+                    <h4 class="faq-q">YouTube/Instagram havolasi ishlaydimi? <span class="arr">+</span></h4>
+                    <div class="faq-a"><p>Ha. Havolani yuborsangiz, bot videoni o'zi yuklab oladi va subtitr yozadi.</p></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="section cta-section">
+        <div class="container">
+            <div class="cta-box glass-strong reveal-scale">
+                <div class="cta-glow"></div>
+                <h2>Birinchi videongizga <span class="grad">bepul</span> subtitr yozing</h2>
+                <p>Ro'yxatdan o'tish shart emas. Telegram'da bir bosishda boshlanadi.</p>
+                <a href="#" class="btn btn-primary btn-lg cta-bot magnetic" target="_blank">Hoziroq boshlash →</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container footer-content">
+            <div class="footer-col brand-col">
+                <a href="#" class="logo"><span class="logo-mark"></span>Subtitr<span class="logo-ai">AI</span></a>
+                <p>O'zbekistondagi ilg'or AI subtitr platformasi. Kontent yaratuvchilar va bizneslar uchun sun'iy intellekt yechimlari.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Platforma</h4>
+                <a href="#how-it-works">Qanday ishlaydi</a>
+                <a href="#modes">Rejimlar</a>
+                <a href="#tech">Texnologiya</a>
+                <a href="#pricing">Narxlar</a>
+            </div>
+            <div class="footer-col">
+                <h4>Resurslar</h4>
+                <a href="#faq">FAQ va yordam</a>
+                <a href="#" class="cta-bot" target="_blank">Telegram bot</a>
+            </div>
+            <div class="footer-col">
+                <h4>Kompaniya</h4>
+                <a href="#">Maxfiylik siyosati</a>
+                <a href="#">Foydalanish shartlari</a>
+                <a href="#" class="cta-bot" target="_blank">Bog'lanish</a>
+            </div>
+        </div>
+        <div class="container footer-bottom">
+            <p>&copy; 2026 Subtitr AI. Barcha huquqlar himoyalangan.</p>
+        </div>
+    </footer>
+
+    <script src="/static/landing.js"></script>
+</body>
+</html>

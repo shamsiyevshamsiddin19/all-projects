@@ -1,0 +1,25 @@
+1. Oʻzbekiston poytaxti qaysi shahar?
+A) Samarqand
+B) Toshkent
+C) Buxoro
+D) Xiva
+Javob: B
+
+2. Yer sayyorasining tabiiy yo'ldoshi?
+A) Quyosh
+B) Mars
+C) Oy
+D) Venera
+Javob: C
+
+# 7 × 8 nechaga teng?
+- 54
++ 56
+- 48
+- 64
+
+# Suvning kimyoviy formulasi qaysi?
++ H2O
+- CO2
+- O2
+- H2

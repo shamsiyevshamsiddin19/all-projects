@@ -1,0 +1,11 @@
+[Unit]
+Description=Boostday cron (rejalashtirilgan yuborishlar)
+After=network.target postgresql.service
+
+[Service]
+Type=oneshot
+User=opc
+Group=opc
+WorkingDirectory=/opt/yordamchi/Boostdaybot/bot_py
+EnvironmentFile=/opt/yordamchi/Boostdaybot/bot_py/.env
+ExecStart=/opt/yordamchi/Boostdaybot/bot_py/.venv/bin/python /opt/yordamchi/Boostdaybot/bot_py/run_cron.py

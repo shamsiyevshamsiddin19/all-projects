@@ -1,0 +1,758 @@
+"""tatulmsbot admin paneli (aiohttp) — master panel bilan bir xil dizayn.
+Bot bilan bitta jarayonda ishlaydi. Master sayt /tatulms/ ostida proxy qiladi."""
+from __future__ import annotations
+
+import base64
+import csv
+import datetime as dt
+import html
+import io
+import logging
+import time
+from collections import Counter
+
+from aiohttp import web
+
+from core import crypto, db
+from core.config import settings
+
+log = logging.getLogger("admin_web")
+PREFIX = "/tatulms"
+
+
+def _esc(v) -> str:
+    return html.escape(str(v if v is not None else ""))
+
+
+def _fmt_ts(ts) -> str:
+    if not ts:
+        return "—"
+    try:
+        return dt.datetime.fromtimestamp(int(ts)).strftime("%d.%m.%Y %H:%M")
+    except Exception:  # noqa: BLE001
+        return "—"
+
+
+def _pwd(u: dict) -> str:
+    if not u.get("pwd_enc"):
+        return ""
+    try:
+        return crypto.decrypt(u["pwd_enc"])
+    except Exception:  # noqa: BLE001
+        return "⚠️ ochilmadi"
+
+
+# ─────────────────────────── auth ───────────────────────────
+@web.middleware
+async def auth_mw(request: web.Request, handler):
+    # Parol himoyasi foydalanuvchi so'roviga ko'ra OLIB TASHLANDI — barcha so'rov o'tadi.
+    # (Panel talaba parollarini ochiq ko'rsatadi; himoya kerak bo'lsa qayta yoqiladi.)
+    return await handler(request)
+
+
+# ─────────────────────────── dizayn (master bilan bir xil) ───────────────────────────
+_STYLE = """
+:root{--bg:#fff;--subtle:#f7f7f8;--border:#e5e5e5;--text:#0d0d0d;--muted:#6e6e80;
+  --accent:#0d0d0d;--ok:#10a37f;--bad:#ef4444;--warn:#d97706}
+*{box-sizing:border-box}
+body{margin:0;background:var(--subtle);color:var(--text);
+  font:15px/1.5 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+a{color:inherit}
+.navtoggle{display:none}
+.layout{display:flex;min-height:100vh}
+.sidebar{width:230px;flex:0 0 230px;background:var(--bg);
+  border-right:1px solid var(--border);padding:18px 14px;position:fixed;
+  top:0;left:0;bottom:0;overflow-y:auto;z-index:30;transition:transform .2s ease}
+.brand{font-weight:600;font-size:16px;padding:6px 10px 16px;display:flex;
+  align-items:center;gap:9px}
+.brand .dot{width:22px;height:22px;border-radius:7px;background:var(--accent);
+  color:#fff;display:inline-flex;align-items:center;justify-content:center;
+  font-size:13px}
+.nav a{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:8px;
+  color:var(--muted);text-decoration:none;font-size:14px;margin-bottom:2px}
+.nav a:hover{background:var(--subtle);color:var(--text)}
+.nav a.active{background:var(--subtle);color:var(--text);font-weight:500}
+.nav svg{width:18px;height:18px;flex:0 0 18px}
+.content{margin-left:230px;flex:1;padding:26px 28px 64px;min-width:0;width:100%}
+.topbar{display:none}
+.overlay{display:none}
+.hamburger{display:none}
+.pagehead{display:flex;align-items:baseline;justify-content:space-between;
+  gap:10px;margin-bottom:22px;flex-wrap:wrap}
+.pagehead h1{font-size:21px;font-weight:600;margin:0}
+.pagehead .sub{color:var(--muted);font-size:13px}
+.btn{color:var(--muted);text-decoration:none;font-size:13px;border:1px solid var(--border);
+  padding:6px 12px;border-radius:8px;background:var(--bg)}
+.btn:hover{color:var(--text)}
+.statbar{display:flex;background:var(--bg);border:1px solid var(--border);
+  border-radius:12px;overflow-x:auto;margin-bottom:28px}
+.stat{flex:1 0 auto;min-width:122px;padding:15px 18px;
+  border-right:1px solid var(--border)}
+.stat:last-child{border-right:none}
+.stat .label{color:var(--muted);font-size:13px;margin-bottom:5px;white-space:nowrap}
+.stat .num{font-size:24px;font-weight:600;letter-spacing:-.5px}
+.stat .note{color:var(--muted);font-size:12px;margin-top:3px;white-space:nowrap}
+h2{font-size:15px;font-weight:600;margin:0 0 12px}
+.panel{background:var(--bg);border:1px solid var(--border);border-radius:12px;
+  overflow:hidden;margin-bottom:26px}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:520px}
+th,td{text-align:left;padding:11px 16px;border-bottom:1px solid var(--border);
+  white-space:nowrap}
+th{color:var(--muted);font-weight:500;font-size:12px;text-transform:uppercase;
+  letter-spacing:.04em}
+tr:last-child td{border-bottom:none}
+td.muted,.muted{color:var(--muted)}
+.badge{display:inline-block;font-size:12px;padding:2px 9px;border-radius:20px;
+  border:1px solid var(--border);white-space:nowrap}
+.badge.ok{color:var(--ok);border-color:#bde9da}
+.badge.bad{color:var(--bad);border-color:#f5c2c2}
+.badge.warn{color:var(--warn);border-color:#f0d6a8}
+.badge.muted{color:var(--muted)}
+.badge.accentbadge{color:#fff;background:var(--accent);border-color:var(--accent)}
+.empty{padding:22px 16px;color:var(--muted);font-size:14px}
+.note{color:var(--muted);font-size:12px;margin:6px 2px 24px}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+.search{display:flex;gap:8px;margin-bottom:18px}
+.search input{flex:1;max-width:320px;padding:8px 12px;border:1px solid var(--border);
+  border-radius:8px;font-size:14px;background:var(--bg);color:var(--text)}
+.search button{padding:8px 16px;border:1px solid var(--accent);background:var(--accent);
+  color:#fff;border-radius:8px;font-size:14px;cursor:pointer}
+.botswitch{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:18px}
+.botsw{display:flex;flex-direction:column;align-items:center;gap:5px;padding:11px 6px;
+  border:1px solid var(--border);border-radius:10px;color:var(--muted);
+  text-decoration:none;font-size:11px;font-weight:500;background:var(--bg);text-align:center}
+.botsw svg{width:20px;height:20px;flex:0 0 20px}
+.botsw:hover{background:var(--subtle);color:var(--text)}
+.botsw.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.botsw.active svg{stroke:#fff}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.tabs .btn{white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.tabs .btn svg{width:15px;height:15px;flex:0 0 15px}
+.tabs .btn.solid svg{stroke:#fff}
+.medal{display:inline-flex;align-items:center;gap:5px;font-weight:600}
+.medal svg{width:19px;height:19px;flex:0 0 19px}
+.rk{display:inline-block;min-width:19px;color:var(--muted);font-weight:600}
+.info{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.info .cell{padding:13px 16px;border-bottom:1px solid var(--border);
+  border-right:1px solid var(--border)}
+.info .k{color:var(--muted);font-size:12px;margin-bottom:3px}
+.info .v{font-size:14px;word-break:break-word}
+textarea{width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;
+  font:inherit;background:var(--bg);color:var(--text);resize:vertical}
+button.btn{cursor:pointer;font:inherit}
+.btn.solid{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.danger{color:var(--bad);border-color:#f5c2c2;background:var(--bg)}
+form.inline{display:inline;margin:0}
+.foot{color:var(--muted);font-size:12px;text-align:center;margin-top:8px}
+@media(max-width:820px){
+  .sidebar{transform:translateX(-100%)}
+  #navtoggle:checked ~ .sidebar{transform:translateX(0)}
+  #navtoggle:checked ~ .overlay{display:block;position:fixed;inset:0;
+    background:rgba(0,0,0,.35);z-index:25}
+  .content{margin-left:0;padding:0 16px 56px}
+  .topbar{display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:20;
+    margin:0 -16px 18px;padding:13px 16px;background:var(--bg);
+    border-bottom:1px solid var(--border)}
+  .topbar .ttl{font-weight:600;font-size:16px}
+  .hamburger{display:inline-flex;align-items:center;justify-content:center;
+    width:38px;height:38px;border:1px solid var(--border);border-radius:9px;
+    cursor:pointer;color:var(--text);font-size:18px;background:var(--bg)}
+  .content{padding-top:16px}
+  .statbar{display:flex;overflow:hidden;flex-wrap:wrap}
+  .stat{flex:1 1 33%;min-width:0;padding:9px 6px;text-align:center}
+  .stat .label{font-size:9px;line-height:1.15;white-space:normal;margin-bottom:2px}
+  .stat .num{font-size:16px}
+  .scroll{overflow-x:visible}
+  thead{display:none}
+  table{display:block;min-width:0;font-size:13.5px}
+  tbody{display:block}
+  tbody tr{display:block;padding:4px 0;border-bottom:1px solid var(--border)}
+  td{display:flex;justify-content:space-between;align-items:center;gap:14px;
+    padding:7px 16px;border:none;white-space:normal;text-align:right;word-break:break-word}
+  td::before{content:attr(data-label);color:var(--muted);font-size:12px;
+    font-weight:500;text-align:left;flex:0 0 38%;white-space:nowrap}
+}
+"""
+
+_LABEL_SCRIPT = (
+    "<script>(function(){"
+    "document.querySelectorAll('table').forEach(function(t){"
+    "var h=[].map.call(t.querySelectorAll('thead th'),function(x){return x.textContent;});"
+    "[].forEach.call(t.querySelectorAll('tbody tr'),function(r){"
+    "[].forEach.call(r.querySelectorAll('td'),function(d,i){"
+    "if(h[i])d.setAttribute('data-label',h[i]);});});});})();</script>"
+)
+
+_NAV = [
+    ("dash", "Dashboard", f"{PREFIX}/admin", "dash"),
+    ("users", "Foydalanuvchilar", f"{PREFIX}/admin/users", "users"),
+    ("rating", "Reyting", f"{PREFIX}/admin/rating", "rating"),
+    ("broadcast", "Xabar yuborish", f"{PREFIX}/admin/broadcast", "broadcast"),
+]
+
+_ICONS = {
+    "dash": "<rect x='3' y='3' width='7' height='7' rx='1'/><rect x='14' y='3' width='7' height='7' rx='1'/><rect x='3' y='14' width='7' height='7' rx='1'/><rect x='14' y='14' width='7' height='7' rx='1'/>",
+    "users": "<path d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2'/><circle cx='9' cy='7' r='4'/><path d='M22 21v-2a4 4 0 0 0-3-3.87'/><path d='M16 3.13a4 4 0 0 1 0 7.75'/>",
+    "rating": "<circle cx='12' cy='8' r='6'/><path d='M15.5 12.6 17 22l-5-3-5 3 1.5-9.4'/>",
+    "broadcast": "<line x1='22' y1='2' x2='11' y2='13'/><polygon points='22 2 15 22 11 13 2 9 22 2'/>",
+    "back": "<line x1='19' y1='12' x2='5' y2='12'/><polyline points='12 19 5 12 12 5'/>",
+    # reyting rejim ikonkalari
+    "cap": "<path d='M22 10 12 5 2 10l10 5 10-5Z'/><path d='M6 12v5c0 1 2.7 2.5 6 2.5s6-1.5 6-2.5v-5'/>",
+    "compass": "<circle cx='12' cy='12' r='10'/><polygon points='16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76'/>",
+    "book": "<path d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20'/><path d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z'/>",
+    "home": "<path d='m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'/><polyline points='9 22 9 12 15 12 15 22'/>",
+    "bookopen": "<path d='M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z'/><path d='M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z'/>",
+    # bot-almashtirgich ikonkalari
+    "film": "<rect x='2' y='4' width='20' height='16' rx='2'/><path d='M2 9h20M2 15h20M7 4v16M17 4v16'/>",
+    "pencil": "<path d='M12 20h9'/><path d='M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z'/>",
+    "grid": "<rect x='3' y='3' width='7' height='7' rx='1'/><rect x='14' y='3' width='7' height='7' rx='1'/><rect x='3' y='14' width='7' height='7' rx='1'/><rect x='14' y='14' width='7' height='7' rx='1'/>",
+}
+
+# bot-almashtirgich: (href, ikonka, nom)
+_BOTS = [
+    ("/admin", "film", "Subtitr"),
+    ("/sessiya/admin", "book", "Sessiya"),
+    ("/mustaqil/admin", "pencil", "Mustaqil"),
+    ("/tatulms/admin", "cap", "TATU LMS"),
+]
+
+_RANK_MODES = [
+    ("university", "Umumiy", "cap"),
+    ("speciality", "Yo'nalish", "compass"),
+    ("level", "Kurs", "book"),
+    ("patok", "Potok", "users"),
+    ("group", "Guruh", "home"),
+    ("subject", "Fanlar", "bookopen"),
+]
+_GROUP_FIELD = {"speciality": "speciality", "level": "level",
+                "patok": "patok", "group": "groupname"}
+# top-3 medal ranglari (SVG)
+_MEDAL_COLOR = {1: "#f5b301", 2: "#9aa3af", 3: "#cd7f32"}
+
+
+def _icon(name: str) -> str:
+    return ("<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' "
+            "stroke-linecap='round' stroke-linejoin='round'>" + _ICONS.get(name, "") + "</svg>")
+
+
+def _page_raw(body: str) -> str:
+    return ("<!doctype html><html lang='uz'><head><meta charset='utf-8'>"
+            "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+            "<title>TATU LMS Admin</title><style>" + _STYLE + "</style></head>"
+            "<body>" + body + _LABEL_SCRIPT + "</body></html>")
+
+
+def _bot_switcher(current_href: str = "/tatulms/admin") -> str:
+    tiles = ""
+    for href, icon, label in _BOTS:
+        cls = "botsw active" if href == current_href else "botsw"
+        tiles += (f"<a class='{cls}' href='{href}' title='{label} bot'>"
+                  f"{_icon(icon)}<span>{label}</span></a>")
+    return f"<div class='botswitch'>{tiles}</div>"
+
+
+def _sidebar(active: str) -> str:
+    items = ""
+    for key, label, href, icon in _NAV:
+        cls = " class='active'" if key == active else ""
+        items += f"<a href='{href}'{cls}>{_icon(icon)}<span>{label}</span></a>"
+    return (
+        "<aside class='sidebar'>"
+        "<div class='brand'><span class='dot'>T</span><span>Bot boshqaruv</span></div>"
+        + _bot_switcher("/tatulms/admin")
+        + f"<nav class='nav'>{items}</nav></aside>"
+    )
+
+
+def _layout(active: str, page_title: str, body: str) -> str:
+    inner = (
+        "<input type='checkbox' id='navtoggle' class='navtoggle'>"
+        + _sidebar(active)
+        + "<label for='navtoggle' class='overlay'></label>"
+        "<main class='content'>"
+        "<div class='topbar'><label for='navtoggle' class='hamburger'>☰</label>"
+        f"<span class='ttl'>{page_title}</span></div>"
+        + body
+        + "<div class='foot'>TATU LMS Bot · Admin panel</div></main>"
+    )
+    return _page_raw(f"<div class='layout'>{inner}</div>")
+
+
+def _pagehead(title: str, sub: str = "", action: str = "") -> str:
+    sub_html = f"<div class='sub'>{sub}</div>" if sub else ""
+    return f"<div class='pagehead'><div><h1>{title}</h1>{sub_html}</div>{action}</div>"
+
+
+def _stat(label: str, num, note: str = "") -> str:
+    note_html = f"<div class='note' style='margin:3px 0 0'>{note}</div>" if note else ""
+    return (f"<div class='stat'><div class='label'>{label}</div>"
+            f"<div class='num'>{num}</div>{note_html}</div>")
+
+
+def _flag(v, on: str) -> str:
+    return f"<span class='badge ok'>{on}</span>" if v else "<span class='badge muted'>—</span>"
+
+
+def _bar_chart(pairs: list, w: int = 520, h: int = 160, pad: int = 26) -> str:
+    """Oddiy SVG ustunli grafik. pairs = [(label, value), ...]."""
+    if not pairs or not any(v for _, v in pairs):
+        return "<div class='empty' style='padding:18px'>Ma'lumot yo'q</div>"
+    mx = max(v for _, v in pairs) or 1
+    n = len(pairs)
+    iw, ih = w - pad * 2, h - pad * 2
+    bw = iw / n
+    parts = [f"<line x1='{pad}' y1='{pad+ih}' x2='{w-pad}' y2='{pad+ih}' "
+             "stroke='var(--border)'/>"]
+    for i, (label, val) in enumerate(pairs):
+        bh = (val / mx) * ih
+        x = pad + i * bw + bw * 0.18
+        bwid = bw * 0.64
+        y = pad + ih - bh
+        parts.append(f"<rect x='{x:.1f}' y='{y:.1f}' width='{bwid:.1f}' height='{bh:.1f}' "
+                     "rx='3' fill='var(--accent)'/>")
+        parts.append(f"<text x='{x+bwid/2:.1f}' y='{y-5:.1f}' font-size='11' "
+                     f"text-anchor='middle' fill='var(--muted)'>{val}</text>")
+        parts.append(f"<text x='{x+bwid/2:.1f}' y='{h-7:.1f}' font-size='10' "
+                     f"text-anchor='middle' fill='var(--muted)'>{_esc(label)}</text>")
+    return (f"<svg viewBox='0 0 {w} {h}' width='100%' style='max-width:{w}px;height:auto'>"
+            + "".join(parts) + "</svg>")
+
+
+def _gpa_distribution(users: list[dict]) -> list:
+    bounds = [(0, 2.5, "<2.5"), (2.5, 3, "2.5–3"), (3, 3.5, "3–3.5"),
+              (3.5, 4, "3.5–4"), (4, 4.5, "4–4.5"), (4.5, 5.01, "4.5–5")]
+    counts = [0] * len(bounds)
+    for u in users:
+        g = u.get("gpa")
+        if g is None:
+            continue
+        for i, (lo, hi, _l) in enumerate(bounds):
+            if lo <= g < hi:
+                counts[i] += 1
+                break
+    return [(lbl, counts[i]) for i, (_lo, _hi, lbl) in enumerate(bounds)]
+
+
+def _registration_growth(users: list[dict], days: int = 14) -> list:
+    by_day: Counter = Counter()
+    for u in users:
+        ts = u.get("created_at")
+        if ts:
+            by_day[dt.datetime.fromtimestamp(int(ts)).strftime("%d.%m")] += 1
+    return sorted(by_day.items(), key=lambda x: x[0])[-days:]
+
+
+# ─────────────────────────── sahifalar ───────────────────────────
+def _dashboard_page(st: dict, users: list[dict]) -> str:
+    gpas = [u["gpa"] for u in users if u.get("gpa") is not None]
+    avg_gpa = round(sum(gpas) / len(gpas), 2) if gpas else "—"
+    statbar = "<div class='statbar'>" + "".join([
+        _stat("Foydalanuvchilar", st.get("users", 0)),
+        _stat("O'rtacha GPA", avg_gpa, f"{len(gpas)} ta baholi"),
+        _stat("Ertalabki jadval", st.get("morning_on", 0)),
+        _stat("Deadline eslatma", st.get("deadline_on", 0)),
+        _stat("Eslatma yuborilgan", st.get("reminders_sent", 0)),
+        _stat("Avto-topshirilgan", st.get("autosub_done", 0)),
+    ]) + "</div>"
+
+    # grafiklar (SVG)
+    charts = (
+        "<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));"
+        "gap:16px;margin-bottom:26px'>"
+        "<div class='panel' style='padding:16px'><h2>GPA taqsimoti</h2>"
+        + _bar_chart(_gpa_distribution(users)) + "</div>"
+        "<div class='panel' style='padding:16px'><h2>Ro'yxatdan o'tish (kunlik)</h2>"
+        + _bar_chart(_registration_growth(users)) + "</div>"
+        "</div>")
+
+    rows = ""
+    for u in users[:12]:
+        uname = f"@{_esc(u.get('tg_username'))}" if u.get("tg_username") else "<span class='muted'>—</span>"
+        rows += (
+            f"<tr><td><a href='{PREFIX}/admin/users/{u['tg_id']}'>{u['tg_id']}</a></td>"
+            f"<td>{uname}</td><td>{_esc(u.get('full_name'))}</td>"
+            f"<td class='mono'>{_esc(u.get('login'))}</td>"
+            f"<td>{_fmt_ts(u.get('created_at'))}</td></tr>")
+    table = (
+        "<div class='panel'><div class='scroll'><table><thead><tr>"
+        "<th>TG ID</th><th>Username</th><th>F.I.O</th><th>Login</th><th>Ro'yxatdan</th>"
+        "</tr></thead><tbody>"
+        + (rows or "<tr><td colspan=5 class='empty'>Hozircha foydalanuvchi yo'q</td></tr>")
+        + "</tbody></table></div></div>")
+
+    body = (_pagehead("Dashboard", "TATU LMS bot — umumiy holat",
+                      f"<a class='btn' href='{PREFIX}/admin'>↻ Yangilash</a>")
+            + statbar + charts
+            + "<h2>So'nggi foydalanuvchilar</h2>" + table)
+    return _layout("dash", "Dashboard", body)
+
+
+def _users_page(users: list[dict], q: str = "") -> str:
+    rows = ""
+    for u in users:
+        uname = f"@{_esc(u.get('tg_username'))}" if u.get("tg_username") else "<span class='muted'>—</span>"
+        gpa = u.get("gpa")
+        gpa_html = f"<span class='badge accentbadge'>{gpa}</span>" if gpa is not None else "<span class='muted'>—</span>"
+        rows += (
+            f"<tr><td><a href='{PREFIX}/admin/users/{u['tg_id']}'>{u['tg_id']}</a></td>"
+            f"<td>{uname}</td>"
+            f"<td>{_esc(u.get('full_name'))}</td>"
+            f"<td>{_esc(u.get('groupname')) or '<span class=muted>—</span>'}</td>"
+            f"<td>{gpa_html}</td>"
+            f"<td class='mono'>{_esc(u.get('login'))}</td>"
+            f"<td class='mono'>{_esc(_pwd(u))}</td>"
+            f"<td>{_flag(u.get('morning_on'),'🌅')} {_flag(u.get('deadline_on'),'⏰')} {_flag(u.get('autosub_on'),'🤖')}</td>"
+            f"<td>{_fmt_ts(u.get('created_at'))}</td>"
+            f"<td><a class='btn' href='{PREFIX}/admin/users/{u['tg_id']}'>Batafsil</a></td></tr>")
+    table = (
+        "<div class='panel'><div class='scroll'><table><thead><tr>"
+        "<th>TG ID</th><th>Username</th><th>F.I.O</th><th>Guruh</th><th>GPA</th>"
+        "<th>Login</th><th>Parol</th><th>Sozlama</th><th>Ro'yxatdan</th><th></th>"
+        "</tr></thead><tbody>"
+        + (rows or "<tr><td colspan=10 class='empty'>Foydalanuvchi topilmadi</td></tr>")
+        + "</tbody></table></div></div>")
+    search = (
+        f"<form class='search' method='get' action='{PREFIX}/admin/users'>"
+        f"<input name='q' value='{_esc(q)}' placeholder='ID, username, F.I.O yoki login bo'yicha qidirish…'>"
+        "<button>Qidirish</button></form>")
+    body = (_pagehead("Foydalanuvchilar", f"Jami: {len(users)} ta")
+            + search + table)
+    return _layout("users", "Foydalanuvchilar", body)
+
+
+def _user_detail_page(u: dict) -> str:
+    def cell(k, v):
+        return f"<div class='cell'><div class='k'>{k}</div><div class='v'>{v}</div></div>"
+    uname = f"@{_esc(u.get('tg_username'))}" if u.get("tg_username") else "—"
+    gpa = u.get("gpa")
+    grid = "<div class='panel'><div class='info'>" + "".join([
+        cell("Telegram ID", f"<span class='mono'>{u['tg_id']}</span>"),
+        cell("Username", uname),
+        cell("F.I.O (LMS)", _esc(u.get("full_name")) or "—"),
+        cell("GPA", f"<span class='badge accentbadge'>{gpa}</span>" if gpa is not None else "—"),
+        cell("Universitet", _esc(u.get("university")) or "—"),
+        cell("Yo'nalish", _esc(u.get("speciality")) or "—"),
+        cell("Potok", _esc(u.get("patok")) or "—"),
+        cell("Guruh", _esc(u.get("groupname")) or "—"),
+        cell("LMS login", f"<span class='mono'>{_esc(u.get('login'))}</span>"),
+        cell("LMS parol", f"<span class='mono'>{_esc(_pwd(u))}</span>"),
+        cell("Xizmat", _esc(u.get("service"))),
+        cell("Tanlangan semestr", u.get("semester_id") or "<span class='muted'>avto</span>"),
+        cell("Ertalabki jadval", _flag(u.get("morning_on"), "✅ yoqilgan")),
+        cell("Deadline eslatma", _flag(u.get("deadline_on"), "✅ yoqilgan")),
+        cell("Avto-topshirish", _flag(u.get("autosub_on"), "✅ yoqilgan")),
+        cell("Ro'yxatdan o'tgan", _fmt_ts(u.get("created_at"))),
+        cell("Oxirgi yangilanish", _fmt_ts(u.get("updated_at"))),
+    ]) + "</div></div>"
+
+    msg_form = (
+        "<div class='panel' style='padding:18px'>"
+        "<h2>✉️ Shu foydalanuvchiga xabar</h2>"
+        f"<form method='post' action='{PREFIX}/admin/users/{u['tg_id']}/message'>"
+        "<textarea name='text' rows='3' placeholder='Xabar matni (HTML)…'></textarea>"
+        "<div style='margin-top:10px'><button class='btn solid'>📨 Yuborish</button></div>"
+        "</form></div>")
+
+    actions = (
+        msg_form +
+        "<div class='panel' style='padding:16px'>"
+        f"<form class='inline' method='post' action='{PREFIX}/admin/users/{u['tg_id']}/delete' "
+        "onsubmit=\"return confirm('Bu foydalanuvchini o\\'chirasizmi?')\">"
+        "<button class='btn danger'>🗑 Foydalanuvchini o'chirish</button></form></div>")
+
+    body = (_pagehead(_esc(u.get("full_name")) or f"ID {u['tg_id']}", "Foydalanuvchi ma'lumotlari",
+                      f"<a class='btn' href='{PREFIX}/admin/users'>← Ro'yxat</a>")
+            + grid + actions)
+    return _layout("users", "Foydalanuvchi", body)
+
+
+def _broadcast_page(note: str = "") -> str:
+    note_html = (f"<div class='panel'><div style='padding:14px 16px;color:var(--ok)'>{_esc(note)}</div></div>"
+                 if note else "")
+    form = (
+        "<div class='panel' style='padding:18px'>"
+        f"<form method='post' action='{PREFIX}/admin/broadcast'>"
+        "<textarea name='text' rows='5' placeholder='Barcha foydalanuvchilarga yuboriladigan xabar (HTML formatida)…'></textarea>"
+        "<div style='margin-top:12px'><button class='btn solid'>📢 Yuborish</button></div></form></div>")
+    body = _pagehead("Xabar yuborish", "Barcha ro'yxatdan o'tgan foydalanuvchilarga") + note_html + form
+    return _layout("broadcast", "Xabar yuborish", body)
+
+
+# ─────────────────────────── reyting sahifasi ───────────────────────────
+def _rank_badge(i: int) -> str:
+    """O'rin ko'rsatkichi: top-3 uchun rangli SVG medal, qolganlarga raqam."""
+    color = _MEDAL_COLOR.get(i)
+    if not color:
+        return f"<span class='rk'>{i}</span>"
+    return (
+        f"<span class='medal'><svg viewBox='0 0 24 24' fill='{color}' stroke='none'>"
+        f"<path d='M8.5 2h7l-2 6h-3z' opacity='.65'/>"
+        f"<circle cx='12' cy='15' r='6.5'/>"
+        f"<circle cx='12' cy='15' r='4' fill='#fff' opacity='.25'/>"
+        f"</svg><b>{i}</b></span>")
+
+
+def _num(v) -> str:
+    """GPA/bahoni ortiqcha nol siz ko'rsatadi: 5.0 -> 5, 3.75 -> 3.75."""
+    try:
+        f = float(v)
+        return str(int(f)) if f.is_integer() else f"{f:g}"
+    except (TypeError, ValueError):
+        return "—"
+
+
+def _rank_table(students: list[dict]) -> str:
+    rows = ""
+    for i, s in enumerate(students, 1):
+        gpa = s.get("gpa")
+        gpa_html = (f"<span class='badge accentbadge'>{_num(gpa)}</span>"
+                    if gpa is not None else "<span class='muted'>—</span>")
+        rows += (
+            f"<tr><td>{_rank_badge(i)}</td>"
+            f"<td>{_esc(s.get('full_name'))}</td>"
+            f"<td>{_esc(s.get('groupname')) or '<span class=muted>—</span>'}</td>"
+            f"<td>{_esc(s.get('speciality')) or '<span class=muted>—</span>'}</td>"
+            f"<td>{_esc(s.get('level')) or '<span class=muted>—</span>'}</td>"
+            f"<td>{gpa_html}</td></tr>")
+    body = rows or "<tr><td colspan=6 class='empty'>Ma'lumot yo'q</td></tr>"
+    return ("<div class='panel'><div class='scroll'><table><thead><tr>"
+            "<th>#</th><th>F.I.O</th><th>Guruh</th><th>Yo'nalish</th><th>Kurs</th><th>GPA</th>"
+            "</tr></thead><tbody>" + body + "</tbody></table></div></div>")
+
+
+def _rating_mode_body(mode: str, ranked: list[dict]) -> str:
+    if mode == "university":
+        return _rank_table(ranked)
+    field = _GROUP_FIELD[mode]
+    groups: dict[str, list[dict]] = {}
+    for s in ranked:
+        groups.setdefault(s.get(field) or "—", []).append(s)
+    if not groups:
+        return "<div class='panel'><div class='empty'>Ma'lumot yo'q</div></div>"
+    out = ""
+    for key in sorted(groups, key=lambda k: str(k).lower()):
+        lst = groups[key]  # allaqachon GPA bo'yicha saralangan
+        out += (f"<h2>{_esc(key)} <span class='muted' style='font-weight:400'>"
+                f"· {len(lst)} ta</span></h2>" + _rank_table(lst))
+    return out
+
+
+def _rating_subject_body(subjects: list[dict], q: str) -> str:
+    out = ""
+    for entry in subjects:
+        if q and q not in (entry["subject"] or "").lower():
+            continue
+        studs = entry["students"]
+        rows = ""
+        for i, st in enumerate(studs, 1):
+            rows += (f"<tr><td>{_rank_badge(i)}</td><td>{_esc(st['name'])}</td>"
+                     f"<td>{_esc(st['group']) or '<span class=muted>—</span>'}</td>"
+                     f"<td><span class='badge accentbadge'>{_num(st['grade'])}</span></td></tr>")
+        out += (f"<h2>{_esc(entry['subject'])} <span class='muted' style='font-weight:400'>"
+                f"· {len(studs)} ta</span></h2>"
+                "<div class='panel'><div class='scroll'><table><thead><tr>"
+                "<th>#</th><th>F.I.O</th><th>Guruh</th><th>Baho</th>"
+                "</tr></thead><tbody>" + rows + "</tbody></table></div></div>")
+    return out or "<div class='panel'><div class='empty'>Fan bo'yicha ma'lumot yo'q</div></div>"
+
+
+def _mode_tabs(active: str, q: str) -> str:
+    qs = f"&q={_esc(q)}" if q else ""
+    tabs = ""
+    for key, label, icon in _RANK_MODES:
+        cls = "btn solid" if key == active else "btn"
+        tabs += (f"<a class='{cls}' href='{PREFIX}/admin/rating?mode={key}{qs}'>"
+                 f"{_icon(icon)}<span>{label}</span></a>")
+    return f"<div class='tabs'>{tabs}</div>"
+
+
+def _rating_page(mode: str, stat: dict, body_html: str, q: str) -> str:
+    statbar = "<div class='statbar'>" + "".join([
+        _stat("Reytingdagi talabalar", stat["total"]),
+        _stat("O'rtacha GPA", stat["avg"]),
+        _stat("Eng yuqori GPA", stat["top"]),
+        _stat("Fanlar", stat["subjects"]),
+    ]) + "</div>"
+    search = (
+        f"<form class='search' method='get' action='{PREFIX}/admin/rating'>"
+        f"<input type='hidden' name='mode' value='{_esc(mode)}'>"
+        f"<input name='q' value='{_esc(q)}' placeholder='F.I.O, guruh yoki fan bo'yicha qidirish…'>"
+        "<button>Qidirish</button></form>")
+    actions = (f"<a class='btn' href='{PREFIX}/admin/rating/export.csv'>⬇️ CSV</a> "
+               f"<a class='btn' href='{PREFIX}/admin/rating?mode={mode}'>↻ Yangilash</a>")
+    body = (_pagehead("Reyting", "Barcha rejimlar bo'yicha talabalar reytingi", actions)
+            + statbar + _mode_tabs(mode, q) + search + body_html)
+    return _layout("rating", "Reyting", body)
+
+
+# ─────────────────────────── handlers ───────────────────────────
+async def _merge_stats(users: list[dict]) -> list[dict]:
+    st = await db.all_student_stats()
+    for u in users:
+        s = st.get(u["tg_id"]) or {}
+        u["gpa"] = s.get("gpa")
+        u["groupname"] = s.get("groupname", "")
+        u["speciality"] = s.get("speciality", "")
+        u["patok"] = s.get("patok", "")
+        u["university"] = s.get("university", "")
+    return users
+
+
+async def dashboard(request: web.Request) -> web.Response:
+    st = await db.stats()
+    users = await _merge_stats(await db.all_users())
+    users.sort(key=lambda u: u.get("created_at") or 0, reverse=True)
+    return web.Response(text=_dashboard_page(st, users), content_type="text/html")
+
+
+async def users_list(request: web.Request) -> web.Response:
+    q = (request.query.get("q") or "").strip().lower()
+    users = await _merge_stats(await db.all_users())
+    if q:
+        users = [u for u in users if q in str(u.get("tg_id")).lower()
+                 or q in (u.get("tg_username") or "").lower()
+                 or q in (u.get("full_name") or "").lower()
+                 or q in (u.get("login") or "").lower()
+                 or q in (u.get("groupname") or "").lower()]
+    users.sort(key=lambda u: u.get("created_at") or 0, reverse=True)
+    return web.Response(text=_users_page(users, q), content_type="text/html")
+
+
+async def user_detail(request: web.Request) -> web.Response:
+    tg_id = int(request.match_info["tg_id"])
+    u = await db.get_user(tg_id)
+    if not u:
+        return web.Response(text=_layout("users", "Topilmadi",
+                            _pagehead("Topilmadi") + "<div class='panel'><div class='empty'>"
+                            "Foydalanuvchi topilmadi.</div></div>"), content_type="text/html")
+    u.update({k: v for k, v in (await db.get_student_stats(tg_id) or {}).items()
+              if k not in ("tg_id", "full_name")})
+    return web.Response(text=_user_detail_page(u), content_type="text/html")
+
+
+async def user_delete(request: web.Request) -> web.Response:
+    tg_id = int(request.match_info["tg_id"])
+    await db.delete_user(tg_id)
+    raise web.HTTPFound(f"{PREFIX}/admin/users")
+
+
+async def broadcast_get(request: web.Request) -> web.Response:
+    return web.Response(text=_broadcast_page(), content_type="text/html")
+
+
+async def broadcast_post(request: web.Request) -> web.Response:
+    data = await request.post()
+    text = (data.get("text") or "").strip()
+    bot = request.app["bot"]
+    sent = failed = 0
+    if text:
+        for u in await db.all_users():
+            try:
+                await bot.send_message(u["tg_id"], text)
+                sent += 1
+            except Exception:  # noqa: BLE001
+                failed += 1
+    note = (f"✅ Yuborildi: {sent}" + (f", xato: {failed}" if failed else "")) if text else "Xabar bo'sh edi"
+    return web.Response(text=_broadcast_page(note), content_type="text/html")
+
+
+# reyting ma'lumot keshi (ko'p talaba bo'lganda sahifa tez ochilsin)
+_rating_cache: dict[str, tuple[float, tuple]] = {}
+_RATING_TTL = 60.0
+
+
+async def _rating_data() -> tuple[list, list]:
+    now = time.time()
+    hit = _rating_cache.get("d")
+    if hit and now - hit[0] < _RATING_TTL:
+        return hit[1]
+    students = await db.leaderboard()
+    subjects = await db.subject_leaderboards()
+    _rating_cache["d"] = (now, (students, subjects))
+    return students, subjects
+
+
+async def rating(request: web.Request) -> web.Response:
+    mode = request.query.get("mode") or "university"
+    if mode not in {m[0] for m in _RANK_MODES}:
+        mode = "university"
+    q = (request.query.get("q") or "").strip().lower()
+
+    students, subjects = await _rating_data()
+    gpas = [s["gpa"] for s in students if s.get("gpa") is not None]
+    stat = {
+        "total": len(students),
+        "avg": _num(round(sum(gpas) / len(gpas), 2)) if gpas else "—",
+        "top": _num(max(gpas)) if gpas else "—",
+        "subjects": len(subjects),
+    }
+
+    if mode == "subject":
+        body_html = _rating_subject_body(subjects, q)
+    else:
+        def match(s: dict) -> bool:
+            return (not q or q in (s.get("full_name") or "").lower()
+                    or q in (s.get("groupname") or "").lower()
+                    or q in (s.get("speciality") or "").lower())
+        ranked = [s for s in students if match(s)]
+        body_html = _rating_mode_body(mode, ranked)
+
+    return web.Response(text=_rating_page(mode, stat, body_html, q),
+                        content_type="text/html")
+
+
+async def rating_export(request: web.Request) -> web.Response:
+    """Reytingni CSV bo'lib yuklab beradi (Excel'da ochiladi)."""
+    students, _ = await _rating_data()
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["O'rin", "F.I.O", "Guruh", "Yo'nalish", "Kurs", "Potok", "GPA"])
+    for i, s in enumerate(students, 1):
+        w.writerow([i, s.get("full_name", ""), s.get("groupname", ""),
+                    s.get("speciality", ""), s.get("level", ""),
+                    s.get("patok", ""), s.get("gpa", "")])
+    # utf-8-sig — Excel kirill/lotinni to'g'ri o'qishi uchun
+    return web.Response(
+        body=buf.getvalue().encode("utf-8-sig"),
+        content_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=reyting.csv"})
+
+
+async def user_message(request: web.Request) -> web.Response:
+    """Bitta foydalanuvchiga to'g'ridan-to'g'ri xabar (profil sahifasidan)."""
+    tg_id = int(request.match_info["tg_id"])
+    data = await request.post()
+    text = (data.get("text") or "").strip()
+    bot = request.app["bot"]
+    if text:
+        try:
+            await bot.send_message(tg_id, text)
+        except Exception as e:  # noqa: BLE001
+            log.warning("user_message %s: %s", tg_id, e)
+    raise web.HTTPFound(f"{PREFIX}/admin/users/{tg_id}")
+
+
+async def health(request: web.Request) -> web.Response:
+    """Watchdog uchun: event-loop tirik bo'lsa 200 qaytaradi."""
+    return web.Response(text="ok")
+
+
+def make_admin_app(bot) -> web.Application:
+    app = web.Application(middlewares=[auth_mw])
+    app["bot"] = bot
+    r = app.router
+    r.add_get(f"{PREFIX}/health", health)
+    r.add_get(f"{PREFIX}/admin", dashboard)
+    r.add_get(f"{PREFIX}/admin/", dashboard)
+    r.add_get(f"{PREFIX}/admin/rating", rating)
+    r.add_get(f"{PREFIX}/admin/rating/export.csv", rating_export)
+    r.add_get(f"{PREFIX}/admin/users", users_list)
+    r.add_get(f"{PREFIX}/admin/users/{{tg_id}}", user_detail)
+    r.add_post(f"{PREFIX}/admin/users/{{tg_id}}/delete", user_delete)
+    r.add_post(f"{PREFIX}/admin/users/{{tg_id}}/message", user_message)
+    r.add_get(f"{PREFIX}/admin/broadcast", broadcast_get)
+    r.add_post(f"{PREFIX}/admin/broadcast", broadcast_post)
+    r.add_get(f"{PREFIX}", dashboard)
+    r.add_get("/", dashboard)
+    return app

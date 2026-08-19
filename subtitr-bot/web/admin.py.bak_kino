@@ -1,0 +1,1703 @@
+"""Admin web panel (arxitektura 12-bo'lim, BOSQICH 3).
+
+Chap sidebar navigatsiya + moslashuvchan (responsive) layout (kompyuter +
+telefon). Sahifalar: Dashboard, Foydalanuvchilar, To'lovlar, Videolar,
+Xatoliklar. Hozircha read-only (mavjud users/videos/payments jadvallaridan).
+
+Kirish: HTTP Basic Auth (.env: ADMIN_USER/ADMIN_PASSWORD). Parol bo'sh bo'lsa
+panel yopiq. Dizayn: arxitektura 19-bo'lim (OpenAI uslubi — toza, monoxrom).
+"""
+from __future__ import annotations
+
+import base64
+import binascii
+import datetime as dt
+import hmac
+import html
+import logging
+import os
+import subprocess
+
+try:
+    import psutil
+except ImportError:
+    psutil = None
+
+from aiogram import Bot
+
+import aiohttp
+from aiohttp import web
+
+from config import settings
+from db.crud import (
+    admin_set_blocked,
+    admin_set_plan,
+    cancel_all_active_videos,
+    cancel_stuck_videos,
+    cancel_video,
+    donations_total,
+    get_api_usage_stats,
+    get_daily_stats,
+    get_dashboard_stats,
+    get_distributions,
+    get_effective_settings,
+    get_effective_tariffs,
+    get_queue,
+    get_user_detail,
+    list_donations,
+    list_payments,
+    list_users,
+    list_videos,
+    recent_errors,
+    recent_videos,
+    save_settings,
+    save_tariffs,
+    set_donation_approved,
+    set_donation_public,
+)
+from tariffs import TARIFFS
+
+logger = logging.getLogger(__name__)
+
+_TASHKENT_OFFSET = dt.timedelta(hours=5)
+
+_MODE_LABEL = {"original": "Original", "translate": "Tarjima",
+               "dual": "Ikki qatlam", "srt": ".srt"}
+_STATUS_LABEL = {"done": "Tayyor", "error": "Xato",
+                 "processing": "Jarayonda", "pending": "Navbatda"}
+_STATUS_CLASS = {"done": "ok", "error": "bad", "processing": "warn", "pending": "muted"}
+_SOURCE_LABEL = {"upload": "Fayl", "youtube": "YouTube",
+                 "instagram": "Instagram", "miniapp": "Mini App"}
+_PLAN_LABEL = {"free": "Bepul", "basic": "Basic", "premium": "Premium"}
+_PLAN_CLASS = {"free": "muted", "basic": "ok", "premium": "accentbadge"}
+_PAY_LABEL = {"paid": "To'langan", "pending": "Kutilmoqda", "failed": "Xato",
+              "refunded": "Qaytarilgan"}
+_PAY_CLASS = {"paid": "ok", "pending": "warn", "failed": "bad", "refunded": "muted"}
+
+
+# ---------------------------------------------------------------- auth
+
+def _authorized(request: web.Request) -> bool:
+    if not settings.admin_password:
+        return False
+    header = request.headers.get("Authorization", "")
+    if not header.startswith("Basic "):
+        return False
+    try:
+        raw = base64.b64decode(header[6:]).decode("utf-8")
+    except (binascii.Error, UnicodeDecodeError):
+        return False
+    user, _, pwd = raw.partition(":")
+    return hmac.compare_digest(user, settings.admin_user) and hmac.compare_digest(
+        pwd, settings.admin_password
+    )
+
+
+def _unauthorized() -> web.Response:
+    return web.Response(
+        status=401,
+        text="Avtorizatsiya talab qilinadi.",
+        headers={"WWW-Authenticate": 'Basic realm="Subtitr Admin"'},
+    )
+
+
+def _guard(request: web.Request) -> web.Response | None:
+    """Auth tekshiradi. None = OK; aks holda javob (401 yoki setup sahifasi)."""
+    if not settings.admin_password:
+        return web.Response(content_type="text/html", text=_setup_needed_page())
+    if not _authorized(request):
+        return _unauthorized()
+    return None
+
+
+# ---------------------------------------------------------------- helpers
+
+def _fmt_dt(value: dt.datetime | None) -> str:
+    return (value + _TASHKENT_OFFSET).strftime("%d.%m %H:%M") if value else "—"
+
+
+def _fmt_date(value: dt.datetime | None) -> str:
+    return (value + _TASHKENT_OFFSET).strftime("%d.%m.%Y") if value else "—"
+
+
+def _fmt_num(value: int) -> str:
+    return f"{value:,}".replace(",", " ")
+
+
+def _esc(value) -> str:
+    return html.escape(str(value)) if value is not None else "—"
+
+
+def _user_label(row: dict) -> str:
+    if row.get("username"):
+        return "@" + _esc(row["username"])
+    return f"id{_esc(row.get('telegram_id'))}"
+
+
+def _badge(text: str, cls: str = "muted") -> str:
+    return f"<span class='badge {cls}'>{text}</span>"
+
+
+def _scroll(table: str) -> str:
+    return f"<div class='scroll'>{table}</div>"
+
+
+# ---------------------------------------------------------------- icons (thin SVG)
+
+def _icon(name: str) -> str:
+    paths = {
+        "dash": "<rect x='3' y='3' width='7' height='7' rx='1'/><rect x='14' y='3' "
+                "width='7' height='7' rx='1'/><rect x='3' y='14' width='7' height='7' "
+                "rx='1'/><rect x='14' y='14' width='7' height='7' rx='1'/>",
+        "users": "<path d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2'/>"
+                 "<circle cx='9' cy='7' r='4'/><path d='M22 21v-2a4 4 0 0 0-3-3.87'/>"
+                 "<path d='M16 3.13a4 4 0 0 1 0 7.75'/>",
+        "pay": "<rect x='2' y='5' width='20' height='14' rx='2'/><path d='M2 10h20'/>",
+        "video": "<rect x='2' y='5' width='14' height='14' rx='2'/>"
+                 "<path d='m16 9 6-3v12l-6-3'/>",
+        "errors": "<path d='M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 "
+                  "1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z'/><path d='M12 9v4'/>"
+                  "<path d='M12 17h.01'/>",
+        "api": "<path d='M22 12h-4l-3 9L9 3l-3 9H2'/>",
+        "stats": "<line x1='6' y1='20' x2='6' y2='14'/><line x1='12' y1='20' "
+                 "x2='12' y2='4'/><line x1='18' y1='20' x2='18' y2='10'/>",
+        "queue": "<circle cx='12' cy='12' r='10'/><polyline points='12 6 12 12 16 14'/>",
+        "heart": "<path d='M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 "
+                 "5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z'/>",
+        "settings": "<circle cx='12' cy='12' r='3'/><path d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'/>",
+        "monitor": "<polyline points='22 12 18 12 15 21 9 3 6 12 2 12'/>",
+        "logs": "<path d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'/>",
+        "env": "<path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/><polyline points='14 2 14 8 20 8'/><line x1='16' y1='13' x2='8' y2='13'/><line x1='16' y1='17' x2='8' y2='17'/><polyline points='10 9 9 9 8 9'/>",
+        "broadcast": "<line x1='22' y1='2' x2='11' y2='13'/><polygon points='22 2 15 22 11 13 2 9 22 2'/>",
+        "service": "<rect x='2' y='2' width='20' height='8' rx='2'/><rect x='2' y='14' "
+                   "width='20' height='8' rx='2'/><line x1='6' y1='6' x2='6.01' y2='6'/>"
+                   "<line x1='6' y1='18' x2='6.01' y2='18'/>",
+    }
+    return (
+        "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' "
+        "stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'>"
+        + paths.get(name, "") + "</svg>"
+    )
+
+
+_NAV = [
+    ("dash", "Dashboard", "/admin", "dash"),
+    ("users", "Foydalanuvchilar", "/admin/users", "users"),
+    ("payments", "To'lovlar", "/admin/payments", "pay"),
+    ("donations", "Donatlar", "/admin/donations", "heart"),
+    ("videos", "Videolar", "/admin/videos", "video"),
+    ("jobs", "Navbat", "/admin/jobs", "queue"),
+    ("api", "API & Limitlar", "/admin/api", "api"),
+    ("stats", "Statistika", "/admin/stats", "stats"),
+    ("errors", "Xatoliklar", "/admin/errors", "errors"),
+    ("settings", "Sozlamalar", "/admin/settings", "settings"),
+    ("monitor", "Tizim Holati", "/admin/monitor", "monitor"),
+    ("services", "Servislar", "/admin/services", "service"),
+    ("logs", "Loglar", "/admin/logs", "logs"),
+    ("env", ".env Muharrir", "/admin/env", "env"),
+    ("broadcast", "Xabar Yuborish", "/admin/broadcast", "broadcast"),
+]
+
+
+# ---------------------------------------------------------------- styles
+
+_STYLE = """
+:root{--bg:#fff;--subtle:#f7f7f8;--border:#e5e5e5;--text:#0d0d0d;--muted:#6e6e80;
+  --accent:#0d0d0d;--ok:#10a37f;--bad:#ef4444;--warn:#d97706}
+*{box-sizing:border-box}
+body{margin:0;background:var(--subtle);color:var(--text);
+  font:15px/1.5 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+a{color:inherit}
+.navtoggle{display:none}
+.layout{display:flex;min-height:100vh}
+.sidebar{width:230px;flex:0 0 230px;background:var(--bg);
+  border-right:1px solid var(--border);padding:18px 14px;position:fixed;
+  top:0;left:0;bottom:0;overflow-y:auto;z-index:30;transition:transform .2s ease}
+.brand{font-weight:600;font-size:16px;padding:6px 10px 16px;display:flex;
+  align-items:center;gap:9px}
+.brand .dot{width:22px;height:22px;border-radius:7px;background:var(--accent);
+  color:#fff;display:inline-flex;align-items:center;justify-content:center;
+  font-size:13px}
+.nav a{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:8px;
+  color:var(--muted);text-decoration:none;font-size:14px;margin-bottom:2px}
+.nav a:hover{background:var(--subtle);color:var(--text)}
+.nav a.active{background:var(--subtle);color:var(--text);font-weight:500}
+.nav svg{width:18px;height:18px;flex:0 0 18px}
+.content{margin-left:230px;flex:1;padding:26px 28px 64px;min-width:0;width:100%}
+.topbar{display:none}
+.overlay{display:none}
+.hamburger{display:none}
+.pagehead{display:flex;align-items:baseline;justify-content:space-between;
+  gap:10px;margin-bottom:22px;flex-wrap:wrap}
+.pagehead h1{font-size:21px;font-weight:600;margin:0}
+.pagehead .sub{color:var(--muted);font-size:13px}
+.btn{color:var(--muted);text-decoration:none;font-size:13px;border:1px solid var(--border);
+  padding:6px 12px;border-radius:8px;background:var(--bg)}
+.btn:hover{color:var(--text)}
+.statbar{display:flex;background:var(--bg);border:1px solid var(--border);
+  border-radius:12px;overflow-x:auto;margin-bottom:28px}
+.stat{flex:1 0 auto;min-width:122px;padding:15px 18px;
+  border-right:1px solid var(--border)}
+.stat:last-child{border-right:none}
+.stat .label{color:var(--muted);font-size:13px;margin-bottom:5px;white-space:nowrap}
+.stat .num{font-size:24px;font-weight:600;letter-spacing:-.5px}
+.stat .note{color:var(--muted);font-size:12px;margin-top:3px;white-space:nowrap}
+h2{font-size:15px;font-weight:600;margin:0 0 12px}
+.panel{background:var(--bg);border:1px solid var(--border);border-radius:12px;
+  overflow:hidden;margin-bottom:26px}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:520px}
+th,td{text-align:left;padding:11px 16px;border-bottom:1px solid var(--border);
+  white-space:nowrap}
+th{color:var(--muted);font-weight:500;font-size:12px;text-transform:uppercase;
+  letter-spacing:.04em}
+tr:last-child td{border-bottom:none}
+td.muted,.muted{color:var(--muted)}
+.badge{display:inline-block;font-size:12px;padding:2px 9px;border-radius:20px;
+  border:1px solid var(--border);white-space:nowrap}
+.badge.ok{color:var(--ok);border-color:#bde9da}
+.badge.bad{color:var(--bad);border-color:#f5c2c2}
+.badge.warn{color:var(--warn);border-color:#f0d6a8}
+.badge.muted{color:var(--muted)}
+.badge.accentbadge{color:#fff;background:var(--accent);border-color:var(--accent)}
+.empty{padding:22px 16px;color:var(--muted);font-size:14px}
+.gauge{padding:18px}
+.gauge .top{display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:11px}
+.gauge .top b{font-size:15px}
+.gaugebar{height:10px;background:var(--subtle);border-radius:6px;overflow:hidden}
+.gaugefill{height:100%;background:var(--ok);border-radius:6px}
+.gaugefill.warn{background:var(--warn)}
+.gaugefill.bad{background:var(--bad)}
+.gaugemeta{display:flex;justify-content:space-between;margin-top:9px;font-size:13px;
+  flex-wrap:wrap;gap:4px}
+.note{color:var(--muted);font-size:12px;margin:6px 2px 24px}
+.chart{display:flex;align-items:flex-end;gap:5px;padding:18px 16px 12px}
+.bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}
+.bar .val{font-size:10px;color:var(--muted);height:13px}
+.bar .barinner{width:100%;height:140px;display:flex;align-items:flex-end;
+  justify-content:center}
+.bar .fill{width:100%;max-width:30px;background:var(--accent);
+  border-radius:5px 5px 0 0;min-height:2px}
+.bar .lbl{font-size:10px;color:var(--muted)}
+.dist{padding:4px 16px 10px}
+.dist .row{display:flex;align-items:center;gap:12px;padding:9px 0;
+  border-bottom:1px solid var(--border)}
+.dist .row:last-child{border-bottom:none}
+.dist .name{width:118px;font-size:13px;flex:0 0 auto}
+.dist .track{flex:1;height:8px;background:var(--subtle);border-radius:5px;overflow:hidden}
+.dist .bar2{height:100%;background:var(--accent);border-radius:5px}
+.dist .cnt{width:46px;text-align:right;font-size:13px;color:var(--muted);flex:0 0 auto}
+.err{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;
+  color:var(--bad);white-space:normal;max-width:380px}
+.search{display:flex;gap:8px;margin-bottom:18px}
+.search input{flex:1;max-width:320px;padding:8px 12px;border:1px solid var(--border);
+  border-radius:8px;font-size:14px;background:var(--bg);color:var(--text)}
+.search button{padding:8px 16px;border:1px solid var(--accent);background:var(--accent);
+  color:#fff;border-radius:8px;font-size:14px;cursor:pointer}
+.filters{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap}
+.filters a{font-size:13px;padding:6px 12px;border:1px solid var(--border);
+  border-radius:20px;text-decoration:none;color:var(--muted);background:var(--bg)}
+.filters a.on{color:var(--text);border-color:var(--accent)}
+.info{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.info .cell{padding:13px 16px;border-bottom:1px solid var(--border);
+  border-right:1px solid var(--border)}
+.info .k{color:var(--muted);font-size:12px;margin-bottom:3px}
+.info .v{font-size:14px}
+.actbar{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-end;padding:16px}
+.field{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted)}
+.field select,.field input{padding:8px 10px;border:1px solid var(--border);
+  border-radius:8px;font-size:14px;background:var(--bg);color:var(--text);min-width:120px}
+form.inline{display:flex;gap:8px;align-items:flex-end;margin:0}
+button.btn{cursor:pointer;font:inherit}
+.btn.solid{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.danger{color:var(--bad);border-color:#f5c2c2;background:var(--bg)}
+.btn.ok{color:var(--ok);border-color:#bde9da;background:var(--bg)}
+.foot{color:var(--muted);font-size:12px;text-align:center;margin-top:8px}
+@media(max-width:820px){
+  .sidebar{transform:translateX(-100%)}
+  #navtoggle:checked ~ .sidebar{transform:translateX(0)}
+  #navtoggle:checked ~ .overlay{display:block;position:fixed;inset:0;
+    background:rgba(0,0,0,.35);z-index:25}
+  .content{margin-left:0;padding:0 16px 56px}
+  .topbar{display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:20;
+    margin:0 -16px 18px;padding:13px 16px;background:var(--bg);
+    border-bottom:1px solid var(--border)}
+  .topbar .ttl{font-weight:600;font-size:16px}
+  .hamburger{display:inline-flex;align-items:center;justify-content:center;
+    width:38px;height:38px;border:1px solid var(--border);border-radius:9px;
+    cursor:pointer;color:var(--text);font-size:18px;background:var(--bg)}
+  .content{padding-top:16px}
+  /* KPI: ixcham, bitta qatorda (surilmaydi, hammasi sig'adi) */
+  .statbar{display:flex;overflow:hidden}
+  .stat{flex:1 1 0;min-width:0;padding:8px 4px;text-align:center}
+  .stat .label{font-size:8.5px;line-height:1.15;white-space:normal;
+    overflow-wrap:anywhere;margin-bottom:2px}
+  .stat .num{font-size:15px}
+  .stat .note{font-size:8px;white-space:normal;line-height:1.15}
+  /* Jadvallar: har bir qator alohida "yorliq: qiymat" kartasi */
+  .scroll{overflow-x:visible}
+  thead{display:none}
+  table{display:block;min-width:0;font-size:13.5px}
+  tbody{display:block}
+  tbody tr{display:block;padding:4px 0;border-bottom:1px solid var(--border)}
+  tbody tr:last-child{border-bottom:none}
+  td{display:flex;justify-content:space-between;align-items:center;gap:14px;
+    padding:7px 16px;border:none;white-space:normal;text-align:right;
+    word-break:break-word}
+  td::before{content:attr(data-label);color:var(--muted);font-size:12px;
+    font-weight:500;text-align:left;flex:0 0 38%;white-space:nowrap}
+  td.err{flex-direction:column;align-items:flex-start;text-align:left}
+  td.err::before{flex:none}
+  .err{max-width:none;font-size:12px}
+  td form.inline{margin:0}
+  .badge{font-size:11px}
+  /* Grafik va taqsimot */
+  .bar .barinner{height:108px}
+  .bar .val,.bar .lbl{font-size:9px}
+  .dist .name{width:88px;font-size:12px}
+  .dist .cnt{width:36px;font-size:12px}
+}
+"""
+
+
+# ---------------------------------------------------------------- layout
+
+# Telefon ko'rinishida har bir td ga ustun nomini (data-label) beradi —
+# shunda jadval "yorliq: qiymat" kartalari sifatida ko'rinadi.
+_LABEL_SCRIPT = (
+    "<script>(function(){"
+    "document.querySelectorAll('table').forEach(function(t){"
+    "var h=[].map.call(t.querySelectorAll('thead th'),function(x){return x.textContent;});"
+    "[].forEach.call(t.querySelectorAll('tbody tr'),function(r){"
+    "[].forEach.call(r.querySelectorAll('td'),function(d,i){"
+    "if(h[i])d.setAttribute('data-label',h[i]);});});});})();</script>"
+)
+
+
+def _page_raw(body: str) -> str:
+    return (
+        "<!doctype html><html lang='uz'><head><meta charset='utf-8'>"
+        "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+        "<title>Subtitr Admin</title><style>" + _STYLE + "</style></head>"
+        "<body>" + body + _LABEL_SCRIPT + "</body></html>"
+    )
+
+
+def _botdropdown() -> str:
+    """Bot tanlagich — barcha botlar bilan bir xil chiroyli dropdown."""
+    def sv(inner):
+        return ("<svg viewBox='0 0 24 24' width='20' height='20' fill='none' stroke='currentColor' "
+                "stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'>" + inner + "</svg>")
+    film = sv("<rect x='2' y='4' width='20' height='16' rx='2'/><path d='M2 9h20M2 15h20M7 4v16M17 4v16'/>")
+    book = sv("<path d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20'/>"
+              "<path d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z'/>")
+    pencil = sv("<path d='M12 20h9'/><path d='M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z'/>")
+    cap = sv("<path d='M22 10 12 5 2 10l10 5 10-5Z'/>"
+             "<path d='M6 12v5c0 1 2.7 2.5 6 2.5s6-1.5 6-2.5v-5'/>")
+    quiz = sv("<circle cx='12' cy='12' r='10'/>"
+              "<path d='M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3'/><line x1='12' y1='17' x2='12.01' y2='17'/>")
+    cart = sv("<circle cx='9' cy='21' r='1'/><circle cx='20' cy='21' r='1'/>"
+              "<path d='M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6'/>")
+    chart = sv("<line x1='18' y1='20' x2='18' y2='10'/><line x1='12' y1='20' x2='12' y2='4'/><line x1='6' y1='20' x2='6' y2='14'/>")
+    bots = [("/admin", film, "Subtitr bot", True),
+            ("/sessiya/admin", book, "Sessiya bot", False),
+            ("/mustaqil/admin", pencil, "Mustaqil bot", False),
+            ("/tatulms/admin", cap, "TATU LMS bot", False),
+            ("/quiz/admin", quiz, "Quiz bot", False),
+            ("/wstore/admin", cart, "wstore market", False),
+            ("/site/admin", chart, "Portfolio", False)]
+    cur = next((b for b in bots if b[3]), bots[0])
+    opts = "".join("<a class='botopt%s' href='%s'>%s<span class='botnm'>%s</span></a>" % (
+        " active" if act else "", url, svg, label) for url, svg, label, act in bots)
+    chev = ("<svg class='botchev' viewBox='0 0 24 24' fill='none' stroke='currentColor' "
+            "stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>"
+            "<polyline points='6 9 12 15 18 9'/></svg>")
+    return (
+        "<style>.botdd{position:relative;flex:1;min-width:0}"
+        ".botcur{list-style:none;display:flex;align-items:center;gap:9px;padding:9px 11px;"
+        "border:1px solid #e5e5e5;border-radius:10px;background:#fff;cursor:pointer;color:#0d0d0d;"
+        "font-size:13.5px;font-weight:600;user-select:none}"
+        ".botcur::-webkit-details-marker{display:none}.botcur:hover{background:#f7f7f8}"
+        ".botcur svg,.botopt svg{width:18px;height:18px;flex:0 0 18px}"
+        ".botnm{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"
+        ".botcur .botchev{width:15px;height:15px;flex:0 0 15px;color:#6e6e80;transition:transform .2s}"
+        ".botdd[open] .botchev{transform:rotate(180deg)}"
+        ".botmenu{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:60;background:#fff;"
+        "border:1px solid #e5e5e5;border-radius:12px;box-shadow:0 14px 34px rgba(0,0,0,.13);padding:6px}"
+        ".botopt{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;"
+        "color:#6e6e80;text-decoration:none;font-size:13.5px;font-weight:500;margin-bottom:2px}"
+        ".botopt:last-child{margin-bottom:0}.botopt:hover{background:#f7f7f8;color:#0d0d0d}"
+        ".botopt.active{background:#0d0d0d;color:#fff}</style>"
+        "<details class='botdd'><summary class='botcur'>" + cur[1] +
+        "<span class='botnm'>" + cur[2] + "</span>" + chev + "</summary>"
+        "<div class='botmenu'>" + opts + "</div></details>"
+        "<script>document.addEventListener('click',function(e){"
+        "document.querySelectorAll('details.botdd[open]').forEach(function(d){"
+        "if(!d.contains(e.target))d.removeAttribute('open');});});</script>"
+    )
+
+
+def _sidebar(active: str) -> str:
+    items = ""
+    for key, label, href, icon in _NAV:
+        cls = " class='active'" if key == active else ""
+        items += f"<a href='{href}'{cls}>{_icon(icon)}<span>{label}</span></a>"
+    return (
+        "<aside class='sidebar'>"
+        # Brand logosi + bot tanlagich — bitta qatorda (ortiqcha matnsiz)
+        "<div class='brand' style='display:flex;align-items:center;gap:10px'>"
+        "<span class='dot'>S</span>"
+        + _botdropdown() +
+        "</div>"
+        f"<nav class='nav'>{items}</nav></aside>"
+    )
+
+
+def _layout(active: str, page_title: str, body: str) -> str:
+    inner = (
+        "<input type='checkbox' id='navtoggle' class='navtoggle'>"
+        + _sidebar(active)
+        + "<label for='navtoggle' class='overlay'></label>"
+        "<main class='content'>"
+        "<div class='topbar'>"
+        "<label for='navtoggle' class='hamburger'>☰</label>"
+        f"<span class='ttl'>{page_title}</span></div>"
+        + body
+        + "<div class='foot'>Subtitr Bot · Admin panel (BOSQICH 3)</div>"
+        "</main>"
+    )
+    return _page_raw(f"<div class='layout'>{inner}</div>")
+
+
+def _setup_needed_page() -> str:
+    return _page_raw(
+        "<div style='max-width:560px;margin:60px auto;padding:0 20px'>"
+        "<h1 style='font-size:20px'>Subtitr Admin</h1>"
+        "<div class='panel'><div class='empty'>"
+        "⚠️ Admin panel yopiq. <b>.env</b> faylida <code>ADMIN_PASSWORD</code> "
+        "ni o'rnating va botni qayta ishga tushiring.</div></div></div>"
+    )
+
+
+def _pagehead(title: str, sub: str = "", action: str = "") -> str:
+    sub_html = f"<div class='sub'>{sub}</div>" if sub else ""
+    return (
+        f"<div class='pagehead'><div><h1>{title}</h1>{sub_html}</div>{action}</div>"
+    )
+
+
+# ---------------------------------------------------------------- dashboard
+
+def _kpi(label: str, num: str, note: str = "") -> str:
+    note_html = f"<div class='note'>{note}</div>" if note else ""
+    return (
+        f"<div class='stat'><div class='label'>{label}</div>"
+        f"<div class='num'>{num}</div>{note_html}</div>"
+    )
+
+
+def _videos_table(rows: list[dict], with_provider: bool = False) -> str:
+    if not rows:
+        return "<div class='panel'><div class='empty'>Hali video yo'q.</div></div>"
+    head = ("<tr><th>ID</th><th>Foydalanuvchi</th><th>Manba</th><th>Rejim</th>"
+            "<th>Holat</th>" + ("<th>Provayder</th>" if with_provider else "")
+            + "<th>Vaqt</th></tr>")
+    body = ""
+    for r in rows:
+        st = r["status"]
+        badge = _badge(_STATUS_LABEL.get(st, _esc(st)), _STATUS_CLASS.get(st, "muted"))
+        tgt = f" → {_esc(r['target_lang'])}" if r.get("target_lang") else ""
+        prov = f"<td class='muted'>{_esc(r.get('provider'))}</td>" if with_provider else ""
+        body += (
+            "<tr>"
+            f"<td class='muted'>#{r['id']}</td>"
+            f"<td class='user'>{_user_label(r)}</td>"
+            f"<td>{_SOURCE_LABEL.get(r['source_type'], _esc(r['source_type']))}</td>"
+            f"<td>{_MODE_LABEL.get(r['mode'], _esc(r['mode']))}{tgt}</td>"
+            f"<td>{badge}</td>{prov}"
+            f"<td class='muted'>{_fmt_dt(r['created_at'])}</td></tr>"
+        )
+    return f"<div class='panel'>{_scroll(f'<table><thead>{head}</thead><tbody>{body}</tbody></table>')}</div>"
+
+
+def _errors_table(rows: list[dict]) -> str:
+    if not rows:
+        return "<div class='panel'><div class='empty'>Xatoliklar yo'q ✅</div></div>"
+    body = ""
+    for r in rows:
+        msg = (r.get("error_message") or "")[:200]
+        step = _badge(_esc(r["error_step"]), "bad") if r.get("error_step") else ""
+        body += (
+            "<tr>"
+            f"<td class='muted'>#{r['id']}</td>"
+            f"<td class='user'>{_user_label(r)}</td>"
+            f"<td>{_MODE_LABEL.get(r['mode'], _esc(r['mode']))} {step}</td>"
+            f"<td class='err'>{_esc(msg)}</td>"
+            f"<td class='muted'>{_fmt_dt(r['created_at'])}</td></tr>"
+        )
+    head = ("<tr><th>ID</th><th>Foydalanuvchi</th><th>Rejim</th><th>Xato</th>"
+            "<th>Vaqt</th></tr>")
+    return f"<div class='panel'>{_scroll(f'<table><thead>{head}</thead><tbody>{body}</tbody></table>')}</div>"
+
+
+async def _dashboard(request: web.Request) -> web.Response:
+    guard = _guard(request)
+    if guard:
+        return guard
+    stats = await get_dashboard_stats()
+    vids = await recent_videos(10)
+    errs = await recent_errors(6)
+    kpis = (
+        _kpi("Foydalanuvchilar", _fmt_num(stats["total_users"]),
+             f"bugun +{stats['new_users_today']}")
+        + _kpi("Faol obuna", _fmt_num(stats["active_subs"]))
+        + _kpi("Videolar (bugun)", _fmt_num(stats["videos_today"]),
+               f"jami {_fmt_num(stats['total_videos'])}")
+        + _kpi("Xatoliklar", _fmt_num(stats["error_videos"]),
+               f"tayyor {_fmt_num(stats['done_videos'])}")
+        + _kpi("Daromad", _fmt_num(stats["revenue"]) + " so'm")
+    )
+    body = (
+        _pagehead("Dashboard", "Umumiy holat", "<a class='btn' href='/admin'>↻ Yangilash</a>")
+        + f"<div class='statbar'>{kpis}</div>"
+        + "<h2>So'nggi videolar</h2>" + _videos_table(vids)
+        + "<h2>So'nggi xatoliklar</h2>" + _errors_table(errs)
+    )
+    return web.Response(content_type="text/html", text=_layout("dash", "Dashboard", body))
+
+
+# ---------------------------------------------------------------- users
+
+async def _users(request: web.Request) -> web.Response:
+    guard = _guard(request)
+    if guard:
+        return guard
+    search = request.query.get("q", "")
+    rows = await list_users(search)
+    search_box = (
+        "<form class='search' method='get' action='/admin/users'>"
+        f"<input type='text' name='q' placeholder='@username yoki Telegram ID' "
+        f"value='{_esc(search) if search else ''}'>"
+        "<button type='submit'>Qidirish</button></form>"
+    )
+    if not rows:
+        table = "<div class='panel'><div class='empty'>Foydalanuvchi topilmadi.</div></div>"
+    else:
+        body_rows = ""
+        for r in rows:
+            plan = r["plan"]
+            plan_badge = _badge(_PLAN_LABEL.get(plan, plan), _PLAN_CLASS.get(plan, "muted"))
+            blocked = _badge("Bloklangan", "bad") if r["is_blocked"] else ""
+            until = _fmt_date(r["plan_until"]) if r["raw_plan"] != "free" else "—"
+            link = f"<a href='/admin/users/{r['id']}'>{_user_label(r)}</a>"
+            body_rows += (
+                "<tr>"
+                f"<td class='muted'>#{r['id']}</td>"
+                f"<td class='user'>{link} {blocked}</td>"
+                f"<td>{plan_badge}</td>"
+                f"<td class='muted'>{until}</td>"
+                f"<td>{r['videos']}</td>"
+                f"<td class='muted'>{_fmt_dt(r['last_active_at'])}</td></tr>"
+            )
+        head = ("<tr><th>ID</th><th>Foydalanuvchi</th><th>Tarif</th><th>Amal qiladi</th>"
+                "<th>Video</th><th>Oxirgi faollik</th></tr>")
+        table = f"<div class='panel'>{_scroll(f'<table><thead>{head}</thead><tbody>{body_rows}</tbody></table>')}</div>"
+    body = _pagehead("Foydalanuvchilar", f"{len(rows)} ta ko'rsatildi") + search_box + table
+    return web.Response(content_type="text/html",
+                        text=_layout("users", "Foydalanuvchilar", body))
+
+
+def _cell(key: str, value: str) -> str:
+    return f"<div class='cell'><div class='k'>{key}</div><div class='v'>{value}</div></div>"
+
+
+def _block_form(uid: int, blocked: bool) -> str:
+    if blocked:
+        return (
+            f"<form class='inline' method='post' action='/admin/users/{uid}/block'>"
+            "<input type='hidden' name='blocked' value='0'>"
+            "<button class='btn ok' type='submit'>Blokdan chiqarish</button></form>"
+        )
+    return (
+        f"<form class='inline' method='post' action='/admin/users/{uid}/block'>"
+        "<input type='hidden' name='blocked' value='1'>"
+        "<button class='btn danger' type='submit'>Bloklash</button></form>"
+    )
+
+
+def _parse_uid(request: web.Request) -> int | None:
+    try:
+        return int(request.match_info["id"])
+    except (ValueError, KeyError):
+        return None
+
+
+async def _user_detail(request: web.Request) -> web.Response:
+    guard = _guard(request)
+    if guard:
+        return guard
+    uid = _parse_uid(request)
+    if uid is None:
+        return web.Response(status=404, text="Noto'g'ri ID")
+    u = await get_user_detail(uid)
+    if u is None:
+        return web.Response(status=404, text="Foydalanuvchi topilmadi")
+
+    plan = u["plan"]
+    plan_badge = _badge(_PLAN_LABEL.get(plan, plan), _PLAN_CLASS.get(plan, "muted"))
+    status_badge = (
+        _badge("Bloklangan", "bad") if u["is_blocked"] else _badge("Faol", "ok")
+    )
+    until = _fmt_date(u["plan_until"]) if u["raw_plan"] != "free" else "—"
+    uname = "@" + _esc(u["username"]) if u["username"] else "—"
+    info = (
+        "<div class='panel'><div class='info'>"
+        + _cell("Telegram ID", _esc(u["telegram_id"]))
+        + _cell("Username", uname)
+        + _cell("Tarif", plan_badge)
+        + _cell("Amal qiladi", until)
+        + _cell("Holat", status_badge)
+        + _cell("Videolar", str(u["videos_count"]))
+        + _cell("Ro'yxatdan", _fmt_date(u["created_at"]))
+        + _cell("Oxirgi faollik", _fmt_dt(u["last_active_at"]))
+        + "</div></div>"
+    )
+
+    plan_opts = "".join(
+        f"<option value='{k}'{' selected' if k == u['raw_plan'] else ''}>"
+        f"{_PLAN_LABEL.get(k, k)}</option>"
+        for k in TARIFFS
+    )
+    plan_form = (
+        f"<form class='inline' method='post' action='/admin/users/{uid}/plan'>"
+        f"<label class='field'>Tarif<select name='plan'>{plan_opts}</select></label>"
+        f"<label class='field'>Kun<input type='number' name='days' "
+        f"value='{settings.sub_days}' min='1' max='3650'></label>"
+        "<button class='btn solid' type='submit'>Tarif berish</button></form>"
+    )
+    actions = (
+        "<div class='panel'><div class='actbar'>"
+        + _block_form(uid, u["is_blocked"]) + plan_form + "</div></div>"
+    )
+
+    title = uname if u["username"] else f"id{u['telegram_id']}"
+    body = (
+        _pagehead(_esc(title), f"Foydalanuvchi #{uid}",
+                  "<a class='btn' href='/admin/users'>← Orqaga</a>")
+        + info
+        + "<h2>Amallar</h2>" + actions
+        + "<h2>Videolari</h2>" + _videos_table(u["videos"], with_provider=True)
+        + "<h2>To'lovlari</h2>" + _payments_table(u["payments"], show_user=False)
+    )
+    return web.Response(content_type="text/html",
+                        text=_layout("users", "Foydalanuvchi", body))
+
+
+async def _user_block(request: web.Request) -> web.Response:
+    guard = _guard(request)
+    if guard:
+        return guard
+    uid = _parse_uid(request)
+    if uid is None:
+        return web.Response(status=404, text="Noto'g'ri ID")
+    data = await request.post()
+    await admin_set_blocked(uid, data.get("blocked", "1") == "1")
+    return web.HTTPFound(f"/admin/users/{uid}")
+
+
+async def _user_plan(request: web.Request) -> web.Response:
+    guard = _guard(request)
+    if guard:
+        return guard
+    uid = _parse_uid(request)
+    if uid is None:
+        return web.Response(status=404, text="Noto'g'ri ID")
+    data = await request.post()
+    plan = data.get("plan", "free")
+    if plan not in TARIFFS:
+        plan = "free"
+    try:
+        days = int(data.get("days", "30"))
+    except (ValueError, TypeError):
+        days = 30
+    days = max(1, min(days, 3650))
+    await admin_set_plan(uid, plan, days)
+    return web.HTTPFound(f"/admin/users/{uid}")
+
+
+# ---------------------------------------------------------------- payments
+
+def _payments_table(rows: list[dict], show_user: bool = True) -> str:
+    if not rows:
+        return "<div class='panel'><div class='empty'>To'lov yo'q.</div></div>"
+    user_col = "<th>Foydalanuvchi</th>" if show_user else ""
+    head = ("<tr><th>ID</th>" + user_col + "<th>Tarif</th><th>Summa</th>"
+            "<th>Holat</th><th>Sana</th></tr>")
+    body_rows = ""
+    for r in rows:
+        st = r["status"]
+        badge = _badge(_PAY_LABEL.get(st, st), _PAY_CLASS.get(st, "muted"))
+        user_cell = f"<td class='user'>{_user_label(r)}</td>" if show_user else ""
+        body_rows += (
+            "<tr>"
+            f"<td class='muted'>#{r['id']}</td>" + user_cell
+            + f"<td>{_PLAN_LABEL.get(r['plan'], r['plan'])}</td>"
+            f"<td>{_fmt_num(r['amount'])} so'm</td>"
+            f"<td>{badge}</td>"
+            f"<td class='muted'>{_fmt_dt(r['paid_at'] or r['created_at'])}</td></tr>"
+        )
+    return f"<div class='panel'>{_scroll(f'<table><thead>{head}</thead><tbody>{body_rows}</tbody></table>')}</div>"
+
+
+async def _payments(request: web.Request) -> web.Response:
+    guard = _guard(request)
+    if guard:
+        return guard
+    rows = await list_payments()
+    body = _pagehead("To'lovlar", f"{len(rows)} ta ko'rsatildi") + _payments_table(rows)
+    return web.Response(content_type="text/html", text=_layout("payments", "To'lovlar", body))
+
+
+# ---------------------------------------------------------------- videos
+
+async def _videos(request: web.Request) -> web.Response:
+    guard = _guard(request)
+    if guard:
+        return guard
+    status = request.query.get("status") or None
+    if status not in (None, "done", "error", "processing", "pending"):
+        status = None
+    rows = await list_videos(status)
+    chips = [("", "Hammasi"), ("done", "Tayyor"), ("error", "Xato"),
+             ("processing", "Jarayonda")]
+    filters = "<div class='filters'>"
+    for val, label in chips:
+        on = " on" if (val or None) == status else ""
+        href = "/admin/videos" + (f"?status={val}" if val else "")
+        filters += f"<a class='{on.strip()}' href='{href}'>{label}</a>"
+    filters += "</div>"
+    body = (
+        _pagehead("Videolar", f"{len(rows)} ta ko'rsatildi")
+        + filters + _videos_table(rows, with_provider=True)
+    )
+    return web.Response(content_type="text/html", text=_layout("videos", "Videolar", body))
+
+
+# ---------------------------------------------------------------- api & limits
+
+def _gauge(title: str, used: int, limit: int, unit: str, sub: str,
+           thr: int = 80) -> str:
+    pct = min(100, round(used / limit * 100)) if limit > 0 else 0
+    if pct >= 95:
+        cls, label = "bad", "Kritik"
+    elif pct >= thr:
+        cls, label = "warn", "Ogohlantirish"
+    else:
+        cls, label = "ok", "Normal"
+    return (
+        "<div class='panel'><div class='gauge'>"
+        f"<div class='top'><b>{title}</b>{_badge(label, cls)}</div>"
+        f"<div class='gaugebar'><div class='gaugefill {cls}' style='width:{pct}%'>"
+        "</div></div>"
+        f"<div class='gaugemeta'><span>{_fmt_num(used)} / {_fmt_num(limit)} {unit} "
+        f"({pct}%)</span><span class='muted'>{sub}</span></div>"
+        "</div></div>"
+    )
+
+
+async def _api(request: web.Request) -> web.Response:
+    guard = _guard(request)
+    if guard:
+        return guard
+    stats = await get_api_usage_stats()
+    eff = await get_effective_settings()
+    limit = eff["groq_monthly_minutes"]
+    threshold = eff["api_alert_threshold"]
+    used = stats["groq_min_month"]
+    remaining = max(0, limit - used)
+    now_utc = dt.datetime.now(dt.timezone.utc).replace(tzinfo=None)
+    day = (now_utc + _TASHKENT_OFFSET).day
+    avg = used / day if day else 0
+    days_left = int(remaining / avg) if avg > 0 else None
+    sub = f"{_fmt_num(remaining)} daqiqa qoldi"
+    if days_left is not None:
+        sub += f" · ~{days_left} kun"
+    gauge = _gauge("Groq Whisper (transkripsiya)", used, limit, "daqiqa", sub, threshold)
+
+    # AI provayder API chaqiruvlari (Redis hisoblagich) — aniq sarf/limit.
+    # Eslatma: bitta video bir nechta chaqiruv qiladi (oynalar + tuzatish).
+    from worker import usage
+    gem_day, gem_mon = usage.read("gemini")
+    cla_day, cla_mon = usage.read("claude")
+    oai_day, oai_mon = usage.read("openai")
+    tts_day, tts_mon = usage.read("gemini_tts")
+
+    gem_limit = settings.gemini_daily_limit
+    gem_rem = max(0, gem_limit - gem_day)
+    gem_gauge = _gauge(
+        "Gemini — bugungi chaqiruvlar", gem_day, gem_limit, "so'rov",
+        f"{_fmt_num(gem_rem)} qoldi (bugun) · bu oy jami {_fmt_num(gem_mon)}",
+        threshold,
+    )
+    cla_block = (
+        "<div class='statbar'>"
+        + _kpi("Claude — bugun", _fmt_num(cla_day), "so'rov (zaxira)")
+        + _kpi("Claude — bu oy", _fmt_num(cla_mon), "so'rov")
+        + "</div>"
+    )
+    # Google'ning gemini-2.5-flash-preview-tts bepul tarifi qattiq kunlik
+    # limit qo'yadi (hozircha 10/kun, BUTUN loyiha uchun umumiy — billing
+    # yoqilsa Google tomonidan ko'tariladi, .env sozlamasi yo'q).
+    tts_limit = 10
+    tts_gauge = _gauge(
+        "TTS (/tts) — bugungi so'rovlar", tts_day, tts_limit, "so'rov",
+        f"bu oy jami {_fmt_num(tts_mon)} · Google bepul tarif qat'iy cheklovi",
+        threshold,
+    )
+    oai_limit = settings.openai_monthly_limit
+    if oai_limit > 0:
+        oai_block = _gauge(
+            "OpenAI — bu oygi chaqiruvlar", oai_mon, oai_limit, "so'rov",
+            f"bugun {_fmt_num(oai_day)} ta", threshold,
+        )
+    else:
+        oai_block = (
+            "<div class='statbar'>"
+            + _kpi("OpenAI — bugun", _fmt_num(oai_day), "so'rov (zaxira)")
+            + _kpi("OpenAI — bu oy", _fmt_num(oai_mon), "so'rov")
+            + "</div>"
+        )
+
+    # Videolar provayder bo'yicha (kontekst — qaysi tarjima qaysi provayder bilan)
+    order = ["gemini", "claude", "openai"]
+    for key in stats["prov_total"]:
+        if key not in order:
+            order.append(key)
+    prov_cards = ""
+    for key in order:
+        prov_cards += _kpi(
+            key.capitalize(),
+            str(stats["prov_month"].get(key, 0)),
+            f"jami {stats['prov_total'].get(key, 0)}",
+        )
+    prov_block = (
+        f"<div class='statbar'>{prov_cards}</div>" if prov_cards
+        else "<div class='panel'><div class='empty'>Hali tarjima yo'q.</div></div>"
+    )
+
+    note = (
+        "<div class='note'>Eslatma: Gemini/OpenAI chaqiruvlari REAL VAQTDA sanaladi "
+        "(har video bir nechta chaqiruv qiladi). Gemini kunlik bepul limiti — "
+        "<b>GEMINI_DAILY_LIMIT</b>, OpenAI oylik chegarasi — "
+        "<b>OPENAI_MONTHLY_LIMIT</b> (.env muharrirda sozlang). Groq sarfi audio "
+        "davomiyligidan taxminan hisoblangan.</div>"
+    )
+    body = (
+        _pagehead("API & Limitlar", "Real vaqt sarfi va limitlar",
+                  "<a class='btn' href='/admin/api'>↻ Yangilash</a>")
+        + "<h2>Groq Whisper (transkripsiya)</h2>" + gauge
+        + "<h2>Gemini (tarjima · lug'at · tuzatish · sarlavha)</h2>" + gem_gauge
+        + "<h2>Claude (1-zaxira provayder)</h2>" + cla_block
+        + "<h2>OpenAI (2-zaxira provayder)</h2>" + oai_block
+        + "<h2>Matnni ovozga aylantirish (/tts)</h2>" + tts_gauge
+        + "<h2>Videolar provayder bo'yicha (oy / jami)</h2>" + prov_block
+        + note
+    )
+    return web.Response(content_type="text/html", text=_layout("api", "API & Limitlar", body))
+
+
+# ---------------------------------------------------------------- statistics
+
+def _barchart(days: list[dict]) -> str:
+    maxv = max((d["videos"] for d in days), default=0) or 1
+    bars = ""
+    for d in days:
+        pct = round(d["videos"] / maxv * 100)
+        val = str(d["videos"]) if d["videos"] else ""
+        lbl = d["date"].strftime("%d")
+        title = f"{d['date'].strftime('%d.%m')}: {d['videos']} video, +{d['users']} user"
+        bars += (
+            "<div class='bar'>"
+            f"<div class='val'>{val}</div>"
+            f"<div class='barinner'><div class='fill' title=\"{title}\" "
+            f"style='height:{pct}%'></div></div>"
+            f"<div class='lbl'>{lbl}</div></div>"
+        )
+    return f"<div class='panel'><div class='chart'>{bars}</div></div>"
+
+
+def _distrows(title: str, data: dict, label_map: dict) -> str:
+    if not data:
+        return (f"<h2>{title}</h2><div class='panel'>"
+                "<div class='empty'>Ma'lumot yo'q.</div></div>")
+    maxv = max(data.values()) or 1
+    rows = ""
+    for key, value in sorted(data.items(), key=lambda x: -x[1]):
+        name = label_map.get(key, key)
+        pct = round(value / maxv * 100)
+        rows += (
+            "<div class='row'>"
+            f"<div class='name'>{_esc(name)}</div>"
+            f"<div class='track'><div class='bar2' style='width:{pct}%'></div></div>"
+            f"<div class='cnt'>{value}</div></div>"
+        )
+    return f"<h2>{title}</h2><div class='panel'><div class='dist'>{rows}</div></div>"
+
+
+async def _stats(request: web.Request) -> web.Response:
+    guard = _guard(request)
+    if guard:
+        return guard
+    days = await get_daily_stats(14)
+    dist = await get_distributions()
+    total_vid = sum(d["videos"] for d in days)
+    total_usr = sum(d["users"] for d in days)
+    body = (
+        _pagehead("Statistika", "Oxirgi 14 kun")
+        + f"<h2>Videolar — {total_vid} ta · +{total_usr} yangi foydalanuvchi</h2>"
+        + _barchart(days)
+        + _distrows("Rejimlar bo'yicha", dist["modes"], _MODE_LABEL)
+        + _distrows("Manbalar bo'yicha", dist["sources"], _SOURCE_LABEL)
+        + _distrows("Tariflar bo'yicha", dist["plans"], _PLAN_LABEL)
+        + _distrows("Holatlar bo'yicha", dist["statuses"], _STATUS_LABEL)
+    )
+    return web.Response(content_type="text/html", text=_layout("stats", "Statistika", body))
+
+
+# ---------------------------------------------------------------- navbat (jobs)
+
+async def _jobs(request: web.Request) -> web.Response:
+    guard = _guard(request)
+    if guard:
+        return guard
+    q = await get_queue()
+    active = q["active"]
+    processing = sum(1 for a in active if a["status"] == "processing")
+    pending = sum(1 for a in active if a["status"] == "pending")
+    cards = (
+        _kpi("Ishlanmoqda", str(processing))
+        + _kpi("Kutilmoqda", str(pending))
+        + _kpi("Bugun tayyor", str(q["done_today"]))
+        + _kpi("Bugun xato", str(q["error_today"]))
+    )
+    if not active:
+        table = ("<div class='panel'><div class='empty'>Navbat bo'sh — barcha "
+                 "videolar yakunlangan ✅</div></div>")
+        bulk = ""
+    else:
+        rows_html = ""
+        for a in active:
+            cancel_btn = (
+                f"<form class='inline' method='post' action='/admin/jobs/{a['id']}/cancel'>"
+                "<button class='btn bad' type='submit'>🛑 To'xtatish</button></form>"
+            )
+            st = a["status"]
+            badge = _badge(_STATUS_LABEL.get(st, st), _STATUS_CLASS.get(st, "muted"))
+            mode = _MODE_LABEL.get(a["mode"], _esc(a["mode"]))
+            rows_html += (
+                "<tr>"
+                f"<td class='muted'>#{a['id']}</td>"
+                f"<td class='user'>{_user_label(a)}</td>"
+                f"<td>{mode}</td>"
+                f"<td>{badge}</td>"
+                f"<td class='muted'>{_fmt_dt(a['created_at'])}</td>"
+                f"<td>{cancel_btn}</td></tr>"
+            )
+        head = ("<tr><th>ID</th><th>Foydalanuvchi</th><th>Rejim</th><th>Holat</th>"
+                "<th>Boshlangan</th><th>Amal</th></tr>")
+        inner = f"<table><thead>{head}</thead><tbody>{rows_html}</tbody></table>"
+        table = f"<div class='panel'>{_scroll(inner)}</div>"
+        # Ommaviy tugmalar: tiqilganlarni va hammasini to'xtatish
+        bulk = (
+            "<div style='display:flex;gap:10px;margin:14px 0'>"
+            "<form class='inline' method='post' action='/admin/jobs/cancel-stuck'>"
+            "<button class='btn' type='submit'>🧹 Tiqilganlarni tozalash (60+ daq)</button></form>"
+            "<form class='inline' method='post' action='/admin/jobs/cancel-all' "
+            "onsubmit=\"return confirm('Barcha faol joblar to\\'xtatiladimi?')\">"
+            "<button class='btn bad' type='submit'>🛑 Hammasini to'xtatish</button></form>"
+            "</div>"
+        )
+    saved = request.query.get("done")
+    note = (f"<div class='badge ok' style='margin-bottom:12px'>✓ {_esc(saved)} ta job to'xtatildi</div>"
+            if saved else "")
+    body = (
+        _pagehead("Navbat", "Joriy holat", "<a class='btn' href='/admin/jobs'>↻ Yangilash</a>")
+        + f"<div class='statbar'>{cards}</div>" + note
+        + "<h2>Faol joblar</h2>" + bulk + table
+    )
+    return web.Response(content_type="text/html", text=_layout("jobs", "Navbat", body))
+
+
+async def _job_cancel(request: web.Request) -> web.Response:
+    guard = _guard(request)
+    if guard:
+        return guard
+    vid = _parse_uid(request)
+    if vid is None:
+        return web.Response(status=404, text="Noto'g'ri ID")
+    ok = await cancel_video(vid)
+    return web.HTTPFound(f"/admin/jobs?done={'1' if ok else '0'}")
+
+
+async def _jobs_cancel_stuck(request: web.Request) -> web.Response:
+    guard = _guard(request)
+    if guard:
+        return guard
+    n = await cancel_stuck_videos(60)
+    return web.HTTPFound(f"/admin/jobs?done={n}")
+
+
+async def _jobs_cancel_all(request: web.Request) -> web.Response:
+    guard = _guard(request)
+    if guard:
+        return guard
+    n = await cancel_all_active_videos()
+    return web.HTTPFound(f"/admin/jobs?done={n}")
+
+
+# ------------------------------------------------------------ donatlar (donations)
+
+def _toggle_form(action: str, field: str, on: bool,
+                 on_label: str, off_label: str) -> str:
+    val = "0" if on else "1"
+    cls = "btn ok" if on else "btn"
+    label = on_label if on else off_label
+    return (
+        f"<form class='inline' method='post' action='{action}'>"
+        f"<input type='hidden' name='{field}' value='{val}'>"
+        f"<button class='{cls}' type='submit'>{label}</button></form>"
+    )
+
+
+async def _donations(request: web.Request) -> web.Response:
+    guard = _guard(request)
+    if guard:
+        return guard
+    rows = await list_donations()
+    total = await donations_total()
+    cards = (
+        _kpi("Jami donat", _fmt_num(total) + " so'm")
+        + _kpi("Donatlar", str(len(rows)))
+    )
+    if not rows:
+        table = "<div class='panel'><div class='empty'>Hali donat yo'q.</div></div>"
+    else:
+        body_rows = ""
+        for r in rows:
+            st = r["status"]
+            pay = _badge(_PAY_LABEL.get(st, st), _PAY_CLASS.get(st, "muted"))
+            comment = _esc(r["comment"]) if r["comment"] else "—"
+            appr = _toggle_form(f"/admin/donations/{r['id']}/approve", "approved",
+                                r["is_approved"], "✓ Tasdiqlangan", "Tasdiqlash")
+            pub = _toggle_form(f"/admin/donations/{r['id']}/public", "public",
+                               r["is_public"], "✓ Devorda", "Ko'rsatish")
+            body_rows += (
+                "<tr>"
+                f"<td class='muted'>#{r['id']}</td>"
+                f"<td class='user'>{_user_label(r)}</td>"
+                f"<td>{_fmt_num(r['amount'])} so'm</td>"
+                f"<td class='user'>{comment}</td>"
+                f"<td>{pay}</td>"
+                f"<td>{appr}</td>"
+                f"<td>{pub}</td>"
+                f"<td class='muted'>{_fmt_dt(r['created_at'])}</td></tr>"
+            )
+        head = ("<tr><th>ID</th><th>Foydalanuvchi</th><th>Summa</th><th>Izoh</th>"
+                "<th>Holat</th><th>Tasdiq</th><th>Devor</th><th>Sana</th></tr>")
+        inner = f"<table><thead>{head}</thead><tbody>{body_rows}</tbody></table>"
+        table = f"<div class='panel'>{_scroll(inner)}</div>"
+    note = ("<div class='note'>Izoh tasdiqlansa (✓) va devorga qo'yilsa, ommaviy "
+            "\"qo'llab-quvvatlovchilar\" ro'yxatida ko'rinishi mumkin.</div>")
+    body = (
+        _pagehead("Donatlar", f"{len(rows)} ta")
+        + f"<div class='statbar'>{cards}</div>" + table + note
+    )
+    return web.Response(content_type="text/html", text=_layout("donations", "Donatlar", body))
+
+
+async def _donation_approve(request: web.Request) -> web.Response:
+    guard = _guard(request)
+    if guard:
+        return guard
+    did = _parse_uid(request)
+    if did is None:
+        return web.Response(status=404, text="Noto'g'ri ID")
+    data = await request.post()
+    await set_donation_approved(did, data.get("approved", "1") == "1")
+    return web.HTTPFound("/admin/donations")
+
+
+async def _donation_public(request: web.Request) -> web.Response:
+    guard = _guard(request)
+    if guard:
+        return guard
+    did = _parse_uid(request)
+    if did is None:
+        return web.Response(status=404, text="Noto'g'ri ID")
+    data = await request.post()
+    await set_donation_public(did, data.get("public", "1") == "1")
+    return web.HTTPFound("/admin/donations")
+
+
+# ------------------------------------------------------------ sozlamalar (settings)
+
+_SETTING_FIELDS = [
+    ("price_basic", "BASIC narxi (so'm)"),
+    ("price_premium", "PREMIUM narxi (so'm)"),
+    ("sub_days", "Obuna muddati (kun)"),
+    ("groq_monthly_minutes", "Groq oylik limit (daqiqa)"),
+    ("api_alert_threshold", "API ogohlantirish chegarasi (%)"),
+]
+
+# Tariflar tahriri (admin har tarifga limit + rejimlarni o'zgartiradi)
+_TARIFF_PLANS = [("free", "🆓 BEPUL"), ("basic", "💳 BASIC"), ("premium", "⭐ PREMIUM")]
+_TARIFF_MODES = [
+    ("original", "Original"), ("translate", "Tarjima"), ("dual", "Ikki qatlam"),
+    ("srt", ".SRT"), ("transcript", "Matn"), ("vocabulary", "Lug'at"),
+]
+
+
+def _tariff_cards(tariffs: dict) -> str:
+    """Har tarif uchun tahrirlanadigan karta (kunlik/daqiqa/rejimlar)."""
+    cards = ""
+    for plan, label in _TARIFF_PLANS:
+        t = tariffs.get(plan)
+        if not t:
+            continue
+        checks = ""
+        for mkey, mlabel in _TARIFF_MODES:
+            on = "checked" if mkey in t.modes else ""
+            checks += (
+                "<label style='display:inline-flex;align-items:center;gap:6px;"
+                "margin:4px 14px 4px 0;font-size:13px;cursor:pointer'>"
+                f"<input type='checkbox' name='tar_{plan}_mode_{mkey}' {on}>{mlabel}</label>"
+            )
+        cards += (
+            "<div class='panel' style='padding:16px;margin-bottom:14px'>"
+            f"<div style='font-weight:700;font-size:15px;margin-bottom:12px'>{label}</div>"
+            "<div style='display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px'>"
+            "<label class='field'>Kunlik video <span style='color:#94a3b8'>(-1 = cheksiz)</span>"
+            f"<input type='number' name='tar_{plan}_daily' value='{t.daily_videos}' "
+            "style='width:120px'></label>"
+            "<label class='field'>Maks. daqiqa"
+            f"<input type='number' name='tar_{plan}_minutes' value='{t.max_minutes}' "
+            "min='1' style='width:120px'></label>"
+            "<label class='field'>Oylik jami <span style='color:#94a3b8'>(0 = yo'q)</span>"
+            f"<input type='number' name='tar_{plan}_monthly' value='{t.monthly_videos}' "
+            "min='0' style='width:120px'></label>"
+            "<label class='field'>Har rejimga/oy <span style='color:#94a3b8'>(0 = yo'q)</span>"
+            f"<input type='number' name='tar_{plan}_permode' value='{t.per_mode_monthly}' "
+            "min='0' style='width:120px'></label>"
+            "</div>"
+            "<div style='font-size:12px;color:#64748b;margin-bottom:4px'>Ochiq rejimlar:</div>"
+            f"<div>{checks}</div>"
+            "</div>"
+        )
+    return cards
+
+
+async def _settings(request: web.Request) -> web.Response:
+    guard = _guard(request)
+    if guard:
+        return guard
+    eff = await get_effective_settings()
+    saved = request.query.get("saved")
+    inputs = ""
+    for key, label in _SETTING_FIELDS:
+        inputs += (
+            f"<label class='field' style='width:100%'>{label}"
+            f"<input type='number' name='{key}' value='{eff[key]}' min='0'></label>"
+        )
+    saved_note = ("<div class='badge ok' style='margin-bottom:14px'>✓ Saqlandi</div>"
+                  if saved else "")
+    form = (
+        "<form method='post' action='/admin/settings'>"
+        "<div class='panel' style='padding:18px;max-width:440px'>"
+        "<div style='display:flex;flex-direction:column;gap:14px'>"
+        + inputs
+        + "<button class='btn solid' type='submit' style='align-self:flex-start'>"
+        "Saqlash</button></div></div></form>"
+    )
+    note = ("<div class='note'>Bu qiymatlar .env standartini bekor qiladi (DB da "
+            "saqlanadi).</div>")
+
+    # Tariflar tahriri (har tarifga limit + rejimlar)
+    tariffs = await get_effective_tariffs()
+    tariff_form = (
+        "<form method='post' action='/admin/settings'>"
+        "<input type='hidden' name='tariff_submit' value='1'>"
+        + _tariff_cards(tariffs)
+        + "<button class='btn solid' type='submit'>Tariflarni saqlash</button>"
+        "</form>"
+    )
+    body = (
+        _pagehead("Sozlamalar", "Narx, limit va tariflar")
+        + saved_note
+        + "<h3 style='margin:18px 0 10px'>💰 Narx va umumiy limitlar</h3>"
+        + form + note
+        + "<h3 style='margin:28px 0 10px'>📦 Tariflar — limit va rejimlar</h3>"
+        + "<div class='note' style='margin-bottom:14px'>Har tarifda kunlik video "
+        "soni, video uzunligi (daqiqa) va qaysi rejimlar ochiqligini belgilang. "
+        "Saqlangach darrov kuchga kiradi.</div>"
+        + tariff_form
+    )
+    return web.Response(content_type="text/html", text=_layout("settings", "Sozlamalar", body))
+
+
+async def _settings_save(request: web.Request) -> web.Response:
+    guard = _guard(request)
+    if guard:
+        return guard
+    data = await request.post()
+
+    # Tarif formasi yuborilgan bo'lsa — tariflarni saqlaymiz
+    if data.get("tariff_submit"):
+        tvals: dict[str, str] = {}
+        for plan, _label in _TARIFF_PLANS:
+            try:
+                tvals[f"tar_{plan}_daily"] = str(int(data.get(f"tar_{plan}_daily", "")))
+            except (ValueError, TypeError):
+                pass
+            try:
+                tvals[f"tar_{plan}_minutes"] = str(max(1, int(data.get(f"tar_{plan}_minutes", ""))))
+            except (ValueError, TypeError):
+                pass
+            try:
+                tvals[f"tar_{plan}_monthly"] = str(max(0, int(data.get(f"tar_{plan}_monthly", ""))))
+            except (ValueError, TypeError):
+                pass
+            try:
+                tvals[f"tar_{plan}_permode"] = str(max(0, int(data.get(f"tar_{plan}_permode", ""))))
+            except (ValueError, TypeError):
+                pass
+            modes = [m for m, _ in _TARIFF_MODES if data.get(f"tar_{plan}_mode_{m}")]
+            tvals[f"tar_{plan}_modes"] = ",".join(modes)
+        if tvals:
+            await save_tariffs(tvals)
+        return web.HTTPFound("/admin/settings?saved=1")
+
+    # Aks holda — narx/umumiy limit formasi
+    items: dict[str, int] = {}
+    for key, _label in _SETTING_FIELDS:
+        try:
+            items[key] = max(0, int(data.get(key, "")))
+        except (ValueError, TypeError):
+            continue
+    if items:
+        await save_settings(items)
+    return web.HTTPFound("/admin/settings?saved=1")
+
+
+# ---------------------------------------------------------------- errors
+
+async def _errors(request: web.Request) -> web.Response:
+    guard = _guard(request)
+    if guard:
+        return guard
+    rows = await recent_errors(60)
+    body = _pagehead("Xatoliklar", f"{len(rows)} ta ko'rsatildi") + _errors_table(rows)
+    return web.Response(content_type="text/html", text=_layout("errors", "Xatoliklar", body))
+
+
+# ---------------------------------------------------------------- routes
+
+# ---------------------------------------------------------------- monitor
+
+async def _monitor(request: web.Request) -> web.Response:
+    guard = _guard(request)
+    if guard: return guard
+    
+    cpu_percent = 0
+    ram_percent = 0
+    disk_percent = 0
+    if psutil:
+        cpu_percent = psutil.cpu_percent(interval=0.1)
+        ram = psutil.virtual_memory()
+        ram_percent = ram.percent
+        disk = psutil.disk_usage('/')
+        disk_percent = disk.percent
+        
+    uptime_raw = 0
+    try:
+        with open('/proc/uptime', 'r') as f:
+            uptime_raw = float(f.readline().split()[0])
+    except:
+        pass
+    days = int(uptime_raw // 86400)
+    hours = int((uptime_raw % 86400) // 3600)
+    mins = int((uptime_raw % 3600) // 60)
+    uptime_str = f"{days} kun, {hours} soat, {mins} daqiqa"
+    
+    kpis = (
+        _kpi("CPU", f"{cpu_percent}%")
+        + _kpi("RAM", f"{ram_percent}%")
+        + _kpi("Disk", f"{disk_percent}%")
+        + _kpi("Uptime", uptime_str)
+    )
+    
+    body = _pagehead("Tizim Holati", "Server resurslari", "<a class='btn' href='/admin/monitor'>↻ Yangilash</a>") + f"<div class='statbar'>{kpis}</div>"
+    return web.Response(content_type="text/html", text=_layout("monitor", "Tizim Holati", body))
+
+
+# ---------------------------------------------------------------- logs
+
+async def _logs(request: web.Request) -> web.Response:
+    guard = _guard(request)
+    if guard: return guard
+    
+    try:
+        proc = subprocess.run(["sudo", "journalctl", "-u", "subtitr-bot", "-u", "subtitr-celery", "-n", "200", "--no-pager"], capture_output=True, text=True, timeout=5)
+        logs_text = proc.stdout
+    except Exception as e:
+        logs_text = f"Loglarni o'qib bo'lmadi: {e}"
+        
+    body = _pagehead("Loglar", "subtitr-bot & subtitr-celery (oxirgi 200 qator)", "<a class='btn' href='/admin/logs'>↻ Yangilash</a>")
+    body += f"<div class='panel'><pre style='padding: 16px; font-size: 11px; overflow-x: auto; max-height: 600px; white-space: pre-wrap; background: #000; color: #0f0; margin: 0;'>{_esc(logs_text)}</pre></div>"
+    
+    return web.Response(content_type="text/html", text=_layout("logs", "Loglar", body))
+
+
+# ---------------------------------------------------------------- env editor
+
+async def _env(request: web.Request) -> web.Response:
+    guard = _guard(request)
+    if guard: return guard
+    
+    env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+    try:
+        with open(env_path, "r", encoding="utf-8") as f:
+            env_content = f.read()
+    except Exception as e:
+        env_content = ""
+        
+    saved = request.query.get("saved")
+    restarted = request.query.get("restarted")
+    msg = ""
+    if saved: msg = "<div class='badge ok' style='margin-bottom:14px'>✓ Saqlandi</div>"
+    if restarted: msg = "<div class='badge ok' style='margin-bottom:14px'>✓ Xizmatlar qayta ishga tushirildi</div>"
+        
+    form = (
+        "<form method='post' action='/admin/env'>"
+        "<div class='panel' style='padding:18px'>"
+        "<textarea name='env_content' style='width:100%; height:400px; font-family:monospace; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); margin-bottom:14px;'>"
+        f"{_esc(env_content)}</textarea>"
+        "<div style='display:flex; gap:10px;'>"
+        "<button class='btn solid' type='submit'>Saqlash</button>"
+        "<button class='btn danger' type='submit' name='action' value='restart' formnovalidate>Saqlash va Restart (Bot & Celery)</button>"
+        "</div></div></form>"
+    )
+    
+    body = _pagehead(".env Muharrir", "Maxfiy sozlamalar") + msg + form
+    return web.Response(content_type="text/html", text=_layout("env", ".env", body))
+
+async def _env_save(request: web.Request) -> web.Response:
+    guard = _guard(request)
+    if guard: return guard
+    
+    data = await request.post()
+    env_content = data.get("env_content", "")
+    action = data.get("action", "save")
+    
+    env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+    try:
+        with open(env_path, "w", encoding="utf-8") as f:
+            f.write(env_content)
+    except:
+        pass
+        
+    if action == "restart":
+        subprocess.Popen(["sudo", "systemctl", "restart", "subtitr-bot", "subtitr-celery"])
+        return web.HTTPFound("/admin/env?restarted=1")
+        
+    return web.HTTPFound("/admin/env?saved=1")
+
+
+# ---------------------------------------------------------------- broadcast
+
+async def _broadcast(request: web.Request) -> web.Response:
+    guard = _guard(request)
+    if guard: return guard
+    
+    sent = request.query.get("sent")
+    msg = ""
+    if sent: msg = f"<div class='badge ok' style='margin-bottom:14px'>✓ Xabar {sent} ta foydalanuvchiga yuborilmoqda...</div>"
+    
+    form = (
+        "<form method='post' action='/admin/broadcast'>"
+        "<div class='panel' style='padding:18px; max-width:600px;'>"
+        "<label class='field' style='width:100%; margin-bottom:14px;'>Xabar matni (HTML format qo'llab-quvvatlanadi)"
+        "<textarea name='message_text' style='width:100%; height:150px; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); margin-top:5px;' required></textarea>"
+        "</label>"
+        "<button class='btn solid' type='submit'>Barchaga Yuborish</button>"
+        "</div></form>"
+    )
+    
+    body = _pagehead("Xabar Yuborish", "Ommaviy xabarnoma (Broadcast)") + msg + form
+    return web.Response(content_type="text/html", text=_layout("broadcast", "Broadcast", body))
+
+async def _do_broadcast(bot: Bot, text: str):
+    try:
+        from db.crud import async_session, select, User
+        async with async_session() as session:
+            users = (await session.execute(select(User.telegram_id))).scalars().all()
+            
+        for uid in users:
+            try:
+                await bot.send_message(uid, text, parse_mode="HTML")
+            except:
+                pass
+            await asyncio.sleep(0.05) # Rate limit protection
+    except Exception as e:
+        logger.error(f"Broadcast xatosi: {e}")
+
+async def _broadcast_send(request: web.Request) -> web.Response:
+    guard = _guard(request)
+    if guard: return guard
+    
+    data = await request.post()
+    text = data.get("message_text", "").strip()
+    
+    bot = request.app.get("bot")
+    if text and bot:
+        # Background task qilib ishga tushiramiz
+        asyncio.create_task(_do_broadcast(bot, text))
+        
+        from db.crud import async_session, select, User, func
+        async with async_session() as session:
+            count = await session.scalar(select(func.count(User.id)))
+        return web.HTTPFound(f"/admin/broadcast?sent={count}")
+        
+    return web.HTTPFound("/admin/broadcast")
+
+
+# ---------------------------------------------------------------- routes
+
+# ---------------------------------------------------------------- sessiya proxy
+
+_SESSIYA_ORIGIN = os.getenv("SESSIYA_ORIGIN", "http://141.147.156.65")
+_SESSIYA_SECRET = os.getenv("SESSIYA_PROXY_SECRET", "")
+
+
+async def _sessiya_proxy(request: web.Request) -> web.Response:
+    """Sessiya bot admin panelini /sessiya/ ostida shu domenга ulaydi.
+
+    Master parolу (Basic Auth) hammasini qoplaydi — sessiya panelга o'tishda
+    qayta parol so'ralmaydi. Sessiya tomonга sir sarlavha bilan kiramiz.
+    """
+    g = _guard(request)
+    if g is not None:
+        return g
+    tail = request.match_info.get("tail", "") or "admin"
+    url = f"{_SESSIYA_ORIGIN}/{tail}"
+    if request.query_string:
+        url += "?" + request.query_string
+    body = await request.read()
+    fwd = {"X-Forwarded-Prefix": "/sessiya", "X-Admin-Proxy": _SESSIYA_SECRET}
+    if request.content_type:
+        fwd["Content-Type"] = request.content_type
+    try:
+        timeout = aiohttp.ClientTimeout(total=25)
+        async with aiohttp.ClientSession(timeout=timeout) as sess:
+            async with sess.request(request.method, url, data=body or None,
+                                    headers=fwd, allow_redirects=False) as resp:
+                raw = await resp.read()
+                out = web.Response(status=resp.status, body=raw)
+                for h in ("Content-Type", "Location", "WWW-Authenticate"):
+                    if resp.headers.get(h):
+                        out.headers[h] = resp.headers[h]
+                return out
+    except Exception as exc:  # noqa: BLE001
+        return web.Response(status=502,
+                            text=f"Sessiya panelга ulanib bo'lmadi: {exc}")
+
+
+_MUSTAQIL_ORIGIN = os.getenv("MUSTAQIL_ORIGIN", "http://141.147.156.65")
+_MUSTAQIL_SECRET = os.getenv("MUSTAQIL_BRIDGE_SECRET", "")
+
+
+async def _mustaqil_proxy(request: web.Request) -> web.Response:
+    """Mustaqil bot admin panelini /mustaqil/ ostida shu domenga ulaydi."""
+    g = _guard(request)
+    if g is not None:
+        return g
+    tail = request.match_info.get("tail", "") or "mustaqil/admin"
+    # tail allaqachon "mustaqil/..." bo'lishi mumkin — ikki marta qo'shmaslik
+    if not tail.startswith("mustaqil"):
+        tail = "mustaqil/" + tail
+    url = f"{_MUSTAQIL_ORIGIN}/{tail}"
+    if request.query_string:
+        url += "?" + request.query_string
+    body = await request.read()
+    fwd: dict[str, str] = {}
+    if _MUSTAQIL_SECRET:
+        fwd["X-Admin-Proxy"] = _MUSTAQIL_SECRET
+    if request.content_type:
+        fwd["Content-Type"] = request.content_type
+    try:
+        timeout = aiohttp.ClientTimeout(total=25)
+        async with aiohttp.ClientSession(timeout=timeout) as sess:
+            async with sess.request(request.method, url, data=body or None,
+                                    headers=fwd, allow_redirects=False) as resp:
+                raw = await resp.read()
+                out = web.Response(status=resp.status, body=raw)
+                for h in ("Content-Type", "Location", "WWW-Authenticate"):
+                    if resp.headers.get(h):
+                        out.headers[h] = resp.headers[h]
+                return out
+    except Exception as exc:
+        return web.Response(status=502, text=f"Mustaqil panelga ulanib bo'lmadi: {exc}")
+
+
+_TATULMS_ORIGIN = os.getenv("TATULMS_ORIGIN", "http://141.147.156.65")
+_TATULMS_SECRET = os.getenv("TATULMS_BRIDGE_SECRET", "")
+
+
+async def _tatulms_proxy(request: web.Request) -> web.Response:
+    """TATU LMS bot admin panelini /tatulms/ ostida shu domenga ulaydi."""
+    g = _guard(request)
+    if g is not None:
+        return g
+    tail = request.match_info.get("tail", "") or "tatulms/admin"
+    if not tail.startswith("tatulms"):
+        tail = "tatulms/" + tail
+    url = f"{_TATULMS_ORIGIN}/{tail}"
+    if request.query_string:
+        url += "?" + request.query_string
+    body = await request.read()
+    fwd = {"X-Forwarded-Prefix": "/tatulms"}
+    if _TATULMS_SECRET:
+        fwd["X-Admin-Proxy"] = _TATULMS_SECRET
+    if request.content_type:
+        fwd["Content-Type"] = request.content_type
+    try:
+        timeout = aiohttp.ClientTimeout(total=25)
+        async with aiohttp.ClientSession(timeout=timeout) as sess:
+            async with sess.request(request.method, url, data=body or None,
+                                    headers=fwd, allow_redirects=False) as resp:
+                raw = await resp.read()
+                out = web.Response(status=resp.status, body=raw)
+                for h in ("Content-Type", "Location", "WWW-Authenticate"):
+                    if resp.headers.get(h):
+                        out.headers[h] = resp.headers[h]
+                return out
+    except Exception as exc:  # noqa: BLE001
+        return web.Response(status=502, text=f"TATU LMS panelga ulanib bo'lmadi: {exc}")
+
+
+_QUIZ_ORIGIN = os.getenv("QUIZ_ORIGIN", "http://79.76.38.131")
+_QUIZ_SECRET = os.getenv("QUIZ_BRIDGE_SECRET", "")
+
+
+async def _quiz_proxy(request: web.Request) -> web.Response:
+    """Quiz bot admin panelini /quiz/ ostida shu domenga ulaydi (sh.sh serveri)."""
+    g = _guard(request)
+    if g is not None:
+        return g
+    tail = request.match_info.get("tail", "") or "admin"
+    url = f"{_QUIZ_ORIGIN}/{tail}"
+    if request.query_string:
+        url += "?" + request.query_string
+    body = await request.read()
+    fwd = {"X-Forwarded-Prefix": "/quiz"}
+    if _QUIZ_SECRET:
+        fwd["X-Admin-Proxy"] = _QUIZ_SECRET
+    if request.content_type:
+        fwd["Content-Type"] = request.content_type
+    try:
+        timeout = aiohttp.ClientTimeout(total=25)
+        async with aiohttp.ClientSession(timeout=timeout) as sess:
+            async with sess.request(request.method, url, data=body or None,
+                                    headers=fwd, allow_redirects=False) as resp:
+                raw = await resp.read()
+                out = web.Response(status=resp.status, body=raw)
+                for h in ("Content-Type", "Location", "WWW-Authenticate"):
+                    if resp.headers.get(h):
+                        out.headers[h] = resp.headers[h]
+                return out
+    except Exception as exc:  # noqa: BLE001
+        return web.Response(status=502, text=f"Quiz panelga ulanib bo'lmadi: {exc}")
+
+
+_WSTORE_ORIGIN = os.getenv("WSTORE_ORIGIN", "http://79.76.38.131")
+
+
+async def _wstore_proxy(request: web.Request) -> web.Response:
+    """wstore market admin panelini /wstore/ ostida shu domenga ulaydi (sh.sh)."""
+    g = _guard(request)
+    if g is not None:
+        return g
+    tail = request.match_info.get("tail", "") or "admin"
+    url = f"{_WSTORE_ORIGIN}/wsadmin/{tail}"
+    if request.query_string:
+        url += "?" + request.query_string
+    body = await request.read()
+    fwd = {"X-Forwarded-Prefix": "/wstore"}
+    if request.content_type:
+        fwd["Content-Type"] = request.content_type
+    try:
+        timeout = aiohttp.ClientTimeout(total=25)
+        async with aiohttp.ClientSession(timeout=timeout) as sess:
+            async with sess.request(request.method, url, data=body or None,
+                                    headers=fwd, allow_redirects=False) as resp:
+                raw = await resp.read()
+                out = web.Response(status=resp.status, body=raw)
+                for h in ("Content-Type", "Location", "WWW-Authenticate"):
+                    if resp.headers.get(h):
+                        out.headers[h] = resp.headers[h]
+                return out
+    except Exception as exc:  # noqa: BLE001
+        return web.Response(status=502, text=f"wstore panelga ulanib bo'lmadi: {exc}")
+
+
+def setup_admin_routes(app: web.Application, bot: Bot = None) -> None:
+    app["bot"] = bot
+    app.router.add_get("/admin", _dashboard)
+    app.router.add_get("/admin/", _dashboard)
+    app.router.add_get("/admin/users", _users)
+    app.router.add_get("/admin/users/{id}", _user_detail)
+    app.router.add_post("/admin/users/{id}/block", _user_block)
+    app.router.add_post("/admin/users/{id}/plan", _user_plan)
+    app.router.add_get("/admin/payments", _payments)
+    app.router.add_get("/admin/donations", _donations)
+    app.router.add_post("/admin/donations/{id}/approve", _donation_approve)
+    app.router.add_post("/admin/donations/{id}/public", _donation_public)
+    app.router.add_get("/admin/videos", _videos)
+    app.router.add_get("/admin/jobs", _jobs)
+    app.router.add_post("/admin/jobs/cancel-stuck", _jobs_cancel_stuck)
+    app.router.add_post("/admin/jobs/cancel-all", _jobs_cancel_all)
+    app.router.add_post("/admin/jobs/{id}/cancel", _job_cancel)
+    app.router.add_get("/admin/api", _api)
+    app.router.add_get("/admin/stats", _stats)
+    app.router.add_get("/admin/errors", _errors)
+    app.router.add_get("/admin/settings", _settings)
+    app.router.add_post("/admin/settings", _settings_save)
+
+    # Portfolio (shamsiyev.uz) tashrif analitikasi
+    from web import site_analytics
+    site_analytics.setup_site_routes(app)
+
+    # Kuchaytirilgan tizim boshqaruvi (monitor/servislar/logs/env/broadcast) —
+    # web/admin_control.py to'liq nazorat beradi (eski yuzaki versiyalar o'rniga).
+    from web import admin_control
+    admin_control.register(app)
+
+    # Sessiya bot admin panelini shu domen ostiga proxy qilish — bitta sayt,
+    # bitta parol (master Basic Auth hammasini qoplaydi).
+    app.router.add_route("*", "/sessiya", _sessiya_proxy)
+    app.router.add_route("*", "/sessiya/{tail:.*}", _sessiya_proxy)
+
+    # Mustaqil bot admin panelini shamsiyev serveri orqali proxy qilish.
+    app.router.add_route("*", "/mustaqil", _mustaqil_proxy)
+    app.router.add_route("*", "/mustaqil/{tail:.*}", _mustaqil_proxy)
+    app.router.add_route("*", "/tatulms", _tatulms_proxy)
+    app.router.add_route("*", "/tatulms/{tail:.*}", _tatulms_proxy)
+
+    # Quiz bot admin panelini sh.sh serveri orqali proxy qilish.
+    app.router.add_route("*", "/quiz", _quiz_proxy)
+    app.router.add_route("*", "/quiz/{tail:.*}", _quiz_proxy)
+
+    # wstore market admin panelini sh.sh (/wsadmin) orqali proxy qilish.
+    app.router.add_route("*", "/wstore", _wstore_proxy)
+    app.router.add_route("*", "/wstore/{tail:.*}", _wstore_proxy)
+

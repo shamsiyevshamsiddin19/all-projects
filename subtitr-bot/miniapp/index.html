@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Subtitr</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="/app/static/style.css?v=19">
+</head>
+<body>
+  <!-- ====== Auth gate (brauzerda token yo'q — botga yo'naltirish) ====== -->
+  <div class="auth-gate hidden" id="authGate">
+    <div class="gate-card">
+      <div class="gate-logo">S</div>
+      <h1 class="gate-title">Subtitr</h1>
+      <p class="gate-sub">Brauzerda davom etish uchun Telegram orqali kiring. Botda <b>/web</b> buyrug'ini yuboring — shaxsiy havola olasiz.</p>
+      <a class="gate-btn" id="gateBtn" href="#" target="_blank" rel="noopener">Telegram botni ochish</a>
+      <p class="gate-hint">Hisobingiz, tarifingiz va tariximingiz shu yerda saqlanadi.</p>
+    </div>
+  </div>
+
+  <div class="app">
+    <header class="head">
+      <button class="brand-user" id="headerUser" type="button" aria-label="Profil">
+        <span class="hu-av" id="huAv">U</span>
+        <span class="hu-name" id="huName">Profil</span>
+      </button>
+      <div class="head-right">
+        <button class="icon-btn" id="webBtn" type="button" aria-label="Brauzerda ochish" title="Brauzerda ochish">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </button>
+        <span id="planChip" class="chip">…</span>
+      </div>
+    </header>
+
+    <!-- Bo'lim navigatsiyasi -->
+    <nav class="snav">
+      <button class="snav-b on" data-sec="create" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/></svg>
+        <span>Yangi</span>
+      </button>
+      <button class="snav-b" data-sec="style" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+        <span>Uslub</span>
+      </button>
+      <button class="snav-b" data-sec="history" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
+        <span>Tarix</span>
+      </button>
+    </nav>
+
+    <!-- ============ YANGI ============ -->
+    <section class="section" id="sec-create">
+      <div class="pstrip" id="pstrip">
+        <span class="pi"><span class="k">Tarif</span><b id="pPlan">—</b></span>
+        <span class="pi"><span class="k">Bugun</span><b id="pUsed">—</b></span>
+        <span class="pi"><span class="k">Maks</span><b id="pMax">—</b></span>
+      </div>
+
+      <div class="workspace">
+        <section class="panel form-panel">
+          <div class="tabs">
+            <button class="tab on" id="tabFile" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Fayl
+            </button>
+            <button class="tab" id="tabUrl" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              Havola
+            </button>
+          </div>
+
+          <div id="fileArea">
+            <label class="drop" id="drop">
+              <input type="file" id="file" accept="video/*" hidden>
+              <span class="drop-ic">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              </span>
+              <span class="drop-ring" id="dropRing" aria-hidden="true">
+                <svg viewBox="0 0 44 44"><circle class="r-bg" cx="22" cy="22" r="19"/><circle class="r-fg" id="ringFg" cx="22" cy="22" r="19"/></svg>
+                <span class="ring-pct" id="ringPct">0%</span>
+              </span>
+              <span class="drop-check" id="dropCheck">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <span class="drop-t" id="dropText">Videoni tanlang yoki tashlang</span>
+              <span class="drop-s" id="dropHint">MP4, MOV, MKV…</span>
+            </label>
+          </div>
+
+          <div id="urlArea" class="hidden">
+            <div class="urlbox">
+              <span class="urlic">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              </span>
+              <input type="url" id="url" placeholder="YouTube yoki Instagram havolasi" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false">
+            </div>
+            <div class="drop-s url-hint">youtube.com · youtu.be · instagram.com</div>
+          </div>
+
+          <div class="flabel">Rejim</div>
+          <div class="modes" id="modeSeg"></div>
+
+          <div class="flabel" id="langLabel">Til</div>
+          <div class="seg" id="langSeg"></div>
+
+          <button class="btn primary" id="goBtn" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/></svg>
+            Subtitr yozish
+          </button>
+          <div class="err" id="formErr"></div>
+        </section>
+
+        <section class="panel view-panel" id="viewPanel">
+          <div class="view idle" id="idleView">
+            <div class="idle-ic">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><path d="M10 8.5l4 2.5-4 2.5z" fill="currentColor" stroke="none"/></svg>
+            </div>
+            <div class="idle-t">Natija shu yerda chiqadi</div>
+            <div class="idle-s">Chapdan video yoki havola yuklang — tayyor subtitrli videoni shu yerda ko'rib, yuklab olasiz.</div>
+            <ul class="tips">
+              <li><b>Original</b> — video asl tilida subtitr</li>
+              <li><b>Tarjima</b> — boshqa tilga subtitr</li>
+              <li><b>Ikki qatlam + lug'at</b> — til o'rganish uchun</li>
+              <li><b>Matn · Lug'at</b> — PDF/txt hujjat</li>
+              <li><b>Audio</b> — videodan ovoz (MP3)</li>
+            </ul>
+          </div>
+
+          <div class="view center hidden" id="progressView">
+            <div class="step-ic" id="stepIc"></div>
+            <div class="prog-bar hidden" id="progBar"><div class="prog-fill" id="progFill"></div></div>
+            <div class="prog-t" id="progText">Boshlanmoqda…</div>
+            <div class="prog-s" id="progSub">Iltimos kuting, oynani yopmang</div>
+          </div>
+
+          <div class="view hidden" id="resultView">
+            <div class="result-head">
+              <span class="done-badge" id="doneBadge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Subtitr tayyor
+              </span>
+            </div>
+            <video id="resultVideo" class="result-video" controls playsinline preload="metadata"></video>
+            <audio id="resultAudio" class="result-audio hidden" controls preload="metadata"></audio>
+            <div id="srtBox" class="srt-box hidden">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span>.srt subtitr fayli tayyor</span>
+            </div>
+            <div id="textBox" class="text-box hidden"><pre id="textPreview"></pre></div>
+            <div id="multiBox" class="multi-box hidden"></div>
+            <div class="result-actions">
+              <a class="btn primary" id="dlBtn" href="#" download>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Yuklab olish
+              </a>
+              <a class="btn ghost hidden" id="dlBtn2" href="#" download>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                .txt fayl
+              </a>
+              <button class="btn ghost" id="sendChatBtn" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                Chatga yuborish
+              </button>
+              <button class="btn ghost" id="anotherBtn" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                Shu videodan boshqa format
+              </button>
+              <button class="btn ghost" id="againBtn" type="button">Yana bittasi (yangi video)</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ============ USLUB ============ -->
+    <section class="section hidden" id="sec-style">
+      <div class="sec-title">Subtitr uslubi</div>
+      <div class="style-banner hidden" id="styleBanner">
+        ℹ️ Uslub sozlash obunachilar uchun saqlanadi.
+        <button class="lnk" id="styleSubBtn" type="button">Obuna olish</button>
+      </div>
+      <div class="workspace">
+        <section class="panel">
+          <div class="flabel">Ranglar</div>
+          <div class="color-row">
+            <label class="color-item"><span>Matn</span><input type="color" id="cText" value="#FFFFFF"></label>
+            <label class="color-item"><span>Kontur</span><input type="color" id="cOutline" value="#000000"></label>
+            <label class="color-item"><span>Tarjima</span><input type="color" id="cTrans" value="#FFE580"></label>
+          </div>
+          <div class="flabel">O'lcham</div>
+          <div class="seg" id="sizeSeg">
+            <button type="button" data-v="small">Kichik</button>
+            <button type="button" data-v="medium">O'rta</button>
+            <button type="button" data-v="large">Katta</button>
+          </div>
+          <div class="flabel">Joylashuv</div>
+          <div class="seg" id="posSeg">
+            <button type="button" data-v="bottom">Past</button>
+            <button type="button" data-v="center">Markaz</button>
+            <button type="button" data-v="top">Tepa</button>
+          </div>
+          <div class="toggle-row">
+            <label class="tgl"><span>Qalin</span><input type="checkbox" id="tBold"></label>
+            <label class="tgl"><span>Orqa fon</span><input type="checkbox" id="tBox"></label>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="flabel">Jonli namuna</div>
+          <div class="preview-frame pos-bottom" id="prevFrame">
+            <div class="preview-sub" id="prevSub"></div>
+          </div>
+          <div class="prev-actions">
+            <button class="btn primary" id="styleSave" type="button">Saqlash va davom etish</button>
+            <button class="btn ghost" id="styleReset" type="button">Standart</button>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ============ TARIX ============ -->
+    <section class="section hidden" id="sec-history">
+      <div class="sec-title">Tarix</div>
+      <div id="historyList" class="history"></div>
+      <div class="empty-block hidden" id="historyEmpty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
+        <div>Hali natija yo'q</div>
+        <div class="empty-sub">Tayyor bo'lgan subtitrlar shu yerda saqlanadi.</div>
+      </div>
+    </section>
+
+    <!-- ============ PROFIL ============ -->
+    <section class="section hidden" id="sec-profile">
+      <div class="sec-title">Profil</div>
+      <div class="panel profile-card">
+        <div class="prof-top">
+          <div class="prof-av" id="profAv">U</div>
+          <div class="prof-id">
+            <div class="prof-name" id="profName">Foydalanuvchi</div>
+            <div class="prof-plan"><span class="plan-badge" id="profPlan">—</span><span id="profUntil" class="prof-until"></span></div>
+          </div>
+        </div>
+        <div class="prof-stats">
+          <div class="ps"><div class="ps-n" id="profUsed">—</div><div class="ps-k">Bugun</div></div>
+          <div class="ps"><div class="ps-n" id="profMax">—</div><div class="ps-k">Maks daqiqa</div></div>
+          <div class="ps"><div class="ps-n" id="profModes">—</div><div class="ps-k">Rejimlar</div></div>
+        </div>
+        <div class="prof-actions">
+          <button class="btn primary" id="subBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            Obuna olish
+          </button>
+          <button class="btn ghost" id="donateBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            Qo'llab-quvvatlash
+          </button>
+        </div>
+      </div>
+
+      <!-- Minnatdorchilik devori — homiylar ro'yxati -->
+      <div class="sec-title donors-title">❤️ Homiylar</div>
+      <div class="panel donors-panel">
+        <div id="donorsList"></div>
+        <div class="donors-empty hidden" id="donorsEmpty">
+          Hali homiylar yo'q — birinchisi siz bo'ling! 💛
+        </div>
+      </div>
+    </section>
+
+    <div class="foot">Subtitr Bot · Mini App</div>
+  </div>
+
+  <!-- ============ OBUNA MODAL (qulflangan rejim bosilganda) ============ -->
+  <div class="sheet-overlay" id="payOverlay" aria-hidden="true">
+    <div class="sheet" id="paySheet" role="dialog" aria-modal="true">
+      <button class="sheet-x" id="payClose" type="button" aria-label="Yopish">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+
+      <div class="sheet-hero">
+        <div class="sheet-ic" id="payIcon"></div>
+        <div class="sheet-htext">
+          <div class="sheet-title" id="payTitle">Premium rejim</div>
+          <div class="sheet-sub" id="payDesc"></div>
+        </div>
+      </div>
+
+      <div class="sheet-unlocks">
+        <div class="unlock-head" id="payUnlockHead">Obuna bilan ochiladigan imkoniyatlar</div>
+        <ul class="unlock-list" id="payUnlocks"></ul>
+      </div>
+
+      <div class="plan-cards" id="payPlans"></div>
+
+      <div class="sheet-trust">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>Click orqali xavfsiz to'lov · istalgan vaqt bekor qilasiz</span>
+      </div>
+      <div class="sheet-err" id="payErr"></div>
+    </div>
+  </div>
+
+  <!-- ============ DONAT MODAL ============ -->
+  <div class="sheet-overlay" id="donOverlay" aria-hidden="true">
+    <div class="sheet" id="donSheet" role="dialog" aria-modal="true">
+      <button class="sheet-x" id="donClose" type="button" aria-label="Yopish">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div class="sheet-hero">
+        <div class="sheet-ic" id="donIcon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </div>
+        <div class="sheet-htext">
+          <div class="sheet-title">Loyihani qo'llab-quvvatlash</div>
+          <div class="sheet-sub">Subtitr botni rivojlantirishga hissa qo'shing. Har qanday summa biz uchun qadrli.</div>
+        </div>
+      </div>
+      <div class="unlock-head">Summani tanlang</div>
+      <div class="don-amounts" id="donAmounts"></div>
+      <input class="don-input" type="text" id="donCustom" inputmode="numeric"
+             placeholder="Boshqa summa (so'm) — 1 000 dan" autocomplete="off">
+      <textarea class="don-text" id="donComment" rows="2" maxlength="200"
+                placeholder="Izoh (ixtiyoriy) — minnatdorchilik devorida ko'rinishi mumkin"></textarea>
+      <button class="plan-go" id="donGo" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <span>Qo'llab-quvvatlash</span>
+      </button>
+      <div class="sheet-trust" style="margin-top:12px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>Click orqali xavfsiz to'lov</span>
+      </div>
+      <div class="sheet-err" id="donErr"></div>
+    </div>
+  </div>
+
+  <script src="/app/static/app.js?v=19"></script>
+</body>
+</html>

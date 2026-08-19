@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>BoostDay — Rejalarim</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root{
+    --bg: var(--tg-theme-bg-color, #ffffff);
+    --sec-bg: var(--tg-theme-secondary-bg-color, #f2f3f5);
+    --text: var(--tg-theme-text-color, #0f172a);
+    --hint: var(--tg-theme-hint-color, #8a94a6);
+    --link: var(--tg-theme-link-color, #2f7bf5);
+    --btn: var(--tg-theme-button-color, #2f7bf5);
+    --btn-text: var(--tg-theme-button-text-color, #ffffff);
+    --accent: var(--tg-theme-accent-text-color, var(--link));
+    --danger:#e5484d; --ok:#2fb344; --warn:#f0a020;
+    --card: var(--bg);
+    --border: color-mix(in srgb, var(--hint) 22%, transparent);
+    --radius:16px; --radius-sm:11px;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 6px 20px rgba(0,0,0,.05);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--sec-bg); color:var(--text);
+    font-size:15px; line-height:1.45;
+    padding-bottom:calc(72px + env(safe-area-inset-bottom));
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:14px 14px 0}
+  h1,h2,h3,h4{margin:0;font-weight:650}
+  button{font-family:inherit;font-size:15px;cursor:pointer;border:none;background:none;color:inherit}
+  input,select,textarea{
+    font-family:inherit;font-size:15px;width:100%;color:var(--text);
+    background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);
+    padding:11px 12px;outline:none;transition:border-color .15s;
+  }
+  input:focus,select:focus,textarea:focus{border-color:var(--btn)}
+  textarea{resize:vertical;min-height:92px}
+  label{display:block;margin-bottom:12px}
+  label > span{display:block;font-size:12.5px;color:var(--hint);margin:0 0 6px 2px;font-weight:600}
+  .hidden{display:none !important}
+
+  /* Header */
+  .app-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+  .app-head h1{font-size:20px;letter-spacing:-.3px}
+  .app-head .sub{font-size:12.5px;color:var(--hint);margin-top:1px}
+  .avatar{width:38px;height:38px;border-radius:50%;background:var(--btn);color:var(--btn-text);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex:0 0 auto}
+  .icon-btn{width:38px;height:38px;border-radius:50%;background:var(--bg);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;font-size:17px}
+
+  /* Cards */
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:14px;box-shadow:var(--shadow);margin-bottom:12px}
+  .stat-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:13px 14px;box-shadow:var(--shadow)}
+  .stat .n{font-size:26px;font-weight:750;letter-spacing:-.5px}
+  .stat .l{font-size:12px;color:var(--hint);margin-top:1px}
+  .stat.accent{background:var(--btn);color:var(--btn-text);border-color:transparent}
+  .stat.accent .l{color:var(--btn-text);opacity:.85}
+
+  /* Chips */
+  .chips{display:flex;gap:5px;padding:2px 0 10px}
+  .chip{flex:1;min-width:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    padding:6px 3px;border-radius:999px;background:var(--bg);
+    border:1px solid var(--border);color:var(--hint);font-size:11px;font-weight:600}
+  .chip.active{background:var(--btn);color:var(--btn-text);border-color:transparent}
+
+  /* List items */
+  .item{display:flex;gap:12px;align-items:flex-start;padding:13px 14px;background:var(--card);
+    border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;box-shadow:var(--shadow)}
+  .item .emoji{font-size:20px;flex:0 0 auto;margin-top:1px}
+  .item .body{flex:1;min-width:0}
+  .item .t{font-weight:640;font-size:15px}
+  .item .m{font-size:12.5px;color:var(--hint);margin-top:3px;display:flex;flex-wrap:wrap;gap:4px 10px}
+  .item .m b{color:var(--text);font-weight:600}
+  .item .prev{font-size:13px;color:var(--hint);margin-top:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--sec-bg);color:var(--accent)}
+  .empty{text-align:center;color:var(--hint);padding:40px 16px;font-size:14px}
+  .empty .big{font-size:40px;display:block;margin-bottom:8px;opacity:.7}
+
+  /* Search */
+  .search{position:relative;margin-bottom:12px}
+  .search input{padding-left:38px}
+  .search::before{content:"🔎";position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;opacity:.6}
+
+  /* Buttons */
+  .btn{display:block;width:100%;padding:13px;border-radius:var(--radius-sm);background:var(--btn);
+    color:var(--btn-text);font-weight:650;text-align:center}
+  .btn.sec{background:var(--sec-bg);color:var(--text)}
+  .btn.danger{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger)}
+  .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+  .btn-row{display:flex;gap:10px}
+  .btn-row .btn{margin:0}
+  .link{color:var(--link);font-weight:600}
+
+  /* FAB */
+  .fab{position:fixed;right:16px;bottom:calc(80px + env(safe-area-inset-bottom));z-index:40;
+    width:56px;height:56px;border-radius:50%;background:var(--btn);color:var(--btn-text);
+    font-size:28px;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 6px 20px color-mix(in srgb,var(--btn) 45%,transparent)}
+
+  /* Bottom nav */
+  .nav{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--bg);
+    border-top:1px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+  .nav button{flex:1;padding:9px 0 8px;display:flex;flex-direction:column;align-items:center;gap:2px;
+    color:var(--hint);font-size:10.5px;font-weight:600}
+  .nav button .ic{font-size:20px;line-height:1}
+  .nav button.active{color:var(--btn)}
+
+  /* Sheet (modal) */
+  .sheet-back{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}
+  .sheet-back.show{opacity:1;pointer-events:auto}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:61;background:var(--sec-bg);
+    border-radius:20px 20px 0 0;max-height:92vh;overflow-y:auto;
+    transform:translateY(100%);transition:transform .26s cubic-bezier(.3,.7,.3,1);
+    padding:8px 14px calc(20px + env(safe-area-inset-bottom))}
+  .sheet.show{transform:translateY(0)}
+  .sheet-grab{width:38px;height:4px;border-radius:2px;background:var(--hint);opacity:.4;margin:8px auto 12px}
+  .sheet h3{font-size:17px;margin-bottom:14px;text-align:center}
+
+  /* Charts */
+  .bars{display:flex;align-items:flex-end;gap:5px;height:120px;padding-top:8px}
+  .bars .b{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}
+  .bars .bar{width:100%;background:var(--sec-bg);border-radius:5px 5px 3px 3px;position:relative;overflow:hidden;height:100%;display:flex;align-items:flex-end}
+  .bars .fill{width:100%;background:var(--btn);border-radius:5px 5px 0 0;transition:height .4s}
+  .bars .bl{font-size:9px;color:var(--hint);white-space:nowrap;transform:scale(.9)}
+  .brk{display:flex;flex-direction:column;gap:9px}
+  .brk .r{display:flex;align-items:center;gap:10px}
+  .brk .r .name{font-size:13px;min-width:104px;color:var(--text)}
+  .brk .r .track{flex:1;height:8px;background:var(--sec-bg);border-radius:4px;overflow:hidden}
+  .brk .r .tf{height:100%;background:var(--btn);border-radius:4px}
+  .brk .r .v{font-size:12px;color:var(--hint);min-width:24px;text-align:right;font-weight:600}
+
+  .items-editor .mi{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px;margin-bottom:9px}
+  .mi-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;gap:8px}
+  .mi-badge{font-size:12.5px;font-weight:650;color:var(--text)}
+  .mi-row{margin-bottom:8px}
+  .mi-pick-box{display:flex;align-items:center;justify-content:center;gap:7px;padding:16px 10px;
+    border:1.5px dashed var(--border);border-radius:var(--radius-sm);color:var(--link);
+    font-size:13.5px;font-weight:650;cursor:pointer;text-align:center}
+  .mi-progress{text-align:center;padding:16px;color:var(--hint);font-size:13px;font-weight:600}
+
+  .tg{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px;margin-bottom:9px}
+  .tg-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .tg-num{font-size:12px;font-weight:700;color:var(--hint);white-space:nowrap}
+  .tg-name{flex:1}
+  /* Bo'lim VAQTI — nom ostida, butun kenglikda (vazifa emas, BO'LIM uchun) */
+  .tg-time{width:100%;margin-bottom:8px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}
+  .toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);
+    z-index:80;background:var(--text);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:13.5px;font-weight:600;
+    opacity:0;transition:.25s;pointer-events:none;max-width:90vw;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .loading{text-align:center;color:var(--hint);padding:30px;font-size:14px}
+  .banner{background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--text);
+    border:1px solid color-mix(in srgb,var(--warn) 35%,transparent);border-radius:var(--radius-sm);
+    padding:10px 12px;font-size:12.5px;margin-bottom:12px}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="app-head">
+      <div>
+        <h1 id="viewTitle">Bosh sahifa</h1>
+        <div class="sub" id="viewSub">Rejalaringiz bir joyda</div>
+      </div>
+      <div class="avatar" id="avatar">B</div>
+    </div>
+
+    <div id="banner" class="banner hidden"></div>
+
+    <!-- BOSH -->
+    <section id="v-home" class="view">
+      <div class="stat-row">
+        <div class="stat accent"><div class="n" id="s-daily">0</div><div class="l">Har kungi reja</div></div>
+        <div class="stat"><div class="n" id="s-plans">0</div><div class="l">Rejalar</div></div>
+        <div class="stat"><div class="n" id="s-rem">0</div><div class="l">Eslatmalar</div></div>
+        <div class="stat"><div class="n" id="s-todo">0</div><div class="l">TO-DO</div></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:10px">So‘nggi yozuvlar</h3>
+        <div id="recentList"></div>
+      </div>
+    </section>
+
+    <!-- REJALAR -->
+    <section id="v-plans" class="view hidden">
+      <div class="chips" id="planChips">
+        <button class="chip active" data-f="all">Hammasi</button>
+        <button class="chip" data-f="daily_todo">Har kungi</button>
+        <button class="chip" data-f="plans">Rejalar</button>
+        <button class="chip" data-f="reminder">Eslatma</button>
+        <button class="chip" data-f="todo">TO-DO</button>
+      </div>
+      <div class="search"><input id="planSearch" placeholder="Qidirish..." /></div>
+      <div id="plansList"></div>
+    </section>
+
+    <!-- STATISTIKA -->
+    <section id="v-stats" class="view hidden">
+      <div class="stat-row">
+        <div class="stat accent"><div class="n" id="st-all">0%</div><div class="l" id="st-all-l">Umumiy · 0/0</div></div>
+        <div class="stat"><div class="n" id="st-week">0%</div><div class="l" id="st-week-l">Hafta · 0/0</div></div>
+        <div class="stat"><div class="n" id="st-month">0%</div><div class="l" id="st-month-l">Oy · 0/0</div></div>
+        <div class="stat"><div class="n" id="st-year">0%</div><div class="l" id="st-year-l">Yil · 0/0</div></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:4px">Oxirgi 14 kun</h3>
+        <div class="bars" id="dailyChart"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:4px">Oxirgi 12 oy</h3>
+        <div class="bars" id="monthlyChart"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px">Reja turlari</h3>
+        <div class="brk" id="typeBreak"></div>
+      </div>
+    </section>
+
+    <!-- KANALLAR -->
+    <section id="v-channels" class="view hidden">
+      <div class="card">
+        <h3 style="margin-bottom:10px">Kanal / guruh ulash</h3>
+        <label><span>@username, havola yoki -100… ID</span>
+          <input id="chInput" placeholder="@mening_kanalim" /></label>
+        <button class="btn" id="chAddBtn">Ulash</button>
+        <p style="font-size:12px;color:var(--hint);margin:10px 2px 0">
+          Muhim: bot o‘sha kanal yoki guruhda <b>admin</b> bo‘lishi kerak.</p>
+      </div>
+      <div id="channelsList"></div>
+    </section>
+  </div>
+
+  <button class="fab" id="fab">＋</button>
+
+  <nav class="nav">
+    <button data-v="home" class="active"><span class="ic">🏠</span>Bosh</button>
+    <button data-v="plans"><span class="ic">📋</span>Rejalar</button>
+    <button data-v="stats"><span class="ic">📊</span>Statistika</button>
+    <button data-v="channels"><span class="ic">📢</span>Kanallar</button>
+  </nav>
+
+  <!-- FORM SHEET -->
+  <div class="sheet-back" id="sheetBack"></div>
+  <div class="sheet" id="sheet">
+    <div class="sheet-grab"></div>
+    <h3 id="sheetTitle">Yangi reja</h3>
+    <form id="planForm">
+      <input type="hidden" id="fId" />
+      <label><span>Reja turi</span>
+        <select id="fType">
+          <option value="daily_plan">📅 Oddiy reja</option>
+          <option value="challenge">🔥 Challenge</option>
+          <option value="reminder">🎗 Eslatma</option>
+          <option value="todo">📋 Oddiy TO-DO</option>
+          <option value="super_todo">⏱ Super TO-DO</option>
+          <option value="daily_todo">🔁 Har kungi reja</option>
+        </select>
+      </label>
+      <label><span>Kanal / guruh</span><select id="fChannel"></select></label>
+      <label><span>Vaqt</span><input type="time" id="fTime" /></label>
+
+      <label id="wrapDate" class="hidden"><span>Sana</span><input type="date" id="fDate" /></label>
+      <div id="wrapChallenge" class="hidden">
+        <label><span>Boshlanish sanasi</span><input type="date" id="fStart" /></label>
+        <label><span>Tugash sanasi</span><input type="date" id="fEnd" /></label>
+      </div>
+      <label id="wrapWeek" class="hidden"><span>Qaysi kunlar</span>
+        <select id="fWeek">
+          <option value="everyday">Har kuni</option>
+          <option value="odd">Toq kunlar</option>
+          <option value="even">Juft kunlar</option>
+        </select>
+      </label>
+
+      <!-- Content (daily_plan / challenge / reminder) -->
+      <div id="wrapContent">
+        <label><span>Asosiy matn</span>
+          <textarea id="fText" placeholder="Reja yoki eslatma matni..."></textarea></label>
+        <div class="items-editor">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span style="font-size:12.5px;color:var(--hint);font-weight:600">Media (ixtiyoriy)</span>
+            <button type="button" class="link" id="addMediaBtn">+ Galereyadan tanlash</button>
+            <input type="file" id="bulkMediaInput" multiple hidden />
+          </div>
+          <div id="mediaBox"></div>
+          <p style="font-size:11.5px;color:var(--hint);margin:2px">Bir nechta rasm/video birdaniga (aralash) tanlash mumkin — avtomatik yuklanadi.</p>
+        </div>
+      </div>
+
+      <!-- Tasks (todo / super_todo / daily_todo) — bo'limlarga ajratilgan -->
+      <div id="wrapTasks" class="hidden">
+        <div id="groupsBox"></div>
+        <button type="button" class="link" id="addGroupBtn" style="margin:2px 0 10px">+ Bo'lim qo'shish</button>
+        <p id="superHint" class="hidden" style="font-size:11.5px;color:var(--hint);margin:-4px 2px 10px">
+          Super TO-DO: <b>Vazifa | daqiqa</b> — masalan <code>Kitob o'qish | 25</code></p>
+      </div>
+
+      <div class="btn-row" style="margin-top:6px">
+        <button type="button" class="btn danger hidden" id="delBtn" style="flex:0 0 46%">O‘chirish</button>
+        <button type="submit" class="btn" id="saveBtn">Saqlash</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const tg = window.Telegram ? window.Telegram.WebApp : null;
+if (tg) { tg.ready(); tg.expand(); }
+
+const API = "/boost/api";
+const INIT = tg ? (tg.initData || "") : "";
+const TYPE_META = {
+  daily_plan:{e:"📅",l:"Oddiy reja"}, challenge:{e:"🔥",l:"Challenge"}, reminder:{e:"🎗",l:"Eslatma"},
+  todo:{e:"📋",l:"Oddiy TO-DO"}, super_todo:{e:"⏱",l:"Super TO-DO"}, daily_todo:{e:"🔁",l:"Har kungi reja"}
+};
+const state = { view:"home", data:null, stats:null, channels:[], filter:"all", search:"" };
+
+// ---- API helper ----
+async function api(action, extra){
+  const body = new URLSearchParams();
+  body.set("action", action);
+  body.set("init_data", INIT);
+  if (extra) for (const k in extra) body.set(k, extra[k]);
+  let json;
+  try{
+    const r = await fetch(API, {method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body});
+    json = await r.json();
+  }catch(e){ throw new Error("Tarmoq xatosi"); }
+  if (json && json.ok === false) throw new Error(json.message || "Xato");
+  return json;
+}
+
+// ---- UI helpers ----
+function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),2200); if(tg&&tg.HapticFeedback) tg.HapticFeedback.impactOccurred("light"); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function fmtChannel(p){ return esc(p.channel_name || p.channel_id || "—"); }
+function el(id){ return document.getElementById(id); }
+
+const VIEW_TITLES = { home:["Bosh sahifa","Rejalaringiz bir joyda"], plans:["Rejalar","Barcha yozuvlaringiz"],
+  stats:["Statistika","Bajarilish ko‘rsatkichlari"], channels:["Kanallar","Ulangan kanal va guruhlar"] };
+
+function switchView(v){
+  state.view=v;
+  document.querySelectorAll(".view").forEach(s=>s.classList.add("hidden"));
+  el("v-"+v).classList.remove("hidden");
+  document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("active", b.dataset.v===v));
+  const t=VIEW_TITLES[v]; el("viewTitle").textContent=t[0]; el("viewSub").textContent=t[1];
+  window.scrollTo(0,0);
+  if(v==="stats" && !state.stats) loadStats();
+  if(v==="channels") renderChannels();
+}
+
+// ---- Data load ----
+async function loadAll(){
+  try{
+    const [list, ch] = await Promise.all([api("list"), api("channels")]);
+    state.data = list; state.channels = ch.channels || [];
+    renderHome(); renderPlans(); renderChannels(); fillChannelSelect();
+  }catch(e){ showBanner("Ma‘lumotni yuklashda xato: "+e.message); }
+}
+async function loadStats(){
+  try{ state.stats = await api("stats"); renderStats(); }
+  catch(e){ el("dailyChart").innerHTML=""; showBanner("Statistika xatosi: "+e.message); }
+}
+
+function allPlans(){
+  const d=state.data||{}; return [].concat(d.daily_routines||[], d.plans||[], d.reminders||[], d.todos||[]);
+}
+function counts(){ const d=state.data||{}; return {
+  daily:(d.daily_routines||[]).length, plans:(d.plans||[]).length,
+  rem:(d.reminders||[]).length, todo:(d.todos||[]).length, ch:state.channels.length }; }
+
+// ---- Render: Home ----
+function renderHome(){
+  const c=counts();
+  el("s-daily").textContent=c.daily; el("s-plans").textContent=c.plans;
+  el("s-rem").textContent=c.rem; el("s-todo").textContent=c.todo;
+  const recent = allPlans().slice().sort((a,b)=>b.id-a.id).slice(0,6);
+  el("recentList").innerHTML = recent.length ? recent.map(planItemHTML).join("")
+    : `<div class="empty"><span class="big">🗓</span>Hali reja yo‘q.<br>Pastdagi <b>＋</b> tugmasi bilan qo‘shing.</div>`;
+  bindPlanItems("recentList");
+}
+
+// ---- Render: Plans ----
+function planFilterList(){
+  const d=state.data||{}; let arr;
+  switch(state.filter){
+    case "daily_todo": arr=d.daily_routines||[]; break;
+    case "plans": arr=d.plans||[]; break;
+    case "reminder": arr=d.reminders||[]; break;
+    case "todo": arr=d.todos||[]; break;
+    default: arr=allPlans();
+  }
+  const q=state.search.trim().toLowerCase();
+  if(q) arr=arr.filter(p=>(fmtChannel(p)+" "+(p.preview||"")+" "+(TYPE_META[p.plan_type]?.l||"")).toLowerCase().includes(q));
+  return arr.slice().sort((a,b)=>b.id-a.id);
+}
+function planItemHTML(p){
+  const m=TYPE_META[p.plan_type]||{e:"•",l:p.plan_type};
+  const meta=[];
+  if(p.time) meta.push(`⏰ <b>${esc(p.time)}</b>`);
+  if(p.date) meta.push(`📅 ${esc(p.date)}`);
+  if(p.start_date) meta.push(`🚀 ${esc(p.start_date)}→${esc(p.end_date||"")}`);
+  if(p.plan_type==="daily_todo" && p.week_mode && p.week_mode!=="everyday") meta.push(p.week_mode==="odd"?"Toq kunlar":"Juft kunlar");
+  let cnt = (p.tasks&&p.tasks.length)?`📋 ${p.tasks.length} vazifa`:((p.items&&p.items.length)?`📦 ${p.items.length} kontent`:"");
+  if(cnt && p.task_groups && p.task_groups.length>1) cnt += ` · ${p.task_groups.length} bo'lim`;
+  if(cnt) meta.push(cnt);
+  return `<div class="item" data-id="${p.id}">
+    <div class="emoji">${m.e}</div>
+    <div class="body">
+      <div class="t">${esc(m.l)} · <span style="color:var(--hint);font-weight:500">${fmtChannel(p)}</span></div>
+      <div class="m">${meta.join("")}</div>
+      ${p.preview?`<div class="prev">${esc(p.preview)}</div>`:""}
+    </div>
+    <span class="tag">#${p.id}</span>
+  </div>`;
+}
+function renderPlans(){
+  const arr=planFilterList();
+  el("plansList").innerHTML = arr.length ? arr.map(planItemHTML).join("")
+    : `<div class="empty"><span class="big">📭</span>Bu bo‘limda yozuv yo‘q.</div>`;
+  bindPlanItems("plansList");
+}
+function bindPlanItems(containerId){
+  el(containerId).querySelectorAll(".item").forEach(node=>{
+    node.onclick=()=>openForm(parseInt(node.dataset.id,10));
+  });
+}
+
+// ---- Render: Channels ----
+function renderChannels(){
+  const list=el("channelsList");
+  if(!state.channels.length){ list.innerHTML=`<div class="empty"><span class="big">📢</span>Hali kanal ulanmagan.</div>`; return; }
+  list.innerHTML = state.channels.map(c=>`<div class="item">
+    <div class="emoji">📢</div>
+    <div class="body"><div class="t">${esc(c.channel_name)}</div>
+      <div class="m"><span>🆔 ${esc(c.channel_id)}</span>${c.channel_username?`<span>${esc(c.channel_username)}</span>`:""}</div></div>
+    <button class="icon-btn" data-del="${c.id}" style="width:32px;height:32px;font-size:14px">🗑</button>
+  </div>`).join("");
+  list.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>removeChannel(b.dataset.del));
+}
+function fillChannelSelect(){
+  el("fChannel").innerHTML = state.channels.length
+    ? state.channels.map(c=>`<option value="${esc(c.channel_id)}">${esc(c.channel_name)}</option>`).join("")
+    : `<option value="">— avval kanal ulang —</option>`;
+}
+async function addChannel(){
+  const v=el("chInput").value.trim();
+  if(!v){ toast("Kanal kiriting"); return; }
+  const btn=el("chAddBtn"); btn.textContent="Ulanmoqda..."; btn.disabled=true;
+  try{ const r=await api("add_channel",{channel:v}); state.channels=r.channels||[];
+    el("chInput").value=""; renderChannels(); fillChannelSelect(); renderHome(); toast("✅ "+(r.message||"Ulandi"));
+  }catch(e){ toast("⚠️ "+e.message); }
+  finally{ btn.textContent="Ulash"; btn.disabled=false; }
+}
+async function removeChannel(id){
+  const go = async()=>{ try{ const r=await api("delete_channel",{id}); state.channels=r.channels||[];
+    renderChannels(); fillChannelSelect(); toast("O‘chirildi"); }catch(e){ toast("⚠️ "+e.message); } };
+  if(tg&&tg.showConfirm) tg.showConfirm("Kanalni o‘chirasizmi?",(ok)=>{ if(ok) go(); }); else if(confirm("O‘chirilsinmi?")) go();
+}
+
+// ---- Render: Stats ----
+function pctBar(list, valKey){
+  const max=Math.max(1,...list.map(x=>x[valKey]||0));
+  return list.map(x=>{ const v=x[valKey]||0; const h=Math.round((v/max)*100);
+    return `<div class="b"><div class="bar"><div class="fill" style="height:${h}%"></div></div><div class="bl">${esc(x.label)}</div></div>`;
+  }).join("");
+}
+function renderStats(){
+  const s=state.stats; if(!s) return;
+  const set=(id,p)=>{ el("st-"+id).textContent=(p.percent||0)+"%"; el("st-"+id+"-l").textContent=
+    ({all:"Umumiy",week:"Hafta",month:"Oy",year:"Yil"}[id])+" · "+(p.completed_tasks||0)+"/"+(p.total_tasks||0); };
+  set("all", s.summary||{}); set("week",(s.periods||{}).week||{}); set("month",(s.periods||{}).month||{}); set("year",(s.periods||{}).year||{});
+  el("dailyChart").innerHTML=pctBar((s.daily_series||[]).map(x=>({label:x.label,percent:x.percent})),"percent");
+  el("monthlyChart").innerHTML=pctBar((s.monthly_series||[]).map(x=>({label:x.label,percent:x.percent})),"percent");
+  const bd=s.plan_breakdown||{}; const maxb=Math.max(1,...Object.values(bd));
+  el("typeBreak").innerHTML=Object.keys(TYPE_META).map(k=>{ const v=bd[k]||0;
+    return `<div class="r"><div class="name">${TYPE_META[k].e} ${TYPE_META[k].l}</div>
+      <div class="track"><div class="tf" style="width:${Math.round((v/maxb)*100)}%"></div></div><div class="v">${v}</div></div>`;
+  }).join("");
+}
+
+// ---- Form ----
+function typeFieldVisibility(t){
+  el("wrapDate").classList.toggle("hidden", !(t==="reminder"||t==="todo"||t==="super_todo"));
+  el("wrapChallenge").classList.toggle("hidden", t!=="challenge");
+  el("wrapWeek").classList.toggle("hidden", t!=="daily_todo");
+  const isTasks = (t==="todo"||t==="super_todo"||t==="daily_todo");
+  el("wrapTasks").classList.toggle("hidden", !isTasks);
+  el("wrapContent").classList.toggle("hidden", isTasks);
+  el("superHint").classList.toggle("hidden", t!=="super_todo");
+}
+const MEDIA_LABEL = {photo:"Rasm",video:"Video",audio:"Audio",document:"Fayl"};
+function mediaEmoji(k){ return {photo:"🖼",video:"🎬",audio:"🎵",document:"📄"}[k]||"📎"; }
+
+function addMediaRow(item){
+  const div=document.createElement("div"); div.className="mi";
+  div.dataset.fileId = (item && item.file_id) || "";
+  div.dataset.type = (item && item.type && item.type!=="text") ? item.type : "";
+  el("mediaBox").appendChild(div);
+  renderMediaRow(div, item);
+}
+
+function renderMediaRow(div, item){
+  const hasFile = !!div.dataset.fileId;
+  const k = div.dataset.type || "document";
+  div.innerHTML = `
+    <div class="mi-head">
+      <span class="mi-badge">${hasFile ? "✅ "+mediaEmoji(k)+" "+(MEDIA_LABEL[k]||"Fayl")+" yuklandi" : "Media"}</span>
+      <button type="button" class="icon-btn mrem" style="width:28px;height:28px;font-size:12px">✕</button>
+    </div>
+    ${hasFile ? `
+      <div class="mi-row"><button type="button" class="link mi-change">🔁 Almashtirish</button></div>
+      <textarea class="mcap" rows="2" placeholder="Caption (ixtiyoriy)"></textarea>
+    ` : `
+      <label class="mi-pick-box">
+        <input type="file" class="mfile" hidden />
+        🖼 Galereyadan tanlash
+      </label>
+      <div class="mi-progress hidden">⏳ Yuklanmoqda...</div>
+    `}
+  `;
+  div.querySelector(".mrem").onclick = () => div.remove();
+  if (hasFile) {
+    const cap = div.querySelector(".mcap");
+    if (item && item.caption) cap.value = item.caption;
+    div.querySelector(".mi-change").onclick = () => { div.dataset.fileId=""; div.dataset.type=""; renderMediaRow(div, null); };
+  } else {
+    const input = div.querySelector(".mfile");
+    input.onchange = () => { const f = input.files[0]; if (f) startUpload(div, f); };
+  }
+}
+
+async function startUpload(div, file){
+  if (file.size > 45 * 1024 * 1024) { toast("⚠️ Juda katta: " + file.name); renderMediaRow(div, null); return; }
+  const kind = file.type.startsWith("image/") ? "photo" : file.type.startsWith("video/") ? "video"
+    : file.type.startsWith("audio/") ? "audio" : "document";
+  div.innerHTML = `<div class="mi-progress">⏳ Yuklanmoqda: ${esc(file.name)}</div>`;
+  try {
+    const fd = new FormData();
+    fd.append("init_data", INIT); fd.append("kind", kind); fd.append("file", file);
+    const r = await fetch("/boost/upload", { method:"POST", body: fd });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.message || "Yuklashda xato");
+    div.dataset.fileId = j.file_id; div.dataset.type = j.type || kind;
+    renderMediaRow(div, {caption:""});
+  } catch(e) {
+    toast("⚠️ " + file.name + ": " + e.message);
+    renderMediaRow(div, null);
+  }
+}
+
+function collectItems(){
+  const items=[]; const txt=el("fText").value.trim();
+  if(txt) items.push({type:"text", text:txt});
+  el("mediaBox").querySelectorAll(".mi").forEach(m=>{
+    const fid=m.dataset.fileId; if(!fid) return;
+    const cap=m.querySelector(".mcap");
+    items.push({type:m.dataset.type||"document", file_id:fid, caption: cap ? cap.value.trim() : ""});
+  });
+  return items;
+}
+function addGroupCard(group, planType){
+  const div = document.createElement("div"); div.className = "tg";
+  div.innerHTML = `
+    <div class="tg-head">
+      <span class="tg-num"></span>
+      <input type="text" class="tg-name" placeholder="Bo'lim nomi (ixtiyoriy)" />
+      <button type="button" class="icon-btn tg-rem" style="width:28px;height:28px;font-size:12px">✕</button>
+    </div>
+    <input type="text" class="tg-time" placeholder="Vaqt oralig'i, masalan 08:00 - 08:30 (ixtiyoriy)" />
+    <textarea class="tg-tasks" rows="5" placeholder="Har qatorda bittadan vazifa"></textarea>
+  `;
+  div.querySelector(".tg-name").value = (group && group.name) || "";
+  div.querySelector(".tg-time").value = (group && group.time) || "";
+  const lines = ((group && group.tasks) || []).map(t =>
+    planType === "super_todo" ? `${t.text} | ${t.duration||""}` : t.text);
+  div.querySelector(".tg-tasks").value = lines.join("\n");
+  div.querySelector(".tg-rem").onclick = () => { div.remove(); renumberGroups(); };
+  el("groupsBox").appendChild(div);
+  renumberGroups();
+}
+
+function renumberGroups(){
+  const cards = el("groupsBox").querySelectorAll(".tg");
+  cards.forEach((card, idx) => {
+    card.querySelector(".tg-num").textContent = (idx + 1) + "-bo'lim";
+    card.querySelector(".tg-rem").style.visibility = cards.length > 1 ? "visible" : "hidden";
+  });
+}
+
+function collectTasksGrouped(t){
+  const cards = Array.from(el("groupsBox").querySelectorAll(".tg"));
+  const groups = [];
+  for (const card of cards) {
+    const name = card.querySelector(".tg-name").value.trim();
+    const time = normTimeRange(card.querySelector(".tg-time").value);
+    const lines = card.querySelector(".tg-tasks").value.split("\n").map(l=>l.trim()).filter(Boolean);
+    let tasks;
+    if (t === "super_todo") {
+      tasks = [];
+      for (const l of lines) {
+        const p = l.split("|");
+        const text = (p[0]||"").trim(); const dur = parseInt((p[1]||"").trim(), 10);
+        if (!text || !dur || dur < 1) return { err: "Format: Vazifa | daqiqa" };
+        tasks.push({text, duration:dur, status:0, started_at:null, finished_at:null, alerts:[]});
+      }
+    } else {
+      tasks = lines.map(text => ({text, status:0}));
+    }
+    if (tasks.length) groups.push({name, time, tasks});
+  }
+  return { groups };
+}
+
+/* Vaqt oralig'ini bir ko'rinishga keltiradi: "8:0-8.30" -> "08:00 - 08:30".
+   Bo'sh yoki tushunarsiz bo'lsa bo'sh qaytaradi (majburlamaymiz —
+   vaqt ixtiyoriy). Sayt tomonida ham AYNI qoida ishlatiladi. */
+function normTimeRange(raw){
+  const s = String(raw||"").trim();
+  if (!s) return "";
+  const m = s.match(/^(\d{1,2})[:.\s]?(\d{2})\s*(?:[-–—]\s*(\d{1,2})[:.\s]?(\d{2}))?$/);
+  if (!m) return "";
+  /* Chegaradan chiqqan qiymat QISILMAYDI, rad etiladi — aks holda
+     `25:99 - 30:00` qisilib teskari `23:59 - 23:00` bo'lib qolardi. */
+  const p = (h,mi) => {
+    h = +h; mi = +mi;
+    if (h > 23 || mi > 59) return null;
+    return String(h).padStart(2,"0")+":"+String(mi).padStart(2,"0");
+  };
+  const a = p(m[1],m[2]);
+  if (!a) return "";
+  if (!m[3]) return a;
+  const b = p(m[3],m[4]);
+  return b ? a+" - "+b : "";
+}
+function openSheet(){ el("sheetBack").classList.add("show"); el("sheet").classList.add("show"); if(tg&&tg.BackButton) tg.BackButton.show(); }
+function closeSheet(){ el("sheetBack").classList.remove("show"); el("sheet").classList.remove("show"); if(tg&&tg.BackButton) tg.BackButton.hide(); }
+
+async function openForm(id){
+  el("planForm").reset(); el("mediaBox").innerHTML=""; el("groupsBox").innerHTML=""; el("fId").value="";
+  el("delBtn").classList.add("hidden"); fillChannelSelect();
+  if(!state.channels.length){ toast("Avval kanal ulang"); switchView("channels"); return; }
+  if(id){
+    el("sheetTitle").textContent="Rejani tahrirlash";
+    try{ const r=await api("get",{id}); const p=r.item;
+      el("fId").value=p.id; el("fType").value=p.plan_type; el("fChannel").value=p.channel_id;
+      el("fTime").value=p.time||""; el("fDate").value=p.date||""; el("fStart").value=p.start_date||"";
+      el("fEnd").value=p.end_date||""; el("fWeek").value=p.week_mode||"everyday";
+      const isTasks = ["todo","super_todo","daily_todo"].includes(p.plan_type);
+      if(isTasks){
+        const groups = (p.task_groups && p.task_groups.length) ? p.task_groups : [{name:"", tasks:[]}];
+        groups.forEach(g => addGroupCard(g, p.plan_type));
+      } else {
+        (p.items||[]).forEach(it=>{ if(it.type==="text") el("fText").value=it.text||""; else addMediaRow(it); });
+      }
+      el("delBtn").classList.remove("hidden");
+    }catch(e){ toast("⚠️ "+e.message); return; }
+  } else {
+    el("sheetTitle").textContent="Yangi reja";
+    addGroupCard({name:"", tasks:[]}, el("fType").value);
+  }
+  typeFieldVisibility(el("fType").value);
+  openSheet();
+}
+
+async function submitForm(ev){
+  ev.preventDefault();
+  const t=el("fType").value;
+  const payload={ id:el("fId").value||"0", plan_type:t, channel_id:el("fChannel").value,
+    channel_name:(el("fChannel").selectedOptions[0]||{}).text||"", time:el("fTime").value,
+    date:"", start_date:"", end_date:"", week_mode:el("fWeek").value, items:"[]", tasks:"[]" };
+  if(!payload.channel_id){ toast("Kanal tanlang"); return; }
+  if(!payload.time){ toast("Vaqtni tanlang"); return; }
+  if(t==="reminder"||t==="todo"||t==="super_todo") payload.date=el("fDate").value;
+  if(t==="challenge"){ payload.start_date=el("fStart").value; payload.end_date=el("fEnd").value; }
+  if(["todo","super_todo","daily_todo"].includes(t)){
+    const r=collectTasksGrouped(t); if(r.err){ toast("⚠️ "+r.err); return; }
+    if(!r.groups.length){ toast("Kamida bitta vazifa"); return; }
+    /* Yassi ro'yxatga faqat nomi HAM, vaqti HAM bo'lmagan yagona bo'lim
+       tushadi — aks holda bo'lim vaqti saqlashda yo'qolib ketardi. */
+    const g0 = r.groups[0];
+    const isSingleUnnamed = r.groups.length===1 && !g0.name && !g0.time;
+    payload.tasks = isSingleUnnamed ? JSON.stringify(g0.tasks) : JSON.stringify({groups:r.groups});
+  } else {
+    const items=collectItems(); if(!items.length){ toast("Matn yoki media kiriting"); return; }
+    payload.items=JSON.stringify(items);
+  }
+  const btn=el("saveBtn"); btn.textContent="Saqlanmoqda..."; btn.disabled=true;
+  try{ await api("save", payload); closeSheet(); toast("✅ Saqlandi"); await loadAll(); state.stats=null; }
+  catch(e){ toast("⚠️ "+e.message); }
+  finally{ btn.textContent="Saqlash"; btn.disabled=false; }
+}
+async function deletePlan(){
+  const id=el("fId").value; if(!id) return;
+  const go=async()=>{ try{ await api("delete",{id}); closeSheet(); toast("O‘chirildi"); await loadAll(); state.stats=null; }
+    catch(e){ toast("⚠️ "+e.message); } };
+  if(tg&&tg.showConfirm) tg.showConfirm("Rejani o‘chirasizmi?",ok=>{ if(ok) go(); }); else if(confirm("O‘chirilsinmi?")) go();
+}
+
+function showBanner(msg){ const b=el("banner"); b.textContent=msg; b.classList.remove("hidden"); }
+
+// ---- Bind ----
+document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>switchView(b.dataset.v));
+el("planChips").querySelectorAll(".chip").forEach(c=>c.onclick=()=>{
+  state.filter=c.dataset.f; el("planChips").querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",x===c)); renderPlans(); });
+el("planSearch").oninput=e=>{ state.search=e.target.value; renderPlans(); };
+el("fab").onclick=()=>openForm(0);
+el("fType").onchange=()=>typeFieldVisibility(el("fType").value);
+el("addMediaBtn").onclick=()=>el("bulkMediaInput").click();
+el("bulkMediaInput").onchange=async()=>{
+  const files=Array.from(el("bulkMediaInput").files);
+  el("bulkMediaInput").value="";
+  for(const file of files){
+    const div=document.createElement("div"); div.className="mi";
+    div.dataset.fileId=""; div.dataset.type="";
+    el("mediaBox").appendChild(div);
+    await startUpload(div, file);
+  }
+};
+el("addGroupBtn").onclick=()=>addGroupCard({name:"",tasks:[]}, el("fType").value);
+el("planForm").onsubmit=submitForm;
+el("delBtn").onclick=deletePlan;
+el("chAddBtn").onclick=addChannel;
+el("sheetBack").onclick=closeSheet;
+if(tg&&tg.BackButton) tg.BackButton.onClick(closeSheet);
+
+// ---- Init ----
+(function init(){
+  if(tg){
+    const u=tg.initDataUnsafe&&tg.initDataUnsafe.user;
+    if(u){ el("avatar").textContent=(u.first_name||"B").charAt(0).toUpperCase(); }
+    if(!INIT){ showBanner("⚠️ Telegram autentifikatsiyasi topilmadi. Botdagi tugma orqali oching."); }
+  } else {
+    showBanner("Bu sahifa Telegram bot ichida ochilishi kerak.");
+  }
+  loadAll();
+})();
+</script>
+</body>
+</html>

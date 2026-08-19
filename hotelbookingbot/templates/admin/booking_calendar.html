@@ -1,0 +1,32 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h1>📅 Xonalar bandligi — {{ month }}/{{ year }}</h1>
+<div style="overflow-x:auto;">
+<table style="border-collapse:collapse;font-size:12px;">
+  <thead>
+    <tr>
+      <th style="position:sticky;left:0;background:#fff;padding:4px 8px;border:1px solid #ddd;">Xona</th>
+      {% for day in days %}
+        <th style="padding:2px 4px;border:1px solid #ddd;">{{ day.day }}</th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in matrix %}
+    <tr>
+      <td style="position:sticky;left:0;background:#fff;padding:4px 8px;border:1px solid #ddd;white-space:nowrap;">
+        {{ row.room.room_number }} ({{ row.room.room_type.name }})
+      </td>
+      {% for day, booked in row.cells %}
+        <td style="width:20px;height:20px;border:1px solid #ddd;background:{% if booked %}#e57373{% else %}#a5d6a7{% endif %};"></td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+<p style="margin-top:10px;">
+  <span style="background:#a5d6a7;padding:2px 8px;">bo'sh</span>
+  <span style="background:#e57373;padding:2px 8px;">band</span>
+</p>
+{% endblock %}

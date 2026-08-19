@@ -1,0 +1,46 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h1>📊 Statistika paneli</h1>
+<div style="display:flex;flex-wrap:wrap;gap:16px;margin:20px 0;">
+  <div style="background:#fff;border-radius:8px;padding:16px 20px;box-shadow:0 1px 4px rgba(0,0,0,.1);min-width:180px;">
+    <div style="font-size:28px;font-weight:700;">{{ stats.today_bookings }}</div>
+    <div>Bugungi bronlar</div>
+  </div>
+  <div style="background:#fff;border-radius:8px;padding:16px 20px;box-shadow:0 1px 4px rgba(0,0,0,.1);min-width:180px;">
+    <div style="font-size:28px;font-weight:700;">{{ stats.pending_bookings }}</div>
+    <div>Kutilayotgan bronlar</div>
+  </div>
+  <div style="background:#fff;border-radius:8px;padding:16px 20px;box-shadow:0 1px 4px rgba(0,0,0,.1);min-width:180px;">
+    <div style="font-size:28px;font-weight:700;">{{ stats.week_bookings }}</div>
+    <div>Haftalik bronlar</div>
+  </div>
+  <div style="background:#fff;border-radius:8px;padding:16px 20px;box-shadow:0 1px 4px rgba(0,0,0,.1);min-width:180px;">
+    <div style="font-size:28px;font-weight:700;">{{ stats.month_bookings }}</div>
+    <div>Oylik bronlar</div>
+  </div>
+  <div style="background:#fff;border-radius:8px;padding:16px 20px;box-shadow:0 1px 4px rgba(0,0,0,.1);min-width:180px;">
+    <div style="font-size:28px;font-weight:700;">{{ stats.occupancy_percent }}%</div>
+    <div>Bandlik foizi (bugun)</div>
+  </div>
+  <div style="background:#fff;border-radius:8px;padding:16px 20px;box-shadow:0 1px 4px rgba(0,0,0,.1);min-width:180px;">
+    <div style="font-size:28px;font-weight:700;">{{ stats.total_paid }}</div>
+    <div>Jami to'langan</div>
+  </div>
+  <div style="background:#fff;border-radius:8px;padding:16px 20px;box-shadow:0 1px 4px rgba(0,0,0,.1);min-width:180px;">
+    <div style="font-size:28px;font-weight:700;">{{ stats.pending_payments }}</div>
+    <div>Kutilayotgan to'lovlar</div>
+  </div>
+</div>
+
+<h2>Eng ko'p buyurtma qilingan xona turlari</h2>
+<table>
+  <thead><tr><th>Xona turi</th><th>Bronlar soni</th></tr></thead>
+  <tbody>
+    {% for row in top_room_types %}
+    <tr><td>{{ row.room_type__name }}</td><td>{{ row.total }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<p><a href="{% url 'admin-booking-calendar' %}">📅 Xonalar bandligi kalendari</a></p>
+{% endblock %}

@@ -1,0 +1,9 @@
+[Unit]
+Description=tatulmsbot health watchdog (self-healing)
+After=tatulmsbot.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/tatu-bots/deploy/watchdog.sh
+# watchdog o'zi yengil bo'lsin
+Nice=10

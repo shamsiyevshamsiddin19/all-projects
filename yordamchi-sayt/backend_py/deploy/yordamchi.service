@@ -1,0 +1,24 @@
+[Unit]
+Description=Yordamchi FastAPI backend
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+# Loyiha joylashgan papka (backend_py):
+WorkingDirectory=/var/www/yordamchi/backend_py
+# .env shu papkada bo'lishi kerak (app/config.py uni o'qiydi).
+EnvironmentFile=/var/www/yordamchi/backend_py/.env
+ExecStart=/var/www/yordamchi/backend_py/.venv/bin/gunicorn app.main:app \
+    -k uvicorn.workers.UvicornWorker \
+    --workers 2 \
+    --bind 127.0.0.1:8000 \
+    --timeout 120 \
+    --access-logfile - \
+    --error-logfile -
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

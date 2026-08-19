@@ -1,0 +1,16 @@
+[Unit]
+Description=Quiz Telegram bot + admin panel
+After=network-online.target postgresql.service
+Wants=network-online.target postgresql.service
+
+[Service]
+Type=simple
+User=opc
+WorkingDirectory=/opt/quizbot
+ExecStart=/opt/quizbot/.venv/bin/python main.py
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

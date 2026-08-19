@@ -1,0 +1,12 @@
+.env
+.env.local
+*.bak-drop
+*.db
+*.sqlite3
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.log
+deploy.log
+import.log

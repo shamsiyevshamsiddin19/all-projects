@@ -1,0 +1,49 @@
+Subtitr Desktop — o'rnatish va ishlatish
+========================================
+
+O'RNATISH
+---------
+1. SubtitrSetup.exe faylini yuklab oling (Telegram yoki internetdan).
+2. Ustiga ikki marta bosing va "O'rnatish" ni bosing.
+   - Administrator huquqi shart emas, faqat shu foydalanuvchi uchun o'rnatiladi.
+3. O'rnatilgach dastur o'zi ochiladi (yoki ish stolidagi/menyudagi
+   "Subtitr Desktop" yorlig'idan oching).
+
+API KALIT KIRITISH (bir marta)
+------------------------------
+Dastur AI xizmatlaridan foydalanadi. Har kim O'ZINING kalitini kiritadi:
+1. Yuqori o'ngdagi kalit (🔑) ikonkasini bosing.
+2. Kamida bittasini kiriting:
+   - Groq  — BEPUL, tez. https://console.groq.com/keys
+   - OpenAI — eng sifatli tarjima. https://platform.openai.com/api-keys
+   - Gemini — muqobil. https://aistudio.google.com/apikey
+3. "Saqlash" ni bosing. Kalit faqat shu kompyuterda saqlanadi.
+
+Kalitsiz ham ishlaydi, lekin faqat video yonidagi tayyor .srt yoki
+cheklangan oflayn lug'at bilan.
+
+ISHLATISH
+---------
+1. Videoni "Videolar" (Videos) papkasiga tashlang yoki "Tashqi video"
+   tugmasi orqali istalgan joydan tanlang.
+2. Rejimni tanlang (tarjima+lug'at, ikki qatorli subtitr, SRT, matn, h.k.).
+3. Video tili va tarjima tilini tanlang.
+4. "Boshlash" ni bosing.
+5. Tayyor bo'lgach "Natijalar" tugmasi natija papkasini ochadi:
+   Videolar\Subtitr natijalar\<video nomi>
+
+TRANSKRIPSIYA TARTIBI
+---------------------
+1) Video yonidagi .srt/.vtt   2) Videoning ichki subtitri
+3) Groq Whisper (kalit bo'lsa)
+
+TARJIMA TARTIBI
+---------------
+OpenAI -> Gemini -> Groq (qaysi kalit bo'lsa) -> oflayn lug'at (zaxira).
+
+ESLATMA
+-------
+- ffmpeg/ffprobe dastur ichida keladi, alohida o'rnatish shart emas.
+- Ish fayllari: %LOCALAPPDATA%\SubtitrDesktop
+- O'chirish: Parametrlar > Ilovalar > Subtitr Desktop, yoki menyudagi
+  "Subtitr Desktop ni o'chirish".
