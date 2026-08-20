@@ -1002,24 +1002,34 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 .hdw.open{ transform:translateY(-50%) translateX(0); }
 .hdw.drag{ transition:none; }
 
-/* Dastak (Pull Handle) - Ultra premium glass capsule */
+/* Dastak (Pull Handle) - Bilinar-bilinmas, nozik va zamonaviy Edge tab */
 .hdw-handle{
   position:relative;
-  flex-shrink:0; width:34px; height:108px; padding:0;
+  flex-shrink:0; width:10px; height:54px; padding:0;
   display:flex; align-items:center; justify-content:center;
-  background:linear-gradient(145deg, rgba(30, 41, 59, 0.94), rgba(15, 23, 42, 0.98));
-  backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+  background:linear-gradient(145deg, rgba(30, 41, 59, 0.75), rgba(15, 23, 42, 0.85));
+  backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
   color:var(--hint);
-  border:1px solid rgba(255, 255, 255, 0.14); border-right:none;
-  border-radius:20px 0 0 20px;
-  box-shadow:-6px 0 28px rgba(0,0,0,.35), inset 1px 1px 0 rgba(255,255,255,0.12);
+  border:1px solid rgba(255, 255, 255, 0.12); border-right:none;
+  border-radius:12px 0 0 12px;
+  box-shadow:-2px 0 10px rgba(0,0,0,.25);
   cursor:grab; touch-action:none;
-  transition:all .25s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity:0.38;
+  transition:width .24s cubic-bezier(0.16, 1, 0.3, 1), height .24s cubic-bezier(0.16, 1, 0.3, 1), opacity .24s ease, background .24s, box-shadow .24s;
   overflow:hidden;
 }
-.hdw-handle:hover{
+.hdw-handle::before{
+  content:''; position:absolute;
+  top:-12px; bottom:-12px; left:-20px; right:0;
+  cursor:pointer;
+}
+.hdw-handle:hover,
+.hdw.open .hdw-handle{
+  width:28px; height:72px;
+  opacity:1;
+  background:linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
   color:var(--text);
-  box-shadow:-8px 0 32px rgba(99, 102, 241, 0.35), inset 1px 1px 0 rgba(255,255,255,0.2);
+  box-shadow:-6px 0 24px rgba(99, 102, 241, 0.35), inset 1px 1px 0 rgba(255,255,255,0.2);
   border-color:rgba(99, 102, 241, 0.4);
 }
 .hdw-handle:active{ cursor:grabbing; transform:scale(0.96); }
@@ -1027,41 +1037,45 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 /* Ambient gradient glow on handle */
 .hdw-handle-glow{
   position:absolute; top:0; left:0; right:0; bottom:0;
-  background:radial-gradient(circle at 10% 50%, rgba(99, 102, 241, 0.25), transparent 70%);
-  pointer-events:none; opacity:0.6; transition:opacity .25s;
+  background:radial-gradient(circle at 10% 50%, rgba(99, 102, 241, 0.3), transparent 70%);
+  pointer-events:none; opacity:0; transition:opacity .25s;
 }
-.hdw-handle:hover .hdw-handle-glow{ opacity:1; }
+.hdw-handle:hover .hdw-handle-glow,
+.hdw.open .hdw-handle-glow{ opacity:1; }
 
 .hdw-handle-inner{
   position:relative; z-index:2;
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
 }
 .hdw-arrow-ic{
   display:flex; align-items:center; justify-content:center;
   color:var(--accent);
-  transition:transform .32s cubic-bezier(0.16, 1, 0.3, 1), color .2s;
-  animation:hdwPulse 2.4s infinite ease-in-out;
+  opacity:0; transform:scale(0.6);
+  transition:all .22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hdw-handle:hover .hdw-arrow-ic,
+.hdw.open .hdw-arrow-ic{
+  opacity:1; transform:scale(1);
 }
 .hdw.open .hdw-arrow-ic{
   transform:rotate(180deg);
   color:var(--warn, #f59e0b);
-  animation:none;
 }
+
 .hdw-pill{
-  display:block; width:3.5px; height:28px; border-radius:99px;
+  display:block; width:3px; height:22px; border-radius:99px;
   background:linear-gradient(180deg, var(--accent), var(--purple, #a855f7));
-  opacity:.85;
+  opacity:.7;
+  transition:all .24s;
+}
+.hdw-handle:hover .hdw-pill{
+  height:18px; opacity:1;
   box-shadow:0 0 10px rgba(99, 102, 241, 0.5);
-  transition:all .25s;
 }
 .hdw.open .hdw-pill{
   background:var(--warn, #f59e0b);
   box-shadow:0 0 10px rgba(245, 158, 11, 0.5);
-}
-
-@keyframes hdwPulse{
-  0%, 100%{ transform:translateX(0); }
-  50%{ transform:translateX(-3.5px); }
+  height:16px;
 }
 
 /* Tortma paneli */
