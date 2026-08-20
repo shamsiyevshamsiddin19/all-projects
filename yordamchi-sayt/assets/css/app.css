@@ -219,62 +219,54 @@ button{ font-family:inherit; cursor:pointer; }
 .icon-btn:hover{ background:var(--card-2); }
 .icon-btn.ghost{ border-color:transparent; background:transparent; }
 
-/* ---------- Bottom nav (Ultra-modern Glassmorphic Mobile Dock) ---------- */
+/* ---------- Telegram-Style Bottom Tab Bar ---------- */
 .botnav{
   position:fixed; left:0; right:0; bottom:0; z-index:40;
-  display:flex; height:calc(var(--nav-h) + var(--safe-b));
+  display:flex; height:calc(50px + var(--safe-b));
   padding-bottom:var(--safe-b);
-  background:rgba(15, 23, 42, 0.88);
-  backdrop-filter:blur(30px); -webkit-backdrop-filter:blur(30px);
-  border-top:1px solid rgba(255, 255, 255, 0.09);
-  box-shadow:0 -6px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background:rgba(23, 33, 43, 0.92);
+  backdrop-filter:blur(24px) saturate(180%);
+  -webkit-backdrop-filter:blur(24px) saturate(180%);
+  border-top:0.5px solid rgba(255, 255, 255, 0.12);
+  box-shadow:0 -2px 14px rgba(0, 0, 0, 0.3);
   -webkit-user-select:none; user-select:none;
   -webkit-touch-callout:none;
   -webkit-tap-highlight-color:transparent;
   touch-action:none;
 }
 .botnav a{
-  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
-  color:var(--hint); font-size:11px; font-weight:600;
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+  color:#708499; font-size:10.5px; font-weight:500; letter-spacing:-0.1px;
+  text-decoration:none; padding:4px 0 2px;
   -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
-  transition:all .22s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:color .16s ease, transform .12s ease;
   position:relative;
 }
-.botnav a .nav-img{
-  width:26px; height:26px; border-radius:8px;
-  transition:transform .24s cubic-bezier(0.16, 1, 0.3, 1), filter .2s, opacity .2s, box-shadow .2s;
-  opacity:.65;
-  filter:grayscale(15%) brightness(.95);
-  margin:0 auto;
+.botnav a .tg-tab-ic{
+  width:26px; height:26px;
+  display:flex; align-items:center; justify-content:center;
+  color:#708499;
+  position:relative;
+  transition:transform .2s cubic-bezier(0.16, 1, 0.3, 1), color .16s ease;
 }
-.botnav a:hover .nav-img{
-  opacity:.9;
-  filter:none;
-}
-.botnav a:active{
-  transform:scale(.92);
-}
+.botnav a .tg-tab-ic .tg-ic-out{ display:flex; align-items:center; justify-content:center; }
+.botnav a .tg-tab-ic .tg-ic-fill{ display:none; }
+
+.botnav a:active{ transform:scale(0.92); }
+
 .botnav a.active{
-  color:var(--text);
-  font-weight:750;
+  color:#2481cc; /* Telegram signature blue */
+  font-weight:650;
 }
-.botnav a.active .nav-img{
-  opacity:1;
-  filter:none;
-  transform:translateY(-2px) scale(1.12);
-  box-shadow:0 4px 14px rgba(99, 102, 241, 0.45);
+.botnav a.active .tg-tab-ic{
+  color:#2481cc;
+  transform:scale(1.08);
 }
-.botnav a.active::after{
-  content:'';
-  position:absolute; bottom:calc(var(--safe-b) + 3px);
-  width:14px; height:3px; border-radius:99px;
-  background:linear-gradient(90deg, var(--accent), var(--purple, #8b5cf6));
-  box-shadow:0 0 8px rgba(99, 102, 241, 0.6);
-  animation:navPop .25s ease;
-}
-@keyframes navPop{
-  from{ transform:scaleX(0); opacity:0; }
-  to{ transform:scaleX(1); opacity:1; }
+.botnav a.active .tg-tab-ic .tg-ic-out{ display:none; }
+.botnav a.active .tg-tab-ic .tg-ic-fill{ display:flex; align-items:center; justify-content:center; }
+
+.botnav a.active .tg-tab-ic svg{
+  filter:drop-shadow(0 2px 8px rgba(36, 129, 204, 0.45));
 }
 /* G'ildirak ustidagi yozuvlar ham tanlanmasin */
 .nav-dial, .nav-dial *{ -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
