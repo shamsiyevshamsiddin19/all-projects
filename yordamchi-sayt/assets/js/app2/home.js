@@ -195,6 +195,9 @@
                 '<span data-icon="shuffle" data-icon-size="20"></span>' +
               '</button>' +
               '<div id="nt-bell-host">' + (window.Notify ? Notify.bellHtml() : '') + '</div>' +
+              '<button class="ig-btn-icon" data-act="go" data-arg=\'{"v":"settings"}\' title="Sozlamalar">' +
+                '<span data-icon="settings" data-icon-size="20"></span>' +
+              '</button>' +
             '</div>' +
           '</header>' +
 
