@@ -343,6 +343,13 @@
             '</div>' +
           '</header>' +
 
+          /* Instagram Stories Carousel */
+          '<div class="ig-stories-carousel">' +
+            '<div class="ig-stories-track" id="ig-stories-track">' +
+              renderStoriesHtml() +
+            '</div>' +
+          '</div>' +
+
           /* Wstore uslubidagi boshqaruv paneli (Filtr + Qidiruv yonma-yon) */
           '<div class="ws-ctrl-bar">' +
             '<button class="ws-filter-trigger-btn" data-act="wsOpenFilterModal">' +
