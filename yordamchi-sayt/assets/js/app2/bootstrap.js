@@ -81,9 +81,9 @@
       if (v === '__more__') {
         return '<a data-nav="__more__" data-act="moreMenu"><span data-icon="menu" data-icon-size="21"></span>Yana</a>';
       }
-      var i = NAV.find(function (x) { return x.v === v; });
+      var i = NAV.find(function (x) { return x.v === v; }) || { n: v, ic: 'user' };
       return '<a data-nav="' + v + '" data-act="go" data-arg=\'' + App.arg({ v: v }) + '\'>' +
-        navIcon(v, i.ic, 26) + (i.bn || i.n) + '</a>';
+        navIcon(v, i.ic || 'user', 26) + (i.bn || i.n) + '</a>';
     }).join('');
     App.icons(el);
   }
@@ -214,7 +214,7 @@
 
      Ro'yxat `navList()` dan MUSTAQIL: bu ataylab qisqa, tez-tez ochiladigan
      bo'limlar yo'li — yon paneldagi to'liq tartib bilan aralashtirilmaydi. */
-  var SWIPE_PATH = ['kun', 'arxiv', 'home', 'goals', 'stats'];
+  var SWIPE_PATH = ['home', 'languages', 'kun', 'sport', 'profile'];
 
   /* Joriy bo'lim shu yo'lning qaysi o'rnida (-1 = yo'lda yo'q). */
   function swipeIndex() {
