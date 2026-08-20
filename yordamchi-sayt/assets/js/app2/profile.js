@@ -52,8 +52,8 @@
           '<div class="h-hello" id="h-hello"></div>' +
           '<div class="h-top-actions">' +
             '<div id="nt-bell-host">' + (window.Notify ? Notify.bellHtml() : '') + '</div>' +
-            '<button class="icon-btn ghost" data-act="go" data-arg=\'{"v":"settings"}\' title="Sozlamalar" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--border-soft);display:flex;align-items:center;justify-content:center">' +
-              '<span data-icon="settings" data-icon-size="19"></span>' +
+            '<button class="h-settings-btn" data-act="go" data-arg=\'{"v":"settings"}\' title="Sozlamalar">' +
+              '<span data-icon="settings" data-icon-size="20"></span>' +
             '</button>' +
           '</div>' +
         '</div>' +

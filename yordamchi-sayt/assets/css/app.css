@@ -1822,6 +1822,21 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   display:flex; align-items:center; justify-content:center;
 }
 .nt-bell:active{ transform:scale(.94); }
+
+.h-settings-btn{
+  position:relative; flex-shrink:0;
+  width:40px; height:40px; border-radius:50%; cursor:pointer;
+  background:var(--card-2); color:var(--text-2);
+  border:1px solid var(--border-soft);
+  display:flex; align-items:center; justify-content:center;
+  transition:all .2s;
+}
+.h-settings-btn:hover{
+  background:var(--card-hover, var(--border-soft));
+  color:var(--text);
+  transform:rotate(30deg);
+}
+.h-settings-btn:active{ transform:scale(.94); }
 /* O'qilmagan soni — qo'ng'iroq ustidagi kichik nishon */
 .nt-badge{
   position:absolute; top:-2px; right:-2px; min-width:18px; height:18px; padding:0 4px;
