@@ -1002,16 +1002,16 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 .hdw.open{ transform:translateY(-50%) translateX(0); }
 .hdw.drag{ transition:none; }
 
-/* Dastak (Pull Handle) - Bilinar-bilinmas, nozik va zamonaviy Edge tab */
+/* Dastak (Pull Handle) - Bilinar-bilinmas, nozik va uzunroq Edge tab */
 .hdw-handle{
   position:relative;
-  flex-shrink:0; width:10px; height:54px; padding:0;
+  flex-shrink:0; width:10px; height:110px; padding:0;
   display:flex; align-items:center; justify-content:center;
   background:linear-gradient(145deg, rgba(30, 41, 59, 0.75), rgba(15, 23, 42, 0.85));
   backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
   color:var(--hint);
   border:1px solid rgba(255, 255, 255, 0.12); border-right:none;
-  border-radius:12px 0 0 12px;
+  border-radius:14px 0 0 14px;
   box-shadow:-2px 0 10px rgba(0,0,0,.25);
   cursor:grab; touch-action:none;
   opacity:0.38;
@@ -1025,7 +1025,7 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 }
 .hdw-handle:hover,
 .hdw.open .hdw-handle{
-  width:28px; height:72px;
+  width:28px; height:145px;
   opacity:1;
   background:linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
   color:var(--text);
@@ -1045,7 +1045,7 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 
 .hdw-handle-inner{
   position:relative; z-index:2;
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
 }
 .hdw-arrow-ic{
   display:flex; align-items:center; justify-content:center;
@@ -1063,19 +1063,19 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 }
 
 .hdw-pill{
-  display:block; width:3px; height:22px; border-radius:99px;
+  display:block; width:3px; height:46px; border-radius:99px;
   background:linear-gradient(180deg, var(--accent), var(--purple, #a855f7));
   opacity:.7;
   transition:all .24s;
 }
 .hdw-handle:hover .hdw-pill{
-  height:18px; opacity:1;
+  height:38px; opacity:1;
   box-shadow:0 0 10px rgba(99, 102, 241, 0.5);
 }
 .hdw.open .hdw-pill{
   background:var(--warn, #f59e0b);
   box-shadow:0 0 10px rgba(245, 158, 11, 0.5);
-  height:16px;
+  height:34px;
 }
 
 /* Tortma paneli */
