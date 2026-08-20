@@ -1,18 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
   <defs>
-    <linearGradient id="bg-goals" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="bg_goals" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#10b981"/>
-      <stop offset="100%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#047857"/>
     </linearGradient>
-    <filter id="glow-goals"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity="0.25"/></filter>
+    <filter id="sh_goals"><feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000" flood-opacity="0.3"/></filter>
   </defs>
-  <rect width="64" height="64" rx="18" fill="url(#bg-goals)"/>
-  <rect x="1" y="1" width="62" height="30" rx="17" fill="#ffffff" fill-opacity="0.15"/>
-  <g filter="url(#glow-goals)">
-    <circle cx="32" cy="32" r="17" fill="#ffffff" fill-opacity="0.2"/>
-    <circle cx="32" cy="32" r="12" fill="#ffffff"/>
-    <circle cx="32" cy="32" r="7" fill="#10b981"/>
-    <polygon points="42,16 48,22 36,34 32,30" fill="#f59e0b"/>
-    <path d="M28 32 L31 35 L38 27" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect width="64" height="64" rx="18" fill="url(#bg_goals)"/>
+  <rect x="1.5" y="1.5" width="61" height="28" rx="16.5" fill="#ffffff" fill-opacity="0.18"/>
+  <g filter="url(#sh_goals)">
+    <circle cx="32" cy="32" r="18" fill="#ffffff" fill-opacity="0.25"/>
+    <circle cx="32" cy="32" r="13" fill="#ffffff"/>
+    <circle cx="32" cy="32" r="8" fill="#ef4444"/>
+    <circle cx="32" cy="32" r="3.5" fill="#ffffff"/>
+    <!-- Arrow in bullseye -->
+    <line x1="46" y1="18" x2="34" y2="30" stroke="#fbbf24" stroke-width="3.5" stroke-linecap="round"/>
+    <polygon points="47,15 50,22 43,19" fill="#fbbf24"/>
   </g>
 </svg>

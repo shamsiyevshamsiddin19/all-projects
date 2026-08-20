@@ -1,16 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
   <defs>
-    <linearGradient id="bg-arxiv" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="bg_arxiv" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#64748b"/>
       <stop offset="100%" stop-color="#334155"/>
     </linearGradient>
-    <filter id="glow-arxiv"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity="0.25"/></filter>
+    <filter id="sh_arxiv"><feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000" flood-opacity="0.3"/></filter>
   </defs>
-  <rect width="64" height="64" rx="18" fill="url(#bg-arxiv)"/>
-  <rect x="1" y="1" width="62" height="30" rx="17" fill="#ffffff" fill-opacity="0.15"/>
-  <g filter="url(#glow-arxiv)">
+  <rect width="64" height="64" rx="18" fill="url(#bg_arxiv)"/>
+  <rect x="1.5" y="1.5" width="61" height="28" rx="16.5" fill="#ffffff" fill-opacity="0.18"/>
+  <g filter="url(#sh_arxiv)">
     <rect x="15" y="18" width="34" height="12" rx="4" fill="#94a3b8"/>
     <rect x="17" y="27" width="30" height="22" rx="4" fill="#ffffff"/>
-    <rect x="27" y="34" width="10" height="4" rx="2" fill="#64748b"/>
+    <rect x="26" y="34" width="12" height="4.5" rx="2.2" fill="#64748b"/>
   </g>
 </svg>

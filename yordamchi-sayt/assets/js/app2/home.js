@@ -710,17 +710,17 @@
      1 ustunli toza vertikal panel
      ========================================================= */
   var DRAWER_SECTIONS = [
-    { t: 'Maqsadlar', s: 'Kunlik vazifalar va odatlar', ic: 'check', c: '#10b981', go: { v: 'goals' } },
-    { t: 'Statistika', s: 'Rivojlanish ko\'rsatkichlari', ic: 'chart', c: '#3b82f6', go: { v: 'stats' } },
-    { t: 'Tarix', s: 'Faollik va o\'rganishlar arxivi', ic: 'clock', c: '#8b5cf6', go: { v: 'tarix' } },
-    { t: 'Testlar', s: 'Bilimni sinash uchun testlar', ic: 'book', c: '#f59e0b', go: { v: 'fanlar' } },
-    { t: 'Coding', s: 'Dasturlash darsliklari va amaliyot', ic: 'code', c: '#06b6d4', go: { v: 'coding' } },
-    { t: 'Boostday', s: 'Intensiv rivojlanish rejasi', ic: 'message', c: '#ec4899', go: { v: 'boost' } },
-    { t: 'Arxiv', s: 'Bajarilgan maqsadlar ombori', ic: 'archive', c: '#64748b', go: { v: 'arxiv' } },
-    { t: 'Qoidalar', s: 'Hayotiy qoidalar va tamoyillar', ic: 'file', c: '#14b8a6', go: { v: 'qoidalar' } },
-    { t: 'Grammatika', s: 'Rus tili zamonlari va qoidalari', ic: 'book', c: '#a855f7', go: { v: 'grammar', p: { lang: 'russian', folder: '05. Времена глагола (Zamonlar)' } } },
-    { t: 'Lug\'at', s: '1-8000 so\'zlar to\'liq bazasi', ic: 'globe', c: '#0ea5e9', go: { v: 'vocab', p: { lang: 'russian' } } },
-    { t: 'Profil', s: 'Rivojlanish profili va faollik', ic: 'user', c: '#6366f1', go: { v: 'profile' } }
+    { t: 'Maqsadlar', s: 'Kunlik vazifalar va odatlar', img: 'goals', ic: 'check', c: '#10b981', go: { v: 'goals' } },
+    { t: 'Statistika', s: 'Rivojlanish ko\'rsatkichlari', img: 'stats', ic: 'chart', c: '#3b82f6', go: { v: 'stats' } },
+    { t: 'Tarix', s: 'Faollik va o\'rganishlar arxivi', img: 'tarix', ic: 'clock', c: '#8b5cf6', go: { v: 'tarix' } },
+    { t: 'Testlar', s: 'Bilimni sinash uchun testlar', img: 'fanlar', ic: 'book', c: '#f59e0b', go: { v: 'fanlar' } },
+    { t: 'Coding', s: 'Dasturlash darsliklari va amaliyot', img: 'coding', ic: 'code', c: '#06b6d4', go: { v: 'coding' } },
+    { t: 'Boostday', s: 'Intensiv rivojlanish rejasi', img: 'boost', ic: 'message', c: '#ec4899', go: { v: 'boost' } },
+    { t: 'Arxiv', s: 'Bajarilgan maqsadlar ombori', img: 'arxiv', ic: 'archive', c: '#64748b', go: { v: 'arxiv' } },
+    { t: 'Qoidalar', s: 'Hayotiy qoidalar va tamoyillar', img: 'qoidalar', ic: 'file', c: '#14b8a6', go: { v: 'qoidalar' } },
+    { t: 'Grammatika', s: 'Rus tili zamonlari va qoidalari', img: 'languages', ic: 'book', c: '#a855f7', go: { v: 'grammar', p: { lang: 'russian', folder: '05. Времена глагола (Zamonlar)' } } },
+    { t: 'Lug\'at', s: '1-8000 so\'zlar to\'liq bazasi', img: 'languages', ic: 'globe', c: '#0ea5e9', go: { v: 'vocab', p: { lang: 'russian' } } },
+    { t: 'Profil', s: 'Rivojlanish profili va faollik', img: 'profile', ic: 'user', c: '#6366f1', go: { v: 'profile' } }
   ];
 
   var DW = null;
@@ -751,8 +751,7 @@
         '</div>' +
         DRAWER_SECTIONS.map(function (x) {
           return '<button class="hdw-row" data-act="go" data-arg=\'' + App.arg(x.go) + '\'>' +
-            '<span class="hdw-ic" style="background:color-mix(in srgb,' + x.c + ' 16%, transparent);color:' + x.c + '">' +
-            '<span data-icon="' + x.ic + '" data-icon-size="16"></span></span>' +
+            '<img src="assets/img/nav/' + x.img + '.svg?v=20260820v10" alt="" width="26" height="26" style="width:26px;height:26px;border-radius:8px;object-fit:cover;flex-shrink:0">' +
             '<span class="hdw-m"><b>' + App.esc(x.t) + '</b><span>' + App.esc(x.s) + '</span></span>' +
             '</button>';
         }).join('') +
