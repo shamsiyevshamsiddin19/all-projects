@@ -343,18 +343,6 @@
             '</div>' +
           '</header>' +
 
-          /* Instagram Stories Carousel */
-          '<div class="ig-stories-carousel">' +
-            '<div class="ig-stories-track" id="ig-stories-track">' +
-              renderStoriesHtml() +
-            '</div>' +
-          '</div>' +
-
-          /* Daily Stats Mini Bar */
-          '<div class="ig-stats-bar" id="ig-stats-bar">' +
-            renderStatsBarHtml() +
-          '</div>' +
-
           /* Wstore uslubidagi boshqaruv paneli (Filtr + Qidiruv yonma-yon) */
           '<div class="ws-ctrl-bar">' +
             '<button class="ws-filter-trigger-btn" data-act="wsOpenFilterModal">' +
@@ -367,11 +355,6 @@
               '<input type="text" id="ws-search-input" class="ws-search-input" placeholder="So\'zlarni qidirish..." value="' + App.esc(SEARCH_QUERY) + '">' +
               '<button class="ws-search-clear" id="ws-search-clear" style="display:' + (SEARCH_QUERY ? 'flex' : 'none') + '" data-act="wsClearSearch">&times;</button>' +
             '</div>' +
-          '</div>' +
-
-          /* Wstore uslubidagi gorizontal kichik chiplar */
-          '<div class="ws-chips-row" id="ws-chips-row">' +
-            renderSubChipsHtml(st) +
           '</div>' +
 
           /* Instagram Reels Feed */
