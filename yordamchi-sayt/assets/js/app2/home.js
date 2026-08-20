@@ -672,82 +672,17 @@
     };
   }
 
-  /* Format note fields into structured HTML */
-  function formatNoteHtml(note) {
-    if (!note) return '';
-    var lines = String(note).split('\n');
-    var html = [];
-    lines.forEach(function (l) {
-      l = l.trim();
-      if (!l) return;
-      if (l.indexOf('Qayerda:') === 0) {
-        html.push('<div class="vr-md-item"><span class="vr-md-badge">💡 Qo\'llanishi</span><span class="vr-md-text">' + App.esc(l.replace('Qayerda:', '').trim()) + '</span></div>');
-      } else if (l.indexOf('Shakl:') === 0) {
-        html.push('<div class="vr-md-item"><span class="vr-md-badge">🔄 Shakllari</span><span class="vr-md-text">' + App.esc(l.replace('Shakl:', '').trim()) + '</span></div>');
-      } else if (l.indexOf('Vid:') === 0) {
-        html.push('<div class="vr-md-item"><span class="vr-md-badge">⚖️ Vid jufti</span><span class="vr-md-text">' + App.esc(l.replace('Vid:', '').trim()) + '</span></div>');
-      } else if (l.indexOf('Ma\'nodosh:') === 0) {
-        html.push('<div class="vr-md-item"><span class="vr-md-badge">🌿 Ma\'nodoshlari</span><span class="vr-md-text">' + App.esc(l.replace('Ma\'nodosh:', '').trim()) + '</span></div>');
-      } else {
-        html.push('<div class="vr-md-item"><span class="vr-md-text">' + App.esc(l) + '</span></div>');
-      }
-    });
-    return html.join('');
-  }
-
-  /* Format example quote into clean HTML */
-  function formatExampleHtml(ex, ttsLang) {
-    if (!ex) return '';
-    var m = ex.match(/^(.*?)\s*\((.*?)\)$/);
-    if (m) {
-      var ruSent = m[1].trim();
-      var uzSent = m[2].trim();
-      return '<div class="vr-md-quote">' +
-        '<div class="vr-quote-ru">«' + App.esc(ruSent.replace(/^[«"'\s]+|[»"'\s]+$/g, '')) + '»</div>' +
-        '<div class="vr-quote-uz">' + App.esc(uzSent) + '</div>' +
-        '<button class="vr-quote-audio-btn" data-act="igSpeakWord" data-arg=\'' + App.arg({ text: ruSent, lang: ttsLang }) + '\'>' +
-          '<span data-icon="volume" data-icon-size="13"></span> Misolni eshitish' +
-        '</button>' +
-      '</div>';
-    }
-    return '<div class="vr-md-quote">' +
-      '<div class="vr-quote-ru">«' + App.esc(ex.replace(/^[«"'\s]+|[»"'\s]+$/g, '')) + '»</div>' +
-      '<button class="vr-quote-audio-btn" data-act="igSpeakWord" data-arg=\'' + App.arg({ text: ex, lang: ttsLang }) + '\'>' +
-        '<span data-icon="volume" data-icon-size="13"></span> Misolni eshitish' +
-      '</button>' +
-    '</div>';
-  }
-
-  /* Toggle Card Details Accordion */
-  App.actions.igToggleCardDetails = function (a) {
-    var details = document.getElementById('det_' + a.id);
-    var btn = document.getElementById('det_btn_' + a.id);
-    if (!details || !btn) return;
-    var isOpen = details.classList.contains('open');
-    if (isOpen) {
-      details.classList.remove('open');
-      btn.innerHTML = '<span data-icon="arrowDown" data-icon-size="13"></span> <span>Batafsil tahlil</span>';
-    } else {
-      details.classList.add('open');
-      btn.innerHTML = '<span data-icon="arrowUp" data-icon-size="13"></span> <span>Yopish</span>';
-    }
-    App.icons(btn);
-  };
-
   /* Render a single Reel card */
   function renderReelCard(w, idx) {
     var cardId = 'ig_card_' + idx + '_' + Math.floor(Math.random() * 10000);
-    var isRu = (w.lang === 'russian');
+    var isRu = (w.lang === 'russian' || /[а-яёА-ЯЁ]/.test(w.ru || ''));
     var ttsLang = isRu ? 'ru-RU' : 'en-US';
     var likes = getLikedWords();
     var isLiked = likes.indexOf(w.ru) >= 0;
     var bms = getBookmarkedWords();
     var isBookmarked = bms.indexOf(w.ru) >= 0;
-    var mastered = getMasteredWords();
-    var isMastered = mastered.indexOf(w.ru) >= 0;
 
     var theme = getCardTheme(w);
-    var hasDetails = !!(w.note || w.ex);
 
     return '<div class="ig-post-card" id="' + cardId + '">' +
       /* Card Ambient Top Glow */
@@ -781,17 +716,6 @@
             '<div class="vr-md-sub">' + App.esc(w.uz) + '</div>' +
             '<div class="vr-md-divider" style="background:' + theme.color + '"></div>' +
           '</div>' +
-
-          (hasDetails ?
-            '<div class="vr-details-accordion">' +
-              '<button class="vr-details-btn" id="det_btn_' + cardId + '" data-act="igToggleCardDetails" data-arg=\'' + App.arg({ id: cardId }) + '\'>' +
-                '<span data-icon="arrowDown" data-icon-size="13"></span> <span>Batafsil tahlil</span>' +
-              '</button>' +
-              '<div class="vr-details-content" id="det_' + cardId + '">' +
-                (w.note ? '<div class="vr-md-content">' + formatNoteHtml(w.note) + '</div>' : '') +
-                (w.ex ? formatExampleHtml(w.ex, ttsLang) : '') +
-              '</div>' +
-            '</div>' : '') +
         '</div>' +
       '</div>' +
 
@@ -1115,16 +1039,10 @@
   };
 
   App.actions.igSpeakWord = function (a) {
-    if (!a.text) return;
-    if (a.id) {
-      var snd = document.getElementById('snd_' + a.id);
-      if (snd) {
-        snd.classList.add('playing');
-        setTimeout(function () { snd.classList.remove('playing'); }, 1800);
-      }
-    }
+    if (!a || !a.text) return;
+    var detectedLang = (/[а-яёА-ЯЁ]/.test(a.text)) ? 'ru-RU' : ((/[a-zA-Z]/.test(a.text)) ? 'en-US' : (a.lang || 'ru-RU'));
     if (window.TTS && TTS.speak) {
-      TTS.speak(a.text, a.lang || 'ru-RU');
+      TTS.speak(a.text, { lang: detectedLang });
     }
   };
 

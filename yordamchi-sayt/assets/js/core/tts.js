@@ -205,6 +205,7 @@
      `done(err)` — MUVAFFAQIYAT ham, XATO ham bo'lsa chaqiriladi, shunda
      chaqiruvchi zanjiri uzilmaydi. */
   function speak(text, opts, done) {
+    if (typeof opts === 'string') opts = { lang: opts };
     opts = opts || {};
     /* `done` FAQAT BIR MARTA chaqirilishi shart: `onend` va `onerror`
        ba'zan ikkalasi ham keladi, ikki marta chaqirilsa o'qish zanjiri
@@ -218,7 +219,14 @@
     if (!clean) { fire(null); return; }
 
     var myGen = ++state.gen;
-    var lang = opts.lang || 'en-US';
+    var lang = opts.lang;
+    if (!lang || lang === 'auto') {
+      lang = (/[а-яёА-ЯЁ]/.test(clean)) ? 'ru-RU' : 'en-US';
+    } else if (lang === 'russian' || lang === 'ru') {
+      lang = 'ru-RU';
+    } else if (lang === 'english' || lang === 'en') {
+      lang = 'en-US';
+    }
 
     ready().then(function () {
       if (myGen !== state.gen) return;              // orada bekor qilindi
