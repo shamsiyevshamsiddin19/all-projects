@@ -1,11 +1,12 @@
 /* ============================================================
-   Yordamchi — Bosh sahifa (Instagram Stories & Reels Feed)
-   Filtrlash paneli va sozlash oynasi bilan
+   Yordamchi — Bosh sahifa (Wstore uslubidagi mukammal filtr va Reels Feed)
+   Aynan wstore.uz kabi: Filtr tugmasi, qidiruv, modal panel, 
+   bo'limlar, saralash, tozalash va "Ko'rsatish (N)" amallari
    ============================================================ */
 (function () {
   'use strict';
 
-  /* Stories ro'yxati (Lug'atlar, Grammatika va Darsliklar) */
+  /* Stories ro'yxati */
   var STORIES = [
     {
       id: 'ru_229',
@@ -205,14 +206,14 @@
     }
   ];
 
-  /* Fallback tasodifiy so'zlar zaxirasi */
+  /* Fallback so'zlar */
   var FALLBACK_WORDS = [
     {
       ru: "я играю",
       uz: "men o'ynayapman",
       lang: "russian",
       cat: "Hozirgi zamon (229)",
-      note: "Qayerda: Sport yoki kompyuter o'yinlarini o'ynash, musiqa asboblarini chalish hamda sahnada rol ijro etishda qo'llaniladi. Birikmalarda: играть в шахматы (shaxmat o'ynamoq), играть на гитаре (gitara chalmoq).\nShakl: hozirgi zamon (я) — я играю, infinitivi — играть, o'tgan zamon — я играл\nVid: NCV — играть (doimiy jarayon), CV — сыграть / поиграть (tugallangan)\nMa'nodosh: развлекаться (ko'ngilxushlik qilmoq), резвиться (sho'xlik qilmoq)",
+      note: "Qayerda: Sport yoki kompyuter o'yinlarini o'ynash, musiqa asboblarini chalish hamda sahnada rol ijro etishda qo'llaniladi.\nShakl: hozirgi zamon (я) — я играю, infinitivi — играть, o'tgan zamon — я играл\nVid: NCV — играть, CV — сыграть / поиграть\nMa'nodosh: развлекаться, резвиться",
       ex: "Я каждый вечер с удовольствием играю в шахматы с дедушкой. (Men har oqshom bobom bilan maroq bilan shaxmat o'ynayman.)"
     },
     {
@@ -220,7 +221,7 @@
       uz: "men yozyapman",
       lang: "russian",
       cat: "Hozirgi zamon (229)",
-      note: "Qayerda: Qalam, ruchka yoki klaviatura orqali matn, xat, ariza yaratishda ishlatiladi.\nShakl: hozirgi zamon (я) — я пишу, infinitivi — писать, o'tgan zamon — я писал\nVid: NCV — писать (yozish jarayoni), CV — написать (yozib tugatmoq)\nMa'nodosh: сочинять (ijod qilmoq), записывать (qayd etmoq)",
+      note: "Qayerda: Qalam, ruchka yoki klaviatura orqali matn, xat, ariza yaratishda ishlatiladi.\nShakl: hozirgi zamon (я) — я пишу, infinitivi — писать, o'tgan zamon — я писал\nVid: NCV — писать, CV — написать\nMa'nodosh: сочинять, записывать",
       ex: "Я сейчас пишу важное электронное письмо преподавателю. (Men hozir o'qituvchiga muhim elektron xat yozyapman.)"
     },
     {
@@ -228,7 +229,7 @@
       uz: "men gapiryapman",
       lang: "russian",
       cat: "Hozirgi zamon (229)",
-      note: "Qayerda: Nutq tovushlarini chiqarish, suhbatlashish yoki biror tilda muloqot qilishda qo'llaniladi.\nShakl: hozirgi zamon (я) — я говорю, infinitivi — говорить, o'tgan zamon — я говорил\nVid: NCV — говорить (davomiy nutq), CV — сказать / поговорить\nMa'nodosh: беседовать (suhbatlashmoq), произносить (talaffuz qilmoq)",
+      note: "Qayerda: Nutq tovushlarini chiqarish, suhbatlashish yoki biror tilda muloqot qilishda qo'llaniladi.\nShakl: hozirgi zamon (я) — я говорю, infinitivi — говорить, o'tgan zamon — я говорил\nVid: NCV — говорить, CV — сказать / поговорить\nMa'nodosh: беседовать, произносить",
       ex: "Я свободно говорю на двух иностранных языках. (Men ikkita chet tilida erkin gapiraman.)"
     },
     {
@@ -236,7 +237,7 @@
       uz: "men o'rganyapman / o'rgatyapman",
       lang: "russian",
       cat: "Hozirgi zamon (229)",
-      note: "Qayerda: 1) Yod olish, o'rganish; 2) Boshqalarga ta'lim berish, o'rgatish.\nShakl: hozirgi zamon (я) — я учу, infinitivi — учить, o'tgan zamon — я учил\nVid: NCV — учить (jarayon), CV — выучить (yodlamoq) / научить (o'rgatmoq)\nMa'nodosh: обучать (ta'lim bermoq), зубрить (quruq yodlamoq)",
+      note: "Qayerda: 1) Yod olish, o'rganish; 2) Boshqalarga ta'lim berish.\nShakl: hozirgi zamon (я) — я учу, infinitivi — учить, o'tgan zamon — я учил\nVid: NCV — учить, CV — выучить / научить\nMa'nodosh: обучать, зубрить",
       ex: "Я каждый день учу двадцать новых русских слов. (Men har kuni 20 ta yangi ruscha so'z yodlayapman.)"
     },
     {
@@ -244,7 +245,7 @@
       uz: "amalga oshirmoq, erishmoq",
       lang: "english",
       cat: "Ingliz tili 8000",
-      note: "Qayerda: Murakkab vazifa, reja yoki maqsadni muvaffaqiyatli uddalashda ishlatiladi.\nMa'nodosh: achieve (erishmoq), complete (yakunlamoq), fulfill (bajarmoq)",
+      note: "Qayerda: Murakkab vazifa, reja yoki maqsadni muvaffaqiyatli uddalashda ishlatiladi.\nMa'nodosh: achieve, complete, fulfill",
       ex: "She accomplished all her goals this year. (U bu yil o'zining barcha maqsadlariga erishdi.)"
     },
     {
@@ -252,7 +253,7 @@
       uz: "men orzu qilyapman",
       lang: "russian",
       cat: "Hozirgi zamon (229)",
-      note: "Qayerda: Kelajakdagi ezgu niyatlar, istaklar haqida xayol surish yoki erishishni xohlashda ishlatiladi.\nShakl: hozirgi zamon (я) — я мечтаю, infinitivi — мечтать, o'tgan zamon — я мечтал\nVid: NCV — мечтать (orzu qilish), CV — помечтать\nMa'nodosh: грезить (xayol surmoq), фантазировать (tasavvur qilmoq)",
+      note: "Qayerda: Kelajakdagi ezgu niyatlar, istaklar haqida xayol surishda ishlatiladi.\nShakl: hozirgi zamon (я) — я мечтаю, infinitivi — мечтать, o'tgan zamon — я мечтал\nVid: NCV — мечтать, CV — помечтать\nMa'nodosh: грезить, фантазировать",
       ex: "Я мечтаю стать высококлассным разработчиком программного обеспечения. (Men yuqori malakali dasturchi bo'lishni orzu qilaman.)"
     },
     {
@@ -265,45 +266,63 @@
     }
   ];
 
-  /* Filtr ta'riflari va metama'lumotlari */
-  var FILTER_LABELS = {
-    all: { title: 'Barcha so\'zlar', desc: 'Rus va Ingliz tili lug\'atlari aralash', icon: 'globe', color: '#6366f1' },
-    ru_229: { title: 'Hozirgi zamon (229)', desc: '229 ta ruscha fe\'l tuslanishi va tahlili', icon: 'zap', color: '#f59e0b' },
-    ru_1000: { title: 'Rus tili 1000', desc: 'Asosiy 1000 ta ruscha lug\'at so\'zlari', icon: 'book', color: '#3b82f6' },
-    en_8000: { title: 'Ingliz tili (8000)', desc: 'Oxford va Cambridge 8000 so\'zlar bazasi', icon: 'globe', color: '#10b981' },
-    ru_8000: { title: 'Rus tili (8000)', desc: 'Katta 8000 ta ruscha lug\'at bazasi', icon: 'book', color: '#8b5cf6' },
-    liked: { title: 'Sevimli so\'zlarim', desc: 'Yurakcha bosilgan so\'zlar to\'plami', icon: 'heartFill', color: '#ef4444' },
-    saved: { title: 'Saqlangan xatcho\'plar', desc: 'Xatcho\'pga saqlab qo\'yilgan so\'zlar', icon: 'bookmarkFill', color: '#0ea5e9' },
-    mastered: { title: 'O\'rganilgan so\'zlar', desc: 'O\'rgandim deb belgilangan so\'zlar', icon: 'check', color: '#10b981' }
-  };
+  /* Wstore uslubidagi kategoriyalar */
+  var WSTORE_CATEGORIES = [
+    { key: 'all', label: 'Barcha so\'zlar', icon: 'globe' },
+    { key: 'ru_229', label: 'Hozirgi zamon (229)', icon: 'zap' },
+    { key: 'ru_1000', label: 'Rus tili 1000', icon: 'book' },
+    { key: 'en_8000', label: 'Ingliz tili 8000', icon: 'globe' },
+    { key: 'ru_8000', label: 'Katta ruscha lug\'at (8000)', icon: 'book' }
+  ];
+
+  var WSTORE_COLLECTIONS = [
+    { key: 'liked', label: 'Sevimli so\'zlarim', icon: 'heartFill', color: '#ef4444' },
+    { key: 'saved', label: 'Saqlangan xatcho\'plar', icon: 'bookmarkFill', color: '#3b82f6' },
+    { key: 'mastered', label: 'O\'rganilgan so\'zlar', icon: 'check', color: '#10b981' }
+  ];
+
+  var WSTORE_SORTS = [
+    { key: 'popular', label: 'Ommabop / Tasodifiy' },
+    { key: 'alpha', label: 'Alifbo bo\'yicha (A–Z)' },
+    { key: 'recent', label: 'Eng yangi so\'zlar' }
+  ];
 
   var FEED_WORDS = [];
   var LOADED_WORDS_POOL = [];
+  var SEARCH_QUERY = '';
   var STORY_VIEWER_STATE = null;
 
-  /* Filter holatini localStorage dan o'qish / saqlash */
+  /* Filter holatini boshqarish */
   function getFilterState() {
     try {
-      var s = JSON.parse(localStorage.getItem('home_filter_state_v2') || '{}');
+      var s = JSON.parse(localStorage.getItem('wstore_filter_v3') || '{}');
       return {
         category: s.category || 'all',
-        sort: s.sort || 'random',
-        batchSize: s.batchSize || 6
+        collections: Array.isArray(s.collections) ? s.collections : [],
+        sort: s.sort || 'popular'
       };
     } catch (e) {
-      return { category: 'all', sort: 'random', batchSize: 6 };
+      return { category: 'all', collections: [], sort: 'popular' };
     }
   }
 
   function saveFilterState(st) {
-    try { localStorage.setItem('home_filter_state_v2', JSON.stringify(st)); } catch (e) {}
+    try { localStorage.setItem('wstore_filter_v3', JSON.stringify(st)); } catch (e) {}
+  }
+
+  function getActiveFilterCount(st) {
+    var count = 0;
+    if (st.category && st.category !== 'all') count++;
+    if (st.collections && st.collections.length > 0) count += st.collections.length;
+    if (st.sort && st.sort !== 'popular') count++;
+    return count;
   }
 
   App.view('home', {
     nav: 'home',
     render: function (page) {
       var st = getFilterState();
-      var curInfo = FILTER_LABELS[st.category] || FILTER_LABELS.all;
+      var activeCount = getActiveFilterCount(st);
 
       page.innerHTML =
         '<div class="ig-home-wrap">' +
@@ -336,23 +355,23 @@
             renderStatsBarHtml() +
           '</div>' +
 
-          /* Asosiy Filtr Paneli (Button + Quick Chips) */
-          '<div class="ig-filter-control-card">' +
-            '<div class="ig-filter-header-wrap">' +
-              '<div class="ig-filter-head-left">' +
-                '<span class="ig-filter-dot" style="background:' + curInfo.color + '"></span>' +
-                '<span class="ig-filter-current-label">Filtr: <b id="ig-filter-active-name">' + App.esc(curInfo.title) + '</b></span>' +
-              '</div>' +
-              '<button class="ig-filter-panel-btn" data-act="igOpenFilterSheet">' +
-                '<span data-icon="sliders" data-icon-size="16"></span>' +
-                '<span>Filtrlar</span>' +
-                '<span class="ig-filter-badge-pill">' + (st.sort === 'alpha' ? 'A-Z' : (st.sort === 'recent' ? 'Yangi' : 'Mix')) + '</span>' +
-              '</button>' +
+          /* Wstore uslubidagi boshqaruv paneli (Filtr + Qidiruv yonma-yon) */
+          '<div class="ws-ctrl-bar">' +
+            '<button class="ws-filter-trigger-btn" data-act="wsOpenFilterModal">' +
+              '<span data-icon="sliders" data-icon-size="16"></span>' +
+              '<span>Filtr</span>' +
+              (activeCount > 0 ? '<span class="ws-badge" id="ws-filter-badge">' + activeCount + '</span>' : '<span class="ws-badge" id="ws-filter-badge" style="display:none">0</span>') +
+            '</button>' +
+            '<div class="ws-search-wrap">' +
+              '<span class="ws-search-ic" data-icon="search" data-icon-size="15"></span>' +
+              '<input type="text" id="ws-search-input" class="ws-search-input" placeholder="So\'zlarni qidirish..." value="' + App.esc(SEARCH_QUERY) + '">' +
+              '<button class="ws-search-clear" id="ws-search-clear" style="display:' + (SEARCH_QUERY ? 'flex' : 'none') + '" data-act="wsClearSearch">&times;</button>' +
             '</div>' +
+          '</div>' +
 
-            '<div class="ig-filter-quick-chips" id="ig-filter-quick-chips">' +
-              renderQuickChipsHtml(st.category) +
-            '</div>' +
+          /* Wstore uslubidagi gorizontal kichik chiplar */
+          '<div class="ws-chips-row" id="ws-chips-row">' +
+            renderSubChipsHtml(st) +
           '</div>' +
 
           /* Instagram Reels Feed */
@@ -372,6 +391,7 @@
         '<div id="ig-story-modal" class="ig-story-modal"></div>';
 
       App.icons(page);
+      bindSearchEvents(page);
       initFeed();
       mountDrawer();
     },
@@ -381,26 +401,85 @@
     }
   });
 
-  /* Quick chips renderer */
-  function renderQuickChipsHtml(activeCat) {
+  /* Search Input Live Binding */
+  function bindSearchEvents(page) {
+    var inp = page.querySelector('#ws-search-input');
+    var clr = page.querySelector('#ws-search-clear');
+    if (!inp) return;
+
+    var debounceTimer = null;
+    inp.addEventListener('input', function () {
+      SEARCH_QUERY = inp.value;
+      if (clr) clr.style.display = SEARCH_QUERY ? 'flex' : 'none';
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(function () {
+        renderFeedItems(6, false);
+      }, 250);
+    });
+  }
+
+  App.actions.wsClearSearch = function () {
+    SEARCH_QUERY = '';
+    var inp = document.getElementById('ws-search-input');
+    var clr = document.getElementById('ws-search-clear');
+    if (inp) { inp.value = ''; inp.focus(); }
+    if (clr) clr.style.display = 'none';
+    renderFeedItems(6, false);
+  };
+
+  /* Horizontal Sub Chips */
+  function renderSubChipsHtml(st) {
     var quickList = [
       { id: 'all', label: 'Barchasi' },
       { id: 'ru_229', label: '229 Fe\'l' },
       { id: 'ru_1000', label: 'Rus 1K' },
       { id: 'en_8000', label: 'Ingliz 8K' },
-      { id: 'liked', label: '❤️ Sevimlilar' },
-      { id: 'saved', label: '🔖 Xatcho\'plar' }
+      { id: 'liked', label: '❤️ Sevimlilar', isCol: true },
+      { id: 'saved', label: '🔖 Xatcho\'plar', isCol: true },
+      { id: 'mastered', label: '✅ O\'rganilganlar', isCol: true }
     ];
 
     return quickList.map(function (q) {
-      var isAct = (q.id === activeCat);
-      return '<button class="ig-qchip ' + (isAct ? 'active' : '') + '" data-act="igQuickFilter" data-arg=\'' + App.arg({ f: q.id }) + '\'>' +
+      var isAct = false;
+      if (q.isCol) {
+        isAct = st.collections && st.collections.indexOf(q.id) >= 0;
+      } else {
+        isAct = (st.category === q.id) && (!st.collections || st.collections.length === 0);
+      }
+      return '<button class="ws-chip ' + (isAct ? 'active' : '') + '" data-act="wsToggleQuickChip" data-arg=\'' + App.arg(q) + '\'>' +
         App.esc(q.label) +
       '</button>';
-    }).join('') +
-    '<button class="ig-qchip ig-qchip-more" data-act="igOpenFilterSheet">' +
-      '<span data-icon="sliders" data-icon-size="13"></span> Ko\'proq...' +
-    '</button>';
+    }).join('');
+  }
+
+  App.actions.wsToggleQuickChip = function (a) {
+    var st = getFilterState();
+    if (a.isCol) {
+      var idx = st.collections.indexOf(a.id);
+      if (idx >= 0) st.collections.splice(idx, 1);
+      else st.collections.push(a.id);
+    } else {
+      st.category = a.id;
+      st.collections = [];
+    }
+    saveFilterState(st);
+    updateControlsUI();
+    renderFeedItems(6, false);
+  };
+
+  function updateControlsUI() {
+    var st = getFilterState();
+    var count = getActiveFilterCount(st);
+    var badge = document.getElementById('ws-filter-badge');
+    if (badge) {
+      badge.textContent = count;
+      badge.style.display = count > 0 ? 'flex' : 'none';
+    }
+    var chips = document.getElementById('ws-chips-row');
+    if (chips) {
+      chips.innerHTML = renderSubChipsHtml(st);
+      App.icons(chips);
+    }
   }
 
   /* Mini Stats Bar HTML */
@@ -471,53 +550,78 @@
             });
           });
         }
-        var st = getFilterState();
-        renderFeedItems(st.batchSize || 6);
+        renderFeedItems(6);
       })
       .catch(function () {
         LOADED_WORDS_POOL = FALLBACK_WORDS.slice();
-        var st = getFilterState();
-        renderFeedItems(st.batchSize || 6);
+        renderFeedItems(6);
       });
   }
 
-  /* Pick random words from loaded pool based on current filter */
-  function getRandomWords(count, filterState) {
-    filterState = filterState || getFilterState();
-    var filter = filterState.category || 'all';
+  /* Filter and Sort pool */
+  function getFilteredWordsPool() {
     var pool = LOADED_WORDS_POOL.length > 0 ? LOADED_WORDS_POOL : FALLBACK_WORDS;
+    var st = getFilterState();
     var liked = getLikedWords();
     var saved = getBookmarkedWords();
     var mastered = getMasteredWords();
 
-    if (filter === 'ru_229') {
-      pool = pool.filter(function (w) { return w.cat && (w.cat.indexOf('Глаголы') >= 0 || w.cat.indexOf('229') >= 0); });
-    } else if (filter === 'ru_1000') {
-      pool = pool.filter(function (w) { return w.lang === 'russian' && (!w.cat || (w.cat.indexOf('Глаголы') < 0 && w.cat.indexOf('229') < 0)); });
-    } else if (filter === 'ru_8000') {
-      pool = pool.filter(function (w) { return w.lang === 'russian'; });
-    } else if (filter === 'en_8000') {
-      pool = pool.filter(function (w) { return w.lang === 'english'; });
-    } else if (filter === 'liked') {
-      pool = pool.filter(function (w) { return liked.indexOf(w.ru) >= 0; });
-    } else if (filter === 'saved') {
-      pool = pool.filter(function (w) { return saved.indexOf(w.ru) >= 0; });
-    } else if (filter === 'mastered') {
-      pool = pool.filter(function (w) { return mastered.indexOf(w.ru) >= 0; });
+    // 1. Qidiruv
+    if (SEARCH_QUERY.trim()) {
+      var q = SEARCH_QUERY.trim().toLowerCase();
+      pool = pool.filter(function (w) {
+        return (w.ru && w.ru.toLowerCase().indexOf(q) >= 0) ||
+               (w.uz && w.uz.toLowerCase().indexOf(q) >= 0) ||
+               (w.note && w.note.toLowerCase().indexOf(q) >= 0);
+      });
     }
 
+    // 2. Kategoriya
+    if (st.category === 'ru_229') {
+      pool = pool.filter(function (w) { return w.cat && (w.cat.indexOf('Глаголы') >= 0 || w.cat.indexOf('229') >= 0); });
+    } else if (st.category === 'ru_1000') {
+      pool = pool.filter(function (w) { return w.lang === 'russian' && (!w.cat || (w.cat.indexOf('Глаголы') < 0 && w.cat.indexOf('229') < 0)); });
+    } else if (st.category === 'ru_8000') {
+      pool = pool.filter(function (w) { return w.lang === 'russian'; });
+    } else if (st.category === 'en_8000') {
+      pool = pool.filter(function (w) { return w.lang === 'english'; });
+    }
+
+    // 3. Shaxsiy to'plamlar
+    if (st.collections && st.collections.length > 0) {
+      pool = pool.filter(function (w) {
+        var match = false;
+        if (st.collections.indexOf('liked') >= 0 && liked.indexOf(w.ru) >= 0) match = true;
+        if (st.collections.indexOf('saved') >= 0 && saved.indexOf(w.ru) >= 0) match = true;
+        if (st.collections.indexOf('mastered') >= 0 && mastered.indexOf(w.ru) >= 0) match = true;
+        return match;
+      });
+    }
+
+    // Fallback if empty
     if (pool.length === 0) {
-      if (filter === 'liked') return [{ ru: "❤️ Sevimli so'zlar", uz: "Quyidagi postlardagi yurakchani bosib sevimli so'zlar to'plamini yarating.", lang: "russian", cat: "Bo'sh", note: "", ex: "" }];
-      if (filter === 'saved') return [{ ru: "🔖 Saqlanganlar", uz: "Xatcho'p tugmasini bosib kerakli so'zlarni saqlab qo'ying.", lang: "russian", cat: "Bo'sh", note: "", ex: "" }];
-      if (filter === 'mastered') return [{ ru: "✅ O'rganilganlar", uz: "Postlardagi «O'rgandim» tugmasini bosib bilgan so'zlaringizni belgilang.", lang: "russian", cat: "Bo'sh", note: "", ex: "" }];
+      if (SEARCH_QUERY.trim()) {
+        return [{ ru: "Qidiruv natijasi topilmadi", uz: "Boshqa so'z kiritib ko'ring yoki filtrlarni tozalang.", lang: "russian", cat: "Natija yo'q", note: "", ex: "" }];
+      }
+      if (st.collections && st.collections.length > 0) {
+        return [{ ru: "To'plam bo'sh", uz: "Tanlangan filtr bo'yicha hali so'zlar mavjud emas.", lang: "russian", cat: "Bo'sh", note: "", ex: "" }];
+      }
       pool = FALLBACK_WORDS;
     }
 
+    return pool;
+  }
+
+  /* Pick random words from loaded pool based on current filter */
+  function getRandomWords(count) {
+    var pool = getFilteredWordsPool();
+    var st = getFilterState();
+
     var result = pool.slice();
-    if (filterState.sort === 'alpha') {
+    if (st.sort === 'alpha') {
       result.sort(function (a, b) { return (a.ru || '').localeCompare(b.ru || ''); });
       return result.slice(0, count);
-    } else if (filterState.sort === 'recent') {
+    } else if (st.sort === 'recent') {
       return result.slice(0, count);
     } else {
       var selected = [];
@@ -644,8 +748,7 @@
     var host = document.getElementById('ig-feed-list');
     if (!host) return;
 
-    var st = getFilterState();
-    var newWords = getRandomWords(count, st);
+    var newWords = getRandomWords(count);
     if (!append) FEED_WORDS = [];
     var startIdx = FEED_WORDS.length;
     FEED_WORDS = FEED_WORDS.concat(newWords);
@@ -667,7 +770,7 @@
     }
   }
 
-  /* Double Tap to Like on Reel Body */
+  /* Double Tap to Like */
   function bindDoubleTapEvents(container) {
     container.querySelectorAll('.ig-post-body').forEach(function (body) {
       var lastTap = 0;
@@ -737,139 +840,137 @@
   }
 
   /* =========================================================
-     INTERAKTIV FILTR SHEET VA ACTIONS
+     WSTORE USLUBIDAGI MUKAMMAL FILTR MODAL (BOTTOM SHEET)
      ========================================================= */
-  App.actions.igQuickFilter = function (a) {
+  App.actions.wsOpenFilterModal = function () {
     var st = getFilterState();
-    st.category = a.f || 'all';
-    saveFilterState(st);
+    var activeCount = getActiveFilterCount(st);
+    var filteredCount = getFilteredWordsPool().length;
 
-    var curInfo = FILTER_LABELS[st.category] || FILTER_LABELS.all;
-    var nameEl = document.getElementById('ig-filter-active-name');
-    if (nameEl) nameEl.textContent = curInfo.title;
-
-    var dot = document.querySelector('.ig-filter-dot');
-    if (dot) dot.style.background = curInfo.color;
-
-    var chipsHost = document.getElementById('ig-filter-quick-chips');
-    if (chipsHost) {
-      chipsHost.innerHTML = renderQuickChipsHtml(st.category);
-      App.icons(chipsHost);
-    }
-
-    renderFeedItems(st.batchSize || 6, false);
-    App.toast('Filtr: ' + curInfo.title + ' ✨');
-  };
-
-  App.actions.igOpenFilterSheet = function () {
-    var s = getFilterState();
     var html =
-      '<div class="ig-filter-sheet-body">' +
-        '<div class="ig-fs-sec-title">Lug\'at va Mavzu bo\'limi</div>' +
-        '<div class="ig-fs-grid">' +
-          Object.keys(FILTER_LABELS).map(function (k) {
-            var info = FILTER_LABELS[k];
-            var isSel = (s.category === k);
-            return '<button class="ig-fs-card ' + (isSel ? 'selected' : '') + '" data-act="igSelectFilterCategory" data-arg=\'' + App.arg({ f: k }) + '\'>' +
-              '<div class="ig-fs-card-left">' +
-                '<span class="ig-fs-icon" style="background:' + info.color + '"><span data-icon="' + info.icon + '" data-icon-size="16"></span></span>' +
-                '<div class="ig-fs-info">' +
-                  '<div class="ig-fs-name">' + App.esc(info.title) + '</div>' +
-                  '<div class="ig-fs-desc">' + App.esc(info.desc) + '</div>' +
-                '</div>' +
+      '<div class="ws-filter-modal-wrap">' +
+        /* Wstore Filter Sidebar Card */
+        '<div class="ws-filter-card">' +
+          '<div class="ws-filter-card-inner">' +
+            /* Bo'lim 1: Saralash (Sort) */
+            '<div class="ws-sec first">' +
+              '<h3 class="ws-sec-title"><span class="ws-sec-bar"></span> Saralash</h3>' +
+              '<div class="ws-sec-body">' +
+                WSTORE_SORTS.map(function (s) {
+                  var isChecked = (st.sort === s.key);
+                  return '<label class="ws-radio-row" data-act="wsSelectSort" data-arg=\'' + App.arg({ s: s.key }) + '\'>' +
+                    '<span class="ws-radio-circle ' + (isChecked ? 'checked' : '') + '">' +
+                      (isChecked ? '<span class="ws-radio-dot"></span>' : '') +
+                    '</span>' +
+                    '<span class="ws-row-label">' + App.esc(s.label) + '</span>' +
+                  '</label>';
+                }).join('') +
               '</div>' +
-              '<span class="ig-fs-radio ' + (isSel ? 'checked' : '') + '"></span>' +
-            '</button>';
-          }).join('') +
+            '</div>' +
+
+            /* Bo'lim 2: Tillar va Lug'atlar (Category) */
+            '<div class="ws-sec">' +
+              '<h3 class="ws-sec-title"><span class="ws-sec-bar"></span> Tillar va Lug\'atlar</h3>' +
+              '<div class="ws-sec-body">' +
+                WSTORE_CATEGORIES.map(function (c) {
+                  var isChecked = (st.category === c.key);
+                  return '<label class="ws-check-row" data-act="wsSelectCategory" data-arg=\'' + App.arg({ c: c.key }) + '\'>' +
+                    '<span class="ws-check-box ' + (isChecked ? 'checked' : '') + '">' +
+                      (isChecked ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '') +
+                    '</span>' +
+                    '<span class="ws-row-icon" data-icon="' + c.icon + '" data-icon-size="15"></span>' +
+                    '<span class="ws-row-label">' + App.esc(c.label) + '</span>' +
+                  '</label>';
+                }).join('') +
+              '</div>' +
+            '</div>' +
+
+            /* Bo'lim 3: Shaxsiy To'plamlar (Collections) */
+            '<div class="ws-sec last">' +
+              '<h3 class="ws-sec-title"><span class="ws-sec-bar"></span> Shaxsiy To\'plamlar</h3>' +
+              '<div class="ws-sec-body">' +
+                WSTORE_COLLECTIONS.map(function (col) {
+                  var isChecked = (st.collections && st.collections.indexOf(col.key) >= 0);
+                  return '<label class="ws-check-row" data-act="wsToggleCollection" data-arg=\'' + App.arg({ col: col.key }) + '\'>' +
+                    '<span class="ws-check-box ' + (isChecked ? 'checked' : '') + '">' +
+                      (isChecked ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '') +
+                    '</span>' +
+                    '<span class="ws-row-icon" data-icon="' + col.icon + '" data-icon-size="15" style="color:' + col.color + '"></span>' +
+                    '<span class="ws-row-label">' + App.esc(col.label) + '</span>' +
+                  '</label>';
+                }).join('') +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+
+          /* Wstore pastki urg'u chizig'i */
+          '<div class="ws-accent-line"></div>' +
         '</div>' +
 
-        '<div class="ig-fs-sec-title" style="margin-top:18px">Saralash tartibi</div>' +
-        '<div class="seg seg-sm" style="width:100%;margin-bottom:16px" id="ig-fs-sort-seg">' +
-          '<button class="' + (s.sort === 'random' ? 'active' : '') + '" data-act="igSelectFilterSort" data-arg=\'{"s":"random"}\'>🎲 Tasodifiy</button>' +
-          '<button class="' + (s.sort === 'alpha' ? 'active' : '') + '" data-act="igSelectFilterSort" data-arg=\'{"s":"alpha"}\'>🔤 Alifbo (A-Z)</button>' +
-          '<button class="' + (s.sort === 'recent' ? 'active' : '') + '" data-act="igSelectFilterSort" data-arg=\'{"s":"recent"}\'>⏱ Yangilar</button>' +
-        '</div>' +
-
-        '<div class="ig-fs-actions">' +
-          '<button class="btn sec" data-act="igResetFilters" style="flex:1">Tozalash</button>' +
-          '<button class="btn primary" data-act="igApplyFilterSheet" style="flex:2">Filtrni qo\'llash</button>' +
+        /* Wstore Pastki Sticky Tugmalar */
+        '<div class="ws-modal-footer">' +
+          '<button class="ws-clear-btn" data-act="wsClearAllFilters">' +
+            '<span data-icon="refresh" data-icon-size="13"></span> Tozalash' +
+          '</button>' +
+          '<button class="ws-apply-btn" data-act="wsApplyFilters">' +
+            'Ko\'rsatish (' + filteredCount + ')' +
+          '</button>' +
         '</div>' +
       '</div>';
 
-    App.sheet(html, { title: 'Tasmani sozlash va filtrlash' });
-  };
-
-  App.actions.igSelectFilterCategory = function (a, e) {
-    var card = e.target.closest('.ig-fs-card');
-    if (!card) return;
-    document.querySelectorAll('.ig-fs-card').forEach(function (c) {
-      c.classList.remove('selected');
-      var r = c.querySelector('.ig-fs-radio');
-      if (r) r.classList.remove('checked');
+    App.sheet(html, {
+      title: 'Filtr ' + (activeCount > 0 ? '(' + activeCount + ')' : '')
     });
-    card.classList.add('selected');
-    var r = card.querySelector('.ig-fs-radio');
-    if (r) r.classList.add('checked');
-
-    var st = getFilterState();
-    st.category = a.f || 'all';
-    saveFilterState(st);
   };
 
-  App.actions.igSelectFilterSort = function (a, e) {
-    var seg = document.getElementById('ig-fs-sort-seg');
-    if (seg) {
-      seg.querySelectorAll('button').forEach(function (b) { b.classList.remove('active'); });
-      if (e && e.target) e.target.classList.add('active');
-    }
+  /* Filter Modal Actions */
+  App.actions.wsSelectSort = function (a) {
     var st = getFilterState();
-    st.sort = a.s || 'random';
+    st.sort = a.s || 'popular';
     saveFilterState(st);
+    App.actions.wsOpenFilterModal();
   };
 
-  App.actions.igResetFilters = function () {
-    var st = { category: 'all', sort: 'random', batchSize: 6 };
+  App.actions.wsSelectCategory = function (a) {
+    var st = getFilterState();
+    st.category = a.c || 'all';
     saveFilterState(st);
-    App.closeSheet();
+    App.actions.wsOpenFilterModal();
+  };
 
-    var curInfo = FILTER_LABELS.all;
-    var nameEl = document.getElementById('ig-filter-active-name');
-    if (nameEl) nameEl.textContent = curInfo.title;
-    var dot = document.querySelector('.ig-filter-dot');
-    if (dot) dot.style.background = curInfo.color;
-    var chipsHost = document.getElementById('ig-filter-quick-chips');
-    if (chipsHost) {
-      chipsHost.innerHTML = renderQuickChipsHtml('all');
-      App.icons(chipsHost);
-    }
+  App.actions.wsToggleCollection = function (a) {
+    var st = getFilterState();
+    var idx = st.collections.indexOf(a.col);
+    if (idx >= 0) st.collections.splice(idx, 1);
+    else st.collections.push(a.col);
+    saveFilterState(st);
+    App.actions.wsOpenFilterModal();
+  };
+
+  App.actions.wsClearAllFilters = function () {
+    var st = { category: 'all', collections: [], sort: 'popular' };
+    saveFilterState(st);
+    SEARCH_QUERY = '';
+    var inp = document.getElementById('ws-search-input');
+    var clr = document.getElementById('ws-search-clear');
+    if (inp) inp.value = '';
+    if (clr) clr.style.display = 'none';
+
+    updateControlsUI();
     renderFeedItems(6, false);
+    App.closeSheet();
     App.toast('Barcha filtrlar tozalandi 🔄');
   };
 
-  App.actions.igApplyFilterSheet = function () {
-    var st = getFilterState();
+  App.actions.wsApplyFilters = function () {
+    updateControlsUI();
+    renderFeedItems(6, false);
     App.closeSheet();
-
-    var curInfo = FILTER_LABELS[st.category] || FILTER_LABELS.all;
-    var nameEl = document.getElementById('ig-filter-active-name');
-    if (nameEl) nameEl.textContent = curInfo.title;
-
-    var dot = document.querySelector('.ig-filter-dot');
-    if (dot) dot.style.background = curInfo.color;
-
-    var chipsHost = document.getElementById('ig-filter-quick-chips');
-    if (chipsHost) {
-      chipsHost.innerHTML = renderQuickChipsHtml(st.category);
-      App.icons(chipsHost);
-    }
-
-    renderFeedItems(st.batchSize || 6, false);
-    App.toast('Filtr qo\'llandi: ' + curInfo.title + ' 🎯');
+    App.toast('Filtrlar muvaffaqiyatli qo\'llandi ✨');
   };
 
   App.actions.igShuffleFeed = function () {
-    var st = getFilterState();
-    renderFeedItems(st.batchSize || 6, false);
+    renderFeedItems(6, false);
     App.toast('Tasodifiy yangi so\'zlar yuklandi! 🎲');
   };
 
@@ -1044,7 +1145,7 @@
   };
 
   /* =========================================================
-     INSTAGRAM STORY VIEWER ENGINE (FULL SCREEN & MULTI-STEP)
+     INSTAGRAM STORY VIEWER ENGINE
      ========================================================= */
   App.actions.igOpenStory = function (a) {
     var story = STORIES.find(function (s) { return s.id === a.id; });
@@ -1246,7 +1347,6 @@
 
     modal.innerHTML =
       '<div class="ig-story-container" style="background:' + s.color + '">' +
-        /* Top Progress & Header */
         '<div class="ig-story-top">' +
           '<div class="ig-story-progress-bar">' + barsHtml + '</div>' +
           '<div class="ig-story-hdr">' +
@@ -1258,16 +1358,13 @@
           '</div>' +
         '</div>' +
 
-        /* Story Middle Dynamic Content */
         '<div class="ig-story-middle">' +
           renderStoryStepBody(s, step) +
         '</div>' +
 
-        /* Story Navigation Tap Zones (Left/Right) */
         '<div class="ig-story-tap-left" data-act="igPrevStoryStep" title="Oldingi"></div>' +
         '<div class="ig-story-tap-right" data-act="igNextStoryStep" title="Keyingi"></div>' +
 
-        /* Story Footer Action Button */
         '<div class="ig-story-footer">' +
           '<button class="btn primary full ig-story-open-btn" data-act="igGoStoryModule" data-arg=\'' + App.arg(s) + '\'>' +
             'Bo\'limni to\'liq ochish &rarr;' +
