@@ -689,16 +689,6 @@
         '<div class="ig-trans-badge">' +
           '<span class="ig-trans-text">' + App.esc(w.uz) + '</span>' +
         '</div>' +
-
-        (w.note ? '<div class="ig-details-box">' + formatNoteHtml(w.note) + '</div>' : '') +
-
-        (w.ex ? '<div class="ig-example-box">' +
-          '<div class="ig-ex-head">💬 Jonli misol:</div>' +
-          '<div class="ig-ex-body">' + App.esc(w.ex) + '</div>' +
-          '<button class="ig-ex-audio" data-act="igSpeakWord" data-arg=\'' + App.arg({ text: w.ex.split('(')[0], lang: ttsLang }) + '\'>' +
-            '<span data-icon="play" data-icon-size="13"></span> Gapni eshitish' +
-          '</button>' +
-        '</div>' : '') +
       '</div>' +
 
       /* Post Action Bar (Instagram style) */

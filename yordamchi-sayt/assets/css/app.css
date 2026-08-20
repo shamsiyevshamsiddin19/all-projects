@@ -2695,7 +2695,7 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   border-radius: 12px;
   background: linear-gradient(135deg, rgba(37,99,235,0.12), rgba(168,85,247,0.14));
   border: 1px solid rgba(168,85,247,0.25);
-  margin-bottom: 14px;
+  margin-bottom: 0;
 }
 .ig-trans-text {
   font-size: 16px;
