@@ -940,8 +940,8 @@
     var htmlArr = [];
     newWords.forEach(function (w, i) {
       var globalIdx = startIdx + i;
-      // Har 5 ta so'zdan keyin xuddi Instagram Threads postlaridek kurslar karuseli chiqsin
-      if (globalIdx > 0 && globalIdx % 5 === 0) {
+      // Har 13 ta so'zdan keyin (2.5 baravar kamroq) tavsiya etilgan kurslar karuseli chiqsin
+      if (globalIdx > 0 && globalIdx % 13 === 0) {
         htmlArr.push(renderCoursesCarouselCard(globalIdx));
       }
       htmlArr.push(renderReelCard(w, globalIdx));
