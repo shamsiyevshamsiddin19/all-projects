@@ -26,7 +26,6 @@
     return '<div class="topbar" style="margin:-16px -15px 12px">' +
       '<button class="icon-btn ghost" data-act="go" data-arg=\'{"v":"home"}\'>' +
       '<span data-icon="arrowLeft" data-icon-size="20"></span></button>' +
-      '<img data-app-icon src="' + App.appIconSrc() + '" alt="Yordamchi" style="width:26px;height:26px;border-radius:7px;object-fit:cover;flex-shrink:0;margin-right:6px">' +
       '<h1>' + App.esc(title) + '</h1>' + (right || '') + '</div>';
   }
 

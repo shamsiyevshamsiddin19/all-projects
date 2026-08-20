@@ -203,10 +203,7 @@
     render: function (page) {
       T.filter = 'all';
       page.innerHTML =
-        '<div class="topbar" style="margin:-16px -15px 12px">' +
-        '<div style="display:flex;align-items:center;gap:9px;flex:1;min-width:0">' +
-        '<img data-app-icon src="' + App.appIconSrc() + '" alt="Yordamchi" style="width:28px;height:28px;border-radius:8px;object-fit:cover;flex-shrink:0">' +
-        '<h1>Tarix</h1></div>' +
+        '<div class="topbar" style="margin:-16px -15px 12px"><h1>Tarix</h1>' +
         '<button class="icon-btn ghost" style="margin-left:auto" data-act="tarixPickDate" aria-label="Sana bo\'yicha qidirish">' +
         '<span data-icon="calendar" data-icon-size="18"></span></button></div>' +
         '<div class="bo-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 4px" id="tx-chips">' +

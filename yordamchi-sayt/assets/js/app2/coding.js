@@ -252,9 +252,7 @@
   function techHeader(title, back) {
     return '<div class="topbar" style="margin:-16px -15px 12px">' +
       (back ? '<button class="icon-btn ghost" data-act="go" data-arg=\'' + App.arg({ v: back }) + '\'><span data-icon="arrowLeft" data-icon-size="20"></span></button>' : '') +
-      '<div style="display:flex;align-items:center;gap:9px;flex:1;min-width:0">' +
-      '<img data-app-icon src="' + App.appIconSrc() + '" alt="Yordamchi" style="width:28px;height:28px;border-radius:8px;object-fit:cover;flex-shrink:0">' +
-      '<h1>' + App.esc(title) + '</h1></div></div>';
+      '<h1>' + App.esc(title) + '</h1></div>';
   }
 
   /* Haqiqiy texnologiya logosi (languages.js'dagi ~190 talik baza orqali,

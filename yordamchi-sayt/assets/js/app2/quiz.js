@@ -315,11 +315,7 @@
   App.view('fanlar', {
     nav: 'fanlar',
     render: function (page) {
-      page.innerHTML =
-        '<div class="topbar" style="margin:-16px -15px 12px">' +
-        '<div style="display:flex;align-items:center;gap:9px;flex:1;min-width:0">' +
-        '<img data-app-icon src="' + App.appIconSrc() + '" alt="Yordamchi" style="width:28px;height:28px;border-radius:8px;object-fit:cover;flex-shrink:0">' +
-        '<h1>Testlar</h1></div>' +
+      page.innerHTML = '<div class="topbar" style="margin:-16px -15px 12px"><h1>Testlar</h1>' +
         '<button class="icon-btn ghost" data-act="fanAdd" aria-label="Fan qo\'shish"><span data-icon="plus" data-icon-size="20"></span></button></div>' +
         '<div id="fan-list"><div class="load-wrap"><div class="spinner"></div></div></div>';
       App.icons(page);

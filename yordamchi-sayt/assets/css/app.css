@@ -260,8 +260,8 @@ button{ font-family:inherit; cursor:pointer; }
 .botnav a.active .tg-tab-ic{
   transform:scale(1.1);
 }
-.botnav a.active .tg-tab-ic .tg-ic-out{ display:none; }
-.botnav a.active .tg-tab-ic .tg-ic-fill{ display:flex; align-items:center; justify-content:center; }
+.botnav a.active .tg-tab-ic .tg-ic-out{ display:none !important; }
+.botnav a.active .tg-tab-ic .tg-ic-fill{ display:flex !important; align-items:center; justify-content:center; }
 
 .botnav a.active .tg-tab-ic svg{
   filter:drop-shadow(0 2px 10px rgba(220, 39, 67, 0.55));
