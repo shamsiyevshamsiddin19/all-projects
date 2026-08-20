@@ -988,54 +988,118 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
    uchun tutqich doim panel yonida qoladi va yopiq holatda ham ko'rinadi. */
 /* MUHIM: kenglik BITTA qiymat, media-query bilan o'zgarmaydi. Sabab:
    `transform` shu o'zgaruvchiga bog'langan va u animatsiyalanadi — qiymat
-   breakpointda o'zgarsa, panel ochilishida sakrab qoladi (sinovda aynan
-   shunday bo'ldi: baza 236px, desktop 260px -> 24px siljish). */
+   breakpointda o'zgarsa, panel ochil/* ============================================================
+   BOSH SAHIFA: O'NG TOMONDAGI TEZKOR VA SILLIQ TORTMA (DRAWER)
+   ============================================================ */
 .hdw{
   position:fixed; right:0; top:50%; z-index:90;
   display:flex; align-items:center;
   transform:translateY(-50%) translateX(var(--hdw-w));
-  transition:transform .28s cubic-bezier(.3,.9,.3,1);
+  transition:transform .32s cubic-bezier(0.16, 1, 0.3, 1);
   -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
-  --hdw-w:260px;
+  --hdw-w:270px;
 }
 .hdw.open{ transform:translateY(-50%) translateX(0); }
 .hdw.drag{ transition:none; }
 
+/* Dastak (Pull Handle) - Ultra premium glass capsule */
 .hdw-handle{
-  flex-shrink:0; width:28px; height:104px; padding:0;
+  position:relative;
+  flex-shrink:0; width:34px; height:108px; padding:0;
   display:flex; align-items:center; justify-content:center;
-  background:var(--bg-elev, var(--card)); color:var(--hint);
-  border:1px solid var(--border); border-right:none;
-  border-radius:14px 0 0 14px;
-  box-shadow:-4px 0 16px rgba(0,0,0,.2);
+  background:linear-gradient(145deg, rgba(30, 41, 59, 0.94), rgba(15, 23, 42, 0.98));
+  backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+  color:var(--hint);
+  border:1px solid rgba(255, 255, 255, 0.14); border-right:none;
+  border-radius:20px 0 0 20px;
+  box-shadow:-6px 0 28px rgba(0,0,0,.35), inset 1px 1px 0 rgba(255,255,255,0.12);
   cursor:grab; touch-action:none;
+  transition:all .25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow:hidden;
 }
-.hdw-handle:active{ cursor:grabbing; }
-.hdw-handle i{ display:block; width:3.5px; height:36px; border-radius:99px; background:currentColor; opacity:.75; }
-.hdw.open .hdw-handle{ color:var(--accent); }
+.hdw-handle:hover{
+  color:var(--text);
+  box-shadow:-8px 0 32px rgba(99, 102, 241, 0.35), inset 1px 1px 0 rgba(255,255,255,0.2);
+  border-color:rgba(99, 102, 241, 0.4);
+}
+.hdw-handle:active{ cursor:grabbing; transform:scale(0.96); }
 
+/* Ambient gradient glow on handle */
+.hdw-handle-glow{
+  position:absolute; top:0; left:0; right:0; bottom:0;
+  background:radial-gradient(circle at 10% 50%, rgba(99, 102, 241, 0.25), transparent 70%);
+  pointer-events:none; opacity:0.6; transition:opacity .25s;
+}
+.hdw-handle:hover .hdw-handle-glow{ opacity:1; }
+
+.hdw-handle-inner{
+  position:relative; z-index:2;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+}
+.hdw-arrow-ic{
+  display:flex; align-items:center; justify-content:center;
+  color:var(--accent);
+  transition:transform .32s cubic-bezier(0.16, 1, 0.3, 1), color .2s;
+  animation:hdwPulse 2.4s infinite ease-in-out;
+}
+.hdw.open .hdw-arrow-ic{
+  transform:rotate(180deg);
+  color:var(--warn, #f59e0b);
+  animation:none;
+}
+.hdw-pill{
+  display:block; width:3.5px; height:28px; border-radius:99px;
+  background:linear-gradient(180deg, var(--accent), var(--purple, #a855f7));
+  opacity:.85;
+  box-shadow:0 0 10px rgba(99, 102, 241, 0.5);
+  transition:all .25s;
+}
+.hdw.open .hdw-pill{
+  background:var(--warn, #f59e0b);
+  box-shadow:0 0 10px rgba(245, 158, 11, 0.5);
+}
+
+@keyframes hdwPulse{
+  0%, 100%{ transform:translateX(0); }
+  50%{ transform:translateX(-3.5px); }
+}
+
+/* Tortma paneli */
 .hdw-panel{
   width:var(--hdw-w); box-sizing:border-box;
-  background:var(--bg-elev, var(--card)); border:1px solid var(--border); border-right:none;
-  border-radius:16px 0 0 16px; padding:12px 14px 14px;
-  box-shadow:-10px 0 32px rgba(0,0,0,.26);
-  max-height:80vh; overflow-y:auto;
+  background:linear-gradient(175deg, rgba(23, 30, 46, 0.97), rgba(15, 20, 32, 0.99));
+  backdrop-filter:blur(30px); -webkit-backdrop-filter:blur(30px);
+  border:1px solid rgba(255, 255, 255, 0.12); border-right:none;
+  border-radius:20px 0 0 20px; padding:16px 14px;
+  box-shadow:-16px 0 44px rgba(0,0,0,.45);
+  max-height:82vh; overflow-y:auto;
 }
-.hdw-title{ font-size:11px; font-weight:750; letter-spacing:.6px; text-transform:uppercase;
-  color:var(--hint); margin:0 0 10px 2px; }
+.hdw-title{
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:11px; font-weight:800; letter-spacing:.8px; text-transform:uppercase;
+  color:var(--hint); margin:0 0 12px 4px; padding-bottom:6px;
+  border-bottom:1px solid var(--border-soft);
+}
 .hdw-row{
-  display:flex; align-items:center; gap:11px; width:100%; text-align:left;
-  padding:9px 4px; background:none; border:none;
-  border-bottom:1px solid var(--border-soft); color:var(--text);
-  border-radius:8px; transition:background .15s;
+  display:flex; align-items:center; gap:12px; width:100%; text-align:left;
+  padding:10px 8px; background:none; border:none;
+  border-bottom:1px solid rgba(255,255,255,0.05); color:var(--text);
+  border-radius:10px; transition:all .18s ease;
+  cursor:pointer;
 }
 .hdw-row:last-child{ border-bottom:none; }
-.hdw-row:hover{ background:var(--card-hover, rgba(255,255,255,0.04)); }
-.hdw-row:active{ opacity:.6; transform:scale(.98); }
-.hdw-ic{ flex-shrink:0; width:32px; height:32px; border-radius:9px;
-  display:flex; align-items:center; justify-content:center; }
+.hdw-row:hover{
+  background:rgba(255,255,255,0.07);
+  transform:translateX(-3px);
+}
+.hdw-row:active{ opacity:.6; transform:scale(.97); }
+.hdw-ic{
+  flex-shrink:0; width:34px; height:34px; border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 2px 8px rgba(0,0,0,0.18);
+}
 .hdw-m{ min-width:0; flex:1; }
-.hdw-m b{ display:block; font-size:13.5px; font-weight:650; line-height:1.25; overflow-wrap:anywhere; }
+.hdw-m b{ display:block; font-size:13.5px; font-weight:650; line-height:1.25; color:var(--text); overflow-wrap:anywhere; }
 .hdw-m span{ display:block; font-size:11px; color:var(--hint); margin-top:2px; }
 
 /* --- Deadline: vaqt progressi --- */

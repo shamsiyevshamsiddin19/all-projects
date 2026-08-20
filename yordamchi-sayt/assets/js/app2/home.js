@@ -737,9 +737,18 @@
     var el = document.createElement('div');
     el.className = 'hdw';
     el.innerHTML =
-      '<button class="hdw-handle" id="hdw-handle" aria-label="Barcha bo\'limlar"><i></i></button>' +
+      '<button class="hdw-handle" id="hdw-handle" aria-label="Barcha bo\'limlar" title="Barcha bo\'limlar">' +
+        '<span class="hdw-handle-glow"></span>' +
+        '<div class="hdw-handle-inner">' +
+          '<span class="hdw-arrow-ic" data-icon="arrowLeft" data-icon-size="14"></span>' +
+          '<i class="hdw-pill"></i>' +
+        '</div>' +
+      '</button>' +
       '<div class="hdw-panel">' +
-        '<div class="hdw-title">Barcha bo\'limlar</div>' +
+        '<div class="hdw-title">' +
+          '<span>Barcha bo\'limlar</span>' +
+          '<span data-icon="sparkles" data-icon-size="14" style="color:var(--accent)"></span>' +
+        '</div>' +
         DRAWER_SECTIONS.map(function (x) {
           return '<button class="hdw-row" data-act="go" data-arg=\'' + App.arg(x.go) + '\'>' +
             '<span class="hdw-ic" style="background:color-mix(in srgb,' + x.c + ' 16%, transparent);color:' + x.c + '">' +
