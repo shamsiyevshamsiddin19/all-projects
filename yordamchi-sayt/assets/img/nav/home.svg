@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bg-home" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#4338ca"/>
+    </linearGradient>
+    <linearGradient id="roof-home" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e0e7ff"/>
+    </linearGradient>
+    <filter id="glow-home" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect width="64" height="64" rx="18" fill="url(#bg-home)"/>
+  <rect x="1" y="1" width="62" height="30" rx="17" fill="#ffffff" fill-opacity="0.15"/>
+  <!-- House base & roof -->
+  <g filter="url(#glow-home)">
+    <path d="M32 14 L15 28 C14 29 14.5 30 16 30 L20 30 L20 47 C20 48.5 21.5 50 23 50 L41 50 C42.5 50 44 48.5 44 47 L44 30 L48 30 C49.5 30 50 29 49 28 Z" fill="url(#roof-home)"/>
+    <!-- Door -->
+    <path d="M27 50 L27 36 C27 34.5 28.5 33 30 33 L34 33 C35.5 33 37 34.5 37 36 L37 50 Z" fill="#6366f1"/>
+    <circle cx="34.5" cy="42" r="1.5" fill="#fbbf24"/>
+    <!-- Window / Chimney -->
+    <rect x="39" y="17" width="4" height="7" rx="1" fill="#e0e7ff"/>
+  </g>
+</svg>

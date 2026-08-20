@@ -24,12 +24,12 @@
     home: 1, profile: 1, goals: 1, stats: 1, tarix: 1, fanlar: 1, languages: 1, coding: 1,
     sport: 1, boost: 1, kun: 1, arxiv: 1, qoidalar: 1, settings: 1, pomodoro: 1
   };
-  var NAV_IMG_V = '?v=20260819v2';       // rasm almashtirilsa shu raqam oshiriladi
+  var NAV_IMG_V = '?v=20260820v10';       // rasm almashtirilsa shu raqam oshiriladi
 
   function navIcon(v, ic, size) {
     if (NAV_IMG[v]) {
-      return '<img class="nav-img" src="assets/img/nav/' + v + '.png' + NAV_IMG_V +
-        '" alt="" style="width:' + size + 'px;height:' + size + 'px">';
+      return '<img class="nav-img" src="assets/img/nav/' + v + '.svg' + NAV_IMG_V +
+        '" alt="" width="' + size + '" height="' + size + '" style="width:' + size + 'px;height:' + size + 'px">';
     }
     return '<span data-icon="' + ic + '" data-icon-size="' + size + '"></span>';
   }

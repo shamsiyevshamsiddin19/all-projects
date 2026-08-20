@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bg-profile" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+    <filter id="glow-profile"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity="0.25"/></filter>
+  </defs>
+  <rect width="64" height="64" rx="18" fill="url(#bg-profile)"/>
+  <rect x="1" y="1" width="62" height="30" rx="17" fill="#ffffff" fill-opacity="0.15"/>
+  <g filter="url(#glow-profile)">
+    <circle cx="32" cy="25" r="9" fill="#ffffff"/>
+    <path d="M17 48 C17 39 23 37 32 37 C41 37 47 39 47 48 Z" fill="#ffffff"/>
+    <circle cx="42" cy="20" r="4" fill="#fbbf24"/>
+  </g>
+</svg>

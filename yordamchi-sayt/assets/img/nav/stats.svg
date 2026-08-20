@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bg-stats" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <filter id="glow-stats"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity="0.25"/></filter>
+  </defs>
+  <rect width="64" height="64" rx="18" fill="url(#bg-stats)"/>
+  <rect x="1" y="1" width="62" height="30" rx="17" fill="#ffffff" fill-opacity="0.15"/>
+  <g filter="url(#glow-stats)">
+    <rect x="17" y="34" width="7" height="16" rx="2.5" fill="#93c5fd"/>
+    <rect x="28" y="24" width="7" height="26" rx="2.5" fill="#60a5fa"/>
+    <rect x="39" y="16" width="7" height="34" rx="2.5" fill="#ffffff"/>
+    <path d="M17 31 L29 20 L40 13 L47 13 L47 20" fill="none" stroke="#fbbf24" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

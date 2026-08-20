@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bg-boost" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ec4899"/>
+      <stop offset="100%" stop-color="#be185d"/>
+    </linearGradient>
+    <filter id="glow-boost"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity="0.25"/></filter>
+  </defs>
+  <rect width="64" height="64" rx="18" fill="url(#bg-boost)"/>
+  <rect x="1" y="1" width="62" height="30" rx="17" fill="#ffffff" fill-opacity="0.15"/>
+  <g filter="url(#glow-boost)">
+    <polygon points="35,14 20,34 32,34 28,50 44,28 32,28" fill="#ffffff"/>
+    <polygon points="34,18 24,32 33,32 29,44 40,28 32,28" fill="#fbbf24"/>
+  </g>
+</svg>
