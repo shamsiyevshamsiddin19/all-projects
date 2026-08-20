@@ -715,6 +715,11 @@
             '</div>' +
             '<div class="vr-md-sub">' + App.esc(w.uz) + '</div>' +
             '<div class="vr-md-divider" style="background:' + theme.color + '"></div>' +
+            (w.note ?
+              '<div class="vr-md-inf-badge">' +
+                '<span class="vr-inf-tag">Infinitiv:</span> ' +
+                '<span class="vr-inf-val">' + App.esc(w.note.replace(/^Infinitiv:\s*/i, '')) + '</span>' +
+              '</div>' : '') +
           '</div>' +
         '</div>' +
       '</div>' +
