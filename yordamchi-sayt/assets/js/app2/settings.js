@@ -29,7 +29,10 @@
       var icon = App.appIconSrc();
 
       page.innerHTML =
-        '<div class="topbar" style="margin:-16px -15px 6px"><button class="icon-btn ghost" data-act="go" data-arg=\'{"v":"home"}\'><span data-icon="arrowLeft" data-icon-size="20"></span></button><h1>Sozlamalar</h1></div>' +
+        '<div class="topbar" style="margin:-16px -15px 6px">' +
+        '<div style="display:flex;align-items:center;gap:9px;flex:1;min-width:0">' +
+        '<img data-app-icon src="' + App.appIconSrc() + '" alt="Yordamchi" style="width:28px;height:28px;border-radius:8px;object-fit:cover;flex-shrink:0">' +
+        '<h1>Sozlamalar</h1></div></div>' +
 
         '<button class="list-row" data-act="editProfile" style="padding:10px 1px">' +
         '<img src="' + avatar + '" style="width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0">' +

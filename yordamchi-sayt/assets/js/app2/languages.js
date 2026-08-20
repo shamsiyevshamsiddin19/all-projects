@@ -270,7 +270,10 @@
       } catch(e){}
 
       page.innerHTML =
-        '<div class="topbar" style="margin:-16px -15px 12px"><h1>Learn</h1>' +
+        '<div class="topbar" style="margin:-16px -15px 12px">' +
+        '<div style="display:flex;align-items:center;gap:9px;flex:1;min-width:0">' +
+        '<img data-app-icon src="' + App.appIconSrc() + '" alt="Yordamchi" style="width:28px;height:28px;border-radius:8px;object-fit:cover;flex-shrink:0">' +
+        '<h1>Learn</h1></div>' +
         '<button class="icon-btn ghost" data-act="langAdd" style="margin-left:auto"><span data-icon="plus" data-icon-size="20"></span></button></div>' +
         '<div class="chat-list">' +
         langCard('english', 'assets/icons/tech/flag-gb.png', 'Ingliz tili', 'Listening, Reading, Grammar, Vocabulary') +

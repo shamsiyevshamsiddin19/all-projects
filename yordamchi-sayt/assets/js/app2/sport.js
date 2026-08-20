@@ -92,9 +92,11 @@
   App.view('sport', {
     nav: 'sport',
     render: function (page) {
-      // Mashg'ulot tarixi endi umumiy "Tarix" bo'limida (activity_log) va
-      // Statistikada ko'rinadi — bu yerda alohida havola shart emas.
-      page.innerHTML = '<div class="topbar" style="margin:-16px -15px 12px"><h1>Sport</h1></div>' +
+      page.innerHTML =
+        '<div class="topbar" style="margin:-16px -15px 12px">' +
+        '<div style="display:flex;align-items:center;gap:9px;flex:1;min-width:0">' +
+        '<img data-app-icon src="' + App.appIconSrc() + '" alt="Yordamchi" style="width:28px;height:28px;border-radius:8px;object-fit:cover;flex-shrink:0">' +
+        '<h1>Sport</h1></div></div>' +
         '<div id="sport-mine-entry"></div>' +
         '<div id="sport-cats"><div class="load-wrap"><div class="spinner"></div></div></div>';
       App.icons(page);

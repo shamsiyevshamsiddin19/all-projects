@@ -551,8 +551,9 @@
 
       page.innerHTML =
         '<div class="topbar" style="margin:-16px -15px 12px">' +
-        '<button class="icon-btn ghost" data-act="go" data-arg=\'{"v":"home"}\'><span data-icon="arrowLeft" data-icon-size="20"></span></button>' +
-        '<h1 style="display:flex;align-items:center;gap:6px">Kun hisobi <label style="cursor:pointer;color:var(--accent);display:flex"><span data-icon="calendar" data-icon-size="18"></span><input type="date" style="position:absolute;opacity:0;width:1px;height:1px;overflow:hidden;padding:0;border:0" onchange="App.go(\'kun\', {date: this.value})"></label></h1>' +
+        '<div style="display:flex;align-items:center;gap:8px">' +
+        '<img data-app-icon src="' + App.appIconSrc() + '" alt="Yordamchi" style="width:28px;height:28px;border-radius:8px;object-fit:cover;flex-shrink:0">' +
+        '<h1 style="display:flex;align-items:center;gap:6px">Kun hisobi <label style="cursor:pointer;color:var(--accent);display:flex"><span data-icon="calendar" data-icon-size="18"></span><input type="date" style="position:absolute;opacity:0;width:1px;height:1px;overflow:hidden;padding:0;border:0" onchange="App.go(\'kun\', {date: this.value})"></label></h1></div>' +
         '<div style="flex:1"></div>' +
         '<button class="icon-btn ghost" data-act="kunImport" aria-label="Fayldan yuklash" title="Fayldan yuklash"><span data-icon="upload" data-icon-size="19"></span></button>' +
         '<button class="icon-btn ghost" data-act="kunAdd" aria-label="Qo\'shish"><span data-icon="plus" data-icon-size="20"></span></button></div>' +

@@ -49,6 +49,7 @@
         pageEl.innerHTML = '<div class="empty"><b>Xatolik</b><span>' + App.esc(e.message) + '</span></div>';
       }
       App.icons(pageEl);
+      App.applyAppIcon();
     },
 
     _serializeParams: function (params) {
