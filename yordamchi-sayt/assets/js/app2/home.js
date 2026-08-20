@@ -624,6 +624,46 @@
     }
   }
 
+  /* Card Theme & Unique Gradient Resolver */
+  function getCardTheme(w) {
+    var cat = w.cat || '';
+    var isRu = (w.lang === 'russian');
+    if (cat.indexOf('229') >= 0 || cat.indexOf('Глаголы') >= 0) {
+      return {
+        badge: '229',
+        title: 'Rus tili · Hozirgi zamon (229)',
+        color: 'linear-gradient(135deg, #f59e0b, #ef4444)',
+        glow: 'linear-gradient(90deg, #f59e0b, #ef4444, #ec4899)',
+        accent: '#ef4444'
+      };
+    }
+    if (isRu && (cat.indexOf('1000') >= 0 || cat.indexOf('1-1000') >= 0)) {
+      return {
+        badge: '1K',
+        title: 'Rus tili · 1000 ta asosiy so\'z',
+        color: 'linear-gradient(135deg, #0284c7, #06b6d4)',
+        glow: 'linear-gradient(90deg, #0284c7, #06b6d4, #3b82f6)',
+        accent: '#0284c7'
+      };
+    }
+    if (isRu) {
+      return {
+        badge: 'RU',
+        title: 'Rus tili lug\'ati',
+        color: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+        glow: 'linear-gradient(90deg, #6366f1, #8b5cf6, #a855f7)',
+        accent: '#6366f1'
+      };
+    }
+    return {
+      badge: 'EN',
+      title: 'Ingliz tili · 8000 ta so\'z',
+      color: 'linear-gradient(135deg, #059669, #10b981)',
+      glow: 'linear-gradient(90deg, #059669, #10b981, #06b6d4)',
+      accent: '#059669'
+    };
+  }
+
   /* Format note fields into structured HTML */
   function formatNoteHtml(note) {
     if (!note) return '';
@@ -633,19 +673,58 @@
       l = l.trim();
       if (!l) return;
       if (l.indexOf('Qayerda:') === 0) {
-        html.push('<div class="ig-card-field field-where"><b>💡 Qo\'llanishi:</b> ' + App.esc(l.replace('Qayerda:', '').trim()) + '</div>');
+        html.push('<div class="vr-md-item"><span class="vr-md-badge">💡 Qo\'llanishi</span><span class="vr-md-text">' + App.esc(l.replace('Qayerda:', '').trim()) + '</span></div>');
       } else if (l.indexOf('Shakl:') === 0) {
-        html.push('<div class="ig-card-field field-form"><b>🔄 Shakllari:</b> ' + App.esc(l.replace('Shakl:', '').trim()) + '</div>');
+        html.push('<div class="vr-md-item"><span class="vr-md-badge">🔄 Shakllari</span><span class="vr-md-text">' + App.esc(l.replace('Shakl:', '').trim()) + '</span></div>');
       } else if (l.indexOf('Vid:') === 0) {
-        html.push('<div class="ig-card-field field-vid"><b>⚖️ Vid jufti:</b> ' + App.esc(l.replace('Vid:', '').trim()) + '</div>');
+        html.push('<div class="vr-md-item"><span class="vr-md-badge">⚖️ Vid jufti</span><span class="vr-md-text">' + App.esc(l.replace('Vid:', '').trim()) + '</span></div>');
       } else if (l.indexOf('Ma\'nodosh:') === 0) {
-        html.push('<div class="ig-card-field field-syn"><b>🌿 Ma\'nodoshlari:</b> ' + App.esc(l.replace('Ma\'nodosh:', '').trim()) + '</div>');
+        html.push('<div class="vr-md-item"><span class="vr-md-badge">🌿 Ma\'nodoshlari</span><span class="vr-md-text">' + App.esc(l.replace('Ma\'nodosh:', '').trim()) + '</span></div>');
       } else {
-        html.push('<div class="ig-card-field">' + App.esc(l) + '</div>');
+        html.push('<div class="vr-md-item"><span class="vr-md-text">' + App.esc(l) + '</span></div>');
       }
     });
     return html.join('');
   }
+
+  /* Format example quote into clean HTML */
+  function formatExampleHtml(ex, ttsLang) {
+    if (!ex) return '';
+    var m = ex.match(/^(.*?)\s*\((.*?)\)$/);
+    if (m) {
+      var ruSent = m[1].trim();
+      var uzSent = m[2].trim();
+      return '<div class="vr-md-quote">' +
+        '<div class="vr-quote-ru">«' + App.esc(ruSent.replace(/^[«"'\s]+|[»"'\s]+$/g, '')) + '»</div>' +
+        '<div class="vr-quote-uz">' + App.esc(uzSent) + '</div>' +
+        '<button class="vr-quote-audio-btn" data-act="igSpeakWord" data-arg=\'' + App.arg({ text: ruSent, lang: ttsLang }) + '\'>' +
+          '<span data-icon="volume" data-icon-size="13"></span> Misolni eshitish' +
+        '</button>' +
+      '</div>';
+    }
+    return '<div class="vr-md-quote">' +
+      '<div class="vr-quote-ru">«' + App.esc(ex.replace(/^[«"'\s]+|[»"'\s]+$/g, '')) + '»</div>' +
+      '<button class="vr-quote-audio-btn" data-act="igSpeakWord" data-arg=\'' + App.arg({ text: ex, lang: ttsLang }) + '\'>' +
+        '<span data-icon="volume" data-icon-size="13"></span> Misolni eshitish' +
+      '</button>' +
+    '</div>';
+  }
+
+  /* Toggle Card Details Accordion */
+  App.actions.igToggleCardDetails = function (a) {
+    var details = document.getElementById('det_' + a.id);
+    var btn = document.getElementById('det_btn_' + a.id);
+    if (!details || !btn) return;
+    var isOpen = details.classList.contains('open');
+    if (isOpen) {
+      details.classList.remove('open');
+      btn.innerHTML = '<span data-icon="arrowDown" data-icon-size="13"></span> <span>Batafsil tahlil</span>';
+    } else {
+      details.classList.add('open');
+      btn.innerHTML = '<span data-icon="arrowUp" data-icon-size="13"></span> <span>Yopish</span>';
+    }
+    App.icons(btn);
+  };
 
   /* Render a single Reel card */
   function renderReelCard(w, idx) {
@@ -659,55 +738,64 @@
     var mastered = getMasteredWords();
     var isMastered = mastered.indexOf(w.ru) >= 0;
 
-    var catTitle = w.cat || (isRu ? 'Rus tili' : 'Ingliz tili');
-    if (catTitle.indexOf('Глаголы') >= 0 || catTitle.indexOf('229') >= 0) catTitle = 'Rus tili · Hozirgi zamon (229)';
-    else if (catTitle.indexOf('1-8000') >= 0) catTitle = isRu ? 'Rus tili lug\'ati' : 'Ingliz tili lug\'ati';
+    var theme = getCardTheme(w);
+    var hasDetails = !!(w.note || w.ex);
 
-    return '<div class="ig-post-card ' + (isRu ? 'theme-ru' : 'theme-en') + '" id="' + cardId + '">' +
+    return '<div class="ig-post-card" id="' + cardId + '">' +
       /* Card Ambient Top Glow */
-      '<div class="ig-card-ambient"></div>' +
+      '<div class="ig-card-ambient" style="background:' + theme.glow + '"></div>' +
 
       /* Post Header */
       '<div class="ig-post-header">' +
         '<div class="ig-post-author">' +
-          '<div class="ig-post-avatar" style="background:' + (isRu ? 'linear-gradient(135deg,#0088cc,#00c6ff)' : 'linear-gradient(135deg,#059669,#10b981)') + '">' +
-            '<span>' + (isRu ? '🇷🇺' : '🇬🇧') + '</span>' +
+          '<div class="ig-post-avatar" style="background:' + theme.color + '">' +
+            '<span>' + App.esc(theme.badge) + '</span>' +
           '</div>' +
           '<div class="ig-post-meta">' +
             '<div class="ig-post-name">' +
-              '<span>' + App.esc(catTitle) + '</span>' +
+              '<span>' + App.esc(theme.title) + '</span>' +
               '<span class="ig-verified" title="Tasdiqlangan">✓</span>' +
             '</div>' +
-            '<div class="ig-post-sub">Reels Lug\'at</div>' +
+            '<div class="ig-post-sub">Lug\'at Reels · O\'rganish</div>' +
           '</div>' +
         '</div>' +
         '<div class="ig-post-header-actions">' +
           '<button class="ig-post-more ' + (isMastered ? 'mastered' : '') + '" data-act="igToggleMastered" data-arg=\'' + App.arg({ word: w.ru, id: cardId }) + '\' title="' + (isMastered ? 'O\'rganilgan' : 'O\'rganildi deb belgilash') + '">' +
-            '<span data-icon="' + (isMastered ? 'check' : 'circle') + '" data-icon-size="16"></span>' +
+            '<span data-icon="' + (isMastered ? 'check' : 'circle') + '" data-icon-size="15"></span>' +
             '<span class="ig-master-text">' + (isMastered ? 'O\'rgandim' : 'O\'rganish') + '</span>' +
           '</button>' +
         '</div>' +
       '</div>' +
 
-      /* Post Main Reel Body (Double tap to like) */
+      /* Post Main Reel Body (Double tap to like & speak) */
       '<div class="ig-post-body" data-dbl-word="' + App.esc(w.ru) + '" data-card-id="' + cardId + '">' +
         '<div class="ig-heart-pop" id="pop_' + cardId + '"><span data-icon="heartFill" data-icon-size="76"></span></div>' +
         
-        '<div class="ig-word-stage">' +
-          '<div class="ig-word-main">' + App.esc(w.ru) + '</div>' +
-          '<button class="ig-sound-wave-btn" id="snd_' + cardId + '" data-act="igSpeakWord" data-arg=\'' + App.arg({ text: w.ru, lang: ttsLang, id: cardId }) + '\' title="Ovoz chiqarish">' +
-            '<span class="ig-sound-wave">' +
-              '<i class="bar"></i><i class="bar"></i><i class="bar"></i><i class="bar"></i>' +
-            '</span>' +
-            '<span data-icon="volume" data-icon-size="16"></span>' +
-          '</button>' +
-        '</div>' +
-
-        '<div class="ig-trans-wrap">' +
-          '<div class="ig-trans-badge">' +
-            '<span class="ig-trans-spark" data-icon="sparkles" data-icon-size="13"></span>' +
-            '<span class="ig-trans-text">' + App.esc(w.uz) + '</span>' +
+        '<div class="vr-screen-flow">' +
+          '<div class="vr-md-header">' +
+            '<div class="vr-title-row">' +
+              '<h1 class="vr-md-title">' + App.esc(w.ru) + '</h1>' +
+              '<button class="ig-sound-wave-btn" id="snd_' + cardId + '" data-act="igSpeakWord" data-arg=\'' + App.arg({ text: w.ru, lang: ttsLang, id: cardId }) + '\' title="Talaffuz">' +
+                '<span class="ig-sound-wave">' +
+                  '<i class="bar"></i><i class="bar"></i><i class="bar"></i><i class="bar"></i>' +
+                '</span>' +
+                '<span data-icon="volume" data-icon-size="16"></span>' +
+              '</button>' +
+            '</div>' +
+            '<div class="vr-md-sub">' + App.esc(w.uz) + '</div>' +
+            '<div class="vr-md-divider" style="background:' + theme.color + '"></div>' +
           '</div>' +
+
+          (hasDetails ?
+            '<div class="vr-details-accordion">' +
+              '<button class="vr-details-btn" id="det_btn_' + cardId + '" data-act="igToggleCardDetails" data-arg=\'' + App.arg({ id: cardId }) + '\'>' +
+                '<span data-icon="arrowDown" data-icon-size="13"></span> <span>Batafsil tahlil</span>' +
+              '</button>' +
+              '<div class="vr-details-content" id="det_' + cardId + '">' +
+                (w.note ? '<div class="vr-md-content">' + formatNoteHtml(w.note) + '</div>' : '') +
+                (w.ex ? formatExampleHtml(w.ex, ttsLang) : '') +
+              '</div>' +
+            '</div>' : '') +
         '</div>' +
       '</div>' +
 
@@ -721,7 +809,7 @@
             '<span data-icon="check" data-icon-size="20"></span>' +
             '<span class="ig-act-badge-text">Test</span>' +
           '</button>' +
-          '<button class="ig-act-btn" data-act="igCopyWord" data-arg=\'' + App.arg({ ru: w.ru, uz: w.uz }) + '\' title="Nusxa olish">' +
+          '<button class="ig-act-btn" data-act="igCopyWord" data-arg=\'' + App.arg({ ru: w.ru, uz: w.uz, ex: w.ex }) + '\' title="Nusxa olish">' +
             '<span data-icon="share" data-icon-size="22"></span>' +
           '</button>' +
           '<button class="ig-act-btn" data-act="igSpeakWord" data-arg=\'' + App.arg({ text: w.ru, lang: ttsLang, id: cardId }) + '\' title="Talaffuz">' +

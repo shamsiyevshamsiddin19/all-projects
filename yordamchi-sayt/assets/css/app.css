@@ -2588,21 +2588,13 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   transform: translateY(-3px);
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.1);
 }
-.ig-post-card.theme-ru .ig-card-ambient {
+.ig-card-ambient {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, #3b82f6, #06b6d4, #6366f1);
-}
-.ig-post-card.theme-en .ig-card-ambient {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #10b981, #06b6d4, #3b82f6);
+  background: linear-gradient(90deg, var(--accent), #a855f7);
 }
 
 .ig-post-header {
@@ -2623,9 +2615,15 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
   box-shadow: 0 3px 10px rgba(0,0,0,0.15);
   flex-shrink: 0;
+}
+.ig-post-avatar span {
+  font-size: 12.5px;
+  font-weight: 900;
+  letter-spacing: -0.3px;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 .ig-post-name {
   font-size: 13.5px;
@@ -2680,26 +2678,157 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 /* Reel / Word Stage Body */
 .ig-post-body {
   position: relative;
-  padding: 22px 20px 20px;
+  padding: 20px 20px 18px;
   background: color-mix(in srgb, var(--card) 94%, var(--accent) 6%);
   border-top: 1px solid var(--border-soft);
   border-bottom: 1px solid var(--border-soft);
   cursor: pointer;
   user-select: none;
 }
-.ig-word-stage {
+
+.vr-screen-flow {
+  display: flex;
+  flex-direction: column;
+}
+.vr-md-header {
+  margin-bottom: 6px;
+}
+.vr-title-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 6px;
 }
-.ig-word-main {
-  font-size: 30px;
+.vr-md-title {
+  font-size: clamp(26px, 6.5vw, 36px);
   font-weight: 900;
-  letter-spacing: -0.6px;
   color: var(--text);
-  line-height: 1.2;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  margin: 0;
+  word-break: break-word;
+}
+.vr-md-sub {
+  font-size: clamp(16px, 4.2vw, 20px);
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1.35;
+  word-break: break-word;
+  margin: 0 0 12px;
+}
+.vr-md-divider {
+  width: 44px;
+  height: 3.5px;
+  border-radius: 99px;
+  margin-bottom: 6px;
+}
+
+/* Details Accordion */
+.vr-details-accordion {
+  margin-top: 6px;
+}
+.vr-details-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--card) 85%, var(--border-soft));
+  border: 1px solid var(--border-strong, var(--border));
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+}
+.vr-details-btn:hover {
+  background: var(--card-hover, var(--border-soft));
+  color: var(--text);
+}
+.vr-details-content {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+  animation: vrFadeIn .2s ease;
+}
+.vr-details-content.open {
+  display: flex;
+}
+@keyframes vrFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.vr-md-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.vr-md-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: color-mix(in srgb, var(--card) 80%, var(--bg));
+  padding: 8px 12px;
+  border-radius: 12px;
+  border-left: 3px solid var(--accent);
+}
+.vr-md-badge {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+}
+.vr-md-text {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.45;
+}
+
+.vr-md-quote {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, var(--card)), color-mix(in srgb, #ec4899 8%, var(--card)));
+  border-left: 3.5px solid var(--accent);
+  padding: 10px 14px;
+  border-radius: 12px;
+  margin-top: 4px;
+}
+.vr-quote-ru {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.4;
+}
+.vr-quote-uz {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.vr-quote-audio-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--card);
+  border: 1px solid var(--border-soft);
+  color: var(--accent);
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+}
+.vr-quote-audio-btn:hover {
+  background: var(--accent);
+  color: #fff;
 }
 
 /* Sound Wave Play Button & Equalizer */
@@ -2715,6 +2844,7 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   cursor: pointer;
   transition: all .2s;
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  flex-shrink: 0;
 }
 .ig-sound-wave-btn:hover {
   background: var(--accent);
@@ -2742,30 +2872,6 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 @keyframes soundWave {
   0% { height: 3px; }
   100% { height: 12px; }
-}
-
-/* Translation Badge */
-.ig-trans-wrap {
-  display: flex;
-  align-items: center;
-}
-.ig-trans-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 8px 18px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 14%, var(--card)), color-mix(in srgb, #a855f7 16%, var(--card)));
-  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
-  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-}
-.ig-trans-spark {
-  color: var(--accent);
-}
-.ig-trans-text {
-  font-size: 17px;
-  font-weight: 800;
-  color: var(--accent);
 }
 
 /* Action Bar */
