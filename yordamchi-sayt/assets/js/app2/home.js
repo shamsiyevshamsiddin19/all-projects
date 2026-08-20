@@ -1,6 +1,6 @@
 /* ============================================================
    Yordamchi — Bosh sahifa (Instagram Stories & Reels Feed)
-   To'liq interaktiv, real ma'lumotlar bilan ishlovchi tizim
+   Filtrlash paneli va sozlash oynasi bilan
    ============================================================ */
 (function () {
   'use strict';
@@ -265,14 +265,46 @@
     }
   ];
 
+  /* Filtr ta'riflari va metama'lumotlari */
+  var FILTER_LABELS = {
+    all: { title: 'Barcha so\'zlar', desc: 'Rus va Ingliz tili lug\'atlari aralash', icon: 'globe', color: '#6366f1' },
+    ru_229: { title: 'Hozirgi zamon (229)', desc: '229 ta ruscha fe\'l tuslanishi va tahlili', icon: 'zap', color: '#f59e0b' },
+    ru_1000: { title: 'Rus tili 1000', desc: 'Asosiy 1000 ta ruscha lug\'at so\'zlari', icon: 'book', color: '#3b82f6' },
+    en_8000: { title: 'Ingliz tili (8000)', desc: 'Oxford va Cambridge 8000 so\'zlar bazasi', icon: 'globe', color: '#10b981' },
+    ru_8000: { title: 'Rus tili (8000)', desc: 'Katta 8000 ta ruscha lug\'at bazasi', icon: 'book', color: '#8b5cf6' },
+    liked: { title: 'Sevimli so\'zlarim', desc: 'Yurakcha bosilgan so\'zlar to\'plami', icon: 'heartFill', color: '#ef4444' },
+    saved: { title: 'Saqlangan xatcho\'plar', desc: 'Xatcho\'pga saqlab qo\'yilgan so\'zlar', icon: 'bookmarkFill', color: '#0ea5e9' },
+    mastered: { title: 'O\'rganilgan so\'zlar', desc: 'O\'rgandim deb belgilangan so\'zlar', icon: 'check', color: '#10b981' }
+  };
+
   var FEED_WORDS = [];
   var LOADED_WORDS_POOL = [];
-  var CURRENT_FILTER = 'all';
   var STORY_VIEWER_STATE = null;
+
+  /* Filter holatini localStorage dan o'qish / saqlash */
+  function getFilterState() {
+    try {
+      var s = JSON.parse(localStorage.getItem('home_filter_state_v2') || '{}');
+      return {
+        category: s.category || 'all',
+        sort: s.sort || 'random',
+        batchSize: s.batchSize || 6
+      };
+    } catch (e) {
+      return { category: 'all', sort: 'random', batchSize: 6 };
+    }
+  }
+
+  function saveFilterState(st) {
+    try { localStorage.setItem('home_filter_state_v2', JSON.stringify(st)); } catch (e) {}
+  }
 
   App.view('home', {
     nav: 'home',
     render: function (page) {
+      var st = getFilterState();
+      var curInfo = FILTER_LABELS[st.category] || FILTER_LABELS.all;
+
       page.innerHTML =
         '<div class="ig-home-wrap">' +
           /* Instagram Top Bar */
@@ -304,15 +336,23 @@
             renderStatsBarHtml() +
           '</div>' +
 
-          /* Filter Chips */
-          '<div class="ig-filter-bar">' +
-            '<button class="ig-chip active" data-act="igSetFilter" data-arg=\'{"f":"all"}\'>Barchasi</button>' +
-            '<button class="ig-chip" data-act="igSetFilter" data-arg=\'{"f":"ru_229"}\'>Hozirgi zamon (229)</button>' +
-            '<button class="ig-chip" data-act="igSetFilter" data-arg=\'{"f":"ru_1000"}\'>Rus tili (1000)</button>' +
-            '<button class="ig-chip" data-act="igSetFilter" data-arg=\'{"f":"en_8000"}\'>Ingliz tili</button>' +
-            '<button class="ig-chip" data-act="igSetFilter" data-arg=\'{"f":"liked"}\'>❤️ Sevimlilar</button>' +
-            '<button class="ig-chip" data-act="igSetFilter" data-arg=\'{"f":"saved"}\'>🔖 Xatcho\'plar</button>' +
-            '<button class="ig-chip" data-act="igSetFilter" data-arg=\'{"f":"mastered"}\'>✅ O\'rganilganlar</button>' +
+          /* Asosiy Filtr Paneli (Button + Quick Chips) */
+          '<div class="ig-filter-control-card">' +
+            '<div class="ig-filter-header-wrap">' +
+              '<div class="ig-filter-head-left">' +
+                '<span class="ig-filter-dot" style="background:' + curInfo.color + '"></span>' +
+                '<span class="ig-filter-current-label">Filtr: <b id="ig-filter-active-name">' + App.esc(curInfo.title) + '</b></span>' +
+              '</div>' +
+              '<button class="ig-filter-panel-btn" data-act="igOpenFilterSheet">' +
+                '<span data-icon="sliders" data-icon-size="16"></span>' +
+                '<span>Filtrlar</span>' +
+                '<span class="ig-filter-badge-pill">' + (st.sort === 'alpha' ? 'A-Z' : (st.sort === 'recent' ? 'Yangi' : 'Mix')) + '</span>' +
+              '</button>' +
+            '</div>' +
+
+            '<div class="ig-filter-quick-chips" id="ig-filter-quick-chips">' +
+              renderQuickChipsHtml(st.category) +
+            '</div>' +
           '</div>' +
 
           /* Instagram Reels Feed */
@@ -340,6 +380,28 @@
       unmountDrawer();
     }
   });
+
+  /* Quick chips renderer */
+  function renderQuickChipsHtml(activeCat) {
+    var quickList = [
+      { id: 'all', label: 'Barchasi' },
+      { id: 'ru_229', label: '229 Fe\'l' },
+      { id: 'ru_1000', label: 'Rus 1K' },
+      { id: 'en_8000', label: 'Ingliz 8K' },
+      { id: 'liked', label: '❤️ Sevimlilar' },
+      { id: 'saved', label: '🔖 Xatcho\'plar' }
+    ];
+
+    return quickList.map(function (q) {
+      var isAct = (q.id === activeCat);
+      return '<button class="ig-qchip ' + (isAct ? 'active' : '') + '" data-act="igQuickFilter" data-arg=\'' + App.arg({ f: q.id }) + '\'>' +
+        App.esc(q.label) +
+      '</button>';
+    }).join('') +
+    '<button class="ig-qchip ig-qchip-more" data-act="igOpenFilterSheet">' +
+      '<span data-icon="sliders" data-icon-size="13"></span> Ko\'proq...' +
+    '</button>';
+  }
 
   /* Mini Stats Bar HTML */
   function renderStatsBarHtml() {
@@ -378,7 +440,6 @@
     FEED_WORDS = [];
     LOADED_WORDS_POOL = [];
 
-    // Try loading Russian dictionary items
     App.call('get_dict_data', null, { query: 'lang=russian' })
       .then(function (res) {
         var items = (res && res.items) ? res.items : [];
@@ -394,7 +455,6 @@
             });
           });
         }
-        // Also fetch English
         return App.call('get_dict_data', null, { query: 'lang=english' }).catch(function () { return null; });
       })
       .then(function (enRes) {
@@ -411,16 +471,20 @@
             });
           });
         }
-        renderFeedItems(6);
+        var st = getFilterState();
+        renderFeedItems(st.batchSize || 6);
       })
       .catch(function () {
         LOADED_WORDS_POOL = FALLBACK_WORDS.slice();
-        renderFeedItems(6);
+        var st = getFilterState();
+        renderFeedItems(st.batchSize || 6);
       });
   }
 
   /* Pick random words from loaded pool based on current filter */
-  function getRandomWords(count, filter) {
+  function getRandomWords(count, filterState) {
+    filterState = filterState || getFilterState();
+    var filter = filterState.category || 'all';
     var pool = LOADED_WORDS_POOL.length > 0 ? LOADED_WORDS_POOL : FALLBACK_WORDS;
     var liked = getLikedWords();
     var saved = getBookmarkedWords();
@@ -430,6 +494,8 @@
       pool = pool.filter(function (w) { return w.cat && (w.cat.indexOf('Глаголы') >= 0 || w.cat.indexOf('229') >= 0); });
     } else if (filter === 'ru_1000') {
       pool = pool.filter(function (w) { return w.lang === 'russian' && (!w.cat || (w.cat.indexOf('Глаголы') < 0 && w.cat.indexOf('229') < 0)); });
+    } else if (filter === 'ru_8000') {
+      pool = pool.filter(function (w) { return w.lang === 'russian'; });
     } else if (filter === 'en_8000') {
       pool = pool.filter(function (w) { return w.lang === 'english'; });
     } else if (filter === 'liked') {
@@ -447,13 +513,21 @@
       pool = FALLBACK_WORDS;
     }
 
-    var selected = [];
-    var poolCopy = pool.slice();
-    for (var i = 0; i < count && poolCopy.length > 0; i++) {
-      var rIdx = Math.floor(Math.random() * poolCopy.length);
-      selected.push(poolCopy.splice(rIdx, 1)[0]);
+    var result = pool.slice();
+    if (filterState.sort === 'alpha') {
+      result.sort(function (a, b) { return (a.ru || '').localeCompare(b.ru || ''); });
+      return result.slice(0, count);
+    } else if (filterState.sort === 'recent') {
+      return result.slice(0, count);
+    } else {
+      var selected = [];
+      var poolCopy = pool.slice();
+      for (var i = 0; i < count && poolCopy.length > 0; i++) {
+        var rIdx = Math.floor(Math.random() * poolCopy.length);
+        selected.push(poolCopy.splice(rIdx, 1)[0]);
+      }
+      return selected;
     }
-    return selected;
   }
 
   /* Format note fields into structured HTML */
@@ -570,7 +644,8 @@
     var host = document.getElementById('ig-feed-list');
     if (!host) return;
 
-    var newWords = getRandomWords(count, CURRENT_FILTER);
+    var st = getFilterState();
+    var newWords = getRandomWords(count, st);
     if (!append) FEED_WORDS = [];
     var startIdx = FEED_WORDS.length;
     FEED_WORDS = FEED_WORDS.concat(newWords);
@@ -661,20 +736,140 @@
     try { localStorage.setItem('vocab_mastered_v1', JSON.stringify(list)); } catch (e) {}
   }
 
-  /* Actions */
-  App.actions.igSetFilter = function (a, e) {
-    CURRENT_FILTER = a.f || 'all';
-    var chips = document.querySelectorAll('.ig-chip');
-    chips.forEach(function (c) { c.classList.remove('active'); });
-    if (e && e.target) {
-      var btn = e.target.closest('.ig-chip') || e.target;
-      btn.classList.add('active');
+  /* =========================================================
+     INTERAKTIV FILTR SHEET VA ACTIONS
+     ========================================================= */
+  App.actions.igQuickFilter = function (a) {
+    var st = getFilterState();
+    st.category = a.f || 'all';
+    saveFilterState(st);
+
+    var curInfo = FILTER_LABELS[st.category] || FILTER_LABELS.all;
+    var nameEl = document.getElementById('ig-filter-active-name');
+    if (nameEl) nameEl.textContent = curInfo.title;
+
+    var dot = document.querySelector('.ig-filter-dot');
+    if (dot) dot.style.background = curInfo.color;
+
+    var chipsHost = document.getElementById('ig-filter-quick-chips');
+    if (chipsHost) {
+      chipsHost.innerHTML = renderQuickChipsHtml(st.category);
+      App.icons(chipsHost);
+    }
+
+    renderFeedItems(st.batchSize || 6, false);
+    App.toast('Filtr: ' + curInfo.title + ' ✨');
+  };
+
+  App.actions.igOpenFilterSheet = function () {
+    var s = getFilterState();
+    var html =
+      '<div class="ig-filter-sheet-body">' +
+        '<div class="ig-fs-sec-title">Lug\'at va Mavzu bo\'limi</div>' +
+        '<div class="ig-fs-grid">' +
+          Object.keys(FILTER_LABELS).map(function (k) {
+            var info = FILTER_LABELS[k];
+            var isSel = (s.category === k);
+            return '<button class="ig-fs-card ' + (isSel ? 'selected' : '') + '" data-act="igSelectFilterCategory" data-arg=\'' + App.arg({ f: k }) + '\'>' +
+              '<div class="ig-fs-card-left">' +
+                '<span class="ig-fs-icon" style="background:' + info.color + '"><span data-icon="' + info.icon + '" data-icon-size="16"></span></span>' +
+                '<div class="ig-fs-info">' +
+                  '<div class="ig-fs-name">' + App.esc(info.title) + '</div>' +
+                  '<div class="ig-fs-desc">' + App.esc(info.desc) + '</div>' +
+                '</div>' +
+              '</div>' +
+              '<span class="ig-fs-radio ' + (isSel ? 'checked' : '') + '"></span>' +
+            '</button>';
+          }).join('') +
+        '</div>' +
+
+        '<div class="ig-fs-sec-title" style="margin-top:18px">Saralash tartibi</div>' +
+        '<div class="seg seg-sm" style="width:100%;margin-bottom:16px" id="ig-fs-sort-seg">' +
+          '<button class="' + (s.sort === 'random' ? 'active' : '') + '" data-act="igSelectFilterSort" data-arg=\'{"s":"random"}\'>🎲 Tasodifiy</button>' +
+          '<button class="' + (s.sort === 'alpha' ? 'active' : '') + '" data-act="igSelectFilterSort" data-arg=\'{"s":"alpha"}\'>🔤 Alifbo (A-Z)</button>' +
+          '<button class="' + (s.sort === 'recent' ? 'active' : '') + '" data-act="igSelectFilterSort" data-arg=\'{"s":"recent"}\'>⏱ Yangilar</button>' +
+        '</div>' +
+
+        '<div class="ig-fs-actions">' +
+          '<button class="btn sec" data-act="igResetFilters" style="flex:1">Tozalash</button>' +
+          '<button class="btn primary" data-act="igApplyFilterSheet" style="flex:2">Filtrni qo\'llash</button>' +
+        '</div>' +
+      '</div>';
+
+    App.sheet(html, { title: 'Tasmani sozlash va filtrlash' });
+  };
+
+  App.actions.igSelectFilterCategory = function (a, e) {
+    var card = e.target.closest('.ig-fs-card');
+    if (!card) return;
+    document.querySelectorAll('.ig-fs-card').forEach(function (c) {
+      c.classList.remove('selected');
+      var r = c.querySelector('.ig-fs-radio');
+      if (r) r.classList.remove('checked');
+    });
+    card.classList.add('selected');
+    var r = card.querySelector('.ig-fs-radio');
+    if (r) r.classList.add('checked');
+
+    var st = getFilterState();
+    st.category = a.f || 'all';
+    saveFilterState(st);
+  };
+
+  App.actions.igSelectFilterSort = function (a, e) {
+    var seg = document.getElementById('ig-fs-sort-seg');
+    if (seg) {
+      seg.querySelectorAll('button').forEach(function (b) { b.classList.remove('active'); });
+      if (e && e.target) e.target.classList.add('active');
+    }
+    var st = getFilterState();
+    st.sort = a.s || 'random';
+    saveFilterState(st);
+  };
+
+  App.actions.igResetFilters = function () {
+    var st = { category: 'all', sort: 'random', batchSize: 6 };
+    saveFilterState(st);
+    App.closeSheet();
+
+    var curInfo = FILTER_LABELS.all;
+    var nameEl = document.getElementById('ig-filter-active-name');
+    if (nameEl) nameEl.textContent = curInfo.title;
+    var dot = document.querySelector('.ig-filter-dot');
+    if (dot) dot.style.background = curInfo.color;
+    var chipsHost = document.getElementById('ig-filter-quick-chips');
+    if (chipsHost) {
+      chipsHost.innerHTML = renderQuickChipsHtml('all');
+      App.icons(chipsHost);
     }
     renderFeedItems(6, false);
+    App.toast('Barcha filtrlar tozalandi 🔄');
+  };
+
+  App.actions.igApplyFilterSheet = function () {
+    var st = getFilterState();
+    App.closeSheet();
+
+    var curInfo = FILTER_LABELS[st.category] || FILTER_LABELS.all;
+    var nameEl = document.getElementById('ig-filter-active-name');
+    if (nameEl) nameEl.textContent = curInfo.title;
+
+    var dot = document.querySelector('.ig-filter-dot');
+    if (dot) dot.style.background = curInfo.color;
+
+    var chipsHost = document.getElementById('ig-filter-quick-chips');
+    if (chipsHost) {
+      chipsHost.innerHTML = renderQuickChipsHtml(st.category);
+      App.icons(chipsHost);
+    }
+
+    renderFeedItems(st.batchSize || 6, false);
+    App.toast('Filtr qo\'llandi: ' + curInfo.title + ' 🎯');
   };
 
   App.actions.igShuffleFeed = function () {
-    renderFeedItems(6, false);
+    var st = getFilterState();
+    renderFeedItems(st.batchSize || 6, false);
     App.toast('Tasodifiy yangi so\'zlar yuklandi! 🎲');
   };
 
@@ -764,7 +959,6 @@
         btn.innerHTML = '<span data-icon="check" data-icon-size="18"></span><span class="ig-master-text">O\'rgandim</span>';
         App.icons(btn);
       }
-      // Record activity
       if (window.Activity && Activity.log) {
         Activity.log('vocab_master', { word: a.word, xp: 10 });
       }
@@ -906,7 +1100,6 @@
       renderStoryModalContent();
       startStoryTimer();
     } else {
-      // Find next story
       var curIdx = STORIES.findIndex(function (s) { return s.id === STORY_VIEWER_STATE.story.id; });
       if (curIdx >= 0 && curIdx < STORIES.length - 1) {
         App.actions.igOpenStory({ id: STORIES[curIdx + 1].id });
@@ -976,7 +1169,6 @@
   }
 
   function renderStoryStepBody(story, step) {
-    // Step 0: Overview
     if (step === 0) {
       return '<div class="ig-story-center-card">' +
         '<div class="ig-story-card-badge">' + App.esc(story.badge) + '</div>' +
@@ -987,7 +1179,6 @@
       '</div>';
     }
 
-    // Step 1: Real Showcase Card (Word / Code / Table)
     if (step === 1) {
       if (story.codeSnippet) {
         return '<div class="ig-story-center-card code-card">' +
@@ -1018,7 +1209,6 @@
       }
     }
 
-    // Step 2: Interactive Quiz
     if (step === 2 && story.quiz) {
       return '<div class="ig-story-center-card quiz-card">' +
         '<div class="ig-story-quiz-badge">🎯 Tezkor sinov</div>' +
@@ -1048,7 +1238,6 @@
     var step = STORY_VIEWER_STATE.step;
     var total = STORY_VIEWER_STATE.totalSteps;
 
-    // Progress segments
     var barsHtml = '';
     for (var i = 0; i < total; i++) {
       var fillClass = (i < step) ? 'full' : (i === step ? 'active' : '');
