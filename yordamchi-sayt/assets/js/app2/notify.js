@@ -25,6 +25,38 @@
   function load() {
     try {
       var v = JSON.parse(localStorage.getItem(KEY) || '[]');
+      if (!Array.isArray(v) || !v.length) {
+        v = [
+          {
+            id: 'n_welcome_1',
+            text: "Yangi 229 ta rus tili fe'llari to'liq yuklandi! Bosh sahifadagi story va reels orqali o'rganing.",
+            note: "229 ta hozirgi zamon fe'li",
+            date: todayStr(),
+            sec: 'languages',
+            read: 0,
+            created: todayStr()
+          },
+          {
+            id: 'n_welcome_2',
+            text: "Kunlik rejalar va odatlarni bajarishni unutmang.",
+            note: "Kunlik maqsadlar",
+            date: todayStr(),
+            sec: 'goals',
+            read: 0,
+            created: todayStr()
+          },
+          {
+            id: 'n_welcome_3',
+            text: "Barcha qo'shimcha bo'limlar uchun o'ng tomondagi yangi tortmadan foydalaning.",
+            note: "Yordamchi menyusi",
+            date: todayStr(),
+            sec: 'boost',
+            read: 0,
+            created: todayStr()
+          }
+        ];
+        try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (x) {}
+      }
       return Array.isArray(v) ? v : [];
     } catch (e) { return []; }
   }
@@ -77,9 +109,10 @@
         'data-act="ntToggleRead" data-arg=\'' + App.arg({ id: n.id }) + '\' ' +
         'aria-label="' + (n.read ? 'O\'qilmagan qilish' : 'O\'qildi') + '">' +
       '<span data-icon="' + si.ic + '" data-icon-size="15"></span></button>' +
-      '<div class="li-main"><div class="li-title">' + App.esc(n.text) + '</div>' +
+      '<div class="li-main"' + (n.sec ? ' style="cursor:pointer" data-act="ntGoSec" data-arg=\'' + App.arg({ id: n.id, sec: n.sec }) + '\'' : '') + '>' +
+      '<div class="li-title">' + App.esc(n.text) + '</div>' +
       '<div class="li-sub">' + App.esc(si.n) + (when ? ' · ' + App.esc(when) : '') +
-      (n.note ? ' · ' + App.esc(n.note) : '') + '</div></div>' +
+      (n.note ? ' · ' + App.esc(n.note) : '') + (n.sec ? ' · <b style="color:var(--accent)">Ochish &rarr;</b>' : '') + '</div></div>' +
       '<button class="icon-btn ghost" style="width:28px;height:28px" aria-label="O\'chirish" ' +
       'data-act="ntDelete" data-arg=\'' + App.arg({ id: n.id }) + '\'>' +
       '<span data-icon="trash" data-icon-size="13"></span></button></div>';
@@ -125,6 +158,15 @@
   App.actions.ntOpen = function () {
     var sh = App.sheet('<div id="nt-body">' + sheetHtml() + '</div>', { title: 'Bildirishnomalar' });
     App.icons(sh);
+  };
+
+  App.actions.ntGoSec = function (a) {
+    if (!a) return;
+    var list = load();
+    var it = list.find(function (x) { return String(x.id) === String(a.id); });
+    if (it) { it.read = 1; save(list); }
+    App.closeSheet();
+    if (a.sec) App.go(a.sec);
   };
 
   App.actions.ntToggleRead = function (a) {
