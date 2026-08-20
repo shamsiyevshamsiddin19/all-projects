@@ -2572,16 +2572,37 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   font-size: 13.5px;
 }
 
+/* =========================================================
+   PREMIUM REELS WORD CARD STYLES
+   ========================================================= */
 .ig-post-card {
+  position: relative;
   background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 20px;
+  border: 1px solid var(--border-strong, var(--border));
+  border-radius: 22px;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-  transition: transform .2s, box-shadow .2s;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+  transition: transform .22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow .22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .ig-post-card:hover {
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.1);
+}
+.ig-post-card.theme-ru .ig-card-ambient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6, #06b6d4, #6366f1);
+}
+.ig-post-card.theme-en .ig-card-ambient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #10b981, #06b6d4, #3b82f6);
 }
 
 .ig-post-header {
@@ -2593,22 +2614,21 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 .ig-post-author {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 10px;
 }
 .ig-post-avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  font-size: 12px;
-  font-weight: 800;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  font-size: 18px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+  flex-shrink: 0;
 }
 .ig-post-name {
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 800;
   color: var(--text);
   display: flex;
@@ -2619,114 +2639,156 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 15px;
-  height: 15px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: #0095f6;
   color: #fff;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 900;
 }
 .ig-post-sub {
-  font-size: 11.5px;
+  font-size: 11px;
   color: var(--hint);
   margin-top: 1px;
 }
+
 .ig-post-more {
-  background: transparent;
-  border: none;
-  color: var(--hint);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 50%;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  transition: color .2s;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--card) 90%, var(--border-soft));
+  border: 1px solid var(--border-strong, var(--border));
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
 }
-.ig-post-more:hover { color: var(--accent); }
+.ig-post-more:hover {
+  background: var(--card-hover, var(--border-soft));
+  color: var(--text);
+}
+.ig-post-more.mastered {
+  color: #10b981 !important;
+  background: rgba(16, 185, 129, 0.12) !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
 
 /* Reel / Word Stage Body */
 .ig-post-body {
-  padding: 16px 18px 18px;
-  background: color-mix(in srgb, var(--card) 95%, var(--accent) 5%);
+  position: relative;
+  padding: 22px 20px 20px;
+  background: color-mix(in srgb, var(--card) 94%, var(--accent) 6%);
   border-top: 1px solid var(--border-soft);
   border-bottom: 1px solid var(--border-soft);
+  cursor: pointer;
+  user-select: none;
 }
 .ig-word-stage {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
+  margin-bottom: 16px;
 }
 .ig-word-main {
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 900;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.6px;
   color: var(--text);
   line-height: 1.2;
 }
-.ig-speak-pill {
+
+/* Sound Wave Play Button & Equalizer */
+.ig-sound-wave-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  border: 1px solid var(--border-soft);
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 14px;
   background: var(--card);
+  border: 1px solid var(--border-strong, var(--border));
   color: var(--accent);
-  font-size: 12px;
-  font-weight: 700;
   cursor: pointer;
   transition: all .2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
-.ig-speak-pill:hover {
+.ig-sound-wave-btn:hover {
   background: var(--accent);
   color: #fff;
   border-color: var(--accent);
+  transform: scale(1.05);
+}
+.ig-sound-wave {
+  display: flex;
+  align-items: center;
+  gap: 2.5px;
+  height: 12px;
+}
+.ig-sound-wave .bar {
+  width: 2.5px;
+  height: 4px;
+  background: currentColor;
+  border-radius: 2px;
+  transition: height .2s;
+}
+.ig-sound-wave-btn.playing .ig-sound-wave .bar:nth-child(1) { animation: soundWave 0.6s infinite ease-in-out alternate; }
+.ig-sound-wave-btn.playing .ig-sound-wave .bar:nth-child(2) { animation: soundWave 0.6s infinite ease-in-out 0.15s alternate; }
+.ig-sound-wave-btn.playing .ig-sound-wave .bar:nth-child(3) { animation: soundWave 0.6s infinite ease-in-out 0.3s alternate; }
+.ig-sound-wave-btn.playing .ig-sound-wave .bar:nth-child(4) { animation: soundWave 0.6s infinite ease-in-out 0.45s alternate; }
+@keyframes soundWave {
+  0% { height: 3px; }
+  100% { height: 12px; }
 }
 
+/* Translation Badge */
+.ig-trans-wrap {
+  display: flex;
+  align-items: center;
+}
 .ig-trans-badge {
   display: inline-flex;
   align-items: center;
-  padding: 7px 16px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, rgba(37,99,235,0.12), rgba(168,85,247,0.14));
-  border: 1px solid rgba(168,85,247,0.25);
-  margin-bottom: 0;
+  gap: 7px;
+  padding: 8px 18px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 14%, var(--card)), color-mix(in srgb, #a855f7 16%, var(--card)));
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+}
+.ig-trans-spark {
+  color: var(--accent);
 }
 .ig-trans-text {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 800;
   color: var(--accent);
 }
 
-.ig-details-box {
+/* Action Bar */
+.ig-post-actions {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: var(--card);
-  border: 1px solid var(--border-soft);
-  margin-bottom: 12px;
-  font-size: 13px;
-  line-height: 1.5;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 16px;
+}
+.ig-actions-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.ig-quiz-act-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.ig-act-badge-text {
+  font-size: 12px;
+  font-weight: 800;
   color: var(--text-2);
-}
-.ig-card-field b {
-  color: var(--text);
-  font-weight: 700;
-}
-
-.ig-example-box {
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--accent) 8%, var(--card));
-  border-left: 3.5px solid var(--accent);
-  margin-top: 4px;
 }
 .ig-ex-head {
   font-size: 11.5px;

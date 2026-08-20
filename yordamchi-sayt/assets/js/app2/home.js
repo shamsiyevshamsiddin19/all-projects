@@ -663,21 +663,27 @@
     if (catTitle.indexOf('Глаголы') >= 0 || catTitle.indexOf('229') >= 0) catTitle = 'Rus tili · Hozirgi zamon (229)';
     else if (catTitle.indexOf('1-8000') >= 0) catTitle = isRu ? 'Rus tili lug\'ati' : 'Ingliz tili lug\'ati';
 
-    return '<div class="ig-post-card" id="' + cardId + '">' +
+    return '<div class="ig-post-card ' + (isRu ? 'theme-ru' : 'theme-en') + '" id="' + cardId + '">' +
+      /* Card Ambient Top Glow */
+      '<div class="ig-card-ambient"></div>' +
+
       /* Post Header */
       '<div class="ig-post-header">' +
         '<div class="ig-post-author">' +
-          '<div class="ig-post-avatar" style="background:' + (isRu ? 'linear-gradient(135deg,#3b82f6,#06b6d4)' : 'linear-gradient(135deg,#10b981,#3b82f6)') + '">' +
-            '<span>' + (isRu ? 'RU' : 'EN') + '</span>' +
+          '<div class="ig-post-avatar" style="background:' + (isRu ? 'linear-gradient(135deg,#0088cc,#00c6ff)' : 'linear-gradient(135deg,#059669,#10b981)') + '">' +
+            '<span>' + (isRu ? '🇷🇺' : '🇬🇧') + '</span>' +
           '</div>' +
           '<div class="ig-post-meta">' +
-            '<div class="ig-post-name">' + App.esc(catTitle) + ' <span class="ig-verified">✓</span></div>' +
-            '<div class="ig-post-sub">Lug\'at Reels · Tasodifiy so\'z</div>' +
+            '<div class="ig-post-name">' +
+              '<span>' + App.esc(catTitle) + '</span>' +
+              '<span class="ig-verified" title="Tasdiqlangan">✓</span>' +
+            '</div>' +
+            '<div class="ig-post-sub">Reels Lug\'at</div>' +
           '</div>' +
         '</div>' +
         '<div class="ig-post-header-actions">' +
           '<button class="ig-post-more ' + (isMastered ? 'mastered' : '') + '" data-act="igToggleMastered" data-arg=\'' + App.arg({ word: w.ru, id: cardId }) + '\' title="' + (isMastered ? 'O\'rganilgan' : 'O\'rganildi deb belgilash') + '">' +
-            '<span data-icon="' + (isMastered ? 'check' : 'circle') + '" data-icon-size="18"></span>' +
+            '<span data-icon="' + (isMastered ? 'check' : 'circle') + '" data-icon-size="16"></span>' +
             '<span class="ig-master-text">' + (isMastered ? 'O\'rgandim' : 'O\'rganish') + '</span>' +
           '</button>' +
         '</div>' +
@@ -685,16 +691,23 @@
 
       /* Post Main Reel Body (Double tap to like) */
       '<div class="ig-post-body" data-dbl-word="' + App.esc(w.ru) + '" data-card-id="' + cardId + '">' +
-        '<div class="ig-heart-pop" id="pop_' + cardId + '"><span data-icon="heartFill" data-icon-size="70"></span></div>' +
+        '<div class="ig-heart-pop" id="pop_' + cardId + '"><span data-icon="heartFill" data-icon-size="76"></span></div>' +
+        
         '<div class="ig-word-stage">' +
           '<div class="ig-word-main">' + App.esc(w.ru) + '</div>' +
-          '<button class="ig-speak-pill" data-act="igSpeakWord" data-arg=\'' + App.arg({ text: w.ru, lang: ttsLang }) + '\'>' +
-            '<span data-icon="volume" data-icon-size="14"></span> Tinglash' +
+          '<button class="ig-sound-wave-btn" id="snd_' + cardId + '" data-act="igSpeakWord" data-arg=\'' + App.arg({ text: w.ru, lang: ttsLang, id: cardId }) + '\' title="Ovoz chiqarish">' +
+            '<span class="ig-sound-wave">' +
+              '<i class="bar"></i><i class="bar"></i><i class="bar"></i><i class="bar"></i>' +
+            '</span>' +
+            '<span data-icon="volume" data-icon-size="16"></span>' +
           '</button>' +
         '</div>' +
 
-        '<div class="ig-trans-badge">' +
-          '<span class="ig-trans-text">' + App.esc(w.uz) + '</span>' +
+        '<div class="ig-trans-wrap">' +
+          '<div class="ig-trans-badge">' +
+            '<span class="ig-trans-spark" data-icon="sparkles" data-icon-size="13"></span>' +
+            '<span class="ig-trans-text">' + App.esc(w.uz) + '</span>' +
+          '</div>' +
         '</div>' +
       '</div>' +
 
@@ -704,14 +717,15 @@
           '<button class="ig-act-btn ' + (isLiked ? 'active liked' : '') + '" data-act="igToggleLike" data-arg=\'' + App.arg({ word: w.ru, id: cardId }) + '\' title="Yoqdi">' +
             '<span data-icon="' + (isLiked ? 'heartFill' : 'heart') + '" data-icon-size="24"></span>' +
           '</button>' +
-          '<button class="ig-act-btn" data-act="igOpenQuiz" data-arg=\'' + App.arg({ ru: w.ru, uz: w.uz, id: cardId }) + '\' title="O\'zini tekshirish (Test)">' +
-            '<span data-icon="check" data-icon-size="24"></span>' +
+          '<button class="ig-act-btn ig-quiz-act-btn" data-act="igOpenQuiz" data-arg=\'' + App.arg({ ru: w.ru, uz: w.uz, id: cardId }) + '\' title="O\'zini tekshirish (Test)">' +
+            '<span data-icon="check" data-icon-size="20"></span>' +
+            '<span class="ig-act-badge-text">Test</span>' +
           '</button>' +
-          '<button class="ig-act-btn" data-act="igCopyWord" data-arg=\'' + App.arg({ ru: w.ru, uz: w.uz, ex: w.ex }) + '\' title="Nusxa olish">' +
+          '<button class="ig-act-btn" data-act="igCopyWord" data-arg=\'' + App.arg({ ru: w.ru, uz: w.uz }) + '\' title="Nusxa olish">' +
             '<span data-icon="share" data-icon-size="22"></span>' +
           '</button>' +
-          '<button class="ig-act-btn" data-act="igSpeakWord" data-arg=\'' + App.arg({ text: w.ru, lang: ttsLang }) + '\' title="Talaffuz">' +
-            '<span data-icon="volume" data-icon-size="24"></span>' +
+          '<button class="ig-act-btn" data-act="igSpeakWord" data-arg=\'' + App.arg({ text: w.ru, lang: ttsLang, id: cardId }) + '\' title="Talaffuz">' +
+            '<span data-icon="volume" data-icon-size="22"></span>' +
           '</button>' +
         '</div>' +
         '<div class="ig-actions-right">' +
@@ -960,6 +974,13 @@
 
   App.actions.igSpeakWord = function (a) {
     if (!a.text) return;
+    if (a.id) {
+      var snd = document.getElementById('snd_' + a.id);
+      if (snd) {
+        snd.classList.add('playing');
+        setTimeout(function () { snd.classList.remove('playing'); }, 1800);
+      }
+    }
     if (window.TTS && TTS.speak) {
       TTS.speak(a.text, a.lang || 'ru-RU');
     }
