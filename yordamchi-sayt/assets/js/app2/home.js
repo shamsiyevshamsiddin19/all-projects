@@ -10,25 +10,25 @@
   var STORIES = [
     {
       id: 'ru_229',
-      title: '229 ta asosiy fe\'l',
-      sub: 'Rus tili fe\'llari',
+      title: '229 ta fe\'l',
+      sub: 'Hozirgi zamon',
       type: 'vocab',
       lang: 'russian',
       category: 'Глаголы настоящего времени',
       color: 'linear-gradient(135deg, #f59e0b, #ef4444)',
       badge: '229',
-      desc: 'Rus tilida eng ko\'p ishlatiladigan 229 ta asosiy fe\'l va ularning o\'zbekcha tarjimalari.',
+      desc: 'Rus tilida eng ko\'p ishlatiladigan 229 ta fe\'lning hozirgi zamon (я) shakllari va tarjimalari.',
       sampleWord: {
-        w: 'изучать',
-        tr: 'o\'rganmoq, tadqiq qilmoq',
-        forms: 'Fe\'l · Несовершенный вид (НСВ)',
-        conj: 'Синонимы: учить, осваивать, исследовать',
-        ex: 'Каждый день я изучаю новые полезные слова.',
-        exTr: 'Har kuni men yangi foydali so\'zlarni o\'rganaman.'
+        w: 'я изучаю',
+        tr: 'men o\'rganyapman',
+        forms: 'Hozirgi zamon · 1-shaxs (я)',
+        conj: 'Fe\'l: изучать (o\'rganmoq)',
+        ex: 'Я изучаю русский язык каждый день.',
+        exTr: 'Men har kuni rus tilini o\'rganyapman.'
       },
       quiz: {
-        q: '«изучать» fe\'lining o\'zbekcha ma\'nosi nima?',
-        opts: ['o\'rganmoq, tadqiq qilmoq', 'uxlamoq, dam olmoq', 'yugurmoq, shoshilmoq', 'sotib olmoq'],
+        q: '«я изучаю» so\'zining o\'zbekcha ma\'nosi nima?',
+        opts: ['men o\'rganyapman', 'men uxlayapman', 'men ishlayapman', 'men ketyapman'],
         correct: 0
       }
     },
@@ -715,11 +715,6 @@
             '</div>' +
             '<div class="vr-md-sub">' + App.esc(w.uz) + '</div>' +
             '<div class="vr-md-divider" style="background:' + theme.color + '"></div>' +
-            (w.note ?
-              '<div class="vr-md-inf-badge">' +
-                '<span class="vr-inf-tag">Infinitiv:</span> ' +
-                '<span class="vr-inf-val">' + App.esc(w.note.replace(/^Infinitiv:\s*/i, '')) + '</span>' +
-              '</div>' : '') +
           '</div>' +
         '</div>' +
       '</div>' +
