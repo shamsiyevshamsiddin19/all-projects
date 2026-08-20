@@ -4,33 +4,27 @@
 
   var NAV = [
     { v: 'home', n: 'Bosh', ic: 'home' },
+    { v: 'languages', n: 'Learn', ic: 'globe' },
+    { v: 'kun', n: 'Kun hisobi', bn: 'Kun', ic: 'calendar' },
+    { v: 'sport', n: 'Sport', ic: 'trophy' },
+    { v: 'profile', n: 'Profil', ic: 'user' },
     { v: 'goals', n: 'Maqsadlar', ic: 'check' },
     { v: 'stats', n: 'Statistika', ic: 'chart' },
     { v: 'tarix', n: 'Tarix', ic: 'clock' },
     { v: 'fanlar', n: 'Testlar', ic: 'book' },
-    { v: 'languages', n: 'Learn', ic: 'globe' },
     { v: 'coding', n: 'Coding', ic: 'code' },
-    { v: 'sport', n: 'Sport', ic: 'trophy' },
     { v: 'boost', n: 'Boostday', ic: 'message' },
-    /* `bn` — pastki panel uchun QISQA nom (u yerda joy tor). Berilmasa `n` olinadi. */
-    { v: 'kun', n: 'Kun hisobi', bn: 'Kun', ic: 'calendar' },
     { v: 'arxiv', n: 'Arxiv', ic: 'archive' },
     { v: 'qoidalar', n: 'Qoidalar', ic: 'file' },
     { v: 'settings', n: 'Sozlamalar', ic: 'settings' }
   ];
-  var BOTTOM = ['home', 'kun', 'languages', 'sport', '__more__'];
+  var BOTTOM = ['home', 'languages', 'kun', 'sport', 'profile'];
 
-  /* Bo'lim belgisi — chiziqli ikonka o'rniga RANGLI RASM (assets/img/nav/).
-     Ilgari hamma bo'lim bir xil yashil chiziqli ikonka bilan turardi:
-     menyuga qaraganda bo'limlar bir-biridan ajralmasdi. Rasmlar ~60 KB,
-     serverning o'zida turadi (tashqi CDN'ga bog'liq emas, oflaynda ham
-     ko'rinadi). Rasm topilmasa — eski ikonkaga qaytadi, ya'ni yangi
-     bo'lim qo'shilsa menyu baribir buzilmaydi. */
   var NAV_IMG = {
-    home: 1, goals: 1, stats: 1, tarix: 1, fanlar: 1, languages: 1, coding: 1,
+    home: 1, profile: 1, goals: 1, stats: 1, tarix: 1, fanlar: 1, languages: 1, coding: 1,
     sport: 1, boost: 1, kun: 1, arxiv: 1, qoidalar: 1, settings: 1, pomodoro: 1
   };
-  var NAV_IMG_V = '?v=20260818';       // rasm almashtirilsa shu raqam oshiriladi
+  var NAV_IMG_V = '?v=20260819v2';       // rasm almashtirilsa shu raqam oshiriladi
 
   function navIcon(v, ic, size) {
     if (NAV_IMG[v]) {
@@ -41,11 +35,11 @@
   }
 
   /* Foydalanuvchi yashirgan bo'limlar (Sozlamalardan boshqariladi).
-     'home' va 'settings' hech qachon yashirilmaydi — aks holda qaytib bo'lmaydi. */
+     'home', 'profile' va 'settings' hech qachon yashirilmaydi — aks holda qaytib bo'lmaydi. */
   function hiddenSet() {
     try {
       var v = JSON.parse(localStorage.getItem('nav_hidden_v1') || '[]');
-      return Array.isArray(v) ? v.filter(function (x) { return x !== 'home' && x !== 'settings'; }) : [];
+      return Array.isArray(v) ? v.filter(function (x) { return x !== 'home' && x !== 'profile' && x !== 'settings'; }) : [];
     } catch (e) { return []; }
   }
   function visibleNav() {

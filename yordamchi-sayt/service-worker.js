@@ -1,28 +1,9 @@
-/* Yordamchi service worker — OFFLINE REJIM.
- *
- * Uch qatlam:
- *  1) App shell (HTML/CSS/JS) — o'rnatishda oldindan keshlanadi, shuning uchun
- *     ilova internetsiz ham ochiladi (avval hech bo'lmasa bir marta kirilgan bo'lsa).
- *  2) Statik fayllar — stale-while-revalidate: darhol keshdan beriladi, orqa
- *     fonda yangilanadi.
- *  3) API O'QISH so'rovlari — stale-while-revalidate: keshdagi javob DARHOL
- *     beriladi (bo'lim kutdirmaydi), yangisi orqa fonda olinadi va FARQ
- *     bo'lsagina sahifaga `data-updated` xabari boradi. Keshda hali bo'lmasa
- *     — tarmoqdan, internet yo'q bo'lsa oflayn javob. Odatda faqat GET, ammo
- *     Boostday o'qishlari POST bilan ketadi, shuning uchun tanasi natijaga
- *     ta'sir qilmaydigan bir nechta POST o'qishga ham ruxsat berilgan
- *     (`CACHEABLE_POST`). YOZISH so'rovlari HECH QACHON keshlanmaydi —
- *     offline'da ular xato beradi va ilova o'z navbatiga qo'yadi.
- */
-const VERSION = '20260819v6';
+/* Yordamchi service worker — OFFLINE REJIM. */
+const VERSION = '20260820v1';
 const SHELL_CACHE = 'yordamchi-shell-' + VERSION;
 const DATA_CACHE = 'yordamchi-data-' + VERSION;
 
-/* App shell ro'yxati QO'LDA yozilmaydi — index.html ning o'zidan o'qiladi.
-   Sabab: har deployda asset versiyalari (`?v=`) o'zgaradi; qo'lda yozilgan
-   ro'yxat darrov eskiradi va brauzer boshqa URL so'rab, kesh ishlamay
-   qoladi (tekshiruvda aynan shunday nomuvofiqlik topilgan edi).
-   Shu yondashuvda ro'yxat hech qachon eskirmaydi. */
+/* App shell ro'yxati index.html ning o'zidan o'qiladi. */
 async function shellUrls() {
   const urls = new Set(['./', './index.html']);
   try {
