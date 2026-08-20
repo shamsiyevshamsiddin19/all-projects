@@ -10,25 +10,25 @@
   var STORIES = [
     {
       id: 'ru_229',
-      title: 'Hozirgi zamon',
-      sub: '229 ta fe\'l',
+      title: '229 ta asosiy fe\'l',
+      sub: 'Rus tili fe\'llari',
       type: 'vocab',
       lang: 'russian',
       category: 'Глаголы настоящего времени',
       color: 'linear-gradient(135deg, #f59e0b, #ef4444)',
       badge: '229',
-      desc: 'Rus tilida eng ko\'p ishlatiladigan 229 ta fe\'lning hozirgi zamon tuslanishi, shakllari va ma\'nodoshlari.',
+      desc: 'Rus tilida eng ko\'p ishlatiladigan 229 ta asosiy fe\'l va ularning o\'zbekcha tarjimalari.',
       sampleWord: {
-        w: 'я изучаю',
-        tr: 'men o\'rganyapman / tadqiq qilyapman',
-        forms: 'изучать (NCV) · изучить (CV) · я изучал (o\'tgan zamon)',
-        conj: 'я изучаю · ты изучаешь · он изучает · мы изучаем · вы изучаете · они изучают',
-        ex: 'Я с большим интересом изучаю веб-разработку и русский язык.',
-        exTr: 'Men katta qiziqish bilan veb-dasturlash va rus tilini o\'rganyapman.'
+        w: 'изучать',
+        tr: 'o\'rganmoq, tadqiq qilmoq',
+        forms: 'Fe\'l · Несовершенный вид (НСВ)',
+        conj: 'Синонимы: учить, осваивать, исследовать',
+        ex: 'Каждый день я изучаю новые полезные слова.',
+        exTr: 'Har kuni men yangi foydali so\'zlarni o\'rganaman.'
       },
       quiz: {
-        q: '«изучать» fe\'lining «мы» (biz) uchun hozirgi zamon shakli qaysi?',
-        opts: ['мы изучаем', 'мы изучаете', 'мы изучают', 'мы изучил'],
+        q: '«изучать» fe\'lining o\'zbekcha ma\'nosi nima?',
+        opts: ['o\'rganmoq, tadqiq qilmoq', 'uxlamoq, dam olmoq', 'yugurmoq, shoshilmoq', 'sotib olmoq'],
         correct: 0
       }
     },

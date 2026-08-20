@@ -1,0 +1,247 @@
+# Rus tili — Eng ko'p ishlatiladigan 229 ta fe'l (Mukammal o'zbekcha tarjimalari bilan)
+
+> Ushbu lug'at rus tilidagi eng muhim va faol 229 ta fe'lning infinitiv (bosh) shakli va aniq o'zbekcha tarjimalarini o'z ichiga oladi.
+
+## 1-50
+
+- **играть** — o'ynamoq, chalmoq (musiqa)
+- **писать** — yozmoq
+- **сидеть** — o'tirmoq
+- **говорить** — gapirmoq, so'zlamoq
+- **знать** — bilmoq, xabardor bo'lmoq
+- **мечтать** — orzu qilmoq, xayol surmoq
+- **изучать** — o'rganmoq, tadqiq qilmoq
+- **работать** — ishlamoq, faoliyat yuritmoq
+- **любить** — sevmoq, yaxshi ko'rmoq
+- **хотеть** — xohlamoq, istamoq
+- **ходить** — yurmoq, qatnamoq
+- **есть** — yemoq, iste'mol qilmoq
+- **кушать** — ovqatlanmoq, yemoq
+- **принимать** — qabul qilmoq, ichmoq (dori)
+- **пить** — ichmoq
+- **петь** — kuylamoq, ashula aytmoq
+- **слушать** — tinglamoq, quloq solmoq
+- **спрашивать** — so'ramoq
+- **рассказывать** — gapirib bermoq, hikoya qilmoq
+- **обижаться** — xafa bo'lmoq, ranjimoq
+- **ошибаться** — xato qilmoq, adashmoq
+- **гулять** — sayr qilmoq, aylanmoq
+- **думать** — o'ylamoq, fikrlamoq
+- **смотреть** — qaramoq, ko'rmoq, tomosha qilmoq
+- **видеть** — ko'rmoq, payqamoq
+- **слышать** — eshitmoq
+- **понимать** — tushunmoq, anglamoq
+- **помнить** — eslamoq, yodda saqlamoq
+- **забывать** — unutmoq, esdan chiqarmoq
+- **читать** — o'qimoq
+- **учить** — o'rgatmoq, o'rganmoq
+- **учиться** — o'qimoq, ta'lim olmoq
+- **покупать** — sotib olmoq
+- **продавать** — sotmoq
+- **помогать** — yordam bermoq, ko'maklashmoq
+- **отвечать** — javob bermoq
+- **ждать** — kutmoq
+- **искать** — qidirmoq, izlamoq
+- **находить** — topmoq
+- **терять** — yo'qotmoq
+- **платить** — to'lamoq
+- **открывать** — ochmoq
+- **закрывать** — yopmoq
+- **начинать** — boshlamoq
+- **заканчивать** — tugatmoq, yakunlamoq
+- **бегать** — yugurmoq
+- **плавать** — suzmoq
+- **летать** — uchmoq
+- **ехать** — bormoq, yurmoq (transportda)
+- **спать** — uxlamoq
+
+## 51-100
+
+- **вставать** — o'rnidan turmoq, uyg'onmoq
+- **ложиться** — yotmoq, uyquga yotmoq
+- **мыть** — yuvmoq, tozalamoq
+- **одеваться** — kiyinmoq
+- **раздеваться** — yechinmoq
+- **готовить** — tayyorlamoq, pishirmoq
+- **варить** — qaynatmoq, pishirmoq
+- **жарить** — qovurmoq
+- **печь** — pishirmoq (duxovkada)
+- **резать** — kesmoq, to'g'ramoq
+- **курить** — chekish
+- **болеть** — og'rimoq, kasal bo'lmoq
+- **выздоравливать** — tuzalmoq, sog'aymoq
+- **лечить** — davolamoq
+- **отдыхать** — dam olmoq, hordiq chiqarmoq
+- **путешествовать** — sayohat qilmoq
+- **звонить** — qo'ng'iroq qilmoq
+- **отправлять** — yubormoq, jo'natmoq
+- **получать** — olmoq, qabul qilib olmoq
+- **включать** — yoqmoq (chiroq, texnika)
+- **выключать** — o'chirmoq (chiroq, texnika)
+- **строить** — qurmoq, bino qilmoq
+- **ломать** — sindirmoq, buzmoq
+- **чинить** — tuzatmoq, ta'mirlamoq
+- **рисовать** — chizmoq, rasm solmoq
+- **танцевать** — raqsga tushmoq
+- **смеяться** — kulmoq
+- **улыбаться** — jilmaymoq, kulimsiramoq
+- **плакать** — yig'lamoq
+- **кричать** — baqirmoq, qichqirmoq
+- **молчать** — jim turmoq, sukut saqlamoq
+- **верить** — ishonmoq
+- **надеяться** — umid qilmoq
+- **бояться** — qo'rqmoq, cho'chimoq
+- **сомневаться** — shubhalanmoq, ikkilanmoq
+- **выбирать** — tanlamoq
+- **решать** — hal qilmoq, qaror qilmoq
+- **соглашаться** — rozi bo'lmoq, qo'shilmoq
+- **отказываться** — rad etmoq, bosh tortmoq
+- **обещать** — va'da bermoq
+- **просить** — iltimos qilmoq, so'ramoq
+- **требовать** — talab qilmoq
+- **советовать** — maslahat bermoq
+- **предлагать** — taklif qilmoq
+- **разрешать** — ruxsat bermoq
+- **запрещать** — taqiqlamoq, man etmoq
+- **наказывать** — jazolamoq
+- **прощать** — kechirmoq, afv etmoq
+- **благодарить** — minnatdorchilik bildirmoq, rahmat aytmoq
+- **извиняться** — uzr so'ramoq
+
+## 101-150
+
+- **здороваться** — salomlashmoq
+- **прощаться** — xayrlashmoq
+- **встречать** — kutib olmoq, uchratmoq
+- **провожать** — kuzatib qo'ymoq
+- **приглашать** — taklif qilmoq
+- **посещать** — tashrif buyurmoq, borib ko'rmoq
+- **гостить** — mehmonda bo'lmoq
+- **угощать** — mehmon qilmoq, siylamoq
+- **дарить** — sovg'a qilmoq, hadya etmoq
+- **поздравлять** — tabriklamoq, qutlamoq
+- **желать** — tilamoq, istamoq
+- **праздновать** — nishonlamoq, bayram qilmoq
+- **выигрывать** — yutmoq, g'alaba qozonmoq
+- **проигрывать** — yutqazmoq, mag'lub bo'lmoq
+- **соревноваться** — musobaqalashmoq, bellashmoq
+- **тренироваться** — mashq qilmoq, shug'ullanmoq
+- **побеждать** — g'alaba qozonmoq, yengmoq
+- **уступать** — yon bermoq, joy bo'shatmoq
+- **защищать** — himoya qilmoq
+- **нападать** — hujum qilmoq
+- **бороться** — kurashmoq
+- **сдаваться** — taslim bo'lmoq
+- **преодолевать** — yengib o'tmoq, yengmoq
+- **достигать** — erishmoq, yetishmoq
+- **стремиться** — intilmoq, harakat qilmoq
+- **пытаться** — urinib ko'rmoq
+- **стараться** — harakat qilmoq, tirishmoq
+- **добиваться** — erishmoq, qo'lga kiritmoq
+- **терпеть** — sabr qilmoq, chidamoq
+- **страдать** — azob chekmoq, qiynalmoq
+- **жалеть** — achinmoq, afsuslanmoq
+- **радоваться** — quvonmoq, xursand bo'lmoq
+- **грустить** — xafa bo'lmoq, g'amgin bo'lmoq
+- **скучать** — sog'inmoq, zerikmoq
+- **удивляться** — hayron qolmoq, ajablanmoq
+- **сердиться** — achchiqlanmoq, jahli chiqmoq
+- **злиться** — g'azablanmoq
+- **ревновать** — rashk qilmoq
+- **завидовать** — hasad qilmoq
+- **гордиться** — faxrlanmoq, g'ururlanmoq
+- **уважать** — hurmat qilmoq
+- **ценить** — qadrlamoq
+- **презирать** — nafratlanmoq, mensimaslik
+- **ненавидеть** — yomon ko'rmoq, nafratlanmoq
+- **обожать** — jondan sevmoq, yaxshi ko'rmoq
+- **восхищаться** — qoyil qolmoq, zavqlanmoq
+- **интересоваться** — qiziqmoq
+- **увлекаться** — berilib ketmoq, qiziqmoq
+- **заниматься** — shug'ullanmoq
+- **участвовать** — qatnashmoq, ishtirok etmoq
+
+## 151-200
+
+- **организовывать** — tashkil etmoq, uyushtirmoq
+- **руководить** — boshqarmoq, rahbarlik qilmoq
+- **управлять** — boshqarmoq, idora qilmoq
+- **контролировать** — nazorat qilmoq
+- **проверять** — tekshirmoq
+- **исправлять** — to'g'rilamoq, tuzatmoq
+- **доверять** — ishonmoq, ishonch bildirmoq
+- **предавать** — xiyonat qilmoq
+- **обманывать** — aldamoq
+- **врать** — yolg'on gapirmoq
+- **скрывать** — yashirmoq, sir saqlamoq
+- **прятать** — berkitmoq, yashirmoq
+- **показывать** — ko'rsatmoq, namoyish qilmoq
+- **прятаться** — yashirinmoq, bekinmoq
+- **исчезать** — g'oyib bo'lmoq, yo'qolmoq
+- **появляться** — paydo bo'lmoq, ko'rinmoq
+- **случаться** — sodir bo'lmoq, yuz bermoq
+- **происходить** — yuz bermoq, bo'lib o'tmoq
+- **меняться** — o'zgarmoq
+- **развиваться** — rivojlanmoq, o'smoq
+- **расти** — o'smoq, ulg'aymoq
+- **уменьшаться** — kamaymoq, kichraymoq
+- **увеличиваться** — ko'paymoq, kattalashmoq
+- **падать** — yiqilmoq, tushmoq
+- **подниматься** — ko'tarilmoq, yuqoriga chiqmoq
+- **опускаться** — pastga tushmoq, pasaymoq
+- **двигаться** — harakatlanmoq, qimirlamoq
+- **останавливаться** — to'xtamoq
+- **продолжать** — davom ettirmoq
+- **прекращать** — to'xtatmoq, bas qilmoq
+- **начинаться** — boshlanmoq
+- **заканчиваться** — tugamoq, tamom bo'lmoq
+- **длиться** — davom etmoq (vaqt bo'yicha)
+- **спешить** — shoshilmoq
+- **опаздывать** — kechikmoq
+- **успевать** — ulgurmoq, yetishmoq
+- **преподавать** — dars bermoq, o'qitmoq
+- **объяснять** — tushuntirmoq, izohlamoq
+- **повторять** — takrorlamoq
+- **переводить** — tarjima qilmoq, ko'chirmoq
+- **произносить** — talaffuz qilmoq
+- **звучать** — yangramoq, eshitilmoq
+- **шуметь** — shovqin solmoq
+- **наблюдать** — kuzatmoq
+- **замечать** — payqamoq, sezmoq
+- **чувствовать** — his qilmoq, sezmoq
+- **ощущать** — tuyg'uni sezmoq, his etmoq
+- **пробовать** — ta'tib ko'rmoq, sinab ko'rmoq
+- **касаться** — tegmoq, ushlab ko'rmoq
+- **держать** — ushlab turmoq
+
+## 201-229
+
+- **брать** — olmoq
+- **давать** — bermoq
+- **класть** — qo'ymoq (yotqizib)
+- **ставить** — qo'ymoq (tikka qilib)
+- **вешать** — ilmoq, osmoq
+- **бросать** — tashlamoq, uloqtirmoq
+- **ловить** — tutmoq, ushlab olmoq
+- **тянуть** — tortmoq
+- **толкать** — itarmoq, siltamoq
+- **нести** — ko'tarib bormoq, eltmoq
+- **везти** — olib bormoq (transportda)
+- **водить** — haydamoq (mashina), yetaklamoq
+- **кататься** — uchmoq (konki, rolik, velosipedda)
+- **беседовать** — suhbatlashmoq, suhbat qurmoq
+- **сочинять** — ijod qilmoq, to'qimoq
+- **записывать** — yozib bormoq, qayd etmoq
+- **строчить** — tez yozmoq, tikmoq
+- **находиться** — joylashmoq, bo'lmoq
+- **пребывать** — bo'lmoq, yashamoq
+- **являться** — hisoblanmoq, bo'lmoq
+- **сдавать** — topshirmoq (imtihon, hisobot)
+- **подарить** — sovg'a qilmoq, tuhfa etmoq
+- **путешествовать** — sayr qilmoq, dunyo kezmoq
+- **стесняться** — uyalmoq, tortinmoq
+- **опаздывать** — kech qolmoq
+- **сплетничать** — g'iybat qilmoq
+- **исправлять** — xatoni tuzatmoq
+- **гордиться** — faxrlanmoq
+- **поступать** — o'qishga kirmoq, ish tutmoq

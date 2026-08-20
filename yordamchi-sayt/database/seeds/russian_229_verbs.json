@@ -1,0 +1,1157 @@
+{
+  "1-50": [
+    {
+      "ru": "играть",
+      "uz": "o'ynamoq, chalmoq (musiqa)",
+      "order": 1
+    },
+    {
+      "ru": "писать",
+      "uz": "yozmoq",
+      "order": 2
+    },
+    {
+      "ru": "сидеть",
+      "uz": "o'tirmoq",
+      "order": 3
+    },
+    {
+      "ru": "говорить",
+      "uz": "gapirmoq, so'zlamoq",
+      "order": 4
+    },
+    {
+      "ru": "знать",
+      "uz": "bilmoq, xabardor bo'lmoq",
+      "order": 5
+    },
+    {
+      "ru": "мечтать",
+      "uz": "orzu qilmoq, xayol surmoq",
+      "order": 6
+    },
+    {
+      "ru": "изучать",
+      "uz": "o'rganmoq, tadqiq qilmoq",
+      "order": 7
+    },
+    {
+      "ru": "работать",
+      "uz": "ishlamoq, faoliyat yuritmoq",
+      "order": 8
+    },
+    {
+      "ru": "любить",
+      "uz": "sevmoq, yaxshi ko'rmoq",
+      "order": 9
+    },
+    {
+      "ru": "хотеть",
+      "uz": "xohlamoq, istamoq",
+      "order": 10
+    },
+    {
+      "ru": "ходить",
+      "uz": "yurmoq, qatnamoq",
+      "order": 11
+    },
+    {
+      "ru": "есть",
+      "uz": "yemoq, iste'mol qilmoq",
+      "order": 12
+    },
+    {
+      "ru": "кушать",
+      "uz": "ovqatlanmoq, yemoq",
+      "order": 13
+    },
+    {
+      "ru": "принимать",
+      "uz": "qabul qilmoq, ichmoq (dori)",
+      "order": 14
+    },
+    {
+      "ru": "пить",
+      "uz": "ichmoq",
+      "order": 15
+    },
+    {
+      "ru": "петь",
+      "uz": "kuylamoq, ashula aytmoq",
+      "order": 16
+    },
+    {
+      "ru": "слушать",
+      "uz": "tinglamoq, quloq solmoq",
+      "order": 17
+    },
+    {
+      "ru": "спрашивать",
+      "uz": "so'ramoq",
+      "order": 18
+    },
+    {
+      "ru": "рассказывать",
+      "uz": "gapirib bermoq, hikoya qilmoq",
+      "order": 19
+    },
+    {
+      "ru": "обижаться",
+      "uz": "xafa bo'lmoq, ranjimoq",
+      "order": 20
+    },
+    {
+      "ru": "ошибаться",
+      "uz": "xato qilmoq, adashmoq",
+      "order": 21
+    },
+    {
+      "ru": "гулять",
+      "uz": "sayr qilmoq, aylanmoq",
+      "order": 22
+    },
+    {
+      "ru": "думать",
+      "uz": "o'ylamoq, fikrlamoq",
+      "order": 23
+    },
+    {
+      "ru": "смотреть",
+      "uz": "qaramoq, ko'rmoq, tomosha qilmoq",
+      "order": 24
+    },
+    {
+      "ru": "видеть",
+      "uz": "ko'rmoq, payqamoq",
+      "order": 25
+    },
+    {
+      "ru": "слышать",
+      "uz": "eshitmoq",
+      "order": 26
+    },
+    {
+      "ru": "понимать",
+      "uz": "tushunmoq, anglamoq",
+      "order": 27
+    },
+    {
+      "ru": "помнить",
+      "uz": "eslamoq, yodda saqlamoq",
+      "order": 28
+    },
+    {
+      "ru": "забывать",
+      "uz": "unutmoq, esdan chiqarmoq",
+      "order": 29
+    },
+    {
+      "ru": "читать",
+      "uz": "o'qimoq",
+      "order": 30
+    },
+    {
+      "ru": "учить",
+      "uz": "o'rgatmoq, o'rganmoq",
+      "order": 31
+    },
+    {
+      "ru": "учиться",
+      "uz": "o'qimoq, ta'lim olmoq",
+      "order": 32
+    },
+    {
+      "ru": "покупать",
+      "uz": "sotib olmoq",
+      "order": 33
+    },
+    {
+      "ru": "продавать",
+      "uz": "sotmoq",
+      "order": 34
+    },
+    {
+      "ru": "помогать",
+      "uz": "yordam bermoq, ko'maklashmoq",
+      "order": 35
+    },
+    {
+      "ru": "отвечать",
+      "uz": "javob bermoq",
+      "order": 36
+    },
+    {
+      "ru": "ждать",
+      "uz": "kutmoq",
+      "order": 37
+    },
+    {
+      "ru": "искать",
+      "uz": "qidirmoq, izlamoq",
+      "order": 38
+    },
+    {
+      "ru": "находить",
+      "uz": "topmoq",
+      "order": 39
+    },
+    {
+      "ru": "терять",
+      "uz": "yo'qotmoq",
+      "order": 40
+    },
+    {
+      "ru": "платить",
+      "uz": "to'lamoq",
+      "order": 41
+    },
+    {
+      "ru": "открывать",
+      "uz": "ochmoq",
+      "order": 42
+    },
+    {
+      "ru": "закрывать",
+      "uz": "yopmoq",
+      "order": 43
+    },
+    {
+      "ru": "начинать",
+      "uz": "boshlamoq",
+      "order": 44
+    },
+    {
+      "ru": "заканчивать",
+      "uz": "tugatmoq, yakunlamoq",
+      "order": 45
+    },
+    {
+      "ru": "бегать",
+      "uz": "yugurmoq",
+      "order": 46
+    },
+    {
+      "ru": "плавать",
+      "uz": "suzmoq",
+      "order": 47
+    },
+    {
+      "ru": "летать",
+      "uz": "uchmoq",
+      "order": 48
+    },
+    {
+      "ru": "ехать",
+      "uz": "bormoq, yurmoq (transportda)",
+      "order": 49
+    },
+    {
+      "ru": "спать",
+      "uz": "uxlamoq",
+      "order": 50
+    }
+  ],
+  "51-100": [
+    {
+      "ru": "вставать",
+      "uz": "o'rnidan turmoq, uyg'onmoq",
+      "order": 51
+    },
+    {
+      "ru": "ложиться",
+      "uz": "yotmoq, uyquga yotmoq",
+      "order": 52
+    },
+    {
+      "ru": "мыть",
+      "uz": "yuvmoq, tozalamoq",
+      "order": 53
+    },
+    {
+      "ru": "одеваться",
+      "uz": "kiyinmoq",
+      "order": 54
+    },
+    {
+      "ru": "раздеваться",
+      "uz": "yechinmoq",
+      "order": 55
+    },
+    {
+      "ru": "готовить",
+      "uz": "tayyorlamoq, pishirmoq",
+      "order": 56
+    },
+    {
+      "ru": "варить",
+      "uz": "qaynatmoq, pishirmoq",
+      "order": 57
+    },
+    {
+      "ru": "жарить",
+      "uz": "qovurmoq",
+      "order": 58
+    },
+    {
+      "ru": "печь",
+      "uz": "pishirmoq (duxovkada)",
+      "order": 59
+    },
+    {
+      "ru": "резать",
+      "uz": "kesmoq, to'g'ramoq",
+      "order": 60
+    },
+    {
+      "ru": "курить",
+      "uz": "chekish",
+      "order": 61
+    },
+    {
+      "ru": "болеть",
+      "uz": "og'rimoq, kasal bo'lmoq",
+      "order": 62
+    },
+    {
+      "ru": "выздоравливать",
+      "uz": "tuzalmoq, sog'aymoq",
+      "order": 63
+    },
+    {
+      "ru": "лечить",
+      "uz": "davolamoq",
+      "order": 64
+    },
+    {
+      "ru": "отдыхать",
+      "uz": "dam olmoq, hordiq chiqarmoq",
+      "order": 65
+    },
+    {
+      "ru": "путешествовать",
+      "uz": "sayohat qilmoq",
+      "order": 66
+    },
+    {
+      "ru": "звонить",
+      "uz": "qo'ng'iroq qilmoq",
+      "order": 67
+    },
+    {
+      "ru": "отправлять",
+      "uz": "yubormoq, jo'natmoq",
+      "order": 68
+    },
+    {
+      "ru": "получать",
+      "uz": "olmoq, qabul qilib olmoq",
+      "order": 69
+    },
+    {
+      "ru": "включать",
+      "uz": "yoqmoq (chiroq, texnika)",
+      "order": 70
+    },
+    {
+      "ru": "выключать",
+      "uz": "o'chirmoq (chiroq, texnika)",
+      "order": 71
+    },
+    {
+      "ru": "строить",
+      "uz": "qurmoq, bino qilmoq",
+      "order": 72
+    },
+    {
+      "ru": "ломать",
+      "uz": "sindirmoq, buzmoq",
+      "order": 73
+    },
+    {
+      "ru": "чинить",
+      "uz": "tuzatmoq, ta'mirlamoq",
+      "order": 74
+    },
+    {
+      "ru": "рисовать",
+      "uz": "chizmoq, rasm solmoq",
+      "order": 75
+    },
+    {
+      "ru": "танцевать",
+      "uz": "raqsga tushmoq",
+      "order": 76
+    },
+    {
+      "ru": "смеяться",
+      "uz": "kulmoq",
+      "order": 77
+    },
+    {
+      "ru": "улыбаться",
+      "uz": "jilmaymoq, kulimsiramoq",
+      "order": 78
+    },
+    {
+      "ru": "плакать",
+      "uz": "yig'lamoq",
+      "order": 79
+    },
+    {
+      "ru": "кричать",
+      "uz": "baqirmoq, qichqirmoq",
+      "order": 80
+    },
+    {
+      "ru": "молчать",
+      "uz": "jim turmoq, sukut saqlamoq",
+      "order": 81
+    },
+    {
+      "ru": "верить",
+      "uz": "ishonmoq",
+      "order": 82
+    },
+    {
+      "ru": "надеяться",
+      "uz": "umid qilmoq",
+      "order": 83
+    },
+    {
+      "ru": "бояться",
+      "uz": "qo'rqmoq, cho'chimoq",
+      "order": 84
+    },
+    {
+      "ru": "сомневаться",
+      "uz": "shubhalanmoq, ikkilanmoq",
+      "order": 85
+    },
+    {
+      "ru": "выбирать",
+      "uz": "tanlamoq",
+      "order": 86
+    },
+    {
+      "ru": "решать",
+      "uz": "hal qilmoq, qaror qilmoq",
+      "order": 87
+    },
+    {
+      "ru": "соглашаться",
+      "uz": "rozi bo'lmoq, qo'shilmoq",
+      "order": 88
+    },
+    {
+      "ru": "отказываться",
+      "uz": "rad etmoq, bosh tortmoq",
+      "order": 89
+    },
+    {
+      "ru": "обещать",
+      "uz": "va'da bermoq",
+      "order": 90
+    },
+    {
+      "ru": "просить",
+      "uz": "iltimos qilmoq, so'ramoq",
+      "order": 91
+    },
+    {
+      "ru": "требовать",
+      "uz": "talab qilmoq",
+      "order": 92
+    },
+    {
+      "ru": "советовать",
+      "uz": "maslahat bermoq",
+      "order": 93
+    },
+    {
+      "ru": "предлагать",
+      "uz": "taklif qilmoq",
+      "order": 94
+    },
+    {
+      "ru": "разрешать",
+      "uz": "ruxsat bermoq",
+      "order": 95
+    },
+    {
+      "ru": "запрещать",
+      "uz": "taqiqlamoq, man etmoq",
+      "order": 96
+    },
+    {
+      "ru": "наказывать",
+      "uz": "jazolamoq",
+      "order": 97
+    },
+    {
+      "ru": "прощать",
+      "uz": "kechirmoq, afv etmoq",
+      "order": 98
+    },
+    {
+      "ru": "благодарить",
+      "uz": "minnatdorchilik bildirmoq, rahmat aytmoq",
+      "order": 99
+    },
+    {
+      "ru": "извиняться",
+      "uz": "uzr so'ramoq",
+      "order": 100
+    }
+  ],
+  "101-150": [
+    {
+      "ru": "здороваться",
+      "uz": "salomlashmoq",
+      "order": 101
+    },
+    {
+      "ru": "прощаться",
+      "uz": "xayrlashmoq",
+      "order": 102
+    },
+    {
+      "ru": "встречать",
+      "uz": "kutib olmoq, uchratmoq",
+      "order": 103
+    },
+    {
+      "ru": "провожать",
+      "uz": "kuzatib qo'ymoq",
+      "order": 104
+    },
+    {
+      "ru": "приглашать",
+      "uz": "taklif qilmoq",
+      "order": 105
+    },
+    {
+      "ru": "посещать",
+      "uz": "tashrif buyurmoq, borib ko'rmoq",
+      "order": 106
+    },
+    {
+      "ru": "гостить",
+      "uz": "mehmonda bo'lmoq",
+      "order": 107
+    },
+    {
+      "ru": "угощать",
+      "uz": "mehmon qilmoq, siylamoq",
+      "order": 108
+    },
+    {
+      "ru": "дарить",
+      "uz": "sovg'a qilmoq, hadya etmoq",
+      "order": 109
+    },
+    {
+      "ru": "поздравлять",
+      "uz": "tabriklamoq, qutlamoq",
+      "order": 110
+    },
+    {
+      "ru": "желать",
+      "uz": "tilamoq, istamoq",
+      "order": 111
+    },
+    {
+      "ru": "праздновать",
+      "uz": "nishonlamoq, bayram qilmoq",
+      "order": 112
+    },
+    {
+      "ru": "выигрывать",
+      "uz": "yutmoq, g'alaba qozonmoq",
+      "order": 113
+    },
+    {
+      "ru": "проигрывать",
+      "uz": "yutqazmoq, mag'lub bo'lmoq",
+      "order": 114
+    },
+    {
+      "ru": "соревноваться",
+      "uz": "musobaqalashmoq, bellashmoq",
+      "order": 115
+    },
+    {
+      "ru": "тренироваться",
+      "uz": "mashq qilmoq, shug'ullanmoq",
+      "order": 116
+    },
+    {
+      "ru": "побеждать",
+      "uz": "g'alaba qozonmoq, yengmoq",
+      "order": 117
+    },
+    {
+      "ru": "уступать",
+      "uz": "yon bermoq, joy bo'shatmoq",
+      "order": 118
+    },
+    {
+      "ru": "защищать",
+      "uz": "himoya qilmoq",
+      "order": 119
+    },
+    {
+      "ru": "нападать",
+      "uz": "hujum qilmoq",
+      "order": 120
+    },
+    {
+      "ru": "бороться",
+      "uz": "kurashmoq",
+      "order": 121
+    },
+    {
+      "ru": "сдаваться",
+      "uz": "taslim bo'lmoq",
+      "order": 122
+    },
+    {
+      "ru": "преодолевать",
+      "uz": "yengib o'tmoq, yengmoq",
+      "order": 123
+    },
+    {
+      "ru": "достигать",
+      "uz": "erishmoq, yetishmoq",
+      "order": 124
+    },
+    {
+      "ru": "стремиться",
+      "uz": "intilmoq, harakat qilmoq",
+      "order": 125
+    },
+    {
+      "ru": "пытаться",
+      "uz": "urinib ko'rmoq",
+      "order": 126
+    },
+    {
+      "ru": "стараться",
+      "uz": "harakat qilmoq, tirishmoq",
+      "order": 127
+    },
+    {
+      "ru": "добиваться",
+      "uz": "erishmoq, qo'lga kiritmoq",
+      "order": 128
+    },
+    {
+      "ru": "терпеть",
+      "uz": "sabr qilmoq, chidamoq",
+      "order": 129
+    },
+    {
+      "ru": "страдать",
+      "uz": "azob chekmoq, qiynalmoq",
+      "order": 130
+    },
+    {
+      "ru": "жалеть",
+      "uz": "achinmoq, afsuslanmoq",
+      "order": 131
+    },
+    {
+      "ru": "радоваться",
+      "uz": "quvonmoq, xursand bo'lmoq",
+      "order": 132
+    },
+    {
+      "ru": "грустить",
+      "uz": "xafa bo'lmoq, g'amgin bo'lmoq",
+      "order": 133
+    },
+    {
+      "ru": "скучать",
+      "uz": "sog'inmoq, zerikmoq",
+      "order": 134
+    },
+    {
+      "ru": "удивляться",
+      "uz": "hayron qolmoq, ajablanmoq",
+      "order": 135
+    },
+    {
+      "ru": "сердиться",
+      "uz": "achchiqlanmoq, jahli chiqmoq",
+      "order": 136
+    },
+    {
+      "ru": "злиться",
+      "uz": "g'azablanmoq",
+      "order": 137
+    },
+    {
+      "ru": "ревновать",
+      "uz": "rashk qilmoq",
+      "order": 138
+    },
+    {
+      "ru": "завидовать",
+      "uz": "hasad qilmoq",
+      "order": 139
+    },
+    {
+      "ru": "гордиться",
+      "uz": "faxrlanmoq, g'ururlanmoq",
+      "order": 140
+    },
+    {
+      "ru": "уважать",
+      "uz": "hurmat qilmoq",
+      "order": 141
+    },
+    {
+      "ru": "ценить",
+      "uz": "qadrlamoq",
+      "order": 142
+    },
+    {
+      "ru": "презирать",
+      "uz": "nafratlanmoq, mensimaslik",
+      "order": 143
+    },
+    {
+      "ru": "ненавидеть",
+      "uz": "yomon ko'rmoq, nafratlanmoq",
+      "order": 144
+    },
+    {
+      "ru": "обожать",
+      "uz": "jondan sevmoq, yaxshi ko'rmoq",
+      "order": 145
+    },
+    {
+      "ru": "восхищаться",
+      "uz": "qoyil qolmoq, zavqlanmoq",
+      "order": 146
+    },
+    {
+      "ru": "интересоваться",
+      "uz": "qiziqmoq",
+      "order": 147
+    },
+    {
+      "ru": "увлекаться",
+      "uz": "berilib ketmoq, qiziqmoq",
+      "order": 148
+    },
+    {
+      "ru": "заниматься",
+      "uz": "shug'ullanmoq",
+      "order": 149
+    },
+    {
+      "ru": "участвовать",
+      "uz": "qatnashmoq, ishtirok etmoq",
+      "order": 150
+    }
+  ],
+  "151-200": [
+    {
+      "ru": "организовывать",
+      "uz": "tashkil etmoq, uyushtirmoq",
+      "order": 151
+    },
+    {
+      "ru": "руководить",
+      "uz": "boshqarmoq, rahbarlik qilmoq",
+      "order": 152
+    },
+    {
+      "ru": "управлять",
+      "uz": "boshqarmoq, idora qilmoq",
+      "order": 153
+    },
+    {
+      "ru": "контролировать",
+      "uz": "nazorat qilmoq",
+      "order": 154
+    },
+    {
+      "ru": "проверять",
+      "uz": "tekshirmoq",
+      "order": 155
+    },
+    {
+      "ru": "исправлять",
+      "uz": "to'g'rilamoq, tuzatmoq",
+      "order": 156
+    },
+    {
+      "ru": "доверять",
+      "uz": "ishonmoq, ishonch bildirmoq",
+      "order": 157
+    },
+    {
+      "ru": "предавать",
+      "uz": "xiyonat qilmoq",
+      "order": 158
+    },
+    {
+      "ru": "обманывать",
+      "uz": "aldamoq",
+      "order": 159
+    },
+    {
+      "ru": "врать",
+      "uz": "yolg'on gapirmoq",
+      "order": 160
+    },
+    {
+      "ru": "скрывать",
+      "uz": "yashirmoq, sir saqlamoq",
+      "order": 161
+    },
+    {
+      "ru": "прятать",
+      "uz": "berkitmoq, yashirmoq",
+      "order": 162
+    },
+    {
+      "ru": "показывать",
+      "uz": "ko'rsatmoq, namoyish qilmoq",
+      "order": 163
+    },
+    {
+      "ru": "прятаться",
+      "uz": "yashirinmoq, bekinmoq",
+      "order": 164
+    },
+    {
+      "ru": "исчезать",
+      "uz": "g'oyib bo'lmoq, yo'qolmoq",
+      "order": 165
+    },
+    {
+      "ru": "появляться",
+      "uz": "paydo bo'lmoq, ko'rinmoq",
+      "order": 166
+    },
+    {
+      "ru": "случаться",
+      "uz": "sodir bo'lmoq, yuz bermoq",
+      "order": 167
+    },
+    {
+      "ru": "происходить",
+      "uz": "yuz bermoq, bo'lib o'tmoq",
+      "order": 168
+    },
+    {
+      "ru": "меняться",
+      "uz": "o'zgarmoq",
+      "order": 169
+    },
+    {
+      "ru": "развиваться",
+      "uz": "rivojlanmoq, o'smoq",
+      "order": 170
+    },
+    {
+      "ru": "расти",
+      "uz": "o'smoq, ulg'aymoq",
+      "order": 171
+    },
+    {
+      "ru": "уменьшаться",
+      "uz": "kamaymoq, kichraymoq",
+      "order": 172
+    },
+    {
+      "ru": "увеличиваться",
+      "uz": "ko'paymoq, kattalashmoq",
+      "order": 173
+    },
+    {
+      "ru": "падать",
+      "uz": "yiqilmoq, tushmoq",
+      "order": 174
+    },
+    {
+      "ru": "подниматься",
+      "uz": "ko'tarilmoq, yuqoriga chiqmoq",
+      "order": 175
+    },
+    {
+      "ru": "опускаться",
+      "uz": "pastga tushmoq, pasaymoq",
+      "order": 176
+    },
+    {
+      "ru": "двигаться",
+      "uz": "harakatlanmoq, qimirlamoq",
+      "order": 177
+    },
+    {
+      "ru": "останавливаться",
+      "uz": "to'xtamoq",
+      "order": 178
+    },
+    {
+      "ru": "продолжать",
+      "uz": "davom ettirmoq",
+      "order": 179
+    },
+    {
+      "ru": "прекращать",
+      "uz": "to'xtatmoq, bas qilmoq",
+      "order": 180
+    },
+    {
+      "ru": "начинаться",
+      "uz": "boshlanmoq",
+      "order": 181
+    },
+    {
+      "ru": "заканчиваться",
+      "uz": "tugamoq, tamom bo'lmoq",
+      "order": 182
+    },
+    {
+      "ru": "длиться",
+      "uz": "davom etmoq (vaqt bo'yicha)",
+      "order": 183
+    },
+    {
+      "ru": "спешить",
+      "uz": "shoshilmoq",
+      "order": 184
+    },
+    {
+      "ru": "опаздывать",
+      "uz": "kechikmoq",
+      "order": 185
+    },
+    {
+      "ru": "успевать",
+      "uz": "ulgurmoq, yetishmoq",
+      "order": 186
+    },
+    {
+      "ru": "преподавать",
+      "uz": "dars bermoq, o'qitmoq",
+      "order": 187
+    },
+    {
+      "ru": "объяснять",
+      "uz": "tushuntirmoq, izohlamoq",
+      "order": 188
+    },
+    {
+      "ru": "повторять",
+      "uz": "takrorlamoq",
+      "order": 189
+    },
+    {
+      "ru": "переводить",
+      "uz": "tarjima qilmoq, ko'chirmoq",
+      "order": 190
+    },
+    {
+      "ru": "произносить",
+      "uz": "talaffuz qilmoq",
+      "order": 191
+    },
+    {
+      "ru": "звучать",
+      "uz": "yangramoq, eshitilmoq",
+      "order": 192
+    },
+    {
+      "ru": "шуметь",
+      "uz": "shovqin solmoq",
+      "order": 193
+    },
+    {
+      "ru": "наблюдать",
+      "uz": "kuzatmoq",
+      "order": 194
+    },
+    {
+      "ru": "замечать",
+      "uz": "payqamoq, sezmoq",
+      "order": 195
+    },
+    {
+      "ru": "чувствовать",
+      "uz": "his qilmoq, sezmoq",
+      "order": 196
+    },
+    {
+      "ru": "ощущать",
+      "uz": "tuyg'uni sezmoq, his etmoq",
+      "order": 197
+    },
+    {
+      "ru": "пробовать",
+      "uz": "ta'tib ko'rmoq, sinab ko'rmoq",
+      "order": 198
+    },
+    {
+      "ru": "касаться",
+      "uz": "tegmoq, ushlab ko'rmoq",
+      "order": 199
+    },
+    {
+      "ru": "держать",
+      "uz": "ushlab turmoq",
+      "order": 200
+    }
+  ],
+  "201-229": [
+    {
+      "ru": "брать",
+      "uz": "olmoq",
+      "order": 201
+    },
+    {
+      "ru": "давать",
+      "uz": "bermoq",
+      "order": 202
+    },
+    {
+      "ru": "класть",
+      "uz": "qo'ymoq (yotqizib)",
+      "order": 203
+    },
+    {
+      "ru": "ставить",
+      "uz": "qo'ymoq (tikka qilib)",
+      "order": 204
+    },
+    {
+      "ru": "вешать",
+      "uz": "ilmoq, osmoq",
+      "order": 205
+    },
+    {
+      "ru": "бросать",
+      "uz": "tashlamoq, uloqtirmoq",
+      "order": 206
+    },
+    {
+      "ru": "ловить",
+      "uz": "tutmoq, ushlab olmoq",
+      "order": 207
+    },
+    {
+      "ru": "тянуть",
+      "uz": "tortmoq",
+      "order": 208
+    },
+    {
+      "ru": "толкать",
+      "uz": "itarmoq, siltamoq",
+      "order": 209
+    },
+    {
+      "ru": "нести",
+      "uz": "ko'tarib bormoq, eltmoq",
+      "order": 210
+    },
+    {
+      "ru": "везти",
+      "uz": "olib bormoq (transportda)",
+      "order": 211
+    },
+    {
+      "ru": "водить",
+      "uz": "haydamoq (mashina), yetaklamoq",
+      "order": 212
+    },
+    {
+      "ru": "кататься",
+      "uz": "uchmoq (konki, rolik, velosipedda)",
+      "order": 213
+    },
+    {
+      "ru": "беседовать",
+      "uz": "suhbatlashmoq, suhbat qurmoq",
+      "order": 214
+    },
+    {
+      "ru": "сочинять",
+      "uz": "ijod qilmoq, to'qimoq",
+      "order": 215
+    },
+    {
+      "ru": "записывать",
+      "uz": "yozib bormoq, qayd etmoq",
+      "order": 216
+    },
+    {
+      "ru": "строчить",
+      "uz": "tez yozmoq, tikmoq",
+      "order": 217
+    },
+    {
+      "ru": "находиться",
+      "uz": "joylashmoq, bo'lmoq",
+      "order": 218
+    },
+    {
+      "ru": "пребывать",
+      "uz": "bo'lmoq, yashamoq",
+      "order": 219
+    },
+    {
+      "ru": "являться",
+      "uz": "hisoblanmoq, bo'lmoq",
+      "order": 220
+    },
+    {
+      "ru": "сдавать",
+      "uz": "topshirmoq (imtihon, hisobot)",
+      "order": 221
+    },
+    {
+      "ru": "подарить",
+      "uz": "sovg'a qilmoq, tuhfa etmoq",
+      "order": 222
+    },
+    {
+      "ru": "путешествовать",
+      "uz": "sayr qilmoq, dunyo kezmoq",
+      "order": 223
+    },
+    {
+      "ru": "стесняться",
+      "uz": "uyalmoq, tortinmoq",
+      "order": 224
+    },
+    {
+      "ru": "опаздывать",
+      "uz": "kech qolmoq",
+      "order": 225
+    },
+    {
+      "ru": "сплетничать",
+      "uz": "g'iybat qilmoq",
+      "order": 226
+    },
+    {
+      "ru": "исправлять",
+      "uz": "xatoni tuzatmoq",
+      "order": 227
+    },
+    {
+      "ru": "гордиться",
+      "uz": "faxrlanmoq",
+      "order": 228
+    },
+    {
+      "ru": "поступать",
+      "uz": "o'qishga kirmoq, ish tutmoq",
+      "order": 229
+    }
+  ]
+}
