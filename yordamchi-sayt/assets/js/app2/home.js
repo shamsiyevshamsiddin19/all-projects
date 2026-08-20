@@ -745,6 +745,185 @@
     '</div>';
   }
 
+  /* Educational Courses Pool for In-Feed Suggested Carousel */
+  var COURSES_POOL = [
+    {
+      id: 'python_core',
+      title: 'Python Dasturlash',
+      sub: 'Noldan professional darajagacha amaliy darslar',
+      badge: 'Python',
+      lessons: '32 dars',
+      level: 'Boshlang\'ich',
+      color: 'linear-gradient(135deg, #0284c7, #38bdf8)',
+      icon: 'code',
+      view: 'coding',
+      params: { cat: 'python' }
+    },
+    {
+      id: 'fastapi_backend',
+      title: 'FastAPI Backend',
+      sub: 'Zamonaviy REST API va Microservice arxitekturasi',
+      badge: 'FastAPI',
+      lessons: '24 dars',
+      level: 'O\'rta',
+      color: 'linear-gradient(135deg, #059669, #10b981)',
+      icon: 'zap',
+      view: 'coding',
+      params: { cat: 'fastapi' }
+    },
+    {
+      id: 'ru_grammar_229',
+      title: 'Rus tili: 229 Fe\'l',
+      sub: 'Hozirgi zamon tuslanishi, audio va misollar',
+      badge: '229 Fe\'l',
+      lessons: '229 fe\'l',
+      level: 'Barcha darajalar',
+      color: 'linear-gradient(135deg, #f59e0b, #ef4444)',
+      icon: 'book',
+      view: 'grammar',
+      params: {}
+    },
+    {
+      id: 'ru_tenses',
+      title: 'Rus tili: Zamonlar',
+      sub: 'O\'tgan, hozirgi va kelasi zamon qoidalari',
+      badge: 'Grammatika',
+      lessons: '18 mavzu',
+      level: 'A2-B1',
+      color: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+      icon: 'bookOpen',
+      view: 'grammar',
+      params: {}
+    },
+    {
+      id: 'en_vocab_8000',
+      title: 'Ingliz tili: 8000 So\'z',
+      sub: 'Oxford 8000 eng faol va kerakli so\'zlar',
+      badge: '8K So\'z',
+      lessons: '8000 so\'z',
+      level: 'A1-C1',
+      color: 'linear-gradient(135deg, #06b6d4, #3b82f6)',
+      icon: 'globe',
+      view: 'languages',
+      params: { lang: 'english' }
+    },
+    {
+      id: 'postgres_db',
+      title: 'PostgreSQL & SQL',
+      sub: 'Ma\'lumotlar bazasi, jadvallar va murakkab so\'rovlar',
+      badge: 'SQL',
+      lessons: '20 dars',
+      level: 'Amaliy',
+      color: 'linear-gradient(135deg, #336791, #6366f1)',
+      icon: 'layers',
+      view: 'coding',
+      params: { cat: 'postgresql' }
+    },
+    {
+      id: 'linux_terminal',
+      title: 'Linux & Terminal',
+      sub: 'Server boshqaruvi, bash script va buyruqlar',
+      badge: 'Linux',
+      lessons: '16 dars',
+      level: 'Amaliy',
+      color: 'linear-gradient(135deg, #e11d48, #f43f5e)',
+      icon: 'terminal',
+      view: 'coding',
+      params: { cat: 'linux' }
+    },
+    {
+      id: 'git_github',
+      title: 'Git & GitHub',
+      sub: 'Versiyalarni boshqarish va jamoaviy loyihalar',
+      badge: 'Git',
+      lessons: '12 dars',
+      level: 'Muhim',
+      color: 'linear-gradient(135deg, #f97316, #ea580c)',
+      icon: 'gitBranch',
+      view: 'coding',
+      params: { cat: 'git' }
+    },
+    {
+      id: 'books_library',
+      title: 'Kutubxona & Kitoblar',
+      sub: 'Badiiy va ilmiy kitoblar, audio kitoblar',
+      badge: 'Kitoblar',
+      lessons: '50+ kitob',
+      level: 'Barchaga',
+      color: 'linear-gradient(135deg, #8b5cf6, #d946ef)',
+      icon: 'book',
+      view: 'library',
+      params: {}
+    },
+    {
+      id: 'sport_workout',
+      title: 'Sport & Kunlik Mashq',
+      sub: 'Kunlik qomat va salomatlik mashg\'ulotlari',
+      badge: 'Workout',
+      lessons: '30+ mashq',
+      level: 'Barchaga',
+      color: 'linear-gradient(135deg, #10b981, #059669)',
+      icon: 'flame',
+      view: 'sport',
+      params: {}
+    }
+  ];
+
+  /* Render Instagram/Threads style Suggested Courses Carousel */
+  function renderCoursesCarouselCard(idx) {
+    // Har safar har xil tasodifiy tartibda aralashtirish (Shuffle)
+    var shuffled = COURSES_POOL.slice();
+    for (var i = shuffled.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var temp = shuffled[i];
+      shuffled[i] = shuffled[j];
+      shuffled[j] = temp;
+    }
+    var selected = shuffled.slice(0, 5);
+
+    var itemsHtml = selected.map(function (c) {
+      return '<div class="ig-course-snap-item">' +
+        '<div class="ig-course-snap-card">' +
+          '<div class="ig-course-snap-top" style="background:' + c.color + '">' +
+            '<span class="ig-course-snap-badge">' + App.esc(c.badge) + '</span>' +
+            '<span class="ig-course-snap-icon" data-icon="' + (c.icon || 'book') + '" data-icon-size="28"></span>' +
+          '</div>' +
+          '<div class="ig-course-snap-body">' +
+            '<div class="ig-course-snap-title">' + App.esc(c.title) + '</div>' +
+            '<div class="ig-course-snap-sub">' + App.esc(c.sub) + '</div>' +
+            '<div class="ig-course-snap-meta">' +
+              '<span class="ig-course-meta-tag">' + App.esc(c.lessons) + '</span>' +
+              '<span class="ig-course-meta-tag">' + App.esc(c.level) + '</span>' +
+            '</div>' +
+            '<button class="ig-course-snap-cta" data-act="go" data-arg=\'' + App.arg({ v: c.view, p: c.params || {} }) + '\'>' +
+              '<span>Boshlash</span> <span data-icon="arrowRight" data-icon-size="14"></span>' +
+            '</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    return '<div class="ig-courses-carousel-card">' +
+      '<div class="ig-courses-card-header">' +
+        '<div class="ig-courses-header-left">' +
+          '<div class="ig-courses-header-icon">' +
+            '<span data-icon="sparkles" data-icon-size="16"></span>' +
+          '</div>' +
+          '<div class="ig-courses-header-titles">' +
+            '<div class="ig-courses-header-title">Siz uchun tavsiya etilgan kurslar</div>' +
+            '<div class="ig-courses-header-sub">Interaktiv darslar va amaliyotlar</div>' +
+          '</div>' +
+        '</div>' +
+        '<button class="ig-courses-see-all-btn" data-act="go" data-arg=\'' + App.arg({ v: 'coding' }) + '\'>' +
+          '<span>Barchasi</span> <span data-icon="arrowRight" data-icon-size="12"></span>' +
+        '</button>' +
+      '</div>' +
+      '<div class="ig-courses-track">' +
+        itemsHtml +
+      '</div>' +
+    '</div>';
+  }
+
   /* Render batch of items into feed */
   function renderFeedItems(count, append) {
     var host = document.getElementById('ig-feed-list');
@@ -758,9 +937,16 @@
     var startIdx = FEED_WORDS.length;
     FEED_WORDS = FEED_WORDS.concat(newWords);
 
-    var html = newWords.map(function (w, i) {
-      return renderReelCard(w, startIdx + i);
-    }).join('');
+    var htmlArr = [];
+    newWords.forEach(function (w, i) {
+      var globalIdx = startIdx + i;
+      // Har 5 ta so'zdan keyin xuddi Instagram Threads postlaridek kurslar karuseli chiqsin
+      if (globalIdx > 0 && globalIdx % 5 === 0) {
+        htmlArr.push(renderCoursesCarouselCard(globalIdx));
+      }
+      htmlArr.push(renderReelCard(w, globalIdx));
+    });
+    var html = htmlArr.join('');
 
     if (append) {
       var tmp = document.createElement('div');
