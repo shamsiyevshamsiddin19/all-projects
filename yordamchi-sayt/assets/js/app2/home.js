@@ -767,28 +767,16 @@
             '<div class="ig-post-sub">Lug\'at Reels · O\'rganish</div>' +
           '</div>' +
         '</div>' +
-        '<div class="ig-post-header-actions">' +
-          '<button class="ig-post-more ' + (isMastered ? 'mastered' : '') + '" data-act="igToggleMastered" data-arg=\'' + App.arg({ word: w.ru, id: cardId }) + '\' title="' + (isMastered ? 'O\'rganilgan' : 'O\'rganildi deb belgilash') + '">' +
-            '<span data-icon="' + (isMastered ? 'check' : 'circle') + '" data-icon-size="15"></span>' +
-            '<span class="ig-master-text">' + (isMastered ? 'O\'rgandim' : 'O\'rganish') + '</span>' +
-          '</button>' +
-        '</div>' +
       '</div>' +
 
       /* Post Main Reel Body (Double tap to like & speak) */
-      '<div class="ig-post-body" data-dbl-word="' + App.esc(w.ru) + '" data-card-id="' + cardId + '">' +
+      '<div class="ig-post-body" data-dbl-word="' + App.esc(w.ru) + '" data-dbl-lang="' + ttsLang + '" data-card-id="' + cardId + '">' +
         '<div class="ig-heart-pop" id="pop_' + cardId + '"><span data-icon="heartFill" data-icon-size="76"></span></div>' +
         
         '<div class="vr-screen-flow">' +
           '<div class="vr-md-header">' +
             '<div class="vr-title-row">' +
               '<h1 class="vr-md-title">' + App.esc(w.ru) + '</h1>' +
-              '<button class="ig-sound-wave-btn" id="snd_' + cardId + '" data-act="igSpeakWord" data-arg=\'' + App.arg({ text: w.ru, lang: ttsLang, id: cardId }) + '\' title="Talaffuz">' +
-                '<span class="ig-sound-wave">' +
-                  '<i class="bar"></i><i class="bar"></i><i class="bar"></i><i class="bar"></i>' +
-                '</span>' +
-                '<span data-icon="volume" data-icon-size="16"></span>' +
-              '</button>' +
             '</div>' +
             '<div class="vr-md-sub">' + App.esc(w.uz) + '</div>' +
             '<div class="vr-md-divider" style="background:' + theme.color + '"></div>' +
@@ -919,47 +907,64 @@
     }, 100);
   }
 
-  /* Double Tap to Like */
+  /* Double Tap to Speak & Like */
   function bindDoubleTapEvents(container) {
     container.querySelectorAll('.ig-post-body').forEach(function (body) {
       var lastTap = 0;
       body.addEventListener('touchend', function (e) {
+        if (e.target.closest('.vr-details-btn') || e.target.closest('.vr-quote-audio-btn')) return;
         var now = Date.now();
-        if (now - lastTap < 300) {
+        if (now - lastTap < 350) {
           e.preventDefault();
           var word = body.getAttribute('data-dbl-word');
+          var lang = body.getAttribute('data-dbl-lang') || 'ru-RU';
           var cardId = body.getAttribute('data-card-id');
-          triggerDoubleTapLike(word, cardId);
+          triggerDoubleTap(word, lang, cardId);
         }
         lastTap = now;
       });
-      body.addEventListener('dblclick', function () {
+      body.addEventListener('dblclick', function (e) {
+        if (e.target.closest('.vr-details-btn') || e.target.closest('.vr-quote-audio-btn')) return;
         var word = body.getAttribute('data-dbl-word');
+        var lang = body.getAttribute('data-dbl-lang') || 'ru-RU';
         var cardId = body.getAttribute('data-card-id');
-        triggerDoubleTapLike(word, cardId);
+        triggerDoubleTap(word, lang, cardId);
       });
     });
   }
 
-  function triggerDoubleTapLike(word, cardId) {
-    if (!word || !cardId) return;
-    var pop = document.getElementById('pop_' + cardId);
-    if (pop) {
-      pop.classList.remove('animate');
-      void pop.offsetWidth;
-      pop.classList.add('animate');
-      setTimeout(function () { pop.classList.remove('animate'); }, 850);
+  function triggerDoubleTap(word, lang, cardId) {
+    if (!word) return;
+
+    // 1. Ovoz chiqarish (TTS speak automatically)
+    if (window.TTS && TTS.speak) {
+      TTS.speak(word, lang || 'ru-RU');
     }
+
+    // 2. 3D Heart pop animatsiyasi
+    if (cardId) {
+      var pop = document.getElementById('pop_' + cardId);
+      if (pop) {
+        pop.classList.remove('animate');
+        void pop.offsetWidth;
+        pop.classList.add('animate');
+        setTimeout(function () { pop.classList.remove('animate'); }, 850);
+      }
+    }
+
+    // 3. Sevimlilarga saqlash
     var likes = getLikedWords();
     if (likes.indexOf(word) < 0) {
       likes.push(word);
       saveLikedWords(likes);
-      var el = document.getElementById(cardId);
-      var btn = el ? el.querySelector('.ig-act-btn[data-act="igToggleLike"]') : null;
-      if (btn) {
-        btn.classList.add('active', 'liked');
-        btn.innerHTML = '<span data-icon="heartFill" data-icon-size="24"></span>';
-        App.icons(btn);
+      if (cardId) {
+        var el = document.getElementById(cardId);
+        var btn = el ? el.querySelector('.ig-act-btn[data-act="igToggleLike"]') : null;
+        if (btn) {
+          btn.classList.add('active', 'liked');
+          btn.innerHTML = '<span data-icon="heartFill" data-icon-size="24"></span>';
+          App.icons(btn);
+        }
       }
       updateStatsBar();
       App.toast('Sevimlilarga saqlandi! ❤️');
