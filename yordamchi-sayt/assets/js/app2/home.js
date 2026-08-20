@@ -231,9 +231,11 @@
 
       App.icons(page);
       initFeed();
+      mountDrawer();
     },
     leave: function () {
       closeStoryViewer();
+      unmountDrawer();
     }
   });
 
@@ -701,6 +703,93 @@
       '</div>';
 
     App.icons(modal);
+  }
+
+  /* =========================================================
+     O'NG TOMONDAGI TEZKOR TORTMA (BARCHA BO'LIMLAR)
+     1 ustunli toza vertikal panel
+     ========================================================= */
+  var DRAWER_SECTIONS = [
+    { t: 'Maqsadlar', s: 'Kunlik vazifalar va odatlar', ic: 'check', c: '#10b981', go: { v: 'goals' } },
+    { t: 'Statistika', s: 'Rivojlanish ko\'rsatkichlari', ic: 'chart', c: '#3b82f6', go: { v: 'stats' } },
+    { t: 'Tarix', s: 'Faollik va o\'rganishlar arxivi', ic: 'clock', c: '#8b5cf6', go: { v: 'tarix' } },
+    { t: 'Testlar', s: 'Bilimni sinash uchun testlar', ic: 'book', c: '#f59e0b', go: { v: 'fanlar' } },
+    { t: 'Coding', s: 'Dasturlash darsliklari va amaliyot', ic: 'code', c: '#06b6d4', go: { v: 'coding' } },
+    { t: 'Boostday', s: 'Intensiv rivojlanish rejasi', ic: 'message', c: '#ec4899', go: { v: 'boost' } },
+    { t: 'Arxiv', s: 'Bajarilgan maqsadlar ombori', ic: 'archive', c: '#64748b', go: { v: 'arxiv' } },
+    { t: 'Qoidalar', s: 'Hayotiy qoidalar va tamoyillar', ic: 'file', c: '#14b8a6', go: { v: 'qoidalar' } },
+    { t: 'Grammatika', s: 'Rus tili zamonlari va qoidalari', ic: 'book', c: '#a855f7', go: { v: 'grammar', p: { lang: 'russian', folder: '05. Времена глагола (Zamonlar)' } } },
+    { t: 'Lug\'at', s: '1-8000 so\'zlar to\'liq bazasi', ic: 'globe', c: '#0ea5e9', go: { v: 'vocab', p: { lang: 'russian' } } },
+    { t: 'Profil', s: 'Rivojlanish profili va faollik', ic: 'user', c: '#6366f1', go: { v: 'profile' } }
+  ];
+
+  var DW = null;
+
+  function unmountDrawer() {
+    if (!DW) return;
+    document.removeEventListener('click', DW.onDocClick, true);
+    DW.el.remove();
+    DW = null;
+  }
+
+  function mountDrawer() {
+    unmountDrawer();
+    var el = document.createElement('div');
+    el.className = 'hdw';
+    el.innerHTML =
+      '<button class="hdw-handle" id="hdw-handle" aria-label="Barcha bo\'limlar"><i></i></button>' +
+      '<div class="hdw-panel">' +
+        '<div class="hdw-title">Barcha bo\'limlar</div>' +
+        DRAWER_SECTIONS.map(function (x) {
+          return '<button class="hdw-row" data-act="go" data-arg=\'' + App.arg(x.go) + '\'>' +
+            '<span class="hdw-ic" style="background:color-mix(in srgb,' + x.c + ' 16%, transparent);color:' + x.c + '">' +
+            '<span data-icon="' + x.ic + '" data-icon-size="16"></span></span>' +
+            '<span class="hdw-m"><b>' + App.esc(x.t) + '</b><span>' + App.esc(x.s) + '</span></span>' +
+            '</button>';
+        }).join('') +
+      '</div>';
+    document.body.appendChild(el);
+    App.icons(el);
+
+    var handle = el.querySelector('#hdw-handle');
+    var W = function () { return parseFloat(getComputedStyle(el).getPropertyValue('--hdw-w')) || 244; };
+
+    function setOpen(on) { el.classList.toggle('open', !!on); }
+    function isOpen() { return el.classList.contains('open'); }
+
+    var drag = null;
+    handle.addEventListener('pointerdown', function (e) {
+      drag = { x: e.clientX, base: isOpen() ? 0 : W(), moved: 0 };
+      el.classList.add('drag');
+      try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+    });
+    handle.addEventListener('pointermove', function (e) {
+      if (!drag) return;
+      var dx = e.clientX - drag.x;
+      drag.moved = Math.max(drag.moved, Math.abs(dx));
+      var off = Math.max(0, Math.min(W(), drag.base + dx));
+      el.style.transform = 'translateY(-50%) translateX(' + off + 'px)';
+    });
+    function endDrag(e) {
+      if (!drag) return;
+      var dx = (e.clientX || 0) - drag.x;
+      var off = Math.max(0, Math.min(W(), drag.base + dx));
+      el.classList.remove('drag');
+      el.style.transform = '';
+      setOpen(drag.moved < 6 ? !isOpen() : off < W() / 2);
+      drag = null;
+    }
+    handle.addEventListener('pointerup', endDrag);
+    handle.addEventListener('pointercancel', endDrag);
+
+    function onDocClick(e) {
+      if (!DW || !isOpen()) return;
+      if (el.contains(e.target)) return;
+      setOpen(false);
+    }
+    document.addEventListener('click', onDocClick, true);
+
+    DW = { el: el, onDocClick: onDocClick };
   }
 
 })();

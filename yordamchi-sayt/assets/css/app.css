@@ -991,49 +991,51 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
    breakpointda o'zgarsa, panel ochilishida sakrab qoladi (sinovda aynan
    shunday bo'ldi: baza 236px, desktop 260px -> 24px siljish). */
 .hdw{
-  position:fixed; right:0; top:50%; z-index:60;
+  position:fixed; right:0; top:50%; z-index:90;
   display:flex; align-items:center;
   transform:translateY(-50%) translateX(var(--hdw-w));
   transition:transform .28s cubic-bezier(.3,.9,.3,1);
   -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
-  --hdw-w:244px;
+  --hdw-w:260px;
 }
 .hdw.open{ transform:translateY(-50%) translateX(0); }
 .hdw.drag{ transition:none; }
 
 .hdw-handle{
-  flex-shrink:0; width:26px; height:104px; padding:0;
+  flex-shrink:0; width:28px; height:104px; padding:0;
   display:flex; align-items:center; justify-content:center;
-  background:var(--bg-elev); color:var(--hint);
+  background:var(--bg-elev, var(--card)); color:var(--hint);
   border:1px solid var(--border); border-right:none;
-  border-radius:12px 0 0 12px;
-  box-shadow:-3px 0 14px rgba(0,0,0,.16);
+  border-radius:14px 0 0 14px;
+  box-shadow:-4px 0 16px rgba(0,0,0,.2);
   cursor:grab; touch-action:none;
 }
 .hdw-handle:active{ cursor:grabbing; }
-.hdw-handle i{ display:block; width:3px; height:34px; border-radius:99px; background:currentColor; opacity:.65; }
+.hdw-handle i{ display:block; width:3.5px; height:36px; border-radius:99px; background:currentColor; opacity:.75; }
 .hdw.open .hdw-handle{ color:var(--accent); }
 
 .hdw-panel{
   width:var(--hdw-w); box-sizing:border-box;
-  background:var(--bg-elev); border:1px solid var(--border); border-right:none;
-  border-radius:14px 0 0 14px; padding:12px 14px 14px;
-  box-shadow:-8px 0 30px rgba(0,0,0,.22);
-  max-height:78vh; overflow-y:auto;
+  background:var(--bg-elev, var(--card)); border:1px solid var(--border); border-right:none;
+  border-radius:16px 0 0 16px; padding:12px 14px 14px;
+  box-shadow:-10px 0 32px rgba(0,0,0,.26);
+  max-height:80vh; overflow-y:auto;
 }
-.hdw-title{ font-size:10.5px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
-  color:var(--hint); margin:0 0 8px 2px; }
+.hdw-title{ font-size:11px; font-weight:750; letter-spacing:.6px; text-transform:uppercase;
+  color:var(--hint); margin:0 0 10px 2px; }
 .hdw-row{
-  display:flex; align-items:center; gap:10px; width:100%; text-align:left;
-  padding:10px 2px; background:none; border:none;
+  display:flex; align-items:center; gap:11px; width:100%; text-align:left;
+  padding:9px 4px; background:none; border:none;
   border-bottom:1px solid var(--border-soft); color:var(--text);
+  border-radius:8px; transition:background .15s;
 }
 .hdw-row:last-child{ border-bottom:none; }
-.hdw-row:active{ opacity:.6; }
-.hdw-ic{ flex-shrink:0; width:30px; height:30px; border-radius:9px;
+.hdw-row:hover{ background:var(--card-hover, rgba(255,255,255,0.04)); }
+.hdw-row:active{ opacity:.6; transform:scale(.98); }
+.hdw-ic{ flex-shrink:0; width:32px; height:32px; border-radius:9px;
   display:flex; align-items:center; justify-content:center; }
 .hdw-m{ min-width:0; flex:1; }
-.hdw-m b{ display:block; font-size:13.5px; font-weight:600; line-height:1.3; overflow-wrap:anywhere; }
+.hdw-m b{ display:block; font-size:13.5px; font-weight:650; line-height:1.25; overflow-wrap:anywhere; }
 .hdw-m span{ display:block; font-size:11px; color:var(--hint); margin-top:2px; }
 
 /* --- Deadline: vaqt progressi --- */

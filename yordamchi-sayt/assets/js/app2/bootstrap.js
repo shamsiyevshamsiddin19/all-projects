@@ -18,7 +18,7 @@
     { v: 'qoidalar', n: 'Qoidalar', ic: 'file' },
     { v: 'settings', n: 'Sozlamalar', ic: 'settings' }
   ];
-  var BOTTOM = ['home', 'languages', 'kun', 'sport', 'profile'];
+  var BOTTOM = ['home', 'languages', 'kun', 'sport', 'settings'];
 
   var NAV_IMG = {
     home: 1, profile: 1, goals: 1, stats: 1, tarix: 1, fanlar: 1, languages: 1, coding: 1,
@@ -214,7 +214,7 @@
 
      Ro'yxat `navList()` dan MUSTAQIL: bu ataylab qisqa, tez-tez ochiladigan
      bo'limlar yo'li — yon paneldagi to'liq tartib bilan aralashtirilmaydi. */
-  var SWIPE_PATH = ['home', 'languages', 'kun', 'sport', 'profile'];
+  var SWIPE_PATH = ['home', 'languages', 'kun', 'sport', 'settings'];
 
   /* Joriy bo'lim shu yo'lning qaysi o'rnida (-1 = yo'lda yo'q). */
   function swipeIndex() {

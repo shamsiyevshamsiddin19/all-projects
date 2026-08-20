@@ -83,7 +83,6 @@
       renderHeatmap();
       renderDailyWidget();
       bindResize();
-      mountDrawer();
 
       var g = (window.Goals && Goals.data && Goals.data.loaded) ? Goals.stats() : { done: 0, total: 0, pct: 0 };
       renderRings(g);
@@ -91,98 +90,8 @@
         Goals.load().then(function () { renderRings(Goals.stats()); }).catch(function () {});
       }
     },
-    leave: function () { unbindResize(); stopHello(); unmountDrawer(); }
+    leave: function () { unbindResize(); stopHello(); }
   });
-
-  /* =========================================================
-     O'NG TOMONDAGI TEZKOR TORTMA
-
-     Yozuvlar BO'LIM TILIDA: rus bo'limi — ruscha, ingliz — inglizcha,
-     o'zbekcha bo'limlar — o'zbekcha. Shu sabab qaysi bo'limga
-     borishi tugmani o'qiganda darrov ayon bo'ladi.
-     ========================================================= */
-  var SHORTCUTS = [
-    { t: 'Грамматика', s: 'Русская грамматика', ic: 'book', c: 'var(--purple)',
-      go: { v: 'grammar', p: { lang: 'russian', folder: 'Grammatika' } } },
-    { t: 'Словарь', s: 'Русские слова', ic: 'globe', c: 'var(--teal)',
-      go: { v: 'vocab', p: { lang: 'russian' } } },
-    { t: 'Mening mashqlarim', s: 'Sport', ic: 'check', c: 'var(--accent)',
-      go: { v: 'sport_mine' } }
-  ];
-
-  var DW = null;
-
-  function unmountDrawer() {
-    if (!DW) return;
-    document.removeEventListener('click', DW.onDocClick, true);
-    DW.el.remove();
-    DW = null;
-  }
-
-  function mountDrawer() {
-    unmountDrawer();
-    var el = document.createElement('div');
-    el.className = 'hdw';
-    el.innerHTML =
-      '<button class="hdw-handle" id="hdw-handle" aria-label="Tezkor havolalar"><i></i></button>' +
-      '<div class="hdw-panel">' +
-        '<div class="hdw-title">Tezkor</div>' +
-        SHORTCUTS.map(function (x) {
-          return '<button class="hdw-row" data-act="go" data-arg=\'' + App.arg(x.go) + '\'>' +
-            '<span class="hdw-ic" style="background:color-mix(in srgb,' + x.c + ' 16%, transparent);color:' + x.c + '">' +
-            '<span data-icon="' + x.ic + '" data-icon-size="15"></span></span>' +
-            '<span class="hdw-m"><b>' + App.esc(x.t) + '</b><span>' + App.esc(x.s) + '</span></span>' +
-            '</button>';
-        }).join('') +
-      '</div>';
-    document.body.appendChild(el);
-    App.icons(el);
-
-    var handle = el.querySelector('#hdw-handle');
-    var W = function () { return parseFloat(getComputedStyle(el).getPropertyValue('--hdw-w')) || 236; };
-
-    function setOpen(on) { el.classList.toggle('open', !!on); }
-    function isOpen() { return el.classList.contains('open'); }
-
-    /* Bosib-tortish: chapga surish ochadi, o'ngga — yopadi. Barmoq/sichqon
-       deyarli qimirlamasa oddiy bosish deb hisoblanadi va shunchaki
-       almashtiriladi (tortmani ochish uchun aniq tortish shart emas). */
-    var drag = null;
-    handle.addEventListener('pointerdown', function (e) {
-      drag = { x: e.clientX, base: isOpen() ? 0 : W(), moved: 0 };
-      el.classList.add('drag');
-      try { handle.setPointerCapture(e.pointerId); } catch (err) {}
-    });
-    handle.addEventListener('pointermove', function (e) {
-      if (!drag) return;
-      var dx = e.clientX - drag.x;
-      drag.moved = Math.max(drag.moved, Math.abs(dx));
-      var off = Math.max(0, Math.min(W(), drag.base + dx));
-      el.style.transform = 'translateY(-50%) translateX(' + off + 'px)';
-    });
-    function endDrag(e) {
-      if (!drag) return;
-      var dx = (e.clientX || 0) - drag.x;
-      var off = Math.max(0, Math.min(W(), drag.base + dx));
-      el.classList.remove('drag');
-      el.style.transform = '';
-      setOpen(drag.moved < 6 ? !isOpen() : off < W() / 2);
-      drag = null;
-    }
-    handle.addEventListener('pointerup', endDrag);
-    handle.addEventListener('pointercancel', endDrag);
-
-    /* Tashqariga bosilsa yopiladi. `capture` — ichkaridagi `data-act="go"`
-       delegatsiyasi hujjat darajasida ishlaydi, undan OLDIN ushlaymiz. */
-    function onDocClick(e) {
-      if (!DW || !isOpen()) return;
-      if (el.contains(e.target)) return;
-      setOpen(false);
-    }
-    document.addEventListener('click', onDocClick, true);
-
-    DW = { el: el, onDocClick: onDocClick };
-  }
 
   /* =========================================================
      QUYOSH HISOBI — chiqish/botish vaqti
