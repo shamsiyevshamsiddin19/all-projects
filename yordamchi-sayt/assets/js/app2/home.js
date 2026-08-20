@@ -369,11 +369,9 @@
             '<div class="ig-feed-loader"><div class="spinner"></div><span>Lug\'atlar yuklanmoqda...</span></div>' +
           '</div>' +
 
-          /* Load More Bar */
-          '<div class="ig-load-more-wrap">' +
-            '<button class="btn primary full ig-load-btn" data-act="igLoadMoreWords">' +
-              '<span data-icon="refresh" data-icon-size="18"></span> Yana tasodifiy so\'zlar' +
-            '</button>' +
+          /* Infinite Scroll Sentinel */
+          '<div class="ig-infinite-sentinel" id="ig-infinite-sentinel">' +
+            '<div class="ig-infinite-spinner"><div class="spinner"></div><span>Yangi so\'zlar yuklanmoqda...</span></div>' +
           '</div>' +
         '</div>' +
         
@@ -383,10 +381,12 @@
       App.icons(page);
       bindSearchEvents(page);
       initFeed();
+      initInfiniteScroll();
       mountDrawer();
     },
     leave: function () {
       closeStoryViewer();
+      disconnectInfiniteScroll();
       unmountDrawer();
     }
   });
@@ -602,17 +602,25 @@
     return pool;
   }
 
-  /* Pick random words from loaded pool based on current filter */
-  function getRandomWords(count) {
+  /* Pick next batch of words from loaded pool based on current filter & offset */
+  function getNextWords(count, offset) {
     var pool = getFilteredWordsPool();
     var st = getFilterState();
 
-    var result = pool.slice();
+    if (!pool || pool.length === 0) return [];
+    if (pool.length <= 1) return pool;
+
     if (st.sort === 'alpha') {
-      result.sort(function (a, b) { return (a.ru || '').localeCompare(b.ru || ''); });
-      return result.slice(0, count);
+      var sorted = pool.slice().sort(function (a, b) { return (a.ru || '').localeCompare(b.ru || ''); });
+      var start = offset % sorted.length;
+      var end = start + count;
+      if (end <= sorted.length) return sorted.slice(start, end);
+      return sorted.slice(start).concat(sorted.slice(0, end - sorted.length));
     } else if (st.sort === 'recent') {
-      return result.slice(0, count);
+      var start = offset % pool.length;
+      var end = start + count;
+      if (end <= pool.length) return pool.slice(start, end);
+      return pool.slice(start).concat(pool.slice(0, end - pool.length));
     } else {
       var selected = [];
       var poolCopy = pool.slice();
@@ -830,8 +838,11 @@
     var host = document.getElementById('ig-feed-list');
     if (!host) return;
 
-    var newWords = getRandomWords(count);
     if (!append) FEED_WORDS = [];
+    var offset = FEED_WORDS.length;
+    var newWords = getNextWords(count, offset);
+    if (!newWords || newWords.length === 0) return;
+
     var startIdx = FEED_WORDS.length;
     FEED_WORDS = FEED_WORDS.concat(newWords);
 
@@ -850,6 +861,62 @@
       App.icons(host);
       bindDoubleTapEvents(host);
     }
+  }
+
+  /* Infinite Scroll Logic */
+  var INFINITE_OBSERVER = null;
+  var IS_LOADING_MORE = false;
+  var infiniteScrollThrottle = null;
+
+  function initInfiniteScroll() {
+    disconnectInfiniteScroll();
+    var sentinel = document.getElementById('ig-infinite-sentinel');
+    if (!sentinel) return;
+
+    if ('IntersectionObserver' in window) {
+      INFINITE_OBSERVER = new IntersectionObserver(function (entries) {
+        if (entries[0] && entries[0].isIntersecting) {
+          triggerInfiniteLoad();
+        }
+      }, {
+        root: null,
+        rootMargin: '700px',
+        threshold: 0.05
+      });
+      INFINITE_OBSERVER.observe(sentinel);
+    }
+
+    window.addEventListener('scroll', onInfiniteWindowScroll, { passive: true });
+  }
+
+  function disconnectInfiniteScroll() {
+    if (INFINITE_OBSERVER) {
+      INFINITE_OBSERVER.disconnect();
+      INFINITE_OBSERVER = null;
+    }
+    window.removeEventListener('scroll', onInfiniteWindowScroll);
+  }
+
+  function onInfiniteWindowScroll() {
+    if (infiniteScrollThrottle) return;
+    infiniteScrollThrottle = setTimeout(function () {
+      infiniteScrollThrottle = null;
+      var scrollPos = window.innerHeight + window.pageYOffset;
+      var totalHeight = document.documentElement.offsetHeight || document.body.offsetHeight;
+      if (totalHeight - scrollPos < 800) {
+        triggerInfiniteLoad();
+      }
+    }, 120);
+  }
+
+  function triggerInfiniteLoad() {
+    if (IS_LOADING_MORE) return;
+    if (!FEED_WORDS || FEED_WORDS.length === 0) return;
+    IS_LOADING_MORE = true;
+    setTimeout(function () {
+      renderFeedItems(6, true);
+      IS_LOADING_MORE = false;
+    }, 100);
   }
 
   /* Double Tap to Like */

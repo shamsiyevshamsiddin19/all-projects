@@ -3030,6 +3030,27 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   100% { transform: translate(-50%, -50%) scale(1.4); opacity: 0; }
 }
 
+/* Infinite Scroll Sentinel */
+.ig-infinite-sentinel {
+  padding: 30px 16px 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ig-infinite-spinner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--hint);
+  font-size: 13px;
+  font-weight: 600;
+}
+.ig-infinite-spinner .spinner {
+  width: 18px;
+  height: 18px;
+  border-width: 2px;
+}
+
 .ig-quiz-word-badge {
   display: inline-block;
   padding: 6px 14px;
