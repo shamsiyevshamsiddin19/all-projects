@@ -1237,6 +1237,16 @@
   /* ---------- Oraliq (batch) tanlash — barcha metodlar shu oraliqda ishlaydi ---------- */
   function rangeKey(lang, cat) { return lang + '::' + cat; }
   function rangeAll() { try { return JSON.parse(localStorage.getItem('vocab_range_v1') || '{}') || {}; } catch (e) { return {}; } }
+  function getBookmarkedWords() {
+    try { return JSON.parse(localStorage.getItem('vocab_bookmarks_v1') || '[]'); } catch (e) { return []; }
+  }
+  function saveBookmarkedWords(list) {
+    try { localStorage.setItem('vocab_bookmarks_v1', JSON.stringify(list)); } catch (e) {}
+  }
+  function isWordBookmarked(word) {
+    return getBookmarkedWords().indexOf(word) >= 0;
+  }
+
   function getRange(lang, cat, total) {
     var r = rangeAll()[rangeKey(lang, cat)];
     if (!r) return { from: 1, to: total };
@@ -1247,25 +1257,75 @@
     localStorage.setItem('vocab_range_v1', JSON.stringify(all));
   }
   /* Tanlangan oraliqdagi so'zlar (asl tartibda — aralashtirilmaydi) */
-  function rangedWords(lang, cat) {
+  function rangedWords(lang, cat, filter) {
     var words = V.data[cat] || [];
     if (!words.length) return [];
+    if (filter === 'bookmarks' || filter === 'saved') {
+      var bms = getBookmarkedWords();
+      return words.filter(function (w) { return bms.indexOf(w.ru) >= 0; });
+    }
     var r = getRange(lang, cat, words.length);
     return words.slice(r.from - 1, r.to);
   }
 
   App.actions.vocabRange = function (a) {
     var total = (V.data[a.cat] || []).length;
+    var allCatWords = V.data[a.cat] || [];
+    var bms = getBookmarkedWords();
+    var catBookmarks = allCatWords.filter(function (w) { return bms.indexOf(w.ru) >= 0; });
     var r = getRange(a.lang, a.cat, total);
+
     var html =
-      '<p class="muted" style="font-size:13px;margin:0 0 12px">Jami ' + total + ' ta so\'z. Mashqlar faqat shu oraliqda ishlaydi.</p>' +
+      '<div class="vr-saved-practice-card" style="margin-bottom:14px;padding:12px 14px;border-radius:16px;background:color-mix(in srgb,var(--accent) 10%,transparent);border:1px solid color-mix(in srgb,var(--accent) 25%,transparent)">' +
+        '<div class="flex" style="justify-content:space-between;align-items:center;margin-bottom:10px">' +
+          '<div class="flex" style="align-items:center;gap:6px">' +
+            '<span data-icon="bookmarkFill" data-icon-size="16" style="color:#f59e0b"></span>' +
+            '<span style="font-size:13.5px;font-weight:800;color:var(--text)">Saqlangan so\'zlar</span>' +
+          '</div>' +
+          '<span class="badge" style="background:#f59e0b;color:#fff;font-weight:800">' + catBookmarks.length + ' ta</span>' +
+        '</div>' +
+        '<div class="flex" style="gap:8px">' +
+          '<button class="btn ' + (catBookmarks.length ? '' : 'disabled') + '" id="vr-practice-saved-reels" style="flex:1;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-size:12px;padding:8px 10px">' +
+            '<span data-icon="play" data-icon-size="14"></span> Reels mashqi' +
+          '</button>' +
+          '<button class="btn sec ' + (catBookmarks.length ? '' : 'disabled') + '" id="vr-practice-saved-flash" style="flex:1;font-size:12px;padding:8px 10px">' +
+            '<span data-icon="refresh" data-icon-size="14"></span> Flashcard' +
+          '</button>' +
+        '</div>' +
+      '</div>' +
+      '<p class="muted" style="font-size:13px;margin:0 0 12px">Oraliqni sozlash (Jami ' + total + ' ta so\'z):</p>' +
       '<div class="flex" style="gap:8px;margin-bottom:12px">' +
       '<label class="field" style="flex:1;margin:0"><span>Dan</span><input class="input" type="number" id="vr-from" min="1" max="' + total + '" value="' + r.from + '"></label>' +
       '<label class="field" style="flex:1;margin:0"><span>Gacha</span><input class="input" type="number" id="vr-to" min="1" max="' + total + '" value="' + r.to + '"></label>' +
       '</div>' +
       '<div class="flex" style="flex-wrap:wrap;gap:6px;margin-bottom:14px" id="vr-quick"></div>' +
       '<button class="btn" id="vr-save">Saqlash</button>';
-    var sh = App.sheet(html, { title: 'Oraliqni tanlash' });
+
+    var sh = App.sheet(html, { title: 'Oraliq va Saqlanganlar' });
+
+    var btnSavedReels = sh.querySelector('#vr-practice-saved-reels');
+    if (btnSavedReels) {
+      btnSavedReels.onclick = function () {
+        if (!catBookmarks.length) {
+          App.toast('Bu bo\'limda hali saqlangan so\'zlar yo\'q');
+          return;
+        }
+        App.closeSheet();
+        App.go('vocab_reels', { lang: a.lang, cat: a.cat, filter: 'bookmarks' });
+      };
+    }
+    var btnSavedFlash = sh.querySelector('#vr-practice-saved-flash');
+    if (btnSavedFlash) {
+      btnSavedFlash.onclick = function () {
+        if (!catBookmarks.length) {
+          App.toast('Bu bo\'limda hali saqlangan so\'zlar yo\'q');
+          return;
+        }
+        App.closeSheet();
+        App.go('vocab_flash', { lang: a.lang, cat: a.cat, filter: 'bookmarks' });
+      };
+    }
+
     var quick = sh.querySelector('#vr-quick');
     var chunks = '<button class="chip-btn" data-f="1" data-t="' + total + '">Barchasi</button>';
     for (var i = 0; i < total; i += 20) {
@@ -2408,6 +2468,7 @@
     render: function (page, params) {
       var lang = params.lang === 'russian' ? 'russian' : 'english';
       var cat = params.cat;
+      var isSavedMode = (params.filter === 'bookmarks' || params.filter === 'saved');
       var loaded = V.lang === lang && V.data[cat];
 
       if (!loaded) {
@@ -2416,10 +2477,14 @@
         return;
       }
 
-      var words = rangedWords(lang, cat);
+      var words = rangedWords(lang, cat, params.filter);
       if (!words.length) {
         page.innerHTML = topbar(cat, 'vocab_practice', { lang: lang, cat: cat }) +
-          App.empty({ icon: 'list', title: 'So\'zlar yo\'q', text: 'Bu bo\'limda hali so\'zlar mavjud emas.' });
+          App.empty({
+            icon: isSavedMode ? 'bookmark' : 'list',
+            title: isSavedMode ? 'Saqlangan so\'zlar yo\'q' : 'So\'zlar yo\'q',
+            text: isSavedMode ? 'Bu bo\'limda hali birorta so\'z saqlanmagan.' : 'Bu bo\'limda hali so\'zlar mavjud emas.'
+          });
         App.icons(page);
         return;
       }
@@ -2433,12 +2498,14 @@
         '<div class="vr-header">' +
         '<div class="vr-header-left"><span class="vr-header-tag">Reels</span></div>' +
         '<div class="vr-header-right">' +
-        '<span class="vr-header-title">' + App.esc(lastSeg(cat)) + '</span>' +
+        '<span class="vr-header-title">' + (isSavedMode ? '🔖 Saqlanganlar (' + words.length + ')' : App.esc(lastSeg(cat))) + '</span>' +
+        '<button class="lm-r-x vr-range-hdr-btn" data-act="vocabRange" data-arg=\'' + App.arg({ lang: lang, cat: cat }) + '\' title="Oraliq va Saqlanganlar"><span data-icon="sliders" data-icon-size="18"></span></button>' +
         '<button class="lm-r-x" aria-label="Yopish" data-act="go" data-arg=\'' + App.arg({ v: 'vocab_practice', p: backParams }) + '\'><span data-icon="close" data-icon-size="20"></span></button>' +
         '</div>' +
         '</div>' +
         '<div class="lm-r-scroll vr-scroll"></div>' +
         '<div class="lm-r-rail vr-rail">' +
+        '<button class="lm-r-a" id="vr-btn-bm" aria-label="Saqlash"><span data-icon="bookmark" data-icon-size="19"></span><b>Saqlash</b></button>' +
         '<button class="lm-r-a" id="vr-btn-speak" aria-label="Talaffuz"><span data-icon="volume" data-icon-size="19"></span><b>Ovoz</b></button>' +
         '<button class="lm-r-a" id="vr-btn-srs" aria-label="Yodlandi"><span data-icon="check" data-icon-size="19"></span><b>Yodlandi</b></button>' +
         '<button class="lm-r-a" id="vr-btn-edit" aria-label="Tahrirlash"><span data-icon="edit" data-icon-size="19"></span><b>Tahrir</b></button>' +
@@ -2522,6 +2589,7 @@
         [].forEach.call(scroll.children, function (c, k) {
           c.classList.toggle('on', k === i);
         });
+        updateBmBtn();
         playAutoSpeak();
       }
 
@@ -2637,6 +2705,37 @@
       scroll.addEventListener('dblclick', function (e) {
         triggerSpeak(e.clientX, e.clientY);
       });
+
+      // Xatcho'p (Bookmark) tugmasi
+      var btnBm = page.querySelector('#vr-btn-bm');
+      function updateBmBtn() {
+        if (!btnBm || !words[i]) return;
+        var saved = getBookmarkedWords().indexOf(words[i].ru) >= 0;
+        btnBm.classList.toggle('active', saved);
+        var ic = btnBm.querySelector('span[data-icon]');
+        if (ic) { ic.setAttribute('data-icon', saved ? 'bookmarkFill' : 'bookmark'); App.icons(btnBm); }
+        var lb = btnBm.querySelector('b');
+        if (lb) lb.textContent = saved ? 'Saqlandi' : 'Saqlash';
+      }
+      updateBmBtn();
+      if (btnBm) {
+        btnBm.onclick = function () {
+          var w = words[i];
+          if (!w) return;
+          var bms = getBookmarkedWords();
+          var idx = bms.indexOf(w.ru);
+          if (idx >= 0) {
+            bms.splice(idx, 1);
+            saveBookmarkedWords(bms);
+            App.toast('Xatcho\'pdan olib tashlandi');
+          } else {
+            bms.push(w.ru);
+            saveBookmarkedWords(bms);
+            App.toast('Saqlandi! 🔖');
+          }
+          updateBmBtn();
+        };
+      }
 
       // Avto-ovoz tugmasi
       var btnSpeak = page.querySelector('#vr-btn-speak');

@@ -505,46 +505,87 @@
   }
 
   /* Load all dictionary words from API or fallback */
+  var FEED_CACHE_KEY = 'yordamchi_feed_cache_v2';
+  var FEED_CACHE_TTL = 3 * 60 * 60 * 1000; /* 3 soat — shundan keyin yangilaydi */
+
+  function saveFeedCache(ruItems, enItems) {
+    try {
+      localStorage.setItem(FEED_CACHE_KEY, JSON.stringify({
+        ts: Date.now(),
+        ru: ruItems,
+        en: enItems
+      }));
+    } catch (e) {}
+  }
+
+  function loadFeedCache() {
+    try {
+      var raw = JSON.parse(localStorage.getItem(FEED_CACHE_KEY) || 'null');
+      if (!raw || !raw.ts || !raw.ru) return null;
+      if (Date.now() - raw.ts > FEED_CACHE_TTL) return null; /* eskirgan */
+      return raw;
+    } catch (e) { return null; }
+  }
+
+  function applyFeedItems(ruItems, enItems) {
+    LOADED_WORDS_POOL = [];
+    ruItems.forEach(function (it) {
+      LOADED_WORDS_POOL.push({
+        ru: it.word_ru || it.ru,
+        uz: it.word_uz || it.uz,
+        lang: 'russian',
+        cat: it.category || it.cat || 'Rus tili',
+        note: it.note || '',
+        ex: it.example || it.ex || ''
+      });
+    });
+    enItems.forEach(function (it) {
+      LOADED_WORDS_POOL.push({
+        ru: it.word_ru || it.ru,
+        uz: it.word_uz || it.uz,
+        lang: 'english',
+        cat: it.category || it.cat || 'Ingliz tili',
+        note: it.note || '',
+        ex: it.example || it.ex || ''
+      });
+    });
+  }
+
   function initFeed() {
     FEED_WORDS = [];
     LOADED_WORDS_POOL = [];
 
+    /* 1. Cache dan darhol ko'rsatish (kutish yo'q) */
+    var cached = loadFeedCache();
+    if (cached) {
+      applyFeedItems(cached.ru, cached.en);
+      renderFeedItems(6);
+    }
+
+    /* 2. Fon rejimida yangi ma'lumot yuklab, cache ni yangilash */
     App.call('get_dict_data', null, { query: 'lang=russian' })
       .then(function (res) {
-        var items = (res && res.items) ? res.items : [];
-        if (items.length > 0) {
-          items.forEach(function (it) {
-            LOADED_WORDS_POOL.push({
-              ru: it.word_ru,
-              uz: it.word_uz,
-              lang: 'russian',
-              cat: it.category || 'Rus tili',
-              note: it.note || '',
-              ex: it.example || ''
-            });
+        var ruItems = (res && res.items) ? res.items : [];
+        return App.call('get_dict_data', null, { query: 'lang=english' })
+          .catch(function () { return null; })
+          .then(function (enRes) {
+            var enItems = (enRes && enRes.items) ? enRes.items : [];
+            saveFeedCache(ruItems, enItems);
+            /* Agar oldin cache bo'lmagan bo'lsa — yangi ma'lumot bilan render qilamiz */
+            if (!cached) {
+              applyFeedItems(ruItems, enItems);
+              if (LOADED_WORDS_POOL.length === 0) {
+                LOADED_WORDS_POOL = FALLBACK_WORDS.slice();
+              }
+              renderFeedItems(6);
+            }
           });
-        }
-        return App.call('get_dict_data', null, { query: 'lang=english' }).catch(function () { return null; });
-      })
-      .then(function (enRes) {
-        var enItems = (enRes && enRes.items) ? enRes.items : [];
-        if (enItems.length > 0) {
-          enItems.forEach(function (it) {
-            LOADED_WORDS_POOL.push({
-              ru: it.word_ru,
-              uz: it.word_uz,
-              lang: 'english',
-              cat: it.category || 'Ingliz tili',
-              note: it.note || '',
-              ex: it.example || ''
-            });
-          });
-        }
-        renderFeedItems(6);
       })
       .catch(function () {
-        LOADED_WORDS_POOL = FALLBACK_WORDS.slice();
-        renderFeedItems(6);
+        if (!cached) {
+          LOADED_WORDS_POOL = FALLBACK_WORDS.slice();
+          renderFeedItems(6);
+        }
       });
   }
 
