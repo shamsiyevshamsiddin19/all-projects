@@ -1,8 +1,11 @@
-/* Bosh sahifa — Instagram Stories va Reels uslubidagi tasodifiy lug'at tasmasi. */
+/* ============================================================
+   Yordamchi — Bosh sahifa (Instagram Stories & Reels Feed)
+   To'liq interaktiv, real ma'lumotlar bilan ishlovchi tizim
+   ============================================================ */
 (function () {
   'use strict';
 
-  /* Stories ro'yxati (Lug'atlar va Darsliklar) */
+  /* Stories ro'yxati (Lug'atlar, Grammatika va Darsliklar) */
   var STORIES = [
     {
       id: 'ru_229',
@@ -13,8 +16,20 @@
       category: 'Глаголы настоящего времени',
       color: 'linear-gradient(135deg, #f59e0b, #ef4444)',
       badge: '229',
-      icon: 'globe',
-      desc: 'Rus tilida eng ko\'p ishlatiladigan 229 ta fe\'lning mukammal tahlili'
+      desc: 'Rus tilida eng ko\'p ishlatiladigan 229 ta fe\'lning hozirgi zamon tuslanishi, shakllari va ma\'nodoshlari.',
+      sampleWord: {
+        w: 'я изучаю',
+        tr: 'men o\'rganyapman / tadqiq qilyapman',
+        forms: 'изучать (NCV) · изучить (CV) · я изучал (o\'tgan zamon)',
+        conj: 'я изучаю · ты изучаешь · он изучает · мы изучаем · вы изучаете · они изучают',
+        ex: 'Я с большим интересом изучаю веб-разработку и русский язык.',
+        exTr: 'Men katta qiziqish bilan veb-dasturlash va rus tilini o\'rganyapman.'
+      },
+      quiz: {
+        q: '«изучать» fe\'lining «мы» (biz) uchun hozirgi zamon shakli qaysi?',
+        opts: ['мы изучаем', 'мы изучаете', 'мы изучают', 'мы изучил'],
+        correct: 0
+      }
     },
     {
       id: 'ru_1000',
@@ -25,20 +40,20 @@
       category: '1-8000/1-1000/1-100',
       color: 'linear-gradient(135deg, #3b82f6, #06b6d4)',
       badge: '1K',
-      icon: 'globe',
-      desc: 'Eng ko\'p uchraydigan 1000 ta ruscha so\'z va misollar'
-    },
-    {
-      id: 'ru_8000',
-      title: 'Rus tili 8000',
-      sub: 'Katta lug\'at',
-      type: 'vocab',
-      lang: 'russian',
-      category: '1-8000',
-      color: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
-      badge: '8K',
-      icon: 'globe',
-      desc: 'Rus tilining 8000 ta so\'zdan iborat to\'liq lug\'at bazasi'
+      desc: 'Eng ko\'p uchraydigan 1000 ta ruscha so\'z, talaffuz va jonli misollar.',
+      sampleWord: {
+        w: 'достижение',
+        tr: 'yutuq, natija, muvaffaqiyat',
+        forms: 'Ot · средний род · ko\'pligi: достижения',
+        conj: 'Синонимы: успех, победа, результат',
+        ex: 'Каждый выученный урок — это ваше личное достижение.',
+        exTr: 'Har bir o\'rganilgan dars — bu sizning shaxsiy yutug\'ingizdir.'
+      },
+      quiz: {
+        q: '«достижение» so\'zining o\'zbekcha tarjimasi nima?',
+        opts: ['yutuq, natija', 'muammo, to\'siq', 'vaqt, soat', 'kitob, darslik'],
+        correct: 0
+      }
     },
     {
       id: 'en_8000',
@@ -49,8 +64,20 @@
       category: '1-8000/1-1000/1-100',
       color: 'linear-gradient(135deg, #10b981, #3b82f6)',
       badge: 'EN',
-      icon: 'globe',
-      desc: 'Ingliz tilining 8000 ta eng muhim so\'zlari'
+      desc: 'Oxford va Cambridge standartidagi 8000 ta eng kerakli inglizcha so\'zlar.',
+      sampleWord: {
+        w: 'perseverance',
+        tr: 'matonat, qat\'iyatlilik, sabot',
+        forms: 'Noun · Uncountable · Pronunciation: /ˌpɜːsɪˈvɪərəns/',
+        conj: 'Synonyms: persistence, dedication, tenacity',
+        ex: 'Success is the result of hard work and perseverance.',
+        exTr: 'Muvaffaqiyat — mashaqqatli mehnat va matonat natijasidir.'
+      },
+      quiz: {
+        q: 'What is the synonym of «perseverance»?',
+        opts: ['persistence', 'laziness', 'hesitation', 'weakness'],
+        correct: 0
+      }
     },
     {
       id: 'ru_grammar',
@@ -61,8 +88,20 @@
       folder: '05. Времена глагола (Zamonlar)',
       color: 'linear-gradient(135deg, #6366f1, #a855f7)',
       badge: 'GR',
-      icon: 'book',
-      desc: 'Rus tili zamonlari, turlari va qoidalari'
+      desc: 'Rus tili fe\'l zamonlari: Hozirgi (Настоящее), O\'tgan (Прошедшее) va Kelasi (Будущее).',
+      sampleWord: {
+        w: 'Fe\'l turlari (НСВ va СВ)',
+        tr: 'Tugallanmagan va Tugallangan harakat',
+        forms: 'НСВ: делать, читать, писать (jarayon)',
+        conj: 'СВ: сделать, прочитать, написать (natija)',
+        ex: 'Я читал книгу 2 часа (НСВ) vs Я прочитал книгу (СВ).',
+        exTr: 'Men 2 soat kitob o\'qidim (jarayon) vs Men kitobni o\'qib bo\'ldim (natija).'
+      },
+      quiz: {
+        q: 'Qaysi fe\'l tugallangan turga (СВ) tegishli?',
+        opts: ['написать', 'писать', 'читать', 'делать'],
+        correct: 0
+      }
     },
     {
       id: 'cs_python',
@@ -72,8 +111,17 @@
       tech: 'python',
       color: 'linear-gradient(135deg, #3776AB, #FFD43B)',
       badge: 'PY',
-      icon: 'code',
-      desc: 'Python dasturlash tili asoslari va loyihalar'
+      desc: 'Python dasturlash tili: List comprehensions, dekoratorlar, generatorlar va OOP.',
+      codeSnippet: {
+        title: 'List Comprehension & Dict Merge',
+        code: '# Kvadratlarni hisoblash va dict birlashtirish\nsquares = [x**2 for x in range(1, 6)]\nuser = {"name": "Ali", "role": "Dev"}\nmeta = {**user, "status": "active"}\nprint(squares, meta)',
+        tip: 'List comprehension oddiy for tsiklidan 2 barobar tezroq ishlaydi!'
+      },
+      quiz: {
+        q: '[x*2 for x in range(3)] kodi qanday ro\'yxat qaytaradi?',
+        opts: ['[0, 2, 4]', '[2, 4, 6]', '[0, 1, 2]', '[1, 2, 3]'],
+        correct: 0
+      }
     },
     {
       id: 'cs_fastapi',
@@ -83,8 +131,17 @@
       tech: 'fastapi',
       color: 'linear-gradient(135deg, #009688, #059669)',
       badge: 'API',
-      icon: 'code',
-      desc: 'Zamonaviy asinxron REST API yaratish kursi'
+      desc: 'Zamonaviy asinxron REST API va Pydantic model validatsiyasi.',
+      codeSnippet: {
+        title: 'Asinxron Endpoint va Validatsiya',
+        code: 'from fastapi import FastAPI, HTTPException\nfrom pydantic import BaseModel\n\napp = FastAPI()\n\n@app.get("/items/{id}")\nasync def get_item(id: int):\n    return {"id": id, "status": "active"}',
+        tip: 'FastAPI avtomatik ravishda /docs ostida Swagger UI yaratadi!'
+      },
+      quiz: {
+        q: 'FastAPI da qaysi kutubxona ma\'lumotlar turlarini tekshiradi (validatsiya)?',
+        opts: ['Pydantic', 'Django ORM', 'Flask-Validator', 'Requests'],
+        correct: 0
+      }
     },
     {
       id: 'cs_git',
@@ -94,8 +151,17 @@
       tech: 'git',
       color: 'linear-gradient(135deg, #F05032, #EA4C89)',
       badge: 'GIT',
-      icon: 'code',
-      desc: 'Versiyalar nazorati va GitHub bilan ishlash'
+      desc: 'Versiyalar nazorati, branchlar bilan ishlash va jamoaviy dasturlash.',
+      codeSnippet: {
+        title: 'Foydali Git buyruqlari',
+        code: '# Yangi branch ochib unga o\'tish\ngit checkout -b feature/auth\n\n# Barcha o\'zgarishlarni commit qilish\ngit add -A && git commit -m "feat: login"\n\n# Serverga yuborish\ngit push -u origin feature/auth',
+        tip: 'git status bilan qaysi fayllar o\'zgarganini doim tekshirib turing.'
+      },
+      quiz: {
+        q: 'Barcha o\'zgargan fayllarni indeksga (staging) qo\'shish buyrug\'i qaysi?',
+        opts: ['git add -A', 'git push all', 'git stage -f', 'git save'],
+        correct: 0
+      }
     },
     {
       id: 'cs_linux',
@@ -105,8 +171,17 @@
       tech: 'linux',
       color: 'linear-gradient(135deg, #FCC624, #222)',
       badge: 'LNX',
-      icon: 'code',
-      desc: 'Linux buyruqlari, server sozlash va terminal'
+      desc: 'Linux buyruqlari, server sozlash, ruxsatlar (chmod) va terminal.',
+      codeSnippet: {
+        title: 'Server monitoringi',
+        code: '# Resurslarni real vaqtda kuzatish\nhtop\n\n# Disk xotirasini inson o\'qiydigan formatda ko\'rish\ndf -h\n\n# Servis loglarini jonli kuzatish\njournalctl -u yordamchi -f',
+        tip: 'Linux da barcha jarayonlar va qurilmalar fayl ko\'rinishida ifodalanadi.'
+      },
+      quiz: {
+        q: 'Fayl ruxsatlarini (permissions) o\'zgartirish uchun qaysi buyruq ishlatiladi?',
+        opts: ['chmod', 'chown', 'touch', 'mkdir'],
+        correct: 0
+      }
     },
     {
       id: 'cs_postgres',
@@ -116,8 +191,17 @@
       tech: 'postgresql',
       color: 'linear-gradient(135deg, #336791, #4169E1)',
       badge: 'SQL',
-      icon: 'code',
-      desc: 'SQL so\'rovlar va ma\'lumotlar bazasini boshqarish'
+      desc: 'SQL so\'rovlar, indekslash, agregat funksiyalar va tranzaksiyalar.',
+      codeSnippet: {
+        title: 'JOIN va GROUP BY so\'rovi',
+        code: 'SELECT u.name, COUNT(o.id) AS total_orders\nFROM users u\nLEFT JOIN orders o ON u.id = o.user_id\nWHERE u.status = \'active\'\nGROUP BY u.id, u.name\nHAVING COUNT(o.id) >= 3\nORDER BY total_orders DESC;',
+        tip: 'Tez-tez qidiriladigan ustunlarga B-Tree indeks qo\'shish tezlikni 100x oshiradi!'
+      },
+      quiz: {
+        q: 'Guruhlangan (GROUP BY) natijalarni filtrlash uchun nima ishlatiladi?',
+        opts: ['HAVING', 'WHERE', 'LIMIT', 'FILTER BY'],
+        correct: 0
+      }
     }
   ];
 
@@ -170,13 +254,20 @@
       cat: "Hozirgi zamon (229)",
       note: "Qayerda: Kelajakdagi ezgu niyatlar, istaklar haqida xayol surish yoki erishishni xohlashda ishlatiladi.\nShakl: hozirgi zamon (я) — я мечтаю, infinitivi — мечтать, o'tgan zamon — я мечтал\nVid: NCV — мечтать (orzu qilish), CV — помечтать\nMa'nodosh: грезить (xayol surmoq), фантазировать (tasavvur qilmoq)",
       ex: "Я мечтаю стать высококлассным разработчиком программного обеспечения. (Men yuqori malakali dasturchi bo'lishni orzu qilaman.)"
+    },
+    {
+      ru: "resilience",
+      uz: "bardoshlilik, moslashuvchanlik, chidamlilik",
+      lang: "english",
+      cat: "Ingliz tili 8000",
+      note: "Qayerda: Qiyinchiliklar va stressdan tezda tiklanish qobiliyati haqida ishlatiladi.\nMa'nodosh: toughness, flexibility, endurance",
+      ex: "Building resilience helps you overcome unexpected life challenges. (Chidamlilikni rivojlantirish kutilmagan qiyinchiliklarni yengishga yordam beradi.)"
     }
   ];
 
   var FEED_WORDS = [];
   var LOADED_WORDS_POOL = [];
   var CURRENT_FILTER = 'all';
-  var IS_FETCHING = false;
   var STORY_VIEWER_STATE = null;
 
   App.view('home', {
@@ -191,6 +282,9 @@
               '<span class="ig-sparkle" data-icon="sparkles" data-icon-size="16"></span>' +
             '</div>' +
             '<div class="ig-actions">' +
+              '<button class="ig-btn-icon" data-act="igQuickPractice" title="Tezkor amaliyot / Test">' +
+                '<span data-icon="zap" data-icon-size="20"></span>' +
+              '</button>' +
               '<button class="ig-btn-icon" data-act="igShuffleFeed" title="Tasodifiy yangilash">' +
                 '<span data-icon="shuffle" data-icon-size="20"></span>' +
               '</button>' +
@@ -205,17 +299,25 @@
             '</div>' +
           '</div>' +
 
+          /* Daily Stats Mini Bar */
+          '<div class="ig-stats-bar" id="ig-stats-bar">' +
+            renderStatsBarHtml() +
+          '</div>' +
+
           /* Filter Chips */
           '<div class="ig-filter-bar">' +
             '<button class="ig-chip active" data-act="igSetFilter" data-arg=\'{"f":"all"}\'>Barchasi</button>' +
             '<button class="ig-chip" data-act="igSetFilter" data-arg=\'{"f":"ru_229"}\'>Hozirgi zamon (229)</button>' +
             '<button class="ig-chip" data-act="igSetFilter" data-arg=\'{"f":"ru_1000"}\'>Rus tili (1000)</button>' +
             '<button class="ig-chip" data-act="igSetFilter" data-arg=\'{"f":"en_8000"}\'>Ingliz tili</button>' +
+            '<button class="ig-chip" data-act="igSetFilter" data-arg=\'{"f":"liked"}\'>❤️ Sevimlilar</button>' +
+            '<button class="ig-chip" data-act="igSetFilter" data-arg=\'{"f":"saved"}\'>🔖 Xatcho\'plar</button>' +
+            '<button class="ig-chip" data-act="igSetFilter" data-arg=\'{"f":"mastered"}\'>✅ O\'rganilganlar</button>' +
           '</div>' +
 
           /* Instagram Reels Feed */
           '<div class="ig-feed" id="ig-feed-list">' +
-            '<div class="ig-feed-loader"><div class="spin"></div><span>Lug\'atlar yuklanmoqda...</span></div>' +
+            '<div class="ig-feed-loader"><div class="spinner"></div><span>Lug\'atlar yuklanmoqda...</span></div>' +
           '</div>' +
 
           /* Load More Bar */
@@ -239,6 +341,24 @@
     }
   });
 
+  /* Mini Stats Bar HTML */
+  function renderStatsBarHtml() {
+    var liked = getLikedWords().length;
+    var saved = getBookmarkedWords().length;
+    var mastered = getMasteredWords().length;
+    return '<div class="ig-stat-pill"><span data-icon="flame" data-icon-size="14" style="color:#f59e0b"></span> <b>' + mastered + '</b> ta o\'rganildi</div>' +
+      '<div class="ig-stat-pill"><span data-icon="heartFill" data-icon-size="14" style="color:#ef4444"></span> <b>' + liked + '</b> sevimli</div>' +
+      '<div class="ig-stat-pill"><span data-icon="bookmarkFill" data-icon-size="14" style="color:#3b82f6"></span> <b>' + saved + '</b> saqlangan</div>';
+  }
+
+  function updateStatsBar() {
+    var bar = document.getElementById('ig-stats-bar');
+    if (bar) {
+      bar.innerHTML = renderStatsBarHtml();
+      App.icons(bar);
+    }
+  }
+
   /* Stories HTML generator */
   function renderStoriesHtml() {
     return STORIES.map(function (s) {
@@ -253,7 +373,7 @@
     }).join('');
   }
 
-  /* Load all dictionary words from API or local storage */
+  /* Load all dictionary words from API or fallback */
   function initFeed() {
     FEED_WORDS = [];
     LOADED_WORDS_POOL = [];
@@ -299,22 +419,37 @@
       });
   }
 
-  /* Pick random words from loaded pool */
+  /* Pick random words from loaded pool based on current filter */
   function getRandomWords(count, filter) {
     var pool = LOADED_WORDS_POOL.length > 0 ? LOADED_WORDS_POOL : FALLBACK_WORDS;
+    var liked = getLikedWords();
+    var saved = getBookmarkedWords();
+    var mastered = getMasteredWords();
+
     if (filter === 'ru_229') {
-      pool = pool.filter(function (w) { return w.cat && w.cat.indexOf('Глаголы') >= 0; });
+      pool = pool.filter(function (w) { return w.cat && (w.cat.indexOf('Глаголы') >= 0 || w.cat.indexOf('229') >= 0); });
     } else if (filter === 'ru_1000') {
-      pool = pool.filter(function (w) { return w.lang === 'russian' && w.cat && w.cat.indexOf('Глаголы') < 0; });
+      pool = pool.filter(function (w) { return w.lang === 'russian' && (!w.cat || (w.cat.indexOf('Глаголы') < 0 && w.cat.indexOf('229') < 0)); });
     } else if (filter === 'en_8000') {
       pool = pool.filter(function (w) { return w.lang === 'english'; });
+    } else if (filter === 'liked') {
+      pool = pool.filter(function (w) { return liked.indexOf(w.ru) >= 0; });
+    } else if (filter === 'saved') {
+      pool = pool.filter(function (w) { return saved.indexOf(w.ru) >= 0; });
+    } else if (filter === 'mastered') {
+      pool = pool.filter(function (w) { return mastered.indexOf(w.ru) >= 0; });
     }
-    if (pool.length === 0) pool = FALLBACK_WORDS;
+
+    if (pool.length === 0) {
+      if (filter === 'liked') return [{ ru: "❤️ Sevimli so'zlar", uz: "Quyidagi postlardagi yurakchani bosib sevimli so'zlar to'plamini yarating.", lang: "russian", cat: "Bo'sh", note: "", ex: "" }];
+      if (filter === 'saved') return [{ ru: "🔖 Saqlanganlar", uz: "Xatcho'p tugmasini bosib kerakli so'zlarni saqlab qo'ying.", lang: "russian", cat: "Bo'sh", note: "", ex: "" }];
+      if (filter === 'mastered') return [{ ru: "✅ O'rganilganlar", uz: "Postlardagi «O'rgandim» tugmasini bosib bilgan so'zlaringizni belgilang.", lang: "russian", cat: "Bo'sh", note: "", ex: "" }];
+      pool = FALLBACK_WORDS;
+    }
 
     var selected = [];
     var poolCopy = pool.slice();
-    for (var i = 0; i < count; i++) {
-      if (poolCopy.length === 0) poolCopy = pool.slice();
+    for (var i = 0; i < count && poolCopy.length > 0; i++) {
       var rIdx = Math.floor(Math.random() * poolCopy.length);
       selected.push(poolCopy.splice(rIdx, 1)[0]);
     }
@@ -353,9 +488,11 @@
     var isLiked = likes.indexOf(w.ru) >= 0;
     var bms = getBookmarkedWords();
     var isBookmarked = bms.indexOf(w.ru) >= 0;
+    var mastered = getMasteredWords();
+    var isMastered = mastered.indexOf(w.ru) >= 0;
 
     var catTitle = w.cat || (isRu ? 'Rus tili' : 'Ingliz tili');
-    if (catTitle.indexOf('Глаголы') >= 0) catTitle = 'Rus tili · Hozirgi zamon (229)';
+    if (catTitle.indexOf('Глаголы') >= 0 || catTitle.indexOf('229') >= 0) catTitle = 'Rus tili · Hozirgi zamon (229)';
     else if (catTitle.indexOf('1-8000') >= 0) catTitle = isRu ? 'Rus tili lug\'ati' : 'Ingliz tili lug\'ati';
 
     return '<div class="ig-post-card" id="' + cardId + '">' +
@@ -367,16 +504,20 @@
           '</div>' +
           '<div class="ig-post-meta">' +
             '<div class="ig-post-name">' + App.esc(catTitle) + ' <span class="ig-verified">✓</span></div>' +
-            '<div class="ig-post-sub">Lug\'at Reels · Tasodifiy</div>' +
+            '<div class="ig-post-sub">Lug\'at Reels · Tasodifiy so\'z</div>' +
           '</div>' +
         '</div>' +
-        '<button class="ig-post-more" data-act="igSpeakWord" data-arg=\'' + App.arg({ text: w.ru, lang: ttsLang }) + '\' title="Ovoz chiqarish">' +
-          '<span data-icon="volume" data-icon-size="20"></span>' +
-        '</button>' +
+        '<div class="ig-post-header-actions">' +
+          '<button class="ig-post-more ' + (isMastered ? 'mastered' : '') + '" data-act="igToggleMastered" data-arg=\'' + App.arg({ word: w.ru, id: cardId }) + '\' title="' + (isMastered ? 'O\'rganilgan' : 'O\'rganildi deb belgilash') + '">' +
+            '<span data-icon="' + (isMastered ? 'check' : 'circle') + '" data-icon-size="18"></span>' +
+            '<span class="ig-master-text">' + (isMastered ? 'O\'rgandim' : 'O\'rganish') + '</span>' +
+          '</button>' +
+        '</div>' +
       '</div>' +
 
-      /* Post Main Reel Body */
-      '<div class="ig-post-body">' +
+      /* Post Main Reel Body (Double tap to like) */
+      '<div class="ig-post-body" data-dbl-word="' + App.esc(w.ru) + '" data-card-id="' + cardId + '">' +
+        '<div class="ig-heart-pop" id="pop_' + cardId + '"><span data-icon="heartFill" data-icon-size="70"></span></div>' +
         '<div class="ig-word-stage">' +
           '<div class="ig-word-main">' + App.esc(w.ru) + '</div>' +
           '<button class="ig-speak-pill" data-act="igSpeakWord" data-arg=\'' + App.arg({ text: w.ru, lang: ttsLang }) + '\'>' +
@@ -405,8 +546,11 @@
           '<button class="ig-act-btn ' + (isLiked ? 'active liked' : '') + '" data-act="igToggleLike" data-arg=\'' + App.arg({ word: w.ru, id: cardId }) + '\' title="Yoqdi">' +
             '<span data-icon="' + (isLiked ? 'heartFill' : 'heart') + '" data-icon-size="24"></span>' +
           '</button>' +
-          '<button class="ig-act-btn" data-act="igOpenQuiz" data-arg=\'' + App.arg({ ru: w.ru, uz: w.uz, id: cardId }) + '\' title="O\'zini tekshirish">' +
+          '<button class="ig-act-btn" data-act="igOpenQuiz" data-arg=\'' + App.arg({ ru: w.ru, uz: w.uz, id: cardId }) + '\' title="O\'zini tekshirish (Test)">' +
             '<span data-icon="check" data-icon-size="24"></span>' +
+          '</button>' +
+          '<button class="ig-act-btn" data-act="igCopyWord" data-arg=\'' + App.arg({ ru: w.ru, uz: w.uz, ex: w.ex }) + '\' title="Nusxa olish">' +
+            '<span data-icon="share" data-icon-size="22"></span>' +
           '</button>' +
           '<button class="ig-act-btn" data-act="igSpeakWord" data-arg=\'' + App.arg({ text: w.ru, lang: ttsLang }) + '\' title="Talaffuz">' +
             '<span data-icon="volume" data-icon-size="24"></span>' +
@@ -439,14 +583,63 @@
       var tmp = document.createElement('div');
       tmp.innerHTML = html;
       App.icons(tmp);
+      bindDoubleTapEvents(tmp);
       while (tmp.firstChild) host.appendChild(tmp.firstChild);
     } else {
       host.innerHTML = html;
       App.icons(host);
+      bindDoubleTapEvents(host);
     }
   }
 
-  /* Like storage */
+  /* Double Tap to Like on Reel Body */
+  function bindDoubleTapEvents(container) {
+    container.querySelectorAll('.ig-post-body').forEach(function (body) {
+      var lastTap = 0;
+      body.addEventListener('touchend', function (e) {
+        var now = Date.now();
+        if (now - lastTap < 300) {
+          e.preventDefault();
+          var word = body.getAttribute('data-dbl-word');
+          var cardId = body.getAttribute('data-card-id');
+          triggerDoubleTapLike(word, cardId);
+        }
+        lastTap = now;
+      });
+      body.addEventListener('dblclick', function () {
+        var word = body.getAttribute('data-dbl-word');
+        var cardId = body.getAttribute('data-card-id');
+        triggerDoubleTapLike(word, cardId);
+      });
+    });
+  }
+
+  function triggerDoubleTapLike(word, cardId) {
+    if (!word || !cardId) return;
+    var pop = document.getElementById('pop_' + cardId);
+    if (pop) {
+      pop.classList.remove('animate');
+      void pop.offsetWidth;
+      pop.classList.add('animate');
+      setTimeout(function () { pop.classList.remove('animate'); }, 850);
+    }
+    var likes = getLikedWords();
+    if (likes.indexOf(word) < 0) {
+      likes.push(word);
+      saveLikedWords(likes);
+      var el = document.getElementById(cardId);
+      var btn = el ? el.querySelector('.ig-act-btn[data-act="igToggleLike"]') : null;
+      if (btn) {
+        btn.classList.add('active', 'liked');
+        btn.innerHTML = '<span data-icon="heartFill" data-icon-size="24"></span>';
+        App.icons(btn);
+      }
+      updateStatsBar();
+      App.toast('Sevimlilarga saqlandi! ❤️');
+    }
+  }
+
+  /* Storage Helpers */
   function getLikedWords() {
     try { return JSON.parse(localStorage.getItem('vocab_likes_v1') || '[]'); } catch (e) { return []; }
   }
@@ -454,7 +647,6 @@
     try { localStorage.setItem('vocab_likes_v1', JSON.stringify(list)); } catch (e) {}
   }
 
-  /* Bookmark storage */
   function getBookmarkedWords() {
     try { return JSON.parse(localStorage.getItem('vocab_bookmarks_v1') || '[]'); } catch (e) { return []; }
   }
@@ -462,12 +654,22 @@
     try { localStorage.setItem('vocab_bookmarks_v1', JSON.stringify(list)); } catch (e) {}
   }
 
+  function getMasteredWords() {
+    try { return JSON.parse(localStorage.getItem('vocab_mastered_v1') || '[]'); } catch (e) { return []; }
+  }
+  function saveMasteredWords(list) {
+    try { localStorage.setItem('vocab_mastered_v1', JSON.stringify(list)); } catch (e) {}
+  }
+
   /* Actions */
   App.actions.igSetFilter = function (a, e) {
     CURRENT_FILTER = a.f || 'all';
     var chips = document.querySelectorAll('.ig-chip');
     chips.forEach(function (c) { c.classList.remove('active'); });
-    if (e && e.target) e.target.classList.add('active');
+    if (e && e.target) {
+      var btn = e.target.closest('.ig-chip') || e.target;
+      btn.classList.add('active');
+    }
     renderFeedItems(6, false);
   };
 
@@ -511,6 +713,7 @@
       App.toast('Sevimlilarga saqlandi! ❤️');
     }
     saveLikedWords(likes);
+    updateStatsBar();
   };
 
   App.actions.igToggleBookmark = function (a) {
@@ -537,9 +740,53 @@
       App.toast('Xatcho\'plarga saqlandi! 🔖');
     }
     saveBookmarkedWords(bms);
+    updateStatsBar();
   };
 
-  /* Interactive Quiz Action */
+  App.actions.igToggleMastered = function (a) {
+    var list = getMasteredWords();
+    var idx = list.indexOf(a.word);
+    var el = document.getElementById(a.id);
+    var btn = el ? el.querySelector('.ig-post-more') : null;
+
+    if (idx >= 0) {
+      list.splice(idx, 1);
+      if (btn) {
+        btn.classList.remove('mastered');
+        btn.innerHTML = '<span data-icon="circle" data-icon-size="18"></span><span class="ig-master-text">O\'rganish</span>';
+        App.icons(btn);
+      }
+      App.toast('O\'rganilmagan holatga qaytarildi');
+    } else {
+      list.push(a.word);
+      if (btn) {
+        btn.classList.add('mastered');
+        btn.innerHTML = '<span data-icon="check" data-icon-size="18"></span><span class="ig-master-text">O\'rgandim</span>';
+        App.icons(btn);
+      }
+      // Record activity
+      if (window.Activity && Activity.log) {
+        Activity.log('vocab_master', { word: a.word, xp: 10 });
+      }
+      App.toast('Ajoyib! So\'z o\'rganildi (+10 XP) 🎉');
+    }
+    saveMasteredWords(list);
+    updateStatsBar();
+  };
+
+  App.actions.igCopyWord = function (a) {
+    var text = '📖 ' + (a.ru || '') + ' — ' + (a.uz || '') + '\n' +
+      (a.ex ? '💬 ' + a.ex + '\n' : '') +
+      '✨ Yordamchi ilovasi orqali';
+    try {
+      navigator.clipboard.writeText(text);
+      App.toast('So\'z nusxalandi! 📋');
+    } catch (e) {
+      App.toast('Nusxalab bo\'lmadi');
+    }
+  };
+
+  /* Interactive Quick Quiz Sheet */
   App.actions.igOpenQuiz = function (a) {
     var correct = a.uz;
     var allUz = LOADED_WORDS_POOL.map(function (w) { return w.uz; }).filter(function (u) { return u && u !== correct; });
@@ -552,19 +799,20 @@
         opts.push('Boshqa ma\'no ' + (i + 1));
       }
     }
-    // Shuffle options
     opts.sort(function () { return Math.random() - 0.5; });
 
     var html =
       '<div class="ig-quiz-sheet">' +
         '<div class="ig-quiz-head">' +
-          '<h3>«' + App.esc(a.ru) + '» so\'zining tarjimasi qaysi?</h3>' +
+          '<div class="ig-quiz-word-badge">' + App.esc(a.ru) + '</div>' +
+          '<h3>Ushbu so\'zning to\'g\'ri tarjimasi qaysi?</h3>' +
         '</div>' +
         '<div class="ig-quiz-options">' +
           opts.map(function (opt) {
             var isRight = (opt === correct);
-            return '<button class="ig-quiz-opt" data-act="igAnswerQuiz" data-arg=\'' + App.arg({ right: isRight, id: a.id }) + '\'>' +
-              App.esc(opt) +
+            return '<button class="ig-quiz-opt" data-act="igAnswerQuiz" data-arg=\'' + App.arg({ right: isRight, word: a.ru, id: a.id }) + '\'>' +
+              '<span class="opt-bullet"></span>' +
+              '<span>' + App.esc(opt) + '</span>' +
             '</button>';
           }).join('') +
         '</div>' +
@@ -578,18 +826,31 @@
     if (!btn) return;
     if (a.right) {
       btn.style.background = 'var(--green, #10b981)';
+      btn.style.borderColor = 'var(--green, #10b981)';
       btn.style.color = '#fff';
-      App.toast('To\'g\'ri topdingiz! 🎉');
+      App.toast('To\'g\'ri topdingiz! (+5 XP) 🎉');
+      if (window.Activity && Activity.log) {
+        Activity.log('quiz_pass', { word: a.word, xp: 5 });
+      }
       setTimeout(function () { App.closeSheet(); }, 900);
     } else {
       btn.style.background = 'var(--red, #ef4444)';
+      btn.style.borderColor = 'var(--red, #ef4444)';
       btn.style.color = '#fff';
       App.toast('Noto\'g\'ri, qayta urinib ko\'ring ❌');
     }
   };
 
+  App.actions.igQuickPractice = function () {
+    var pool = LOADED_WORDS_POOL.length > 0 ? LOADED_WORDS_POOL : FALLBACK_WORDS;
+    var randomWord = pool[Math.floor(Math.random() * pool.length)];
+    if (randomWord) {
+      App.actions.igOpenQuiz({ ru: randomWord.ru, uz: randomWord.uz, id: 'quick_practice' });
+    }
+  };
+
   /* =========================================================
-     INSTAGRAM STORY VIEWER (FULL SCREEN)
+     INSTAGRAM STORY VIEWER ENGINE (FULL SCREEN & MULTI-STEP)
      ========================================================= */
   App.actions.igOpenStory = function (a) {
     var story = STORIES.find(function (s) { return s.id === a.id; });
@@ -602,16 +863,32 @@
       story: story,
       step: 0,
       totalSteps: 3,
-      timer: null
+      timer: null,
+      isPaused: false
     };
 
     modal.classList.add('open');
     renderStoryModalContent();
+    startStoryTimer();
+    bindStoryTouchEvents();
   };
+
+  function startStoryTimer() {
+    if (STORY_VIEWER_STATE && STORY_VIEWER_STATE.timer) {
+      clearInterval(STORY_VIEWER_STATE.timer);
+    }
+    if (!STORY_VIEWER_STATE) return;
+
+    STORY_VIEWER_STATE.timer = setTimeout(function () {
+      if (STORY_VIEWER_STATE && !STORY_VIEWER_STATE.isPaused) {
+        App.actions.igNextStoryStep();
+      }
+    }, 6000);
+  }
 
   function closeStoryViewer() {
     if (STORY_VIEWER_STATE && STORY_VIEWER_STATE.timer) {
-      clearInterval(STORY_VIEWER_STATE.timer);
+      clearTimeout(STORY_VIEWER_STATE.timer);
     }
     STORY_VIEWER_STATE = null;
     var modal = document.getElementById('ig-story-modal');
@@ -627,8 +904,15 @@
     if (STORY_VIEWER_STATE.step < STORY_VIEWER_STATE.totalSteps - 1) {
       STORY_VIEWER_STATE.step++;
       renderStoryModalContent();
+      startStoryTimer();
     } else {
-      closeStoryViewer();
+      // Find next story
+      var curIdx = STORIES.findIndex(function (s) { return s.id === STORY_VIEWER_STATE.story.id; });
+      if (curIdx >= 0 && curIdx < STORIES.length - 1) {
+        App.actions.igOpenStory({ id: STORIES[curIdx + 1].id });
+      } else {
+        closeStoryViewer();
+      }
     }
   };
 
@@ -637,6 +921,28 @@
     if (STORY_VIEWER_STATE.step > 0) {
       STORY_VIEWER_STATE.step--;
       renderStoryModalContent();
+      startStoryTimer();
+    } else {
+      var curIdx = STORIES.findIndex(function (s) { return s.id === STORY_VIEWER_STATE.story.id; });
+      if (curIdx > 0) {
+        App.actions.igOpenStory({ id: STORIES[curIdx - 1].id });
+      }
+    }
+  };
+
+  App.actions.igStoryAnswer = function (a, e) {
+    var btn = e.target.closest('.ig-story-quiz-btn');
+    if (!btn) return;
+    if (a.right) {
+      btn.classList.add('correct');
+      App.toast('Ajoyib! To\'g\'ri javob (+5 XP) 🎉');
+      if (window.Activity && Activity.log) {
+        Activity.log('story_quiz', { topic: a.topic, xp: 5 });
+      }
+      setTimeout(function () { App.actions.igNextStoryStep(); }, 1200);
+    } else {
+      btn.classList.add('wrong');
+      App.toast('Noto\'g\'ri tanlov ❌');
     }
   };
 
@@ -650,6 +956,89 @@
       App.go('coding', { tech: a.tech });
     }
   };
+
+  function bindStoryTouchEvents() {
+    var modal = document.getElementById('ig-story-modal');
+    if (!modal) return;
+
+    modal.onpointerdown = function () {
+      if (STORY_VIEWER_STATE) {
+        STORY_VIEWER_STATE.isPaused = true;
+        if (STORY_VIEWER_STATE.timer) clearTimeout(STORY_VIEWER_STATE.timer);
+      }
+    };
+    modal.onpointerup = function () {
+      if (STORY_VIEWER_STATE) {
+        STORY_VIEWER_STATE.isPaused = false;
+        startStoryTimer();
+      }
+    };
+  }
+
+  function renderStoryStepBody(story, step) {
+    // Step 0: Overview
+    if (step === 0) {
+      return '<div class="ig-story-center-card">' +
+        '<div class="ig-story-card-badge">' + App.esc(story.badge) + '</div>' +
+        '<h2 class="ig-story-card-title">' + App.esc(story.title) + '</h2>' +
+        '<div class="ig-story-card-sub">' + App.esc(story.sub) + '</div>' +
+        '<p class="ig-story-card-desc">' + App.esc(story.desc) + '</p>' +
+        '<div class="ig-story-card-hint">💡 Davom etish uchun o\'ng tomonga bosing</div>' +
+      '</div>';
+    }
+
+    // Step 1: Real Showcase Card (Word / Code / Table)
+    if (step === 1) {
+      if (story.codeSnippet) {
+        return '<div class="ig-story-center-card code-card">' +
+          '<div class="ig-story-code-head">' +
+            '<span>💻 ' + App.esc(story.codeSnippet.title) + '</span>' +
+          '</div>' +
+          '<pre class="ig-story-code-body"><code>' + App.esc(story.codeSnippet.code) + '</code></pre>' +
+          '<div class="ig-story-code-tip">💡 ' + App.esc(story.codeSnippet.tip) + '</div>' +
+        '</div>';
+      } else if (story.sampleWord) {
+        var isRu = (story.lang === 'russian');
+        var ttsLang = isRu ? 'ru-RU' : 'en-US';
+        return '<div class="ig-story-center-card word-card">' +
+          '<div class="ig-story-word-hero">' +
+            '<h3>' + App.esc(story.sampleWord.w) + '</h3>' +
+            '<button class="ig-story-audio-btn" data-act="igSpeakWord" data-arg=\'' + App.arg({ text: story.sampleWord.w, lang: ttsLang }) + '\'>' +
+              '<span data-icon="volume" data-icon-size="16"></span> Tinglash' +
+            '</button>' +
+          '</div>' +
+          '<div class="ig-story-word-tr">' + App.esc(story.sampleWord.tr) + '</div>' +
+          '<div class="ig-story-word-forms">' + App.esc(story.sampleWord.forms) + '</div>' +
+          '<div class="ig-story-word-conj">' + App.esc(story.sampleWord.conj) + '</div>' +
+          '<div class="ig-story-word-ex">' +
+            '💬 ' + App.esc(story.sampleWord.ex) + '<br>' +
+            '<small>' + App.esc(story.sampleWord.exTr) + '</small>' +
+          '</div>' +
+        '</div>';
+      }
+    }
+
+    // Step 2: Interactive Quiz
+    if (step === 2 && story.quiz) {
+      return '<div class="ig-story-center-card quiz-card">' +
+        '<div class="ig-story-quiz-badge">🎯 Tezkor sinov</div>' +
+        '<h3 class="ig-story-quiz-q">' + App.esc(story.quiz.q) + '</h3>' +
+        '<div class="ig-story-quiz-opts">' +
+          story.quiz.opts.map(function (opt, idx) {
+            var isRight = (idx === story.quiz.correct);
+            return '<button class="ig-story-quiz-btn" data-act="igStoryAnswer" data-arg=\'' + App.arg({ right: isRight, topic: story.title }) + '\'>' +
+              App.esc(opt) +
+            '</button>';
+          }).join('') +
+        '</div>' +
+      '</div>';
+    }
+
+    return '<div class="ig-story-center-card">' +
+      '<h2 class="ig-story-card-title">' + App.esc(story.title) + '</h2>' +
+      '<p class="ig-story-card-desc">' + App.esc(story.desc) + '</p>' +
+    '</div>';
+  }
 
   function renderStoryModalContent() {
     var modal = document.getElementById('ig-story-modal');
@@ -680,24 +1069,19 @@
           '</div>' +
         '</div>' +
 
-        /* Story Middle Content */
+        /* Story Middle Dynamic Content */
         '<div class="ig-story-middle">' +
-          '<div class="ig-story-center-card">' +
-            '<div class="ig-story-card-badge">' + App.esc(s.badge) + '</div>' +
-            '<h2 class="ig-story-card-title">' + App.esc(s.title) + '</h2>' +
-            '<p class="ig-story-card-desc">' + App.esc(s.desc) + '</p>' +
-            '<div class="ig-story-card-tip">Qadam ' + (step + 1) + ' / ' + total + '</div>' +
-          '</div>' +
+          renderStoryStepBody(s, step) +
         '</div>' +
 
         /* Story Navigation Tap Zones (Left/Right) */
-        '<div class="ig-story-tap-left" data-act="igPrevStoryStep"></div>' +
-        '<div class="ig-story-tap-right" data-act="igNextStoryStep"></div>' +
+        '<div class="ig-story-tap-left" data-act="igPrevStoryStep" title="Oldingi"></div>' +
+        '<div class="ig-story-tap-right" data-act="igNextStoryStep" title="Keyingi"></div>' +
 
         /* Story Footer Action Button */
         '<div class="ig-story-footer">' +
           '<button class="btn primary full ig-story-open-btn" data-act="igGoStoryModule" data-arg=\'' + App.arg(s) + '\'>' +
-            'Bo\'limga o\'tish &rarr;' +
+            'Bo\'limni to\'liq ochish &rarr;' +
           '</button>' +
         '</div>' +
       '</div>';
@@ -707,7 +1091,6 @@
 
   /* =========================================================
      O'NG TOMONDAGI TEZKOR TORTMA (BARCHA BO'LIMLAR)
-     1 ustunli toza vertikal panel
      ========================================================= */
   var DRAWER_SECTIONS = [
     { t: 'Maqsadlar', s: 'Kunlik vazifalar va odatlar', img: 'goals', ic: 'check', c: '#10b981', go: { v: 'goals' } },

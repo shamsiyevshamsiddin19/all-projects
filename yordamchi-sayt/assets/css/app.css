@@ -2540,18 +2540,236 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   100% { transform: scale(1); }
 }
 
-.ig-load-more-wrap {
-  margin-top: 24px;
-  padding: 0 4px;
-}
-.ig-load-btn {
+/* Mini Stats Bar */
+.ig-stats-bar {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-bottom: 14px;
+}
+.ig-stats-bar::-webkit-scrollbar { display: none; }
+.ig-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--border-soft);
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.ig-stat-pill b { color: var(--text); font-weight: 800; }
+
+.ig-post-header-actions { display: flex; align-items: center; gap: 8px; }
+.ig-post-more.mastered {
+  color: var(--green, #10b981) !important;
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+.ig-master-text {
+  font-size: 11.5px;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+/* Double-tap Heart Pop Animation */
+.ig-post-body {
+  position: relative;
+}
+.ig-heart-pop {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  color: #ef4444;
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0;
+  filter: drop-shadow(0 4px 20px rgba(239, 68, 68, 0.6));
+}
+.ig-heart-pop.animate {
+  animation: igHeartExplode .8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+@keyframes igHeartExplode {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+  40% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+  70% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.9; }
+  100% { transform: translate(-50%, -50%) scale(1.4); opacity: 0; }
+}
+
+.ig-quiz-word-badge {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+.opt-bullet {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  flex-shrink: 0;
+}
+.ig-quiz-opt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Story Multi-Step Rich Cards */
+.ig-story-center-card.code-card {
+  text-align: left;
+  padding: 20px;
+  max-height: 480px;
+  overflow-y: auto;
+}
+.ig-story-code-head {
+  font-size: 13.5px;
   font-weight: 800;
-  border-radius: 16px;
+  color: #fff;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ig-story-code-body {
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 14px;
   padding: 14px;
+  margin: 0 0 12px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #a5f3fc;
+  overflow-x: auto;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+.ig-story-code-tip {
+  font-size: 12px;
+  color: rgba(255,255,255,0.85);
+  background: rgba(255,255,255,0.12);
+  padding: 8px 12px;
+  border-radius: 10px;
+}
+
+.ig-story-center-card.word-card {
+  text-align: left;
+  padding: 24px 20px;
+}
+.ig-story-word-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.ig-story-word-hero h3 {
+  font-size: 26px;
+  font-weight: 900;
+  margin: 0;
+  color: #fff;
+}
+.ig-story-audio-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.25);
+  border: 1px solid rgba(255,255,255,0.4);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.ig-story-word-tr {
+  font-size: 17px;
+  font-weight: 800;
+  color: #fef08a;
+  margin-bottom: 12px;
+}
+.ig-story-word-forms, .ig-story-word-conj {
+  font-size: 12.5px;
+  color: rgba(255,255,255,0.88);
+  line-height: 1.45;
+  margin-bottom: 8px;
+  background: rgba(0,0,0,0.25);
+  padding: 8px 12px;
+  border-radius: 10px;
+}
+.ig-story-word-ex {
+  font-size: 13.5px;
+  color: #fff;
+  line-height: 1.4;
+  margin-top: 10px;
+  border-left: 3px solid #fef08a;
+  padding-left: 10px;
+}
+.ig-story-word-ex small {
+  color: rgba(255,255,255,0.75);
+}
+
+.ig-story-center-card.quiz-card {
+  padding: 24px 20px;
+}
+.ig-story-quiz-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.25);
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+.ig-story-quiz-q {
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.4;
+  margin: 0 0 16px;
+  color: #fff;
+}
+.ig-story-quiz-opts {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.ig-story-quiz-btn {
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: all .2s;
+}
+.ig-story-quiz-btn:active {
+  transform: scale(0.98);
+}
+.ig-story-quiz-btn.correct {
+  background: #10b981 !important;
+  border-color: #10b981 !important;
+}
+.ig-story-quiz-btn.wrong {
+  background: #ef4444 !important;
+  border-color: #ef4444 !important;
+}
+
+.ig-story-card-hint {
+  font-size: 11.5px;
+  opacity: 0.75;
+  margin-top: 10px;
 }
 
 /* =========================================================
