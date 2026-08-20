@@ -769,9 +769,9 @@
         '</div>' +
       '</div>' +
 
-      /* Post Main Reel Body (Double tap to like & speak) */
+      /* Post Main Reel Body (Double tap to speak) */
       '<div class="ig-post-body" data-dbl-word="' + App.esc(w.ru) + '" data-dbl-lang="' + ttsLang + '" data-card-id="' + cardId + '">' +
-        '<div class="ig-heart-pop" id="pop_' + cardId + '"><span data-icon="heartFill" data-icon-size="76"></span></div>' +
+        '<div class="ig-tap-speak-pop" id="pop_' + cardId + '"><span data-icon="volume" data-icon-size="44"></span></div>' +
         
         '<div class="vr-screen-flow">' +
           '<div class="vr-md-header">' +
@@ -941,33 +941,15 @@
       TTS.speak(word, lang || 'ru-RU');
     }
 
-    // 2. 3D Heart pop animatsiyasi
+    // 2. Audio speaker pulse animatsiyasi
     if (cardId) {
       var pop = document.getElementById('pop_' + cardId);
       if (pop) {
         pop.classList.remove('animate');
         void pop.offsetWidth;
         pop.classList.add('animate');
-        setTimeout(function () { pop.classList.remove('animate'); }, 850);
+        setTimeout(function () { pop.classList.remove('animate'); }, 600);
       }
-    }
-
-    // 3. Sevimlilarga saqlash
-    var likes = getLikedWords();
-    if (likes.indexOf(word) < 0) {
-      likes.push(word);
-      saveLikedWords(likes);
-      if (cardId) {
-        var el = document.getElementById(cardId);
-        var btn = el ? el.querySelector('.ig-act-btn[data-act="igToggleLike"]') : null;
-        if (btn) {
-          btn.classList.add('active', 'liked');
-          btn.innerHTML = '<span data-icon="heartFill" data-icon-size="24"></span>';
-          App.icons(btn);
-        }
-      }
-      updateStatsBar();
-      App.toast('Sevimlilarga saqlandi! ❤️');
     }
   }
 

@@ -3005,29 +3005,33 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   margin-left: 4px;
 }
 
-/* Double-tap Heart Pop Animation */
-.ig-post-body {
-  position: relative;
-}
-.ig-heart-pop {
+/* Double-tap Speak Pulse Animation */
+.ig-tap-speak-pop {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%) scale(0);
-  color: #ef4444;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 85%, transparent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   pointer-events: none;
   z-index: 10;
   opacity: 0;
-  filter: drop-shadow(0 4px 20px rgba(239, 68, 68, 0.6));
+  box-shadow: 0 0 30px var(--accent);
 }
-.ig-heart-pop.animate {
-  animation: igHeartExplode .8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+.ig-tap-speak-pop.animate {
+  animation: igSpeakPulse .6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
-@keyframes igHeartExplode {
-  0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
-  40% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
-  70% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.9; }
-  100% { transform: translate(-50%, -50%) scale(1.4); opacity: 0; }
+@keyframes igSpeakPulse {
+  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+  35% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+  70% { transform: translate(-50%, -50%) scale(1); opacity: 0.9; }
+  100% { transform: translate(-50%, -50%) scale(1.3); opacity: 0; }
 }
 
 /* Infinite Scroll Sentinel */
