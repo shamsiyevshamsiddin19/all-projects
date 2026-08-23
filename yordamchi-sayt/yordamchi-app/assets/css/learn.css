@@ -1,0 +1,983 @@
+/* ============================================================
+   Learn — belgilash, Reels, keyingi mavzu  (learn-marks.js)
+   + har qanday ekranga moslashuvchi dizayn qatlami
+
+   Bu fayl app.css DAN KEYIN ulanadi va faqat QO'SHADI —
+   mavjud shrift o'lchami, mavzu (theme) va scroll sozlamalariga
+   umuman tegmaydi.
+   ============================================================ */
+
+/* ---------- 1. Belgilash qatlami ---------- */
+
+/* Belgilar matn tugunlarini bo'lmasdan, ALOHIDA qatlamga chiziladi
+   (`learn-marks.js` boshidagi izohga qarang). Shu sabab matn kontenti
+   qatlamdan ustun turishi kerak. */
+.md-content.lm-host{ position:relative; }
+.md-content.lm-host > *{ position:relative; z-index:1; }
+/* MUHIM: yuqoridagi `> *` qoidasi (aniqlik 0-2-0) o'zimizning qatlamlarga
+   ham tegib, ularni `position:relative` qilib qo'yardi — natijada tanlash
+   to'rtburchagi umuman ko'rinmasdi. Shuning uchun bu ikkisi ATAYLAB
+   aniqroq selektor (0-3-0) bilan qayta e'lon qilinadi. */
+.md-content.lm-host > .lm-layer{
+  position:absolute; inset:0; pointer-events:none; z-index:0;
+}
+
+.lm-rect{
+  position:absolute; border-radius:3px;
+  background:rgba(255,199,0,.30);
+  box-shadow:0 0 0 1px rgba(255,199,0,.22);
+  pointer-events:auto; cursor:pointer;
+  transition:background .15s ease;
+}
+.lm-rect.flash{ background:rgba(255,199,0,.62); }
+@media (hover:hover){ .lm-rect:hover{ background:rgba(255,199,0,.45); } }
+
+/* Yorug' mavzuda sariq juda o'chib ketmasin */
+@media (prefers-color-scheme: light){
+  .lm-rect{ background:rgba(255,190,0,.42); }
+}
+
+/* Tanlash to'rtburchagi — kompyuterdagi "ekran kesish" oynasi kabi.
+
+   `.lm-capture` matn ustidagi qatlam. `touch-action:pan-y` — barmoq
+   to'rtburchakdan TASHQARIDA harakat qilsa sahifa oddiy suriladi
+   (uzun bo'lakni belgilash uchun shart); to'rtburchak va tutqichlarda
+   esa `touch-action:none` — u yerda harakatni bizning kodimiz oladi. */
+.md-content.lm-host > .lm-capture{
+  position:absolute; inset:0; z-index:6;
+  touch-action:pan-y;
+  background:transparent;
+  /* `overflow:hidden` ATAYLAB yo'q: pastdagi ulkan `box-shadow` butun
+     ekranni qoraytirishi kerak. Soya joy egallamaydi va yon tomonga
+     scroll hosil qilmaydi, shuning uchun kesish shart emas. */
+}
+
+/* Tashqarisini qoraytirish — ulkan `box-shadow` spread orqali.
+   Alohida to'rtta "parda" element yasashdan sodda va reflow bermaydi. */
+.lm-sel{
+  position:absolute;
+  border:2px solid #fff;
+  border-radius:3px;
+  box-shadow:0 0 0 9999px rgba(0,0,0,.60);
+  cursor:move; touch-action:none;
+}
+.lm-sel.grab{ box-shadow:0 0 0 9999px rgba(0,0,0,.45); }
+
+.lm-h{
+  position:absolute; display:block;
+  width:20px; height:20px; border-radius:50%;
+  background:#fff; box-shadow:0 1px 6px rgba(0,0,0,.55);
+  touch-action:none;
+}
+.lm-h-tl{ left:-11px;  top:-11px;    cursor:nwse-resize; }
+.lm-h-tr{ right:-11px; top:-11px;    cursor:nesw-resize; }
+.lm-h-bl{ left:-11px;  bottom:-11px; cursor:nesw-resize; }
+.lm-h-br{ right:-11px; bottom:-11px; cursor:nwse-resize; }
+
+/* Barmoq uchun tutqich kattaroq bo'lsin */
+@media (pointer:coarse){
+  .lm-h{ width:26px; height:26px; }
+  .lm-h-tl{ left:-14px;  top:-14px; }
+  .lm-h-tr{ right:-14px; top:-14px; }
+  .lm-h-bl{ left:-14px;  bottom:-14px; }
+  .lm-h-br{ right:-14px; bottom:-14px; }
+}
+
+.lm-sel-hint{
+  position:absolute; left:50%; top:-30px; transform:translateX(-50%);
+  font-size:11.5px; font-weight:600; white-space:nowrap;
+  color:#fff; background:rgba(0,0,0,.55);
+  border-radius:20px; padding:3px 10px;
+  pointer-events:none;
+}
+.lm-sel.grab .lm-sel-hint{ opacity:0; }
+
+body.lm-on{ -webkit-user-select:none; user-select:none; }
+/* Belgilash paytida pastdagi menyu va suzuvchi tugmalar xalaqit bermasin */
+body.lm-on .lm-fab,
+body.lm-on .lm-dock,
+body.lm-on .lm-pull{ display:none; }
+
+/* Pastdagi maslahat/tasdiq paneli */
+.lm-bar{
+  position:fixed; z-index:70;
+  left:50%; transform:translateX(-50%);
+  bottom:calc(var(--nav-h) + var(--safe-b) + 14px);
+  width:min(560px, calc(100vw - 24px));
+  background:var(--bg-elev); border:1px solid var(--border);
+  border-radius:var(--radius); box-shadow:var(--shadow);
+  padding:12px 14px;
+  display:flex; flex-direction:column; gap:10px;
+  animation:lmUp .18s ease;
+}
+@keyframes lmUp{ from{ opacity:0; transform:translate(-50%,10px);} to{ opacity:1; transform:translate(-50%,0);} }
+.lm-bar-t{ font-size:13px; color:var(--text-2); line-height:1.45; }
+.lm-bar-b{ display:flex; gap:8px; }
+.lm-bar-b .btn{ flex:1; }
+/* To'rtburchak ichida matn yo'q bo'lsa saqlash mumkin emas */
+.lm-bar-b .btn.off{ opacity:.45; pointer-events:none; }
+@media (min-width:920px){ .lm-bar{ bottom:26px; } }
+
+/* ---------- 2. O'ng chekkadagi tortma ---------- */
+
+.lm-dock{
+  position:fixed; z-index:55;
+  right:0; top:50%; transform:translateY(-50%);
+  display:flex; align-items:center;
+  pointer-events:none;
+}
+.lm-dock > *{ pointer-events:auto; }
+
+.lm-handle{
+  width:16px; height:74px;
+  border:1px solid var(--border); border-right:none;
+  border-radius:10px 0 0 10px;
+  background:var(--bg-elev); color:var(--hint);
+  display:flex; align-items:center; justify-content:center;
+  padding:0; opacity:.75;
+  transition:opacity .15s ease, background .15s ease;
+}
+.lm-handle:hover{ opacity:1; background:var(--card-2); }
+.lm-handle i{ width:3px; height:26px; border-radius:2px; background:var(--hint); display:block; }
+
+.lm-dock-body{
+  display:flex; flex-direction:column; gap:8px;
+  padding:0; width:0; overflow:hidden;
+  background:var(--bg-elev);
+  border:1px solid var(--border); border-right:none;
+  border-radius:14px 0 0 14px;
+  opacity:0;
+  transition:width .2s ease, padding .2s ease, opacity .15s ease;
+}
+.lm-dock.open .lm-dock-body{ width:56px; padding:10px 8px; opacity:1; }
+.lm-dock.open .lm-handle{ opacity:1; }
+
+.lm-b{
+  position:relative;
+  width:40px; height:40px; flex-shrink:0;
+  display:inline-flex; align-items:center; justify-content:center;
+  border-radius:11px; border:1px solid var(--border);
+  background:var(--card); color:var(--text); padding:0;
+}
+.lm-b:hover{ background:var(--card-2); }
+.lm-cnt{
+  position:absolute; top:-5px; right:-5px;
+  min-width:17px; height:17px; padding:0 4px;
+  border-radius:9px; background:var(--accent); color:var(--accent-ink);
+  font-size:10.5px; font-weight:700; line-height:17px; text-align:center;
+}
+
+/* ---------- 3. Reels tugmasi (o'ng past) ---------- */
+
+.lm-fab{
+  position:fixed; z-index:45;
+  right:16px; bottom:calc(var(--nav-h) + var(--safe-b) + 16px);
+  width:54px; height:54px; border-radius:50%;
+  border:none; padding:0;
+  background:var(--accent); color:var(--accent-ink);
+  display:inline-flex; align-items:center; justify-content:center;
+  box-shadow:0 6px 20px rgba(0,0,0,.35);
+  transition:transform .12s ease;
+}
+.lm-fab:active{ transform:scale(.93); }
+/* Reading bo'limida pastda o'qish pleyeri turadi — tugma undan tepada */
+.lm-fab.up{ bottom:calc(var(--nav-h) + var(--safe-b) + 92px); }
+.lm-fab b{
+  position:absolute; top:-2px; right:-2px;
+  min-width:20px; height:20px; padding:0 5px;
+  border-radius:10px; background:var(--bg-elev); color:var(--text);
+  border:1px solid var(--border);
+  font-size:11px; font-weight:700; line-height:19px; text-align:center;
+}
+@media (min-width:920px){
+  .lm-fab{ right:26px; bottom:26px; }
+  .lm-fab.up{ bottom:110px; }
+}
+
+/* ---------- 4. Reels ko'rinishi ---------- */
+
+body.lm-noscroll{ overflow:hidden; }
+/* Reels ochiqda pastdagi dumaloq tugma va tortma o'ng chekkadagi
+   harakat tugmalari ustiga tushib qolardi — vaqtincha yashiriladi. */
+body.lm-noscroll .lm-fab,
+body.lm-noscroll .lm-dock,
+body.lm-noscroll .lm-pull{ display:none; }
+
+/* Reels — Instagram uslubidagi TIK LENTA.
+
+   O'tish qo'lda animatsiya bilan emas, brauzerning O'Z scroll'i +
+   `scroll-snap` bilan qilingan: barmoq harakatiga ergashadi, inersiya va
+   "yopishish" tizimnikidek tabiiy chiqadi. Ilgari kartochka har safar
+   qaytadan chizilgani uchun o'tish to'xtab-to'xtab, sun'iy tuyulardi. */
+.lm-reels{
+  position:fixed; inset:0; z-index:120;
+  background:var(--bg);
+  display:flex; flex-direction:column;
+}
+/* DIQQAT: konteynerga kirish animatsiyasi QO'YILMAYDI.
+   `animation` bilan `transform:scale()` berilganda element alohida
+   kompozit qatlamga o'tib, foni to'liq bo'yalmay qolardi — ortidagi
+   sahifa ko'rinib turardi. Kirish jonliligi kartochkaning o'zida
+   (`.lm-r-slide.on .lm-r-card`) — u yetarli va xavfsiz. */
+.lm-reels.out{ animation:lmOut .16s ease forwards; }
+@keyframes lmOut{ to{ opacity:0; } }
+
+.lm-r-x{
+  position:absolute; z-index:4;
+  top:calc(env(safe-area-inset-top,0px) + 12px); right:14px;
+  width:40px; height:40px; border-radius:50%;
+  border:1px solid var(--border); background:var(--card); color:var(--text);
+  display:inline-flex; align-items:center; justify-content:center; padding:0;
+}
+
+/* Lentaning o'zi */
+.lm-r-scroll{
+  flex:1; min-height:0;
+  overflow-y:auto; overflow-x:hidden;
+  scroll-snap-type:y mandatory;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.lm-r-scroll::-webkit-scrollbar{ display:none; }
+
+.lm-r-slide{
+  height:100%; scroll-snap-align:start; scroll-snap-stop:always;
+  display:flex; align-items:center; justify-content:center;
+  padding:26px 22px 46px 22px;
+  box-sizing:border-box;
+}
+/* Faol kartochka to'liq ko'rinadi, qo'shnilari xiralashadi —
+   surish paytida "keyingisi kelyapti" hissi shundan. */
+.lm-r-card{
+  width:min(640px, 100%); max-height:100%;
+  display:flex; flex-direction:column; gap:14px;
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius-lg); padding:clamp(18px, 3.5vw, 30px);
+  opacity:.32; transform:scale(.93);
+  transition:opacity .28s ease, transform .28s cubic-bezier(.22,.9,.3,1);
+  box-shadow:var(--shadow);
+}
+.lm-r-slide.on .lm-r-card{ opacity:1; transform:none; }
+
+.lm-r-body{ overflow-y:auto; min-height:0; scrollbar-width:thin; }
+
+/* O'ng chekkadagi harakat tugmalari (Instagram'dagi kabi) */
+.lm-r-rail{
+  position:absolute; z-index:4; right:12px;
+  bottom:calc(var(--safe-b) + 44px);
+  display:flex; flex-direction:column; gap:12px;
+}
+.lm-r-a{
+  width:48px; padding:6px 0 4px; border:none; background:transparent;
+  color:var(--text-2);
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+}
+.lm-r-a b{ font-size:10px; font-weight:600; }
+.lm-r-a:active{ transform:scale(.9); }
+.lm-r-a.danger{ color:var(--danger); }
+@media (hover:hover){ .lm-r-a:hover{ color:var(--text); } }
+
+@media (min-width:920px){
+  .lm-r-rail{ right:26px; bottom:60px; }
+  .lm-r-slide{ padding:34px 26px 54px; }
+}
+@media (prefers-reduced-motion:reduce){
+  .lm-r-card{ animation:none; transition:none; }
+  .lm-r-card{ opacity:1; transform:none; }
+}
+
+/* Belgilar ro'yxati (sheet ichida) */
+.lm-row{ display:flex; align-items:center; gap:10px; padding:9px 2px; border-bottom:1px solid var(--border-soft); }
+.lm-row:last-of-type{ border-bottom:none; }
+.lm-row-n{
+  width:26px; height:26px; flex-shrink:0; border-radius:50%;
+  background:var(--card-2); color:var(--text-2);
+  font-size:12px; font-weight:700;
+  display:inline-flex; align-items:center; justify-content:center;
+}
+.lm-row-t{ flex:1; min-width:0; font-size:13.5px; line-height:1.5; cursor:pointer; }
+.lm-row-x{ width:34px; height:34px; flex-shrink:0; }
+.lm-row-tag{ font-size:10.5px; font-weight:700; color:var(--accent);
+  border:1px solid var(--accent); border-radius:20px; padding:1px 6px; margin-left:4px; }
+.lm-empty{ text-align:center; color:var(--text-2); font-size:14px; line-height:1.7; padding:22px 6px; }
+
+/* ---------- 5. Keyingi mavzu ---------- */
+
+
+.lm-pull{
+  position:fixed; z-index:60;
+  left:50%; transform:translate(-50%, 16px);
+  bottom:calc(var(--nav-h) + var(--safe-b) + 18px);
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  opacity:0; pointer-events:none;
+  transition:opacity .15s ease, transform .15s ease;
+}
+.lm-pull.on{ opacity:1; transform:translate(-50%, 0); }
+.lm-pull svg{ width:44px; height:44px; transform:rotate(-90deg); display:block; }
+.lm-pull circle{ fill:none; stroke-width:3; }
+.lm-pull .bg{ stroke:var(--border); }
+.lm-pull .fg{ stroke:var(--accent); stroke-linecap:round; transition:stroke-dashoffset .06s linear; }
+.lm-pull-ic{
+  position:absolute; top:12px; left:50%; transform:translateX(-50%);
+  color:var(--hint); pointer-events:none;
+}
+.lm-pull.ready .lm-pull-ic{ color:var(--accent); }
+@media (min-width:920px){ .lm-pull{ bottom:26px; } }
+
+/* ============================================================
+   6. HAR QANDAY EKRANGA MOSLASHISH
+
+   app.css da 920px va 980px chegaralari bor edi — ya'ni "mobil"
+   va "kompyuter" degan ikki holat. Quyida oradagi va chetdagi
+   o'lchamlar to'ldiriladi: kichik telefon, planshet, keng monitor.
+   Faqat joy/o'lcham o'zgaradi — rang va shrift oilasi tegilmaydi.
+   ============================================================ */
+
+/* --- 6.1 Juda kichik telefonlar (≤ 360px) --- */
+@media (max-width:360px){
+  .page{ padding-left:11px; padding-right:11px; }
+  .card{ padding:13px; }
+  .topbar{ padding-left:11px; padding-right:11px; gap:8px; }
+  .topbar h1{ font-size:16.5px; }
+  .icon-btn{ width:36px; height:36px; border-radius:10px; }
+  .lm-fab{ width:48px; height:48px; right:12px; }
+  .lm-r-rail{ right:6px; }
+  .lm-r-a{ width:42px; }
+}
+
+/* --- 6.2 Katta telefon / kichik planshet (560–767px) --- */
+@media (min-width:560px) and (max-width:767px){
+  .page{ padding-left:22px; padding-right:22px; }
+}
+
+/* --- 6.3 Planshet (768–919px): sidebar hali yo'q, lekin joy ko'p --- */
+@media (min-width:768px) and (max-width:919px){
+  /* `.topbar` ning manfiy chekka margini ko'rinishlarda inline yozilgan
+     (`margin:-16px -15px 12px`) — uni bu yerdan o'zgartirsak, bunday margini
+     yo'q sahifalarda panel chetdan chiqib ketardi. Shu sabab sahifa yon
+     bo'shlig'i 15px da qoldiriladi, faqat kenglik oshiriladi. */
+  .page{ max-width:720px; padding-top:24px; }
+  .stat-grid{ grid-template-columns:repeat(4,1fr); }
+  .tiles{ grid-template-columns:repeat(4,1fr); }
+  .sp-grid{ grid-template-columns:repeat(3,1fr); }
+  .lm-r-card{ padding:30px; }
+}
+
+/* --- 6.4 Planshet gorizontal / kichik noutbuk (920–1279px) --- */
+@media (min-width:920px) and (max-width:1279px){
+  .page{ padding:28px 30px; max-width:100%; }
+  :root{ --sidebar-w:232px; }
+  .side{ padding:14px 10px; }
+}
+
+/* --- 6.5 Keng monitor (≥ 1440px) --- */
+@media (min-width:1440px){
+  :root{ --sidebar-w:288px; }
+  .page{ max-width:1360px; padding:40px 56px; }
+  .dash{ grid-template-columns:minmax(0,760px) 400px; gap:56px; }
+  .dash-main{ max-width:760px; }
+}
+
+/* --- 6.6 Juda keng monitor (≥ 1920px) — kontent markazga tortiladi --- */
+@media (min-width:1920px){
+  :root{ --sidebar-w:312px; }
+  .page{ max-width:1560px; padding:48px 72px; }
+  .tiles{ grid-template-columns:repeat(6,1fr); }
+  .stat-grid{ grid-template-columns:repeat(4,1fr); }
+  .sp-grid{ grid-template-columns:repeat(5,1fr); }
+}
+
+/* --- 6.7 Yotiq holatdagi past ekran (telefon gorizontal) ---
+   Balandlik 480px dan kam bo'lganda pastki menyu ekranning katta
+   qismini yeb qo'yadi; shu sabab u pasaytiriladi va suzuvchi
+   elementlar ham pastroqqa tushiriladi. */
+@media (max-height:480px) and (orientation:landscape){
+  :root{ --nav-h:50px; }
+  .page{ padding-top:10px; }
+  .topbar{ padding-top:8px; padding-bottom:8px; }
+  .lm-r-slide{ padding:12px 18px 30px; }
+  .lm-r-card{ padding:14px 18px; gap:8px; }
+  .lm-r-rail{ bottom:calc(var(--safe-b) + 26px); gap:6px; }
+  .lm-r-a{ width:42px; padding:3px 0 2px; }
+  .lm-r-a b{ font-size:9px; }
+}
+
+/* --- 6.8 Matn kengligi ---
+   Bu yerda ilgari `@media (min-width:1280px){ .md-content{max-width:82ch} }`
+   turgan edi — o'qish qulayligi uchun qator uzunligini cheklardi.
+   OLIB TASHLANDI: foydalanuvchi so'rovi — keng monitorda matn ustuni
+   kichkina bo'lib, o'ng tomoni bo'sh qolardi. Endi matn sahifaning
+   to'liq kengligini egallaydi (`.page` ning o'z chegarasigacha). */
+
+/* --- 6.9 Yon tomonga siljib ketishning oldini olish ---
+   Kichik ekranda keng jadval yoki uzun kod butun sahifani cho'zib
+   yuborardi. Ular O'Z konteyneri ichida siljiydi.
+
+   DIQQAT: bu yerda `html/body{overflow-x:hidden}` ATAYLAB YO'Q — u
+   `position:sticky` ni ishdan chiqaradi (topbar yopishmay qoladi). */
+.md-content pre{ overflow-x:auto; max-width:100%; }
+.md-content img{ height:auto; }
+
+/* --- 6.10 Sensorli ekranda bosish maydoni ---
+   Barmoq uchun eng kichik qulay o'lcham 44px (Apple HIG / Material). */
+@media (pointer:coarse){
+  .lm-b{ min-width:44px; min-height:44px; }
+  .lm-r-a{ min-height:44px; }
+  .lm-handle{ width:20px; height:88px; }
+}
+
+/* --- 6.11 Harakatni kamaytirish so'ralgan bo'lsa --- */
+@media (prefers-reduced-motion:reduce){
+  .lm-r-card.in-up,.lm-r-card.in-down,.lm-bar{ animation:none; }
+  .lm-pull,.lm-pull .fg{ transition:none; }
+}
+/* =========================================================
+   7. LUG'AT REELS (TikTok / Instagram uslubidagi tik lenta)
+   ========================================================= */
+
+.vr-reels .lm-r-card.vr-card{
+  width:min(580px, calc(100% - 24px));
+  max-height:82vh;
+  display:flex;
+  flex-direction:column;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:24px;
+  padding:clamp(20px, 4vw, 32px);
+  box-shadow:0 16px 48px rgba(0,0,0,0.3);
+  position:relative;
+  overflow:hidden;
+  gap:16px;
+}
+
+.vr-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding-bottom:12px;
+  border-bottom:1px solid var(--border-soft);
+}
+.vr-cat-tag{
+  font-size:12.5px;
+  font-weight:700;
+  color:var(--accent);
+  background:var(--accent-soft);
+  padding:5px 14px;
+  border-radius:99px;
+  max-width:70%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.vr-num-tag{
+  font-size:13px;
+  font-weight:700;
+  color:var(--text-3);
+}
+
+.vr-body{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  overflow-y:auto;
+  scrollbar-width:thin;
+  padding-right:2px;
+}
+
+.vr-word-wrap{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+}
+.vr-word{
+  font-size:clamp(26px, 6vw, 36px);
+  font-weight:800;
+  color:var(--text);
+  line-height:1.2;
+  letter-spacing:-0.02em;
+  word-break:break-word;
+}
+.vr-speak-btn{
+  width:46px;
+  height:46px;
+  border-radius:50%;
+  background:var(--card-2);
+  border:1px solid var(--border);
+  color:var(--accent);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  flex-shrink:0;
+  transition:transform .15s ease, background .15s ease;
+}
+.vr-speak-btn:active{
+  transform:scale(0.88);
+  background:var(--accent);
+  color:#fff;
+}
+
+.vr-trans{
+  font-size:clamp(20px, 4.5vw, 26px);
+  font-weight:700;
+  color:var(--success, #22c55e);
+  line-height:1.3;
+  word-break:break-word;
+}
+
+.vr-note-box{
+  background:var(--card-2);
+  border-left:3.5px solid var(--accent);
+  border-radius:10px;
+  padding:12px 16px;
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+}
+.vr-ex-box{
+  background:var(--card-2);
+  border-left:3.5px solid var(--warn, #f59e0b);
+  border-radius:10px;
+  padding:12px 16px;
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+}
+.vr-label{
+  font-size:11px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:0.06em;
+  color:var(--text-3);
+}
+.vr-note{
+  font-size:14.5px;
+  color:var(--text-2);
+  line-height:1.55;
+}
+.vr-ex{
+  font-size:15px;
+  color:var(--text);
+  line-height:1.6;
+  font-style:italic;
+}
+.vr-ex b{
+  color:var(--accent);
+  font-weight:700;
+}
+
+.vr-tap-pulse{
+  position:fixed;
+  transform:translate(-50%, -50%) scale(0.6);
+  width:76px; height:76px;
+  border-radius:50%;
+  background:rgba(0, 122, 255, 0.25);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  border:1.5px solid rgba(255, 255, 255, 0.4);
+  color:#ffffff;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  pointer-events:none;
+  z-index:200;
+  box-shadow:0 8px 32px rgba(0,0,0,0.3);
+  animation:vrPulseAnim .5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes vrPulseAnim{
+  0%{ transform:translate(-50%, -50%) scale(0.5); opacity:0; }
+  30%{ transform:translate(-50%, -50%) scale(1.15); opacity:1; }
+  100%{ transform:translate(-50%, -50%) scale(1.4); opacity:0; }
+}
+
+/* Magic 1-8000 Card Styling */
+.chat-item-magic{
+  position:relative;
+  margin-bottom:12px;
+  border-radius:18px;
+  background:linear-gradient(135deg, rgba(99, 102, 241, 0.14) 0%, rgba(168, 85, 247, 0.14) 50%, rgba(236, 72, 153, 0.14) 100%);
+  border:1.5px solid rgba(168, 85, 247, 0.4);
+  box-shadow:0 6px 24px rgba(168, 85, 247, 0.18);
+  overflow:hidden;
+  transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+
+.chat-item-magic:hover{
+  transform:translateY(-1px);
+  border-color:rgba(168, 85, 247, 0.7);
+  box-shadow:0 8px 32px rgba(168, 85, 247, 0.28);
+}
+
+.chat-row-magic{
+  background:transparent !important;
+  border:none !important;
+  box-shadow:none !important;
+}
+
+.tag-magic{
+  display:inline-flex;
+  align-items:center;
+  font-size:11px;
+  font-weight:800;
+  padding:2.5px 8.5px;
+  border-radius:99px;
+  background:linear-gradient(135deg, #6366f1, #ec4899);
+  color:#ffffff;
+  margin-left:6px;
+  letter-spacing:0.02em;
+  vertical-align:middle;
+  box-shadow:0 2px 8px rgba(236, 72, 153, 0.4);
+}
+
+/* Instagram Reels Button in practice */
+.btn-reels-ig{
+  background:linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%) !important;
+  color:#ffffff !important;
+  font-weight:700 !important;
+  border:none !important;
+  box-shadow:0 4px 16px rgba(220, 39, 67, 0.38) !important;
+  transition:transform .15s ease, box-shadow .15s ease !important;
+}
+.btn-reels-ig:active{
+  transform:scale(0.97) !important;
+  box-shadow:0 2px 8px rgba(220, 39, 67, 0.25) !important;
+}
+
+/* Reels Top Header with title left of X */
+.vr-header{
+  position:absolute;
+  top:calc(env(safe-area-inset-top, 0px) + 12px);
+  left:16px;
+  right:16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  z-index:130;
+  pointer-events:none;
+}
+
+.vr-header-left{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  pointer-events:auto;
+}
+
+.vr-header-tag{
+  font-size:12.5px;
+  font-weight:800;
+  padding:5px 12px;
+  border-radius:99px;
+  background:linear-gradient(45deg, #f09433 0%, #dc2743 50%, #bc1888 100%);
+  color:#ffffff;
+  letter-spacing:0.04em;
+  box-shadow:0 2px 10px rgba(220, 39, 67, 0.35);
+}
+
+.vr-header-right{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  pointer-events:auto;
+}
+
+.vr-header-title{
+  font-size:13px;
+  font-weight:700;
+  color:var(--text);
+  background:var(--card);
+  border:1px solid var(--border);
+  padding:6px 14px;
+  border-radius:99px;
+  box-shadow:0 2px 10px rgba(0,0,0,0.15);
+  max-width:220px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.vr-header .lm-r-x{
+  position:static !important;
+}
+
+/* SRS top bar with right-aligned button */
+.srs-top{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:8px;
+  margin-bottom:8px !important;
+}
+.srs-left{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+.srs-due-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:linear-gradient(135deg, var(--accent, #6366f1), #4f46e5);
+  color:#ffffff !important;
+  font-size:12px;
+  font-weight:700;
+  padding:5px 13px;
+  border-radius:99px;
+  border:none;
+  cursor:pointer;
+  box-shadow:0 2px 8px rgba(99, 102, 241, 0.35);
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+.srs-due-btn:active{
+  transform:scale(0.96);
+}
+.srs-due-btn b{
+  background:rgba(255,255,255,0.25);
+  padding:1px 6px;
+  border-radius:99px;
+  font-size:11px;
+}
+.srs-done-tag{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  font-size:11.5px;
+  font-weight:600;
+  color:var(--success, #22c55e);
+  background:rgba(34, 197, 94, 0.12);
+  padding:4px 10px;
+  border-radius:99px;
+  border:1px solid rgba(34, 197, 94, 0.22);
+}
+
+/* Immersive Full-Screen Markdown Reels (No boxy cards, no emojis) */
+.vr-reels .lm-r-slide{
+  padding:0 !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  background:transparent !important;
+}
+
+.vr-screen-flow{
+  width:100% !important;
+  max-width:100% !important;
+  height:100%;
+  max-height:100vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  padding:calc(env(safe-area-inset-top, 0px) + 64px) clamp(16px, 4vw, 28px) calc(env(safe-area-inset-bottom, 0px) + 36px) clamp(16px, 4vw, 28px) !important;
+  padding-right:clamp(58px, 12vw, 76px) !important;
+  overflow-y:auto;
+  scrollbar-width:none;
+  box-sizing:border-box !important;
+}
+
+.vr-md-story,
+.vr-md-quote{
+  width:100% !important;
+  box-sizing:border-box !important;
+}
+.vr-screen-flow::-webkit-scrollbar{
+  display:none;
+}
+
+.vr-md-header{
+  margin-bottom:16px;
+}
+.vr-md-title{
+  font-size:clamp(32px, 8.5vw, 48px);
+  font-weight:900;
+  color:var(--text);
+  line-height:1.15;
+  letter-spacing:-0.03em;
+  margin:0 0 8px;
+  word-break:break-word;
+}
+.vr-md-sub{
+  font-size:clamp(18px, 5vw, 24px);
+  font-weight:700;
+  color:var(--accent, #6366f1);
+  line-height:1.35;
+  word-break:break-word;
+  margin:0 0 16px;
+}
+.vr-md-divider{
+  width:48px;
+  height:3.5px;
+  border-radius:99px;
+  background:linear-gradient(90deg, var(--accent, #6366f1), rgba(99, 102, 241, 0.2));
+  margin-bottom:18px;
+}
+
+.vr-md-content{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.vr-md-section{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.vr-md-item{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  background:rgba(255, 255, 255, 0.04);
+  padding:10px 14px;
+  border-radius:14px;
+  border-left:3px solid var(--accent, #6366f1);
+}
+.vr-md-badge{
+  font-size:11px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:0.06em;
+  color:var(--accent, #6366f1);
+  opacity:0.9;
+}
+.vr-md-text{
+  font-size:clamp(14px, 3.8vw, 16px);
+  font-weight:500;
+  color:var(--text);
+  line-height:1.55;
+  word-break:break-word;
+}
+
+.vr-md-quote{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  background:linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(220, 39, 67, 0.06));
+  border-left:3.5px solid #dc2743;
+  padding:12px 16px;
+  border-radius:14px;
+  margin-top:2px;
+}
+.vr-quote-badge{
+  font-size:11px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:0.06em;
+  color:#dc2743;
+}
+.vr-quote-text{
+  font-size:clamp(15px, 4vw, 17.5px);
+  font-style:italic;
+  font-weight:600;
+  color:var(--text);
+  line-height:1.5;
+  word-break:break-word;
+}
+
+/* Unified Story-style Markdown Reels */
+.vr-md-story{
+  background:rgba(255, 255, 255, 0.05);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  border-left:3.5px solid var(--accent, #6366f1);
+  padding:16px 20px;
+  border-radius:16px;
+  box-shadow:0 4px 20px rgba(0, 0, 0, 0.06);
+}
+.vr-md-story p{
+  margin:0;
+  font-size:clamp(15px, 4vw, 17px);
+  line-height:1.7;
+  color:var(--text);
+  font-weight:400;
+  letter-spacing:-0.01em;
+  word-break:break-word;
+}
+
+.vr-md-quote{
+  background:linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(220, 39, 67, 0.08));
+  border-left:3.5px solid #dc2743;
+  padding:16px 20px;
+  border-radius:16px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  box-shadow:0 4px 20px rgba(0, 0, 0, 0.06);
+}
+.vr-quote-ru{
+  font-size:clamp(16px, 4.2vw, 18.5px);
+  font-weight:700;
+  color:var(--text);
+  line-height:1.45;
+  font-style:italic;
+}
+.vr-quote-uz{
+  font-size:clamp(13.5px, 3.6vw, 15px);
+  font-weight:500;
+  color:var(--text-2, #94a3b8);
+  line-height:1.4;
+}
+
+/* Auto-speak active button glow */
+.lm-r-rail .lm-r-a.active{
+  color:var(--success, #22c55e) !important;
+  transform:scale(1.06);
+}
+.lm-r-rail .lm-r-a.active span{
+  filter:drop-shadow(0 0 8px rgba(34, 197, 94, 0.65));
+}
+.lm-r-rail .lm-r-a.active b{
+  color:var(--success, #22c55e) !important;
+  font-weight:800;
+}
+
+/* Clean, Borderless Full-Screen Markdown Story */
+.vr-md-story{
+  width:100% !important;
+  box-sizing:border-box !important;
+  background:transparent !important;
+  border:none !important;
+  padding:0 !important;
+  margin:0 0 16px 0 !important;
+  box-shadow:none !important;
+}
+
+.vr-story-text{
+  font-size:clamp(15px, 4.2vw, 17px);
+  line-height:1.8;
+  color:var(--text);
+  font-weight:400;
+  white-space:pre-line;
+  word-break:break-word;
+}
+
+.vr-md-quote{
+  width:100% !important;
+  box-sizing:border-box !important;
+  background:transparent !important;
+  border:none !important;
+  border-top:1px solid var(--border-soft) !important;
+  padding:14px 0 0 0 !important;
+  border-radius:0 !important;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  margin-top:10px !important;
+  box-shadow:none !important;
+}
+
+.vr-quote-ru{
+  font-size:clamp(16px, 4.4vw, 18.5px);
+  font-weight:700;
+  color:var(--text);
+  line-height:1.45;
+  font-style:italic;
+}
+
+.vr-quote-uz{
+  font-size:clamp(14px, 3.8vw, 15.5px);
+  font-weight:500;
+  color:var(--accent, #6366f1);
+  line-height:1.4;
+}

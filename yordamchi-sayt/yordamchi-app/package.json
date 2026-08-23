@@ -1,0 +1,47 @@
+{
+  "name": "yordamchi-app",
+  "version": "1.0.0",
+  "description": "Yordamchi — Ta'lim va shaxsiy rivojlanish platformasi",
+  "main": "main.js",
+  "author": "Shamsiddin",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "build:linux": "electron-builder --linux deb AppImage",
+    "build:win": "electron-builder --win nsis",
+    "build:mac": "electron-builder --mac dmg",
+    "build:all": "electron-builder -mwl"
+  },
+  "build": {
+    "appId": "uz.wstore.yordamchi",
+    "productName": "Yordamchi",
+    "directories": {
+      "output": "dist-desktop"
+    },
+    "files": [
+      "index.html",
+      "main.js",
+      "assets/**/*",
+      "manifest.webmanifest",
+      "service-worker.js"
+    ],
+    "linux": {
+      "target": ["deb", "AppImage"],
+      "category": "Education",
+      "icon": "assets/icons/app-icon.png"
+    },
+    "win": {
+      "target": ["nsis"],
+      "icon": "assets/icons/app-icon.ico"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "icon": "assets/icons/app-icon.icns",
+      "category": "public.app-category.education"
+    }
+  },
+  "devDependencies": {
+    "electron": "^34.0.0",
+    "electron-builder": "^25.1.8"
+  }
+}

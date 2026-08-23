@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bg_sport" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <linearGradient id="metal_grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#e2e8f0"/>
+      <stop offset="100%" stop-color="#94a3b8"/>
+    </linearGradient>
+    <filter id="sh_sport"><feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000" flood-opacity="0.3"/></filter>
+  </defs>
+  <rect width="64" height="64" rx="18" fill="url(#bg_sport)"/>
+  <rect x="1.5" y="1.5" width="61" height="28" rx="16.5" fill="#ffffff" fill-opacity="0.18"/>
+  <!-- Dumbbell Icon -->
+  <g filter="url(#sh_sport)" transform="translate(0, 0)">
+    <!-- Bar Center -->
+    <rect x="22" y="29" width="20" height="6" rx="2" fill="url(#metal_grad)"/>
+    <!-- Grip stripes -->
+    <line x1="28" y1="29" x2="28" y2="35" stroke="#64748b" stroke-width="1"/>
+    <line x1="32" y1="29" x2="32" y2="35" stroke="#64748b" stroke-width="1"/>
+    <line x1="36" y1="29" x2="36" y2="35" stroke="#64748b" stroke-width="1"/>
+    <!-- Left Inner Weight -->
+    <rect x="19" y="22" width="5" height="20" rx="2.5" fill="#ffffff"/>
+    <!-- Left Outer Weight (Bigger) -->
+    <rect x="12" y="18" width="6" height="28" rx="3" fill="url(#metal_grad)"/>
+    <!-- Right Inner Weight -->
+    <rect x="40" y="22" width="5" height="20" rx="2.5" fill="#ffffff"/>
+    <!-- Right Outer Weight (Bigger) -->
+    <rect x="46" y="18" width="6" height="28" rx="3" fill="url(#metal_grad)"/>
+    <!-- Energy Sparkle -->
+    <polygon points="32,15 33.5,19 37,20 33.5,21 32,25 30.5,21 27,20 30.5,19" fill="#fbbf24"/>
+    <polygon points="50,44 51,46.5 53.5,47 51,47.5 50,50 49,47.5 46.5,47 49,46.5" fill="#fbbf24"/>
+  </g>
+</svg>

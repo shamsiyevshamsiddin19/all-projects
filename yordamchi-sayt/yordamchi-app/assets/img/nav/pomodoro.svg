@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bg_pomo" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ef4444"/>
+      <stop offset="100%" stop-color="#b91c1c"/>
+    </linearGradient>
+    <filter id="sh_pomo"><feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000" flood-opacity="0.3"/></filter>
+  </defs>
+  <rect width="64" height="64" rx="18" fill="url(#bg_pomo)"/>
+  <rect x="1.5" y="1.5" width="61" height="28" rx="16.5" fill="#ffffff" fill-opacity="0.18"/>
+  <g filter="url(#sh_pomo)">
+    <circle cx="32" cy="34" r="16" fill="#ffffff"/>
+    <circle cx="32" cy="34" r="13" fill="#fee2e2"/>
+    <path d="M32 21 C32 21 34 15 39 15" stroke="#15803d" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path d="M29 18 C29 18 24 16 26 13" stroke="#15803d" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+    <!-- Timer markings -->
+    <line x1="32" y1="25" x2="32" y2="34" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="32" y1="34" x2="38" y2="34" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+</svg>

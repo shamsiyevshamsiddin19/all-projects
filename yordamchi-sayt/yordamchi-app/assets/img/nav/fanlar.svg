@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bg_fan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <filter id="sh_fan"><feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000" flood-opacity="0.3"/></filter>
+  </defs>
+  <rect width="64" height="64" rx="18" fill="url(#bg_fan)"/>
+  <rect x="1.5" y="1.5" width="61" height="28" rx="16.5" fill="#ffffff" fill-opacity="0.18"/>
+  <g filter="url(#sh_fan)">
+    <!-- Academic Cap -->
+    <polygon points="32,16 14,25 32,34 50,25" fill="#ffffff"/>
+    <path d="M21 29.5 L21 40 C21 43.5 26 46 32 46 C38 46 43 43.5 43 40 L43 29.5" fill="#ffffff" opacity="0.9"/>
+    <path d="M48 26 L48 41" stroke="#fef08a" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="48" cy="42" r="2" fill="#fef08a"/>
+  </g>
+</svg>

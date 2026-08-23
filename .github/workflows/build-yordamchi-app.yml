@@ -1,0 +1,92 @@
+name: Build Yordamchi Cross-Platform Apps
+
+on:
+  push:
+    paths:
+      - 'yordamchi-sayt/yordamchi-app/**'
+      - '.github/workflows/build-yordamchi-app.yml'
+  workflow_dispatch:
+
+jobs:
+  build-desktop:
+    name: Build Desktop (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'yordamchi-sayt/yordamchi-app/package.json'
+
+      - name: Install dependencies
+        working-directory: yordamchi-sayt/yordamchi-app
+        run: npm ci || npm install
+
+      - name: Build Linux (.deb, .AppImage)
+        if: matrix.os == 'ubuntu-latest'
+        working-directory: yordamchi-sayt/yordamchi-app
+        run: npm run build:linux
+
+      - name: Build Windows (.exe)
+        if: matrix.os == 'windows-latest'
+        working-directory: yordamchi-sayt/yordamchi-app
+        run: npm run build:win
+
+      - name: Build macOS (.dmg)
+        if: matrix.os == 'macos-latest'
+        working-directory: yordamchi-sayt/yordamchi-app
+        run: npm run build:mac
+
+      - name: Upload Desktop Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Yordamchi-Desktop-${{ matrix.os }}
+          path: yordamchi-sayt/yordamchi-app/dist-desktop/*.*
+
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: 17
+
+      - name: Install Capacitor & Android Tools
+        working-directory: yordamchi-sayt/yordamchi-app
+        run: |
+          npm install
+          npx @capacitor/cli init "Yordamchi" "uz.wstore.yordamchi" --web-dir "."
+          npm install @capacitor/core @capacitor/android
+          npx cap add android
+          npx cap copy
+
+      - name: Build Android APK
+        working-directory: yordamchi-sayt/yordamchi-app
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Yordamchi-Android-APK
+          path: yordamchi-sayt/yordamchi-app/android/app/build/outputs/apk/debug/app-debug.apk
