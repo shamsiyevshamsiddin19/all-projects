@@ -34,6 +34,12 @@
     #splash span{margin-top:16px;font-size:12px;font-weight:800;letter-spacing:4px;color:var(--hint);text-transform:uppercase}
     @keyframes sp{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.07);opacity:.85}}
   </style>
+<script>
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  window._deferredPWAInstallPrompt = e;
+});
+</script>
 </head>
 <body>
 

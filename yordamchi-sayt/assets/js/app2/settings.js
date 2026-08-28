@@ -50,6 +50,19 @@
         '<div class="li-main"><div class="li-title">Ilova belgisi</div><div class="li-sub">Bosh ekran yorlig\'i uchun</div></div>' +
         '<span class="li-chev" data-icon="arrowLeft" data-icon-size="16" style="transform:rotate(180deg)"></span></button>' +
 
+        '<div class="list-label">Ilova (Mobil & Kompyuter)</div>' +
+        '<button class="list-row" data-act="downloadApk">' +
+        '<span class="li-ic" style="background:#10b98122;color:#10b981" data-icon="download" data-icon-size="15"></span>' +
+        '<div class="li-main"><div class="li-title">Android Ilova (APK yuklab olish)</div>' +
+        '<div class="li-sub">Telefonga to\'g\'ridan-to\'g\'ri o\'rnatish uchun (.apk fayl)</div></div>' +
+        '<span class="li-chev" data-icon="arrowLeft" data-icon-size="16" style="transform:rotate(180deg)"></span></button>' +
+
+        '<button class="list-row" data-act="downloadLinuxDeb">' +
+        '<span class="li-ic" style="background:#3b82f622;color:#3b82f6" data-icon="download" data-icon-size="15"></span>' +
+        '<div class="li-main"><div class="li-title">Linux Dasturi (DEB yuklab olish)</div>' +
+        '<div class="li-sub">Ubuntu/Debian kompyuterlar uchun (.deb fayl)</div></div>' +
+        '<span class="li-chev" data-icon="arrowLeft" data-icon-size="16" style="transform:rotate(180deg)"></span></button>' +
+
         '<div class="list-label">O\'quv jarayoni</div>' +
         '<button class="list-row" data-act="sessiya">' +
         '<span class="li-ic" style="background:var(--accent-soft);color:var(--accent)" data-icon="calendar" data-icon-size="15"></span>' +
@@ -408,6 +421,38 @@
       }, { danger: true, yes: 'Uzish' });
     };
   }
+
+  App.actions.downloadApk = function () {
+    App.sheet(
+      '<div style="text-align:center;padding:6px 0 16px">' +
+      '<div style="font-size:46px;margin-bottom:8px">📱</div>' +
+      '<h3 style="margin:0 0 6px">Yordamchi Android Ilovasi</h3>' +
+      '<p class="muted" style="font-size:13px;margin:0 0 18px;line-height:1.5">Ilovani to\'g\'ridan-to\'g\'ri telefoningizga o\'rnatish uchun APK faylni yuklab oling.</p>' +
+      '<a href="/assets/downloads/yordamchi.apk" download="yordamchi.apk" class="btn" style="display:flex;align-items:center;justify-content:center;text-decoration:none;width:100%;margin-bottom:10px;background:var(--accent);color:#fff">📦 APK yuklab olish (43.6 MB)</a>' +
+      (window._deferredPWAInstallPrompt
+        ? '<button class="btn ghost" id="pwa-inst-act-btn" style="width:100%">✨ 1 bosishda o\'rnatish (PWA)</button>'
+        : '') +
+      '</div>',
+      { title: 'Android Ilova' }
+    );
+    var pb = document.getElementById('pwa-inst-act-btn');
+    if (pb && window._deferredPWAInstallPrompt) {
+      pb.onclick = function () {
+        window._deferredPWAInstallPrompt.prompt();
+        App.closeSheet();
+      };
+    }
+  };
+
+  App.actions.downloadLinuxDeb = function () {
+    var a = document.createElement('a');
+    a.href = '/assets/downloads/yordamchi_1.0.0_amd64.deb';
+    a.download = 'yordamchi_1.0.0_amd64.deb';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    App.toast('📥 Linux .deb dasturi yuklanmoqda...');
+  };
 
   App.actions.sessiyaKun = function () { App.closeSheet(); App.go('kun'); };
 
