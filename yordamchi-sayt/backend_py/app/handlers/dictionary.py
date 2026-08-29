@@ -53,7 +53,11 @@ def _nat_key(text):
 def get_dict_data(request: Request, body: dict, lang: str):
     lang = _clean_dict_lang(lang)
     items = db.fetch_all(
-        "SELECT category, word_ru, word_uz, COALESCE(note, '') AS note, COALESCE(example, '') AS example "
+        "SELECT category, word_ru, word_uz, COALESCE(note, '') AS note, COALESCE(example, '') AS example, "
+        # `pair_with` — .md dagi "Chalkashadi:" qatoridan kelgan, ATAYLAB
+        # ko'rsatilgan adashtiriladigan so'zlar. Juftlash rejimi buni
+        # avtomatik topilgan o'xshashlikdan USTUN qo'yadi.
+        "COALESCE(pair_with, '') AS pair_with "
         "FROM dictionary_words WHERE lang = :l ORDER BY sort_order, id",
         {"l": lang},
     )
@@ -88,14 +92,21 @@ def save_dict_cat(request: Request, body: dict):
             uz = s(word.get("uz"))
             note = s(word.get("note") or word.get("izoh") or "")
             example = s(word.get("example") or word.get("misol") or word.get("ex") or "")
+            # Ro'yxat ham, tayyor satr ham qabul qilinadi (frontend massiv yuboradi).
+            raw_pair = word.get("pairWith") or word.get("pair_with") or ""
+            if isinstance(raw_pair, (list, tuple)):
+                pair_with = ", ".join(s(x) for x in raw_pair if s(x))
+            else:
+                pair_with = s(raw_pair)
             if ru == "" and uz == "":
                 continue
             conn.execute(
                 text(
-                    "INSERT INTO dictionary_words (lang, category, word_ru, word_uz, note, example, sort_order) "
-                    "VALUES (:l, :c, :ru, :uz, :note, :ex, :so)"
+                    "INSERT INTO dictionary_words (lang, category, word_ru, word_uz, note, example, pair_with, sort_order) "
+                    "VALUES (:l, :c, :ru, :uz, :note, :ex, :pw, :so)"
                 ),
-                {"l": lang, "c": category, "ru": ru, "uz": uz, "note": note, "ex": example, "so": index},
+                {"l": lang, "c": category, "ru": ru, "uz": uz, "note": note, "ex": example,
+                 "pw": pair_with, "so": index},
             )
             saved += 1
 

@@ -63,6 +63,24 @@ class Settings:
     # Bu ilova login talab qilmaydi (hamma umumiy fazoda ishlaydi), shuning uchun default False.
     REQUIRE_AUTH: bool = _bool("REQUIRE_AUTH", False)
 
+    # --- Google orqali kirish (yagona egaga qulflangan sayt) ---------------
+    # AUTH_MODE=google  -> parol bilan kirish va ro'yxatdan o'tish YOPILADI,
+    #                      faqat Google ID token bilan kiriladi.
+    # AUTH_MODE=password-> eski holat (email + parol).
+    AUTH_MODE: str = (os.getenv("AUTH_MODE", "password").strip().lower() or "password")
+
+    # Google Cloud Console'dagi OAuth 2.0 "Web application" client ID.
+    # Kelgan ID token'ning `aud` maydoni AYNAN shunga teng bo'lishi shart —
+    # aks holda boshqa saytga berilgan token bilan ham kirib bo'lardi.
+    GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "").strip()
+
+    # Kirishga ruxsat etilgan emaillar (vergul bilan). BO'SH BO'LSA HECH KIM
+    # kira olmaydi — bu ataylab shunday: ro'yxat noto'g'ri sozlansa, sayt
+    # ochilib qolgandan ko'ra yopilib qolgani xavfsizroq.
+    ALLOWED_EMAILS: list[str] = [
+        e.strip().lower() for e in os.getenv("ALLOWED_EMAILS", "").split(",") if e.strip()
+    ]
+
     # Debug rejimi: True bo'lsa xatolik tafsilotlari javobga chiqadi (faqat local uchun).
     DEBUG: bool = _bool("APP_DEBUG", False)
 

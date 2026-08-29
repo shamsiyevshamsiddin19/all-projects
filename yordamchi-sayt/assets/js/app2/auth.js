@@ -64,6 +64,108 @@
     setTimeout(function () { el.querySelector('#au-email').focus(); }, 100);
   }
 
+  /* --- Google orqali kirish (yagona ruxsat etilgan yo'l) ---
+     Google Identity Services (GIS) skripti FAQAT shu ekran kerak bo'lganda
+     yuklanadi — oddiy ochilishda tashqi so'rov qo'shilmasin. GIS bizga
+     Google IMZOLAGAN ID token beradi; email o'sha tokenning ichida keladi
+     va serverda Google'ning o'zida tekshiriladi. Shuning uchun bu yerdan
+     email/uid yuborilmaydi — faqat `credential`. */
+  function wantsLogin() {
+    try { return /[?&]login=1(&|$)/.test(location.search || ''); } catch (e) { return false; }
+  }
+
+  var GSI_SRC = 'https://accounts.google.com/gsi/client';
+
+  function loadGsi() {
+    if (window.__gsiP) return window.__gsiP;
+    window.__gsiP = new Promise(function (resolve, reject) {
+      if (window.google && google.accounts && google.accounts.id) { resolve(); return; }
+      var sc = document.createElement('script');
+      sc.src = GSI_SRC; sc.async = true; sc.defer = true;
+      sc.onload = function () { resolve(); };
+      sc.onerror = function () { reject(new Error('Google skripti yuklanmadi')); };
+      document.head.appendChild(sc);
+    });
+    return window.__gsiP;
+  }
+
+  /* Telegram aloqasi — bo'sh bo'lsa blok umuman chizilmaydi.
+     Noto'g'ri havola qo'yilgandan ko'ra ko'rsatmagan yaxshi. */
+  var TG_USER = 'shamsiyev_shamsiddin';
+
+  function tgHtml() {
+    if (!TG_USER) return '';
+    var u = String(TG_USER).replace(/^@/, '');
+    return '<a class="agate-tg" href="https://t.me/' + encodeURIComponent(u) + '" ' +
+      'target="_blank" rel="noopener noreferrer">' +
+      '<span data-icon="send" data-icon-size="15"></span>' +
+      '<span>Bog\'lanish — @' + App.esc(u) + '</span></a>';
+  }
+
+  function googleScreen(clientId, msg) {
+    var el = screen(
+      '<div class="agate">' +
+        '<div class="agate-mark">' +
+          '<span class="agate-glow" aria-hidden="true"></span>' +
+          '<img class="agate-logo" data-app-icon src="' + App.appIconSrc() + '" alt="">' +
+        '</div>' +
+
+        '<h1 class="agate-title">Yordamchi</h1>' +
+        '<p class="agate-sub">Shaxsiy o\'quv maydoni</p>' +
+
+        '<div class="agate-card">' +
+          '<div class="agate-lock">' +
+            '<span data-icon="lock" data-icon-size="14"></span>' +
+            '<span>Faqat egasi kira oladi</span>' +
+          '</div>' +
+
+          (msg ? '<div class="agate-err">' +
+                   '<span data-icon="alert" data-icon-size="15"></span>' +
+                   '<span>' + App.esc(msg) + '</span></div>' : '') +
+
+          '<div id="au-gbtn" class="agate-btnhost"></div>' +
+          '<p class="agate-note" id="au-gnote">Google yuklanmoqda…</p>' +
+        '</div>' +
+
+        tgHtml() +
+      '</div>'
+    );
+
+    if (!clientId) {
+      el.querySelector('#au-gnote').textContent =
+        'Google kirishi hali sozlanmagan (GOOGLE_CLIENT_ID yo\'q).';
+      return;
+    }
+
+    loadGsi().then(function () {
+      var note = el.querySelector('#au-gnote');
+      var host = el.querySelector('#au-gbtn');
+      if (!host) return;
+      if (note) note.textContent = '';
+
+      google.accounts.id.initialize({
+        client_id: clientId,
+        callback: function (resp) {
+          var cred = resp && resp.credential;
+          if (!cred) { googleScreen(clientId, 'Google javobi bo\'sh keldi.'); return; }
+          if (note) note.textContent = 'Tekshirilmoqda...';
+          post({ amal: 'google_kirish', credential: cred })
+            .then(function (j) {
+              Auth.user = j; gateRemember(true); closeScreen(); resyncThenStart();
+            })
+            .catch(function (e) { googleScreen(clientId, e.message); });
+        }
+      });
+      google.accounts.id.renderButton(host, {
+        theme: 'filled_blue', size: 'large', shape: 'pill',
+        text: 'signin_with', width: 280
+      });
+    }).catch(function () {
+      var note = el.querySelector('#au-gnote');
+      if (note) note.textContent = 'Google skriptini yuklab bo\'lmadi. Internetni tekshiring.';
+    });
+  }
+
   /* --- Ilk sozlash: birinchi (va yagona) akkaunt --- */
   function setupScreen(msg) {
     var el = screen(
@@ -171,6 +273,20 @@
         Auth.checked = true;
 
         if (j.kirganmi) { Auth.user = j; gateRemember(true); open(); return; }
+
+        /* Google rejimi: parol bilan kirish ham, ro'yxatdan o'tish ham yopiq.
+           Akkaunt bor-yo'qligi ahamiyatsiz — ruxsat etilgan email birinchi
+           kirganda server o'zi ochib beradi. */
+        if (j.kirish_usuli === 'google') {
+          /* Himoya hali yoqilmagan bo'lsa sayt ochiq turadi, lekin `?login=1`
+             bilan kirish ekranini ataylab chaqirsa bo'ladi. Bu qulflashdan
+             OLDIN Google kirishini sinab ko'rish uchun kerak: ishlamasa,
+             egasi o'z saytidan tashqarida qolib ketmaydi. */
+          if (!j.himoya && !wantsLogin()) { gateRemember(true); open(); return; }
+          gateRemember(false);
+          showLocked(function () { googleScreen(j.google_client_id); });
+          return;
+        }
 
         // Hali akkaunt yo'q — himoya yoqilgan/yoqilmaganidan qat'i nazar ilk sozlash ko'rsatiladi.
         if (!j.sozlanganmi) { gateRemember(false); showLocked(setupScreen); return; }

@@ -16,3 +16,12 @@ deploy.tar.gz
 
 # Ishlatilmaydigan eski fayllar (index.html hech qayerda chaqirmaydi)
 _eskirgan/
+
+# Yig'ilgan mahsulotlar — manba kod EMAS.
+# APK 42MB, DEB 11MB. Git ularni tarixda ABADIY saqlaydi (keyin o'chirilsa
+# ham), ya'ni ochiq repo doimiy 53MB shishardi va har klon shuni yuklardi.
+# Ular: (1) serverda turadi va sayt o'sha yerdan beradi,
+#       (2) GitHub Releases'ga yuklanadi — server yo'qolsa ham saqlanadi,
+#       (3) manbasi `yordamchi-app/` shu repoda, ya'ni qayta yasash mumkin.
+assets/downloads/*.apk
+assets/downloads/*.deb

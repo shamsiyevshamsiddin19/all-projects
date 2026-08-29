@@ -1,0 +1,188 @@
+#!/usr/bin/env node
+/*
+ * Sof mantiq uchun testlar — `node tests/run.js`.
+ *
+ * NIMA UCHUN KERAK
+ * ================
+ * 2026-08-29 da uchta nuqson topildi va UCHALASI HAM XATO BERMAGAN edi —
+ * ular shunchaki jimgina ishlamagan:
+ *
+ *   1. Juftlash 400 dan ortiq so'zli lug'atda butunlay o'chib qolardi
+ *      (ya'ni 8000 so'zlik lug'atda hech qachon ishlamagan).
+ *   2. `.md` dagi "Chalkashadi:" qatori o'qilardi, keyin yo'qolardi.
+ *   3. Bir so'z 12 ta "oila"ga tushib ketardi, natijada "я пишу / я сижу"
+ *      kabi umuman o'xshamagan juftlar chiqardi.
+ *
+ * Bunday nuqsonni qo'lda ko'rish qiyin: ekranda nimadir ko'rinadi, xato
+ * yo'q, lekin natija noto'g'ri. Shuning uchun eng qimmatli joylar —
+ * juftlash algoritmi va o'qish intonatsiyasi — shu yerda qulflab qo'yildi.
+ *
+ * Brauzer kutubxonasi yo'q: fayllar `window` soxta obyekti bilan yuklanadi.
+ */
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+
+const ROOT = path.join(__dirname, '..');
+let pass = 0, fail = 0;
+const failures = [];
+
+function check(name, cond, detail) {
+  if (cond) { pass++; return; }
+  fail++;
+  failures.push(name + (detail ? '  ->  ' + detail : ''));
+}
+
+function eq(name, got, want) {
+  check(name, JSON.stringify(got) === JSON.stringify(want),
+    'kutilgan ' + JSON.stringify(want) + ', kelgan ' + JSON.stringify(got));
+}
+
+/* ---------- Brauzer fayllarini yuklash ---------- */
+function loadIntoWindow(relPath) {
+  const win = {};
+  const code = fs.readFileSync(path.join(ROOT, relPath), 'utf8');
+  new Function('window', 'self', code)(win, win);
+  return win;
+}
+
+/* `reading.js` butun App/TTS ilovasiga bog'liq, shuning uchun undan faqat
+   sof intonatsiya qismini ajratib olamiz. */
+function loadProsody() {
+  const src = fs.readFileSync(path.join(ROOT, 'assets/js/app2/reading.js'), 'utf8');
+  // `PROSODY` jadvalidan boshlaymiz — `prosodyParts` unga tayanadi.
+  const a = src.indexOf('  var PROSODY = {');
+  const b = src.indexOf("  /* Bitta bo'lakni");
+  if (a < 0 || b < 0) throw new Error('reading.js ichidagi intonatsiya bloki topilmadi');
+  const scope = {};
+  new Function('exports', src.slice(a, b) + '\nexports.prosodyParts = prosodyParts;')(scope);
+  return scope.prosodyParts;
+}
+
+/* =========================================================
+   1. Juftlash (paircore.js)
+   ========================================================= */
+const PairCore = loadIntoWindow('assets/js/core/paircore.js').PairCore;
+const ru = (list) => list.map((r) => (typeof r === 'string' ? { ru: r, uz: '' } : r));
+const names = (groups) => groups.map((g) => g.map((w) => w.ru).join('|'));
+
+{
+  // O'zak oilasi — ma'no prefiksda farq qiladi
+  const g = PairCore.build(ru([
+    'давать', 'отдавать', 'передавать', 'раздавать', 'играть'
+  ]), 'russian');
+  check('o\'zak oilasi topiladi', g.length === 1 && g[0].length === 4, names(g).join(' ; '));
+  check('begona so\'z oilaga qo\'shilmaydi',
+    !names(g).join('').includes('играть'), names(g).join(' ; '));
+}
+
+{
+  // Tuslangan shakl: "я " olmoshi solishtirishga QO'SHILMASLIGI kerak.
+  // Aynan shu narsa "я пишу / я сижу" kabi soxta juftlarni yaratardi.
+  const g = PairCore.build(ru(['я пишу', 'я сижу', 'я глажу', 'я плачу']), 'russian');
+  eq('o\'xshamagan qisqa so\'zlar juftlanmaydi', names(g), []);
+}
+
+{
+  // Umumiy boshi bor haqiqiy juft — saqlanishi kerak
+  const g = PairCore.build(ru(['я храню', 'я храплю', 'я играю']), 'russian');
+  eq('umumiy boshli juft topiladi', names(g), ['я храню|я храплю']);
+}
+
+{
+  // Har so'z FAQAT BITTA oilada bo'lsin
+  const words = ru(['ходить', 'заходить', 'проходить', 'находить', 'уходить', 'выходить']);
+  const g = PairCore.build(words, 'russian');
+  const seen = {};
+  let dup = 0;
+  g.forEach((grp) => grp.forEach((w) => { seen[w.ru] = (seen[w.ru] || 0) + 1; if (seen[w.ru] > 1) dup++; }));
+  check('bir so\'z bir nechta oilada emas', dup === 0, dup + ' ta takror');
+}
+
+{
+  // Qo'lda ko'rsatilgan juftlik avtomatikadan USTUN.
+  // "снимать/убирать" yozilishi umuman o'xshamaydi — buni faqat odam bog'lay oladi.
+  const g = PairCore.build([
+    { ru: 'снимать', uz: '', pairWith: ['убирать'] },
+    { ru: 'убирать', uz: '' },
+    { ru: 'играть', uz: '' }
+  ], 'russian');
+  eq('qo\'lda ko\'rsatilgan juftlik ishlaydi', names(g), ['снимать|убирать']);
+}
+
+{
+  // Katta lug'atda ham ishlashi SHART. Ilgari bu yerda `length <= 400`
+  // cheklovi bor edi va 8000 so'zlik lug'atda juftlash umuman o'chib qolardi.
+  const big = [];
+  for (let i = 0; i < 3000; i++) big.push({ ru: 'слово' + i, uz: '' });
+  big.push({ ru: 'храню', uz: '' }, { ru: 'храплю', uz: '' });
+  const t0 = Date.now();
+  const g = PairCore.build(big, 'russian');
+  const ms = Date.now() - t0;
+  check('katta lug\'atda ham juftlaydi',
+    names(g).some((x) => x === 'храню|храплю'), 'topilmadi');
+  check('katta lug\'atda tez ishlaydi (<3s)', ms < 3000, ms + ' ms');
+}
+
+{
+  // Bir xil so'z ikki marta yozilgan bo'lsa "juftlik" yasalmasin
+  const g = PairCore.build(ru(['изучаю', 'изучаю']), 'russian');
+  eq('bir xil so\'z juftlik emas', names(g), []);
+}
+
+/* =========================================================
+   2. O'qish intonatsiyasi (reading.js)
+   ========================================================= */
+const prosodyParts = loadProsody();
+const texts = (t) => prosodyParts(t).map((p) => p.text);
+
+{
+  eq('gap oxirlari bo\'yicha bo\'linadi',
+    texts('Здравствуйте! Как вас зовут?'),
+    ['Здравствуйте!', 'Как вас зовут?']);
+
+  const q = prosodyParts('Как вас зовут?')[0];
+  check('so\'roqda ohang ko\'tariladi', q.pitch > 1.1, 'pitch=' + q.pitch);
+
+  const d = prosodyParts('Он ушёл.')[0];
+  check('nuqtada ohang pasayadi', d.pitch < 1, 'pitch=' + d.pitch);
+}
+
+{
+  // Qisqartma gap oxiri EMAS, lekin undan keyingi haqiqiy gap chegarasi
+  // o'tkazib yuborilmasligi kerak.
+  eq('qisqartma bo\'linmaydi, keyingi gap bo\'linadi',
+    texts('Он купил хлеб и т. д. Потом ушёл.'),
+    ['Он купил хлеб и т. д.', 'Потом ушёл.']);
+
+  eq('unvondan keyin bo\'linmaydi',
+    texts('Mr. Smith пришёл.'),
+    ['Mr. Smith пришёл.']);
+}
+
+{
+  // Vergul ATAYLAB chegara emas — har vergulda uzilsa nutq bo'g'iladi
+  eq('vergulda bo\'linmaydi',
+    texts('Это книга, которую я читал вчера.'),
+    ['Это книга, которую я читал вчера.']);
+}
+
+{
+  // Tire o'qilmaydi, uning o'rniga jimlik qo'yiladi
+  const p = prosodyParts('Мама — врач.');
+  eq('tire matndan chiqariladi', p.map((x) => x.text), ['Мама', 'врач.']);
+  check('tire oldidan jimlik uzayadi', p[0].pause >= 300, 'pause=' + p[0].pause);
+}
+
+/* =========================================================
+   Natija
+   ========================================================= */
+console.log('');
+if (fail === 0) {
+  console.log('  ' + pass + ' ta test o\'tdi.');
+  process.exit(0);
+}
+console.log('  ' + pass + ' o\'tdi, ' + fail + ' YIQILDI:');
+failures.forEach((f) => console.log('   - ' + f));
+process.exit(1);

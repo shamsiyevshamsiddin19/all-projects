@@ -24,11 +24,11 @@
      o'qiydi, lekin so'z/gap tarjimasi va tinglash bilan (reading.js). */
   var SECTIONS = {
     en_reading:   { n: 'Reading',   parent: 'english', parentName: 'Ingliz tili', ic: 'book', doc: 'reading_doc' },
-    en_listening: { n: 'Listening', parent: 'english', parentName: 'Ingliz tili', ic: 'headphones' },
+    en_listening: { n: 'Listening', parent: 'english', parentName: 'Ingliz tili', ic: 'headphones', doc: 'listening_doc' },
     en_writing:   { n: 'Writing',   parent: 'english', parentName: 'Ingliz tili', ic: 'edit' },
     en_speaking:  { n: 'Speaking',  parent: 'english', parentName: 'Ingliz tili', ic: 'mic' },
     ru_reading:   { n: 'Чтение',      parent: 'russian', parentName: 'Русский язык', ic: 'book', doc: 'reading_doc' },
-    ru_listening: { n: 'Аудирование', parent: 'russian', parentName: 'Русский язык', ic: 'headphones' },
+    ru_listening: { n: 'Аудирование', parent: 'russian', parentName: 'Русский язык', ic: 'headphones', doc: 'listening_doc' },
     ru_speaking:  { n: 'Говорение',   parent: 'russian', parentName: 'Русский язык', ic: 'mic' },
     ru_writing:   { n: 'Письмо',      parent: 'russian', parentName: 'Русский язык', ic: 'edit' },
     ru_shadowing: { n: 'Шэдоуинг',    parent: 'russian', parentName: 'Русский язык', ic: 'refresh' }

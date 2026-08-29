@@ -284,7 +284,9 @@
   var WSTORE_SORTS = [
     { key: 'popular', label: 'Ommabop / Tasodifiy' },
     { key: 'alpha', label: 'Alifbo bo\'yicha (A–Z)' },
-    { key: 'recent', label: 'Eng yangi so\'zlar' }
+    { key: 'recent', label: 'Eng yangi so\'zlar' },
+    { key: 'pairs', label: 'Juftlash: karusel (surib ko\'rish)' },
+    { key: 'pairs_color', label: 'Juftlash: bir xil rangli kartalar' }
   ];
 
   var FEED_WORDS = [];
@@ -643,6 +645,125 @@
     return pool;
   }
 
+  /* ---------- Juftlash saralashi: o'xshash/adashtiriladigan so'zlarni yonma-yon qo'yish ----------
+     vocab.js dagi buildPairGroups bilan bir xil mantiq (rus fe'l oilalari + imlosi
+     yaqin so'zlar). Bu yerda til aralash bo'lishi mumkinligi uchun ru/en alohida
+     guruhlanadi, keyin natija bitta lentaga birlashtiriladi. */
+  /* Juftlash algoritmi `assets/js/core/paircore.js` da — YAGONA manba.
+     Ilgari aynan shu kod bu yerda ham, home.js da ham nusxa bo'lib turardi;
+     biri tuzatilib, ikkinchisi eskirib qolish xavfi bor edi. */
+  function buildHomePairGroups(words, lang) {
+    return window.PairCore ? PairCore.build(words, lang) : [];
+  }
+
+  var PAIRS_SORT_CACHE = { key: null, list: null };
+  var pairGroupSeq = 0;
+  /* Guruh a'zolarini "_pairGroupId" bilan belgilaydi — renderFeedItems shu orqali
+     ularni bitta karusel kartaga birlashtiradi (o'rniga alohida-alohida kartalar). */
+  function buildPairsSortedList(pool) {
+    var byLang = {};
+    pool.forEach(function (w) {
+      var l = w.lang === 'russian' ? 'russian' : 'english';
+      (byLang[l] = byLang[l] || []).push(w);
+    });
+    var ordered = [], used = {};
+    Object.keys(byLang).forEach(function (l) {
+      buildHomePairGroups(byLang[l], l).forEach(function (g) {
+        var fresh = g.filter(function (w) { return !used[w.ru + '|' + w.uz]; });
+        if (fresh.length < 2) return;
+        pairGroupSeq++;
+        fresh.forEach(function (w) {
+          used[w.ru + '|' + w.uz] = true;
+          w._pairGroupId = pairGroupSeq;
+          w._pairGroupSize = fresh.length;
+          ordered.push(w);
+        });
+      });
+    });
+    pool.forEach(function (w) {
+      var k = w.ru + '|' + w.uz;
+      if (!used[k]) {
+        used[k] = true;
+        w._pairGroupId = null;
+        ordered.push(w);
+      }
+    });
+    return ordered;
+  }
+
+  /* Guruhdagi so'zlarning umumiy boshi/oxirini o'chirib, farq qiladigan qismini <b> bilan ajratadi */
+  function highlightPairDiff(list) {
+    if (list.length < 2) return list.map(function (w) { return App.esc(w); });
+    var minLen = Math.min.apply(null, list.map(function (w) { return w.length; }));
+    var pre = 0;
+    while (pre < minLen && list.every(function (w) { return w[pre] === list[0][pre]; })) pre++;
+    var suf = 0;
+    while (suf < minLen - pre && list.every(function (w) { return w[w.length - 1 - suf] === list[0][list[0].length - 1 - suf]; })) suf++;
+    return list.map(function (w) {
+      var p = App.esc(w.slice(0, pre));
+      var mid = App.esc(w.slice(pre, w.length - suf));
+      var s = App.esc(w.slice(w.length - suf));
+      return p + (mid ? '<b class="ig-pair-diff">' + mid + '</b>' : '') + s;
+    });
+  }
+
+  /* Rangli rejim: har bir o'xshash so'zlar oilasi o'z rangini oladi, shu oiladagi
+     barcha kartalar bir xil rangda ko'rinadi — bir qarashda qaysi so'z qaysi
+     oilaga tegishli ekani bilinadi. */
+  var PAIR_PALETTE = [
+    { color: 'linear-gradient(135deg, #6366f1, #a855f7)', glow: 'linear-gradient(90deg, #6366f1, #a855f7, #ec4899)', accent: '#8b5cf6' },
+    { color: 'linear-gradient(135deg, #0284c7, #06b6d4)', glow: 'linear-gradient(90deg, #0284c7, #06b6d4, #22d3ee)', accent: '#0891b2' },
+    { color: 'linear-gradient(135deg, #059669, #10b981)', glow: 'linear-gradient(90deg, #059669, #10b981, #34d399)', accent: '#10b981' },
+    { color: 'linear-gradient(135deg, #f59e0b, #f97316)', glow: 'linear-gradient(90deg, #f59e0b, #f97316, #ef4444)', accent: '#f97316' },
+    { color: 'linear-gradient(135deg, #ec4899, #f43f5e)', glow: 'linear-gradient(90deg, #ec4899, #f43f5e, #fb7185)', accent: '#f43f5e' },
+    { color: 'linear-gradient(135deg, #7c3aed, #6366f1)', glow: 'linear-gradient(90deg, #7c3aed, #6366f1, #818cf8)', accent: '#7c3aed' }
+  ];
+  function pairThemeFor(groupId, size) {
+    var t = PAIR_PALETTE[Math.abs(groupId - 1) % PAIR_PALETTE.length];
+    return {
+      color: t.color, glow: t.glow, accent: t.accent,
+      label: 'O\'xshash so\'zlar guruhi · ' + size + ' ta'
+    };
+  }
+
+  /* Bir guruhdagi o'xshash so'zlar — har biri to'liq Reel karta, chapga/o'ngga
+     surilganda guruhdagi keyingi so'zga o'tadi (lentaning o'zi tik suriladi). */
+  function renderPairCarouselCard(words, baseIdx) {
+    var ruList = words.map(function (w) { return String(w.ru || ''); });
+    var highlighted = highlightPairDiff(ruList);
+
+    var slidesHtml = words.map(function (w, i) {
+      return '<div class="ig-pair-slide">' + renderReelCard(w, baseIdx + i, highlighted[i]) + '</div>';
+    }).join('');
+
+    var dotsHtml = words.map(function (w, i) {
+      return '<span class="ig-pair-dot' + (i === 0 ? ' active' : '') + '"></span>';
+    }).join('');
+
+    return '<div class="ig-pair-carousel">' +
+      '<div class="ig-pair-track">' + slidesHtml + '</div>' +
+      '<div class="ig-pair-dots">' + dotsHtml + '</div>' +
+    '</div>';
+  }
+
+  /* Surilganda faol nuqtani yangilab turadi */
+  function bindPairCarouselEvents(host) {
+    host.querySelectorAll('.ig-pair-carousel').forEach(function (car) {
+      var track = car.querySelector('.ig-pair-track');
+      var dots = car.querySelectorAll('.ig-pair-dot');
+      if (!track || !dots.length) return;
+      var raf = null;
+      track.addEventListener('scroll', function () {
+        if (raf) return;
+        raf = requestAnimationFrame(function () {
+          raf = null;
+          var i = Math.round(track.scrollLeft / track.clientWidth);
+          dots.forEach(function (d, di) { d.classList.toggle('active', di === i); });
+        });
+      }, { passive: true });
+    });
+  }
+
   /* Pick next batch of words from loaded pool based on current filter & offset */
   function getNextWords(count, offset) {
     var pool = getFilteredWordsPool();
@@ -662,6 +783,18 @@
       var end = start + count;
       if (end <= pool.length) return pool.slice(start, end);
       return pool.slice(start).concat(pool.slice(0, end - pool.length));
+    } else if (st.sort === 'pairs' || st.sort === 'pairs_color') {
+      var cacheKey = pool.length + ':' + (pool[0] ? pool[0].ru : '') + ':' + (pool[pool.length - 1] ? pool[pool.length - 1].ru : '');
+      if (PAIRS_SORT_CACHE.key !== cacheKey) {
+        PAIRS_SORT_CACHE.key = cacheKey;
+        PAIRS_SORT_CACHE.list = buildPairsSortedList(pool);
+      }
+      var sorted = PAIRS_SORT_CACHE.list;
+      if (!sorted.length) return [];
+      var start = offset % sorted.length;
+      var end = start + count;
+      if (end <= sorted.length) return sorted.slice(start, end);
+      return sorted.slice(start).concat(sorted.slice(0, end - sorted.length));
     } else {
       var selected = [];
       var poolCopy = pool.slice();
@@ -713,8 +846,9 @@
     };
   }
 
-  /* Render a single Reel card */
-  function renderReelCard(w, idx) {
+  /* Render a single Reel card. `titleHtml` berilsa sarlavha o'rniga ishlatiladi
+     (juftlash karuselida farq qiluvchi harflarni ajratib ko'rsatish uchun). */
+  function renderReelCard(w, idx, titleHtml, themeOverride) {
     var cardId = 'ig_card_' + idx + '_' + Math.floor(Math.random() * 10000);
     var isRu = (w.lang === 'russian' || /[а-яёА-ЯЁ]/.test(w.ru || ''));
     var ttsLang = isRu ? 'ru-RU' : 'en-US';
@@ -724,8 +858,16 @@
     var isBookmarked = bms.indexOf(w.ru) >= 0;
 
     var theme = getCardTheme(w);
+    // Juftlash (rangli) rejimida rang oilaga qarab almashtiriladi, qolgani o'z holicha.
+    if (themeOverride) {
+      theme = {
+        badge: theme.badge, title: theme.title,
+        color: themeOverride.color, glow: themeOverride.glow, accent: themeOverride.accent
+      };
+    }
 
-    return '<div class="ig-post-card" id="' + cardId + '">' +
+    return '<div class="ig-post-card' + (themeOverride ? ' ig-pair-tinted' : '') + '" id="' + cardId + '"' +
+      (themeOverride ? ' style="--pair-accent:' + themeOverride.accent + '"' : '') + '>' +
       /* Card Ambient Top Glow */
       '<div class="ig-card-ambient" style="background:' + theme.glow + '"></div>' +
 
@@ -740,7 +882,7 @@
               '<span>' + App.esc(theme.title) + '</span>' +
               '<span class="ig-verified" title="Tasdiqlangan">✓</span>' +
             '</div>' +
-            '<div class="ig-post-sub">Lug\'at Reels · O\'rganish</div>' +
+            '<div class="ig-post-sub">' + (themeOverride && themeOverride.label ? App.esc(themeOverride.label) : 'Lug\'at Reels · O\'rganish') + '</div>' +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -752,7 +894,7 @@
         '<div class="vr-screen-flow">' +
           '<div class="vr-md-header">' +
             '<div class="vr-title-row">' +
-              '<h1 class="vr-md-title">' + App.esc(w.ru) + '</h1>' +
+              '<h1 class="vr-md-title">' + (titleHtml || App.esc(w.ru)) + '</h1>' +
             '</div>' +
             '<div class="vr-md-sub">' + App.esc(w.uz) + '</div>' +
             '<div class="vr-md-divider" style="background:' + theme.color + '"></div>' +
@@ -977,16 +1119,40 @@
 
     var startIdx = FEED_WORDS.length;
     FEED_WORDS = FEED_WORDS.concat(newWords);
+    var sortMode = getFilterState().sort;
 
     var htmlArr = [];
-    newWords.forEach(function (w, i) {
+    for (var i = 0; i < newWords.length; i++) {
+      var w = newWords[i];
       var globalIdx = startIdx + i;
       // Har 13 ta so'zdan keyin (2.5 baravar kamroq) tavsiya etilgan kurslar karuseli chiqsin
       if (globalIdx > 0 && globalIdx % 13 === 0) {
         htmlArr.push(renderCoursesCarouselCard(globalIdx));
       }
+      // Juftlash saralashida ketma-ket kelgan bir guruh a'zolari yig'iladi.
+      if (w._pairGroupId) {
+        var run = [w];
+        var j = i + 1;
+        while (j < newWords.length && newWords[j]._pairGroupId === w._pairGroupId) {
+          run.push(newWords[j]); j++;
+        }
+        if (sortMode === 'pairs_color') {
+          // Rangli rejim: kartalar odatdagidek tik lentada qoladi, faqat bitta
+          // oiladagilar bir xil rangda bo'ladi.
+          var hl = highlightPairDiff(run.map(function (x) { return String(x.ru || ''); }));
+          var grpTheme = pairThemeFor(w._pairGroupId, run.length);
+          for (var k = 0; k < run.length; k++) {
+            htmlArr.push(renderReelCard(run[k], globalIdx + k, hl[k], grpTheme));
+          }
+        } else {
+          // Karusel rejimi: bitta surib ko'riladigan karuselga birlashtiriladi.
+          htmlArr.push(renderPairCarouselCard(run, globalIdx));
+        }
+        i = j - 1;
+        continue;
+      }
       htmlArr.push(renderReelCard(w, globalIdx));
-    });
+    }
     var html = htmlArr.join('');
 
     if (append) {
@@ -994,11 +1160,13 @@
       tmp.innerHTML = html;
       App.icons(tmp);
       bindDoubleTapEvents(tmp);
+      bindPairCarouselEvents(tmp);
       while (tmp.firstChild) host.appendChild(tmp.firstChild);
     } else {
       host.innerHTML = html;
       App.icons(host);
       bindDoubleTapEvents(host);
+      bindPairCarouselEvents(host);
     }
   }
 

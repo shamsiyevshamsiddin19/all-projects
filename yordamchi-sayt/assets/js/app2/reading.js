@@ -71,7 +71,20 @@
 
     lines.forEach(function (line) {
       var h = line.match(/^(#{1,6})\s+(.*)$/);
-      if (h) { blankRun = 0; blocks.push({ k: 'h', lvl: h[1].length, text: h[2].trim() }); return; }
+      if (h) {
+        blankRun = 0;
+        /* Sarlavha ham OVOZDA o'qiladi — ilgari u butunlay o'tkazib
+           yuborilardi va tinglayotgan odam matnning yangi bo'limga
+           o'tganini bilmasdi. `n` beriladi, chunki o'qilayotgan joy
+           `data-n` orqali belgilanadi. */
+        var hb = { k: 'h', lvl: h[1].length, text: h[2].trim(), n: sentences.length };
+        hb.tokens = tokenize(hb.text);
+        hb.raw = hb.text;
+        hb.tr = '';
+        blocks.push(hb);
+        if (hb.text) sentences.push(hb);
+        return;
+      }
 
       var tr = line.match(/^\s*::\s?(.*)$/);
       if (tr) {
@@ -131,6 +144,147 @@
     });
   }
 
+  /* ================= Intonatsiya (tinish belgilariga qarab) =================
+     Ovoz dvigateli butun qatorni bitta bo'lak qilib olsa, ohang tekis
+     chiqadi: so'roq ham, xitob ham, nuqta ham bir xil eshitiladi. Shuning
+     uchun qator tinish belgilari bo'yicha intonatsion bo'laklarga ajratiladi
+     va har bo'lak O'Z ohangi (pitch), tezligi va keyingi jimligi bilan
+     o'qiladi.
+
+     VERGUL ataylab bo'lak CHEGARASI qilinmadi: uni dvigatelning o'zi tabiiy
+     qisqa to'xtash bilan o'qiydi. Har vergulda uzilsa, nutq bo'g'ib-bo'g'ib,
+     sun'iy chiqadi. Chegara — faqat gap oxiri (. ! ? …), nuqtali vergul,
+     ikki nuqta va tire. */
+  var PROSODY = {
+    '.': { pitch: 0.96, rate: 1.00, pause: 340 },   // xabar — ohang pasayadi
+    '!': { pitch: 1.15, rate: 1.06, pause: 400 },   // xitob — baland, jonli
+    '?': { pitch: 1.20, rate: 0.97, pause: 420 },   // so'roq — ohang ko'tariladi
+    '…': { pitch: 0.90, rate: 0.88, pause: 600 },   // tugallanmagan fikr — so'nadi
+    ':': { pitch: 1.06, rate: 1.00, pause: 280 },   // izoh kutilyapti
+    ';': { pitch: 1.00, rate: 1.00, pause: 300 },
+    '—': { pitch: 1.00, rate: 1.00, pause: 300 },   // tire — sezilarli to'xtash
+    '':  { pitch: 1.00, rate: 1.00, pause: 200 }
+  };
+
+  /* Ismdan oldin keladigan unvonlar — ulardan keyin HECH QACHON gap uzilmaydi */
+  var TITLES = ['mr', 'mrs', 'ms', 'dr', 'prof', 'st', 'sr', 'jr'];
+
+  /* Gap OXIRIDA ham kelishi mumkin bo'lgan qisqartmalar — qaror keyingi
+     so'zning bosh harfiga qarab chiqariladi */
+  var ABBREV = ['т', 'д', 'п', 'е', 'г', 'в', 'гг', 'вв', 'см', 'стр', 'рис',
+                'др', 'руб', 'чел', 'ул', 'им', 'etc', 'vs', 'eg', 'ie'];
+
+  var SPLIT = '';
+
+  /* Qatorni intonatsion bo'laklarga ajratadi -> [{ text, pitch, rate, pause }] */
+  function prosodyParts(raw) {
+    var text = String(raw || '').replace(/\s+/g, ' ').trim();
+    if (!text) return [];
+
+    text = text.replace(/\.{3,}/g, '…');
+
+    /* Gap oxiridan keyin ajratamiz.
+
+       QISQARTMA MUAMMOSI: "и т. д. Потом пошёл" da uchta nuqta bor, lekin
+       faqat OXIRGISI gap oxiri. Avvalgi qoida sodda edi — "nuqtadan oldin
+       bitta harf bo'lsa bo'lma" — va u "д." dan keyingi HAQIQIY gap
+       chegarasini ham yutib yuborardi.
+
+       Endi keyingi so'zning bosh harfiga ham qaraladi:
+         "т. д."     -> keyingisi kichik harf ("д") => qisqartma, bo'linmaydi
+         "д. Потом"  -> keyingisi BOSH harf         => gap oxiri, bo'linadi
+       Unvonlar (Mr., Dr.) har doim ism bilan keladi, ya'ni ulardan keyin
+       bosh harf normal — shuning uchun ular alohida ro'yxatda va hech
+       qachon bo'linmaydi.
+
+       `(?<=)` ISHLATILMAYDI — eski Safari uni tushunmaydi va butun faylni
+       yiqitadi (tts.js dagi izohga qarang). */
+    text = text.replace(/([.!?…]+)(\s+)/g, function (m, punct, ws, off, str) {
+      if (punct === '.') {
+        var lastTok = (str.slice(0, off).match(/([^\s.]+)$/) || [])[1] || '';
+        var lt = lastTok.toLowerCase();
+        var nextIsUpper = /[А-ЯЁA-Z]/.test(str.charAt(off + m.length));
+        if (TITLES.indexOf(lt) >= 0) return m;                       // Mr. Smith
+        if ((lastTok.length === 1 || ABBREV.indexOf(lt) >= 0) && !nextIsUpper) return m;
+      }
+      return punct + SPLIT;
+    });
+    text = text.replace(/([;:])\s+/g, '$1' + SPLIT);
+    text = text.replace(/\s*[—–]\s*/g, SPLIT + '— ');
+
+    var parts = [];
+    text.split(SPLIT).forEach(function (piece) {
+      var t = piece.trim();
+      if (!t) return;
+
+      /* Boshidagi tire — o'zi o'qilmaydi, uning o'rniga oldiga jimlik
+         qo'yiladi (yuqorida bo'lak chegarasi shu sabab qo'yilgan). */
+      var leadDash = /^[—–]\s*/.test(t);
+      if (leadDash) t = t.replace(/^[—–]\s*/, '');
+      if (!t) return;
+
+      /* Tire oldidagi jimlik — AVVALGI bo'lakdan keyin bo'lishi kerak
+         (pauza har doim bo'lakdan KEYIN qo'yiladi, tire esa keyingi
+         bo'lakning boshida turadi). */
+      if (leadDash && parts.length) {
+        var prev = parts[parts.length - 1];
+        if (prev.pause < PROSODY['—'].pause) prev.pause = PROSODY['—'].pause;
+      }
+
+      var last = t.charAt(t.length - 1);
+      var key = PROSODY[last] ? last : '';
+      var p = PROSODY[key];
+      parts.push({ text: t, pitch: p.pitch, rate: p.rate, pause: p.pause });
+    });
+
+    return parts;
+  }
+
+  /* Bitta bo'lakni o'z ohangi bilan o'qiydi */
+  function speakPart(part, done) {
+    if (!window.TTS || !TTS.ok()) { if (done) done(); return; }
+    TTS.speak(part.text, {
+      lang: R.lang,
+      rate: R.rate * part.rate,
+      pitch: part.pitch
+    }, function (err) {
+      if (!R.alive) return;
+      if (err) {
+        R.errCount = (R.errCount || 0) + 1;
+        if (R.errCount <= 2) App.toast('Ovozda uzilish — davom etyapmiz');
+      }
+      if (done) done();
+    });
+  }
+
+  /* Qatorni bo'lak-bo'lak, intonatsiya bilan o'qiydi.
+     `done(pause)` — oxirgi bo'lakdan keyin qancha jimlik kerakligini beradi
+     (nuqtadan keyin qisqa, so'roq/xitobdan keyin uzunroq). */
+  function speakProsody(text, done) {
+    var parts = prosodyParts(text);
+    if (!parts.length) { if (done) done(PROSODY[''].pause); return; }
+
+    var i = 0;
+    (function next() {
+      if (!R.alive) return;
+      var p = parts[i++];
+      speakPart(p, function () {
+        if (!R.alive) return;
+        if (i >= parts.length) { if (done) done(p.pause); return; }
+        R.partTimer = setTimeout(next, Math.round(p.pause / (R.rate || 1)));
+      });
+    })();
+  }
+
+  /* Sarlavhani alohida ohangda o'qiydi */
+  function speakHeading(text, done) {
+    if (!window.TTS || !TTS.ok()) { if (done) done(); return; }
+    TTS.speak(text, { lang: R.lang, rate: R.rate * 0.92, pitch: 0.94 }, function () {
+      if (!R.alive) return;
+      if (done) done();
+    });
+  }
+
   function highlight(n) {
     var page = document.getElementById('page'); if (!page) return;
     page.querySelectorAll('.rd-s.reading').forEach(function (el) { el.classList.remove('reading'); });
@@ -142,13 +296,22 @@
     }
   }
 
+  /* Ovozni ham, KUTAYOTGAN TAYMERLARNI ham birga to'xtatadi.
+     Ikkalasi birga bekor qilinmasa, to'xtatilgandan keyin osilib qolgan
+     taymer eski bo'lakni o'qib yuboradi (`R.alive` hamma joyda ham
+     o'chirilmaydi — masalan "keyingi gap" bosilganda u ataylab yoqiladi). */
+  function haltSpeech() {
+    if (R.gapTimer) { clearTimeout(R.gapTimer); R.gapTimer = null; }
+    if (R.partTimer) { clearTimeout(R.partTimer); R.partTimer = null; }
+    if (window.TTS) TTS.cancel(); else { try { window.speechSynthesis.cancel(); } catch (e) {} }
+  }
+
   function stopAll() {
     R.playing = false;
     R.alive = false;
     /* Gaplar orasidagi kutish ham bekor qilinsin — aks holda to'xtatilgandan
        keyin yana bitta gap o'qilib ketardi. */
-    if (R.gapTimer) { clearTimeout(R.gapTimer); R.gapTimer = null; }
-    if (window.TTS) TTS.cancel(); else { try { window.speechSynthesis.cancel(); } catch (e) {} }
+    haltSpeech();
     releaseWake();
     highlight(-1);
     paintPlayer();
@@ -200,11 +363,23 @@
     R.idx = n;
     highlight(n);
     paintPlayer();
-    speak(R.sentences[n].text, function () {
+    var cur = R.sentences[n];
+    /* Sarlavha e'lon qilib o'qiladi: sekinroq, pastroq ohangda va undan
+       keyin uzunroq jimlik — quloq bilan "yangi bo'lim boshlandi" degani
+       bilinsin. */
+    if (cur.k === 'h') {
+      speakHeading(cur.text, function () {
+        if (R.stepMode) R.pendingStop = true;
+        R.gapTimer = setTimeout(function () { step(n + 1); }, Math.round(700 / (R.rate || 1)));
+      });
+      return;
+    }
+    speakProsody(cur.text, function (endPause) {
       if (R.stepMode) R.pendingStop = true;   // keyingi qadamda to'xtaydi
-      /* Gaplar orasida kichik jimlik — tinglab tushunish uchun muhim.
-         Tezlikka bog'liq: sekin o'qilsa pauza ham uzunroq bo'ladi. */
-      var pause = Math.round(260 / (R.rate || 1));
+      /* Gaplar orasidagi jimlik endi TINISH BELGISIGA bog'liq: nuqtadan
+         keyin qisqa, so'roq/xitobdan keyin uzunroq, ko'p nuqtadan keyin eng
+         uzun. Tezlikka ham bog'liq: sekin o'qilsa pauza ham uzunroq. */
+      var pause = Math.round((endPause || 260) / (R.rate || 1));
       R.gapTimer = setTimeout(function () { step(n + 1); }, pause);
     });
   }
@@ -258,15 +433,14 @@
 
   App.actions.rdOpenBar = function () { R.barOpen = true; paintPlayer(); };
   App.actions.rdCloseBar = function () {
-    if (R.playing) { R.playing = false; if (window.TTS) TTS.cancel(); else { try { window.speechSynthesis.cancel(); } catch (e) {} } highlight(-1); }
+    if (R.playing) { R.playing = false; haltSpeech(); highlight(-1); }
     R.barOpen = false; paintPlayer();
   };
 
   App.actions.rdToggle = function () {
     if (R.playing) {
       R.playing = false;
-      if (R.gapTimer) { clearTimeout(R.gapTimer); R.gapTimer = null; }
-      if (window.TTS) TTS.cancel(); else { try { window.speechSynthesis.cancel(); } catch (e) {} }
+      haltSpeech();
       releaseWake();
       paintPlayer();
       return;
@@ -292,7 +466,7 @@
     if (n < 0) n = 0;
     if (n >= R.sentences.length) n = R.sentences.length - 1;
     R.alive = true;
-    if (R.playing) { if (window.TTS) TTS.cancel(); else { try { window.speechSynthesis.cancel(); } catch (e) {} } step(n); }
+    if (R.playing) { haltSpeech(); step(n); }
     else { R.idx = n; highlight(n); paintPlayer(); }
   }
 
@@ -361,7 +535,7 @@
     R.rate = opts[(opts.indexOf(R.rate) + 1) % opts.length];
     try { localStorage.setItem('reading_rate', String(R.rate)); } catch (e) {}
     paintPlayer();
-    if (R.playing) { if (window.TTS) TTS.cancel(); else { try { window.speechSynthesis.cancel(); } catch (e) {} } step(R.idx < 0 ? 0 : R.idx); }
+    if (R.playing) { haltSpeech(); step(R.idx < 0 ? 0 : R.idx); }
   };
 
   /* ================= Tarjima oynachasi (popover) =================
@@ -436,7 +610,13 @@
     }
   }
 
-  App.actions.rdSay = function (a) { R.alive = true; speak(a && a.t); };
+  /* "Tinglash" — bitta so'z ham, butun gap ham bo'lishi mumkin. Gap bo'lsa
+     u ham intonatsiya bilan o'qilsin (so'z uchun natija bir xil). */
+  App.actions.rdSay = function (a) {
+    R.alive = true;
+    haltSpeech();
+    speakProsody(a && a.t);
+  };
 
   App.actions.rdWord = function (a, el) {
     R.alive = true;
@@ -598,7 +778,10 @@
         // Birinchi darajali sarlavha — MARKAZDA (matn boshlanishi shundan)
         var cls = b.lvl === 1 ? 'rd-h1' : 'rd-h2';
         var tag = b.lvl === 1 ? 'h2' : 'h3';
-        html += '<' + tag + ' class="' + cls + '">' + App.esc(b.text) + '</' + tag + '>';
+        /* `rd-s` + `data-n` — o'qilayotganda sarlavha ham belgilanib turishi
+           uchun (gaplar bilan bir xil mexanizm). */
+        html += '<' + tag + ' class="' + cls + ' rd-s" data-n="' + b.n + '">' +
+          App.esc(b.text) + '</' + tag + '>';
         return;
       }
 
@@ -939,5 +1122,17 @@
 
   /* Kutubxona "Qo'shish" menyusi Reading bo'limida namuna faylni ham taklif qiladi */
   window.Reading = { isReadingSec: function (sec) { return /^(en|ru)_reading$/.test(sec || ''); } };
+
+  /* Audirovaniye (listening-doc.js) AYNAN shu parser va intonatsiya
+     dvigatelini ishlatadi — bir xil `.md` format, ikki xil mashq. Kod
+     nusxa ko'chirilmasin: formatga o'zgartirish kiritilsa, ikkala bo'lim
+     birga yangilanishi kerak. */
+  window.RDCore = {
+    parse: parse,
+    prosodyParts: prosodyParts,
+    plainText: plainText,
+    ttsLang: ttsLang,
+    dictLang: dictLang
+  };
 
 })();

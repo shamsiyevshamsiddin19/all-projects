@@ -9,6 +9,7 @@ from fastapi import Request
 from .. import db
 from ..config import settings
 from ..errors import AuthError, auth_response
+from ..google_auth import email_allowed, verify_google_id_token
 from ..security import (
     check_login_rate_limit,
     clear_login_rate_limit,
@@ -25,6 +26,11 @@ def handle_auth_action(request: Request, payload: dict) -> "object":
     if amal == "":
         raise AuthError("So'rov noto'g'ri yuborilgan.")
 
+    # Google-only rejimda parol yo'llari BUTUNLAY yopiladi. Frontendda tugmani
+    # olib qo'yishning o'zi yetarli emas — API to'g'ridan-to'g'ri ham chaqiriladi.
+    if amal in ("royxatdan_otish", "kirish") and _google_only():
+        raise AuthError("Bu saytga faqat Google orqali kiriladi.")
+
     if amal == "royxatdan_otish":
         return _register(request, payload)
     if amal == "kirish":
@@ -38,6 +44,10 @@ def handle_auth_action(request: Request, payload: dict) -> "object":
         return auth_response(True, "Tizimdan muvaffaqiyatli chiqildi.")
 
     raise AuthError("Noma'lum amal yuborildi.")
+
+
+def _google_only() -> bool:
+    return settings.AUTH_MODE == "google"
 
 
 def _account_exists() -> bool:
@@ -112,36 +122,54 @@ def _login(request: Request, payload: dict):
 
 
 def _google_login(request: Request, payload: dict):
-    ism = s(payload.get("ism"))
-    email = s(payload.get("email"))
-    firebase_uid = s(payload.get("firebase_uid"))
+    """Google orqali kirish — YAGONA ishonchli yo'l.
 
-    if email == "" or firebase_uid == "":
-        raise AuthError("Google ma'lumotlari to'liq kelmadi.")
+    Mijozdan faqat Google imzolagan ID token (`credential`) olinadi. Email
+    TOKEN ICHIDAN chiqadi, mijoz yuborgan maydondan emas — aks holda uni
+    istalgan odam o'zgartirib yuborardi.
+    """
+    check_login_rate_limit(request)
+
+    # Google Identity Services `credential` deb yuboradi; eski nom ham qabul
+    # qilinadi, lekin har ikkalasi ham TEKSHIRILADI.
+    token = s(payload.get("credential")) or s(payload.get("id_token"))
+    info = verify_google_id_token(token)
+
+    email = info["email"]
+    if not email_allowed(email):
+        # Kim urinib ko'rgani jurnalda qolsin, lekin javobda tafsilot bermaymiz.
+        raise AuthError("Bu akkauntga ruxsat yo'q.")
+
+    ism = info["name"]
+    sub = info["sub"]
 
     doktor = db.fetch_one("SELECT * FROM doktorlar WHERE email = :e LIMIT 1", {"e": email})
 
     if doktor:
         db.execute(
             "UPDATE doktorlar SET ism = :i, firebase_uid = :f, kirish_turi = 'google' WHERE id = :id",
-            {"i": ism, "f": firebase_uid, "id": doktor["id"]},
+            {"i": ism, "f": sub, "id": doktor["id"]},
         )
         doktor_id = int(doktor["id"])
-        message = "Google orqali muvaffaqiyatli kirildi."
     else:
-        if _account_exists():
-            raise AuthError("Ro'yxatdan o'tish yopiq. Mavjud akkaunt bilan kiring.")
+        # Ruxsat etilgan email uchun akkaunt yo'q bo'lsa — ochib beramiz.
+        # `_account_exists()` bu yerda TO'SIQ QILINMAYDI: aks holda bazadagi
+        # eski akkaunt boshqa email bilan yozilgan bo'lsa, egasi o'z saytiga
+        # kira olmay qolardi. Ma'lumot `owner_context` bo'yicha umumiy
+        # fazoda saqlanadi, ya'ni yangi qator ochilishi hech narsani
+        # yo'qotmaydi.
         doktor_id = db.execute_returning_id(
-            "INSERT INTO doktorlar (ism, email, firebase_uid, kirish_turi) VALUES (:i, :e, :f, 'google')",
-            {"i": ism, "e": email, "f": firebase_uid},
+            "INSERT INTO doktorlar (ism, email, firebase_uid, kirish_turi) "
+            "VALUES (:i, :e, :f, 'google')",
+            {"i": ism, "e": email, "f": sub},
         )
-        message = "Google orqali ro'yxatdan o'tildi."
 
+    clear_login_rate_limit(request)
     request.session["doktor_id"] = doktor_id
     request.session["doktor_ism"] = ism
     request.session["doktor_email"] = email
 
-    return auth_response(True, message, {
+    return auth_response(True, "Google orqali kirildi.", {
         "doktor_id": doktor_id,
         "doktor_ism": ism,
         "doktor_email": email,
@@ -161,4 +189,7 @@ def _check_session(request: Request):
         "kirganmi": False,
         "sozlanganmi": _account_exists(),
         "himoya": bool(settings.REQUIRE_AUTH),
+        # Frontend shu ikkisiga qarab Google tugmasini chizadi.
+        "kirish_usuli": "google" if _google_only() else "parol",
+        "google_client_id": settings.GOOGLE_CLIENT_ID if _google_only() else "",
     })
