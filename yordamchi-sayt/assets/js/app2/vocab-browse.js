@@ -134,7 +134,12 @@
     var mastered = ws && ws.isMastered(w.ru);
     var saved = ws && ws.isSaved(w.ru);
     var color = ws ? ws.colorOf(w.ru) : '';
-    var cls = 'vb-w' + (mastered ? ' done' : '') + (saved ? ' saved' : '');
+    /* Uzun so'zga kichikroq o'lcham. O'lchash bilan qilinmadi: 8000+
+       katakni o'lchash sahifani qotirardi. Harf soni yetarli aniq
+       ko'rsatkich — ustun eni barcha kataklarda bir xil. */
+    var n = (w.ru || '').length;
+    var sizeCls = n >= 16 ? ' len-l' : (n >= 11 ? ' len-m' : '');
+    var cls = 'vb-w' + sizeCls + (mastered ? ' done' : '') + (saved ? ' saved' : '');
     var style = color ? ' style="--wcolor:' + color + '"' : '';
     return '<button class="' + cls + (color ? ' tinted' : '') + '" data-ru="' + App.esc(w.ru) + '"' +
       style + '>' + App.esc(w.ru) + '</button>';

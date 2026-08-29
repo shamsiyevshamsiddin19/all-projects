@@ -3185,6 +3185,21 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   position: relative;
   overflow: hidden;
 }
+/* Logo bo'lgan kartada gradient KERAK EMAS — logo o'zi tanilsin.
+   Neytral fon qo'yiladi, chunki logolarning ko'pi shaffof va rangli
+   gradient ustida o'qilmay qolardi. */
+.ig-course-snap-top.has-logo {
+  background: var(--card-2);
+  border-bottom: 1px solid var(--border-soft);
+}
+.ig-course-snap-logo {
+  width: 46px; height: 46px; object-fit: contain;
+  display: block; margin: auto;
+}
+.ig-course-snap-top.has-logo .ig-course-snap-badge {
+  background: var(--card); color: var(--text-2);
+  border: 1px solid var(--border-soft);
+}
 .ig-course-snap-badge {
   align-self: flex-start;
   background: rgba(0, 0, 0, 0.45);
@@ -3957,24 +3972,44 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 /* Ustun soni ANIQ belgilangan: kompyuterda 10, telefonda 5.
    `auto-fill` ishlatilmadi — u ekran eniga qarab o'zi hal qilardi va
    ustun soni oldindan bilinmasdi. */
-.vb-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px 14px; }
+.vb-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px 6px; }
 @media (min-width: 760px) {
   .vb-grid { grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 2px 16px; }
 }
 
 .vb-w {
   border: none; background: none; padding: 5px 2px; cursor: pointer;
-  color: var(--text); font-size: 13px; font-family: inherit;
+  color: var(--text); font-family: inherit;
   text-align: left; line-height: 1.3;
-  /* So'z KESILMAYDI — uzuni keyingi qatorga o'tadi.
-     Ilgari `nowrap` + `ellipsis` edi: telefonda 5 ustunda rus tuslangan
-     shakllari ("я мечтаю") "я меч..." bo'lib qolardi, ya'ni lug'at
-     ko'rgichida so'zning o'zi ko'rinmasdi. */
-  white-space: normal;
-  overflow-wrap: anywhere;
+  /* So'z BITTA QATORDA turadi va BO'LINMAYDI. O'lcham ekranga qarab
+     kichrayadi (`clamp` + `vw`), shunda "я рассказываю" kabi uzun
+     tuslangan shakl ham 5 ustunga sig'adi.
+
+     Ikki noto'g'ri yechim sinab ko'rilgan edi:
+       - `ellipsis` — so'z "я меч..." bo'lib kesilardi, lug'at ko'rgichida
+         so'zning o'zi ko'rinmasdi;
+       - `wrap`     — so'z ikkiga bo'linib ("я" / "мечтаю") ro'yxat
+         qiyshayib ketardi. */
+  white-space: nowrap;
+  overflow: hidden;
+  font-size: clamp(8.5px, 2.45vw, 13px);
   transition: color .12s;
 }
 .vb-w:hover { color: var(--accent); }
+@media (min-width: 760px) {
+  .vb-w { font-size: clamp(9px, 0.95vw, 13.5px); }
+}
+
+/* Uzun so'zlar bir qatorga sig'sin: rus tilida "достопримечательность"
+   kabi 20+ harfli so'zlar bor, ular oddiy o'lchamda 5 ustunga hech
+   qachon sig'maydi. Kesib tashlagandan ko'ra biroz kichraytirgan
+   ma'qul — so'zning O'ZI ko'rinishi muhimroq. */
+.vb-w.len-m { font-size: clamp(7.5px, 2.05vw, 11.5px); }
+.vb-w.len-l { font-size: clamp(6.5px, 1.7vw, 10px); letter-spacing: -.2px; }
+@media (min-width: 760px) {
+  .vb-w.len-m { font-size: clamp(8px, 0.8vw, 12px); }
+  .vb-w.len-l { font-size: clamp(7px, 0.68vw, 10.5px); }
+}
 
 /* Holatlar rang va uslub bilan ko'rsatiladi — ramka bilan emas */
 .vb-w.done { opacity: .35; text-decoration: line-through; }

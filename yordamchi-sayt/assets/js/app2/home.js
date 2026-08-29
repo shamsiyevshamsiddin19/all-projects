@@ -940,6 +940,7 @@
   var COURSES_POOL = [
     {
       id: 'python_core',
+      logo: 'assets/icons/tech/python-original.svg',
       title: 'Python Dasturlash',
       sub: 'Noldan professional darajagacha amaliy darslar',
       badge: 'Python',
@@ -952,6 +953,7 @@
     },
     {
       id: 'fastapi_backend',
+      logo: 'assets/icons/tech/fastapi-original.svg',
       title: 'FastAPI Backend',
       sub: 'Zamonaviy REST API va Microservice arxitekturasi',
       badge: 'FastAPI',
@@ -964,6 +966,7 @@
     },
     {
       id: 'ru_grammar_229',
+      logo: 'assets/icons/tech/flag-ru.png',
       title: 'Rus tili: 229 Fe\'l',
       sub: 'Hozirgi zamon tuslanishi, audio va misollar',
       badge: '229 Fe\'l',
@@ -976,6 +979,7 @@
     },
     {
       id: 'ru_tenses',
+      logo: 'assets/icons/tech/flag-ru.png',
       title: 'Rus tili: Zamonlar',
       sub: 'O\'tgan, hozirgi va kelasi zamon qoidalari',
       badge: 'Grammatika',
@@ -988,6 +992,7 @@
     },
     {
       id: 'en_vocab_8000',
+      logo: 'assets/icons/tech/flag-gb.png',
       title: 'Ingliz tili: 8000 So\'z',
       sub: 'Oxford 8000 eng faol va kerakli so\'zlar',
       badge: '8K So\'z',
@@ -1000,6 +1005,7 @@
     },
     {
       id: 'postgres_db',
+      logo: 'assets/icons/tech/postgresql-original.svg',
       title: 'PostgreSQL & SQL',
       sub: 'Ma\'lumotlar bazasi, jadvallar va murakkab so\'rovlar',
       badge: 'SQL',
@@ -1012,6 +1018,7 @@
     },
     {
       id: 'linux_terminal',
+      logo: 'assets/icons/tech/linux-original.svg',
       title: 'Linux & Terminal',
       sub: 'Server boshqaruvi, bash script va buyruqlar',
       badge: 'Linux',
@@ -1024,6 +1031,7 @@
     },
     {
       id: 'git_github',
+      logo: 'assets/icons/tech/git-original.svg',
       title: 'Git & GitHub',
       sub: 'Versiyalarni boshqarish va jamoaviy loyihalar',
       badge: 'Git',
@@ -1036,6 +1044,7 @@
     },
     {
       id: 'books_library',
+      logo: 'assets/img/vocab/book.jpg',
       title: 'Kutubxona & Kitoblar',
       sub: 'Badiiy va ilmiy kitoblar, audio kitoblar',
       badge: 'Kitoblar',
@@ -1048,6 +1057,7 @@
     },
     {
       id: 'sport_workout',
+      logo: 'assets/img/nav/sport.svg',
       title: 'Sport & Kunlik Mashq',
       sub: 'Kunlik qomat va salomatlik mashg\'ulotlari',
       badge: 'Workout',
@@ -1075,9 +1085,15 @@
     var itemsHtml = selected.map(function (c) {
       return '<div class="ig-course-snap-item">' +
         '<div class="ig-course-snap-card">' +
-          '<div class="ig-course-snap-top" style="background:' + c.color + '">' +
+          /* Kursning O'Z logosi. Ilgari bu yerda faqat gradient va umumiy
+             ikonka turardi — Python ham, Git ham bir xil ko'rinardi.
+             Logo bo'lmasa eski gradient qoladi (zaxira sifatida). */
+          '<div class="ig-course-snap-top' + (c.logo ? ' has-logo' : '') + '"' +
+            (c.logo ? '' : ' style="background:' + c.color + '"') + '>' +
+            (c.logo
+              ? '<img class="ig-course-snap-logo" src="' + c.logo + '" alt="" loading="lazy">'
+              : '<span class="ig-course-snap-icon" data-icon="' + (c.icon || 'book') + '" data-icon-size="28"></span>') +
             '<span class="ig-course-snap-badge">' + App.esc(c.badge) + '</span>' +
-            '<span class="ig-course-snap-icon" data-icon="' + (c.icon || 'book') + '" data-icon-size="28"></span>' +
           '</div>' +
           '<div class="ig-course-snap-body">' +
             '<div class="ig-course-snap-title">' + App.esc(c.title) + '</div>' +
