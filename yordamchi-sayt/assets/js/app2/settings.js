@@ -428,7 +428,7 @@
       '<div style="font-size:46px;margin-bottom:8px">📱</div>' +
       '<h3 style="margin:0 0 6px">Yordamchi Android Ilovasi</h3>' +
       '<p class="muted" style="font-size:13px;margin:0 0 18px;line-height:1.5">Ilovani to\'g\'ridan-to\'g\'ri telefoningizga o\'rnatish uchun APK faylni yuklab oling.</p>' +
-      '<a href="/assets/downloads/yordamchi.apk" download="yordamchi.apk" class="btn" style="display:flex;align-items:center;justify-content:center;text-decoration:none;width:100%;margin-bottom:10px;background:var(--accent);color:#fff">📦 APK yuklab olish (43.6 MB)</a>' +
+      '<a href="/assets/downloads/yordamchi.apk" download="yordamchi.apk" class="btn" style="display:flex;align-items:center;justify-content:center;text-decoration:none;width:100%;margin-bottom:10px;background:var(--accent);color:#fff">📦 APK yuklab olish (51 MB)</a>' +
       (window._deferredPWAInstallPrompt
         ? '<button class="btn ghost" id="pwa-inst-act-btn" style="width:100%">✨ 1 bosishda o\'rnatish (PWA)</button>'
         : '') +

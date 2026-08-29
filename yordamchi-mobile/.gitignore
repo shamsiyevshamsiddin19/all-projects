@@ -1,0 +1,23 @@
+# Flutter/Dart
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+
+# Android
+android/.gradle/
+android/local.properties
+android/app/debug/
+android/app/profile/
+android/app/release/
+**/*.keystore
+**/*.jks
+
+# Saytning ILOVA ICHIDAGI nusxasi va ma'lumot surati.
+# Bular yordamchi-sayt/ dan KO'CHIRILADI (build-assets.sh), ya'ni ikkinchi
+# marta git'da saqlash — bir xil faylning ikki nusxasi va ular albatta
+# bir-biridan uzoqlashib ketardi. Manba: ../vibe-coding/yordamchi-sayt/
+assets/www/
+assets/data/snapshot.json

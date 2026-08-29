@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Ilova o'z ichida HTTP server ko'taradi (127.0.0.1) va WebView shunga
+  ulanadi. Android 9 dan boshlab shifrlanmagan HTTP sukut bo'yicha
+  BLOKLANADI — ruxsat berilmasa WebView bo'sh ekran ko'rsatadi.
+
+  Ruxsat ATAYLAB faqat loopback manzilga berilgan: `cleartextTrafficPermitted`
+  ni butun ilovaga ochish tashqi saytlar bilan ham shifrsiz aloqaga yo'l
+  ochardi. Bu yerda esa trafik qurilmadan umuman chiqmaydi.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>
