@@ -57,20 +57,12 @@
         navIcon(i.v, i.ic, 22) + i.n + '</button>';
     }).join('');
     
-    // Global harakat tugmalari
-    var pbtn = document.getElementById('global-pomo-btn');
-    if (!pbtn) {
-      pbtn = document.createElement('button');
-      pbtn.id = 'global-pomo-btn';
-      pbtn.className = 'side-link';
-      pbtn.style.marginTop = 'auto';
-      pbtn.style.background = 'var(--accent-soft)';
-      pbtn.style.color = 'var(--accent)';
-      pbtn.innerHTML = navIcon('pomodoro', 'clock', 22) + 'Pomodoro';
-      pbtn.setAttribute('data-act', 'pomoToggle');
-      el.appendChild(pbtn);
-    }
-    
+    /* Pomodoro yon panelidan olib tashlandi (foydalanuvchi so'rovi).
+       `pomoToggle` amali va App.Pomo o'zi joyida qoladi — boshqa joydan
+       chaqirilsa ishlayveradi, faqat doimiy tugma ko'rinmaydi. */
+    var oldPomo = document.getElementById('global-pomo-btn');
+    if (oldPomo) oldPomo.remove();
+
     App.icons(el);
   }
 

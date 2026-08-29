@@ -140,19 +140,53 @@
       style + '>' + App.esc(w.ru) + '</button>';
   }
 
+  /* "1-8000/1-1000/1-100" -> guruh "1-8000", bo'lim "1-100".
+     To'liq yo'lni sarlavha qilib yozish o'qishga qiyin va takroriy edi. */
+  function topSeg(cat) {
+    var i = String(cat || '').indexOf('/');
+    return i < 0 ? cat : cat.slice(0, i);
+  }
+  function leafSeg(cat) {
+    var i = String(cat || '').lastIndexOf('/');
+    return i < 0 ? cat : cat.slice(i + 1);
+  }
+
   function paintAll(host, page) {
-    var html = '';
-    var shown = 0;
+    /* Har lug'at ALOHIDA guruh bo'ladi: ilgari 8000 ning bo'limlari va
+       229 lik ro'yxat ketma-ket oqib ketardi va qaysi lug'at qayerda
+       tugaganini bilib bo'lmasdi. */
+    var groups = [], byTop = {};
     B.order.forEach(function (cat) {
       var words = (B.data[cat] || []).filter(matches);
       if (!words.length) return;
-      shown += words.length;
-      html += '<div class="vb-sec">' +
-        '<div class="vb-sec-h"><span>' + App.esc(cat) + '</span>' +
-        '<i>' + words.length + '</i></div>' +
-        '<div class="vb-grid">' + words.map(chip).join('') + '</div></div>';
+      var top = topSeg(cat);
+      if (!byTop[top]) { byTop[top] = { name: top, secs: [], total: 0 }; groups.push(byTop[top]); }
+      byTop[top].secs.push({ cat: cat, leaf: leafSeg(cat), words: words });
+      byTop[top].total += words.length;
     });
-    host.innerHTML = html || App.empty({ icon: 'list', title: 'Topilmadi', text: 'Boshqa so\'z kiritib ko\'ring.' });
+
+    if (!groups.length) {
+      host.innerHTML = App.empty({ icon: 'list', title: 'Topilmadi', text: 'Boshqa so\'z kiritib ko\'ring.' });
+      App.icons(host);
+      return;
+    }
+
+    host.innerHTML = groups.map(function (g) {
+      /* Bitta bo'limli lug'at (masalan 229 lik) — ortiqcha ichki sarlavha
+         berilmaydi, guruh sarlavhasining o'zi yetarli. */
+      var single = g.secs.length === 1 && g.secs[0].leaf === g.name;
+      return '<div class="vb-group">' +
+        '<div class="vb-group-h"><span>' + App.esc(g.name) + '</span>' +
+        '<i>' + g.total + ' so\'z</i></div>' +
+        g.secs.map(function (sec) {
+          return '<div class="vb-sec">' +
+            (single ? '' :
+              '<div class="vb-sec-h"><span>' + App.esc(sec.leaf) + '</span>' +
+              '<i>' + sec.words.length + '</i></div>') +
+            '<div class="vb-grid">' + sec.words.map(chip).join('') + '</div></div>';
+        }).join('') +
+        '</div>';
+    }).join('');
     App.icons(host);
     bindWords(host, page);
   }

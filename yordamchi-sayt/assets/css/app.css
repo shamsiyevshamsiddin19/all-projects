@@ -3928,6 +3928,19 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   color: var(--text); font-size: 14px; padding: 11px 0; font-family: inherit;
 }
 
+/* Har lug'at ALOHIDA blok: 8000 va 229 ketma-ket oqib ketmasin.
+   Guruh sarlavhasi kattaroq va chiziq bilan ajratilgan. */
+.vb-group { margin-bottom: 34px; }
+.vb-group-h {
+  display: flex; align-items: center; gap: 9px; margin: 0 0 16px;
+  padding-bottom: 9px; border-bottom: 2px solid var(--border);
+  font-size: 15.5px; font-weight: 800; color: var(--text);
+}
+.vb-group-h i {
+  margin-left: auto; font-style: normal; font-size: 11.5px;
+  font-weight: 700; color: var(--hint);
+  background: var(--card-2); padding: 3px 9px; border-radius: 999px;
+}
 .vb-sec { margin-bottom: 22px; }
 .vb-sec-h {
   display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
@@ -3941,7 +3954,13 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
    Karta ko'rinishi 8000 so'zli ro'yxatda shovqin qilardi: har so'z atrofida
    ramka va fon bo'lsa, ko'z so'zlarni emas, qutichalarni ko'radi.
    `auto-fill` + `minmax` — ekran kengaysa ustun soni o'zi ko'payadi. */
-.vb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 2px 18px; }
+/* Ustun soni ANIQ belgilangan: kompyuterda 10, telefonda 5.
+   `auto-fill` ishlatilmadi — u ekran eniga qarab o'zi hal qilardi va
+   ustun soni oldindan bilinmasdi. */
+.vb-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px 14px; }
+@media (min-width: 760px) {
+  .vb-grid { grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 2px 16px; }
+}
 
 .vb-w {
   border: none; background: none; padding: 6px 2px; cursor: pointer;
