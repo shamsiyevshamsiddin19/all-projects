@@ -317,7 +317,14 @@ body.lm-noscroll .lm-pull{ display:none; }
 .lm-pull svg{ width:44px; height:44px; transform:rotate(-90deg); display:block; }
 .lm-pull circle{ fill:none; stroke-width:3; }
 .lm-pull .bg{ stroke:var(--border); }
-.lm-pull .fg{ stroke:var(--accent); stroke-linecap:round; transition:stroke-dashoffset .06s linear; }
+/* Halqa ATAYLAB sekinroq va yumshoqroq to'ladi (.06s -> .28s).
+   Oldingi qiymat deyarli bir zumda edi: halqa "sakrab" to'lardi va
+   foydalanuvchi qancha qolganini ko'rib ulgurmasdi. Endi u barmoq
+   ortidan biroz kechikib boradi — qancha tortish kerakligi ko'rinadi. */
+.lm-pull .fg{
+  stroke:var(--accent); stroke-linecap:round;
+  transition:stroke-dashoffset .28s cubic-bezier(.22,.61,.36,1);
+}
 .lm-pull-ic{
   position:absolute; top:12px; left:50%; transform:translateX(-50%);
   color:var(--hint); pointer-events:none;

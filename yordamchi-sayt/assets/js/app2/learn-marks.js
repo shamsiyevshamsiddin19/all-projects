@@ -1033,8 +1033,18 @@
     fg.style.strokeDasharray = LEN;
     S.nextBar = el;
 
-    var NEED = 110;              // shuncha piksel tortilsa — o'tadi
-    var acc = 0, sy = 0, on = false, fired = false;
+    /* TORTISH MASOFASI. Avval 110px edi va bu juda kam bo'lgan:
+       mavzu o'qib bo'lingach sahifa oxirida oddiy surish ham keyingisiga
+       "chizillab" o'tkazib yuborardi. Endi ataylab uzunroq — o'tish
+       tasodifan emas, QASDDAN bo'lishi kerak. */
+    var NEED = 200;              // telefonda shuncha piksel tortilsa — o'tadi
+
+    /* Eng qisqa davomiylik: masofa yig'ilib qolsa ham, jest shundan
+       tez tugasa o'tkazilmaydi. Trackpad'ning bitta silkitishi bir
+       lahzada yuzlab birlik beradi — vaqt chegarasi aynan shuni to'xtatadi. */
+    var MIN_MS = 420;
+
+    var acc = 0, sy = 0, on = false, fired = false, t0 = 0;
 
     function atEnd() {
       var doc = document.documentElement;
@@ -1051,6 +1061,7 @@
     function ts(e) {
       if (e.touches.length !== 1) { on = false; return; }
       sy = e.touches[0].clientY; on = atEnd(); acc = 0; fired = false;
+      t0 = Date.now();
     }
     function tm(e) {
       if (!on || fired) return;
@@ -1058,7 +1069,7 @@
       var dy = sy - e.touches[0].clientY;     // yuqoriga tortish -> musbat
       acc = Math.max(0, dy);
       show(acc / NEED);
-      if (acc >= NEED) {
+      if (acc >= NEED && Date.now() - t0 >= MIN_MS) {
         fired = true;
         go();
       }
@@ -1075,15 +1086,31 @@
     document.addEventListener('touchmove', tm, { passive: true });
     document.addEventListener('touchend', te, { passive: true });
 
-    /* Kompyuterda: oxirida g'ildirakni pastga aylantirish. */
-    var wacc = 0, wt = null;
+    /* Kompyuterda: oxirida g'ildirakni pastga aylantirish.
+
+       IKKI HIMOYA BOR, ikkalasi ham kerak:
+         1. Har hodisadan olinadigan ulush CHEKLANGAN (STEP_CAP). Trackpad
+            va "silliq surish" bitta hodisada 300+ birlik yuborishi mumkin —
+            usiz halqa bir silkitishda to'lib, mavzu o'tib ketardi.
+         2. Eng qisqa davomiylik (MIN_MS): tez-tez kelgan hodisalar
+            yig'ilib qolsa ham, jest juda qisqa bo'lsa o'tkazilmaydi. */
+    /* Sichqoncha g'ildiragi bir "tiq"da ~100 birlik yuboradi, trackpad esa
+       o'nlab mayda hodisa. Ulush 45 ga cheklangani uchun g'ildirak bilan
+       ~16 marta aylantirish kerak bo'ladi — qasddan qilinadigan, lekin
+       zeriktirmaydigan miqdor. */
+    var WHEEL_NEED = Math.round(NEED * 3.5);
+    var STEP_CAP = 45;
+    var wacc = 0, wt = null, wt0 = 0;
     function onWheel(e) {
       if (!atEnd() || e.deltaY <= 0 || fired) return;
-      wacc += e.deltaY;
-      show(wacc / (NEED * 2.2));
+      if (wacc === 0) wt0 = Date.now();
+      wacc += Math.min(e.deltaY, STEP_CAP);
+      show(wacc / WHEEL_NEED);
       clearTimeout(wt);
-      wt = setTimeout(function () { wacc = 0; show(0); }, 420);
-      if (wacc >= NEED * 2.2) { fired = true; go(); }
+      /* Qo'yib yuborilsa halqa asta bo'shaydi — 420ms juda tez edi,
+         foydalanuvchi to'xtab o'ylab olsa yig'ilgani yo'qolardi. */
+      wt = setTimeout(function () { wacc = 0; show(0); }, 900);
+      if (wacc >= WHEEL_NEED && Date.now() - wt0 >= MIN_MS) { fired = true; go(); }
     }
     window.addEventListener('wheel', onWheel, { passive: true });
 
