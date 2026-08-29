@@ -507,8 +507,25 @@
   }
 
   /* Load all dictionary words from API or fallback */
-  var FEED_CACHE_KEY = 'yordamchi_feed_cache_v2';
+  /* `__remote_storage_` PREFIKSI ATAYLAB: shu prefiksli kalitlar serverga
+     sinxronlanmaydi (remote-storage.js -> isInternalKey), ya'ni kesh faqat
+     shu qurilmada qoladi.
+
+     NIMA UCHUN SHART: prefiksiz bu kesh app_storage'ga yozilardi va 2.26 MB
+     ga yetgan edi — butun xotiraning 80 foizi. `storage_bootstrap` esa uni
+     har ochilishda tortib olishi kerak va 4.5 soniyalik chegaradan o'tolmay
+     yiqilardi. Bootstrap yiqilsa `state.cache` bo'sh qoladi, ya'ni HAMMA
+     sozlama (o'rgangan so'zlar, xatcho'plar, bildirishnomalar) o'qilmay
+     "default holatga tushib" ko'rinardi.
+
+     Kesh baribir 3 soatda eskiradi va qaytadan yasaladi — uni qurilmalar
+     orasida sinxronlashning ma'nosi yo'q. */
+  var FEED_CACHE_KEY = '__remote_storage_feed_cache_v2';
   var FEED_CACHE_TTL = 3 * 60 * 60 * 1000; /* 3 soat — shundan keyin yangilaydi */
+
+  /* Eski, sinxronlanadigan kalit qoldig'ini tozalaymiz — u bo'lmasa ham
+     bootstrap'ni yana og'irlashtirib turardi. */
+  try { localStorage.removeItem('yordamchi_feed_cache_v2'); } catch (e) {}
 
   function saveFeedCache(ruItems, enItems) {
     try {
