@@ -25,7 +25,11 @@
     english: { name: 'Ingliz tili', key: 'V' }
   };
 
-  var B = { lang: 'russian', tab: 'all', q: '', data: null, order: [] };
+  /* `mode` — TEZ REJIM. Bo'sh bo'lsa so'z bosilganda oynacha ochiladi.
+     'master' | 'save' | '#rrggbb' bo'lsa esa oynacha OCHILMAYDI, bosilgan
+     so'zga o'sha amal darrov qo'llanadi. Yuzlab so'zni tartiblashda har
+     safar oynacha ochib yopish juda sekin edi. */
+  var B = { lang: 'russian', tab: 'all', q: '', data: null, order: [], mode: '' };
 
   function WS() { return window.WordState; }
 
@@ -57,11 +61,17 @@
         '<button class="icon-btn ghost" data-act="go" data-arg=\'' +
         App.arg({ v: 'vocab', p: { lang: B.lang } }) + '\'><span data-icon="arrowLeft" data-icon-size="20"></span></button>' +
         '<h1>' + App.esc(LANGS[B.lang].name) + '</h1>' +
-        '<button class="icon-btn ghost" id="vb-other" style="margin-left:auto" ' +
+        '<button class="icon-btn ghost vb-mode-btn" id="vb-mode" style="margin-left:auto" ' +
+        'title="Tez rejim"><span data-icon="edit" data-icon-size="18"></span></button>' +
+        '<button class="icon-btn ghost" id="vb-other" ' +
         'title="Boshqa tilga o\'tish">' + (B.lang === 'russian' ? 'V' : 'C') + '</button>' +
         '</div>' +
         '<div id="vb-body"><div class="load-wrap"><div class="spinner"></div></div></div>';
       App.icons(page);
+
+      var modeBtn = page.querySelector('#vb-mode');
+      if (modeBtn) modeBtn.onclick = function () { openModePicker(page); };
+      syncModeBtn(page);
 
       var other = page.querySelector('#vb-other');
       if (other) other.onclick = function () {
@@ -85,6 +95,7 @@
         tabBtn('all', 'Lug\'at') +
         tabBtn('saved', 'Saqlanganlar') +
         tabBtn('groups', 'Guruhlar') +
+        tabBtn('learned', 'O\'rganilganlar') +
       '</div>' +
       '<div class="vb-search">' +
         '<span data-icon="search" data-icon-size="15"></span>' +
@@ -125,6 +136,7 @@
     var host = App.el('vb-content'); if (!host) return;
     if (B.tab === 'saved') return paintSaved(host, page);
     if (B.tab === 'groups') return paintGroups(host, page);
+    if (B.tab === 'learned') return paintLearned(host, page);
     paintAll(host, page);
   }
 
@@ -262,6 +274,9 @@
       el.onclick = function (e) {
         e.stopPropagation();
         hideTip();
+        /* Tez rejim yoqilgan bo'lsa oynacha ochilmaydi — amal darrov
+           qo'llanadi va ro'yxat joyida yangilanadi. */
+        if (B.mode) { applyMode(w.ru, el); return; }
         openActions(el, w, page);
       };
     });
@@ -286,6 +301,126 @@
     if (top < 8) top = r.bottom + 8;           // tepada joy bo'lmasa pastga
     pop.style.left = Math.round(left) + 'px';
     pop.style.top = Math.round(top + window.scrollY) + 'px';
+  }
+
+  /* ---------- Tez rejim ---------- */
+
+  function modeLabel(m) {
+    if (m === 'master') return 'O\'rgandim';
+    if (m === 'save') return 'Saqlash';
+    if (m) {
+      var ws = WS();
+      var hit = ws && ws.COLORS.filter(function (c) { return c.hex === m; })[0];
+      return hit ? hit.name : 'Rang';
+    }
+    return '';
+  }
+
+  /* Tugma yoqilganda "chiroq kabi" yonib turadi va joriy rejim rangini oladi */
+  function syncModeBtn(page) {
+    var btn = (page || document).querySelector('#vb-mode');
+    if (!btn) return;
+    var on = !!B.mode;
+    btn.classList.toggle('on', on);
+    btn.style.color = (B.mode && B.mode.charAt(0) === '#') ? B.mode : '';
+    btn.setAttribute('title', on ? 'Tez rejim: ' + modeLabel(B.mode) : 'Tez rejim');
+  }
+
+  /* Bosilgan so'zga joriy rejimni qo'llaydi. Butun ro'yxat qayta
+     chizilmaydi — 8000 katakni qayta yasash sezilarli sekinlik berardi;
+     faqat shu katakning ko'rinishi yangilanadi. */
+  function applyMode(ru, el) {
+    var ws = WS(); if (!ws) return;
+    if (B.mode === 'master') ws.toggleMastered(ru);
+    else if (B.mode === 'save') ws.toggleSaved(ru);
+    else ws.setColor(ru, ws.colorOf(ru) === B.mode ? '' : B.mode);
+
+    var mastered = ws.isMastered(ru), saved = ws.isSaved(ru), color = ws.colorOf(ru);
+    el.classList.toggle('done', mastered);
+    el.classList.toggle('saved', saved);
+    el.classList.toggle('tinted', !!color);
+    if (color) el.style.setProperty('--wcolor', color); else el.style.removeProperty('--wcolor');
+  }
+
+  function openModePicker(page) {
+    var ws = WS(); if (!ws) return;
+    var html =
+      '<p class="muted" style="font-size:12.5px;margin:0 0 12px">' +
+      'Rejimni tanlang — shundan keyin bosilgan HAR SO\'Z shu belgini oladi. ' +
+      'Ko\'p so\'zni tez tartiblash uchun.</p>' +
+      '<div class="vb-act-row">' +
+        '<button class="vb-act' + (B.mode === 'master' ? ' on' : '') + '" data-m="master">' +
+          '<span data-icon="check" data-icon-size="17"></span><b>O\'rgandim</b>' +
+          '<i>Hech qayerda chiqmaydi</i></button>' +
+        '<button class="vb-act' + (B.mode === 'save' ? ' on' : '') + '" data-m="save">' +
+          '<span data-icon="bookmark" data-icon-size="17"></span><b>Saqlash</b>' +
+          '<i>Hozir o\'rganaman</i></button>' +
+      '</div>' +
+      '<div class="vb-act-lbl">Rang bilan guruhlash</div>' +
+      '<div class="vb-colors">' +
+        ws.COLORS.map(function (c) {
+          return '<button class="vb-color' + (B.mode === c.hex ? ' on' : '') + '" data-m="' + c.hex +
+            '" title="' + App.esc(c.name) + '" style="background:' + c.hex + '"></button>';
+        }).join('') +
+        '<button class="vb-color none' + (B.mode ? '' : ' on') + '" data-m="" title="Rejimni o\'chirish">✕</button>' +
+      '</div>';
+    var sh = App.sheet(html, { title: 'Tez rejim' });
+    App.icons(sh);
+    sh.querySelectorAll('[data-m]').forEach(function (b) {
+      b.onclick = function () {
+        var m = b.getAttribute('data-m');
+        B.mode = (B.mode === m) ? '' : m;      // qayta bosilsa o'chadi
+        App.closeSheet();
+        syncModeBtn(page);
+        App.toast(B.mode ? 'Tez rejim: ' + modeLabel(B.mode) : 'Tez rejim o\'chirildi');
+      };
+    });
+  }
+
+  /* ---------- O'rganilganlar ---------- */
+
+  /* O'rgangan so'zlar O'Z BO'LIMIDA turadi (1-100, 101-200 ...), ya'ni
+     qaysi qismni qanchalik o'zlashtirganingiz ko'rinadi. Oddiy tekis
+     ro'yxat buni ko'rsatmasdi. */
+  function paintLearned(host, page) {
+    var ws = WS(); if (!ws) return;
+    var groups = [], byTop = {}, total = 0;
+
+    B.order.forEach(function (cat) {
+      var words = (B.data[cat] || []).filter(function (w) {
+        return ws.isMastered(w.ru) && matches(w);
+      });
+      if (!words.length) return;
+      total += words.length;
+      var top = topSeg(cat);
+      if (!byTop[top]) { byTop[top] = { name: top, secs: [], total: 0 }; groups.push(byTop[top]); }
+      byTop[top].secs.push({ leaf: leafSeg(cat), words: words, all: (B.data[cat] || []).length });
+      byTop[top].total += words.length;
+    });
+
+    if (!total) {
+      host.innerHTML = App.empty({
+        icon: 'check', title: 'Hali o\'rganilgan so\'z yo\'q',
+        text: 'So\'zni bosib "O\'rgandim" ni tanlang — u shu yerga tushadi va mashqlarda chiqmaydi.'
+      });
+      App.icons(host);
+      return;
+    }
+
+    host.innerHTML = groups.map(function (g) {
+      return '<div class="vb-group">' +
+        '<div class="vb-group-h"><span>' + App.esc(g.name) + '</span>' +
+        '<i>' + g.total + ' o\'rganilgan</i></div>' +
+        g.secs.map(function (sec) {
+          return '<div class="vb-sec">' +
+            '<div class="vb-sec-h"><span>' + App.esc(sec.leaf) + '</span>' +
+            '<i>' + sec.words.length + '/' + sec.all + '</i></div>' +
+            '<div class="vb-grid">' + sec.words.map(chip).join('') + '</div></div>';
+        }).join('') +
+        '</div>';
+    }).join('');
+    App.icons(host);
+    bindWords(host, page);
   }
 
   /* Uchta amal + rang tanlash */
@@ -322,6 +457,28 @@
 
     var sh = App.sheet(html, { title: 'So\'z' });
     App.icons(sh);
+
+    /* ENTER — eng ko'p ishlatiladigan amal, ya'ni "O'rgandim".
+       Ro'yxatni ko'rib chiqishda qo'lni sichqonchadan uzmasdan tez
+       belgilash mumkin bo'lsin. Oynacha yopilganda tinglagich ham
+       olib tashlanadi (aks holda ular yig'ilib qolardi). */
+    function onKey(e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      var on = ws.toggleMastered(w.ru);
+      App.toast(on ? '✓ O\'rgandim — endi mashqlarda chiqmaydi' : 'Belgi olib tashlandi');
+      document.removeEventListener('keydown', onKey, true);
+      App.closeSheet();
+      paintContent(page);
+    }
+    document.addEventListener('keydown', onKey, true);
+    var mo = new MutationObserver(function () {
+      if (!document.body.contains(sh)) {
+        document.removeEventListener('keydown', onKey, true);
+        mo.disconnect();
+      }
+    });
+    mo.observe(document.body, { childList: true, subtree: true });
 
     sh.querySelectorAll('.vb-act').forEach(function (b) {
       b.onclick = function () {

@@ -3931,6 +3931,14 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   border: 1px solid var(--border); background: var(--card);
   color: var(--hint); font-size: 13px; font-weight: 700; cursor: pointer;
 }
+/* Tez rejim tugmasi — yoqilganda "chiroq kabi" yonib turadi, shunda
+   qaysi rejimda ekaningiz doim ko'rinib turadi (rejimda bosilgan so'z
+   darrov o'zgargani uchun buni bilmaslik xato belgilashga olib kelardi). */
+.vb-mode-btn.on {
+  background: var(--accent-soft);
+  color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent) inset, 0 0 12px -2px var(--accent);
+}
 .vb-tab.active { background: var(--accent-soft); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
 
 .vb-search {

@@ -881,6 +881,7 @@
     var isLiked = likes.indexOf(w.ru) >= 0;
     var bms = getBookmarkedWords();
     var isBookmarked = bms.indexOf(w.ru) >= 0;
+    var isMastered = !!(window.WordState && WordState.isMastered(w.ru));
 
     var theme = getCardTheme(w);
     // Juftlash (rangli) rejimida rang oilaga qarab almashtiriladi, qolgani o'z holicha.
@@ -933,9 +934,14 @@
           '<button class="ig-act-btn ' + (isLiked ? 'active liked' : '') + '" data-act="igToggleLike" data-arg=\'' + App.arg({ word: w.ru, id: cardId }) + '\' title="Yoqdi">' +
             '<span data-icon="' + (isLiked ? 'heartFill' : 'heart') + '" data-icon-size="24"></span>' +
           '</button>' +
-          '<button class="ig-act-btn ig-quiz-act-btn" data-act="igOpenQuiz" data-arg=\'' + App.arg({ ru: w.ru, uz: w.uz, id: cardId }) + '\' title="O\'zini tekshirish (Test)">' +
+          /* "Test" o'rniga "O'rgandim": lentada so'z ko'rilganda eng kerakli
+             amal — uni bir bosishda hamma mashqdan chiqarish. Test uchun
+             alohida bo'lim bor, lentada u kamdan-kam ishlatilardi. */
+          '<button class="ig-act-btn ig-quiz-act-btn' + (isMastered ? ' active mastered' : '') + '" ' +
+            'data-act="igToggleMastered" data-arg=\'' + App.arg({ ru: w.ru, id: cardId }) + '\' ' +
+            'title="O\'rgandim — hech qayerda chiqmaydi">' +
             '<span data-icon="check" data-icon-size="20"></span>' +
-            '<span class="ig-act-badge-text">Test</span>' +
+            '<span class="ig-act-badge-text">' + (isMastered ? 'Bildim' : 'O\'rgandim') + '</span>' +
           '</button>' +
           '<button class="ig-act-btn" data-act="igCopyWord" data-arg=\'' + App.arg({ ru: w.ru, uz: w.uz, ex: w.ex }) + '\' title="Nusxa olish">' +
             '<span data-icon="share" data-icon-size="22"></span>' +
@@ -1576,6 +1582,24 @@
     } catch (e) {
       App.toast('Nusxalab bo\'lmadi');
     }
+  };
+
+  /* Lentadan to'g'ridan-to'g'ri "o'rgandim" belgilash.
+     Karta O'CHIRILMAYDI — belgilangani darrov ko'rinsin va xato bosilgan
+     bo'lsa qaytarib olish mumkin bo'lsin. Keyingi yangilanishda u
+     `WordState.forPractice` orqali lentadan chiqib ketadi. */
+  App.actions.igToggleMastered = function (a) {
+    if (!window.WordState) return;
+    var on = WordState.toggleMastered(a.ru);
+    var card = document.getElementById(a.id);
+    var btn = card && card.querySelector('[data-act="igToggleMastered"]');
+    if (btn) {
+      btn.classList.toggle('active', on);
+      btn.classList.toggle('mastered', on);
+      var t = btn.querySelector('.ig-act-badge-text');
+      if (t) t.textContent = on ? 'Bildim' : 'O\'rgandim';
+    }
+    App.toast(on ? '✓ O\'rgandim — endi mashqlarda chiqmaydi' : 'Belgi olib tashlandi');
   };
 
   /* Interactive Quick Quiz Sheet */
