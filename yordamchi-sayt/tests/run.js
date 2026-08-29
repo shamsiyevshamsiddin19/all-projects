@@ -176,6 +176,52 @@ const texts = (t) => prosodyParts(t).map((p) => p.text);
 }
 
 /* =========================================================
+   3. So'z holati (wordstate.js)
+   ========================================================= */
+{
+  /* localStorage Node'da yo'q — eng sodda o'rnini bosuvchi.
+     Modul faqat get/set/removeItem ishlatadi. */
+  const store = {};
+  const fakeLS = {
+    getItem: (k) => (k in store ? store[k] : null),
+    setItem: (k, v) => { store[k] = String(v); },
+    removeItem: (k) => { delete store[k]; }
+  };
+  const win = { localStorage: fakeLS };
+  const code = fs.readFileSync(path.join(ROOT, 'assets/js/core/wordstate.js'), 'utf8');
+  new Function('window', 'localStorage', code)(win, fakeLS);
+  const ws = win.WordState;
+
+  const W = 'слово';
+  check('boshida belgi yo\'q', !ws.isMastered(W) && !ws.isSaved(W));
+
+  ws.toggleSaved(W);
+  check('saqlash ishlaydi', ws.isSaved(W));
+
+  ws.toggleMastered(W);
+  check('o\'rgandim yoqiladi', ws.isMastered(W));
+  // Ikkisi bir vaqtda yoqilmasligi kerak: o'rganib bo'lingan so'z
+  // "hozir o'rganyapman" ro'yxatida turishi mantiqsiz.
+  check('o\'rgandim saqlanganni o\'chiradi', !ws.isSaved(W));
+
+  /* ENG MUHIM SHART: o'rganilgan so'z mashqqa TUSHMAYDI.
+     Aynan shu narsa "galichka" ning ma'nosi. */
+  const left = ws.forPractice([{ ru: W }, { ru: 'другое' }]).map((x) => x.ru);
+  eq('o\'rganilgan so\'z mashqdan chiqadi', left, ['другое']);
+
+  ws.setColor(W, '#ef4444');
+  eq('rang saqlanadi', ws.colorOf(W), '#ef4444');
+  eq('rang guruhga tushadi', ws.byColor()['#ef4444'], [W]);
+
+  ws.setColor(W, '');
+  eq('rang olib tashlanadi', ws.colorOf(W), '');
+
+  // Eski kalit formati saqlanganmi — mavjud ma'lumot yo'qolmasligi uchun
+  check('eski localStorage kaliti ishlatiladi',
+    'vocab_mastered_v1' in store, Object.keys(store).join(','));
+}
+
+/* =========================================================
    Natija
    ========================================================= */
 console.log('');

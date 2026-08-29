@@ -292,7 +292,12 @@
       page.innerHTML = topbar(inFolder ? lastSeg(inFolder) : LABEL[lang].hub, backView, backParams,
         '<div class="voc-acts">' +
         '<button class="icon-btn ghost" data-act="go" data-arg=\'' + App.arg({ v: 'vocab_md_list', p: { lang: lang } }) + '\' aria-label="MD Kitoblar" title="MD Kitoblar" style="font-weight:800;font-size:16.5px;color:var(--accent,#007aff);width:34px;height:34px;line-height:1">D</button>' +
-        '<button class="icon-btn ghost" data-act="vocabAddCat" data-arg=\'' + App.arg({ lang: lang, folder: inFolder }) + '\' aria-label="Yangi kategoriya" title="Yangi kategoriya"><span data-icon="plus" data-icon-size="19"></span></button>' +
+        /* C va V — butun lug'atni bir ekranda ko'rish (vocab_browse).
+           Ilgari bu yerda "+" (yangi kategoriya) turardi; u endi
+           "Baza qo'shish" varag'iga ko'chirildi, chunki kundalik ish
+           yangi kategoriya ochish emas, so'zlarni ko'rib chiqish. */
+        '<button class="icon-btn ghost voc-key" data-act="go" data-arg=\'' + App.arg({ v: 'vocab_browse', p: { lang: 'russian' } }) + '\' aria-label="Rus lug\'ati" title="Rus lug\'ati (C)">C</button>' +
+        '<button class="icon-btn ghost voc-key" data-act="go" data-arg=\'' + App.arg({ v: 'vocab_browse', p: { lang: 'english' } }) + '\' aria-label="Ingliz lug\'ati" title="Ingliz lug\'ati (V)">V</button>' +
         /* `folder` ham uzatiladi — MD fayl JORIY papkaga yuklanadi */
         '<button class="icon-btn ghost" data-act="vocabDbOptions" data-arg=\'' + App.arg({ lang: lang, folder: params.folder || '' }) + '\' aria-label="Baza qo\'shish" title="Baza qo\'shish"><span data-icon="upload" data-icon-size="18"></span></button>' +
         '<button class="icon-btn ghost" data-act="vocabSendSheet" data-arg=\'' + App.arg({ lang: lang }) + '\' aria-label="Boostdayga yuborish" title="Boostdayga yuborish"><span data-icon="message" data-icon-size="18"></span></button>' +
@@ -593,6 +598,10 @@
 
   App.actions.vocabDbOptions = function(a) {
     var sh = App.sheet(
+      '<button class="list-row" data-act="vocabAddCat" data-arg=\'' + App.arg(a) + '\'>' +
+        '<span class="li-ic" data-icon="plus" data-icon-size="15"></span>' +
+        '<div class="li-main"><div class="li-title">Yangi kategoriya</div><div class="li-sub">Bo\'sh lug\'at bo\'limi ochish</div></div>' +
+      '</button>' +
       '<button class="list-row" data-act="vocabImportMDToDict" data-arg=\'' + App.arg(a) + '\'>' +
         '<span class="li-ic" data-icon="upload" data-icon-size="15"></span>' +
         '<div class="li-main"><div class="li-title">Lug\'atga MD fayl yuklash (Import)</div><div class="li-sub">.md fayldagi so\'zlarni to\'g\'ridan-to\'g\'ri lug\'at bazasiga qo\'shish</div></div>' +
@@ -1108,7 +1117,12 @@
     var words = V.data[cat] || [];
     if (!words.length) return [];
     var r = getRange(lang, cat, words.length);
-    return words.slice(r.from - 1, r.to);
+    var slice = words.slice(r.from - 1, r.to);
+    /* "O'rgandim" deb belgilangan so'z mashqqa TUSHMAYDI. Flashcard,
+       svayp, reels, test, tinglash, juftlash — hammasi shu funksiyadan
+       so'z oladi, shuning uchun filtr shu yerda. Ilgari bu belgi faqat
+       bosh sahifadagi filtr edi va o'rganilgan so'z mashqda chiqaverardi. */
+    return window.WordState ? WordState.forPractice(slice) : slice;
   }
 
   App.actions.vocabRange = function (a) {
@@ -1824,10 +1838,13 @@
   /* Bugun takrorlash kerak bo'lgan so'zlar (hech ko'rilmaganlar ham kiradi) */
   function srsDue(lang, cat) {
     var all = srsAll(), today = dayStr(new Date());
-    return (V.data[cat] || []).filter(function (w) {
+    var due = (V.data[cat] || []).filter(function (w) {
       var s = all[srsKey(lang, cat, w.ru)];
       return !s || !s.due || s.due <= today;
     });
+    /* Takrorlash ro'yxatiga ham tushmasin — aks holda "o'rgandim" bosilgan
+       so'z ertasiga "bugun takrorlash" bo'lib qaytib kelardi. */
+    return window.WordState ? WordState.forPractice(due) : due;
   }
 
   /* Kategoriya bo'yicha o'zlashtirish darajasi (3+ marta to'g'ri = o'zlashtirilgan) */

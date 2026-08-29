@@ -3904,3 +3904,88 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   border: 1px solid var(--border-soft); transition: color .15s, border-color .15s;
 }
 .agate-tg:hover { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
+
+/* ---------- Lug'at ko'rgichi (vocab_browse) ----------
+   Zich to'r: maqsad — ko'p so'zni bir ekranda ko'rish. Shuning uchun
+   katakchalar kichik, oraliq tor va shrift ixcham. */
+.voc-key { font-weight: 800; font-size: 15.5px; color: var(--accent); width: 34px; height: 34px; line-height: 1; }
+
+.vb-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+.vb-tab {
+  flex: 1; padding: 9px 10px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--card);
+  color: var(--hint); font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.vb-tab.active { background: var(--accent-soft); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
+
+.vb-search {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 0 12px; color: var(--hint);
+}
+.vb-inp {
+  flex: 1; border: none; background: none; outline: none;
+  color: var(--text); font-size: 14px; padding: 11px 0; font-family: inherit;
+}
+
+.vb-sec { margin-bottom: 22px; }
+.vb-sec-h {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  font-size: 12px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .5px; color: var(--hint);
+}
+.vb-sec-h i { margin-left: auto; font-style: normal; font-weight: 700; opacity: .7; }
+.vb-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* `auto-fill` + `minmax` — ekran kengaysa ustun soni o'zi ko'payadi */
+.vb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 6px; }
+
+.vb-w {
+  padding: 8px 10px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--border-soft); background: var(--card);
+  color: var(--text); font-size: 13.5px; text-align: left;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  transition: border-color .12s, background .12s;
+}
+.vb-w:hover { border-color: var(--accent); }
+
+/* O'rganib bo'lingan — o'chgan holatda, lekin ko'rinib turadi:
+   foydalanuvchi qaysi so'zni allaqachon belgilaganini bilishi kerak. */
+.vb-w.done { opacity: .38; text-decoration: line-through; }
+.vb-w.saved { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
+.vb-w.tinted { border-left: 3px solid var(--wcolor); }
+
+/* Tarjima qalqib chiquvchi oynachasi — brauzerning `title` kechikishi
+   ro'yxatni ko'rib chiqishni sekinlashtiradi, shuning uchun o'zimizniki. */
+.vb-pop {
+  position: absolute; z-index: 9000; pointer-events: none;
+  background: var(--bg-elev); border: 1px solid var(--border);
+  border-radius: 10px; padding: 8px 11px; box-shadow: var(--shadow);
+  display: flex; flex-direction: column; gap: 2px; max-width: 260px;
+}
+.vb-pop b { font-size: 13.5px; color: var(--text); }
+.vb-pop span { font-size: 12.5px; color: var(--hint); }
+
+.vb-act-head { display: flex; flex-direction: column; gap: 3px; margin-bottom: 14px; }
+.vb-act-head b { font-size: 19px; font-weight: 800; }
+.vb-act-head span { font-size: 13.5px; color: var(--hint); }
+
+.vb-act-row { display: flex; gap: 8px; margin-bottom: 18px; }
+.vb-act {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 13px 8px; border-radius: var(--radius-sm); cursor: pointer;
+  border: 1px solid var(--border); background: var(--card); color: var(--text);
+}
+.vb-act b { font-size: 13px; font-weight: 700; }
+.vb-act i { font-size: 10.5px; font-style: normal; color: var(--hint); }
+.vb-act.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.vb-act.on i { color: inherit; opacity: .8; }
+
+.vb-act-lbl { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--hint); margin-bottom: 9px; }
+.vb-colors { display: flex; flex-wrap: wrap; gap: 9px; }
+.vb-color {
+  width: 34px; height: 34px; border-radius: 50%; cursor: pointer;
+  border: 2px solid transparent; box-shadow: 0 0 0 1px var(--border);
+}
+.vb-color.on { border-color: var(--text); }
+.vb-color.none { background: var(--card-2); color: var(--hint); font-size: 13px; }

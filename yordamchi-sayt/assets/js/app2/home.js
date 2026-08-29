@@ -620,6 +620,14 @@
       pool = pool.filter(function (w) { return w.lang === 'english'; });
     }
 
+    // 2.5 "O'rgandim" belgilangan so'zlar lentada CHIQMAYDI.
+    // Istisno: foydalanuvchi ataylab "O'rganilganlar" to'plamini tanlagan
+    // bo'lsa — u holda maqsad aynan o'shalarni ko'rish.
+    var wantsMastered = st.collections && st.collections.indexOf('mastered') >= 0;
+    if (!wantsMastered && window.WordState) {
+      pool = WordState.forPractice(pool);
+    }
+
     // 3. Shaxsiy to'plamlar
     if (st.collections && st.collections.length > 0) {
       pool = pool.filter(function (w) {
