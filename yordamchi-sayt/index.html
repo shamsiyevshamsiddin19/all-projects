@@ -4,12 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Yordamchi</title>
+  <!-- Joriy qurilma qaysi qurilmani (build) yuklaganini bildiradi.
+       `deploy.sh` uni har o'rnatishda yangilaydi va SERVERDAGI version.json
+       bilan solishtiriladi: farq bo'lsa sahifa keshlarni tozalab o'zini
+       qaytadan yuklaydi. Sabab: tarmoq uzilsa service worker keshdagi ESKI
+       index.html ni beradi va u eski `?v=` manzillarini chaqiradi — natijada
+       butun ilova eski holatda ochilib qolardi. -->
+  <meta name="app-build" content="20260829-231659">
   <!-- Belgi manzili QATTIQ yozilmaydi: uni pastdagi inline skript localStorage'dan
        qo'yadi. Ilgari bu yerda `?v=` bilan fayl yo'li turardi va u YANGILANMASDI —
        brauzer o'sha manzil ostidagi ESKI keshlangan rasmni chizib, keyin JS yangisiga
        almashtirardi (ochilishdagi "eski logo -> yangi logo" miltillashi shundan edi). -->
   <link rel="icon" data-app-icon>
-  <link rel="manifest" href="manifest.webmanifest?v=20260804new1">
+  <link rel="manifest" href="manifest.webmanifest?v=20260829-231659">
   <meta name="theme-color" content="#1a1a1a">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -17,8 +24,8 @@
   <link rel="apple-touch-icon" data-app-icon>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/app.css?v=20260829v6">
-  <link rel="stylesheet" href="assets/css/learn.css?v=20260819v15">
+  <link rel="stylesheet" href="assets/css/app.css?v=20260829-231659">
+  <link rel="stylesheet" href="assets/css/learn.css?v=20260829-231659">
   <script>
     window.MathJax = {
       startup: { typeset: false },
@@ -110,44 +117,44 @@ window.addEventListener('beforeinstallprompt', function(e) {
 
 <!-- Core infra (saqlangan) -->
 <!-- O'qish amallari ro'yxati — service-worker.js ham AYNI shu faylni o'qiydi -->
-<script defer src="assets/js/core/read-actions.js?v=20260810new3"></script>
-<script defer src="assets/js/core/logger.js?v=20260804new1"></script>
-<script defer src="assets/js/core/remote-storage.js?v=20260817fast1"></script>
-<script defer src="assets/js/core/tts.js?v=20260820v26"></script>
-<script defer src="assets/js/core/icons.js?v=20260820v1"></script>
-<script defer src="assets/js/core/paircore.js?v=20260829v5"></script>
-<script defer src="assets/js/core/wordstate.js?v=init"></script>
+<script defer src="assets/js/core/read-actions.js?v=20260829-231659"></script>
+<script defer src="assets/js/core/logger.js?v=20260829-231659"></script>
+<script defer src="assets/js/core/remote-storage.js?v=20260829-231659"></script>
+<script defer src="assets/js/core/tts.js?v=20260829-231659"></script>
+<script defer src="assets/js/core/icons.js?v=20260829-231659"></script>
+<script defer src="assets/js/core/paircore.js?v=20260829-231659"></script>
+<script defer src="assets/js/core/wordstate.js?v=20260829-231659"></script>
 <!-- Yangi SPA -->
-<script defer src="assets/js/app2/core.js?v=20260820v14"></script>
-<script defer src="assets/js/app2/auth.js?v=20260829v8"></script>
-<script defer src="assets/js/app2/activity.js?v=20260811new1"></script>
-<script defer src="assets/js/app2/goals.js?v=20260804new1"></script>
-<script defer src="assets/js/app2/stats.js?v=20260820v14"></script>
-<script defer src="assets/js/app2/tarix.js?v=20260820v14"></script>
-<script defer src="assets/js/app2/notify.js?v=20260820v9"></script>
-<script defer src="assets/js/app2/push.js?v=20260806new28"></script>
-<script defer src="assets/js/app2/habits.js?v=20260806new28"></script>
-<script defer src="assets/js/app2/home.js?v=20260829v4"></script>
-<script defer src="assets/js/app2/profile.js?v=20260820v5"></script>
-<script defer src="assets/js/app2/quiz.js?v=20260820v14"></script>
-<script defer src="assets/js/app2/languages.js?v=20260820v14"></script>
-<script defer src="assets/js/app2/coding.js?v=20260820v14"></script>
-<script defer src="assets/js/app2/boost.js?v=20260811new2"></script>
-<script defer src="assets/js/app2/library.js?v=20260829v1"></script>
-<script defer src="assets/js/app2/reading.js?v=20260829v5"></script>
-<script defer src="assets/js/app2/listening-doc.js?v=20260829v5"></script>
-<script defer src="assets/js/app2/grammar.js?v=20260819v9"></script>
-<script defer src="assets/js/app2/grammar-games.js?v=20260804new1"></script>
-<script defer src="assets/js/app2/listening.js?v=20260805new1"></script>
-<script defer src="assets/js/app2/vocab.js?v=20260829v5"></script>
-<script defer src="assets/js/app2/vocab-browse.js?v=init"></script>
-<script defer src="assets/js/app2/sport.js?v=20260820v14"></script>
-<script defer src="assets/js/app2/workout.js?v=20260807new5"></script>
-<script defer src="assets/js/app2/arxiv.js?v=20260804new1"></script>
-<script defer src="assets/js/app2/qoidalar.js?v=20260804new31"></script>
-<script defer src="assets/js/app2/kun.js?v=20260820v14"></script>
-<script defer src="assets/js/app2/settings.js?v=20260828v1"></script>
-<script defer src="assets/js/app2/learn-marks.js?v=20260818learn20"></script>
-<script defer src="assets/js/app2/bootstrap.js?v=20260820v14"></script>
+<script defer src="assets/js/app2/core.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/auth.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/activity.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/goals.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/stats.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/tarix.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/notify.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/push.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/habits.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/home.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/profile.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/quiz.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/languages.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/coding.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/boost.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/library.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/reading.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/listening-doc.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/grammar.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/grammar-games.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/listening.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/vocab.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/vocab-browse.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/sport.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/workout.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/arxiv.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/qoidalar.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/kun.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/settings.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/learn-marks.js?v=20260829-231659"></script>
+<script defer src="assets/js/app2/bootstrap.js?v=20260829-231659"></script>
 </body>
 </html>

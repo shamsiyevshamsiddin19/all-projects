@@ -402,6 +402,66 @@
   else start();
 
   // Service worker
+  /* ---------------- Versiya qo'riqchisi ----------------
+     MUAMMO: navigatsiya "avval tarmoq" tartibida ishlaydi, lekin tarmoq
+     UZILSA service worker keshdagi ESKI index.html ni beradi. Eski
+     index.html esa eski `?v=` manzillarini chaqiradi va ular ham keshda
+     bor — natijada internet sekin/uzuq bo'lgan bir lahzada butun ilova
+     ESKI holatda ochilib qolardi va shundayligicha qolib ketardi.
+
+     YECHIM: sahifa ochilgach serverdan `version.json` so'raladi (kesh
+     butunlay chetlab o'tiladi). Serverdagi build sahifadagidan farq qilsa
+     — hamma kesh tozalanadi, service worker ro'yxatdan chiqariladi va
+     sahifa BIR MARTA qayta yuklanadi.
+
+     Tarmoq yo'q bo'lsa hech narsa qilinmaydi: oflaynda eski nusxa bilan
+     ishlash — bu xato emas, ataylab shunday. */
+  function currentBuild() {
+    var m = document.querySelector('meta[name="app-build"]');
+    return m ? (m.getAttribute('content') || '') : '';
+  }
+
+  function guardVersion() {
+    var mine = currentBuild();
+    if (!mine || mine === 'dev') return;          // mahalliy ishlash — tekshirilmaydi
+
+    fetch('version.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        if (!j || !j.build || j.build === mine) return;
+
+        /* Qayta yuklash HALQASIGA tushmaslik uchun: shu build uchun bir
+           marta urinamiz. Agar tozalashdan keyin ham eski nusxa kelsa
+           (masalan server orqada), cheksiz yangilanib turmaydi. */
+        var mark = 'app_build_reload_' + j.build;
+        try {
+          if (sessionStorage.getItem(mark)) return;
+          sessionStorage.setItem(mark, '1');
+        } catch (e) {}
+
+        var jobs = [];
+        if (window.caches) {
+          jobs.push(caches.keys().then(function (keys) {
+            return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+          }));
+        }
+        if (navigator.serviceWorker) {
+          jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) {
+            return Promise.all(rs.map(function (r) { return r.unregister(); }));
+          }));
+        }
+        Promise.all(jobs).catch(function () {}).then(function () {
+          location.reload();
+        });
+      })
+      .catch(function () {});                     // oflayn — tegmaymiz
+  }
+
+  window.addEventListener('load', guardVersion);
+  /* Ulanish qaytganda ham tekshiramiz: ilova oflayn ochilgan bo'lsa,
+     internet kelishi bilan o'zi eng so'nggisiga o'tadi. */
+  window.addEventListener('online', guardVersion);
+
   if ('serviceWorker' in navigator) {
     /* SW o'qish javoblarini keshdan DARHOL beradi, yangisini esa orqa fonda
        oladi. Yangisi eskisidan farq qilsa shu xabar keladi — joriy bo'lim

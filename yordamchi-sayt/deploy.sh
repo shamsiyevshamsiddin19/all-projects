@@ -1,30 +1,34 @@
 #!/usr/bin/env bash
 #
-# Yordamchi sayt — statik fayllarni serverga xavfsiz yuklash.
+# Yordamchi sayt — o'rnatish.
 #
 #   ./deploy.sh assets/js/app2/vocab.js assets/css/app.css
 #   ./deploy.sh --all-changed          # git'da o'zgargan fayllarni o'zi topadi
 #
-# NIMA UCHUN SKRIPT KERAK
-# =======================
-# Qo'lda `scp` qilish ikki marta jiddiy nosozlikka olib keldi (2026-08-28/29):
+# UCH MUAMMO SHU YERDA YOPILGAN
+# =============================
 #
-# 1) KESH TUZOG'I. nginx statik fayllarni `Cache-Control: immutable,
-#    max-age=1yil` bilan beradi. Faylni almashtirishning O'ZI yetmaydi —
-#    brauzer eski nusxani abadiy ushlab qoladi. `index.html` dagi `?v=...`
-#    belgisini HAM yangilash shart. Bir marta unutildi va hech kim
-#    yangilanishni ko'rmadi.
+# 1) KESH TUZOG'I. nginx statik fayllarni `immutable, max-age=1yil` bilan
+#    beradi. Faylni almashtirishning O'ZI yetmaydi — `?v=` belgisi ham
+#    yangilanishi shart. Bir marta unutildi va hech kim yangilanishni
+#    ko'rmadi.
 #
 # 2) YIRTIQ FAYL. `scp` faylni JOYIDA qayta yozadi. Shu payt brauzer o'sha
 #    faylni so'rasa, nginx CHALA faylni beradi — va `immutable` tufayli
-#    buzuq nusxa o'sha `?v=` manzili ostida abadiy keshlanadi. Sayt
-#    butunlay ishlamay qoldi, `node --check` esa "OK" deb turaverdi,
-#    chunki u boshqa faylni o'qiyotgan edi.
+#    buzuq nusxa abadiy keshlanadi. Sayt butunlay ishlamay qolgan edi,
+#    `node --check` esa "OK" derdi, chunki u boshqa faylni o'qiyotgan edi.
 #
-# Skript ikkalasini ham yopadi: sintaksisni oldindan tekshiradi, faylni
-# vaqtinchalik nomga yuklab ATOMIK `mv` bilan almashtiradi, `?v=` va
-# service-worker versiyasini birga yangilaydi, so'ng serverdan qaytarib
-# o'qib hajmini solishtiradi.
+# 3) ESKI VERSIYA OCHILISHI. Ilgari skript FAQAT serverdagi index.html va
+#    service-worker.js ni tahrirlardi. Natijada git'dagi nusxa haqiqatni
+#    aks ettirmasdi, va har fayl o'z `?v=` siga ega bo'lgani uchun kesh
+#    holati chalkash edi. Endi BITTA build raqami hamma narsaga qo'yiladi
+#    (index.html, service-worker.js, version.json) va MAHALLIY fayllar ham
+#    yangilanadi — ya'ni git aynan o'rnatilgan holatni saqlaydi.
+#
+# `version.json` ni sahifa o'zi o'qib turadi (bootstrap.js -> guardVersion):
+# serverdagi build sahifadagidan farq qilsa, keshlar tozalanib sahifa bir
+# marta qayta yuklanadi. Shu sababli tarmoq uzilib eski nusxa ochilib
+# qolsa ham, ilova ulanish tiklanishi bilan o'zi eng so'nggisiga o'tadi.
 
 set -euo pipefail
 
@@ -35,10 +39,9 @@ SSH=(ssh -i "$KEY" "$HOST")
 
 cd "$(dirname "$0")"
 
-# ---------- Yuklanadigan fayllar ----------
 if [ "${1:-}" = "--all-changed" ]; then
   mapfile -t FILES < <(git status --porcelain . | awk '{print $NF}' \
-    | grep -E '\.(js|css|html)$' | sed 's|^yordamchi-sayt/||')
+    | grep -E '\.(js|css)$' | sed 's|^yordamchi-sayt/||')
 else
   FILES=("$@")
 fi
@@ -50,7 +53,6 @@ if [ ${#FILES[@]} -eq 0 ]; then
 fi
 
 # ---------- 1. Oldindan tekshiruv ----------
-# Buzuq fayl serverga umuman chiqmasin.
 echo "== Tekshiruv =="
 for f in "${FILES[@]}"; do
   [ -f "$f" ] || { echo "  YO'Q: $f"; exit 1; }
@@ -58,62 +60,81 @@ for f in "${FILES[@]}"; do
     *.js)
       if command -v node >/dev/null 2>&1; then
         node --check "$f" >/dev/null || { echo "  SINTAKSIS XATO: $f"; exit 1; }
-        echo "  ok  $f"
-      else
-        echo "  (node yo'q, $f tekshirilmadi)"
       fi
-      ;;
+      echo "  ok  $f" ;;
     *.css)
-      # Qavslar balansi — eng ko'p uchraydigan CSS nosozligi
       o=$(tr -cd '{' < "$f" | wc -c); c=$(tr -cd '}' < "$f" | wc -c)
       [ "$o" -eq "$c" ] || { echo "  QAVS BALANSI BUZUQ: $f ({=$o }=$c)"; exit 1; }
-      echo "  ok  $f"
-      ;;
+      echo "  ok  $f" ;;
     *) echo "  ok  $f" ;;
   esac
 done
 
-# ---------- 2. Yangi versiya belgisi ----------
-VER="$(date +%Y%m%d)v$(date +%H%M%S)"
+# Testlar bor bo'lsa — buzuq kod serverga chiqmasin
+if [ -f tests/run.js ] && command -v node >/dev/null 2>&1; then
+  echo "== Testlar =="
+  node tests/run.js | tail -1
+fi
+
+BUILD="$(date +%Y%m%d-%H%M%S)"
 echo
-echo "== Versiya: $VER =="
+echo "== Build: $BUILD =="
+
+# ---------- 2. Mahalliy fayllarni yangilash ----------
+# BITTA build hamma joyda: index.html dagi HAMMA `?v=`, SW VERSION va
+# version.json. Shunda "qaysi fayl qaysi versiyada" degan savol yo'qoladi.
+python3 - "$BUILD" <<'PY'
+import re, sys, json, pathlib
+build = sys.argv[1]
+
+idx = pathlib.Path('index.html')
+html = idx.read_text(encoding='utf-8')
+html = re.sub(r'(\.(?:js|css|webmanifest))\?v=[^"\']*', r'\1?v=' + build, html)
+html = re.sub(r'(<meta name="app-build" content=")[^"]*(")', r'\g<1>' + build + r'\g<2>', html)
+idx.write_text(html, encoding='utf-8')
+
+sw = pathlib.Path('service-worker.js')
+sw.write_text(re.sub(r"^const VERSION = .*$",
+                     "const VERSION = '%s';" % build,
+                     sw.read_text(encoding='utf-8'), count=1, flags=re.M),
+              encoding='utf-8')
+
+pathlib.Path('version.json').write_text(
+    json.dumps({"build": build}, ensure_ascii=False) + "\n", encoding='utf-8')
+print("  index.html, service-worker.js, version.json yangilandi")
+PY
 
 # ---------- 3. Atomik yuklash ----------
+# `.deploytmp` ga yozib, keyin `mv` — o'quvchi doim BUTUN faylni ko'radi.
 echo "== Yuklash =="
-for f in "${FILES[@]}"; do
+upload() {
+  local f="$1"
+  "${SSH[@]}" "mkdir -p '$ROOT/$(dirname "$f")'"
   scp -q -i "$KEY" "$f" "$HOST:$ROOT/$f.deploytmp"
   "${SSH[@]}" "mv -f '$ROOT/$f.deploytmp' '$ROOT/$f'"
   echo "  yuklandi  $f"
-done
+}
+for f in "${FILES[@]}"; do upload "$f"; done
+# index.html ENG OXIRIDA — yangi `?v=` manzillari faqat fayllar joyiga
+# yetgandan keyin e'lon qilinsin, aks holda oradagi lahzada 404 bo'lardi.
+upload service-worker.js
+upload version.json
+upload index.html
 
-# ---------- 4. Kesh belgilarini yangilash ----------
-# `?v=` FAQAT shu yuklangan fayllar uchun almashtiriladi — tegilmagan
-# fayllarning keshini bekorga buzmaymiz.
-echo "== Kesh belgilari =="
-for f in "${FILES[@]}"; do
-  base="${f#assets/}"
-  "${SSH[@]}" "sed -i 's|\(${base//\//\\/}\)?v=[^\"]*|\1?v=$VER|g' '$ROOT/index.html'"
-  echo "  ?v=$VER  $base"
-done
-"${SSH[@]}" "sed -i \"s/^const VERSION = .*/const VERSION = '$VER';/\" '$ROOT/service-worker.js'"
-echo "  service-worker VERSION=$VER"
-
-# ---------- 5. Serverdan qaytarib tekshirish ----------
-# Yirtiq fayl aynan shu bosqichda ushlanadi.
+# ---------- 4. Serverdan qaytarib tekshirish ----------
 echo "== Tasdiqlash =="
 fail=0
-for f in "${FILES[@]}"; do
-  local_size=$(stat -c%s "$f")
-  remote_size=$("${SSH[@]}" "stat -c%s '$ROOT/$f'")
-  if [ "$local_size" = "$remote_size" ]; then
-    echo "  ok  $f ($local_size bayt)"
-  else
-    echo "  HAJM MOS EMAS: $f  mahalliy=$local_size server=$remote_size"
-    fail=1
-  fi
+for f in "${FILES[@]}" service-worker.js version.json index.html; do
+  l=$(stat -c%s "$f")
+  r=$("${SSH[@]}" "stat -c%s '$ROOT/$f'")
+  if [ "$l" = "$r" ]; then echo "  ok  $f ($l bayt)"
+  else echo "  HAJM MOS EMAS: $f  mahalliy=$l server=$r"; fail=1; fi
 done
 [ "$fail" -eq 0 ] || { echo "XATO: yuklash to'liq bo'lmadi."; exit 1; }
 
+srv=$(curl -s "https://y.wstore.uz/version.json?t=$(date +%s)" | tr -d '{}" ' | sed 's/build://')
+echo "  serverdagi build: $srv"
+[ "$srv" = "$BUILD" ] || { echo "  OGOHLANTIRISH: version.json mos kelmadi"; exit 1; }
+
 echo
-echo "Tayyor. Versiya: $VER"
-echo "Brauzerda tekshiring: https://y.wstore.uz/"
+echo "Tayyor. Build: $BUILD"
