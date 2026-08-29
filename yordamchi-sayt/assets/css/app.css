@@ -3937,23 +3937,28 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 .vb-sec-h i { margin-left: auto; font-style: normal; font-weight: 700; opacity: .7; }
 .vb-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
-/* `auto-fill` + `minmax` — ekran kengaysa ustun soni o'zi ko'payadi */
-.vb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 6px; }
+/* So'zlar KARTA EMAS — oddiy matn ustunlari (Language Reactor uslubi).
+   Karta ko'rinishi 8000 so'zli ro'yxatda shovqin qilardi: har so'z atrofida
+   ramka va fon bo'lsa, ko'z so'zlarni emas, qutichalarni ko'radi.
+   `auto-fill` + `minmax` — ekran kengaysa ustun soni o'zi ko'payadi. */
+.vb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 2px 18px; }
 
 .vb-w {
-  padding: 8px 10px; border-radius: 8px; cursor: pointer;
-  border: 1px solid var(--border-soft); background: var(--card);
-  color: var(--text); font-size: 13.5px; text-align: left;
+  border: none; background: none; padding: 6px 2px; cursor: pointer;
+  color: var(--text); font-size: 14px; font-family: inherit;
+  text-align: left; line-height: 1.35;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  transition: border-color .12s, background .12s;
+  transition: color .12s;
 }
-.vb-w:hover { border-color: var(--accent); }
+.vb-w:hover { color: var(--accent); }
 
-/* O'rganib bo'lingan — o'chgan holatda, lekin ko'rinib turadi:
-   foydalanuvchi qaysi so'zni allaqachon belgilaganini bilishi kerak. */
-.vb-w.done { opacity: .38; text-decoration: line-through; }
-.vb-w.saved { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
-.vb-w.tinted { border-left: 3px solid var(--wcolor); }
+/* Holatlar rang va uslub bilan ko'rsatiladi — ramka bilan emas */
+.vb-w.done { opacity: .35; text-decoration: line-through; }
+.vb-w.saved { font-weight: 700; }
+.vb-w.saved::after { content: '•'; color: var(--accent); margin-left: 4px; }
+/* Guruh rangi — so'zning O'Z rangi bo'ladi, shunda bir xil guruhdagilar
+   ro'yxat ichida bir qarashda ko'zga tashlanadi. */
+.vb-w.tinted { color: var(--wcolor); }
 
 /* Tarjima qalqib chiquvchi oynachasi — brauzerning `title` kechikishi
    ro'yxatni ko'rib chiqishni sekinlashtiradi, shuning uchun o'zimizniki. */

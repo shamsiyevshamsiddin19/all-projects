@@ -296,8 +296,12 @@
            Ilgari bu yerda "+" (yangi kategoriya) turardi; u endi
            "Baza qo'shish" varag'iga ko'chirildi, chunki kundalik ish
            yangi kategoriya ochish emas, so'zlarni ko'rib chiqish. */
-        '<button class="icon-btn ghost voc-key" data-act="go" data-arg=\'' + App.arg({ v: 'vocab_browse', p: { lang: 'russian' } }) + '\' aria-label="Rus lug\'ati" title="Rus lug\'ati (C)">C</button>' +
-        '<button class="icon-btn ghost voc-key" data-act="go" data-arg=\'' + App.arg({ v: 'vocab_browse', p: { lang: 'english' } }) + '\' aria-label="Ingliz lug\'ati" title="Ingliz lug\'ati (V)">V</button>' +
+        /* Faqat JORIY tilning harfi: rus lug'atida C, ingliz lug'atida V.
+           Ikkalasini yonma-yon qo'yish chalkash edi — bu sahifa allaqachon
+           bitta tilga tegishli. */
+        '<button class="icon-btn ghost voc-key" data-act="go" data-arg=\'' +
+          App.arg({ v: 'vocab_browse', p: { lang: lang } }) + '\' aria-label="Butun lug\'at" title="Butun lug\'at">' +
+          (lang === 'russian' ? 'C' : 'V') + '</button>' +
         /* `folder` ham uzatiladi — MD fayl JORIY papkaga yuklanadi */
         '<button class="icon-btn ghost" data-act="vocabDbOptions" data-arg=\'' + App.arg({ lang: lang, folder: params.folder || '' }) + '\' aria-label="Baza qo\'shish" title="Baza qo\'shish"><span data-icon="upload" data-icon-size="18"></span></button>' +
         '<button class="icon-btn ghost" data-act="vocabSendSheet" data-arg=\'' + App.arg({ lang: lang }) + '\' aria-label="Boostdayga yuborish" title="Boostdayga yuborish"><span data-icon="message" data-icon-size="18"></span></button>' +
