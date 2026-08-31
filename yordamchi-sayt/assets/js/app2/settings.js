@@ -50,6 +50,13 @@
         '<div class="li-main"><div class="li-title">Ilova belgisi</div><div class="li-sub">Bosh ekran yorlig\'i uchun</div></div>' +
         '<span class="li-chev" data-icon="arrowLeft" data-icon-size="16" style="transform:rotate(180deg)"></span></button>' +
 
+        '<div class="list-label">Xavfsizlik</div>' +
+        '<button class="list-row" data-act="accessCode">' +
+        '<span class="li-ic" style="background:#f59e0b22;color:#f59e0b" data-icon="lock" data-icon-size="15"></span>' +
+        '<div class="li-main"><div class="li-title">Favqulodda kirish kodi</div>' +
+        '<div class="li-sub">Google ishlamaganda shu kod bilan kiriladi</div></div>' +
+        '<span class="li-chev" data-icon="arrowLeft" data-icon-size="16" style="transform:rotate(180deg)"></span></button>' +
+
         '<div class="list-label">Ilova (Mobil & Kompyuter)</div>' +
         '<button class="list-row" data-act="downloadApk">' +
         '<span class="li-ic" style="background:#10b98122;color:#10b981" data-icon="download" data-icon-size="15"></span>' +
@@ -564,4 +571,77 @@
     // Sanoq faqat bajarilmaganlarida ketadi (bajarilganida matn o'rnini egallagan)
     arr.forEach(function (d) { if (d.status !== 'done') startCountdown(d.id, new Date(d.end)); });
   }
+
+
+  /* ---------- Favqulodda kirish kodi ----------
+     Kod OCHIQ SAQLANMAYDI: bazada faqat bcrypt xeshi turadi. Shuning uchun
+     "kodni ko'rsatish" degan narsa yo'q — faqat YANGISINI yasash mumkin va
+     u bir marta, aynan shu oynachada ko'rsatiladi. Yo'qotilsa yangisi
+     yasaladi, eskisi shu zahoti ishlamay qoladi. */
+  App.actions.accessCode = function () {
+    var sh = App.sheet('<div id="ac-body"><div class="load-wrap"><div class="spinner"></div></div></div>',
+      { title: 'Favqulodda kirish kodi' });
+
+    function draw(st, kod) {
+      var body = sh.querySelector('#ac-body'); if (!body) return;
+      body.innerHTML =
+        '<p class="muted" style="font-size:12.5px;margin:0 0 14px;line-height:1.55">' +
+        'Bu kod Google ishlamay qolganda kerak: boshqa qurilmada, boshqa domenda ' +
+        'yoki Google xizmati uzilganda. Ishonchli joyda saqlang.</p>' +
+
+        (kod
+          ? '<div class="ac-code">' + App.esc(kod) + '</div>' +
+            '<p class="muted" style="font-size:11.5px;margin:0 0 14px;color:var(--warn)">' +
+            'Kod FAQAT hozir ko\'rinadi — bazada uning xeshi saqlanadi. Ko\'chirib oling.</p>'
+          : '') +
+
+        (st.bor
+          ? '<div class="list-row" style="padding:10px 1px"><div class="li-main">' +
+            '<div class="li-title">Kod o\'rnatilgan</div>' +
+            '<div class="li-sub">Yaratilgan: ' + App.esc(st.yaratilgan || '—') +
+            (st.oxirgi_ishlatilgan ? ' · Oxirgi: ' + App.esc(st.oxirgi_ishlatilgan) : '') +
+            '</div></div></div>'
+          : '<div class="list-row" style="padding:10px 1px"><div class="li-main">' +
+            '<div class="li-title">Kod o\'rnatilmagan</div>' +
+            '<div class="li-sub">Bu yo\'l hozir YOPIQ — faqat Google bilan kiriladi</div>' +
+            '</div></div>') +
+
+        '<button class="btn" id="ac-new" style="margin-top:14px">' +
+        '<span data-icon="refresh" data-icon-size="16"></span>' +
+        (st.bor ? 'Yangi kod yasash' : 'Kod yaratish') + '</button>' +
+        (st.bor
+          ? '<button class="btn ghost" id="ac-del" style="margin-top:8px;color:var(--danger)">Kodni o\'chirish</button>'
+          : '');
+
+      App.icons(body);
+
+      body.querySelector('#ac-new').onclick = function () {
+        App.confirm(st.bor
+          ? 'Yangi kod yasalsa eski kod DARHOL ishlamay qoladi. Davom etamizmi?'
+          : 'Favqulodda kirish kodi yaratilsinmi?', function () {
+          App.call('kirish_kodi_yangilash', {}).then(function (j) {
+            draw(j, j.kod);
+            App.toast('✅ Yangi kod yaratildi');
+          }).catch(function (e) { App.toast('⚠️ ' + e.message); });
+        });
+      };
+
+      var del = body.querySelector('#ac-del');
+      if (del) del.onclick = function () {
+        App.confirm('Kod o\'chirilsa faqat Google orqali kirish qoladi. Davom etamizmi?', function () {
+          App.call('kirish_kodi_ochirish', {}).then(function () {
+            draw({ bor: false }, '');
+            App.toast('Kod o\'chirildi');
+          }).catch(function (e) { App.toast('⚠️ ' + e.message); });
+        }, { danger: true, yes: 'O\'chirish' });
+      };
+    }
+
+    App.call('kirish_kodi_holati', {}).then(function (j) { draw(j, ''); })
+      .catch(function (e) {
+        var b = sh.querySelector('#ac-body');
+        if (b) b.innerHTML = App.empty({ icon: 'alert', title: 'Xatolik', text: e.message });
+      });
+  };
+
 })();

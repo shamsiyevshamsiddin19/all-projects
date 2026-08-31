@@ -179,6 +179,17 @@ def _dispatch_query_action(request: Request, action: str, body: dict, q):
         "lms_schedule": lambda: lms.get_schedule(request, body, q.get("from", ""), q.get("to", "")),
         "lms_options": lambda: lms.set_options(request, body),
         "lms_disconnect": lambda: lms.disconnect(request, body),
+
+        # Favqulodda kirish kodi — boshqaruv Sozlamalardan chaqiriladi.
+        # Kirishning O'ZI bu yerda EMAS: u `amal=kod_bilan_kirish` orqali
+        # auth yo'lidan o'tadi, chunki bu yo'l sessiya talab qilmasligi
+        # kerak. Bu uchtasi esa aksincha — faqat ichkaridan.
+        "kirish_kodi_holati": lambda: auth.handle_auth_action(
+            request, {"amal": "kirish_kodi_holati"}),
+        "kirish_kodi_yangilash": lambda: auth.handle_auth_action(
+            request, {"amal": "kirish_kodi_yangilash"}),
+        "kirish_kodi_ochirish": lambda: auth.handle_auth_action(
+            request, {"amal": "kirish_kodi_ochirish"}),
     }
 
     handler = table.get(action)

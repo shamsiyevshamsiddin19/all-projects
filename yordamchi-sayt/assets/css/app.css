@@ -3911,6 +3911,38 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 }
 .agate-err [data-icon] { flex-shrink: 0; margin-top: 1px; }
 
+/* Kod bilan kirish — ikkinchi darajali yo'l, shuning uchun ko'zga
+   tashlanmaydigan havola ko'rinishida (asosiysi Google tugmasi). */
+.agate-alt {
+  display: block; width: 100%; margin-top: 12px;
+  background: none; border: none; cursor: pointer;
+  font-size: 12.5px; font-weight: 600; color: var(--hint);
+  font-family: inherit; padding: 6px;
+}
+.agate-alt:hover { color: var(--accent); }
+
+/* Kod maydoni — belgilar aniq ajralib tursin: kod qo'lda ko'chiriladi */
+.agate-input {
+  width: 100%; box-sizing: border-box;
+  background: var(--card-2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 13px 14px;
+  color: var(--text); font-family: var(--mono);
+  font-size: 16px; letter-spacing: 1.5px; text-align: center;
+  text-transform: uppercase;
+}
+.agate-input:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* Sozlamalarda kod ko'rsatilganda */
+.ac-code {
+  font-family: var(--mono); font-size: 19px; font-weight: 700;
+  letter-spacing: 2px; text-align: center; color: var(--accent);
+  background: var(--accent-soft); border-radius: var(--radius-sm);
+  padding: 15px 10px; margin: 12px 0; user-select: all; word-break: break-all;
+}
+
 /* Ega bilan bog'lanish — kira olmagan odam uchun yagona yo'l */
 .agate-tg {
   display: inline-flex; align-items: center; gap: 7px; margin-top: 22px;

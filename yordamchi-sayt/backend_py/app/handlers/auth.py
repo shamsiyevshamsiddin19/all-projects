@@ -6,7 +6,7 @@ import re
 
 from fastapi import Request
 
-from .. import db
+from .. import access_code, db
 from ..config import settings
 from ..errors import AuthError, auth_response
 from ..google_auth import email_allowed, verify_google_id_token
@@ -37,6 +37,14 @@ def handle_auth_action(request: Request, payload: dict) -> "object":
         return _login(request, payload)
     if amal == "google_kirish":
         return _google_login(request, payload)
+    if amal == "kod_bilan_kirish":
+        return _code_login(request, payload)
+    if amal == "kirish_kodi_holati":
+        return _code_status(request)
+    if amal == "kirish_kodi_yangilash":
+        return _code_renew(request)
+    if amal == "kirish_kodi_ochirish":
+        return _code_clear(request)
     if amal == "sessiya_tekshir":
         return _check_session(request)
     if amal == "chiqish":
@@ -176,6 +184,81 @@ def _google_login(request: Request, payload: dict):
     })
 
 
+def _code_login(request: Request, payload: dict):
+    """14 belgilik favqulodda kod bilan kirish.
+
+    Google ishlamay qolganda (boshqa qurilma, boshqa domen, xizmat uzilishi)
+    egasi o'z saytiga kira olsin. Kod O'RNATILMAGAN bo'lsa bu yo'l yopiq —
+    ya'ni xususiyat o'zicha teshik ochmaydi.
+    """
+    check_login_rate_limit(request)
+
+    if not access_code.verify(s(payload.get("kod"))):
+        # Sabab aytilmaydi: "kod yo'q" va "kod noto'g'ri" bir xil javob
+        # beradi, aks holda kod o'rnatilgan-o'rnatilmagani bilinib qolardi.
+        raise AuthError("Kod noto'g'ri.")
+
+    # Kod egaga tegishli, ya'ni ruxsat etilgan birinchi email akkauntiga
+    # kiritamiz. Akkaunt bo'lmasa ochib beramiz — Google yo'lidagi kabi.
+    allowed = settings.ALLOWED_EMAILS
+    if not allowed:
+        raise AuthError("Ruxsat etilgan email sozlanmagan.")
+    email = allowed[0]
+
+    doktor = db.fetch_one("SELECT * FROM doktorlar WHERE email = :e LIMIT 1", {"e": email})
+    if doktor:
+        doktor_id = int(doktor["id"])
+        ism = doktor["ism"] or "Egasi"
+    else:
+        ism = "Egasi"
+        doktor_id = db.execute_returning_id(
+            "INSERT INTO doktorlar (ism, email, kirish_turi) VALUES (:i, :e, 'kod')",
+            {"i": ism, "e": email},
+        )
+
+    clear_login_rate_limit(request)
+    request.session["doktor_id"] = doktor_id
+    request.session["doktor_ism"] = ism
+    request.session["doktor_email"] = email
+
+    return auth_response(True, "Kod bilan kirildi.", {
+        "doktor_id": doktor_id,
+        "doktor_ism": ism,
+        "doktor_email": email,
+    })
+
+
+def _require_session(request: Request) -> None:
+    """Kodni ko'rish/almashtirish faqat ICHKARIDAN. Aks holda istalgan
+    odam yangi kod yasab, o'zi uchun kirish ochib olardi."""
+    if not request.session.get("doktor_id"):
+        raise AuthError("Bu amal uchun tizimga kirishingiz kerak.")
+
+
+def _code_status(request: Request):
+    _require_session(request)
+    return auth_response(True, "Holat.", access_code.status())
+
+
+def _code_renew(request: Request):
+    """Yangi kod yasaydi va uni BIR MARTA qaytaradi.
+
+    Keyin faqat xeshi qoladi — shuning uchun javobdagi kodni saqlab
+    qo'yish kerak, u boshqa ko'rsatilmaydi."""
+    _require_session(request)
+    code = access_code.generate()
+    access_code.set_code(code)
+    data = access_code.status()
+    data["kod"] = access_code.pretty(code)
+    return auth_response(True, "Yangi kod yaratildi.", data)
+
+
+def _code_clear(request: Request):
+    _require_session(request)
+    access_code.clear_code()
+    return auth_response(True, "Kod o'chirildi.", {"bor": False})
+
+
 def _check_session(request: Request):
     if request.session.get("doktor_id"):
         return auth_response(True, "Sessiya faol.", {
@@ -192,4 +275,7 @@ def _check_session(request: Request):
         # Frontend shu ikkisiga qarab Google tugmasini chizadi.
         "kirish_usuli": "google" if _google_only() else "parol",
         "google_client_id": settings.GOOGLE_CLIENT_ID if _google_only() else "",
+        # Kirish ekrani "Kod bilan kirish" havolasini FAQAT kod
+        # o'rnatilgan bo'lsa ko'rsatadi — bo'lmasa u foydasiz tugma.
+        "kod_bor": access_code.status().get("bor", False),
     })

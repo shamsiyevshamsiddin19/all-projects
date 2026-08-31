@@ -102,6 +102,61 @@
       '<span>Bog\'lanish — @' + App.esc(u) + '</span></a>';
   }
 
+  /* `sessiya_tekshir` javobi — kirish ekrani shunga qarab chiziladi */
+  var AUTH_INFO = {};
+
+  /* Favqulodda kod ekrani. Google bilan bir xil natija beradi: sessiya
+     ochiladi va ilova ishga tushadi. */
+  function codeScreen(msg) {
+    var el = screen(
+      '<div class="agate">' +
+        '<div class="agate-mark">' +
+          '<span class="agate-glow" aria-hidden="true"></span>' +
+          '<img class="agate-logo" data-app-icon src="' + App.appIconSrc() + '" alt="">' +
+        '</div>' +
+        '<h1 class="agate-title">Kirish kodi</h1>' +
+        '<p class="agate-sub">14 belgilik favqulodda kod</p>' +
+        '<div class="agate-card">' +
+          (msg ? '<div class="agate-err"><span data-icon="alert" data-icon-size="15"></span>' +
+                 '<span>' + App.esc(msg) + '</span></div>' : '') +
+          '<input class="agate-input" id="au-code" autocomplete="one-time-code" ' +
+            'autocapitalize="characters" spellcheck="false" ' +
+            'placeholder="XXXXX-XXXXX-XXXX" maxlength="20">' +
+          '<button class="btn" id="au-code-go" style="width:100%;margin-top:12px">Kirish</button>' +
+          '<button class="agate-alt" id="au-code-back">Google bilan kirish</button>' +
+        '</div>' +
+      '</div>'
+    );
+
+    var inp = el.querySelector('#au-code');
+    var go = el.querySelector('#au-code-go');
+    if (inp) {
+      inp.focus();
+      inp.onkeydown = function (e) { if (e.key === 'Enter') go.click(); };
+    }
+    go.onclick = function () {
+      var kod = (inp.value || '').trim();
+      if (!kod) { inp.focus(); return; }
+      go.disabled = true; go.textContent = 'Tekshirilmoqda…';
+      post({ amal: 'kod_bilan_kirish', kod: kod })
+        .then(function (j) {
+          /* Google yo'li bilan AYNAN bir xil yakun: sessiya ochilgach
+             mahalliy o'zgarishlar serverga yuboriladi va shundan keyin
+             ilova ishga tushadi (`resyncThenStart`). */
+          Auth.user = j;
+          gateRemember(true);
+          closeScreen();
+          resyncThenStart();
+        })
+        .catch(function (e) {
+          codeScreen(e && e.message ? e.message : 'Kod noto\'g\'ri.');
+        });
+    };
+    el.querySelector('#au-code-back').onclick = function () {
+      googleScreen(AUTH_INFO.google_client_id);
+    };
+  }
+
   function googleScreen(clientId, msg) {
     var el = screen(
       '<div class="agate">' +
@@ -125,6 +180,13 @@
 
           '<div id="au-gbtn" class="agate-btnhost"></div>' +
           '<p class="agate-note" id="au-gnote">Google yuklanmoqda…</p>' +
+
+          /* Favqulodda yo'l — FAQAT kod o'rnatilgan bo'lsa ko'rinadi.
+             Kod yo'q bo'lsa bu tugma foydasiz bo'lardi va faqat
+             chalkashtirardi. */
+          (AUTH_INFO.kod_bor
+            ? '<button class="agate-alt" id="au-code-open">Kod bilan kirish</button>'
+            : '') +
         '</div>' +
 
         tgHtml() +
@@ -136,6 +198,9 @@
         'Google kirishi hali sozlanmagan (GOOGLE_CLIENT_ID yo\'q).';
       return;
     }
+
+    var codeOpen = el.querySelector('#au-code-open');
+    if (codeOpen) codeOpen.onclick = function () { codeScreen(''); };
 
     loadGsi().then(function () {
       var note = el.querySelector('#au-gnote');
@@ -277,6 +342,7 @@
         /* Google rejimi: parol bilan kirish ham, ro'yxatdan o'tish ham yopiq.
            Akkaunt bor-yo'qligi ahamiyatsiz — ruxsat etilgan email birinchi
            kirganda server o'zi ochib beradi. */
+        AUTH_INFO = j;
         if (j.kirish_usuli === 'google') {
           /* Himoya hali yoqilmagan bo'lsa sayt ochiq turadi, lekin `?login=1`
              bilan kirish ekranini ataylab chaqirsa bo'ladi. Bu qulflashdan
