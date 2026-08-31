@@ -905,6 +905,14 @@
                 return nativeGetItem.call(this, key);
             }
 
+            /* ICHKI KALIT (`__remote_storage_` prefiksi) — masofaviy qatlam
+               umuman aralashmaydi: to'g'ridan-to'g'ri brauzer xotirasidan.
+               Bu kalitlar QURILMAGA tegishli (kesh, navbat surati) va
+               serverga yuborilmasligi kerak. */
+            if (isInternalKey(key)) {
+                return nativeGetItem.call(window.localStorage, key);
+            }
+
             if (!state.ready) {
                 bootstrap();
             }
@@ -930,6 +938,18 @@
 
             if (!isLocalStorageTarget(this)) {
                 return nativeSetItem.call(this, key, stringValue);
+            }
+
+            /* ICHKI KALIT — serverga YUBORILMAYDI.
+               Ilgari bu tekshiruv FAQAT o'qishda (`listNativeKeys`) bor edi,
+               yozishda esa yo'q edi. Natijada `__remote_storage_` prefiksli
+               kalit ham `app_storage` ga tushardi: bosh sahifa lentasining
+               2.3 MB lik keshi shu yo'l bilan bazaga yozilib, har ochilishda
+               `storage_bootstrap` ni 4.5 soniyalik chegaradan chiqarardi.
+               Bootstrap yiqilsa `state.cache` bo'sh qoladi va HAMMA sozlama
+               (o'rgangan so'zlar ham) "saqlanmagandek" ko'rinardi. */
+            if (isInternalKey(key)) {
+                return nativeSetItem.call(window.localStorage, key, stringValue);
             }
 
             if (!state.ready) {
@@ -983,6 +1003,11 @@
 
             if (!isLocalStorageTarget(this)) {
                 return nativeRemoveItem.call(this, key);
+            }
+
+            /* Ichki kalit — o'chirish ham faqat shu qurilmada */
+            if (isInternalKey(key)) {
+                return nativeRemoveItem.call(window.localStorage, key);
             }
 
             if (!state.ready) {
