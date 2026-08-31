@@ -277,7 +277,7 @@
 
   var WSTORE_COLLECTIONS = [
     { key: 'liked', label: 'Sevimli so\'zlarim', icon: 'heartFill', color: '#ef4444' },
-    { key: 'saved', label: 'Saqlangan xatcho\'plar', icon: 'bookmarkFill', color: '#3b82f6' },
+    { key: 'saved', label: 'Saqlanganlar', icon: 'bookmarkFill', color: '#3b82f6' },
     { key: 'mastered', label: 'O\'rganilgan so\'zlar', icon: 'check', color: '#10b981' }
   ];
 
@@ -335,8 +335,11 @@
               '<span class="ig-sparkle" data-icon="sparkles" data-icon-size="16"></span>' +
             '</div>' +
             '<div class="ig-actions">' +
-              '<button class="ig-btn-icon" data-act="igQuickPractice" title="Tezkor amaliyot / Test">' +
-                '<span data-icon="zap" data-icon-size="20"></span>' +
+              /* Test o'rniga TIZIM HOLATI: oflayn/onlayn, versiya, kesh va
+                 xotira sinxronizatsiyasi bir joyda ko'rinsin. Nosozlik
+                 chiqqanda "nima bo'lyapti" degan savolga javob shu yerda. */
+              '<button class="ig-btn-icon" data-act="igSystemStatus" title="Tizim holati">' +
+                '<span data-icon="activity" data-icon-size="20"></span>' +
               '</button>' +
               '<button class="ig-btn-icon" data-act="igShuffleFeed" title="Tasodifiy yangilash">' +
                 '<span data-icon="shuffle" data-icon-size="20"></span>' +
@@ -427,7 +430,7 @@
       { id: 'ru_1000', label: 'Rus 1K' },
       { id: 'en_8000', label: 'Ingliz 8K' },
       { id: 'liked', label: '❤️ Sevimlilar', isCol: true },
-      { id: 'saved', label: '🔖 Xatcho\'plar', isCol: true },
+      { id: 'saved', label: '🔖 Saqlanganlar', isCol: true },
       { id: 'mastered', label: '✅ O\'rganilganlar', isCol: true }
     ];
 
@@ -1327,18 +1330,16 @@
     try { localStorage.setItem('vocab_likes_v1', JSON.stringify(list)); } catch (e) {}
   }
 
+  /* Bu ikkisi endi FAQAT `WordState` orqali o'qiladi/yoziladi.
+     Ilgari home.js o'sha kalitlarga to'g'ridan-to'g'ri yozardi, WordState
+     esa ularni XOTIRADA keshlaydi — natijada bosh sahifada xatcho'p
+     bosilsa, o'sha seansda lug'at ko'rgichi ESKI holatni ko'rsatardi.
+     Bitta manba bo'lgach bunday ajralish mumkin emas. */
   function getBookmarkedWords() {
-    try { return JSON.parse(localStorage.getItem('vocab_bookmarks_v1') || '[]'); } catch (e) { return []; }
+    return window.WordState ? WordState.savedList() : [];
   }
-  function saveBookmarkedWords(list) {
-    try { localStorage.setItem('vocab_bookmarks_v1', JSON.stringify(list)); } catch (e) {}
-  }
-
   function getMasteredWords() {
-    try { return JSON.parse(localStorage.getItem('vocab_mastered_v1') || '[]'); } catch (e) { return []; }
-  }
-  function saveMasteredWords(list) {
-    try { localStorage.setItem('vocab_mastered_v1', JSON.stringify(list)); } catch (e) {}
+    return window.WordState ? WordState.masteredList() : [];
   }
 
   /* =========================================================
@@ -1516,78 +1517,24 @@
   };
 
   App.actions.igToggleBookmark = function (a) {
-    var bms = getBookmarkedWords();
-    var idx = bms.indexOf(a.word);
+    if (!window.WordState) return;
+    /* `WordState` orqali: u "o'rgandim" bilan ziddiyatni ham o'zi hal
+       qiladi (bir so'z bir vaqtda ikkalasida turolmaydi) va keshini
+       yangilaydi. Ilgari bu yerda localStorage'ga to'g'ridan-to'g'ri
+       yozilardi va WordState keshi eskirib qolardi. */
+    var on = WordState.toggleSaved(a.word);
     var el = document.getElementById(a.id);
     var btn = el ? el.querySelector('.ig-act-btn[data-act="igToggleBookmark"]') : null;
-
-    if (idx >= 0) {
-      bms.splice(idx, 1);
-      if (btn) {
-        btn.classList.remove('active', 'saved');
-        btn.innerHTML = '<span data-icon="bookmark" data-icon-size="24"></span>';
-        App.icons(btn);
-      }
-      App.toast('Xatcho\'plardan olib tashlandi');
-    } else {
-      bms.push(a.word);
-      if (btn) {
-        btn.classList.add('active', 'saved');
-        btn.innerHTML = '<span data-icon="bookmarkFill" data-icon-size="24"></span>';
-        App.icons(btn);
-      }
-      App.toast('Xatcho\'plarga saqlandi! 🔖');
+    if (btn) {
+      btn.classList.toggle('active', on);
+      btn.classList.toggle('saved', on);
+      btn.innerHTML = '<span data-icon="' + (on ? 'bookmarkFill' : 'bookmark') + '" data-icon-size="24"></span>';
+      App.icons(btn);
     }
-    saveBookmarkedWords(bms);
+    App.toast(on ? 'Saqlanganlarga qo\'shildi 🔖' : 'Saqlanganlardan olib tashlandi');
     updateStatsBar();
   };
 
-  App.actions.igToggleMastered = function (a) {
-    var list = getMasteredWords();
-    var idx = list.indexOf(a.word);
-    var el = document.getElementById(a.id);
-    var btn = el ? el.querySelector('.ig-post-more') : null;
-
-    if (idx >= 0) {
-      list.splice(idx, 1);
-      if (btn) {
-        btn.classList.remove('mastered');
-        btn.innerHTML = '<span data-icon="circle" data-icon-size="18"></span><span class="ig-master-text">O\'rganish</span>';
-        App.icons(btn);
-      }
-      App.toast('O\'rganilmagan holatga qaytarildi');
-    } else {
-      list.push(a.word);
-      if (btn) {
-        btn.classList.add('mastered');
-        btn.innerHTML = '<span data-icon="check" data-icon-size="18"></span><span class="ig-master-text">O\'rgandim</span>';
-        App.icons(btn);
-      }
-      if (window.Activity && Activity.log) {
-        Activity.log('vocab_master', { word: a.word, xp: 10 });
-      }
-      App.toast('Ajoyib! So\'z o\'rganildi (+10 XP) 🎉');
-    }
-    saveMasteredWords(list);
-    updateStatsBar();
-  };
-
-  App.actions.igCopyWord = function (a) {
-    var text = '📖 ' + (a.ru || '') + ' — ' + (a.uz || '') + '\n' +
-      (a.ex ? '💬 ' + a.ex + '\n' : '') +
-      '✨ Yordamchi ilovasi orqali';
-    try {
-      navigator.clipboard.writeText(text);
-      App.toast('So\'z nusxalandi! 📋');
-    } catch (e) {
-      App.toast('Nusxalab bo\'lmadi');
-    }
-  };
-
-  /* Lentadan to'g'ridan-to'g'ri "o'rgandim" belgilash.
-     Karta O'CHIRILMAYDI — belgilangani darrov ko'rinsin va xato bosilgan
-     bo'lsa qaytarib olish mumkin bo'lsin. Keyingi yangilanishda u
-     `WordState.forPractice` orqali lentadan chiqib ketadi. */
   App.actions.igToggleMastered = function (a) {
     if (!window.WordState) return;
     var on = WordState.toggleMastered(a.ru);
@@ -1601,6 +1548,211 @@
     }
     App.toast(on ? '✓ O\'rgandim — endi mashqlarda chiqmaydi' : 'Belgi olib tashlandi');
   };
+
+  /* ================= TIZIM HOLATI =================
+     Nosozlik chiqqanda birinchi savol — "nima bo'lyapti?". Ilgari buni
+     faqat brauzer konsolidan bilish mumkin edi. Bu panel o'sha
+     tekshiruvlarni bir joyga yig'adi va MUAMMONI ODDIY TIL bilan aytadi.
+
+     Tekshiriladigan narsalar aynan shu kunlarda nosozlik bergan joylar:
+       - ulanish va serverga javob vaqti
+       - sahifa versiyasi serverdagidan orqada emasmi (eski kesh)
+       - xotira sinxronizatsiyasi (`storage_bootstrap`) ishladimi —
+         u yiqilsa HAMMA sozlama "saqlanmagandek" ko'rinardi
+       - navbatda yuborilmagan yozuv qolmadimi
+       - kesh hajmi */
+
+  function stRow(id, label, hint) {
+    return '<div class="st-row" id="st-' + id + '">' +
+      '<span class="st-dot wait"></span>' +
+      '<div class="st-main"><div class="st-lbl">' + App.esc(label) + '</div>' +
+      '<div class="st-val">tekshirilyapti…</div></div>' +
+      (hint ? '<div class="st-hint">' + App.esc(hint) + '</div>' : '') +
+    '</div>';
+  }
+
+  /* state: 'ok' | 'warn' | 'bad' */
+  function stSet(id, state, value, problem) {
+    var el = document.getElementById('st-' + id);
+    if (!el) return;
+    var dot = el.querySelector('.st-dot');
+    dot.className = 'st-dot ' + state;
+    el.querySelector('.st-val').textContent = value;
+    var old = el.querySelector('.st-problem');
+    if (old) old.remove();
+    if (problem) {
+      var p = document.createElement('div');
+      p.className = 'st-problem';
+      p.textContent = problem;
+      el.appendChild(p);
+    }
+  }
+
+  App.actions.igSystemStatus = function () {
+    var html =
+      '<div class="st-wrap">' +
+        stRow('net', 'Ulanish') +
+        stRow('ver', 'Ilova versiyasi') +
+        stRow('auth', 'Kirish') +
+        stRow('sync', 'Xotira sinxronizatsiyasi') +
+        stRow('queue', 'Yuborilmagan o\'zgarishlar') +
+        stRow('sw', 'Oflayn rejim (service worker)') +
+        stRow('cache', 'Kesh hajmi') +
+        stRow('data', 'Yuklangan ma\'lumot') +
+      '</div>' +
+      '<div class="btn-row" style="margin-top:16px">' +
+        '<button class="btn sec" id="st-again">Qayta tekshirish</button>' +
+        '<button class="btn" id="st-fix">Keshni tozalab yangilash</button>' +
+      '</div>';
+
+    var sh = App.sheet(html, { title: 'Tizim holati' });
+    App.icons(sh);
+    sh.querySelector('#st-again').onclick = runChecks;
+    sh.querySelector('#st-fix').onclick = function () {
+      App.confirm('Barcha kesh tozalanadi va sahifa qaytadan yuklanadi. Saqlangan ma\'lumotlaringizga tegilmaydi.', function () {
+        var jobs = [];
+        if (window.caches) {
+          jobs.push(caches.keys().then(function (k) {
+            return Promise.all(k.map(function (x) { return caches.delete(x); }));
+          }));
+        }
+        if (navigator.serviceWorker) {
+          jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) {
+            return Promise.all(rs.map(function (r) { return r.unregister(); }));
+          }));
+        }
+        Promise.all(jobs).catch(function () {}).then(function () { location.reload(); });
+      });
+    };
+    runChecks();
+  };
+
+  /* Har so'rov CHEGARALANGAN vaqtda tugaydi. Usiz sekin tarmoqda qator
+     "tekshirilyapti…" holatida abadiy osilib qolardi — ya'ni panel
+     aynan kerak bo'lgan paytda javob bermasdi. */
+  function withTimeout(promise, ms) {
+    return new Promise(function (resolve, reject) {
+      var done = false;
+      var t = setTimeout(function () {
+        if (!done) { done = true; reject(new Error('timeout')); }
+      }, ms);
+      promise.then(function (v) {
+        if (!done) { done = true; clearTimeout(t); resolve(v); }
+      }, function (e) {
+        if (!done) { done = true; clearTimeout(t); reject(e); }
+      });
+    });
+  }
+
+  function runChecks() {
+    /* --- Ulanish ---
+       `navigator.onLine` ga TAYANMAYMIZ: u faqat tarmoq interfeysi
+       borligini biladi, server javob berishini emas, va ba'zi muhitlarda
+       noto'g'ri `false` qaytaradi. Shuning uchun har doim HAQIQIY so'rov
+       yuboriladi; `onLine` esa qo'shimcha izoh sifatida ishlatiladi. */
+    var t0 = Date.now();
+    withTimeout(
+      fetch('version.json?t=' + Date.now(), { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('http')); }),
+      6000
+    ).then(function (j) {
+      var ms = Date.now() - t0;
+      stSet('net', ms > 1500 ? 'warn' : 'ok', 'Ulangan · server ' + ms + ' ms',
+        ms > 1500 ? 'Server sekin javob beryapti — sahifa ochilishi cho\'zilishi mumkin.' : '');
+      checkVersion(j.build);
+    }).catch(function () {
+      if (!navigator.onLine) {
+        stSet('net', 'bad', 'Internet yo\'q',
+          'Ilova oflayn ishlayapti. O\'zgarishlar shu qurilmada saqlanadi va ulanish qaytganda serverga yuboriladi.');
+      } else {
+        stSet('net', 'bad', 'Server javob bermadi',
+          'Internet bor ko\'rinadi, lekin serverga ulanib bo\'lmadi.');
+      }
+      stSet('ver', 'warn', 'tekshirib bo\'lmadi',
+        'Server bilan aloqa yo\'q — ilova eng so\'nggi versiyadami, bilib bo\'lmadi.');
+    });
+
+    /* --- Versiya --- */
+    function checkVersion(serverBuild) {
+      var m = document.querySelector('meta[name="app-build"]');
+      var mine = m ? m.getAttribute('content') : '';
+      if (!mine || mine === 'dev') { stSet('ver', 'ok', 'mahalliy (dev)'); return; }
+      if (mine === serverBuild) stSet('ver', 'ok', mine + ' — eng so\'nggisi');
+      else stSet('ver', 'bad', mine + ' (serverda ' + serverBuild + ')',
+        'Ilova ESKI versiyada ishlayapti. Pastdagi "Keshni tozalab yangilash" tugmasini bosing.');
+    }
+
+    /* --- Kirish --- */
+    withTimeout(fetch('/api', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amal: 'sessiya_tekshir' })
+    }).then(function (r) { return r.json(); }), 6000).then(function (j) {
+      if (j.kirganmi) stSet('auth', 'ok', 'Kirilgan');
+      else if (j.himoya) stSet('auth', 'bad', 'Kirilmagan',
+        'Sayt qulflangan. O\'zgarishlar SERVERGA SAQLANMAYDI — qaytadan kiring.');
+      else stSet('auth', 'warn', 'Kirilmagan (sayt ochiq)');
+    }).catch(function () {
+      stSet('auth', 'warn', 'tekshirib bo\'lmadi', 'Server javob bermadi.');
+    });
+
+    /* --- Xotira sinxronizatsiyasi --- */
+    var B = window.RemoteStorageBridge;
+    if (!B) {
+      stSet('sync', 'bad', 'modul yuklanmagan',
+        'remote-storage.js ishga tushmagan — sozlamalar saqlanmaydi.');
+      stSet('queue', 'warn', '—');
+    } else {
+      var st = B.state || {};
+      var keys = st.cache ? Object.keys(st.cache).length : 0;
+      if (st.ready) {
+        stSet('sync', 'ok', 'Ishlayapti · ' + keys + ' ta yozuv');
+      } else {
+        stSet('sync', 'bad', 'Yuklanmadi',
+          'Server xotirasi o\'qilmadi. Shu sababli sozlamalar (o\'rgangan so\'zlar, xatcho\'plar) BO\'SH ko\'rinishi mumkin. Ulanishni tekshiring va qayta yuklang.');
+      }
+      var q = st.queue ? Object.keys(st.queue).length : 0;
+      if (!q) stSet('queue', 'ok', 'Hammasi yuborilgan');
+      else stSet('queue', 'warn', q + ' ta kutmoqda',
+        'Bu o\'zgarishlar hali serverga yetmagan. Ulanish tiklanganda o\'zi yuboriladi.');
+    }
+
+    /* --- Service worker --- */
+    if (!navigator.serviceWorker) {
+      stSet('sw', 'warn', 'qo\'llab-quvvatlanmaydi', 'Bu brauzerda oflayn rejim ishlamaydi.');
+    } else {
+      navigator.serviceWorker.getRegistrations().then(function (rs) {
+        if (!rs.length) stSet('sw', 'warn', 'ro\'yxatdan o\'tmagan', 'Oflayn rejim yoqilmagan.');
+        else if (!navigator.serviceWorker.controller) {
+          stSet('sw', 'warn', 'faol emas', 'Sahifa bir marta yangilangach ishga tushadi.');
+        } else stSet('sw', 'ok', 'Faol · oflayn ishlaydi');
+      }).catch(function () { stSet('sw', 'warn', 'tekshirib bo\'lmadi'); });
+    }
+
+    /* --- Kesh hajmi --- */
+    if (navigator.storage && navigator.storage.estimate) {
+      navigator.storage.estimate().then(function (e) {
+        var mb = (e.usage || 0) / 1048576;
+        var qmb = (e.quota || 0) / 1048576;
+        stSet('cache', mb > 300 ? 'warn' : 'ok',
+          mb.toFixed(1) + ' MB' + (qmb ? ' / ' + qmb.toFixed(0) + ' MB' : ''),
+          mb > 300 ? 'Kesh kattalashib ketdi — tozalash foydali bo\'lishi mumkin.' : '');
+      }).catch(function () { stSet('cache', 'warn', 'tekshirib bo\'lmadi'); });
+    } else {
+      stSet('cache', 'warn', 'qo\'llab-quvvatlanmaydi');
+    }
+
+    /* --- Ma'lumot --- */
+    var n = (LOADED_WORDS_POOL || []).length;
+    var cached = loadFeedCache();
+    var age = cached && cached.ts ? Math.round((Date.now() - cached.ts) / 60000) : null;
+    if (!n) {
+      stSet('data', 'bad', 'so\'zlar yuklanmagan',
+        'Lug\'at o\'qilmadi. Ulanishni tekshiring yoki sahifani yangilang.');
+    } else {
+      stSet('data', 'ok', n + ' ta so\'z' +
+        (age === null ? '' : ' · kesh ' + (age < 60 ? age + ' daqiqa' : Math.round(age / 60) + ' soat') + ' oldin'));
+    }
+  }
 
   /* Interactive Quick Quiz Sheet */
   App.actions.igOpenQuiz = function (a) {

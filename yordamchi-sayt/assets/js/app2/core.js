@@ -139,6 +139,12 @@
        bo'lmaganda: ochiq oyna (sheet) yoki matn kiritish jarayonini
        uzib yuborish yaramaydi. */
     _onDataUpdated: function () {
+      /* Boshqa qurilmadan yangi ma'lumot keldi. `WordState` ro'yxatlarni
+         XOTIRADA keshlaydi, `App.reload()` esa faqat ko'rinishni qayta
+         chizadi — modul keshiga tegmaydi. Shuning uchun keshni ATAYLAB
+         bekor qilamiz, aks holda telefonda belgilangan so'z kompyuterda
+         eski holatda ko'rinaverardi. */
+      if (window.WordState && WordState.refresh) WordState.refresh();
       if (App._sheet) return;
       var a = document.activeElement;
       if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;

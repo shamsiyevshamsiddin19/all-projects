@@ -4093,3 +4093,35 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 }
 .vb-color.on { border-color: var(--text); }
 .vb-color.none { background: var(--card-2); color: var(--hint); font-size: 13px; }
+
+/* ---------- Tizim holati paneli ----------
+   Har qator: rangli nuqta (holat) + nom/qiymat, muammo bo'lsa ostida
+   oddiy til bilan tushuntirish. Rang YAKKA belgi emas — matn ham bor,
+   chunki rang ko'rmaydigan holatda ham ma'no yo'qolmasligi kerak. */
+.st-wrap { display: flex; flex-direction: column; gap: 2px; }
+.st-row {
+  display: grid; grid-template-columns: auto 1fr; gap: 10px;
+  align-items: start; padding: 11px 2px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.st-row:last-child { border-bottom: none; }
+.st-dot {
+  width: 9px; height: 9px; border-radius: 50%; margin-top: 5px;
+  background: var(--hint); flex-shrink: 0;
+}
+.st-dot.ok   { background: var(--success); }
+.st-dot.warn { background: var(--warn); }
+.st-dot.bad  { background: var(--danger); }
+.st-dot.wait { background: var(--hint); opacity: .5; }
+.st-lbl { font-size: 13px; font-weight: 700; color: var(--text); }
+.st-val { font-size: 12.5px; color: var(--hint); margin-top: 2px; word-break: break-word; }
+.st-problem {
+  grid-column: 2; margin-top: 7px; padding: 8px 10px;
+  background: var(--danger-soft); color: var(--danger);
+  border-radius: var(--radius-sm); font-size: 12px;
+  font-weight: 600; line-height: 1.45;
+}
+.st-row .st-dot.warn ~ .st-problem,
+.st-row:has(.st-dot.warn) .st-problem {
+  background: var(--warn-soft); color: var(--warn);
+}

@@ -1197,6 +1197,7 @@
       var r = getRange(lang, cat, total);
       var full = r && r.from === 1 && r.to === total;
 
+      var practiceLeft = rangedWords(lang, cat).length;
       var prog = srsProgress(lang, cat);
       var due = srsDue(lang, cat).length;
 
@@ -1221,7 +1222,14 @@
         '<button class="list-row" data-act="vocabRange" data-arg=\'' + App.arg({ lang: lang, cat: cat }) + '\' style="margin-bottom:14px">' +
         '<span class="li-ic" data-icon="list" data-icon-size="15"></span>' +
         '<div class="li-main"><div class="li-title">Oraliq: ' + r.from + '–' + r.to + (full ? ' (barchasi)' : '') + '</div>' +
-        '<div class="li-sub">' + (r.to - r.from + 1) + ' ta so\'z · jami ' + total + '</div></div>' +
+        /* Mashqda NECHTA so'z qolganini ham ko'rsatamiz: oraliq 150 bo'lsa
+           ham, o'rganilganlar chiqarilgach 40 ta qolishi mumkin. Ilgari
+           yorliq faqat oraliq kengligini aytardi va bu chalg'itardi. */
+        '<div class="li-sub">' + (r.to - r.from + 1) + ' ta so\'z' +
+        (practiceLeft < (r.to - r.from + 1)
+          ? ' · mashqda ' + practiceLeft + ' ta'
+          : '') +
+        ' · jami ' + total + '</div></div>' +
         '<span class="li-chev" data-icon="arrowLeft" data-icon-size="16" style="transform:rotate(180deg)"></span></button>' +
         '<div class="btn-row" style="flex-direction:column;gap:10px">' +
         methodBtn('vocab_reels', lang, cat, 'play', 'Reels', 'btn-reels-ig') +
@@ -1852,9 +1860,17 @@
   }
 
   /* Kategoriya bo'yicha o'zlashtirish darajasi (3+ marta to'g'ri = o'zlashtirilgan) */
+  /* O'zlashtirish darajasi. IKKALA manba ham hisoblanadi:
+       - SRS: 3+ marta to'g'ri javob berilgan (tizim o'zi qaror qiladi);
+       - "O'rgandim": foydalanuvchi o'zi belgilagan.
+     Ilgari faqat SRS sanalardi va 100 ta so'zni qo'lda belgilasangiz ham
+     progress qatori qimirlamasdi — bu ikki xil "o'rganilgan" tushunchasi
+     bir-birini ko'rmasligini bildirardi. */
   function srsProgress(lang, cat) {
     var all = srsAll(), words = V.data[cat] || [], learned = 0;
+    var ws = window.WordState;
     words.forEach(function (w) {
+      if (ws && ws.isMastered(w.ru)) { learned++; return; }
       var s = all[srsKey(lang, cat, w.ru)];
       if (s && s.n >= 3) learned++;
     });
@@ -1871,9 +1887,14 @@
   function loadMistakes(lang) {
     return App.call('get_mistakes', null, { query: 'lang=' + lang }).then(function (j) {
       MIS.lang = lang;
-      MIS.list = (j.mistakes || []).map(function (m) {
+      /* "O'rgandim" belgisi BU YERDA ham amal qiladi. Ilgari filtr yo'q
+         edi: butunlay o'rganilgan deb belgilangan so'z Xatolar ro'yxatida
+         turaverardi va u yerdan flashcard mashqiga tushardi — ya'ni
+         "hech qayerda chiqmaydi" va'dasi buzilardi. */
+      var raw = (j.mistakes || []).map(function (m) {
         return { ru: m.word_ru, uz: m.word_uz, cat: m.category };
       });
+      MIS.list = window.WordState ? WordState.forPractice(raw) : raw;
       return MIS.list;
     });
   }
