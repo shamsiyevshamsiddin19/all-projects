@@ -75,7 +75,10 @@
              yozilgan juftlik hech qachon ishlatilmasdi. */
           pairWith: (it.pair_with || '').split(',')
             .map(function (x) { return x.trim(); })
-            .filter(Boolean)
+            .filter(Boolean),
+          /* Ma'no guruhi yorlig'i — bir xil yorliqli so'zlar bitta guruh.
+             Yozilishi o'xshash bo'lishi shart emas (иду / хожу / еду). */
+          meaningGroup: (it.meaning_group || '').trim()
         });
       });
       V.order.forEach(function (c) { if (!V.data[c]) V.data[c] = []; });
@@ -459,6 +462,10 @@
           lines.push('> ' + nl);
         });
       }
+      if (w.meaningGroup) {
+        lines.push('');
+        lines.push('> **Ma\'no guruhi:** ' + w.meaningGroup);
+      }
       if (w.pairWith && w.pairWith.length) {
         lines.push('');
         lines.push('> **Chalkashadi:** ' + w.pairWith.join(', '));
@@ -490,7 +497,8 @@
           uz: curWord.uz.trim(),
           note: (curWord.note || '').trim(),
           ex: (curWord.ex || '').trim(),
-          pairWith: curWord.pairWith || []
+          pairWith: curWord.pairWith || [],
+          meaningGroup: curWord.meaningGroup || ''
         });
       }
       curWord = null;
@@ -525,7 +533,7 @@
       var h2Match = line.match(/^##\s+(?:\d+[.)]\s*)?(.+?)\s*[—–\-:]\s*(.+)$/);
       if (h2Match) {
         flushWord();
-        curWord = { ru: h2Match[1].trim(), uz: h2Match[2].trim(), note: '', ex: '', pairWith: [] };
+        curWord = { ru: h2Match[1].trim(), uz: h2Match[2].trim(), note: '', ex: '', pairWith: [], meaningGroup: '' };
         continue;
       }
 
@@ -538,6 +546,13 @@
         } else if (bq.startsWith('Misol:')) {
           var exText = bq.replace(/^Misol:\s*/, '').trim();
           if (curWord) curWord.ex = exText;
+        } else if (bq.startsWith('**Ma\'no guruhi:**') || bq.startsWith('Ma\'no guruhi:')) {
+          /* MA'NO bo'yicha guruh. `Chalkashadi:` dan farqi: u yozilishi
+             o'xshash so'zlarni bog'laydi, bu esa MA'NOSI bog'liqlarni.
+             Bir xil yorliq yozilgan so'zlar bitta oila bo'ladi, ya'ni
+             har so'zga qolganlarini sanab chiqish shart emas. */
+          var mgText = bq.replace(/^\*?\*?Ma'no guruhi:\*?\*?\s*/, '').trim();
+          if (curWord) curWord.meaningGroup = mgText;
         } else if (bq.startsWith('**Chalkashadi:**') || bq.startsWith('Chalkashadi:')) {
           // Adashtiriladigan so'zlar — AI (yoki qo'lda) .md ichida yozib qoldirgan bo'lsa,
           // Juftlash rejimi shu ro'yxatni birinchi navbatda ishonchli manba sifatida oladi.
@@ -1009,6 +1024,8 @@
     '',
     '> **Chalkashadi:** похожее1, похожее2',
     '',
+    '> **Ma\'no guruhi:** bormoq',
+    '',
     '> **Misol:** Gap ichida ishlatilgan misol.',
     '',
     '## 2. другое — boshqa tarjima',
@@ -1032,6 +1049,48 @@
     '- Vergul bilan ajrat.',
     '- Chalkashtirmaydigan so\'zni yozma — ortiqcha juftlik mashqni buzadi.',
     '- Bir so\'z uchun 1-7 tagacha yetarli.',
+    '',
+    '## `Ma\'no guruhi:` — ikkinchi, MUTLAQO BOSHQA bog\'lanish',
+    '',
+    '`Chalkashadi:` YOZILISHI o\'xshash so\'zlar uchun.',
+    '`Ma\'no guruhi:` esa MA\'NOSI bog\'liq so\'zlar uchun — ular bir-biriga',
+    'umuman o\'xshamasligi mumkin.',
+    '',
+    'Misol: "bormoq" tushunchasiga rus tilida bir nechta so\'z kiradi va',
+    'ular har xil yoziladi:',
+    '',
+    '```markdown',
+    '## 1. иду — ketyapman (piyoda, hozir)',
+    '',
+    '> **Ma\'no guruhi:** bormoq',
+    '',
+    '## 2. хожу — yuraman (odatda, takroriy)',
+    '',
+    '> **Ma\'no guruhi:** bormoq',
+    '',
+    '## 3. еду — ketyapman (transportda)',
+    '',
+    '> **Ma\'no guruhi:** bormoq',
+    '',
+    '## 4. пойду — boraman (kelasi zamon)',
+    '',
+    '> **Ma\'no guruhi:** bormoq',
+    '```',
+    '',
+    'Bir xil yorliq yozilgan so\'zlar BITTA guruh bo\'ladi. Har so\'zga',
+    'qolganlarini sanab chiqish SHART EMAS — bitta yorliq yetarli.',
+    '',
+    'Qanday yorliq tanlash kerak:',
+    '- Yorliq — O\'ZBEKCHA tushuncha nomi: `bormoq`, `gapirmoq`, `ko\'rmoq`,',
+    '  `vaqt`, `oila a\'zolari`, `ranglar`.',
+    '- Bir tushuncha uchun HAR DOIM bir xil yorliq yoz, aks holda guruh',
+    '  ikkiga bo\'linib ketadi (`bormoq` va `borish` — ikki xil guruh).',
+    '- Guruhda kamida 2 ta so\'z bo\'lsin, aks holda u ko\'rsatilmaydi.',
+    '- Eng foydalisi — o\'zbekchada BITTA so\'z, rus tilida esa bir nechta:',
+    '  aynan shunda o\'rganuvchi qaysi birini qachon ishlatishni bilmaydi.',
+    '',
+    'Ikkalasini BIRGA yozish mumkin: so\'z ham yozilishi bo\'yicha, ham',
+    'ma\'nosi bo\'yicha bog\'langan bo\'lishi mumkin.',
     ''
   ].join('\n');
 

@@ -232,8 +232,49 @@
     return groups;
   }
 
+  /* ---------- MA'NO bo'yicha guruhlash ----------
+     `build()` dan MUTLAQO BOSHQA ish qiladi va shuning uchun alohida
+     funksiya: u yozilishga umuman qaramaydi.
+
+     Sabab: "bormoq" tushunchasiga иду, хожу, еду, пойду, поеду kiradi —
+     ular bir-biriga o'xshamaydi, ya'ni imlo yoki o'zak algoritmi ularni
+     hech qachon topolmaydi. Bunday bog'lanishni faqat MA'NONI biladigan
+     manba ko'rsata oladi, shuning uchun u `.md` faylda yoziladi:
+
+         > **Ma'no guruhi:** bormoq
+
+     Bir xil yorliqli so'zlar bitta oila bo'ladi. Har so'zga qolganlarini
+     sanab chiqish shart emas — 8 ta so'zlik oila uchun 8 ta uzun qator
+     yozish o'rniga bitta yorliq yetarli. */
+  function buildMeaning(words) {
+    var byLabel = {}, order = [];
+    (words || []).forEach(function (w) {
+      var label = String(w && w.meaningGroup || '').trim().toLowerCase();
+      if (!label) return;
+      if (!byLabel[label]) { byLabel[label] = []; order.push(label); }
+      byLabel[label].push(w);
+    });
+
+    var groups = [];
+    order.forEach(function (label) {
+      var list = byLabel[label];
+      /* Bir so'z bir necha marta yozilgan bo'lishi mumkin — matni bo'yicha
+         takrorlar tashlanadi (bitta so'zdan iborat "oila" mashq emas). */
+      var seen = {}, uniq = [];
+      list.forEach(function (w) {
+        var k = String(w.ru || '').toLowerCase();
+        if (seen[k]) return;
+        seen[k] = 1;
+        uniq.push(w);
+      });
+      if (uniq.length >= 2) groups.push(uniq.slice(0, MAX_FAMILY));
+    });
+    return groups;
+  }
+
   root.PairCore = {
     build: build,
+    buildMeaning: buildMeaning,
     coreWord: coreWord,
     levenshtein: levenshtein,
     looksAlike: looksAlike

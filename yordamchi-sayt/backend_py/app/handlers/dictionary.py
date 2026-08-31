@@ -57,7 +57,11 @@ def get_dict_data(request: Request, body: dict, lang: str):
         # `pair_with` — .md dagi "Chalkashadi:" qatoridan kelgan, ATAYLAB
         # ko'rsatilgan adashtiriladigan so'zlar. Juftlash rejimi buni
         # avtomatik topilgan o'xshashlikdan USTUN qo'yadi.
-        "COALESCE(pair_with, '') AS pair_with "
+        "COALESCE(pair_with, '') AS pair_with, "
+        # `meaning_group` — MA'NO bo'yicha guruh yorlig'i (masalan "bormoq").
+        # Bir xil yorliqli so'zlar bitta guruh. Yozilishi o'xshash bo'lishi
+        # SHART EMAS: иду / хожу / еду — bir tushuncha, lekin har xil so'z.
+        "COALESCE(meaning_group, '') AS meaning_group "
         "FROM dictionary_words WHERE lang = :l ORDER BY sort_order, id",
         {"l": lang},
     )
@@ -98,15 +102,17 @@ def save_dict_cat(request: Request, body: dict):
                 pair_with = ", ".join(s(x) for x in raw_pair if s(x))
             else:
                 pair_with = s(raw_pair)
+            meaning = s(word.get("meaningGroup") or word.get("meaning_group") or "")
             if ru == "" and uz == "":
                 continue
             conn.execute(
                 text(
-                    "INSERT INTO dictionary_words (lang, category, word_ru, word_uz, note, example, pair_with, sort_order) "
-                    "VALUES (:l, :c, :ru, :uz, :note, :ex, :pw, :so)"
+                    "INSERT INTO dictionary_words "
+                    "(lang, category, word_ru, word_uz, note, example, pair_with, meaning_group, sort_order) "
+                    "VALUES (:l, :c, :ru, :uz, :note, :ex, :pw, :mg, :so)"
                 ),
                 {"l": lang, "c": category, "ru": ru, "uz": uz, "note": note, "ex": example,
-                 "pw": pair_with, "so": index},
+                 "pw": pair_with, "mg": meaning, "so": index},
             )
             saved += 1
 

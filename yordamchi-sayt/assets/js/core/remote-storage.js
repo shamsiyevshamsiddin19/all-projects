@@ -407,6 +407,11 @@
         }
 
         ops.forEach(function (op) {
+            /* Eski navbatda qolgan ichki kalit tiklanmaydi — u qurilmaga
+               tegishli va serverga ketmasligi kerak. */
+            if (isInternalKey(op.key)) {
+                return;
+            }
             var stamp = normalizeStamp(op.stamp) || makeStamp();
             if (op.type === 'delete') {
                 delete state.cache[op.key];
@@ -711,18 +716,34 @@
     }
 
     function buildOps() {
-        return Object.keys(state.queue).map(function (key) {
-            return {
-                key: key,
-                type: state.queue[key].type,
-                value: state.queue[key].value,
-                stamp: state.queue[key].stamp || 0,
-            };
-        });
+        /* ICHKI KALITLAR SHU YERDA TO'SILADI — bu ma'lumot qurilmadan
+           chiqadigan YAGONA joy, shuning uchun himoya aynan shu yerda.
+
+           `setItem` dagi tekshiruvning o'zi yetmagan edi: kalit navbatga
+           boshqa yo'llar bilan ham tushar ekan —
+             - `restorePendingBackups()` tuzatishdan OLDIN navbatga tushgan
+               yozuvni keyin qayta tiklaydi;
+             - eski kod ishlab turgan boshqa qurilma/ilova ham yuborishi
+               mumkin.
+           Natijada 2.3 MB lik lenta keshi serverga QAYTA yozilgan va
+           `storage_bootstrap` yana vaqt chegarasidan chiqib ketgan edi. */
+        return Object.keys(state.queue)
+            .filter(function (key) { return !isInternalKey(key); })
+            .map(function (key) {
+                return {
+                    key: key,
+                    type: state.queue[key].type,
+                    value: state.queue[key].value,
+                    stamp: state.queue[key].stamp || 0,
+                };
+            });
     }
 
     function restoreOps(ops) {
         ops.forEach(function (item) {
+            if (isInternalKey(item.key)) {
+                return;
+            }
             if (!Object.prototype.hasOwnProperty.call(state.queue, item.key)) {
                 state.queue[item.key] = {
                     type: item.type,

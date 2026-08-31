@@ -70,12 +70,36 @@
             console[method]('[APP ' + level.toUpperCase() + '][' + pageName + '] ' + message, payload.meta);
         }
 
+        remember(level, message, payload.meta);
+
         if (shouldSend(level)) {
             sendToServer(payload);
         }
     }
 
+    /* ---------- Yaqin xatolar tarixi ----------
+       Xatolar serverga yuboriladi, lekin foydalanuvchi ularni ko'ra
+       olmasdi — "nimadir ishlamayapti" degan tuyg'udan boshqa hech narsa
+       qolmasdi. Endi oxirgi xatolar XOTIRADA saqlanadi va "Tizim holati"
+       paneli ularni ko'rsatadi. Ring bufer: eng eskisi tushib ketadi,
+       shuning uchun uzoq ochiq turgan sahifada ham xotira o'smaydi. */
+    var recentLog = [];
+    var RECENT_MAX = 30;
+
+    function remember(level, message, meta) {
+        if (level !== 'error' && level !== 'warn') return;
+        recentLog.push({
+            level: level,
+            message: message,
+            meta: meta,
+            at: Date.now(),
+        });
+        if (recentLog.length > RECENT_MAX) recentLog.shift();
+    }
+
     window.AppLogger = {
+        recent: function () { return recentLog.slice(); },
+        clearRecent: function () { recentLog.length = 0; },
         debug: function (message, meta) {
             emit('debug', message, meta);
         },

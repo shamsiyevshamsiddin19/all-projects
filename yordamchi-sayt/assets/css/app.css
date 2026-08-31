@@ -2453,6 +2453,13 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 }
 
 /* Radio & Check Rows (Wstore Style) */
+/* Filtr qatoridagi izoh — variant nima qilishini bir qatorda aytadi.
+   "So'zlarni juftlash" va "Ma'noni juftlash" nomining o'zidan farqi
+   bilinmaydi, shuning uchun misol ko'rsatiladi. */
+.ws-row-hint {
+  display: block; font-style: normal; font-weight: 500;
+  font-size: 11px; color: var(--hint); margin-top: 2px; line-height: 1.35;
+}
 .ws-radio-row, .ws-check-row {
   display: flex;
   align-items: center;
@@ -4125,3 +4132,29 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 .st-row:has(.st-dot.warn) .st-problem {
   background: var(--warn-soft); color: var(--warn);
 }
+
+/* Panel: bo'lim sarlavhasi, umumiy xulosa va xato ro'yxati */
+.st-grp {
+  font-size: 11px; font-weight: 800; letter-spacing: .5px;
+  text-transform: uppercase; color: var(--hint);
+  margin: 18px 0 6px;
+}
+.st-grp:first-of-type { margin-top: 10px; }
+.st-sum {
+  padding: 11px 13px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 700; line-height: 1.4;
+}
+.st-sum.ok   { background: var(--success-soft); color: var(--success); }
+.st-sum.warn { background: var(--warn-soft);    color: var(--warn); }
+.st-sum.bad  { background: var(--danger-soft);  color: var(--danger); }
+.st-sum.wait { background: var(--card-2);       color: var(--hint); }
+.st-err {
+  padding: 9px 11px; margin-top: 6px; border-radius: var(--radius-sm);
+  background: var(--card-2); border-left: 3px solid var(--hint);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.st-err.error { border-left-color: var(--danger); }
+.st-err.warn  { border-left-color: var(--warn); }
+.st-err b { font-size: 12.5px; font-weight: 700; color: var(--text); }
+.st-err span { font-size: 11.5px; color: var(--text-2); word-break: break-word; }
+.st-err i { font-size: 11px; font-style: normal; color: var(--hint); }

@@ -281,12 +281,24 @@
     { key: 'mastered', label: 'O\'rganilgan so\'zlar', icon: 'check', color: '#10b981' }
   ];
 
+  /* JOIN — so'zlarni qanday BOG'LASH kerakligi. Saralashdan alohida
+     bo'lim: saralash tartibni belgilaydi, join esa qaysi so'zlar bir
+     guruhga tushishini. Ikki mantiq butunlay boshqacha ishlaydi. */
+  var WSTORE_JOINS = [
+    { key: '', label: 'O\'chiq', sub: 'So\'zlar bog\'lanmaydi' },
+    { key: 'words', label: 'So\'zlarni juftlash',
+      sub: 'Yozilishi o\'xshash: храню / храплю' },
+    { key: 'meaning', label: 'Ma\'noni juftlash',
+      sub: 'Ma\'nosi bog\'liq: иду / хожу / еду' }
+  ];
+
   var WSTORE_SORTS = [
     { key: 'popular', label: 'Ommabop / Tasodifiy' },
     { key: 'alpha', label: 'Alifbo bo\'yicha (A–Z)' },
-    { key: 'recent', label: 'Eng yangi so\'zlar' },
-    { key: 'pairs', label: 'Juftlash: karusel (surib ko\'rish)' },
-    { key: 'pairs_color', label: 'Juftlash: bir xil rangli kartalar' }
+    { key: 'recent', label: 'Eng yangi so\'zlar' }
+    /* Juftlash bandlari BU YERDAN olib tashlandi: ular saralash emas,
+       GURUHLASH edi. Endi ular "Join" bo'limida — u yerda mantiq
+       (so'z/ma'no) va ko'rinish (karusel/rangli) alohida tanlanadi. */
   ];
 
   var FEED_WORDS = [];
@@ -301,10 +313,12 @@
       return {
         category: s.category || 'all',
         collections: Array.isArray(s.collections) ? s.collections : [],
-        sort: s.sort || 'popular'
+        sort: s.sort || 'popular',
+        join: s.join || '',
+        joinColor: !!s.joinColor
       };
     } catch (e) {
-      return { category: 'all', collections: [], sort: 'popular' };
+      return { category: 'all', collections: [], sort: 'popular', join: '', joinColor: false };
     }
   }
 
@@ -317,6 +331,7 @@
     if (st.category && st.category !== 'all') count++;
     if (st.collections && st.collections.length > 0) count += st.collections.length;
     if (st.sort && st.sort !== 'popular') count++;
+    if (st.join) count++;
     return count;
   }
 
@@ -523,7 +538,10 @@
 
      Kesh baribir 3 soatda eskiradi va qaytadan yasaladi — uni qurilmalar
      orasida sinxronlashning ma'nosi yo'q. */
-  var FEED_CACHE_KEY = '__remote_storage_feed_cache_v2';
+  /* v3: keshdagi so'zlarda `meaningGroup`/`pairWith` YO'Q edi. Kalit
+     yangilanmasa 3 soat davomida eski shakldagi havza ishlatilib,
+     "Ma'noni juftlash" bo'sh chiqaverardi. */
+  var FEED_CACHE_KEY = '__remote_storage_feed_cache_v3';
   var FEED_CACHE_TTL = 3 * 60 * 60 * 1000; /* 3 soat — shundan keyin yangilaydi */
 
   /* Eski, sinxronlanadigan kalit qoldig'ini tozalaymiz — u bo'lmasa ham
@@ -558,7 +576,13 @@
         lang: 'russian',
         cat: it.category || it.cat || 'Rus tili',
         note: it.note || '',
-        ex: it.example || it.ex || ''
+        ex: it.example || it.ex || '',
+        /* Juftlash uchun kerakli maydonlar. Ilgari bu yerda ko'chirilmasdi
+           va lentaga yetib bormasdi — natijada "Ma'noni juftlash" hech
+           qachon guruh topolmasdi, chunki havzadagi so'zlarda yorliq
+           umuman yo'q edi. */
+        meaningGroup: (it.meaning_group || it.meaningGroup || '').trim(),
+        pairWith: (it.pair_with || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean)
       });
     });
     enItems.forEach(function (it) {
@@ -568,7 +592,9 @@
         lang: 'english',
         cat: it.category || it.cat || 'Ingliz tili',
         note: it.note || '',
-        ex: it.example || it.ex || ''
+        ex: it.example || it.ex || '',
+        meaningGroup: (it.meaning_group || it.meaningGroup || '').trim(),
+        pairWith: (it.pair_with || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean)
       });
     });
   }
@@ -688,7 +714,34 @@
   var pairGroupSeq = 0;
   /* Guruh a'zolarini "_pairGroupId" bilan belgilaydi — renderFeedItems shu orqali
      ularni bitta karusel kartaga birlashtiradi (o'rniga alohida-alohida kartalar). */
-  function buildPairsSortedList(pool) {
+  /* `mode`: 'words' — yozilishi o'xshashlar (imlo/o'zak);
+              'meaning' — ma'nosi bog'liqlar (.md dagi "Ma'no guruhi").
+     Ikkalasi ham bir xil natija shaklini qaytaradi: guruh a'zolari
+     ketma-ket, `_pairGroupId` bilan belgilangan holda. */
+  function buildPairsSortedList(pool, mode) {
+    /* Ma'no guruhi TILGA BOG'LIQ EMAS: yorliq o'zbekcha ("bormoq"),
+       so'zlar esa rus yoki ingliz bo'lishi mumkin. Shuning uchun bu
+       yerda tillarga bo'linmaydi. */
+    if (mode === 'meaning') {
+      var ordered2 = [], used2 = {};
+      (window.PairCore ? PairCore.buildMeaning(pool) : []).forEach(function (g) {
+        var fresh = g.filter(function (w) { return !used2[w.ru + '|' + w.uz]; });
+        if (fresh.length < 2) return;
+        pairGroupSeq++;
+        fresh.forEach(function (w) {
+          used2[w.ru + '|' + w.uz] = true;
+          w._pairGroupId = pairGroupSeq;
+          w._pairGroupSize = fresh.length;
+          ordered2.push(w);
+        });
+      });
+      pool.forEach(function (w) {
+        var k = w.ru + '|' + w.uz;
+        if (!used2[k]) { used2[k] = true; w._pairGroupId = null; ordered2.push(w); }
+      });
+      return ordered2;
+    }
+
     var byLang = {};
     pool.forEach(function (w) {
       var l = w.lang === 'russian' ? 'russian' : 'english';
@@ -811,11 +864,14 @@
       var end = start + count;
       if (end <= pool.length) return pool.slice(start, end);
       return pool.slice(start).concat(pool.slice(0, end - pool.length));
-    } else if (st.sort === 'pairs' || st.sort === 'pairs_color') {
-      var cacheKey = pool.length + ':' + (pool[0] ? pool[0].ru : '') + ':' + (pool[pool.length - 1] ? pool[pool.length - 1].ru : '');
+    } else if (st.join) {
+      /* Join yoqilgan bo'lsa saralash ORNIGA guruhlash ishlaydi: guruh
+         a'zolari yonma-yon turishi kerak, aks holda ularni bitta
+         karuselga yig'ib bo'lmaydi. */
+      var cacheKey = st.join + ':' + pool.length + ':' + (pool[0] ? pool[0].ru : '') + ':' + (pool[pool.length - 1] ? pool[pool.length - 1].ru : '');
       if (PAIRS_SORT_CACHE.key !== cacheKey) {
         PAIRS_SORT_CACHE.key = cacheKey;
-        PAIRS_SORT_CACHE.list = buildPairsSortedList(pool);
+        PAIRS_SORT_CACHE.list = buildPairsSortedList(pool, st.join);
       }
       var sorted = PAIRS_SORT_CACHE.list;
       if (!sorted.length) return [];
@@ -1169,7 +1225,8 @@
 
     var startIdx = FEED_WORDS.length;
     FEED_WORDS = FEED_WORDS.concat(newWords);
-    var sortMode = getFilterState().sort;
+    var fst = getFilterState();
+    var colorMode = !!(fst.join && fst.joinColor);
 
     var htmlArr = [];
     for (var i = 0; i < newWords.length; i++) {
@@ -1186,7 +1243,7 @@
         while (j < newWords.length && newWords[j]._pairGroupId === w._pairGroupId) {
           run.push(newWords[j]); j++;
         }
-        if (sortMode === 'pairs_color') {
+        if (colorMode) {
           // Rangli rejim: kartalar odatdagidek tik lentada qoladi, faqat bitta
           // oiladagilar bir xil rangda bo'ladi.
           var hl = highlightPairDiff(run.map(function (x) { return String(x.ru || ''); }));
@@ -1371,6 +1428,32 @@
               '</div>' +
             '</div>' +
 
+            /* Bo'lim: Join — so'zlarni bog'lash mantiqi */
+            '<div class="ws-sec">' +
+              '<h3 class="ws-sec-title"><span class="ws-sec-bar"></span> Join</h3>' +
+              '<div class="ws-sec-body">' +
+                WSTORE_JOINS.map(function (j) {
+                  var on = (st.join || '') === j.key;
+                  return '<label class="ws-radio-row" data-act="wsSelectJoin" data-arg=\'' + App.arg({ j: j.key }) + '\'>' +
+                    '<span class="ws-radio-circle ' + (on ? 'checked' : '') + '">' +
+                      (on ? '<span class="ws-radio-dot"></span>' : '') +
+                    '</span>' +
+                    '<span class="ws-row-label">' + App.esc(j.label) +
+                      '<i class="ws-row-hint">' + App.esc(j.sub) + '</i></span>' +
+                  '</label>';
+                }).join('') +
+                (st.join
+                  ? '<label class="ws-check-row" data-act="wsToggleJoinColor">' +
+                    '<span class="ws-check-box ' + (st.joinColor ? 'checked' : '') + '">' +
+                      (st.joinColor ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '') +
+                    '</span>' +
+                    '<span class="ws-row-label">Rangli kartalar' +
+                      '<i class="ws-row-hint">Karusel o\'rniga: bir guruh — bir rang</i></span>' +
+                  '</label>'
+                  : '') +
+              '</div>' +
+            '</div>' +
+
             /* Bo'lim 2: Tillar va Lug'atlar (Category) */
             '<div class="ws-sec">' +
               '<h3 class="ws-sec-title"><span class="ws-sec-bar"></span> Tillar va Lug\'atlar</h3>' +
@@ -1430,6 +1513,20 @@
   App.actions.wsSelectSort = function (a) {
     var st = getFilterState();
     st.sort = a.s || 'popular';
+    saveFilterState(st);
+    App.actions.wsOpenFilterModal();
+  };
+
+  App.actions.wsSelectJoin = function (a) {
+    var st = getFilterState();
+    st.join = a.j || '';
+    saveFilterState(st);
+    App.actions.wsOpenFilterModal();
+  };
+
+  App.actions.wsToggleJoinColor = function () {
+    var st = getFilterState();
+    st.joinColor = !st.joinColor;
     saveFilterState(st);
     App.actions.wsOpenFilterModal();
   };
@@ -1586,28 +1683,100 @@
       p.textContent = problem;
       el.appendChild(p);
     }
+    stSummary();
+  }
+
+  /* Yuqoridagi bitta qatorli xulosa. Panelda 12 ta qator bor — ularni
+     birma-bir o'qimasdan ham "hammasi joyidami yoki yo'q" degan javob
+     darhol ko'rinishi kerak. */
+  function stSummary() {
+    var box = document.getElementById('st-sum');
+    if (!box) return;
+    var rows = document.querySelectorAll('.st-row');
+    var bad = 0, warn = 0, wait = 0, firstBad = '';
+    rows.forEach(function (r) {
+      var c = r.querySelector('.st-dot').className;
+      if (c.indexOf('bad') >= 0) {
+        bad++;
+        if (!firstBad) firstBad = r.querySelector('.st-lbl').textContent;
+      } else if (c.indexOf('warn') >= 0) warn++;
+      else if (c.indexOf('wait') >= 0) wait++;
+    });
+    if (wait) { box.className = 'st-sum wait'; box.textContent = 'Tekshirilyapti…'; return; }
+    if (bad) {
+      box.className = 'st-sum bad';
+      box.textContent = bad + ' ta jiddiy muammo' + (warn ? ' va ' + warn + ' ta ogohlantirish' : '') +
+        ' — birinchisi: ' + firstBad;
+    } else if (warn) {
+      box.className = 'st-sum warn';
+      box.textContent = warn + ' ta ogohlantirish, jiddiy muammo yo\'q';
+    } else {
+      box.className = 'st-sum ok';
+      box.textContent = 'Hammasi joyida';
+    }
   }
 
   App.actions.igSystemStatus = function () {
     var html =
+      '<div class="st-sum" id="st-sum">Tekshirilyapti…</div>' +
+
+      '<div class="st-grp">Server bilan aloqa</div>' +
       '<div class="st-wrap">' +
         stRow('net', 'Ulanish') +
-        stRow('ver', 'Ilova versiyasi') +
         stRow('auth', 'Kirish') +
-        stRow('sync', 'Xotira sinxronizatsiyasi') +
-        stRow('queue', 'Yuborilmagan o\'zgarishlar') +
-        stRow('sw', 'Oflayn rejim (service worker)') +
-        stRow('cache', 'Kesh hajmi') +
-        stRow('data', 'Yuklangan ma\'lumot') +
+        stRow('api', 'Ma\'lumot o\'qish tezligi') +
       '</div>' +
+
+      '<div class="st-grp">Ilova</div>' +
+      '<div class="st-wrap">' +
+        stRow('ver', 'Versiya') +
+        stRow('mod', 'Modullar') +
+        stRow('sw', 'Oflayn rejim') +
+      '</div>' +
+
+      '<div class="st-grp">Ma\'lumot saqlash</div>' +
+      '<div class="st-wrap">' +
+        stRow('sync', 'Xotira sinxronizatsiyasi') +
+        stRow('size', 'Server xotirasi hajmi') +
+        stRow('queue', 'Yuborilmagan o\'zgarishlar') +
+        stRow('data', 'Yuklangan lug\'at') +
+        stRow('cache', 'Qurilma keshi') +
+      '</div>' +
+
+      '<div class="st-grp">Yaqin xatolar</div>' +
+      '<div class="st-wrap">' + stRow('err', 'JS xatolari') + '</div>' +
+      '<div id="st-errlist"></div>' +
+
       '<div class="btn-row" style="margin-top:16px">' +
         '<button class="btn sec" id="st-again">Qayta tekshirish</button>' +
-        '<button class="btn" id="st-fix">Keshni tozalab yangilash</button>' +
-      '</div>';
+        '<button class="btn sec" id="st-copy">Hisobotni nusxalash</button>' +
+      '</div>' +
+      '<button class="btn" id="st-fix" style="margin-top:8px">Keshni tozalab yangilash</button>';
 
     var sh = App.sheet(html, { title: 'Tizim holati' });
     App.icons(sh);
     sh.querySelector('#st-again').onclick = runChecks;
+    /* Hisobotni matn qilib nusxalash — nosozlikni boshqa birovga
+       (yoki o'ziga keyinroq) yuborish uchun eng tez yo'l. */
+    sh.querySelector('#st-copy').onclick = function () {
+      var lines = ['Yordamchi — tizim holati', new Date().toLocaleString(), ''];
+      sh.querySelectorAll('.st-row').forEach(function (r) {
+        var dot = r.querySelector('.st-dot').className.replace('st-dot ', '');
+        var mark = dot === 'ok' ? '[ok]  ' : dot === 'warn' ? '[!]   ' : dot === 'bad' ? '[XATO]' : '[?]   ';
+        lines.push(mark + ' ' + r.querySelector('.st-lbl').textContent + ': ' +
+                   r.querySelector('.st-val').textContent);
+        var p = r.querySelector('.st-problem');
+        if (p) lines.push('        -> ' + p.textContent);
+      });
+      var el = sh.querySelector('#st-errlist');
+      if (el && el.textContent.trim()) lines.push('', 'Xatolar:', el.innerText);
+      lines.push('', 'UA: ' + navigator.userAgent);
+      try {
+        navigator.clipboard.writeText(lines.join('\n'))
+          .then(function () { App.toast('✅ Nusxa olindi'); })
+          .catch(function () { App.toast('⚠️ Nusxa olinmadi'); });
+      } catch (e) { App.toast('⚠️ Nusxa olinmadi'); }
+    };
     sh.querySelector('#st-fix').onclick = function () {
       App.confirm('Barcha kesh tozalanadi va sahifa qaytadan yuklanadi. Saqlangan ma\'lumotlaringizga tegilmaydi.', function () {
         var jobs = [];
@@ -1739,6 +1908,105 @@
       }).catch(function () { stSet('cache', 'warn', 'tekshirib bo\'lmadi'); });
     } else {
       stSet('cache', 'warn', 'qo\'llab-quvvatlanmaydi');
+    }
+
+    /* --- Modullar ---
+       Bitta JS fayl yuklanmasa (masalan yarim yozilgan fayl keshlanib
+       qolsa) ilova jimgina buziladi: xato konsolda qoladi, ekranda esa
+       shunchaki "nimadir ishlamaydi". Har modul o'z global nomini
+       qo'yadi — yo'qi qaysi fayl yiqilganini aniq ko'rsatadi. */
+    var MODULES = [
+      ['App', 'core.js'], ['Auth', 'auth.js'], ['TTS', 'tts.js'],
+      ['AppLogger', 'logger.js'], ['RemoteStorageBridge', 'remote-storage.js'],
+      ['WordState', 'wordstate.js'], ['PairCore', 'paircore.js'],
+      ['RDCore', 'reading.js'], ['Notify', 'notify.js']
+    ];
+    var missing = MODULES.filter(function (m) { return !window[m[0]]; });
+    if (!missing.length) {
+      stSet('mod', 'ok', MODULES.length + ' tadan ' + MODULES.length + ' ta yuklandi');
+    } else {
+      stSet('mod', 'bad', missing.length + ' ta yuklanmadi',
+        'Bu fayllar ishga tushmadi: ' + missing.map(function (m) { return m[1]; }).join(', ') +
+        '. Odatda sabab — buzuq keshlangan fayl. "Keshni tozalab yangilash" ni bosing.');
+    }
+
+    /* --- Server xotirasi hajmi ---
+       Ikki marta nosozlik shu yerdan chiqqan: bitta yozuv haddan tashqari
+       kattalashib, `storage_bootstrap` vaqt chegarasidan chiqib ketgan va
+       BARCHA sozlama bo'sh ko'ringan. Endi hajm ko'rinib turadi, ya'ni
+       muammo yuzaga chiqishidan oldin bilinadi. */
+    var Bs = window.RemoteStorageBridge && RemoteStorageBridge.state;
+    if (Bs && Bs.cache) {
+      /* `__remote_storage_` prefiksli kalitlar HISOBGA OLINMAYDI: ular
+         qurilmada qoladi va serverga hech qachon yuborilmaydi. Ilgari
+         ular ham qo'shilib, o'lchov "server xotirasi" deb noto'g'ri
+         katta ko'rsatardi. */
+      var total = 0, biggest = null;
+      Object.keys(Bs.cache).forEach(function (k) {
+        if (k.indexOf('__remote_storage_') === 0) return;
+        var len = (Bs.cache[k] || '').length;
+        total += len;
+        if (!biggest || len > biggest.n) biggest = { k: k, n: len };
+      });
+      var mb = total / 1048576;
+      var big = biggest ? (biggest.k + ' — ' + Math.round(biggest.n / 1024) + ' KB') : '';
+      if (mb > 1.5) {
+        stSet('size', 'bad', mb.toFixed(2) + ' MB',
+          'Juda katta. Eng kattasi: ' + big + '. Shu sababli sozlamalar yuklanmay qolishi mumkin.');
+      } else if (mb > 0.8) {
+        stSet('size', 'warn', mb.toFixed(2) + ' MB',
+          'Kattalashib boryapti. Eng kattasi: ' + big);
+      } else {
+        stSet('size', 'ok', mb.toFixed(2) + ' MB' + (big ? ' · eng kattasi: ' + big : ''));
+      }
+    } else {
+      stSet('size', 'warn', 'tekshirib bo\'lmadi');
+    }
+
+    /* --- Ma'lumot o'qish tezligi --- */
+    var a0 = Date.now();
+    withTimeout(
+      fetch('/api?action=get_topics&lang=russian').then(function (r) {
+        return r.ok ? r.json() : Promise.reject(new Error(String(r.status)));
+      }), 8000
+    ).then(function () {
+      var ms = Date.now() - a0;
+      stSet('api', ms > 2500 ? 'warn' : 'ok', ms + ' ms',
+        ms > 2500 ? 'Server sekin javob beryapti — bo\'limlar kech ochiladi.' : '');
+    }).catch(function (e) {
+      var msg = String(e && e.message || '');
+      if (msg === '401') stSet('api', 'bad', 'ruxsat yo\'q (401)', 'Tizimga kirilmagan.');
+      else stSet('api', 'bad', msg === 'timeout' ? 'javob bermadi (8 s)' : 'xato',
+        'Ma\'lumot o\'qib bo\'lmadi.');
+    });
+
+    /* --- Yaqin xatolar --- */
+    var box = document.getElementById('st-errlist');
+    var log = window.AppLogger && AppLogger.recent ? AppLogger.recent() : null;
+    if (!log) {
+      stSet('err', 'warn', 'jurnal mavjud emas');
+    } else if (!log.length) {
+      stSet('err', 'ok', 'Xato yo\'q');
+      if (box) box.innerHTML = '';
+    } else {
+      var errs = log.filter(function (x) { return x.level === 'error'; });
+      stSet('err', errs.length ? 'bad' : 'warn',
+        log.length + ' ta yozuv' + (errs.length ? ' (' + errs.length + ' xato)' : ''),
+        errs.length ? 'Quyida oxirgilari ko\'rsatilgan.' : '');
+      if (box) {
+        box.innerHTML = log.slice(-6).reverse().map(function (x) {
+          var m = x.meta || {};
+          var where = m.file ? String(m.file).split('/').pop() + (m.line ? ':' + m.line : '') : '';
+          var t = new Date(x.at);
+          return '<div class="st-err ' + x.level + '">' +
+            '<b>' + App.esc(x.message) + '</b>' +
+            (m.message ? '<span>' + App.esc(String(m.message)) + '</span>' : '') +
+            (m.reason ? '<span>' + App.esc(String(m.reason)) + '</span>' : '') +
+            '<i>' + App.esc(where) + ' · ' +
+            ('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2) + '</i>' +
+          '</div>';
+        }).join('');
+      }
     }
 
     /* --- Ma'lumot --- */

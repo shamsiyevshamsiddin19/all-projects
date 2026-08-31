@@ -132,9 +132,16 @@ for f in "${FILES[@]}" service-worker.js version.json index.html; do
 done
 [ "$fail" -eq 0 ] || { echo "XATO: yuklash to'liq bo'lmadi."; exit 1; }
 
-srv=$(curl -s "https://y.wstore.uz/version.json?t=$(date +%s)" | tr -d '{}" ' | sed 's/build://')
-echo "  serverdagi build: $srv"
-[ "$srv" = "$BUILD" ] || { echo "  OGOHLANTIRISH: version.json mos kelmadi"; exit 1; }
+# Bir lahzalik tarmoq uzilishi tufayli bekorga "mos kelmadi" demasin —
+# bir marta yiqilgani shundan bo'lgan edi, aslida hammasi joyida edi.
+srv=""
+for i in 1 2 3 4 5; do
+  srv=$(curl -s --max-time 10 "https://y.wstore.uz/version.json?t=$(date +%s)$i" | tr -d '{}" ' | sed 's/build://')
+  [ "$srv" = "$BUILD" ] && break
+  sleep 2
+done
+echo "  serverdagi build: ${srv:-javobsiz}"
+[ "$srv" = "$BUILD" ] || { echo "  OGOHLANTIRISH: version.json mos kelmadi (5 urinishdan keyin)"; exit 1; }
 
 echo
 echo "Tayyor. Build: $BUILD"
