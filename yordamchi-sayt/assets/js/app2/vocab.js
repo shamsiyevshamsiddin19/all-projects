@@ -2901,6 +2901,7 @@
         '<div class="lm-r-scroll vr-scroll"></div>' +
         '<div class="lm-r-rail vr-rail">' +
         '<button class="lm-r-a" id="vr-btn-speak" aria-label="Talaffuz"><span data-icon="volume" data-icon-size="19"></span><b>Ovoz</b></button>' +
+        '<button class="lm-r-a" id="vr-btn-info" aria-label="Batafsil"><span data-icon="list" data-icon-size="19"></span><b>Batafsil</b></button>' +
         '<button class="lm-r-a" id="vr-btn-srs" aria-label="Yodlandi"><span data-icon="check" data-icon-size="19"></span><b>Yodlandi</b></button>' +
         '<button class="lm-r-a" id="vr-btn-edit" aria-label="Tahrirlash"><span data-icon="edit" data-icon-size="19"></span><b>Tahrir</b></button>' +
         '<button class="lm-r-a danger" id="vr-btn-del" aria-label="O\'chirish"><span data-icon="trash" data-icon-size="19"></span><b>O\'chir</b></button>' +
@@ -2910,6 +2911,36 @@
       App.icons(page);
 
       var scroll = page.querySelector('.vr-scroll');
+
+      /* "Batafsil" bosilganda ko'rinadigan TO'LIQ panel — Reels'ning
+         o'zi (Izoh+Misol) yengil qoladi, bu yerda esa AI yozgan HAMMA
+         narsa: Turkum, Talaffuz, Shakllar, Sinonim, Antonim, Birikma,
+         Eslab qolish, so'ng Izoh/Misol. Bo'sh maydon o'tkazib yuboriladi. */
+      function buildReelsDetailHtml(w) {
+        var rows = [];
+        function row(label, value) {
+          if (!value) return;
+          rows.push(
+            '<div class="vr-md-item"><span class="vr-md-badge">' + App.esc(label) + '</span>' +
+            '<span class="vr-md-text">' + App.esc(value) + '</span></div>'
+          );
+        }
+        row('Turkum', w.partOfSpeech);
+        row('Talaffuz', w.pronunciation);
+        row('Shakllar', w.forms);
+        row('Eslab qolish', w.mnemonic);
+        row('Sinonim', w.synonyms);
+        row('Antonim', w.antonyms);
+        row('Birikma', w.collocations);
+        if (w.note) row('Izoh', w.note);
+        var ex = (w.ex || w.example || '').trim();
+        if (ex) row('Misol', ex);
+
+        if (!rows.length) {
+          return '<div class="vr-detail-empty">Bu so\'z uchun qo\'shimcha ma\'lumot hali yo\'q.</div>';
+        }
+        return rows.join('');
+      }
 
       function formatReelsMarkdown(w) {
         var html = '';
@@ -2952,6 +2983,7 @@
           
           sl.innerHTML =
             '<div class="vr-screen-flow">' +
+            '<div class="vr-summary">' +
             '<div class="vr-md-header">' +
             '<h1 class="vr-md-title">' + App.esc(w.ru) + '</h1>' +
             '<div class="vr-md-sub">' + App.esc(w.uz) + '</div>' +
@@ -2960,6 +2992,11 @@
             '<div class="vr-md-content">' +
             formatReelsMarkdown(w) +
             '</div>' +
+            '</div>' +
+            /* "Batafsil" bosilganda YUQORIDAGI o'rniga shu ko'rinadi (CSS
+               orqali, .vr-detail-on klassiga qarab) — element yasab-buzib
+               o'tirilmaydi, ikkalasi ham oldindan tayyor turadi. */
+            '<div class="vr-detail-panel">' + buildReelsDetailHtml(w) + '</div>' +
             '</div>';
 
           scroll.appendChild(sl);
@@ -3073,6 +3110,26 @@
             App.toast('🔇 Avto ovoz o\'chirildi');
             try { window.speechSynthesis.cancel(); } catch (e) {}
           }
+        };
+      }
+
+      /* Batafsil rejimi: butun sessiya davomida yoqiq qoladi (scroll
+         ustiga klass qo'yiladi), ya'ni keyingi so'zga o'tilganda ham
+         batafsil ko'rinishda qoladi — foydalanuvchi bir marta yoqib,
+         hammasini shu rejimda ko'rib chiqishi mumkin. */
+      var detailOn = false;
+      var btnInfo = page.querySelector('#vr-btn-info');
+      function updateInfoBtn() {
+        if (!btnInfo) return;
+        btnInfo.classList.toggle('active', detailOn);
+        var b = btnInfo.querySelector('b');
+        if (b) b.textContent = detailOn ? 'Qisqa' : 'Batafsil';
+      }
+      if (btnInfo) {
+        btnInfo.onclick = function () {
+          detailOn = !detailOn;
+          scroll.classList.toggle('vr-detail-on', detailOn);
+          updateInfoBtn();
         };
       }
 

@@ -315,10 +315,14 @@
         collections: Array.isArray(s.collections) ? s.collections : [],
         sort: s.sort || 'popular',
         join: s.join || '',
-        joinColor: !!s.joinColor
+        joinColor: !!s.joinColor,
+        /* AI .md faylda yozgan "Turkum:" qatoridan kelgan qiymatlar.
+           Qattiq ro'yxat EMAS — qaysi turkumlar mavjud bo'lsa, filtrda
+           o'shalar chiqadi (getAvailablePos() ga qarang). */
+        partsOfSpeech: Array.isArray(s.partsOfSpeech) ? s.partsOfSpeech : []
       };
     } catch (e) {
-      return { category: 'all', collections: [], sort: 'popular', join: '', joinColor: false };
+      return { category: 'all', collections: [], sort: 'popular', join: '', joinColor: false, partsOfSpeech: [] };
     }
   }
 
@@ -332,6 +336,7 @@
     if (st.collections && st.collections.length > 0) count += st.collections.length;
     if (st.sort && st.sort !== 'popular') count++;
     if (st.join) count++;
+    if (st.partsOfSpeech && st.partsOfSpeech.length > 0) count += st.partsOfSpeech.length;
     return count;
   }
 
@@ -582,7 +587,10 @@
            qachon guruh topolmasdi, chunki havzadagi so'zlarda yorliq
            umuman yo'q edi. */
         meaningGroup: (it.meaning_group || it.meaningGroup || '').trim(),
-        pairWith: (it.pair_with || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean)
+        pairWith: (it.pair_with || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean),
+        /* AI .md yozganda to'ldiradi — "Turkum bo'yicha" filtr shundan
+           dinamik ro'yxat yasaydi (qattiq kodlangan ro'yxat emas). */
+        partOfSpeech: (it.part_of_speech || '').trim()
       });
     });
     enItems.forEach(function (it) {
@@ -594,7 +602,8 @@
         note: it.note || '',
         ex: it.example || it.ex || '',
         meaningGroup: (it.meaning_group || it.meaningGroup || '').trim(),
-        pairWith: (it.pair_with || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean)
+        pairWith: (it.pair_with || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean),
+        partOfSpeech: (it.part_of_speech || '').trim()
       });
     });
   }
@@ -637,6 +646,31 @@
       });
   }
 
+  /* AI yozgan "Turkum:" matnidan sof yorliqni ajratadi. AI ba'zan qavs
+     ichida qo'shimcha (masalan "fe'l (NSV) — mukammal juft: ...") yozadi
+     — filtr uchun faqat asosiy so'z kerak, aks holda "fe'l (NSV)" va
+     "fe'l (SV)" IKKI XIL guruh bo'lib qolardi. */
+  function normalizePos(raw) {
+    return String(raw || '').split('(')[0].split('—')[0].trim().toLowerCase();
+  }
+
+  /* Havzadagi so'zlarni skanerlab, HOZIR nechta va qanday turkum borligini
+     topadi. Qattiq ro'yxat emas: AI yangi turkum yozsa (masalan "undov"),
+     bu yerda o'zi paydo bo'ladi — kodga tegilmaydi. */
+  function getAvailablePos() {
+    var pool = LOADED_WORDS_POOL.length > 0 ? LOADED_WORDS_POOL : FALLBACK_WORDS;
+    var counts = {}, labels = {};
+    pool.forEach(function (w) {
+      var key = normalizePos(w.partOfSpeech);
+      if (!key) return;
+      counts[key] = (counts[key] || 0) + 1;
+      if (!labels[key]) labels[key] = key.charAt(0).toUpperCase() + key.slice(1);
+    });
+    return Object.keys(counts)
+      .map(function (key) { return { key: key, label: labels[key], count: counts[key] }; })
+      .sort(function (a, b) { return b.count - a.count; });
+  }
+
   /* Filter and Sort pool */
   function getFilteredWordsPool() {
     var pool = LOADED_WORDS_POOL.length > 0 ? LOADED_WORDS_POOL : FALLBACK_WORDS;
@@ -664,6 +698,14 @@
       pool = pool.filter(function (w) { return w.lang === 'russian'; });
     } else if (st.category === 'en_8000') {
       pool = pool.filter(function (w) { return w.lang === 'english'; });
+    }
+
+    // 2.6 Turkum (so'z turi) — bir nechtasi tanlansa, ULARDAN BIRIGA mos
+    // so'zlar qoladi (OR, Kategoriya bilan esa AND).
+    if (st.partsOfSpeech && st.partsOfSpeech.length > 0) {
+      pool = pool.filter(function (w) {
+        return st.partsOfSpeech.indexOf(normalizePos(w.partOfSpeech)) >= 0;
+      });
     }
 
     // 2.5 "O'rgandim" belgilangan so'zlar lentada CHIQMAYDI.
@@ -1406,6 +1448,7 @@
     var st = getFilterState();
     var activeCount = getActiveFilterCount(st);
     var filteredCount = getFilteredWordsPool().length;
+    var posOptions = getAvailablePos();
 
     var html =
       '<div class="ws-filter-modal-wrap">' +
@@ -1470,6 +1513,27 @@
                 }).join('') +
               '</div>' +
             '</div>' +
+
+            /* Bo'lim: Turkum (AI .md dan) — DINAMIK, qattiq ro'yxat emas.
+               Hech qanday so'zda part_of_speech bo'lmasa, bo'lim
+               umuman chizilmaydi (bo'sh joy qoldirmaslik uchun). */
+            (posOptions.length
+              ? '<div class="ws-sec">' +
+                '<h3 class="ws-sec-title"><span class="ws-sec-bar"></span> Turkum</h3>' +
+                '<div class="ws-sec-body">' +
+                  posOptions.map(function (p) {
+                    var isChecked = st.partsOfSpeech.indexOf(p.key) >= 0;
+                    return '<label class="ws-check-row" data-act="wsTogglePos" data-arg=\'' + App.arg({ k: p.key }) + '\'>' +
+                      '<span class="ws-check-box ' + (isChecked ? 'checked' : '') + '">' +
+                        (isChecked ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '') +
+                      '</span>' +
+                      '<span class="ws-row-label">' + App.esc(p.label) +
+                        '<i class="ws-row-hint">' + p.count + ' ta so\'z</i></span>' +
+                    '</label>';
+                  }).join('') +
+                '</div>' +
+              '</div>'
+              : '') +
 
             /* Bo'lim 3: Shaxsiy To'plamlar (Collections) */
             '<div class="ws-sec last">' +
@@ -1547,8 +1611,20 @@
     App.actions.wsOpenFilterModal();
   };
 
+  App.actions.wsTogglePos = function (a) {
+    var st = getFilterState();
+    var idx = st.partsOfSpeech.indexOf(a.k);
+    if (idx >= 0) st.partsOfSpeech.splice(idx, 1);
+    else st.partsOfSpeech.push(a.k);
+    saveFilterState(st);
+    App.actions.wsOpenFilterModal();
+  };
+
   App.actions.wsClearAllFilters = function () {
-    var st = { category: 'all', collections: [], sort: 'popular' };
+    /* Ilgari bu yerda `join`/`joinColor` unutilgan edi — "Tozalash"
+       bosilsa ular eskicha qolib ketardi. Endi HAMMASI asl holatiga
+       qaytadi. */
+    var st = { category: 'all', collections: [], sort: 'popular', join: '', joinColor: false, partsOfSpeech: [] };
     saveFilterState(st);
     SEARCH_QUERY = '';
     var inp = document.getElementById('ws-search-input');
