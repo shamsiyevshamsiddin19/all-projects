@@ -138,4 +138,28 @@
     /* Boshqa qurilmadan sinxron kelganda keshni yangilash uchun */
     refresh: invalidate
   };
+
+  /* SERVERDAN MA'LUMOT KELGANDA KESHNI BEKOR QILAMIZ.
+
+     Bu tuzatish shu nosozlik uchun: telefonda belgilangan so'zlar
+     ko'rinmasdi, kompyuterda esa ko'rinardi.
+
+     Sabab tartibda edi. `masteredSet()` birinchi so'ralganda ro'yxatni
+     o'qib XOTIRAGA yozib qo'yadi. Ilova ochilganda esa ketma-ketlik
+     shunday:
+       1) sahifa chiziladi va `isMastered()` chaqiriladi;
+       2) `storage_bootstrap` HALI TUGAMAGAN, ya'ni localStorage bo'sh;
+       3) WordState bo'sh ro'yxatni keshlab qo'yadi;
+       4) bootstrap tugaydi, ma'lumot keladi — lekin kesh BO'SHLIGICHA
+          qoladi va boshqa hech qachon o'qilmaydi.
+
+     Kompyuterda bootstrap tez tugagani uchun bu ko'rinmasdi; sekin
+     mobil ulanishda esa har safar sodir bo'lardi.
+
+     `remote-storage:refreshed` — bootstrap tugaganda yuboriladigan
+     hodisa. Uni tinglab keshni tashlaymiz, shunda keyingi o'qish
+     haqiqiy ma'lumotni oladi. */
+  try {
+    root.addEventListener('remote-storage:refreshed', invalidate);
+  } catch (e) {}
 })(window);

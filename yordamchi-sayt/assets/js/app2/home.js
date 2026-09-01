@@ -443,45 +443,6 @@
   };
 
   /* Horizontal Sub Chips */
-  function renderSubChipsHtml(st) {
-    var quickList = [
-      { id: 'all', label: 'Barchasi' },
-      { id: 'ru_229', label: '229 Fe\'l' },
-      { id: 'ru_1000', label: 'Rus 1K' },
-      { id: 'en_8000', label: 'Ingliz 8K' },
-      { id: 'liked', label: '❤️ Sevimlilar', isCol: true },
-      { id: 'saved', label: '🔖 Saqlanganlar', isCol: true },
-      { id: 'mastered', label: '✅ O\'rganilganlar', isCol: true }
-    ];
-
-    return quickList.map(function (q) {
-      var isAct = false;
-      if (q.isCol) {
-        isAct = st.collections && st.collections.indexOf(q.id) >= 0;
-      } else {
-        isAct = (st.category === q.id) && (!st.collections || st.collections.length === 0);
-      }
-      return '<button class="ws-chip ' + (isAct ? 'active' : '') + '" data-act="wsToggleQuickChip" data-arg=\'' + App.arg(q) + '\'>' +
-        App.esc(q.label) +
-      '</button>';
-    }).join('');
-  }
-
-  App.actions.wsToggleQuickChip = function (a) {
-    var st = getFilterState();
-    if (a.isCol) {
-      var idx = st.collections.indexOf(a.id);
-      if (idx >= 0) st.collections.splice(idx, 1);
-      else st.collections.push(a.id);
-    } else {
-      st.category = a.id;
-      st.collections = [];
-    }
-    saveFilterState(st);
-    updateControlsUI();
-    renderFeedItems(6, false);
-  };
-
   function updateControlsUI() {
     var st = getFilterState();
     var count = getActiveFilterCount(st);
@@ -490,11 +451,9 @@
       badge.textContent = count;
       badge.style.display = count > 0 ? 'flex' : 'none';
     }
-    var chips = document.getElementById('ws-chips-row');
-    if (chips) {
-      chips.innerHTML = renderSubChipsHtml(st);
-      App.icons(chips);
-    }
+    /* Tez chiplar OLIB TASHLANDI (foydalanuvchi so'rovi): ular uchun
+       `ws-chips-row` elementi HTML'da umuman yasalmagan edi, ya'ni kod
+       hech qachon ishlamagan o'lik qism edi. */
   }
 
   /* Mini Stats Bar HTML */
