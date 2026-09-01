@@ -78,7 +78,16 @@
             .filter(Boolean),
           /* Ma'no guruhi yorlig'i — bir xil yorliqli so'zlar bitta guruh.
              Yozilishi o'xshash bo'lishi shart emas (иду / хожу / еду). */
-          meaningGroup: (it.meaning_group || '').trim()
+          meaningGroup: (it.meaning_group || '').trim(),
+          /* Boyitilgan maydonlar — hammasi oddiy bir qatorlik matn.
+             Server ustunlarining nomi bilan bir xil, faqat camelCase. */
+          partOfSpeech: (it.part_of_speech || '').trim(),
+          pronunciation: (it.pronunciation || '').trim(),
+          forms: (it.forms || '').trim(),
+          synonyms: (it.synonyms || '').trim(),
+          antonyms: (it.antonyms || '').trim(),
+          collocations: (it.collocations || '').trim(),
+          mnemonic: (it.mnemonic || '').trim()
         });
       });
       V.order.forEach(function (c) { if (!V.data[c]) V.data[c] = []; });
@@ -455,12 +464,40 @@
     ];
     (words || []).forEach(function (w, idx) {
       lines.push('## ' + (idx + 1) + '. ' + w.ru + ' — ' + w.uz);
+      if (w.partOfSpeech) {
+        lines.push('');
+        lines.push('> Turkum: ' + w.partOfSpeech);
+      }
+      if (w.pronunciation) {
+        lines.push('');
+        lines.push('> Talaffuz: ' + w.pronunciation);
+      }
+      if (w.forms) {
+        lines.push('');
+        lines.push('> Shakllar: ' + w.forms);
+      }
       if (w.note) {
         lines.push('');
         var noteLines = String(w.note).trim().split('\n');
         noteLines.forEach(function (nl) {
           lines.push('> ' + nl);
         });
+      }
+      if (w.synonyms) {
+        lines.push('');
+        lines.push('> Sinonim: ' + w.synonyms);
+      }
+      if (w.antonyms) {
+        lines.push('');
+        lines.push('> Antonim: ' + w.antonyms);
+      }
+      if (w.collocations) {
+        lines.push('');
+        lines.push('> Birikma: ' + w.collocations);
+      }
+      if (w.mnemonic) {
+        lines.push('');
+        lines.push('> Eslab qolish: ' + w.mnemonic);
       }
       if (w.meaningGroup) {
         lines.push('');
@@ -498,7 +535,14 @@
           note: (curWord.note || '').trim(),
           ex: (curWord.ex || '').trim(),
           pairWith: curWord.pairWith || [],
-          meaningGroup: curWord.meaningGroup || ''
+          meaningGroup: curWord.meaningGroup || '',
+          partOfSpeech: (curWord.partOfSpeech || '').trim(),
+          pronunciation: (curWord.pronunciation || '').trim(),
+          forms: (curWord.forms || '').trim(),
+          synonyms: (curWord.synonyms || '').trim(),
+          antonyms: (curWord.antonyms || '').trim(),
+          collocations: (curWord.collocations || '').trim(),
+          mnemonic: (curWord.mnemonic || '').trim()
         });
       }
       curWord = null;
@@ -533,8 +577,25 @@
       var h2Match = line.match(/^##\s+(?:\d+[.)]\s*)?(.+?)\s*[—–\-:]\s*(.+)$/);
       if (h2Match) {
         flushWord();
-        curWord = { ru: h2Match[1].trim(), uz: h2Match[2].trim(), note: '', ex: '', pairWith: [], meaningGroup: '' };
+        curWord = {
+          ru: h2Match[1].trim(), uz: h2Match[2].trim(), note: '', ex: '',
+          pairWith: [], meaningGroup: '',
+          partOfSpeech: '', pronunciation: '', forms: '',
+          synonyms: '', antonyms: '', collocations: '', mnemonic: ''
+        };
         continue;
+      }
+
+      /* Bitta qatorlik boyitilgan maydonlar ("**Label:** qiymat" yoki
+         "Label: qiymat"). Barchasi bir xil qoliplanadi, shuning uchun
+         bitta yordamchi funksiya orqali o'qiladi — 7 marta bir xil kodni
+         takrorlash o'rniga. */
+      function matchLabel(text, label) {
+        var bold = new RegExp('^\\*\\*' + label + ':\\*\\*\\s*');
+        var plain = new RegExp('^' + label + ':\\s*');
+        if (bold.test(text)) return text.replace(bold, '').trim();
+        if (plain.test(text)) return text.replace(plain, '').trim();
+        return null;
       }
 
       // Check for Blockquote note or example
@@ -558,6 +619,23 @@
           // Juftlash rejimi shu ro'yxatni birinchi navbatda ishonchli manba sifatida oladi.
           var pairText = bq.replace(/^\*?\*?Chalkashadi:\*?\*?\s*/, '').trim();
           if (curWord) curWord.pairWith = pairText.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+        } else if (curWord && matchLabel(bq, 'Turkum') !== null) {
+          curWord.partOfSpeech = matchLabel(bq, 'Turkum');
+        } else if (curWord && matchLabel(bq, 'Talaffuz') !== null) {
+          curWord.pronunciation = matchLabel(bq, 'Talaffuz');
+        } else if (curWord && matchLabel(bq, 'Shakllar') !== null) {
+          curWord.forms = matchLabel(bq, 'Shakllar');
+        } else if (curWord && matchLabel(bq, 'Sinonim') !== null) {
+          curWord.synonyms = matchLabel(bq, 'Sinonim');
+        } else if (curWord && matchLabel(bq, 'Antonim') !== null) {
+          curWord.antonyms = matchLabel(bq, 'Antonim');
+        } else if (curWord && matchLabel(bq, 'Birikma') !== null) {
+          curWord.collocations = matchLabel(bq, 'Birikma');
+        } else if (curWord && matchLabel(bq, 'Eslab qolish') !== null) {
+          /* Bu qator ATAYLAB alohida maydon: mashqda eng ko'p ko'rinishi
+             kerak bo'lgan yordam aynan shu — tovush o'xshashligi, tasvir
+             yoki o'zak parchalash orqali eslab qolish yo'li. */
+          curWord.mnemonic = matchLabel(bq, 'Eslab qolish');
         } else {
           if (curWord) {
             curWord.note = (curWord.note ? curWord.note + '\n' : '') + bq;
@@ -1091,6 +1169,57 @@
     '',
     'Ikkalasini BIRGA yozish mumkin: so\'z ham yozilishi bo\'yicha, ham',
     'ma\'nosi bo\'yicha bog\'langan bo\'lishi mumkin.',
+    '',
+    '## Boyitilgan maydonlar — YODDA QOLADIGAN lug\'at uchun',
+    '',
+    'Yuqoridagi to\'rttasi (Izoh, Chalkashadi, Ma\'no guruhi, Misol) yetarli',
+    'bo\'lishi mumkin, lekin CHUQUR o\'rganish uchun yana ettita qator bor.',
+    'Har biri BITTA QATOR, ortiqcha cho\'zma:',
+    '',
+    '```markdown',
+    '## 15. объясня́ть — tushuntirmoq',
+    '',
+    '> Turkum: fe\'l (NSV) — mukammal juft: объясни\'ть',
+    '',
+    '> Talaffuz: объясня́ть (3-bo\'g\'inga urg\'u)',
+    '',
+    '> Shakllar: я объясня́ю, ты объясня́ешь, он объясня́ет',
+    '',
+    '> Sinonim: растолко\'вывать (kamroq rasmiy)',
+    '',
+    '> Antonim: (bo\'lmasa qoldir)',
+    '',
+    '> Birikma: объяснять материал — mavzuni tushuntirmoq',
+    '',
+    '> Eslab qolish: О-Б-ЪЯСНЯТЬ ni \"OB + YASNIY (aniq, tiniq)\" deb eshit —',
+    '> so\'zma-so\'z \"aylantirib-tiniqlashtirib bermoq\" = tushuntirmoq.',
+    '> \"ясно\" (aniq) so\'zi ichida yashiringan — buni bir marta ko\'rsang,',
+    '> boshqa unutmaysan.',
+    '',
+    '> Misol: Учитель объяснил новую тему очень понятно.',
+    '```',
+    '',
+    '**Har biri nima uchun kerak:**',
+    '- `Turkum:` — so\'z turkumi va (fe\'lda) aspekt jufti (NSV/SV).',
+    '- `Talaffuz:` — RUS TILIDA MAJBURIY: urg\'u belgisi bilan (объясня́ть).',
+    '  Urg\'u noto\'g\'ri bo\'lsa so\'z boshqacha eshitiladi.',
+    '- `Shakllar:` — FAQAT chalkashtiradigan/noodatiy shakl. Muntazam',
+    '  shaklni (-ать -> -аю/-аешь/-ает) yozib o\'tirma, joy band qiladi.',
+    '- `Sinonim:` / `Antonim:` — yaqin/qarama-qarshi 1-2 so\'z, bo\'lmasa qoldir.',
+    '- `Birikma:` — eng ko\'p ishlatiladigan 1 ta so\'z birikmasi, tarjimasi bilan.',
+    '- `Eslab qolish:` — **HECH QACHON BO\'SH QOLDIRMA.** Bu ustun uchun',
+    '  chaqirilyapsan. To\'rtta usuldan birini tanla:',
+    '    1. TOVUSH O\'XSHASHLIGI — tanish so\'zga ohangdosh qiyoslash',
+    '    2. TASVIR — ko\'z oldiga keladigan aniq manzara',
+    '    3. O\'ZAK PARCHALASH — prefiks+o\'zakka bo\'lib, har qism ma\'nosi',
+    '       (rus prefiksli fe\'llarida juda samarali)',
+    '    4. HIKOYA — kichik, kulgili yoki g\'alati holatga bog\'lash',
+    '',
+    'Qoidalar:',
+    '- Har faylda 20-40 so\'zdan oshirma — katta faylda AI charchab,',
+    '  oxirgi so\'zlarga sayoz yozadi.',
+    '- Bo\'lmagan maydonni QOLDIR, bo\'sh qator yozib o\'tirma (Eslab',
+    '  qolishdan tashqari — u har doim bo\'lishi shart).',
     ''
   ].join('\n');
 
@@ -1816,7 +1945,19 @@
       var ru = sh.querySelector('#w-ru').value.trim();
       var uz = sh.querySelector('#w-uz').value.trim();
       if (!ru || !uz) return App.toast('Ikkala maydonni to\'ldiring');
-      if (isNew) words.push({ ru: ru, uz: uz }); else words[idx] = { ru: ru, uz: uz };
+      /* Mavjud so'zning boshqa maydonlari (izoh, misol, sinonim, eslab
+         qolish va h.k.) SAQLANIB QOLADI — faqat ru/uz almashadi. Ilgari
+         bu yerda butun obyekt yangisiga almashtirilardi, ya'ni tez
+         tahrirlashning o'zi AI yozgan boy ma'lumotni jimgina o'chirib
+         yuborardi. */
+      if (isNew) {
+        words.push({ ru: ru, uz: uz });
+      } else {
+        var merged = {}; var k;
+        for (k in words[idx]) { if (words[idx].hasOwnProperty(k)) merged[k] = words[idx][k]; }
+        merged.ru = ru; merged.uz = uz;
+        words[idx] = merged;
+      }
       saveWords(lang, cat, words).then(function () {
         App.closeSheet(); App.toast('✅ Saqlandi'); onDone();
       }).catch(function (e) { App.toast('⚠️ ' + e.message); });
@@ -2177,8 +2318,10 @@
 
       '<div id="fc-card-wrap" style="flex:1;min-height:0;display:flex;justify-content:center;perspective:1200px">' +
       '<div class="fc-card" id="fc-card"><div class="fc-inner" id="fc-inner">' +
-      '<div class="fc-face fc-front"><span class="fc-lbl" id="fc-lbl-f"></span><span class="fc-word" id="fc-word-f"></span></div>' +
-      '<div class="fc-face fc-back"><span class="fc-lbl" id="fc-lbl-b"></span><span class="fc-word" id="fc-word-b"></span></div>' +
+      '<div class="fc-face fc-front"><span class="fc-lbl" id="fc-lbl-f"></span><span class="fc-word" id="fc-word-f"></span>' +
+        '<span class="fc-pron" id="fc-pron"></span></div>' +
+      '<div class="fc-face fc-back"><span class="fc-lbl" id="fc-lbl-b"></span><span class="fc-word" id="fc-word-b"></span>' +
+        '<div class="fc-extra" id="fc-extra"></div></div>' +
       '</div></div>' +
       '</div>' +
       '<p class="muted" style="text-align:center;font-size:11.5px;margin:8px 0 12px">Kartaga bosing — aylantiradi, surib yoki tugma bilan javob bering.</p>' +
@@ -2236,7 +2379,43 @@
     App.el('fc-word-b').textContent = isL1 ? w.uz : w.ru;
     App.el('fc-idx').textContent = (FC.idx + 1) + '/' + FC.list.length;
 
+    /* Talaffuz — FAQAT asl so'z tomonida ko'rsatiladi (tarjima tomonida
+       ma'nosiz). O'qishdan oldin qanday aytilishini ko'rsatib qo'yadi. */
+    var pronEl = App.el('fc-pron');
+    if (pronEl) pronEl.textContent = (isL1 && w.pronunciation) ? w.pronunciation : '';
+
+    renderFcExtra(w, isL1);
     speakSide(page);
+  }
+
+  /* Orqa tomondagi qo'shimcha panel. "Eslab qolish" ATAYLAB birinchi va
+     eng ko'zga tashlanadigan — mashqning butun ma'nosi shu yordamda.
+     Qolganlari (turkum/sinonim/antonim/shakllar/birikma) bo'lsa qo'shiladi,
+     bo'lmasa panelning o'zi ko'rinmaydi (bo'sh joy qoldirmaslik uchun). */
+  function renderFcExtra(w, isL1) {
+    var el = App.el('fc-extra'); if (!el) return;
+    /* Faqat ASL so'z tomonida chiqadi — tarjima tomonida bu ma'lumotlar
+       o'rinsiz (masalan "Eslab qolish" rus so'zi haqida gapiradi). */
+    if (!isL1) { el.innerHTML = ''; el.hidden = true; return; }
+
+    var rows = [];
+    if (w.mnemonic) {
+      rows.push('<div class="fc-mnemonic"><span data-icon="bulb" data-icon-size="14"></span>' +
+        App.esc(w.mnemonic) + '</div>');
+    }
+    var tags = [];
+    if (w.partOfSpeech) tags.push(App.esc(w.partOfSpeech));
+    if (w.forms) tags.push(App.esc(w.forms));
+    if (tags.length) rows.push('<div class="fc-tags">' + tags.join(' · ') + '</div>');
+
+    if (w.synonyms) rows.push('<div class="fc-extra-row"><b>Sinonim:</b> ' + App.esc(w.synonyms) + '</div>');
+    if (w.antonyms) rows.push('<div class="fc-extra-row"><b>Antonim:</b> ' + App.esc(w.antonyms) + '</div>');
+    if (w.collocations) rows.push('<div class="fc-extra-row"><b>Birikma:</b> ' + App.esc(w.collocations) + '</div>');
+
+    if (!rows.length) { el.innerHTML = ''; el.hidden = true; return; }
+    el.hidden = false;
+    el.innerHTML = rows.join('');
+    App.icons(el);
   }
 
   function speakSide(page) {

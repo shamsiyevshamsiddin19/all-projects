@@ -792,10 +792,28 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   position:absolute; inset:0; backface-visibility:hidden; border-radius:var(--radius-lg);
   border:1px solid var(--border); background:var(--card); box-shadow:var(--shadow);
   display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;
+  /* Boy ma'lumot (eslab qolish, sinonim...) bo'lgan so'zda kontent
+     360px balandlikdan oshib ketishi mumkin — kesib tashlash o'rniga
+     aylantiriladi. */
+  overflow-y:auto;
 }
 .fc-face .fc-lbl{ font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--hint); margin-bottom:14px; }
 .fc-face .fc-word{ font-size:25px; font-weight:800; line-height:1.3; }
 .fc-back{ transform:rotateY(180deg); }
+
+/* Talaffuz — so'z ostida, asl (o'qilayotgan) tomonda */
+.fc-pron{ font-size:13px; color:var(--hint); margin-top:6px; font-family:var(--mono); }
+
+/* Orqa tomondagi boy ma'lumot paneli */
+.fc-extra{ margin-top:16px; width:100%; text-align:left; display:flex; flex-direction:column; gap:8px; }
+.fc-mnemonic{
+  background:var(--accent-soft); border-radius:var(--radius-sm); padding:10px 12px;
+  font-size:12.5px; line-height:1.5; color:var(--text); display:flex; gap:8px; align-items:flex-start;
+}
+.fc-mnemonic [data-icon]{ flex-shrink:0; margin-top:2px; color:var(--accent); }
+.fc-tags{ font-size:11px; color:var(--hint); }
+.fc-extra-row{ font-size:11.5px; color:var(--text-2); }
+.fc-extra-row b{ color:var(--hint); font-weight:600; }
 
 /* ---------- Lug'at: Juftlash (o'xshash so'zlarni birga ko'rsatish) ---------- */
 .pc-card{
