@@ -60,6 +60,18 @@ function loadProsody() {
   return scope.prosodyParts;
 }
 
+/* `vocab.js` da .md faylni so'zlarga aylantiruvchi sof funksiya bor —
+   uni ham ajratib olamiz. */
+function loadMdParser() {
+  const src = fs.readFileSync(path.join(ROOT, 'assets/js/app2/vocab.js'), 'utf8');
+  const a = src.indexOf('  function parseMdToDictCategories(');
+  const b = src.indexOf('  function bulkSheetHtml(');
+  if (a < 0 || b < 0) throw new Error('vocab.js ichidagi .md parser topilmadi');
+  const scope = {};
+  new Function('exports', src.slice(a, b) + '\nexports.parseMdToDictCategories = parseMdToDictCategories;')(scope);
+  return scope.parseMdToDictCategories;
+}
+
 /* =========================================================
    1. Juftlash (paircore.js)
    ========================================================= */
@@ -219,6 +231,92 @@ const texts = (t) => prosodyParts(t).map((p) => p.text);
   // Eski kalit formati saqlanganmi — mavjud ma'lumot yo'qolmasligi uchun
   check('eski localStorage kaliti ishlatiladi',
     'vocab_mastered_v1' in store, Object.keys(store).join(','));
+}
+
+/* =========================================================
+   3. Lug'at .md parseri — boyitilgan maydonlar (2026-09-01)
+   ========================================================= */
+{
+  const parse = loadMdParser();
+  const md = [
+    '# Test',
+    '',
+    '## 1. объяснять — tushuntirmoq',
+    '',
+    '> Turkum: fe\'l (NSV)',
+    '',
+    '> Talaffuz: объясня\u0301ть',
+    '',
+    '> Shakllar: я объясняю, ты объясняешь',
+    '',
+    '> Sinonim: растолковывать (tushuntirib bermoq)',
+    '',
+    '> Antonim: скрывать (yashirmoq)',
+    '',
+    '> Birikma: объяснять материал — mavzuni tushuntirmoq',
+    '',
+    '> Eslab qolish: "ясно" so\'zi ichida yashiringan',
+    '',
+    '> Misol: Учитель объяснил тему.',
+    '',
+    '## 2. для — uchun',
+    '',
+    '> Turkum: predlog',
+    '',
+    '> Eslab qolish: otdan oldin keladi',
+    ''
+  ].join('\n');
+
+  const cats = parse(md, 'Yangi lug\'at');
+  const words = cats[0].words;
+
+  check('.md dan 2 ta so\'z o\'qildi', words.length === 2, words.length);
+
+  const w1 = words[0];
+  eq('Turkum o\'qildi', w1.partOfSpeech, 'fe\'l (NSV)');
+  eq('Talaffuz o\'qildi (urg\'u belgisi bilan)', w1.pronunciation, 'объясня\u0301ть');
+  eq('Shakllar o\'qildi', w1.forms, 'я объясняю, ты объясняешь');
+  eq('Sinonim o\'qildi (tarjima bilan)', w1.synonyms, 'растолковывать (tushuntirib bermoq)');
+  eq('Antonim o\'qildi', w1.antonyms, 'скрывать (yashirmoq)');
+  eq('Birikma o\'qildi', w1.collocations, 'объяснять материал — mavzuni tushuntirmoq');
+  eq('Eslab qolish o\'qildi', w1.mnemonic, '"ясно" so\'zi ichida yashiringan');
+  eq('Misol hamon ishlaydi (eski maydon)', w1.ex, 'Учитель объяснил тему.');
+
+  // Yordamchi so'z: faqat 2 ta maydon yozilgan, qolganlari BO'SH qolishi kerak —
+  // "moslashuvchan yoz" qoidasi majburlash emasligini tasdiqlaydi.
+  const w2 = words[1];
+  eq('Yordamchi so\'zda Turkum bor', w2.partOfSpeech, 'predlog');
+  eq('Yordamchi so\'zda Eslab qolish bor', w2.mnemonic, 'otdan oldin keladi');
+  check('Yordamchi so\'zda Shakllar BO\'SH (majburlanmagan)', w2.forms === '', w2.forms);
+  check('Yordamchi so\'zda Sinonim BO\'SH (majburlanmagan)', w2.synonyms === '', w2.synonyms);
+  check('Yordamchi so\'zda Talaffuz BO\'SH (majburlanmagan)', w2.pronunciation === '', w2.pronunciation);
+}
+
+{
+  // Eski .md fayllar (Chalkashadi/Ma'no guruhi/Misol, yangi maydonlarsiz)
+  // yangi parser bilan ham ISHLASHI SHART — orqaga moslik.
+  const parse = loadMdParser();
+  const md = [
+    '# Test',
+    '',
+    '## 1. слово — so\'z',
+    '',
+    '> Izoh: eski uslubdagi izoh',
+    '',
+    '> **Chalkashadi:** boshqa1, boshqa2',
+    '',
+    '> **Ma\'no guruhi:** namuna',
+    ''
+  ].join('\n');
+  const words = parse(md, 'X')[0].words;
+  eq('eski Chalkashadi hamon ishlaydi', words[0].pairWith, ['boshqa1', 'boshqa2']);
+  eq('eski Ma\'no guruhi hamon ishlaydi', words[0].meaningGroup, 'namuna');
+  /* "Izoh:" hech qachon maxsus ishlanmagan — u boshqa hech qanday
+     direktivga mos kelmagani uchun generic "note" ichiga SO'ZMA-SO'Z
+     (yorlig'i bilan birga) tushadi. Bu eskidan shunday ishlagan. */
+  eq('eski Izoh hamon ishlaydi (yorlig\'i bilan)', words[0].note, 'Izoh: eski uslubdagi izoh');
+  check('yangi maydonlar bo\'sh (fayl yozmagan)', words[0].mnemonic === '' && words[0].forms === '',
+    JSON.stringify(words[0]));
 }
 
 /* =========================================================
