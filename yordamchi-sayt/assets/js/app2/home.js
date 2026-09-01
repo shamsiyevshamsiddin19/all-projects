@@ -689,15 +689,31 @@
       });
     }
 
-    // 2. Kategoriya
+    /* 2. Kategoriya.
+
+       Kategoriya nomlari `1-8000/1001-2000/1001-1100` ko'rinishida, 229 lik
+       ro'yxat esa alohida: `Глаголы настоящего времени`.
+
+       Ilgari bu shartlar NOTO'G'RI edi va o'lchab tasdiqlandi:
+         - `ru_1000` "rus va 229 emas" derdi -> 1000 emas, 8000 ta so'z
+           qaytarardi, ya'ni `ru_8000` dan farq qilmasdi;
+         - `ru_8000` "hamma rus" derdi -> 8229 ta, ya'ni 229 lik ro'yxatni
+           ham o'z ichiga olardi.
+       Endi ikkalasi ham yo'l bo'yicha aniq ajratiladi. */
+    function inTree(w) { return w.cat && w.cat.indexOf('1-8000') === 0; }
+
     if (st.category === 'ru_229') {
-      pool = pool.filter(function (w) { return w.cat && (w.cat.indexOf('Глаголы') >= 0 || w.cat.indexOf('229') >= 0); });
+      pool = pool.filter(function (w) {
+        return w.lang === 'russian' && w.cat && w.cat.indexOf('Глаголы') >= 0;
+      });
     } else if (st.category === 'ru_1000') {
-      pool = pool.filter(function (w) { return w.lang === 'russian' && (!w.cat || (w.cat.indexOf('Глаголы') < 0 && w.cat.indexOf('229') < 0)); });
+      pool = pool.filter(function (w) {
+        return w.lang === 'russian' && w.cat && w.cat.indexOf('/1-1000/') >= 0;
+      });
     } else if (st.category === 'ru_8000') {
-      pool = pool.filter(function (w) { return w.lang === 'russian'; });
+      pool = pool.filter(function (w) { return w.lang === 'russian' && inTree(w); });
     } else if (st.category === 'en_8000') {
-      pool = pool.filter(function (w) { return w.lang === 'english'; });
+      pool = pool.filter(function (w) { return w.lang === 'english' && inTree(w); });
     }
 
     // 2.6 Turkum (so'z turi) — bir nechtasi tanlansa, ULARDAN BIRIGA mos
@@ -727,13 +743,28 @@
       });
     }
 
-    // Fallback if empty
+    /* Natija bo'sh bo'lsa.
+
+       ESKI XATO: bu yerda `pool = FALLBACK_WORDS` qilinardi — ya'ni filtr
+       hech narsa topmasa, lentaga BEGONA so'zlar chiqardi. Foydalanuvchiga
+       bu "filtr umuman ishlamayapti" bo'lib ko'rinardi, aslida filtr
+       ishlagan, faqat natijasi bo'sh edi va tizim buni yashirardi.
+
+       Endi FILTR YOQILGAN bo'lsa hech qachon zaxira so'zlarga tushmaymiz —
+       bo'shligini ochiq aytamiz. Zaxira faqat FILTRSIZ holatda ishlaydi
+       (masalan lug'at hali yuklanmagan). */
     if (pool.length === 0) {
+      var filterOn = !!SEARCH_QUERY.trim() ||
+        st.category !== 'all' ||
+        (st.collections && st.collections.length > 0) ||
+        (st.partsOfSpeech && st.partsOfSpeech.length > 0) ||
+        !!st.join;
+
       if (SEARCH_QUERY.trim()) {
-        return [{ ru: "Qidiruv natijasi topilmadi", uz: "Boshqa so'z kiritib ko'ring yoki filtrlarni tozalang.", lang: "russian", cat: "Natija yo'q", note: "", ex: "" }];
+        return [{ ru: "Topilmadi", uz: "«" + SEARCH_QUERY.trim() + "» bo'yicha so'z yo'q. Boshqa so'z kiriting yoki filtrni tozalang.", lang: "russian", cat: "Natija yo'q", note: "", ex: "" }];
       }
-      if (st.collections && st.collections.length > 0) {
-        return [{ ru: "To'plam bo'sh", uz: "Tanlangan filtr bo'yicha hali so'zlar mavjud emas.", lang: "russian", cat: "Bo'sh", note: "", ex: "" }];
+      if (filterOn) {
+        return [{ ru: "Natija yo'q", uz: "Tanlangan filtrlarga mos so'z topilmadi. Filtrni o'zgartiring yoki «Tozalash» bosing.", lang: "russian", cat: "Bo'sh", note: "", ex: "" }];
       }
       pool = FALLBACK_WORDS;
     }
