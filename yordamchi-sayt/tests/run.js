@@ -396,7 +396,14 @@ const texts = (t) => prosodyParts(t).map((p) => p.text);
   // Qoidada yo'q lug'atlar — TEGILMASIN
   check('229 lik lug\'at ochiq qoladi', L.isLocked('Глаголы настоящего времени') === false);
   check('Возвратные глаголы ochiq qoladi', L.isLocked('Возвратные глаголы') === false);
-  check('ingliz lug\'ati ochiq qoladi', L.isLocked('Ingliz tili') === false);
+  /* DIQQAT: ingliz lug'ati ham `1-8000/...` yo'lidan foydalanadi, ya'ni
+     qoida unga HAM tegadi — ingliz 1001+ boblari ham qulflangan. Qulf yo'l
+     bo'yicha ishlaydi, til bo'yicha emas. Buni ochiq yozib qo'yamiz, aks
+     holda "ingliz tegilmagan" degan noto'g'ri taassurot qolardi. */
+  check('ingliz 1-1000 ham ochiq', L.isLocked('1-8000/1-1000/1-100') === false);
+  check('ingliz 1001+ ham qulf (yo\'l bo\'yicha, til emas)',
+        L.isLocked('1-8000/2001-3000') === true);
+  check('qoidasiz nomdagi lug\'at ochiq', L.isLocked('Yangi lug\'at') === false);
 
   const pool = [
     { ru: 'a', cat: '1-8000/1-1000/1-100' },
@@ -464,6 +471,63 @@ const texts = (t) => prosodyParts(t).map((p) => p.text);
   eq('qaytib o\'chdi', sc.rangedWords('russian', 'X').length, 80);
 
   global.localStorage = prevLS;
+}
+
+/* =========================================================
+   8. Filtrdagi lug'atlar ro'yxati dinamik (2026-09-02)
+   =========================================================
+   Ro'yxat kodda yozilgan edi: yangi lug'at qo'shilsa filtrda ko'rinmasdi,
+   o'chirilgani esa qolib ketardi. Endi u so'zlar havzasidan o'sadi.
+
+   Eng nozik joyi: rus va ingliz lug'atlari BIR XIL `1-8000/...` yo'lidan
+   foydalanadi. Kalitga til qo'shilmasa ikkalasi bitta qatorga qo'shilib
+   ketardi va "Ingliz 1-1000" ni alohida tanlab bo'lmasdi. */
+{
+  const L = fs.readFileSync(path.join(ROOT, 'assets/js/app2/home.js'), 'utf8').split('\n');
+  function grab(head) {
+    const a = L.findIndex((l) => l.startsWith(head));
+    if (a < 0) throw new Error('topilmadi: ' + head);
+    for (let i = a + 1; i < L.length; i++) if (L[i] === '  }') return L.slice(a, i + 1).join('\n');
+    throw new Error('oxiri topilmadi: ' + head);
+  }
+  const a = L.findIndex((l) => l.startsWith('  var LEGACY_CATEGORIES = {'));
+  let legacy = null;
+  for (let i = a; i < L.length; i++) if (L[i] === '  };') { legacy = L.slice(a, i + 1).join('\n'); break; }
+
+  const sc = {};
+  new Function('e',
+    'var LOADED_WORDS_POOL = [];\nvar FALLBACK_WORDS = [];\n' + legacy + '\n' +
+    grab('  function getAvailableCats()') + '\n' + grab('  function resolveCatKey(') + '\n' +
+    'e.set=function(p){LOADED_WORDS_POOL=p;};e.cats=getAvailableCats;e.resolve=resolveCatKey;'
+  )(sc);
+
+  const pool = [];
+  for (let i = 0; i < 1000; i++) pool.push({ lang: 'russian', cat: '1-8000/1-1000/1-100' });
+  for (let i = 0; i < 500; i++)  pool.push({ lang: 'english', cat: '1-8000/1-1000/1-100' });
+  for (let i = 0; i < 229; i++)  pool.push({ lang: 'russian', cat: 'Глаголы настоящего времени' });
+  for (let i = 0; i < 300; i++)  pool.push({ lang: 'russian', cat: 'Тематический 9000/ОСНОВНЫЕ ПОНЯТИЯ/часть 1/14. Цвета' });
+  sc.set(pool);
+
+  const opts = sc.cats();
+  eq('havzadan 4 ta lug\'at topildi', opts.length, 4);
+  eq('rus va ingliz 1-1000 ALOHIDA qator', opts.filter((o) => o.name === '1-1000').length, 2);
+  eq('eng ko\'p so\'zlisi birinchi', opts[0].count, 1000);
+  eq('daraja: ildiz ostidagi birinchi bo\'lak',
+     opts.find((o) => o.root === 'Тематический 9000').name, 'ОСНОВНЫЕ ПОНЯТИЯ');
+
+  // Eski saqlangan tanlov yo'qolib ketmasin
+  eq('eski ru_1000 tarjima qilindi', sc.resolve('ru_1000'), 'russian|1-8000/1-1000');
+  eq('eski en_8000 tarjima qilindi', sc.resolve('en_8000'), 'english|1-8000');
+  eq('yangi kalit ochiladi', sc.resolve('cat:russian|X'), 'russian|X');
+  check('"all" -> filtrsiz', sc.resolve('all') === null);
+  check('notanish kalit -> filtrsiz', sc.resolve('yoq_bunday') === null);
+
+  // Qo'shildi / o'chirildi
+  sc.set(pool.concat([{ lang: 'russian', cat: 'Yangi lug\'at' }]));
+  check('yangi lug\'at o\'zi chiqdi', sc.cats().some((o) => o.name === 'Yangi lug\'at'));
+  sc.set(pool.filter((w) => w.cat !== 'Глаголы настоящего времени'));
+  check('o\'chirilgan lug\'at yo\'qoldi',
+        sc.cats().some((o) => o.name === 'Глаголы настоящего времени') === false);
 }
 
 /* =========================================================

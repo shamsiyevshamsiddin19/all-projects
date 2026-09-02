@@ -274,13 +274,20 @@
   ];
 
   /* Wstore uslubidagi kategoriyalar */
-  var WSTORE_CATEGORIES = [
-    { key: 'all', label: 'Barcha so\'zlar', icon: 'globe' },
-    { key: 'ru_229', label: 'Hozirgi zamon (229)', icon: 'zap' },
-    { key: 'ru_1000', label: 'Rus tili 1000', icon: 'book' },
-    { key: 'en_8000', label: 'Ingliz tili 8000', icon: 'globe' },
-    { key: 'ru_8000', label: 'Katta ruscha lug\'at (8000)', icon: 'book' }
-  ];
+  /* Lug'atlar ro'yxati endi QATTIQ EMAS — u so'zlar havzasidan yasaladi
+     (`getAvailableCats`). Yangi lug'at qo'shilsa ro'yxatda o'zi paydo
+     bo'ladi, o'chirilgani esa yo'qoladi.
+
+     Bu xarita faqat ESKI saqlangan tanlov uchun: foydalanuvchida
+     `ru_1000` yozib qo'yilgan bo'lishi mumkin, u yo'qolib qolmasin. */
+  var LEGACY_CATEGORIES = {
+    ru_229:  'russian|Глаголы настоящего времени',
+    ru_1000: 'russian|1-8000/1-1000',
+    ru_8000: 'russian|1-8000',
+    en_8000: 'english|1-8000'
+  };
+
+  var LANG_LABEL = { russian: 'Rus', english: 'Ingliz' };
 
   var WSTORE_COLLECTIONS = [
     { key: 'liked', label: 'Sevimli so\'zlarim', icon: 'heartFill', color: '#ef4444' },
@@ -689,6 +696,49 @@
       .sort(function (a, b) { return b.count - a.count; });
   }
 
+  /* Havzada HAQIQATAN mavjud lug'atlar. `getAvailablePos` bilan bir xil
+     usul: ro'yxat ma'lumotdan o'sadi, kodda yozilmaydi.
+
+     Daraja tanlovi: ildizning ostidagi BIRINCHI bo'lak olinadi
+     (`1-8000/1-1000`, `Тематический 9000/ЧЕЛОВЕК`), papkasiz lug'at esa
+     o'zi. Faqat ildiz olinsa "1-1000" ni alohida tanlab bo'lmasdi;
+     to'liq yo'l olinsa ro'yxatda 340 ta qator chiqardi.
+
+     Kalitga TIL ham kiradi: rus va ingliz lug'atlari bir xil `1-8000/...`
+     yo'lidan foydalanadi, tilsiz ikkalasi bitta qatorga qo'shilib ketardi. */
+  function getAvailableCats() {
+    var pool = LOADED_WORDS_POOL.length > 0 ? LOADED_WORDS_POOL : FALLBACK_WORDS;
+    var map = {}, order = [];
+    pool.forEach(function (w) {
+      var cat = String(w.cat || '');
+      if (!cat) return;
+      var parts = cat.split('/');
+      var prefix = parts.length > 1 ? parts[0] + '/' + parts[1] : parts[0];
+      var key = (w.lang || 'russian') + '|' + prefix;
+      if (!map[key]) {
+        map[key] = {
+          key: 'cat:' + key,
+          name: parts.length > 1 ? parts[1] : parts[0],
+          root: parts.length > 1 ? parts[0] : '',
+          lang: w.lang || 'russian',
+          count: 0
+        };
+        order.push(key);
+      }
+      map[key].count++;
+    });
+    return order.map(function (k) { return map[k]; })
+      .sort(function (a, b) { return b.count - a.count; });
+  }
+
+  /* Tanlangan lug'at kalitini `lang|prefix` ga aylantiradi. Eski kalit
+     ham, yangi `cat:` kaliti ham tushunarli. */
+  function resolveCatKey(key) {
+    if (!key || key === 'all') return null;
+    if (key.indexOf('cat:') === 0) return key.slice(4);
+    return LEGACY_CATEGORIES[key] || null;
+  }
+
   /* Filter and Sort pool */
   function getFilteredWordsPool() {
     var pool = LOADED_WORDS_POOL.length > 0 ? LOADED_WORDS_POOL : FALLBACK_WORDS;
@@ -717,25 +767,22 @@
            qaytarardi, ya'ni `ru_8000` dan farq qilmasdi;
          - `ru_8000` "hamma rus" derdi -> 8229 ta, ya'ni 229 lik ro'yxatni
            ham o'z ichiga olardi.
-       Endi ikkalasi ham yo'l bo'yicha aniq ajratiladi. */
-    function inTree(w) { return w.cat && w.cat.indexOf('1-8000') === 0; }
+       Endi ikkalasi ham yo'l bo'yicha aniq ajratiladi.
 
-    /* ANIQ nom bo'yicha. Ilgari `indexOf('Глаголы') >= 0` edi — bu
-       "Тематический 9000" ichidagi `252. Глаголы А-Е` ... `257. Глаголы У-Я`
-       mavzularini ham tortib olardi, ya'ni 229 lik ro'yxatga begona
-       so'zlar aralashardi. */
-    if (st.category === 'ru_229') {
+       Shart ham QATTIQ EMAS: tanlov `lang|yo'l` ko'rinishida keladi va
+       bitta solishtirish bilan bajariladi. Ilgari har lug'at uchun alohida
+       `if` yozilardi — yangi lug'at qo'shilganda uni filtrlab bo'lmasdi va
+       aynan shu sabab shartlar bir-biriga o'xshab ketib xato qilardi. */
+    var catSel = resolveCatKey(st.category);
+    if (catSel) {
+      var bar = catSel.indexOf('|');
+      var selLang = catSel.slice(0, bar);
+      var selPath = catSel.slice(bar + 1);
       pool = pool.filter(function (w) {
-        return w.lang === 'russian' && w.cat === CAT_229;
+        if (w.lang !== selLang) return false;
+        var c = w.cat || '';
+        return c === selPath || c.indexOf(selPath + '/') === 0;
       });
-    } else if (st.category === 'ru_1000') {
-      pool = pool.filter(function (w) {
-        return w.lang === 'russian' && w.cat && w.cat.indexOf('/1-1000/') >= 0;
-      });
-    } else if (st.category === 'ru_8000') {
-      pool = pool.filter(function (w) { return w.lang === 'russian' && inTree(w); });
-    } else if (st.category === 'en_8000') {
-      pool = pool.filter(function (w) { return w.lang === 'english' && inTree(w); });
     }
 
     // 2.6 Turkum (so'z turi) — bir nechtasi tanlansa, ULARDAN BIRIGA mos
@@ -1566,16 +1613,44 @@
             '<div class="ws-sec">' +
               '<h3 class="ws-sec-title"><span class="ws-sec-bar"></span> Tillar va Lug\'atlar</h3>' +
               '<div class="ws-sec-body">' +
-                WSTORE_CATEGORIES.map(function (c) {
-                  var isChecked = (st.category === c.key);
-                  return '<label class="ws-check-row" data-act="wsSelectCategory" data-arg=\'' + App.arg({ c: c.key }) + '\'>' +
-                    '<span class="ws-check-box ' + (isChecked ? 'checked' : '') + '">' +
-                      (isChecked ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '') +
-                    '</span>' +
-                    '<span class="ws-row-icon" data-icon="' + c.icon + '" data-icon-size="15"></span>' +
-                    '<span class="ws-row-label">' + App.esc(c.label) + '</span>' +
-                  '</label>';
-                }).join('') +
+                /* "Barchasi" + havzada mavjud lug'atlar. Ro'yxat kodda
+                   yozilmagan: yangi lug'at qo'shilsa o'zi chiqadi,
+                   o'chirilgani (yoki qulflangani) yo'qoladi.
+
+                   Tanlangan lug'at ro'yxatdan yo'qolib qolsa ham qator
+                   ko'rsatiladi ("yo'q" izohi bilan) — aks holda filtr
+                   yoqiq turib, nima yoqilganini ko'rib bo'lmasdi. */
+                (function () {
+                  var opts = getAvailableCats();
+                  var selKey = resolveCatKey(st.category);
+                  var found = opts.some(function (c) { return c.key === 'cat:' + selKey; });
+                  var rows = [{ key: 'all', label: 'Barcha so\'zlar', hint: '', icon: 'globe' }];
+                  opts.forEach(function (c) {
+                    rows.push({
+                      key: c.key,
+                      label: c.name,
+                      hint: (LANG_LABEL[c.lang] || c.lang) +
+                            (c.root ? ' · ' + c.root : '') + ' · ' + c.count + ' ta so\'z',
+                      icon: c.lang === 'english' ? 'globe' : 'book'
+                    });
+                  });
+                  if (selKey && !found) {
+                    rows.push({ key: st.category, label: selKey.split('|').pop().split('/').pop(),
+                                hint: 'hozir mavjud emas', icon: 'alert' });
+                  }
+                  return rows.map(function (c) {
+                    var isChecked = (st.category === c.key);
+                    return '<label class="ws-check-row" data-act="wsSelectCategory" data-arg=\'' + App.arg({ c: c.key }) + '\'>' +
+                      '<span class="ws-check-box ' + (isChecked ? 'checked' : '') + '">' +
+                        (isChecked ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '') +
+                      '</span>' +
+                      '<span class="ws-row-icon" data-icon="' + c.icon + '" data-icon-size="15"></span>' +
+                      '<span class="ws-row-label">' + App.esc(c.label) +
+                        (c.hint ? '<i class="ws-row-hint">' + App.esc(c.hint) + '</i>' : '') +
+                      '</span>' +
+                    '</label>';
+                  }).join('');
+                })() +
               '</div>' +
             '</div>' +
 
