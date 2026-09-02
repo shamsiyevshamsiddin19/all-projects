@@ -8,6 +8,12 @@
   };
 
   var V = { lang: 'english', order: [], data: {}, loaded: false };
+
+  /* T&P Books "Русско-узбекский тематический словарь" (2014) tuzilishi.
+     257 mavzu, 6 katta bo'lim. Nomi BITTA joyda turadi — u uch joyda
+     ishlatiladi (nishon, karta ko'rinishi, yorliq), qo'lda takrorlansa
+     biri o'zgarib qolishi aniq edi. */
+  var TEMA_ROOT = 'Тематический 9000';
   var FC = null; // flashcard session state
 
     function vocabBadgeHtml(name) {
@@ -16,6 +22,14 @@
     // Master 1-8000 badge
     if (name === '1-8000') {
       return '<span class="chat-av" style="background:linear-gradient(135deg,#6366f1,#a855f7,#ec4899);color:#fff;font-size:14.5px;font-weight:900;box-shadow:0 4px 14px rgba(168,85,247,0.45);letter-spacing:-0.5px">8K</span>';
+    }
+
+    /* Тематический 9000 — 1-8000 ning yonidagi ikkinchi katta to'plam.
+       Rangi ATAYLAB butunlay boshqa: 8K binafsha-pushti, bu esa
+       ko'kish-yashil. Ikkalasi yonma-yon turadi, farqi bir qarashda
+       bilinishi kerak. Qizil olinmadi — u xato/o'chirish rangi. */
+    if (name === TEMA_ROOT) {
+      return '<span class="chat-av" style="background:linear-gradient(135deg,#0d9488,#10b981,#84cc16);color:#fff;font-size:14.5px;font-weight:900;box-shadow:0 4px 14px rgba(16,185,129,0.45);letter-spacing:-0.5px">9K</span>';
     }
 
     // 1-1000 folder badge
@@ -402,10 +416,17 @@
         if (order.length) {
           html += '<div class="chat-list">' + order.map(function (path) {
             var f = map[path];
+            var isTema  = (f.name === TEMA_ROOT);
             var isMagic = (f.name === '1-8000' || (f.name === '1-1000' && !folder));
-            var magicClass = isMagic ? ' chat-row-magic' : '';
-            var titleExtra = f.name === '1-8000' ? ' <span class="tag-magic">✨ 8 000 So\'z</span>' : (isMagic ? ' <span class="tag-magic">✨ 1 000 So\'z</span>' : '');
-            return '<div class="chat-item' + (isMagic ? ' chat-item-magic' : '') + '">' +
+            /* Ichki tugma har ikkala holatda ham shaffof bo'ladi — rang
+               o'ram `div` da, aks holda ikki fon ustma-ust tushardi. */
+            var magicClass = (isMagic || isTema) ? ' chat-row-magic' : '';
+            var itemClass = isTema ? ' chat-item-tema' : (isMagic ? ' chat-item-magic' : '');
+            var titleExtra = isTema
+              ? ' <span class="tag-tema">9 000 So\'z · 257 mavzu</span>'
+              : (f.name === '1-8000' ? ' <span class="tag-magic">✨ 8 000 So\'z</span>'
+                : (isMagic ? ' <span class="tag-magic">✨ 1 000 So\'z</span>' : ''));
+            return '<div class="chat-item' + itemClass + '">' +
               '<button class="chat-row' + magicClass + '" data-act="go" data-arg=\'' +
               App.arg({ v: 'vocab', p: { lang: lang, folder: path } }) + '\'>' +
               vocabBadgeHtml(f.name) +

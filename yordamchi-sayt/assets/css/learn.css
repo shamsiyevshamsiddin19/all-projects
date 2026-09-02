@@ -639,6 +639,42 @@ body.lm-noscroll .lm-pull{ display:none; }
   box-shadow:0 2px 8px rgba(236, 72, 153, 0.4);
 }
 
+/* Тематический 9000 kartasi — 1-8000 ning yonidagi ikkinchi to'plam.
+   Tuzilishi `chat-item-magic` bilan bir xil, FAQAT rangi boshqa: u
+   binafsha-pushti, bu ko'kish-yashil. Ikkalasi yonma-yon turadi va bir
+   qarashda farqlanishi kerak. */
+.chat-item-tema{
+  position:relative;
+  margin-bottom:12px;
+  border-radius:18px;
+  background:linear-gradient(135deg, rgba(13, 148, 136, 0.14) 0%, rgba(16, 185, 129, 0.14) 50%, rgba(132, 204, 22, 0.14) 100%);
+  border:1.5px solid rgba(16, 185, 129, 0.4);
+  box-shadow:0 6px 24px rgba(16, 185, 129, 0.18);
+  overflow:hidden;
+  transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+
+.chat-item-tema:hover{
+  transform:translateY(-1px);
+  border-color:rgba(16, 185, 129, 0.7);
+  box-shadow:0 8px 32px rgba(16, 185, 129, 0.28);
+}
+
+.tag-tema{
+  display:inline-flex;
+  align-items:center;
+  font-size:11px;
+  font-weight:800;
+  padding:2.5px 8.5px;
+  border-radius:99px;
+  background:linear-gradient(135deg, #0d9488, #84cc16);
+  color:#ffffff;
+  margin-left:6px;
+  letter-spacing:0.02em;
+  vertical-align:middle;
+  box-shadow:0 2px 8px rgba(16, 185, 129, 0.4);
+}
+
 /* Instagram Reels Button in practice */
 .btn-reels-ig{
   background:linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%) !important;

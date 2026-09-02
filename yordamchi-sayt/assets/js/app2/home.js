@@ -7,6 +7,13 @@
   'use strict';
 
   /* Stories ro'yxati */
+  /* Kategoriya nomlari — bir necha joyda ishlatiladi, shuning uchun
+     bitta joyda e'lon qilinadi. Ilgari ular satr sifatida qo'lda
+     takrorlanardi va shartlar `indexOf` bilan yozilgani uchun begona
+     kategoriyalarni ham tortib olardi. */
+  var CAT_229  = 'Глаголы настоящего времени';
+  var CAT_TEMA = 'Тематический 9000';
+
   var STORIES = [
     {
       id: 'ru_229',
@@ -661,9 +668,13 @@
        Endi ikkalasi ham yo'l bo'yicha aniq ajratiladi. */
     function inTree(w) { return w.cat && w.cat.indexOf('1-8000') === 0; }
 
+    /* ANIQ nom bo'yicha. Ilgari `indexOf('Глаголы') >= 0` edi — bu
+       "Тематический 9000" ichidagi `252. Глаголы А-Е` ... `257. Глаголы У-Я`
+       mavzularini ham tortib olardi, ya'ni 229 lik ro'yxatga begona
+       so'zlar aralashardi. */
     if (st.category === 'ru_229') {
       pool = pool.filter(function (w) {
-        return w.lang === 'russian' && w.cat && w.cat.indexOf('Глаголы') >= 0;
+        return w.lang === 'russian' && w.cat === CAT_229;
       });
     } else if (st.category === 'ru_1000') {
       pool = pool.filter(function (w) {
@@ -926,7 +937,19 @@
   function getCardTheme(w) {
     var cat = w.cat || '';
     var isRu = (w.lang === 'russian');
-    if (cat.indexOf('229') >= 0 || cat.indexOf('Глаголы') >= 0) {
+    /* Тематический 9000 — ikkinchi katta to'plam. Sharti BIRINCHI
+       tekshiriladi: uning ichida `252. Глаголы А-Е` kabi mavzular bor,
+       pastdagi 229 shartiga tushib qolmasligi kerak. */
+    if (cat.indexOf(CAT_TEMA + '/') === 0) {
+      return {
+        badge: '9K',
+        title: 'Rus tili · Mavzulashtirilgan (9000)',
+        color: 'linear-gradient(135deg, #0d9488, #10b981)',
+        glow: 'linear-gradient(90deg, #0d9488, #10b981, #84cc16)',
+        accent: '#10b981'
+      };
+    }
+    if (cat === CAT_229) {
       return {
         badge: '229',
         title: 'Rus tili · Hozirgi zamon (229)',
