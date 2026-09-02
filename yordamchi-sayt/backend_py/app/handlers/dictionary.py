@@ -77,16 +77,27 @@ def get_dict_data(request: Request, body: dict, lang: str):
         "FROM dictionary_words WHERE lang = :l ORDER BY sort_order, id",
         {"l": lang},
     )
+    # SAQLANGAN TARTIB USTUN.
+    #
+    # Ilgari oxirida `order.sort(key=_nat_key)` turardi va u BUTUN ro'yxatni
+    # qayta saralardi — ya'ni saqlangan tartib hech qachon ishlamasdi.
+    # Sezilmasdi, chunki saqlangan tartib bo'sh edi va alifbo tartibi
+    # `1-8000/...` nomlariga baribir to'g'ri kelardi.
+    #
+    # "Тематический 9000" bilan bu ochildi: kitobdagi tartib (ОСНОВНЫЕ
+    # ПОНЯТИЯ -> ЧЕЛОВЕК -> ДЕЯТЕЛЬНОСТЬ -> ...) alifboga aylanib qolardi.
+    # Kitobning bo'lim tartibi mazmunga bog'liq, uni alifbo bilan
+    # almashtirib bo'lmaydi.
+    #
+    # Endi: saqlangan tartib o'z holicha qoladi, ro'yxatda YO'Q kategoriyalar
+    # (qo'lda yangi qo'shilganlar) tabiiy saralanib oxiriga qo'shiladi.
     order = _get_dict_order(lang)
     known: list[str] = []
     for item in items:
         if item["category"] not in known:
             known.append(item["category"])
-    for category in known:
-        if category not in order:
-            order.append(category)
-    order.sort(key=_nat_key)
-    return success({"items": items, "order": order})
+    extra = sorted((c for c in known if c not in order), key=_nat_key)
+    return success({"items": items, "order": order + extra})
 
 
 def save_dict_cat(request: Request, body: dict):
