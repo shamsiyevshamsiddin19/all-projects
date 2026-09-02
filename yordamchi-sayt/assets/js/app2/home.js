@@ -512,21 +512,62 @@
   /* v3: keshdagi so'zlarda `meaningGroup`/`pairWith` YO'Q edi. Kalit
      yangilanmasa 3 soat davomida eski shakldagi havza ishlatilib,
      "Ma'noni juftlash" bo'sh chiqaverardi. */
-  var FEED_CACHE_KEY = '__remote_storage_feed_cache_v3';
+  /* v4: kesh shakli siqildi (compactForCache). v3 keshlar xom shaklda va
+     juda katta — ular eskirishini kutmasdan darhol tashlanadi, aks holda
+     yangi 8847 so'z 3 soatgacha ko'rinmasdi. */
+  var FEED_CACHE_KEY = '__remote_storage_feed_cache_v4';
   var FEED_CACHE_TTL = 3 * 60 * 60 * 1000; /* 3 soat — shundan keyin yangilaydi */
 
   /* Eski, sinxronlanadigan kalit qoldig'ini tozalaymiz — u bo'lmasa ham
      bootstrap'ni yana og'irlashtirib turardi. */
   try { localStorage.removeItem('yordamchi_feed_cache_v2'); } catch (e) {}
+  try { localStorage.removeItem('__remote_storage_feed_cache_v3'); } catch (e) {}
+
+  /* Keshga SIQILGAN shakl tushadi, serverdan kelgan xom qator EMAS.
+
+     Server har so'z uchun 15 ta maydon qaytaradi (pronunciation, forms,
+     synonyms, antonyms, collocations, mnemonic, formation...), lekin lenta
+     ulardan FAQAT 8 tasini o'qiydi — qolgani keshda bekorga yotardi.
+     Ustiga maydon NOMLARI har qatorda takrorlanadi, ya'ni "word_ru" 25 ming
+     marta yozilardi.
+
+     O'lchandi: xom shaklda ru 5493 kB + en 2202 kB = 7.7 MB. localStorage
+     chegarasi odatda ~5 MB, ya'ni `setItem` xato berardi, xato yutilardi va
+     kesh HECH QACHON saqlanmasdi — natijada ilova har ochilganda 7.7 MB ni
+     qaytadan tortardi. Sekin internetda aynan shu sezilardi.
+
+     `applyFeedItems` ikkala shaklni ham o'qiydi (`it.word_ru || it.ru`),
+     shuning uchun eski kesh ham buzilmaydi. */
+  function compactForCache(items) {
+    return (items || []).map(function (it) {
+      var o = {
+        ru: it.word_ru || it.ru || '',
+        uz: it.word_uz || it.uz || '',
+        cat: it.category || it.cat || ''
+      };
+      /* Bo'sh maydon yozilmaydi — hozircha so'zlarning katta qismida
+         izoh/misol yo'q, ular uchun bu keshni yana ancha kichraytiradi. */
+      var note = it.note || '';                     if (note) o.note = note;
+      var ex = it.example || it.ex || '';            if (ex) o.ex = ex;
+      var mg = it.meaning_group || it.meaningGroup || ''; if (mg) o.meaning_group = mg;
+      var pw = it.pair_with || '';                   if (pw) o.pair_with = pw;
+      var pos = it.part_of_speech || '';             if (pos) o.part_of_speech = pos;
+      return o;
+    });
+  }
 
   function saveFeedCache(ruItems, enItems) {
     try {
       localStorage.setItem(FEED_CACHE_KEY, JSON.stringify({
         ts: Date.now(),
-        ru: ruItems,
-        en: enItems
+        ru: compactForCache(ruItems),
+        en: compactForCache(enItems)
       }));
-    } catch (e) {}
+    } catch (e) {
+      /* Baribir sig'masa — eski keshni tashlaymiz, aks holda u eskirib
+         yotaveradi va yangilanish hech qachon ko'rinmaydi. */
+      try { localStorage.removeItem(FEED_CACHE_KEY); } catch (e2) {}
+    }
   }
 
   function loadFeedCache() {
