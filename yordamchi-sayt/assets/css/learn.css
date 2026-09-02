@@ -1024,3 +1024,21 @@ body.lm-noscroll .lm-pull{ display:none; }
   color:var(--accent, #6366f1);
   line-height:1.4;
 }
+
+/* Qulflangan bo'lim: KO'RINADI, lekin ochiq emas.
+   Butunlay yashirish emas — nima kutayotgani bilinib tursin, shu turtki
+   beradi. Shuning uchun so'ndirilgan, lekin o'qilarli. */
+.chat-item-locked .chat-row{
+  opacity:.5;
+  cursor:default;
+}
+.chat-item-locked .chat-row:hover{
+  opacity:.62;
+}
+.chat-lock{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+  opacity:.75;
+}

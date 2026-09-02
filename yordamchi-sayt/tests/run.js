@@ -364,6 +364,62 @@ const texts = (t) => prosodyParts(t).map((p) => p.text);
 }
 
 /* =========================================================
+   6. Lug'at qulfi (2026-09-02)
+   =========================================================
+   Qulfning ikki tomoni bor va IKKALASI ham to'g'ri bo'lishi shart:
+     - qulflangan bo'lim ochilmasin;
+     - qoidada YOZILMAGAN lug'at qulflanib QOLMASIN.
+   Ikkinchisi muhimroq: "ro'yxatda yo'q hamma narsa qulf" degan qoida
+   yangi lug'at qo'shilganda uni jimgina yo'q qilib qo'yardi. */
+{
+  const path = require('path');
+  const prev = { window: global.window, localStorage: global.localStorage,
+                 addEventListener: global.addEventListener };
+  global.window = global;
+  global.localStorage = { _d: {}, getItem(k) { return this._d[k] || null; },
+                          setItem(k, v) { this._d[k] = v; }, removeItem(k) { delete this._d[k]; } };
+  global.addEventListener = function () {};
+  delete require.cache[require.resolve('../assets/js/core/lock.js')];
+  require('../assets/js/core/lock.js');
+  const L = global.window.WordLock;
+
+  check('1-8000 ildiziga kirsa bo\'ladi (ichida 1-1000 ochiq)', L.isLocked('1-8000') === false);
+  check('1-1000 ostidagi lug\'at ochiq', L.isLocked('1-8000/1-1000/301-400') === false);
+  check('1001-2000 qulf', L.isLocked('1-8000/1001-2000') === true);
+  check('7001-8000 ostidagisi qulf', L.isLocked('1-8000/7001-8000/7101-7200') === true);
+  check('Тематический ildiziga kirsa bo\'ladi', L.isLocked('Тематический 9000') === false);
+  check('ОСНОВНЫЕ ПОНЯТИЯ ostidagi mavzu ochiq',
+        L.isLocked('Тематический 9000/ОСНОВНЫЕ ПОНЯТИЯ/часть 1/14. Цвета') === false);
+  check('ЧЕЛОВЕК ostidagi mavzu qulf',
+        L.isLocked('Тематический 9000/ЧЕЛОВЕК/питание/44. Продукты') === true);
+
+  // Qoidada yo'q lug'atlar — TEGILMASIN
+  check('229 lik lug\'at ochiq qoladi', L.isLocked('Глаголы настоящего времени') === false);
+  check('Возвратные глаголы ochiq qoladi', L.isLocked('Возвратные глаголы') === false);
+  check('ingliz lug\'ati ochiq qoladi', L.isLocked('Ingliz tili') === false);
+
+  const pool = [
+    { ru: 'a', cat: '1-8000/1-1000/1-100' },
+    { ru: 'b', cat: '1-8000/5001-6000/5101-5200' },
+    { ru: 'c', cat: 'Тематический 9000/ОСНОВНЫЕ ПОНЯТИЯ/часть 1/14. Цвета' },
+    { ru: 'd', cat: 'Тематический 9000/ПРИРОДА/фауна/210. Млекопитающие' },
+    { ru: 'e', cat: 'Глаголы настоящего времени' }
+  ];
+  eq('havzadan qulflanganlar chiqib ketdi', L.filterWords(pool).length, 3);
+
+  L.setOpen('Тематический 9000/ПРИРОДА', true);
+  eq('bo\'lim ochilgach havzaga qaytdi', L.filterWords(pool).length, 4);
+  L.setOpen('Тематический 9000/ПРИРОДА', false);
+  check('qaytib yopildi', L.isLocked('Тематический 9000/ПРИРОДА') === true);
+
+  check('boshlang\'ich ochiq bo\'limni yopib bo\'lmaydi', L.isFixedOpen('1-8000/1-1000') === true);
+
+  global.window = prev.window;
+  global.localStorage = prev.localStorage;
+  global.addEventListener = prev.addEventListener;
+}
+
+/* =========================================================
    Natija
    ========================================================= */
 console.log('');

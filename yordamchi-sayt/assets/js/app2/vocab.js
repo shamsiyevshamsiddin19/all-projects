@@ -399,15 +399,21 @@
         });
 
         function catRow(it) {
-          return '<div class="chat-item">' +
-            '<button class="chat-row" data-act="go" data-arg=\'' + App.arg({ v: 'vocab_practice', p: { lang: lang, cat: it.full } }) + '\'>' +
+          var lockedC = !!(window.WordLock && WordLock.isLocked(it.full));
+          var actC = lockedC
+            ? 'data-act="vocabLocked" data-arg=\'' + App.arg({ p: it.full }) + '\''
+            : 'data-act="go" data-arg=\'' + App.arg({ v: 'vocab_practice', p: { lang: lang, cat: it.full } }) + '\'';
+          return '<div class="chat-item' + (lockedC ? ' chat-item-locked' : '') + '">' +
+            '<button class="chat-row" ' + actC + '>' +
             vocabBadgeHtml(it.name) +
             '<span class="chat-main">' +
               '<span class="chat-title">' + App.esc(it.name) + '</span>' +
               '<span class="chat-sub">' + it.count + ' so\'z</span>' +
             '</span>' +
-            '<span class="chat-arrow" data-icon="arrowLeft" data-icon-size="16"></span></button>' +
-            '</div>';
+            (lockedC
+              ? '<span class="chat-lock" data-icon="lock" data-icon-size="15"></span>'
+              : '<span class="chat-arrow" data-icon="arrowLeft" data-icon-size="16"></span>') +
+            '</button></div>';
         }
 
         /* Papka qatori: asosiy qismi ichkariga kiradi, yonidagi tugma menyu
@@ -426,16 +432,23 @@
               ? ' <span class="tag-tema">9 000 So\'z · 257 mavzu</span>'
               : (f.name === '1-8000' ? ' <span class="tag-magic">✨ 8 000 So\'z</span>'
                 : (isMagic ? ' <span class="tag-magic">✨ 1 000 So\'z</span>' : ''));
-            return '<div class="chat-item' + itemClass + '">' +
-              '<button class="chat-row' + magicClass + '" data-act="go" data-arg=\'' +
-              App.arg({ v: 'vocab', p: { lang: lang, folder: path } }) + '\'>' +
+            /* Qulflangan papka KO'RINADI (nima kutayotgani bilinsin),
+               lekin bosilganda ichiga o'tmaydi — tushuntirish chiqadi. */
+            var lockedF = !!(window.WordLock && WordLock.isLocked(path));
+            var actF = lockedF
+              ? 'data-act="vocabLocked" data-arg=\'' + App.arg({ p: path }) + '\''
+              : 'data-act="go" data-arg=\'' + App.arg({ v: 'vocab', p: { lang: lang, folder: path } }) + '\'';
+            return '<div class="chat-item' + itemClass + (lockedF ? ' chat-item-locked' : '') + '">' +
+              '<button class="chat-row' + magicClass + '" ' + actF + '>' +
               vocabBadgeHtml(f.name) +
               '<span class="chat-main">' +
                 '<span class="chat-title">' + App.esc(f.name) + titleExtra + '</span>' +
                 '<span class="chat-sub">' + f.items + ' bo\'lim · ' + f.words + ' so\'z</span>' +
               '</span>' +
-              '<span class="chat-arrow" data-icon="arrowLeft" data-icon-size="16"></span></button>' +
-              '</div>';
+              (lockedF
+                ? '<span class="chat-lock" data-icon="lock" data-icon-size="15"></span>'
+                : '<span class="chat-arrow" data-icon="arrowLeft" data-icon-size="16"></span>') +
+              '</button></div>';
           }).join('') + '</div>';
         }
         if (root.length) {
@@ -1271,6 +1284,22 @@
     ''
   ].join('\n');
 
+  /* Qulflangan bo'lim bosilganda. Jim turish yomon — foydalanuvchi
+     tugma buzuq deb o'ylaydi. Nima uchun yopiqligi va qayerdan ochilishi
+     aytiladi. */
+  App.actions.vocabLocked = function (a) {
+    var name = String((a && a.p) || '').split('/').pop();
+    App.sheet(
+      '<p style="margin:0 0 10px;font-size:14px"><b>' + App.esc(name) + '</b> hozircha qulflangan.</p>' +
+      '<p class="muted" style="margin:0 0 14px;font-size:13px;line-height:1.5">' +
+      'Qulflangan bo\'limlar lentada, qidiruvda va mashqlarda ham chiqmaydi — ' +
+      'diqqat ochiq bo\'limga qaratilsin uchun. Tayyor bo\'lganingizda ' +
+      '<b>Sozlamalar &rarr; Lug\'at qulfi</b> dan ochasiz.</p>' +
+      '<button class="btn" data-act="go" data-arg=\'' + App.arg({ v: 'settings' }) + '\'>Sozlamalarga o\'tish</button>',
+      { title: 'Qulflangan' }
+    );
+  };
+
   App.actions.vocabAiGuide = function (a) {
     var html =
       '<p class="muted" style="font-size:12.5px;margin:0 0 12px">' +
@@ -1354,6 +1383,10 @@
   }
   /* Tanlangan oraliqdagi so'zlar (asl tartibda — aralashtirilmaydi) */
   function rangedWords(lang, cat) {
+    /* Ikkinchi to'siq. Kirish qatorda yopilgan, lekin mashqqa boshqa yo'l
+       bilan (eski havola, saqlangan holat) kelib qolinsa ham qulflangan
+       kategoriyadan so'z chiqmasligi kerak. */
+    if (window.WordLock && WordLock.isLocked(cat)) return [];
     var words = V.data[cat] || [];
     if (!words.length) return [];
     var r = getRange(lang, cat, words.length);

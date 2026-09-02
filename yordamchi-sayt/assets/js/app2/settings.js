@@ -50,6 +50,12 @@
         '<div class="li-main"><div class="li-title">Ilova belgisi</div><div class="li-sub">Bosh ekran yorlig\'i uchun</div></div>' +
         '<span class="li-chev" data-icon="arrowLeft" data-icon-size="16" style="transform:rotate(180deg)"></span></button>' +
 
+        '<div class="list-label">Lug\'at</div>' +
+        '<button class="list-row" data-act="vocabLock">' +
+        '<span class="li-ic" style="background:#6366f122;color:#6366f1" data-icon="lock" data-icon-size="15"></span>' +
+        '<div class="li-main"><div class="li-title">Lug\'at qulfi</div>' +
+        '<div class="li-sub">Qaysi bo\'limlar ochiq bo\'lishini tanlash</div></div>' +
+        '<span class="li-chev" data-icon="arrowLeft" data-icon-size="16" style="transform:rotate(180deg)"></span></button>' +
         '<div class="list-label">Xavfsizlik</div>' +
         '<button class="list-row" data-act="accessCode">' +
         '<span class="li-ic" style="background:#f59e0b22;color:#f59e0b" data-icon="lock" data-icon-size="15"></span>' +
@@ -642,6 +648,69 @@
         var b = sh.querySelector('#ac-body');
         if (b) b.innerHTML = App.empty({ icon: 'alert', title: 'Xatolik', text: e.message });
       });
+  };
+
+
+  /* Lug'at qulfi. Ro'yxat QO'LDA yozilmaydi — `WordLock` uni lentaga
+     yuklangan kategoriyalardan o'rganadi, ya'ni yangi bo'lim qo'shilsa
+     shu yerda o'zi paydo bo'ladi.
+
+     Boshlang'ich ochiq bo'lim (1-1000 va ОСНОВНЫЕ ПОНЯТИЯ) yopilmaydi:
+     hammasi yopilsa foydalanuvchi o'zini butunlay tashqarida qoldirardi. */
+  App.actions.vocabLock = function () {
+    if (!window.WordLock) return;
+    var units = WordLock.units();
+
+    if (!units.length) {
+      App.sheet('<p class="muted" style="margin:0;font-size:13px">Lug\'at hali yuklanmadi. ' +
+        'Bosh sahifani bir marta oching va qaytib keling.</p>', { title: 'Lug\'at qulfi' });
+      return;
+    }
+
+    var byRoot = {}, roots = [];
+    units.forEach(function (u) {
+      if (!byRoot[u.root]) { byRoot[u.root] = []; roots.push(u.root); }
+      byRoot[u.root].push(u);
+    });
+
+    var html =
+      '<p class="muted" style="margin:0 0 12px;font-size:13px;line-height:1.5">' +
+      'Qulflangan bo\'lim lentada, qidiruvda va mashqlarda chiqmaydi. ' +
+      'Bir vaqtda kam bo\'lim ochiq tursa, diqqat tarqalmaydi.</p>';
+
+    roots.forEach(function (r) {
+      html += '<div class="list-label">' + App.esc(r) + '</div>';
+      byRoot[r].sort(function (a, b) { return a.name.localeCompare(b.name, 'ru'); });
+      byRoot[r].forEach(function (u) {
+        var fixed = WordLock.isFixedOpen(u.path);
+        html +=
+          '<label class="list-row" style="cursor:pointer">' +
+          '<span class="li-ic" style="background:' + (u.locked ? '#94a3b822' : '#10b98122') +
+            ';color:' + (u.locked ? '#94a3b8' : '#10b981') + '" data-icon="' +
+            (u.locked ? 'lock' : 'check') + '" data-icon-size="15"></span>' +
+          '<span class="li-main"><span class="li-title">' + App.esc(u.name) + '</span>' +
+          '<span class="li-sub">' + u.words + ' so\'z' +
+          (fixed ? ' · doim ochiq' : '') + '</span></span>' +
+          '<input type="checkbox" class="vl-chk" data-path="' + App.esc(u.path) + '"' +
+          (u.locked ? '' : ' checked') + (fixed ? ' disabled' : '') + '>' +
+          '</label>';
+      });
+    });
+
+    html += '<button class="btn" id="vl-save" style="margin-top:14px">Saqlash</button>';
+
+    var sh = App.sheet(html, { title: 'Lug\'at qulfi' });
+    App.icons(sh);
+    var btn = sh.querySelector('#vl-save');
+    if (btn) btn.onclick = function () {
+      sh.querySelectorAll('.vl-chk').forEach(function (c) {
+        if (c.disabled) return;
+        WordLock.setOpen(c.getAttribute('data-path'), c.checked);
+      });
+      /* Havza ilova ochilganda bir marta yig'iladi — o'zgarish ko'rinishi
+         uchun sahifani qaytadan yuklaymiz. Bu kamdan-kam bo'ladigan amal. */
+      location.reload();
+    };
   };
 
 })();

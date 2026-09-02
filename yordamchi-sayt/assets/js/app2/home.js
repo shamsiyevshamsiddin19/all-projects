@@ -613,6 +613,17 @@
         partOfSpeech: (it.part_of_speech || '').trim()
       });
     });
+
+    /* QULF — bitta joyda. Lenta, qidiruv, filtrlar, juftlash, Reels
+       hammasi shu havzadan oladi, shuning uchun qulflangan bo'limlarni
+       shu yerda olib tashlash yetarli.
+
+       Filtr KESHDAN KEYIN turadi (kesh to'liq saqlanadi): bo'lim ochilganda
+       so'zlar darhol paydo bo'ladi, qaytadan tortib olish shart emas. */
+    if (window.WordLock) {
+      LOADED_WORDS_POOL.forEach(function (w) { WordLock.note(w.cat); });
+      LOADED_WORDS_POOL = WordLock.filterWords(LOADED_WORDS_POOL);
+    }
   }
 
   function initFeed() {
