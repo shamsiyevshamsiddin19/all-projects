@@ -1370,7 +1370,50 @@
   };
 
   /* ---------- Oraliq (batch) tanlash — barcha metodlar shu oraliqda ishlaydi ---------- */
+  /* ON/OFF tugmasi — sarlavhada, yuklash va sozlanma belgilaridan CHAPDA.
+     Holati matn bilan ham yozilgan (faqat rang emas): rangni ajratolmaydigan
+     ekranda ham, kichik ekranda ham qaysi holatda ekani bilinadi. */
+  function allSwitchHtml(lang, cat) {
+    var on = isAllMode(lang, cat);
+    return '<button class="all-sw' + (on ? ' on' : '') + '" data-act="vocabAllToggle" data-arg=\'' +
+      App.arg({ lang: lang, cat: cat }) + '\' role="switch" aria-checked="' + (on ? 'true' : 'false') +
+      '" title="' + (on ? 'Hammasi yoqilgan — oraliq va o\'rganilganlar hisobga olinmaydi'
+                        : 'Yoqilsa lug\'atdagi barcha so\'z mashqqa tushadi') + '">' +
+      '<span class="all-sw-txt">' + (on ? 'ON' : 'OFF') + '</span>' +
+      '<span class="all-sw-knob"></span></button>';
+  }
+
+  App.actions.vocabAllToggle = function (a) {
+    setAllMode(a.lang, a.cat, !isAllMode(a.lang, a.cat));
+    App.reload();
+  };
+
   function rangeKey(lang, cat) { return lang + '::' + cat; }
+
+  /* --- "Hammasi" rejimi ---
+     Yoqilsa mashq lug'atdagi HAMMA so'zni oladi: oraliq ham, "o'rgandim"
+     belgisi ham e'tiborga olinmaydi.
+
+     Nima uchun kerak: oraliq va o'rganilganlar filtri odatda foydali,
+     lekin butun lug'atni bir yo'la takrorlamoqchi bo'lganda ular yo'lni
+     to'sadi — oraliqni qo'lda 1 dan oxirigacha kengaytirish, keyin qaytarib
+     qo'yish kerak bo'lardi.
+
+     Oraliq kabi HAR KATEGORIYA uchun alohida saqlanadi: bitta lug'atda
+     yoqilgani boshqasini o'zgartirmaydi. */
+  var ALL_KEY = 'vocab_all_mode_v1';
+  function allModeAll() {
+    try {
+      var v = JSON.parse(localStorage.getItem(ALL_KEY) || '{}');
+      return (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+    } catch (e) { return {}; }
+  }
+  function isAllMode(lang, cat) { return !!allModeAll()[rangeKey(lang, cat)]; }
+  function setAllMode(lang, cat, on) {
+    var m = allModeAll();
+    if (on) m[rangeKey(lang, cat)] = 1; else delete m[rangeKey(lang, cat)];
+    try { localStorage.setItem(ALL_KEY, JSON.stringify(m)); } catch (e) {}
+  }
   function rangeAll() { try { return JSON.parse(localStorage.getItem('vocab_range_v1') || '{}') || {}; } catch (e) { return {}; } }
   function getRange(lang, cat, total) {
     var r = rangeAll()[rangeKey(lang, cat)];
@@ -1389,6 +1432,9 @@
     if (window.WordLock && WordLock.isLocked(cat)) return [];
     var words = V.data[cat] || [];
     if (!words.length) return [];
+    /* "Hammasi" yoqilgan bo'lsa — oraliq ham, o'rganilganlar filtri ham
+       o'tkazib yuboriladi va ro'yxat butunligicha qaytadi. */
+    if (isAllMode(lang, cat)) return words.slice();
     var r = getRange(lang, cat, words.length);
     var slice = words.slice(r.from - 1, r.to);
     /* "O'rgandim" deb belgilangan so'z mashqqa TUSHMAYDI. Flashcard,
@@ -1452,6 +1498,7 @@
       var loaded = V.lang === lang && V.data[cat];
       if (!loaded) {
         var rightTopHtml =
+        allSwitchHtml(lang, cat) +
         '<button class="icon-btn ghost" data-act="vocabExportCatMD" data-arg=\'' + App.arg({ lang: lang, cat: cat }) + '\' aria-label="MD yuklab olish" title=".md qilib yuklab olish"><span data-icon="download" data-icon-size="18"></span></button>' +
         '<button class="icon-btn ghost" data-act="vocabCatManage" data-arg=\'' + App.arg({ lang: lang, cat: cat }) + '\' aria-label="Boshqarish" title="Kategoriyani boshqarish"><span data-icon="settings" data-icon-size="18"></span></button>';
 
@@ -1465,6 +1512,7 @@
       var total = V.data[cat].length;
       var r = getRange(lang, cat, total);
       var full = r && r.from === 1 && r.to === total;
+      var allOn = isAllMode(lang, cat);
 
       var practiceLeft = rangedWords(lang, cat).length;
       var prog = srsProgress(lang, cat);
@@ -1478,6 +1526,7 @@
       }
 
       var rightTopHtml =
+        allSwitchHtml(lang, cat) +
         '<button class="icon-btn ghost" data-act="vocabExportCatMD" data-arg=\'' + App.arg({ lang: lang, cat: cat }) + '\' aria-label="MD yuklab olish" title=".md qilib yuklab olish"><span data-icon="download" data-icon-size="18"></span></button>' +
         '<button class="icon-btn ghost" data-act="vocabCatManage" data-arg=\'' + App.arg({ lang: lang, cat: cat }) + '\' aria-label="Boshqarish" title="Kategoriyani boshqarish"><span data-icon="settings" data-icon-size="18"></span></button>';
 
@@ -1490,15 +1539,22 @@
         '<div class="bar"><i style="width:' + (prog.total ? Math.round(prog.learned * 100 / prog.total) : 0) + '%"></i></div></div>' +
         '<button class="list-row" data-act="vocabRange" data-arg=\'' + App.arg({ lang: lang, cat: cat }) + '\' style="margin-bottom:14px">' +
         '<span class="li-ic" data-icon="list" data-icon-size="15"></span>' +
-        '<div class="li-main"><div class="li-title">Oraliq: ' + r.from + '–' + r.to + (full ? ' (barchasi)' : '') + '</div>' +
+        /* "Hammasi" yoqilganda oraliq ISHLAMAYDI — qator shuni ochiq
+           aytishi kerak, aks holda foydalanuvchi "21-100" yozuviga qarab
+           mashqda 80 ta so'z bo'ladi deb o'ylardi. */
+        '<div class="li-main"><div class="li-title">' +
+        (allOn ? 'Hammasi yoqilgan — oraliq ishlamaydi'
+               : 'Oraliq: ' + r.from + '–' + r.to + (full ? ' (barchasi)' : '')) + '</div>' +
         /* Mashqda NECHTA so'z qolganini ham ko'rsatamiz: oraliq 150 bo'lsa
            ham, o'rganilganlar chiqarilgach 40 ta qolishi mumkin. Ilgari
            yorliq faqat oraliq kengligini aytardi va bu chalg'itardi. */
-        '<div class="li-sub">' + (r.to - r.from + 1) + ' ta so\'z' +
-        (practiceLeft < (r.to - r.from + 1)
-          ? ' · mashqda ' + practiceLeft + ' ta'
-          : '') +
-        ' · jami ' + total + '</div></div>' +
+        '<div class="li-sub">' +
+        (allOn
+          ? 'mashqda ' + practiceLeft + ' ta · o\'rganilganlar ham qo\'shildi'
+          : (r.to - r.from + 1) + ' ta so\'z' +
+            (practiceLeft < (r.to - r.from + 1) ? ' · mashqda ' + practiceLeft + ' ta' : '') +
+            ' · jami ' + total) +
+        '</div></div>' +
         '<span class="li-chev" data-icon="arrowLeft" data-icon-size="16" style="transform:rotate(180deg)"></span></button>' +
         '<div class="btn-row" style="flex-direction:column;gap:10px">' +
         methodBtn('vocab_reels', lang, cat, 'play', 'Reels', 'btn-reels-ig') +

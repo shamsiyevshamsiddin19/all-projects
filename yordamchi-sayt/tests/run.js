@@ -420,6 +420,53 @@ const texts = (t) => prosodyParts(t).map((p) => p.text);
 }
 
 /* =========================================================
+   7. "Hammasi" rejimi (2026-09-02)
+   =========================================================
+   Yoqilganda mashq oraliqni ham, "o'rgandim" belgisini ham e'tiborga
+   olmasligi kerak. Ikkalasi bitta `rangedWords()` ichida, shuning uchun
+   biri tuzalib ikkinchisi qolib ketishi mumkin edi. */
+{
+  const L = fs.readFileSync(path.join(ROOT, 'assets/js/app2/vocab.js'), 'utf8').split('\n');
+  /* Qator raqamiga bog'lanmaymiz — fayl o'zgarganda test jimgina buzilardi. */
+  function grab(head) {
+    const a = L.findIndex((l) => l.startsWith(head));
+    if (a < 0) throw new Error('topilmadi: ' + head);
+    for (let i = a + 1; i < L.length; i++) if (L[i] === '  }') return L.slice(a, i + 1).join('\n');
+    throw new Error('oxiri topilmadi: ' + head);
+  }
+  const parts = [
+    "  function rangeKey(lang, cat) { return lang + '::' + cat; }",
+    grab('  function allModeAll()'),
+    L.find((l) => l.startsWith('  var ALL_KEY')),
+    L.find((l) => l.startsWith('  function isAllMode')),
+    grab('  function setAllMode('),
+    grab('  function rangedWords(')
+  ].join('\n');
+
+  const prevLS = global.localStorage;
+  global.localStorage = { _d: {}, getItem(k) { return this._d[k] || null; },
+                          setItem(k, v) { this._d[k] = v; }, removeItem(k) { delete this._d[k]; } };
+  const sc = {};
+  new Function('e', 'localStorage',
+    'var V = { data: {} };\nvar window = {};\n' +
+    'function getRange(){ return { from: 21, to: 100 }; }\n' + parts + '\n' +
+    'e.isAllMode=isAllMode; e.setAllMode=setAllMode; e.rangedWords=rangedWords; e.V=V;'
+  )(sc, global.localStorage);
+
+  sc.V.data['X'] = Array.from({ length: 229 }, (_, i) => ({ ru: 'w' + i }));
+
+  check('boshida "Hammasi" o\'chiq', sc.isAllMode('russian', 'X') === false);
+  eq('o\'chiq: faqat oraliq (21-100)', sc.rangedWords('russian', 'X').length, 80);
+  sc.setAllMode('russian', 'X', true);
+  eq('yoqiq: butun lug\'at', sc.rangedWords('russian', 'X').length, 229);
+  check('boshqa kategoriyaga tegmaydi', sc.isAllMode('russian', 'Y') === false);
+  sc.setAllMode('russian', 'X', false);
+  eq('qaytib o\'chdi', sc.rangedWords('russian', 'X').length, 80);
+
+  global.localStorage = prevLS;
+}
+
+/* =========================================================
    Natija
    ========================================================= */
 console.log('');
