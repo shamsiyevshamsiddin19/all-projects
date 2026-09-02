@@ -320,6 +320,50 @@ const texts = (t) => prosodyParts(t).map((p) => p.text);
 }
 
 /* =========================================================
+   5. `Yasalishi:` — so'z qanday yasalgani (2026-09-02)
+   =========================================================
+   Bu qator "Batafsil" panelida ko'rsatiladi. Qo'shilishidan OLDIN u
+   hech qanday direktivga mos kelmagani uchun generic `note` ichiga
+   tushib ketardi — ya'ni Reels'ning asosiy izoh maydonini ifloslantirardi.
+   Shuning uchun ikki narsa tekshiriladi: maydonga tushishi VA note'ga
+   TUSHMASLIGI. */
+{
+  const parse = loadMdParser();
+  const md = [
+    '# Test',
+    '',
+    '## 1. приходить — kelmoq',
+    '',
+    '> Qayerda: piyoda kelish haqida',
+    '',
+    '> Yasalishi: при- (yaqinlashmoq) + ходить (yurmoq)',
+    '',
+    '## 2. вокзал — vokzal',
+    '',
+    '> **Yasalishi:** ingliz "Vauxhall" — Londondagi bekat nomi',
+    '',
+    '## 3. дом — uy',
+    '',
+    '> Qayerda: turar joy',
+    ''
+  ].join('\n');
+
+  const words = parse(md, 'X')[0].words;
+
+  eq('Yasalishi o\'qildi (oddiy yorliq)', words[0].formation,
+     'при- (yaqinlashmoq) + ходить (yurmoq)');
+  eq('Yasalishi o\'qildi (qalin yorliq)', words[1].formation,
+     'ingliz "Vauxhall" — Londondagi bekat nomi');
+
+  // Eng muhimi: yorliq note ichiga SIZIB O'TMASLIGI kerak.
+  eq('Yasalishi note ichiga tushmadi', words[0].note, 'Qayerda: piyoda kelish haqida');
+  eq('faqat Yasalishi bo\'lsa note BO\'SH qoladi', words[1].note, '');
+
+  // Tub so'zda bu qator YO'Q — qo'llanma "yozma" deydi, bo'sh qolishi normal.
+  check('yozilmagan bo\'lsa bo\'sh', words[2].formation === '', words[2].formation);
+}
+
+/* =========================================================
    Natija
    ========================================================= */
 console.log('');

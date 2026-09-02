@@ -84,6 +84,7 @@
           partOfSpeech: (it.part_of_speech || '').trim(),
           pronunciation: (it.pronunciation || '').trim(),
           forms: (it.forms || '').trim(),
+          formation: (it.formation || '').trim(),
           synonyms: (it.synonyms || '').trim(),
           antonyms: (it.antonyms || '').trim(),
           collocations: (it.collocations || '').trim(),
@@ -468,6 +469,10 @@
         lines.push('');
         lines.push('> Turkum: ' + w.partOfSpeech);
       }
+      if (w.formation) {
+        lines.push('');
+        lines.push('> Yasalishi: ' + w.formation);
+      }
       if (w.pronunciation) {
         lines.push('');
         lines.push('> Talaffuz: ' + w.pronunciation);
@@ -539,6 +544,7 @@
           partOfSpeech: (curWord.partOfSpeech || '').trim(),
           pronunciation: (curWord.pronunciation || '').trim(),
           forms: (curWord.forms || '').trim(),
+          formation: (curWord.formation || '').trim(),
           synonyms: (curWord.synonyms || '').trim(),
           antonyms: (curWord.antonyms || '').trim(),
           collocations: (curWord.collocations || '').trim(),
@@ -580,7 +586,7 @@
         curWord = {
           ru: h2Match[1].trim(), uz: h2Match[2].trim(), note: '', ex: '',
           pairWith: [], meaningGroup: '',
-          partOfSpeech: '', pronunciation: '', forms: '',
+          partOfSpeech: '', pronunciation: '', forms: '', formation: '',
           synonyms: '', antonyms: '', collocations: '', mnemonic: ''
         };
         continue;
@@ -621,6 +627,14 @@
           if (curWord) curWord.pairWith = pairText.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
         } else if (curWord && matchLabel(bq, 'Turkum') !== null) {
           curWord.partOfSpeech = matchLabel(bq, 'Turkum');
+        } else if (curWord && matchLabel(bq, 'Yasalishi') !== null) {
+          /* So'z QANDAY yasalgan / qayerdan kelib chiqqan.
+             Rus tilida so'zlarning katta qismi prefiks+o'zak: `приходить`
+             ni "при- + ходить" deb ko'rsatish o'nlab qarindosh so'zni bir
+             yo'la ochib beradi. O'zlashgan so'zlar uchun esa manba tili
+             (`вокзал` <- ingliz "Vauxhall") eslab qolishga yordam beradi.
+             Ikkisi bitta maydonda: ko'p so'zda javob AYNAN BIR XIL gap. */
+          curWord.formation = matchLabel(bq, 'Yasalishi');
         } else if (curWord && matchLabel(bq, 'Talaffuz') !== null) {
           curWord.pronunciation = matchLabel(bq, 'Talaffuz');
         } else if (curWord && matchLabel(bq, 'Shakllar') !== null) {
@@ -1102,6 +1116,8 @@
     '',
     '> Turkum: fe\'l',
     '',
+    '> Yasalishi: при- (yaqinlashmoq) + ходить (yurmoq)',
+    '',
     '> **Ma\'no guruhi:** bormoq',
     '',
     '> **Chalkashadi:** похожее1, похожее2',
@@ -1119,7 +1135,9 @@
     '  Bu asosiy izoh, Reels\'da ham shu ko\'rinadi.',
     '- `**Misol:**` — rus/ingliz gap, qavs ichida o\'zbekcha tarjimasi.',
     '  Qavs ATAYLAB kerak: ilova undan tarjimani ajratib oladi.',
-    '- Qolgan uchtasi — FILTR TIZIMI uchun (pastda).',
+    '- `Yasalishi:` — so\'z qanday yasalgan yoki qayerdan kelib chiqqan.',
+    '  Reels\'da "Batafsil" bosilganda ko\'rinadi (pastda).',
+    '- Qolgan ikkitasi — FILTR TIZIMI uchun (pastda).',
     '',
     '## `Turkum:` — filtr uchun',
     '',
@@ -1134,6 +1152,39 @@
     'Yangi tur uchrasa o\'zing nom ber (masalan `undov` — "ого", "yeah").',
     'MUHIM: bir turkum uchun HAR DOIM bir xil so\'z yoz, aks holda filtrda',
     'ikkita alohida qator bo\'lib chiqadi.',
+    '',
+    '## `Yasalishi:` — so\'z qayerdan kelib chiqqan',
+    '',
+    'BITTA qator. Ikki xil savolga javob beradi va odatda ikkalasi bir gapda',
+    'birlashadi: so\'z qanday QISMLARDAN yasalgan, va u qayerdan PAYDO',
+    'bo\'lgan.',
+    '',
+    '**1) Qismlarga ajraladigan so\'z** — eng ko\'p uchraydigani. Rus tilida',
+    'so\'zlarning katta qismi prefiks + o\'zak. Har bo\'lakning ma\'nosini',
+    'qavsda ko\'rsat:',
+    '',
+    '    > Yasalishi: при- (yaqinlashmoq) + ходить (yurmoq)',
+    '    > Yasalishi: пере- (qaytadan) + писать (yozmoq)',
+    '    > Yasalishi: учить (o\'rgatmoq) + -тель (ish bajaruvchi shaxs)',
+    '',
+    'Bu eng foydali qism: bitta prefiksni tushungan odam o\'nlab qarindosh',
+    'so\'zni birdaniga ochadi. `Chalkashadi:` ro\'yxatidagi bir o\'zakli',
+    'fe\'llarga aynan shu qator izoh beradi.',
+    '',
+    '**2) O\'zlashgan so\'z** — qaysi tildan kirgani va asl ma\'nosi:',
+    '',
+    '    > Yasalishi: ingliz "Vauxhall" — Londondagi bekat nomi',
+    '    > Yasalishi: lotin "computare" (hisoblamoq)',
+    '    > Yasalishi: turkiy "qarpuz" — tarvuz',
+    '',
+    '**3) Ajralmaydigan tub so\'z** (`дом`, `вода`, `рука`) — bu qatorni',
+    'umuman YOZMA. Zo\'rma-zo\'raki tarix o\'ylab topilgani yolg\'on bo\'ladi.',
+    '',
+    'Qoidalar:',
+    '- Bir qatordan oshirma, ensiklopediya kerak emas.',
+    '- Tushuntirish O\'ZBEKCHA, so\'z bo\'laklari asl tilida.',
+    '- ISHONCHING KOMIL bo\'lmasa yozma. Noto\'g\'ri yasalish noto\'g\'ri',
+    '  o\'rganishga olib keladi — bo\'sh qoldirish undan yaxshi.',
     '',
     '## `Chalkashadi:` — YOZILISHI o\'xshash so\'zlar',
     '',
@@ -1192,8 +1243,8 @@
     '',
     '- `Qayerda:` va `**Misol:**` — HAR so\'zga yoz.',
     '- `Turkum:` — HAR so\'zga yoz, filtr shunga tayanadi.',
-    '- `Ma\'no guruhi:` va `**Chalkashadi:**` — faqat O\'RINLI bo\'lsa yoz.',
-    '  Majburlama: ko\'p so\'zda ular bo\'lmaydi va bu normal.',
+    '- `Yasalishi:`, `Ma\'no guruhi:`, `**Chalkashadi:**` — faqat O\'RINLI',
+    '  bo\'lsa yoz. Majburlama: ko\'p so\'zda ular bo\'lmaydi va bu normal.',
     '- Har faylda 20-40 so\'zdan oshirma — katta faylda AI charchab,',
     '  oxirgi so\'zlarga sayoz yozadi.',
     ''
@@ -2862,8 +2913,8 @@
 
       /* "Batafsil" bosilganda ko'rinadigan TO'LIQ panel — Reels'ning
          o'zi (Izoh+Misol) yengil qoladi, bu yerda esa AI yozgan HAMMA
-         narsa: Turkum, Talaffuz, Shakllar, Sinonim, Antonim, Birikma,
-         Eslab qolish, so'ng Izoh/Misol. Bo'sh maydon o'tkazib yuboriladi. */
+         narsa: Turkum, Yasalishi, Talaffuz, Shakllar, Sinonim, Antonim,
+         Birikma, Eslab qolish, so'ng Izoh/Misol. Bo'sh maydon tashlanadi. */
       function buildReelsDetailHtml(w) {
         var rows = [];
         function row(label, value) {
@@ -2874,6 +2925,8 @@
           );
         }
         row('Turkum', w.partOfSpeech);
+        /* Yasalish turkumdan keyin: avval "bu nima", keyin "qayerdan". */
+        row('Yasalishi', w.formation);
         row('Talaffuz', w.pronunciation);
         row('Shakllar', w.forms);
         row('Eslab qolish', w.mnemonic);

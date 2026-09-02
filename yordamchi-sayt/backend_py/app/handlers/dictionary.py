@@ -67,6 +67,9 @@ def get_dict_data(request: Request, body: dict, lang: str):
         "COALESCE(part_of_speech, '') AS part_of_speech, "
         "COALESCE(pronunciation, '') AS pronunciation, "
         "COALESCE(forms, '') AS forms, "
+        # `formation` — so'z qanday yasalgani / qayerdan kelib chiqqani.
+        # Reels'dagi "Batafsil" panelida ko'rsatiladi.
+        "COALESCE(formation, '') AS formation, "
         "COALESCE(synonyms, '') AS synonyms, "
         "COALESCE(antonyms, '') AS antonyms, "
         "COALESCE(collocations, '') AS collocations, "
@@ -115,6 +118,7 @@ def save_dict_cat(request: Request, body: dict):
             part_of_speech = s(word.get("partOfSpeech") or word.get("part_of_speech") or "")
             pronunciation = s(word.get("pronunciation") or "")
             forms = s(word.get("forms") or "")
+            formation = s(word.get("formation") or "")
             synonyms = s(word.get("synonyms") or "")
             antonyms = s(word.get("antonyms") or "")
             collocations = s(word.get("collocations") or "")
@@ -125,13 +129,14 @@ def save_dict_cat(request: Request, body: dict):
                 text(
                     "INSERT INTO dictionary_words "
                     "(lang, category, word_ru, word_uz, note, example, pair_with, meaning_group, "
-                    " part_of_speech, pronunciation, forms, synonyms, antonyms, collocations, mnemonic, sort_order) "
+                    " part_of_speech, pronunciation, forms, formation, synonyms, antonyms, collocations, "
+                    " mnemonic, sort_order) "
                     "VALUES (:l, :c, :ru, :uz, :note, :ex, :pw, :mg, "
-                    " :pos, :pron, :forms, :syn, :ant, :coll, :mn, :so)"
+                    " :pos, :pron, :forms, :form2, :syn, :ant, :coll, :mn, :so)"
                 ),
                 {"l": lang, "c": category, "ru": ru, "uz": uz, "note": note, "ex": example,
                  "pw": pair_with, "mg": meaning, "pos": part_of_speech, "pron": pronunciation,
-                 "forms": forms, "syn": synonyms, "ant": antonyms, "coll": collocations,
+                 "forms": forms, "form2": formation, "syn": synonyms, "ant": antonyms, "coll": collocations,
                  "mn": mnemonic, "so": index},
             )
             saved += 1
