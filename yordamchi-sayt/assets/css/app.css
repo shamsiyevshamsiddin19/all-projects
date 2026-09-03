@@ -4252,10 +4252,10 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   font-family: Georgia, "Iowan Old Style", "Palatino Linotype",
                "Book Antiqua", "Source Serif Pro", "Times New Roman", serif;
 
-  /* 68ch — uzun matn uchun qulay kenglik. Kengroq bo'lsa ko'z qator
-     oxiridan boshiga qaytishda adashadi. */
-  max-width: 68ch;
-  margin-inline: auto;
+  /* Kenglik CHEKLANMAYDI — matn ekranni to'liq egallaydi.
+     Ilgari bu yerda 68ch bor edi (uzun matn uchun qulay o'lchov), lekin
+     keng ekranda matn o'rtada tor ustun bo'lib qolardi va ilovaning
+     qolgan qismidan uzilib turardi. */
   padding: 26px 22px 34px;
   border-radius: 14px;
   background: var(--r-bg);
@@ -4309,7 +4309,7 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 }
 
 /* ---- Kod bloki ----
-   Matn kengligidan CHIQADI (78ch): kod o'ralib ketmasligi kerak. */
+   Uzun satr o'ralmaydi, kerak bo'lsa yon tomonga suriladi. */
 .md-claude .md-content pre{
   position: relative;
   margin: 0 0 1.3em;
@@ -4317,7 +4317,7 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   border-radius: 11px;
   background: var(--r-code-bg);
   border: 1px solid var(--r-line);
-  width: min(100%, 78ch);
+  width: 100%;
   font-size: .855em;
   line-height: 1.62;
   overflow-x: auto;
@@ -4361,7 +4361,7 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 }
 
 /* ---- Jadval ---- */
-.md-claude .md-content .md-table-wrap{ width: min(100%, 78ch); }
+.md-claude .md-content .md-table-wrap{ width: 100%; }
 .md-claude .md-content .md-table{ font-size: .92em; border-color: var(--r-line); }
 .md-claude .md-content .md-table th,
 .md-claude .md-content .md-table td{
@@ -4375,13 +4375,10 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 .md-claude .md-content hr{ margin: 2.1em 0; border-top: 1px solid var(--r-line); }
 .md-claude .md-content a{ color: #9db8ff; text-decoration: underline; text-underline-offset: 2px; }
 .md-claude .md-content strong{ color: #fffdf7; }
-.md-claude .md-content img{ width: min(100%, 78ch); margin: 1.2em 0; border-color: var(--r-line); }
+.md-claude .md-content img{ max-width: 100%; margin: 1.2em 0; border-color: var(--r-line); }
 .md-claude .md-content li.md-task.done{ color: var(--r-muted); }
 
 /* Tor ekranda kenglik cheklovi ortiqcha — u yerda ekranning o'zi tor */
 @media (max-width: 720px){
   .md-claude .md-content{ font-size: 16px; padding: 18px 15px 26px; border-radius: 12px; }
-  .md-claude .md-content pre,
-  .md-claude .md-content .md-table-wrap,
-  .md-claude .md-content img{ width: 100%; }
 }
