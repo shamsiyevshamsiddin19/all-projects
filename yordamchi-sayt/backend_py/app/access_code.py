@@ -9,7 +9,7 @@ saytidan tashqarida qoldirib qo'yishi mumkin:
     bo'lmagan domenda Google tugmasi ishlamaydi);
   - Google xizmati vaqtincha ishlamasa.
 
-Shu sabab 14 belgilik kod bilan ham kirish mumkin.
+Shu sabab 12 belgilik kod bilan ham kirish mumkin.
 
 XAVFSIZLIK QARORLARI
 ====================
@@ -24,26 +24,31 @@ XAVFSIZLIK QARORLARI
    butun `app_storage` ni mijozga yuboradi — xesh o'sha yerda tursa,
    brauzerga ochiq uzatilardi.
 
-4. Kod uzunligi 14 belgi, alifboda 31 ta belgi (chalkashadiganlari —
-   0/O, 1/I/L — olib tashlangan). Bu ~31^14 ≈ 2.5 x 10^20 variant, ya'ni
-   taxmin qilib topib bo'lmaydi. Ustiga kirish urinishlari IP bo'yicha
-   cheklangan (`check_login_rate_limit`).
+4. Kodni EGASI o'zi yozadi, tizim yasamaydi.
+
+   Ilgari kod tasodifiy yasalardi va bir marta ko'rsatilardi. Amalda bu
+   ishlamadi: tasodifiy kod eslab qolinmasdi va o'sha zahoti ko'chirib
+   olinmasa butunlay yo'qolardi — ya'ni favqulodda yo'l aynan kerak
+   bo'lgan paytda ochilmasdi. Eslab qoladigan kod — ishlaydigan kod.
+
+   Buning evaziga kod tasodifiylikni yo'qotadi, shuning uchun ikki
+   cheklov qo'yilgan: uzunligi ANIQ 12 belgi va kamida 5 xil belgi
+   (ya'ni "AAAAAAAAAAAA" o'tmaydi). Ustiga kirish urinishlari IP bo'yicha
+   cheklangan (`check_login_rate_limit`), shuning uchun taxmin qilib
+   topish yo'li yopiq.
 
 5. Kod XOTIRADA solishtiriladi (`bcrypt.checkpw`) — u doimiy vaqtda
    ishlaydi, ya'ni javob tezligiga qarab belgi taxmin qilib bo'lmaydi.
 """
 from __future__ import annotations
 
-import secrets
 from datetime import datetime
 
 from . import db
 from .security import hash_password, verify_password
 
-# Chalkashadigan belgilar yo'q: 0/O, 1/I/L olib tashlangan.
-# Kod qo'lda ko'chiriladi, shuning uchun o'qilishi muhim.
-ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"
-CODE_LEN = 14
+CODE_LEN = 12
+MIN_UNIQUE = 5   # "AAAAAAAAAAAA" kabi kodlar o'tmasin
 
 
 def ensure_table() -> None:
@@ -58,39 +63,44 @@ def ensure_table() -> None:
 
 
 def normalize(raw: str) -> str:
-    """Foydalanuvchi kodni chiziqcha/bo'shliq bilan yozishi mumkin.
+    """Kodni solishtirishga tayyorlaydi.
 
-    Ko'rsatishda `XXXXX-XXXXX-XXXX` shaklida beriladi, shuning uchun
-    solishtirishdan oldin ajratgichlar olib tashlanadi va katta harfga
-    keltiriladi.
+    Faqat AJRATGICHLAR olib tashlanadi (bo'shliq, chiziqcha, pastki
+    chiziq) va katta harfga keltiriladi. Boshqa hech narsa o'chirilmaydi.
+
+    Ilgari bu yerda alifboga kirmagan HAR QANDAY belgi tashlab
+    yuborilardi. Tizim yasagan kod uchun bu zararsiz edi, lekin kodni
+    egasi yozadigan bo'lgach xavfli: odam "MENING-KODIM-01" deb yozsa,
+    O va 0 jimgina o'chib, kod umuman boshqa narsaga aylanardi.
+
+    `set_code()` ham, `verify()` ham AYNAN shu funksiyadan o'tadi —
+    ikkalasi bir xil qoidaga bo'ysunmasa, o'rnatilgan kodni keyin
+    hech qachon tasdiqlab bo'lmasdi.
     """
-    return "".join(ch for ch in (raw or "").upper() if ch in ALPHABET)
-
-
-def generate() -> str:
-    """Yangi kod yasaydi. `secrets` — kriptografik tasodifiy manba."""
-    return "".join(secrets.choice(ALPHABET) for _ in range(CODE_LEN))
-
-
-def pretty(code: str) -> str:
-    """XXXXX-XXXXX-XXXX — qo'lda ko'chirish oson bo'lsin."""
-    return "%s-%s-%s" % (code[:5], code[5:10], code[10:])
+    text = (raw or "").upper()
+    return "".join(ch for ch in text if ch not in " -_\t")
 
 
 def set_code(code: str) -> None:
-    """Kodni almashtiradi. Faqat BITTA kod amal qiladi — eskisi o'chadi.
+    """Egasi yozgan kodni o'rnatadi. Faqat BITTA kod amal qiladi.
 
-    Kod SAQLASHDAN OLDIN ham `normalize()` dan o'tkaziladi. Bu shart:
-    `verify()` kiruvchi qiymatni normalizatsiya qiladi, shuning uchun
-    saqlashda qilinmasa ikkalasi bir-biriga mos kelmasdi — alifboga
-    kirmaydigan belgi (masalan `I` yoki `O`) bilan qo'yilgan kodni keyin
-    hech qachon tasdiqlab bo'lmasdi.
+    Kod SAQLASHDAN OLDIN ham `normalize()` dan o'tkaziladi — `verify()`
+    ham shuni qiladi, ikkalasi mos kelishi shart.
+
+    Ikki cheklov bor, ikkalasi ham ATAYLAB:
+      - uzunlik ANIQ 12: bu kod Google'ni chetlab o'tadi, qisqasi
+        yaramaydi;
+      - kamida 5 xil belgi: "AAAAAAAAAAAA" yoki "121212121212" 12 belgi
+        bo'lsa ham bir zumda taxmin qilinadi.
     """
     ensure_table()
     clean = normalize(code)
     if len(clean) != CODE_LEN:
-        raise ValueError("Kod %d belgidan iborat bo'lishi kerak (alifbo: %s)"
-                         % (CODE_LEN, ALPHABET))
+        raise ValueError("Kod aniq %d belgidan iborat bo'lishi kerak "
+                         "(hozir %d ta)." % (CODE_LEN, len(clean)))
+    if len(set(clean)) < MIN_UNIQUE:
+        raise ValueError("Kod juda oddiy: kamida %d xil belgi bo'lsin."
+                         % MIN_UNIQUE)
     db.execute("DELETE FROM auth_codes")
     db.execute("INSERT INTO auth_codes (code_hash) VALUES (:h)",
                {"h": hash_password(clean)})

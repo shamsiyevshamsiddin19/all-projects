@@ -3950,14 +3950,6 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
-/* Sozlamalarda kod ko'rsatilganda */
-.ac-code {
-  font-family: var(--mono); font-size: 19px; font-weight: 700;
-  letter-spacing: 2px; text-align: center; color: var(--accent);
-  background: var(--accent-soft); border-radius: var(--radius-sm);
-  padding: 15px 10px; margin: 12px 0; user-select: all; word-break: break-all;
-}
-
 /* Ega bilan bog'lanish — kira olmagan odam uchun yagona yo'l */
 .agate-tg {
   display: inline-flex; align-items: center; gap: 7px; margin-top: 22px;

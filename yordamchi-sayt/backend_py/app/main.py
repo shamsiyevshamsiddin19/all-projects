@@ -186,8 +186,9 @@ def _dispatch_query_action(request: Request, action: str, body: dict, q):
         # kerak. Bu uchtasi esa aksincha — faqat ichkaridan.
         "kirish_kodi_holati": lambda: auth.handle_auth_action(
             request, {"amal": "kirish_kodi_holati"}),
-        "kirish_kodi_yangilash": lambda: auth.handle_auth_action(
-            request, {"amal": "kirish_kodi_yangilash"}),
+        # Kodni EGASI yozadi, shuning uchun `kod` so'rov tanasidan olinadi.
+        "kirish_kodi_ornatish": lambda: auth.handle_auth_action(
+            request, {"amal": "kirish_kodi_ornatish", "kod": body.get("kod")}),
         "kirish_kodi_ochirish": lambda: auth.handle_auth_action(
             request, {"amal": "kirish_kodi_ochirish"}),
     }

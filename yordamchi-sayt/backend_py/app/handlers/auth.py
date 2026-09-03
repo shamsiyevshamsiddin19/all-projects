@@ -41,8 +41,8 @@ def handle_auth_action(request: Request, payload: dict) -> "object":
         return _code_login(request, payload)
     if amal == "kirish_kodi_holati":
         return _code_status(request)
-    if amal == "kirish_kodi_yangilash":
-        return _code_renew(request)
+    if amal == "kirish_kodi_ornatish":
+        return _code_set(request, payload)
     if amal == "kirish_kodi_ochirish":
         return _code_clear(request)
     if amal == "sessiya_tekshir":
@@ -185,7 +185,7 @@ def _google_login(request: Request, payload: dict):
 
 
 def _code_login(request: Request, payload: dict):
-    """14 belgilik favqulodda kod bilan kirish.
+    """12 belgilik favqulodda kod bilan kirish.
 
     Google ishlamay qolganda (boshqa qurilma, boshqa domen, xizmat uzilishi)
     egasi o'z saytiga kira olsin. Kod O'RNATILMAGAN bo'lsa bu yo'l yopiq —
@@ -240,17 +240,23 @@ def _code_status(request: Request):
     return auth_response(True, "Holat.", access_code.status())
 
 
-def _code_renew(request: Request):
-    """Yangi kod yasaydi va uni BIR MARTA qaytaradi.
+def _code_set(request: Request, payload: dict):
+    """Egasi YOZGAN kodni o'rnatadi.
 
-    Keyin faqat xeshi qoladi — shuning uchun javobdagi kodni saqlab
-    qo'yish kerak, u boshqa ko'rsatilmaydi."""
+    Ilgari kod tizim tomonidan yasalar va bir marta ko'rsatilardi. Amalda
+    bu ishlamadi: tasodifiy kod eslab qolinmasdi va o'sha zahoti ko'chirib
+    olinmasa yo'qolardi — favqulodda yo'l aynan kerak bo'lgan paytda
+    ochilmasdi.
+
+    Kod JAVOBDA QAYTARILMAYDI: uni foydalanuvchi o'zi yozgan, ya'ni
+    biladi. Serverdan qaytarish faqat ortiqcha nusxa yaratardi.
+    """
     _require_session(request)
-    code = access_code.generate()
-    access_code.set_code(code)
-    data = access_code.status()
-    data["kod"] = access_code.pretty(code)
-    return auth_response(True, "Yangi kod yaratildi.", data)
+    try:
+        access_code.set_code(s(payload.get("kod")))
+    except ValueError as exc:
+        raise AuthError(str(exc))
+    return auth_response(True, "Kod o'rnatildi.", access_code.status())
 
 
 def _code_clear(request: Request):

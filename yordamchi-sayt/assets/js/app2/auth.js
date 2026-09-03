@@ -115,13 +115,13 @@
           '<img class="agate-logo" data-app-icon src="' + App.appIconSrc() + '" alt="">' +
         '</div>' +
         '<h1 class="agate-title">Kirish kodi</h1>' +
-        '<p class="agate-sub">14 belgilik favqulodda kod</p>' +
+        '<p class="agate-sub">12 belgilik favqulodda kod</p>' +
         '<div class="agate-card">' +
           (msg ? '<div class="agate-err"><span data-icon="alert" data-icon-size="15"></span>' +
                  '<span>' + App.esc(msg) + '</span></div>' : '') +
           '<input class="agate-input" id="au-code" autocomplete="one-time-code" ' +
             'autocapitalize="characters" spellcheck="false" ' +
-            'placeholder="XXXXX-XXXXX-XXXX" maxlength="20">' +
+            'placeholder="Kodingizni kiriting" maxlength="24">' +
           '<button class="btn" id="au-code-go" style="width:100%;margin-top:12px">Kirish</button>' +
           '<button class="agate-alt" id="au-code-back">Google bilan kirish</button>' +
         '</div>' +

@@ -584,72 +584,111 @@
      "kodni ko'rsatish" degan narsa yo'q — faqat YANGISINI yasash mumkin va
      u bir marta, aynan shu oynachada ko'rsatiladi. Yo'qotilsa yangisi
      yasaladi, eskisi shu zahoti ishlamay qoladi. */
+  /* Favqulodda kirish kodi.
+
+     Kodni EGASI yozadi, tizim yasamaydi. Ilgari aksincha edi va bu
+     ishlamadi: tasodifiy kod eslab qolinmasdi, o'sha zahoti ko'chirib
+     olinmasa esa butunlay yo'qolardi — favqulodda yo'l aynan kerak
+     bo'lgan paytda ochilmasdi.
+
+     Kod yozilayotganda OCHIQ ko'rinadi (yulduzcha bilan berkitilmaydi):
+     bu yerga faqat tizimga kirgan egasi tusha oladi, berkitilsa esa
+     xato yozib qo'yish ehtimoli ortardi — keyin uni tekshirib
+     bo'lmasdi, chunki bazada faqat xesh qoladi. */
   App.actions.accessCode = function () {
+    var LEN = 12;
     var sh = App.sheet('<div id="ac-body"><div class="load-wrap"><div class="spinner"></div></div></div>',
       { title: 'Favqulodda kirish kodi' });
 
-    function draw(st, kod) {
+    function draw(st) {
       var body = sh.querySelector('#ac-body'); if (!body) return;
       body.innerHTML =
         '<p class="muted" style="font-size:12.5px;margin:0 0 14px;line-height:1.55">' +
         'Bu kod Google ishlamay qolganda kerak: boshqa qurilmada, boshqa domenda ' +
-        'yoki Google xizmati uzilganda. Ishonchli joyda saqlang.</p>' +
-
-        (kod
-          ? '<div class="ac-code">' + App.esc(kod) + '</div>' +
-            '<p class="muted" style="font-size:11.5px;margin:0 0 14px;color:var(--warn)">' +
-            'Kod FAQAT hozir ko\'rinadi — bazada uning xeshi saqlanadi. Ko\'chirib oling.</p>'
-          : '') +
+        'yoki Google xizmati uzilganda. Kodni <b>o\'zingiz</b> tanlaysiz — ' +
+        'eslab qoladigan, lekin taxmin qilinmaydigan bo\'lsin.</p>' +
 
         (st.bor
           ? '<div class="list-row" style="padding:10px 1px"><div class="li-main">' +
             '<div class="li-title">Kod o\'rnatilgan</div>' +
-            '<div class="li-sub">Yaratilgan: ' + App.esc(st.yaratilgan || '—') +
-            (st.oxirgi_ishlatilgan ? ' · Oxirgi: ' + App.esc(st.oxirgi_ishlatilgan) : '') +
+            '<div class="li-sub">O\'rnatilgan: ' + App.esc(st.yaratilgan || '—') +
+            (st.oxirgi_ishlatilgan ? ' · Oxirgi ishlatilgan: ' + App.esc(st.oxirgi_ishlatilgan) : '') +
             '</div></div></div>'
           : '<div class="list-row" style="padding:10px 1px"><div class="li-main">' +
             '<div class="li-title">Kod o\'rnatilmagan</div>' +
             '<div class="li-sub">Bu yo\'l hozir YOPIQ — faqat Google bilan kiriladi</div>' +
             '</div></div>') +
 
-        '<button class="btn" id="ac-new" style="margin-top:14px">' +
-        '<span data-icon="refresh" data-icon-size="16"></span>' +
-        (st.bor ? 'Yangi kod yasash' : 'Kod yaratish') + '</button>' +
+        '<label class="field" style="margin:14px 0 6px"><span>' +
+          (st.bor ? 'Yangi kod' : 'Kod') + ' (' + LEN + ' belgi)</span>' +
+        '<input class="input" id="ac-inp" type="text" autocomplete="off" ' +
+          'autocapitalize="characters" spellcheck="false" maxlength="24" ' +
+          'placeholder="' + LEN + ' ta belgi kiriting" style="letter-spacing:.06em"></label>' +
+        '<div class="muted" id="ac-hint" style="font-size:11.5px;margin:0 0 12px">' +
+          'Bo\'shliq va chiziqcha hisobga olinmaydi · 0/' + LEN + '</div>' +
+
+        '<button class="btn" id="ac-save" disabled>' +
+        (st.bor ? 'Kodni almashtirish' : 'Kodni o\'rnatish') + '</button>' +
         (st.bor
           ? '<button class="btn ghost" id="ac-del" style="margin-top:8px;color:var(--danger)">Kodni o\'chirish</button>'
           : '');
 
       App.icons(body);
 
-      body.querySelector('#ac-new').onclick = function () {
+      var inp  = body.querySelector('#ac-inp');
+      var hint = body.querySelector('#ac-hint');
+      var save = body.querySelector('#ac-save');
+
+      /* Serverdagi `normalize()` bilan AYNAN bir xil qoida: ajratgichlar
+         tashlanadi, qolgani katta harfga o'tadi. Sanoq shu qoida bo'yicha
+         ko'rsatilmasa, "12 ta yozdim" deb turib server rad etardi. */
+      function clean(v) { return String(v || '').toUpperCase().replace(/[\s\-_]/g, ''); }
+
+      function refresh() {
+        var c = clean(inp.value);
+        var uniq = 0, seen = {};
+        for (var i = 0; i < c.length; i++) if (!seen[c[i]]) { seen[c[i]] = 1; uniq++; }
+        var okLen = c.length === LEN;
+        var okUniq = uniq >= 5;
+        save.disabled = !(okLen && okUniq);
+        hint.textContent = okLen && !okUniq
+          ? 'Juda oddiy: kamida 5 xil belgi bo\'lsin · ' + c.length + '/' + LEN
+          : 'Bo\'shliq va chiziqcha hisobga olinmaydi · ' + c.length + '/' + LEN;
+        hint.style.color = okLen && !okUniq ? 'var(--danger)' : '';
+      }
+      inp.oninput = refresh;
+      refresh();
+
+      save.onclick = function () {
+        var kod = clean(inp.value);
         App.confirm(st.bor
-          ? 'Yangi kod yasalsa eski kod DARHOL ishlamay qoladi. Davom etamizmi?'
-          : 'Favqulodda kirish kodi yaratilsinmi?', function () {
-          App.call('kirish_kodi_yangilash', {}).then(function (j) {
-            draw(j, j.kod);
-            App.toast('✅ Yangi kod yaratildi');
-          }).catch(function (e) { App.toast('⚠️ ' + e.message); });
-        });
+          ? 'Eski kod DARHOL ishlamay qoladi va yangisi o\'rnatiladi. Davom etamizmi?'
+          : 'Shu kod o\'rnatilsinmi? Uni eslab qoling — keyin ko\'rsatib bo\'lmaydi.',
+          function () {
+            App.call('kirish_kodi_ornatish', { kod: kod }).then(function (j) {
+              draw(j);
+              App.toast('✅ Kod o\'rnatildi');
+            }).catch(function (e) { App.toast('⚠️ ' + e.message); });
+          });
       };
 
       var del = body.querySelector('#ac-del');
       if (del) del.onclick = function () {
         App.confirm('Kod o\'chirilsa faqat Google orqali kirish qoladi. Davom etamizmi?', function () {
           App.call('kirish_kodi_ochirish', {}).then(function () {
-            draw({ bor: false }, '');
+            draw({ bor: false });
             App.toast('Kod o\'chirildi');
           }).catch(function (e) { App.toast('⚠️ ' + e.message); });
         }, { danger: true, yes: 'O\'chirish' });
       };
     }
 
-    App.call('kirish_kodi_holati', {}).then(function (j) { draw(j, ''); })
+    App.call('kirish_kodi_holati', {}).then(function (j) { draw(j); })
       .catch(function (e) {
         var b = sh.querySelector('#ac-body');
         if (b) b.innerHTML = App.empty({ icon: 'alert', title: 'Xatolik', text: e.message });
       });
   };
-
 
   /* Lug'at qulfi. Ro'yxat QO'LDA yozilmaydi — `WordLock` uni lentaga
      yuklangan kategoriyalardan o'rganadi, ya'ni yangi bo'lim qo'shilsa
