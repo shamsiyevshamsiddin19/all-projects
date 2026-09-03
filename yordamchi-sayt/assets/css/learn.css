@@ -1093,3 +1093,79 @@ body.lm-noscroll .lm-pull{ display:none; }
   transition:transform .18s ease;
 }
 .all-sw.on .all-sw-knob{ transform:translateX(28px); }
+
+/* ==================== O'qildi belgisi ==================== */
+
+/* Doira + uning burchagidagi galichka birga turishi uchun o'ram.
+   `chat-av` ning o'zi flex bolasi, ustiga belgi qo'yish uchun
+   position kerak edi. */
+.rm-av-wrap{
+  position:relative;
+  display:inline-flex;
+  flex-shrink:0;
+}
+
+/* Telegram uslubi: O'NG PAST burchak. Doira ichiga qo'yilsa raqamni
+   berkitardi, yon tomonga qo'yilsa qator kengligini surib yuborardi. */
+.rm-tick{
+  position:absolute;
+  right:-2px;
+  bottom:-2px;
+  width:17px;
+  height:17px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  background:#22c55e;
+  color:#ffffff;
+  /* Fon rangidagi halqa — galichka doiradan ajralib tursin */
+  box-shadow:0 0 0 2px var(--bg), 0 1px 4px rgba(34,197,94,.5);
+}
+
+/* O'qilgan qator biroz so'nadi: e'tibor o'qilmaganlarga qaratilsin.
+   Butunlay xiralashtirilmaydi — qaytib kirish kerak bo'lishi mumkin. */
+.rm-done .chat-title{ opacity:.62; }
+.rm-done .chat-av{ opacity:.75; }
+
+/* ---- Navbatdagi bo'lim ---- */
+.rm-next{
+  position:relative;
+  border-radius:14px;
+  background:linear-gradient(90deg, rgba(34,197,94,.10), rgba(34,197,94,0));
+  box-shadow:inset 0 0 0 1.5px rgba(34,197,94,.55);
+}
+.rm-next .chat-title{ font-weight:800; }
+.rm-next .chat-sub{ color:#22c55e; font-weight:600; }
+/* Doira atrofidagi yorqin halqa — ko'z birinchi shu yerga tushadi */
+.rm-next .chat-av{
+  box-shadow:0 0 0 2px #22c55e, 0 3px 12px rgba(34,197,94,.35);
+}
+
+/* ---- Bosib turish ko'rsatkichi ----
+   Qator 7 soniya bosib turilishi kerak. Chiziq to'lib borishi shuni
+   ko'rsatadi; bo'lmasa odam nima bo'layotganini bilmay qo'yib yuborardi. */
+.rm-hold-bar{
+  position:absolute;
+  left:0;
+  bottom:0;
+  height:2.5px;
+  width:0;
+  border-radius:2px;
+  background:linear-gradient(90deg,#22c55e,#84cc16);
+  pointer-events:none;
+  opacity:0;
+}
+.chat-row{ position:relative; }
+.rm-holding .rm-hold-bar{
+  opacity:1;
+  animation:rmHold 7s linear forwards;
+}
+@keyframes rmHold{ from{ width:0; } to{ width:100%; } }
+
+/* Bosib turilganda qator sal ichkariga bosiladi — teginish sezilsin */
+.rm-holding{ transform:scale(.985); transition:transform .18s ease; }
+
+@media (prefers-reduced-motion: reduce){
+  .rm-holding{ transform:none; }
+}

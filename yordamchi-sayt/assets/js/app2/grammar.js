@@ -157,18 +157,106 @@
     return { num: String(fallback), title: s };
   }
 
-  function topicRow(t, lang, idx) {
+  function RM() { return window.ReadMark; }
+
+  /* Telegram uslubidagi galichka — doiraning O'NG PAST burchagida.
+     Doira ichiga qo'yilsa raqamni berkitardi, yon tomonga qo'yilsa
+     qatorning kengligini o'zgartirardi. */
+  function tickHtml() {
+    return '<span class="rm-tick"><svg viewBox="0 0 24 24" width="11" height="11" fill="none">' +
+      '<path d="M5 12l5 5L20 6" stroke="currentColor" stroke-width="3.4" ' +
+      'stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
+  }
+
+  function topicRow(t, lang, idx, isNext) {
     var p = splitNum(t.name, idx);
-    return '<div class="chat-item">' +
-      '<button class="chat-row" data-act="go" data-arg=\'' + App.arg({ v: 'grammar_topic', p: { id: t.id, lang: lang } }) + '\'>' +
+    var done = RM() && RM().isRead(lang, 'topic', t.id);
+    return '<div class="chat-item' + (done ? ' rm-done' : '') + (isNext ? ' rm-next' : '') + '">' +
+      '<button class="chat-row" data-hold="topic" data-hold-key="' + App.esc(String(t.id)) +
+        '" data-hold-name="' + App.esc(p.title) + '"' +
+        ' data-act="go" data-arg=\'' + App.arg({ v: 'grammar_topic', p: { id: t.id, lang: lang } }) + '\'>' +
+      '<span class="rm-av-wrap">' +
       '<span class="chat-av chat-av-num" style="background:#fff;color:var(--accent,#007aff);font-size:18px;font-weight:800">' + App.esc(p.num) + '</span>' +
+      (done ? tickHtml() : '') +
+      '</span>' +
       '<span class="chat-main">' +
         '<span class="chat-title">' + App.esc(p.title) + '</span>' +
-        '<span class="chat-sub">Mavzuni o\'qish</span>' +
+        '<span class="chat-sub">' + (done ? 'O\'qildi' : (isNext ? 'Navbatdagi mavzu' : 'Mavzuni o\'qish')) + '</span>' +
       '</span>' +
+      '<span class="rm-hold-bar"></span>' +
       '<span class="chat-arrow" data-icon="arrowLeft" data-icon-size="16"></span></button>' +
       '<button class="icon-btn ghost" style="width:34px;height:34px;flex-shrink:0" data-act="topicManage" data-arg=\'' + App.arg({ id: t.id, name: t.name, folder: t.folder || '', lang: lang }) + '\'><span data-icon="edit" data-icon-size="15"></span></button>' +
       '</div>';
+  }
+
+  /* ---------- Uzoq bosish ----------
+     Qatorni bosish MAVZUNI OCHADI, uzoq bosish esa belgilash varag'ini
+     chiqaradi. Ikkisi bir tugmada bo'lgani uchun uch narsa kerak:
+
+       1) bosib turilgan vaqt KO'RINSIN (`rm-holding` -> to'ladigan chiziq),
+          aks holda odam nima bo'layotganini bilmay qo'yib yuboradi;
+       2) uzoq bosish tugagach, qo'yib yuborilganda bosish HISOBGA
+          OLINMASIN — aks holda varaq ochilib, orqasidan mavzu ham
+          ochilib ketardi;
+       3) barmoq surilsa bekor qilinsin (ro'yxat aylantirilayotgandir). */
+  function bindHold(box, lang) {
+    if (!box || !window.ReadMark) return;
+    box.querySelectorAll('[data-hold]').forEach(function (row) {
+      var kind = row.getAttribute('data-hold');
+      var key  = row.getAttribute('data-hold-key');
+      var name = row.getAttribute('data-hold-name') || '';
+      var timer = null, fired = false, sx = 0, sy = 0;
+
+      function stop() {
+        if (timer) { clearTimeout(timer); timer = null; }
+        row.classList.remove('rm-holding');
+      }
+      row.addEventListener('pointerdown', function (e) {
+        if (e.button != null && e.button !== 0) return;
+        sx = e.clientX; sy = e.clientY;
+        fired = false;
+        row.classList.add('rm-holding');
+        timer = setTimeout(function () {
+          fired = true;
+          stop();
+          try { if (navigator.vibrate) navigator.vibrate(35); } catch (e2) {}
+          openReadSheet(lang, kind, key, name);
+        }, ReadMark.HOLD_MS);
+      });
+      row.addEventListener('pointermove', function (e) {
+        /* 10 pikseldan ortiq surilsa — bu aylantirish, bosish emas. */
+        if (timer && (Math.abs(e.clientX - sx) > 10 || Math.abs(e.clientY - sy) > 10)) stop();
+      });
+      ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) {
+        row.addEventListener(ev, stop);
+      });
+      row.addEventListener('click', function (e) {
+        if (!fired) return;
+        fired = false;
+        e.preventDefault();
+        e.stopPropagation();
+      }, true);
+    });
+  }
+
+  function openReadSheet(lang, kind, key, name) {
+    var done = ReadMark.isRead(lang, kind, key);
+    var what = kind === 'folder' ? 'Bob' : 'Mavzu';
+    var sh = App.sheet(
+      '<p class="muted" style="margin:0 0 14px;font-size:13px;line-height:1.5">' +
+        what + ': <b>' + App.esc(name) + '</b><br>' +
+        (done ? 'Bu bo\'lim o\'qilgan deb belgilangan.'
+              : 'O\'qib bo\'lgan bo\'lsangiz belgilang — navbatdagi bo\'lim ' +
+                'ajratib ko\'rsatiladi.') +
+      '</p>' +
+      (done
+        ? '<button class="btn sec" id="rm-off">Belgini olib tashlash</button>'
+        : '<button class="btn" id="rm-on">O\'qib bo\'ldim</button>'),
+      { title: done ? 'O\'qilgan' : 'Belgilash' }
+    );
+    var on = sh.querySelector('#rm-on'), off = sh.querySelector('#rm-off');
+    if (on) on.onclick = function () { ReadMark.setRead(lang, kind, key, true); App.closeSheet(); App.reload(); };
+    if (off) off.onclick = function () { ReadMark.setRead(lang, kind, key, false); App.closeSheet(); App.reload(); };
   }
 
   /* ---------- Mavzular ro'yxati ---------- */
@@ -199,6 +287,25 @@
           App.icons(box); return;
         }
 
+        /* Bob o'qilganmi va qaysi biri NAVBATDAGI — chizishdan oldin
+           bir marta hisoblanadi. Har qator ichida hisoblansa, "navbatdagi"
+           ni topish uchun ro'yxatni oldinga qarab ko'rish kerak bo'lardi. */
+        var fDone = g.folders.map(function (f) {
+          var ids = topics.filter(function (t) {
+            return (t.folder || '') === f.path;
+          }).map(function (t) { return t.id; });
+          return !!(RM() && RM().folderDone(lang, f.path, ids));
+        });
+        var fNext = RM() ? RM().nextIndex(fDone) : -1;
+
+        var rDone = g.root.map(function (t) {
+          return !!(RM() && RM().isRead(lang, 'topic', t.id));
+        });
+        /* Bu papkadagi mavzular: agar papkaning O'ZI o'qilgan deb
+           belgilangan bo'lsa, ichida "navbatdagi" ko'rsatilmaydi. */
+        var rNext = (folder && RM() && RM().isRead(lang, 'folder', folder))
+          ? -1 : (RM() ? RM().nextIndex(rDone) : -1);
+
         var html = '';
         if (g.folders.length) {
           html += '<div class="chat-list">' + g.folders.map(function (f, i) {
@@ -207,24 +314,33 @@
             var avColor = isSpecial ? 'color:var(--danger,#ff3b30);' : 'color:var(--accent,#007aff);';
             var titleStyle = isSpecial ? ' style="color:var(--danger,#ff3b30);font-weight:700"' : '';
 
-            return '<div class="chat-item">' +
-              '<button class="chat-row" data-act="go" data-arg=\'' +
+            var done = fDone[i];
+            var isNext = (i === fNext);
+            return '<div class="chat-item' + (done ? ' rm-done' : '') + (isNext ? ' rm-next' : '') + '">' +
+              '<button class="chat-row" data-hold="folder" data-hold-key="' + App.esc(f.path) +
+                '" data-hold-name="' + App.esc(fp.title) + '"' +
+                ' data-act="go" data-arg=\'' +
               App.arg({ v: 'grammar', p: { lang: lang, folder: f.path } }) + '\'>' +
-              folderBadgeHtml(f, lang, i) +
+              '<span class="rm-av-wrap">' + folderBadgeHtml(f, lang, i) + (done ? tickHtml() : '') + '</span>' +
               '<span class="chat-main">' +
                 '<span class="chat-title"' + titleStyle + '>' + App.esc(fp.title) + '</span>' +
-                '<span class="chat-sub">' + f.count + ' ta mavzu</span>' +
+                '<span class="chat-sub">' + f.count + ' ta mavzu' +
+                  (done ? ' · o\'qildi' : (isNext ? ' · navbatdagi' : '')) + '</span>' +
               '</span>' +
+              '<span class="rm-hold-bar"></span>' +
               '<span class="chat-arrow" data-icon="arrowLeft" data-icon-size="16"></span></button>' +
               '</div>';
           }).join('') + '</div>';
         }
         if (g.root.length) {
           if (g.folders.length) html += '<div class="list-label" style="margin-top:16px">' + (folder ? 'Mavzular' : 'Papkasiz') + '</div>';
-          html += '<div class="chat-list">' + g.root.map(function (t, i) { return topicRow(t, lang, i + 1); }).join('') + '</div>';
+          html += '<div class="chat-list">' + g.root.map(function (t, i) {
+            return topicRow(t, lang, i + 1, i === rNext);
+          }).join('') + '</div>';
         }
         box.innerHTML = html;
         App.icons(box);
+        bindHold(box, lang);
       }).catch(function (e) {
         var box = App.el('topic-list'); if (box) box.innerHTML = App.empty({ icon: 'alert', title: 'Xatolik', text: e.message });
       });

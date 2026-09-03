@@ -531,6 +531,56 @@ const texts = (t) => prosodyParts(t).map((p) => p.text);
 }
 
 /* =========================================================
+   9. "O'qib bo'ldim" belgilari va navbatdagi bo'lim (2026-09-03)
+   =========================================================
+   Foydalanuvchining aniq misoli: 1-bob "o'qib bo'ldim" qilinsa, 2-bobning
+   birinchi mavzusi navbatdagi bo'lib yonishi kerak. */
+{
+  const prevLS = global.localStorage, prevW = global.window, prevA = global.addEventListener;
+  global.window = global;
+  global.localStorage = { _d: {}, getItem(k) { return this._d[k] || null; },
+                          setItem(k, v) { this._d[k] = v; }, removeItem(k) { delete this._d[k]; } };
+  global.addEventListener = function () {};
+  delete require.cache[require.resolve('../assets/js/core/readmark.js')];
+  require('../assets/js/core/readmark.js');
+  const R = global.ReadMark;
+
+  const bob1 = ['t1', 't2', 't3'], bob2 = ['t4', 't5'], bob3 = ['t6'];
+  const chapters = () => [R.folderDone('coding', '01-bob', bob1),
+                          R.folderDone('coding', '02-bob', bob2),
+                          R.folderDone('coding', '03-bob', bob3)];
+
+  check('boshida hech narsa belgilanmagan', R.isRead('coding', 'folder', '01-bob') === false);
+
+  R.setRead('coding', 'folder', '01-bob', true);
+  eq('1-bob o\'qildi, qolgani yo\'q', chapters(), [true, false, false]);
+  eq('navbatdagi — 2-bob', R.nextIndex(chapters()), 1);
+  eq('2-bobning BIRINCHI mavzusi navbatda',
+     R.nextIndex(bob2.map((id) => R.isRead('coding', 'topic', id))), 0);
+
+  /* Mavzular birma-bir belgilansa, bob O'ZI yopilishi kerak — aks holda
+     hamma mavzusi o'qilgan bob "tugallanmagan" bo'lib turaverardi. */
+  R.setRead('coding', 'topic', 't4', true);
+  check('bitta mavzu — bob hali tugamagan', R.folderDone('coding', '02-bob', bob2) === false);
+  R.setRead('coding', 'topic', 't5', true);
+  check('hamma mavzu — bob tugadi', R.folderDone('coding', '02-bob', bob2) === true);
+  eq('navbat 3-bobga o\'tdi', R.nextIndex(chapters()), 2);
+
+  R.setRead('coding', 'folder', '01-bob', false);
+  eq('belgi olingach 1-bob yana navbatda', R.nextIndex(chapters()), 0);
+
+  /* Kalitga til/kurs kiradi: bir xil nomli bob ikki kursda bo'lishi mumkin. */
+  R.setRead('russian', 'folder', '01-bob', true);
+  check('boshqa kursga o\'tmaydi', R.isRead('coding', 'folder', '01-bob') === false);
+  check('o\'z kursida turibdi', R.isRead('russian', 'folder', '01-bob') === true);
+
+  eq('hammasi o\'qilgan — navbat yo\'q', R.nextIndex([true, true, true]), -1);
+  check('mavzusiz bob tugagan hisoblanmaydi', R.folderDone('coding', 'X', []) === false);
+
+  global.localStorage = prevLS; global.window = prevW; global.addEventListener = prevA;
+}
+
+/* =========================================================
    Natija
    ========================================================= */
 console.log('');
