@@ -4158,3 +4158,185 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 .st-err b { font-size: 12.5px; font-weight: 700; color: var(--text); }
 .st-err span { font-size: 11.5px; color: var(--text-2); word-break: break-word; }
 .st-err i { font-size: 11px; font-style: normal; color: var(--hint); }
+
+/* ==================== ON/OFF tugmasi (qora korpus) ====================
+   Rasmdagi uslub: qora korpus, ichida rangli yo'lak (o'chiq — qizil,
+   yoqiq — yashil) va qora tugmacha. Holat UCH belgi bilan bir vaqtda
+   ko'rsatiladi: rang, yozuv (ON/OFF) va tugmachaning joyi. Faqat rangga
+   tayanilsa, rangni ajratolmaydigan foydalanuvchi holatni bilmasdi. */
+.sw2{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  width:58px;
+  height:30px;
+  flex-shrink:0;
+  padding:3px;
+  border:none;
+  border-radius:999px;
+  background:#26292e;
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.55);
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+
+.sw2-track{
+  position:absolute;
+  left:3px; right:3px; top:3px; bottom:3px;
+  border-radius:999px;
+  background:#dc2626;                 /* o'chiq */
+  display:flex;
+  align-items:center;
+  transition:background .18s ease;
+}
+.sw2.on .sw2-track{ background:#16a34a; }   /* yoqiq */
+
+.sw2-txt{
+  position:absolute;
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.06em;
+  color:#ffffff;
+  pointer-events:none;
+}
+/* Yozuv tugmachaning QARSHI tomonida — berkitilmasin */
+.sw2      .sw2-txt{ left:7px; }
+.sw2.on   .sw2-txt{ right:7px; }
+
+.sw2-knob{
+  position:absolute;
+  top:3px; left:3px;
+  width:24px; height:24px;
+  border-radius:50%;
+  background:linear-gradient(160deg,#4a4f57,#1c1f24);
+  box-shadow:0 2px 5px rgba(0,0,0,.5);
+  transition:transform .18s ease;
+}
+.sw2.on .sw2-knob{ transform:translateX(28px); }
+
+@media (prefers-reduced-motion: reduce){
+  .sw2-track, .sw2-knob{ transition:none; }
+}
+
+/* ==================== Darsliklarni o'qish uslubi ====================
+   `<html class="md-claude">` bo'lganda ishlaydi (mdtheme.js qo'yadi).
+   Chizuvchi TEGILMAGAN — bu faqat uslub qatlami, shuning uchun barcha
+   `.md-content` joylarida (darslik, qoidalar, arxiv, kutubxona) bir
+   vaqtda ishlaydi.
+
+   Maqsad: uzun darsni o'qib charchamaslik. Uch narsa hal qiladi —
+   satr kengligi, qator oralig'i va sarlavhalar atrofidagi havo. */
+
+.md-claude .md-content{
+  /* 68ch — uzun matn uchun qulay kenglik. Kengroq bo'lsa ko'z qator
+     oxiridan boshiga qaytishda adashadi, torroq bo'lsa uzilib-uzilib
+     o'qiladi. Kod bloklari va jadvallar bundan chiqib turadi (pastda). */
+  max-width:68ch;
+  margin-inline:auto;
+  font-size:16.5px;
+  line-height:1.78;
+  letter-spacing:.002em;
+  color:var(--text);
+}
+
+.md-claude .md-content p{ margin:0 0 1.15em; }
+
+/* ---- Sarlavhalar ----
+   Ustidagi oraliq ostidagidan sezilarli katta: shunda sarlavha O'ZIDAN
+   KEYINGI matnga tegishli ekani ko'rinadi (yaqinlik qoidasi). */
+.md-claude .md-content h2,
+.md-claude .md-content h3,
+.md-claude .md-content h4,
+.md-claude .md-content h5,
+.md-claude .md-content h6{
+  line-height:1.3;
+  letter-spacing:-.011em;
+  color:var(--text);
+}
+.md-claude .md-content h2{ font-size:1.55em; font-weight:700; margin:1.9em 0 .55em; }
+.md-claude .md-content h3{ font-size:1.24em; font-weight:700; margin:1.7em 0 .45em; }
+.md-claude .md-content h4{ font-size:1.06em; font-weight:700; margin:1.5em 0 .4em; }
+.md-claude .md-content h5,
+.md-claude .md-content h6{ font-size:.96em; font-weight:700; margin:1.4em 0 .35em; color:var(--text-2); }
+.md-claude .md-content > :first-child{ margin-top:0; }
+
+/* Bobning birinchi sarlavhasi ostida yupqa chiziq — bo'limlar
+   bir-biriga qo'shilib ketmasin */
+.md-claude .md-content h2{
+  padding-bottom:.3em;
+  border-bottom:1px solid var(--border-soft);
+}
+
+/* ---- Ro'yxatlar ---- */
+.md-claude .md-content ul,
+.md-claude .md-content ol{ margin:0 0 1.15em; padding-left:1.5em; }
+.md-claude .md-content li{ margin-bottom:.45em; }
+.md-claude .md-content li::marker{ color:var(--hint); }
+.md-claude .md-content ul ul,
+.md-claude .md-content ol ol,
+.md-claude .md-content ul ol,
+.md-claude .md-content ol ul{ margin:.45em 0 0; }
+
+/* ---- Kod ----
+   Ichki kod matn oqimida qoladi, blok esa alohida panel bo'lib
+   ajraladi va satr kengligidan CHIQADI — kod o'ralib ketmasin. */
+.md-claude .md-content code{
+  font-size:.875em;
+  padding:.15em .38em;
+  border-radius:5px;
+  background:var(--card-2);
+  border:1px solid var(--border-soft);
+}
+.md-claude .md-content pre{
+  margin:0 0 1.3em;
+  padding:2.1em 1.05em 1.05em;
+  border-radius:11px;
+  background:var(--card-2);
+  border:1px solid var(--border);
+  font-size:.86em;
+  line-height:1.62;
+  /* Matn 68ch bilan cheklangan, kod esa kengroq joy oladi */
+  width:min(100%, 78ch);
+}
+.md-claude .md-content pre code{
+  background:none; border:none; padding:0; font-size:1em;
+}
+/* Til yorlig'i — panelning o'z sarlavha yo'lagida */
+.md-claude .md-content pre[data-lang]::before{
+  top:.55em; left:1.05em; right:auto;
+  font-size:10.5px; letter-spacing:.08em;
+}
+
+/* ---- Iqtibos ---- */
+.md-claude .md-content blockquote{
+  margin:0 0 1.25em;
+  padding:.15em 0 .15em 1.1em;
+  border-left:3px solid var(--border);
+  background:none;
+  border-radius:0;
+  color:var(--text-2);
+  font-style:normal;
+}
+
+/* ---- Jadval ---- */
+.md-claude .md-content .md-table-wrap{ width:min(100%, 78ch); }
+.md-claude .md-content .md-table{ font-size:.92em; }
+.md-claude .md-content .md-table th{
+  font-weight:700;
+  background:var(--card-2);
+}
+.md-claude .md-content .md-table th,
+.md-claude .md-content .md-table td{ padding:.55em .75em; }
+
+/* ---- Qolganlari ---- */
+.md-claude .md-content hr{ margin:2.2em 0; border-top:1px solid var(--border-soft); }
+.md-claude .md-content a{ text-decoration:underline; text-underline-offset:2px; }
+.md-claude .md-content img{ width:min(100%, 78ch); margin:1.2em 0; }
+
+/* Tor ekranda kenglik cheklovi ortiqcha — u yerda ekranning o'zi tor */
+@media (max-width: 720px){
+  .md-claude .md-content{ font-size:16px; }
+  .md-claude .md-content pre,
+  .md-claude .md-content .md-table-wrap,
+  .md-claude .md-content img{ width:100%; }
+}

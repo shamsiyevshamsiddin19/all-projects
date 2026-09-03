@@ -271,7 +271,11 @@
 
       page.innerHTML =
         '<div class="topbar" style="margin:-16px -15px 12px"><h1>Learn</h1>' +
-        '<button class="icon-btn ghost" data-act="langAdd" style="margin-left:auto"><span data-icon="plus" data-icon-size="20"></span></button></div>' +
+        /* O'ng yuqorida: darsliklarni o'qish uslubi. Aynan shu yerda,
+           chunki bu bo'lim darsliklarga kiradigan eshik — uslubni
+           ichkariga kirishdan OLDIN tanlash mantiqiy. */
+        mdThemeSwitchHtml() +
+        '<button class="icon-btn ghost" data-act="langAdd"><span data-icon="plus" data-icon-size="20"></span></button></div>' +
         '<div class="chat-list">' +
         langCard('english', 'assets/icons/tech/flag-gb.png', 'Ingliz tili', 'Listening, Reading, Grammar, Vocabulary') +
         langCard('russian', 'assets/icons/tech/flag-ru.png', 'Русский язык', 'Грамматика, Словарь, Чтение, Аудирование') +
@@ -281,6 +285,28 @@
       App.icons(page);
     }
   });
+
+  /* O'qish uslubi tugmasi. Holat matn (ON/OFF) va tugmachaning joyi
+     bilan ham ko'rsatiladi — faqat rangga tayanilsa, rangni ajratolmaydigan
+     foydalanuvchi qaysi holatda ekanini bilmasdi. */
+  function mdThemeSwitchHtml() {
+    var on = !!(window.MdTheme && MdTheme.isOn());
+    return '<button class="sw2' + (on ? ' on' : '') + '" data-act="mdThemeToggle" ' +
+      'role="switch" aria-checked="' + (on ? 'true' : 'false') + '" ' +
+      'style="margin-left:auto" ' +
+      'aria-label="Darsliklarni o\'qish uslubi" ' +
+      'title="' + (on ? 'Kengaytirilgan o\'qish uslubi yoqilgan'
+                      : 'Yoqilsa darsliklar keng, yirik va oraliqli ko\'rinadi') + '">' +
+      '<span class="sw2-track"><span class="sw2-txt">' + (on ? 'ON' : 'OFF') + '</span></span>' +
+      '<span class="sw2-knob"></span></button>';
+  }
+
+  App.actions.mdThemeToggle = function () {
+    if (!window.MdTheme) return;
+    var on = MdTheme.toggle();
+    App.toast(on ? 'O\'qish uslubi yoqildi' : 'Odatiy uslub');
+    App.reload();
+  };
 
   /* Built-in tillar uchun karta (data-icon yoki URL rasm bilan) */
   /* Learn hub kartalari ham ko'nikma ro'yxati bilan BIR XIL Telegram-chat
