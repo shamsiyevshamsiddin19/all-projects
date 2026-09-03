@@ -17,14 +17,14 @@
   var STORIES = [
     {
       id: 'ru_229',
-      title: '229 ta fe\'l',
+      title: '210 ta fe\'l',
       sub: 'Hozirgi zamon',
       type: 'vocab',
       lang: 'russian',
       category: 'Глаголы настоящего времени',
       color: 'linear-gradient(135deg, #f59e0b, #ef4444)',
-      badge: '229',
-      desc: 'Rus tilida eng ko\'p ishlatiladigan 229 ta fe\'lning hozirgi zamon (я) shakllari va tarjimalari.',
+      badge: '210',
+      desc: 'Rus tilida eng ko\'p ishlatiladigan 210 ta fe\'lning hozirgi zamon (я) shakllari va tarjimalari.',
       sampleWord: {
         w: 'я изучаю',
         tr: 'men o\'rganyapman',
@@ -219,7 +219,7 @@
       ru: "я играю",
       uz: "men o'ynayapman",
       lang: "russian",
-      cat: "Hozirgi zamon (229)",
+      cat: "Hozirgi zamon (210)",
       note: "Qayerda: Sport yoki kompyuter o'yinlarini o'ynash, musiqa asboblarini chalish hamda sahnada rol ijro etishda qo'llaniladi.\nShakl: hozirgi zamon (я) — я играю, infinitivi — играть, o'tgan zamon — я играл\nVid: NCV — играть, CV — сыграть / поиграть\nMa'nodosh: развлекаться, резвиться",
       ex: "Я каждый вечер с удовольствием играю в шахматы с дедушкой. (Men har oqshom bobom bilan maroq bilan shaxmat o'ynayman.)"
     },
@@ -227,7 +227,7 @@
       ru: "я пишу",
       uz: "men yozyapman",
       lang: "russian",
-      cat: "Hozirgi zamon (229)",
+      cat: "Hozirgi zamon (210)",
       note: "Qayerda: Qalam, ruchka yoki klaviatura orqali matn, xat, ariza yaratishda ishlatiladi.\nShakl: hozirgi zamon (я) — я пишу, infinitivi — писать, o'tgan zamon — я писал\nVid: NCV — писать, CV — написать\nMa'nodosh: сочинять, записывать",
       ex: "Я сейчас пишу важное электронное письмо преподавателю. (Men hozir o'qituvchiga muhim elektron xat yozyapman.)"
     },
@@ -235,7 +235,7 @@
       ru: "я говорю",
       uz: "men gapiryapman",
       lang: "russian",
-      cat: "Hozirgi zamon (229)",
+      cat: "Hozirgi zamon (210)",
       note: "Qayerda: Nutq tovushlarini chiqarish, suhbatlashish yoki biror tilda muloqot qilishda qo'llaniladi.\nShakl: hozirgi zamon (я) — я говорю, infinitivi — говорить, o'tgan zamon — я говорил\nVid: NCV — говорить, CV — сказать / поговорить\nMa'nodosh: беседовать, произносить",
       ex: "Я свободно говорю на двух иностранных языках. (Men ikkita chet tilida erkin gapiraman.)"
     },
@@ -243,7 +243,7 @@
       ru: "я учу",
       uz: "men o'rganyapman / o'rgatyapman",
       lang: "russian",
-      cat: "Hozirgi zamon (229)",
+      cat: "Hozirgi zamon (210)",
       note: "Qayerda: 1) Yod olish, o'rganish; 2) Boshqalarga ta'lim berish.\nShakl: hozirgi zamon (я) — я учу, infinitivi — учить, o'tgan zamon — я учил\nVid: NCV — учить, CV — выучить / научить\nMa'nodosh: обучать, зубрить",
       ex: "Я каждый день учу двадцать новых русских слов. (Men har kuni 20 ta yangi ruscha so'z yodlayapman.)"
     },
@@ -259,7 +259,7 @@
       ru: "я мечтаю",
       uz: "men orzu qilyapman",
       lang: "russian",
-      cat: "Hozirgi zamon (229)",
+      cat: "Hozirgi zamon (210)",
       note: "Qayerda: Kelajakdagi ezgu niyatlar, istaklar haqida xayol surishda ishlatiladi.\nShakl: hozirgi zamon (я) — я мечтаю, infinitivi — мечтать, o'tgan zamon — я мечтал\nVid: NCV — мечтать, CV — помечтать\nMa'nodosh: грезить, фантазировать",
       ex: "Я мечтаю стать высококлассным разработчиком программного обеспечения. (Men yuqori malakali dasturchi bo'lishni orzu qilaman.)"
     },
@@ -1050,8 +1050,8 @@
     }
     if (cat === CAT_229) {
       return {
-        badge: '229',
-        title: 'Rus tili · Hozirgi zamon (229)',
+        badge: '210',
+        title: 'Rus tili · Hozirgi zamon (210)',
         color: 'linear-gradient(135deg, #f59e0b, #ef4444)',
         glow: 'linear-gradient(90deg, #f59e0b, #ef4444, #ec4899)',
         accent: '#ef4444'
@@ -1203,10 +1203,10 @@
     {
       id: 'ru_grammar_229',
       logo: 'assets/icons/tech/flag-ru.png',
-      title: 'Rus tili: 229 Fe\'l',
+      title: 'Rus tili: 210 Fe\'l',
       sub: 'Hozirgi zamon tuslanishi, audio va misollar',
-      badge: '229 Fe\'l',
-      lessons: '229 fe\'l',
+      badge: '210 Fe\'l',
+      lessons: '210 fe\'l',
       level: 'Barcha darajalar',
       color: 'linear-gradient(135deg, #f59e0b, #ef4444)',
       icon: 'book',

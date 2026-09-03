@@ -29,8 +29,8 @@
         v = [
           {
             id: 'n_welcome_1',
-            text: "Yangi 229 ta rus tili fe'llari to'liq yuklandi! Bosh sahifadagi story va reels orqali o'rganing.",
-            note: "229 ta hozirgi zamon fe'li",
+            text: "Yangi 210 ta rus tili fe'llari to'liq yuklandi! Bosh sahifadagi story va reels orqali o'rganing.",
+            note: "210 ta hozirgi zamon fe'li",
             date: todayStr(),
             sec: 'languages',
             read: 0,
