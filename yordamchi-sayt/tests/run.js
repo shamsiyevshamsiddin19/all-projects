@@ -581,6 +581,63 @@ const texts = (t) => prosodyParts(t).map((p) => p.text);
 }
 
 /* =========================================================
+   10. Kod bo'yash (2026-09-03)
+   =========================================================
+   Ikki narsa muhim va ikkalasi ham jimgina buzilishi mumkin edi:
+
+   1) XAVFSIZLIK — bo'yash xom matn ustida ishlaydi, ya'ni HTML har
+      bo'lak uchun ALOHIDA qochirilishi shart. Aks holda darslikdagi
+      `<script>` haqiqiy tegga aylanardi.
+   2) GURUH RAQAMLARI — qoidalar ichida o'z qamrab oluvchi guruhlari
+      bo'lishi mumkin. Ular sanalmasa indekslar suriladi va bo'lakka
+      BOSHQA qoida nomi berilardi (`import` "satr" deb bo'yalgandi). */
+{
+  const prevW = global.window;
+  global.window = global;
+  delete require.cache[require.resolve('../assets/js/core/hilite.js')];
+  require('../assets/js/core/hilite.js');
+  const H = global.Hilite;
+
+  // --- Xavfsizlik ---
+  const evil = H.code('python', '<script>alert(1)</script>');
+  check('kod ichidagi <script> teg bo\'lib qolmaydi', evil.indexOf('<script>') < 0);
+  check('u qochirilgan holda ko\'rinadi', evil.indexOf('&lt;script&gt;') >= 0);
+  check('satr ichidagi teg ham qochiriladi',
+        H.code('python', 'x = "<img onerror=1>"').indexOf('<img') < 0);
+
+  // --- Guruh raqamlari (aynan tutilgan nosozlik) ---
+  const py = H.code('python',
+    'from django.test import TestCase\nclass T(TestCase):\n' +
+    '    def f(self):\n        x = Mahsulot.objects.create(nomi="Non", narxi=5000)  # izoh');
+  check('kalit so\'z bo\'yaldi', /class="hl-kw">from</.test(py));
+  check('son bo\'yaldi', /class="hl-num">5000/.test(py));
+  check('satr bo\'yaldi', /class="hl-str">"Non"/.test(py));
+  check('izoh bo\'yaldi', /class="hl-com"># izoh/.test(py));
+
+  // --- Izoh/satr ichida kalit so'z bo'yalmasin ---
+  eq('izoh ichidagi kalit so\'z tegilmaydi',
+     (H.code('python', '# import bu yerda kalit emas').match(/hl-kw/g) || []).length, 0);
+  eq('satr ichidagi kalit so\'z tegilmaydi',
+     (H.code('python', 'x = "class def import"').match(/hl-kw/g) || []).length, 0);
+
+  // --- Boshqa tillar ---
+  check('bash o\'zgaruvchisi', /hl-var">\$HOME/.test(H.code('bash', 'export P=$HOME/bin')));
+  check('sql kichik harfda ham', /hl-kw">select/.test(H.code('sql', 'select * from t')));
+  check('sql katta harfda ham', /hl-kw">SELECT/.test(H.code('sql', 'SELECT * FROM t')));
+  check('taxallus: py -> python', /hl-kw">import/.test(H.code('py', 'import os')));
+  check('notanish til yiqilmaydi', typeof H.code('klingon', 'a = 1 # b') === 'string');
+  eq('bo\'sh kod', H.code('python', ''), '');
+
+  // --- Matn yo'qolmasligi ---
+  const src = 'def f(x):\n    return x + 1  # qo\'shish\n';
+  const back = H.code('python', src).replace(/<[^>]+>/g, '')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  eq('birorta belgi yo\'qolmadi', back, src);
+
+  global.window = prevW;
+}
+
+/* =========================================================
    Natija
    ========================================================= */
 console.log('');

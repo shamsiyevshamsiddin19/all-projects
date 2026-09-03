@@ -4220,26 +4220,51 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 
 /* ==================== Darsliklarni o'qish uslubi ====================
    `<html class="md-claude">` bo'lganda ishlaydi (mdtheme.js qo'yadi).
-   Chizuvchi TEGILMAGAN — bu faqat uslub qatlami, shuning uchun barcha
-   `.md-content` joylarida (darslik, qoidalar, arxiv, kutubxona) bir
-   vaqtda ishlaydi.
 
-   Maqsad: uzun darsni o'qib charchamaslik. Uch narsa hal qiladi —
-   satr kengligi, qator oralig'i va sarlavhalar atrofidagi havo. */
+   Bu rejim ILOVA MAVZUSIDAN QAT'IY NAZAR o'z rangini ishlatadi: iliq
+   qora fon va sarg'ish-oq matn. Sababi shu rejimning butun maqsadi —
+   uzoq o'qish uchun bir xil, tinch muhit; u yorug'/qorong'i o'tishlarda
+   o'zgarib tursa, maqsad yo'qolardi.
+
+   Markdown chizuvchi TEGILMAGAN. Bu faqat uslub qatlami, shuning uchun
+   `.md-content` ishlatadigan hamma joyda (darslik, qoidalar, arxiv,
+   kutubxona) bir vaqtda ishlaydi. */
 
 .md-claude .md-content{
+  /* --- rejim ranglari --- */
+  --r-bg:      #262624;   /* iliq qora — ko'k emas, shuning uchun charchatmaydi */
+  --r-code-bg: #1f1e1d;
+  --r-text:    #f0eee6;
+  --r-muted:   #a9a49b;
+  --r-line:    #3c3a36;
+
+  /* --- kod ranglari --- */
+  --r-kw:   #c792ea;   /* kalit so'z — binafsha */
+  --r-str:  #e5786d;   /* satr — marjon */
+  --r-num:  #f0a35e;   /* son — kahrabo */
+  --r-com:  #7f7b73;   /* izoh — bo'g'iq */
+  --r-fn:   #82aaff;   /* funksiya/klass — moviy */
+  --r-var:  #f78c6c;   /* o'zgaruvchi — to'q sariq */
+  --r-dec:  #ffcb6b;   /* dekorator — sariq */
+
+  /* Serif ATAYLAB: uzun matnda harflarning tugallovchi chiziqchalari
+     ko'zni qator bo'ylab olib boradi. Kod esa monospace bo'lib qoladi. */
+  font-family: Georgia, "Iowan Old Style", "Palatino Linotype",
+               "Book Antiqua", "Source Serif Pro", "Times New Roman", serif;
+
   /* 68ch — uzun matn uchun qulay kenglik. Kengroq bo'lsa ko'z qator
-     oxiridan boshiga qaytishda adashadi, torroq bo'lsa uzilib-uzilib
-     o'qiladi. Kod bloklari va jadvallar bundan chiqib turadi (pastda). */
-  max-width:68ch;
-  margin-inline:auto;
-  font-size:16.5px;
-  line-height:1.78;
-  letter-spacing:.002em;
-  color:var(--text);
+     oxiridan boshiga qaytishda adashadi. */
+  max-width: 68ch;
+  margin-inline: auto;
+  padding: 26px 22px 34px;
+  border-radius: 14px;
+  background: var(--r-bg);
+  color: var(--r-text);
+  font-size: 16.5px;
+  line-height: 1.72;
 }
 
-.md-claude .md-content p{ margin:0 0 1.15em; }
+.md-claude .md-content p{ margin: 0 0 1.15em; }
 
 /* ---- Sarlavhalar ----
    Ustidagi oraliq ostidagidan sezilarli katta: shunda sarlavha O'ZIDAN
@@ -4249,94 +4274,114 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 .md-claude .md-content h4,
 .md-claude .md-content h5,
 .md-claude .md-content h6{
-  line-height:1.3;
-  letter-spacing:-.011em;
-  color:var(--text);
+  color: var(--r-text);
+  line-height: 1.3;
+  letter-spacing: -.005em;
 }
-.md-claude .md-content h2{ font-size:1.55em; font-weight:700; margin:1.9em 0 .55em; }
-.md-claude .md-content h3{ font-size:1.24em; font-weight:700; margin:1.7em 0 .45em; }
-.md-claude .md-content h4{ font-size:1.06em; font-weight:700; margin:1.5em 0 .4em; }
+.md-claude .md-content h2{ font-size: 1.5em;  font-weight: 700; margin: 1.75em 0 .5em; }
+.md-claude .md-content h3{ font-size: 1.2em;  font-weight: 700; margin: 1.6em 0 .4em; }
+.md-claude .md-content h4{ font-size: 1.04em; font-weight: 700; margin: 1.4em 0 .35em; }
 .md-claude .md-content h5,
-.md-claude .md-content h6{ font-size:.96em; font-weight:700; margin:1.4em 0 .35em; color:var(--text-2); }
-.md-claude .md-content > :first-child{ margin-top:0; }
-
-/* Bobning birinchi sarlavhasi ostida yupqa chiziq — bo'limlar
-   bir-biriga qo'shilib ketmasin */
-.md-claude .md-content h2{
-  padding-bottom:.3em;
-  border-bottom:1px solid var(--border-soft);
-}
+.md-claude .md-content h6{ font-size: .95em; font-weight: 700; margin: 1.3em 0 .3em; color: var(--r-muted); }
+.md-claude .md-content > :first-child{ margin-top: 0; }
 
 /* ---- Ro'yxatlar ---- */
 .md-claude .md-content ul,
-.md-claude .md-content ol{ margin:0 0 1.15em; padding-left:1.5em; }
-.md-claude .md-content li{ margin-bottom:.45em; }
-.md-claude .md-content li::marker{ color:var(--hint); }
+.md-claude .md-content ol{ margin: 0 0 1.15em; padding-left: 1.5em; }
+.md-claude .md-content li{ margin-bottom: .5em; }
+.md-claude .md-content li::marker{ color: var(--r-muted); }
 .md-claude .md-content ul ul,
 .md-claude .md-content ol ol,
 .md-claude .md-content ul ol,
-.md-claude .md-content ol ul{ margin:.45em 0 0; }
+.md-claude .md-content ol ul{ margin: .5em 0 0; }
 
-/* ---- Kod ----
-   Ichki kod matn oqimida qoladi, blok esa alohida panel bo'lib
-   ajraladi va satr kengligidan CHIQADI — kod o'ralib ketmasin. */
+/* ---- Matn ichidagi kod ----
+   Marjon rang + yengil fon. Fon SHART: serif matn oqimida monospace
+   bo'lak aks holda tasodifiy ajralib turgandek ko'rinardi. */
 .md-claude .md-content code{
-  font-size:.875em;
-  padding:.15em .38em;
-  border-radius:5px;
-  background:var(--card-2);
-  border:1px solid var(--border-soft);
+  font-family: var(--mono);
+  font-size: .845em;
+  color: var(--r-str);
+  background: rgba(255,255,255,.055);
+  border: none;
+  padding: .12em .36em;
+  border-radius: 5px;
 }
+
+/* ---- Kod bloki ----
+   Matn kengligidan CHIQADI (78ch): kod o'ralib ketmasligi kerak. */
 .md-claude .md-content pre{
-  margin:0 0 1.3em;
-  padding:2.1em 1.05em 1.05em;
-  border-radius:11px;
-  background:var(--card-2);
-  border:1px solid var(--border);
-  font-size:.86em;
-  line-height:1.62;
-  /* Matn 68ch bilan cheklangan, kod esa kengroq joy oladi */
-  width:min(100%, 78ch);
+  position: relative;
+  margin: 0 0 1.3em;
+  padding: 2.2em 1.1em 1.1em;
+  border-radius: 11px;
+  background: var(--r-code-bg);
+  border: 1px solid var(--r-line);
+  width: min(100%, 78ch);
+  font-size: .855em;
+  line-height: 1.62;
+  overflow-x: auto;
 }
 .md-claude .md-content pre code{
-  background:none; border:none; padding:0; font-size:1em;
+  background: none; border: none; padding: 0;
+  font-size: 1em; color: var(--r-text);
 }
-/* Til yorlig'i — panelning o'z sarlavha yo'lagida */
+/* Til yorlig'i — panelning o'z yo'lagida, chapda */
 .md-claude .md-content pre[data-lang]::before{
-  top:.55em; left:1.05em; right:auto;
-  font-size:10.5px; letter-spacing:.08em;
+  content: attr(data-lang);
+  position: absolute;
+  top: .6em; left: 1.15em; right: auto;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: none;
+  color: var(--r-muted);
 }
+
+/* ---- Sintaksis ranglari ---- */
+.md-claude .md-content .hl-kw  { color: var(--r-kw); }
+.md-claude .md-content .hl-str { color: var(--r-str); }
+.md-claude .md-content .hl-num { color: var(--r-num); }
+.md-claude .md-content .hl-com { color: var(--r-com); font-style: italic; }
+.md-claude .md-content .hl-fn,
+.md-claude .md-content .hl-def { color: var(--r-fn); }
+.md-claude .md-content .hl-var,
+.md-claude .md-content .hl-opt { color: var(--r-var); }
+.md-claude .md-content .hl-dec { color: var(--r-dec); }
 
 /* ---- Iqtibos ---- */
 .md-claude .md-content blockquote{
-  margin:0 0 1.25em;
-  padding:.15em 0 .15em 1.1em;
-  border-left:3px solid var(--border);
-  background:none;
-  border-radius:0;
-  color:var(--text-2);
-  font-style:normal;
+  margin: 0 0 1.25em;
+  padding: .1em 0 .1em 1.1em;
+  border-left: 3px solid var(--r-line);
+  background: none;
+  border-radius: 0;
+  color: var(--r-muted);
 }
 
 /* ---- Jadval ---- */
-.md-claude .md-content .md-table-wrap{ width:min(100%, 78ch); }
-.md-claude .md-content .md-table{ font-size:.92em; }
-.md-claude .md-content .md-table th{
-  font-weight:700;
-  background:var(--card-2);
-}
+.md-claude .md-content .md-table-wrap{ width: min(100%, 78ch); }
+.md-claude .md-content .md-table{ font-size: .92em; border-color: var(--r-line); }
 .md-claude .md-content .md-table th,
-.md-claude .md-content .md-table td{ padding:.55em .75em; }
+.md-claude .md-content .md-table td{
+  padding: .55em .75em;
+  border-color: var(--r-line);
+  color: var(--r-text);
+}
+.md-claude .md-content .md-table th{ font-weight: 700; background: rgba(255,255,255,.045); }
 
 /* ---- Qolganlari ---- */
-.md-claude .md-content hr{ margin:2.2em 0; border-top:1px solid var(--border-soft); }
-.md-claude .md-content a{ text-decoration:underline; text-underline-offset:2px; }
-.md-claude .md-content img{ width:min(100%, 78ch); margin:1.2em 0; }
+.md-claude .md-content hr{ margin: 2.1em 0; border-top: 1px solid var(--r-line); }
+.md-claude .md-content a{ color: #9db8ff; text-decoration: underline; text-underline-offset: 2px; }
+.md-claude .md-content strong{ color: #fffdf7; }
+.md-claude .md-content img{ width: min(100%, 78ch); margin: 1.2em 0; border-color: var(--r-line); }
+.md-claude .md-content li.md-task.done{ color: var(--r-muted); }
 
 /* Tor ekranda kenglik cheklovi ortiqcha — u yerda ekranning o'zi tor */
 @media (max-width: 720px){
-  .md-claude .md-content{ font-size:16px; }
+  .md-claude .md-content{ font-size: 16px; padding: 18px 15px 26px; border-radius: 12px; }
   .md-claude .md-content pre,
   .md-claude .md-content .md-table-wrap,
-  .md-claude .md-content img{ width:100%; }
+  .md-claude .md-content img{ width: 100%; }
 }

@@ -587,8 +587,13 @@
         var code = [];
         i++;
         while (i < lines.length && !/^\s*```/.test(lines[i])) { code.push(lines[i]); i++; }
+        /* Bo'yash XOM matn ustida bajariladi va har bo'lak alohida
+           qochiriladi. Avval qochirib keyin bo'yash MUMKIN EMAS:
+           `&quot;` kabi ketma-ketliklar satr deb noto'g'ri tanilardi.
+           Modul yuklanmagan bo'lsa — oddiy qochirish. */
+        var raw = code.join('\n');
         html += '<pre' + (lang ? ' data-lang="' + App.esc(lang) + '"' : '') + '><code>' +
-          App.esc(code.join('\n')) + '</code></pre>';
+          (window.Hilite ? Hilite.code(lang, raw) : App.esc(raw)) + '</code></pre>';
         i++; continue;
       }
 
