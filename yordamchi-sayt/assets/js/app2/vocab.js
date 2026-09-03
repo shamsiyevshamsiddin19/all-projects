@@ -326,8 +326,11 @@
         /* Faqat JORIY tilning harfi: rus lug'atida C, ingliz lug'atida V.
            Ikkalasini yonma-yon qo'yish chalkash edi — bu sahifa allaqachon
            bitta tilga tegishli. */
+        /* JORIY papka uzatiladi: "C" har doim butun tilni emas, SHU
+           sahifada ko'rinib turgan narsani ochadi. Ildizda bosilsa
+           hammasi, `1-8000/1-1000` ichida bosilsa faqat o'sha mingtasi. */
         '<button class="icon-btn ghost voc-key" data-act="go" data-arg=\'' +
-          App.arg({ v: 'vocab_browse', p: { lang: lang } }) + '\' aria-label="Butun lug\'at" title="Butun lug\'at">' +
+          App.arg({ v: 'vocab_browse', p: { lang: lang, folder: params.folder || '' } }) + '\' aria-label="Shu yerdagi so\'zlar" title="Shu yerdagi so\'zlar">' +
           (lang === 'russian' ? 'C' : 'V') + '</button>' +
         /* `folder` ham uzatiladi — MD fayl JORIY papkaga yuklanadi */
         '<button class="icon-btn ghost" data-act="vocabDbOptions" data-arg=\'' + App.arg({ lang: lang, folder: params.folder || '' }) + '\' aria-label="Baza qo\'shish" title="Baza qo\'shish"><span data-icon="upload" data-icon-size="18"></span></button>' +

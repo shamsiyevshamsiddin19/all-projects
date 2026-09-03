@@ -29,7 +29,23 @@
      'master' | 'save' | '#rrggbb' bo'lsa esa oynacha OCHILMAYDI, bosilgan
      so'zga o'sha amal darrov qo'llanadi. Yuzlab so'zni tartiblashda har
      safar oynacha ochib yopish juda sekin edi. */
-  var B = { lang: 'russian', tab: 'all', q: '', data: null, order: [], mode: '' };
+  var B = { lang: 'russian', tab: 'all', q: '', data: null, order: [], mode: '', folder: '' };
+
+  /* Kategoriya SHU papka ichidami. Bo'sh papka = ildiz = hammasi. */
+  function inScope(cat) {
+    if (!B.folder) return true;
+    return cat === B.folder || String(cat).indexOf(B.folder + '/') === 0;
+  }
+
+  /* Guruh sarlavhasi uchun nom: papka ostidagi BIRINCHI bo'lak.
+     Ildizda bu odatdagi `topSeg`, papka ichida esa bir pog'ona pastdagi
+     nom — aks holda "1-1000" ichida ham guruh "1-8000" deb yozilardi. */
+  function groupSeg(cat) {
+    if (!B.folder) return topSeg(cat);
+    var rest = String(cat).slice(B.folder.length + 1);
+    var i = rest.indexOf('/');
+    return i < 0 ? (rest || leafSeg(cat)) : rest.slice(0, i);
+  }
 
   function WS() { return window.WordState; }
 
@@ -55,12 +71,16 @@
       B.lang = params.lang === 'english' ? 'english' : 'russian';
       B.tab = params.tab || 'all';
       B.q = '';
+      B.folder = params.folder || '';
 
       page.innerHTML =
         '<div class="topbar" style="margin:-16px -15px 12px">' +
         '<button class="icon-btn ghost" data-act="go" data-arg=\'' +
-        App.arg({ v: 'vocab', p: { lang: B.lang } }) + '\'><span data-icon="arrowLeft" data-icon-size="20"></span></button>' +
-        '<h1>' + App.esc(LANGS[B.lang].name) + '</h1>' +
+        App.arg({ v: 'vocab', p: { lang: B.lang, folder: B.folder } }) + '\'><span data-icon="arrowLeft" data-icon-size="20"></span></button>' +
+        /* Sarlavha QAYERDAN kelinganini aytadi. Ilgari doim til nomi
+           turardi, endi esa "1-1000" ichidan kirilsa shu yoziladi —
+           aks holda ekrandagi so'zlar qaysi to'plamdanligi bilinmasdi. */
+        '<h1>' + App.esc(B.folder ? leafSeg(B.folder) : LANGS[B.lang].name) + '</h1>' +
         '<button class="icon-btn ghost vb-mode-btn" id="vb-mode" style="margin-left:auto" ' +
         'title="Tez rejim"><span data-icon="edit" data-icon-size="18"></span></button>' +
         '<button class="icon-btn ghost" id="vb-other" ' +
@@ -75,11 +95,23 @@
 
       var other = page.querySelector('#vb-other');
       if (other) other.onclick = function () {
+        /* Papka tashlanadi: yo'llar ikki tilda bir xil bo'lsa ham
+           (`1-8000/...`), "Тематический 9000" faqat rus tilida bor —
+           papka saqlansa ingliz tilida bo'sh ekran chiqardi. */
         App.go('vocab_browse', { lang: B.lang === 'russian' ? 'english' : 'russian' });
       };
 
       load(B.lang).then(function (res) {
-        B.data = res.data; B.order = res.order;
+        B.data = res.data;
+        /* IKKI filtr, bir joyda:
+             1) papka — "C" qaysi sahifada bosilgan bo'lsa, o'shanisi;
+             2) qulf — qulflangan bo'lim bu yerda ham ko'rinmasligi kerak.
+           Ikkinchisi ilgari YO'Q edi: bu ekran to'g'ridan-to'g'ri serverdan
+           o'qigani uchun qulflangan 22 ming so'z shu yerda ochiq chiqardi. */
+        B.order = (res.order || []).filter(function (c) {
+          if (!inScope(c)) return false;
+          return !(window.WordLock && WordLock.isLocked(c));
+        });
         paint(page);
       }).catch(function (e) {
         var b = App.el('vb-body');
@@ -176,14 +208,21 @@
     B.order.forEach(function (cat) {
       var words = (B.data[cat] || []).filter(matches);
       if (!words.length) return;
-      var top = topSeg(cat);
+      var top = groupSeg(cat);
       if (!byTop[top]) { byTop[top] = { name: top, secs: [], total: 0 }; groups.push(byTop[top]); }
       byTop[top].secs.push({ cat: cat, leaf: leafSeg(cat), words: words });
       byTop[top].total += words.length;
     });
 
     if (!groups.length) {
-      host.innerHTML = App.empty({ icon: 'list', title: 'Topilmadi', text: 'Boshqa so\'z kiritib ko\'ring.' });
+      /* Ikki xil bo'shlik bor va ularni ajratish kerak: qidiruv natija
+         bermadimi, yoki bu papkada umuman so'z yo'qmi (qulflangan yoki
+         hali to'ldirilmagan). Bitta "Topilmadi" ikkalasiga ham yaramasdi. */
+      host.innerHTML = B.q
+        ? App.empty({ icon: 'search', title: 'Topilmadi',
+                      text: '"' + B.q + '" bo\'yicha so\'z yo\'q. Boshqa so\'z kiritib ko\'ring.' })
+        : App.empty({ icon: 'list', title: 'Bo\'sh',
+                      text: 'Bu bo\'limda ko\'rsatiladigan so\'z yo\'q — qulflangan yoki hali to\'ldirilmagan.' });
       App.icons(host);
       return;
     }
@@ -392,7 +431,7 @@
       });
       if (!words.length) return;
       total += words.length;
-      var top = topSeg(cat);
+      var top = groupSeg(cat);
       if (!byTop[top]) { byTop[top] = { name: top, secs: [], total: 0 }; groups.push(byTop[top]); }
       byTop[top].secs.push({ leaf: leafSeg(cat), words: words, all: (B.data[cat] || []).length });
       byTop[top].total += words.length;
