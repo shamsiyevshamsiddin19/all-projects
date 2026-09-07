@@ -1,0 +1,20 @@
+# Backend
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/.pytest_cache/
+backend/tracker.db
+backend/test_tracker.db
+backend/storage/uploads/*
+!backend/storage/uploads/.gitkeep
+backend/.env
+
+# Mobile (Flutter)
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/build/
+mobile/.idea/
+mobile/android/local.properties
+mobile/android/.gradle/
+mobile/ios/Pods/
