@@ -609,6 +609,7 @@
         languages: 'languages', english: 'languages', russian: 'languages',
         grammar: 'languages', grammar_topic: 'languages', library: 'languages',
         library_doc: 'languages', reading_doc: 'languages', listening_doc: 'languages',
+        listening_hub: 'languages',
         vocab: 'languages', vocab_browse: 'languages',
         /* Lug'at ichidagi EKRANLAR. Bular xaritada yo'q edi va oddiy
            foydalanuvchi lug'at kategoriyasini bosganda "ruxsat etilmagan"

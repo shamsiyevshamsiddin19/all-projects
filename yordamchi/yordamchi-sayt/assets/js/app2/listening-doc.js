@@ -208,7 +208,10 @@
       if (b0) b0.innerHTML = App.empty({ icon: 'alert', title: 'Modul yuklanmadi', text: 'reading.js topilmadi.' });
       return;
     }
-    App.call('get_topic', null, { query: 'id=' + encodeURIComponent(L.id) }).then(function (t) {
+
+    var builtin = window.ListeningBuiltin ? ListeningBuiltin.get(L.id) : null;
+
+    function applyTopic(t) {
       var box = App.el('au-body'); if (!box) return;
       L.name = t.name || 'Matn';
       var folder = (t.folder || '').trim();
@@ -216,7 +219,7 @@
       var back = page.querySelector('#au-back');
       if (back) {
         back.setAttribute('data-act', 'go');
-        back.setAttribute('data-arg', App.arg({ v: 'library', p: { sec: L.sec, path: folder } }));
+        back.setAttribute('data-arg', App.arg({ v: 'listening_hub', p: { sec: L.sec, path: folder } }));
       }
       var h1 = page.querySelector('#au-title');
       if (h1) h1.textContent = L.name;
@@ -224,7 +227,7 @@
       if (!t.content) {
         box.innerHTML = App.empty({
           icon: 'headphones', title: 'Matn hali yo\'q',
-          text: 'Bu bo\'limga Chtenie uchun yozilgan .md faylni yuklasangiz bo\'ladi — format bir xil.'
+          text: 'Bu bo\'limga .md faylni yuklasangiz bo\'ladi.'
         });
         App.icons(box);
         return;
@@ -244,6 +247,15 @@
         return;
       }
       renderSentence(page);
+    }
+
+    if (builtin) {
+      applyTopic(builtin);
+      return;
+    }
+
+    App.call('get_topic', null, { query: 'id=' + encodeURIComponent(L.id) }).then(function (t) {
+      applyTopic(t);
     }).catch(function (e) {
       var box = App.el('au-body');
       if (box) box.innerHTML = App.empty({ icon: 'alert', title: 'Yuklanmadi', text: e.message });
