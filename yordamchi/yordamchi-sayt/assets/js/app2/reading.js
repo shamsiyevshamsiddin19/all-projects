@@ -31,7 +31,9 @@
     playing: false, idx: -1, rate: 1, alive: false,
     barOpen: false,
     stepMode: false,      // gap-ma-gap: har gapdan keyin to'xtaydi
-    pendingStop: false
+    pendingStop: false,
+    repeatCount: 1,       // 1 (oddiy), 2 (2x), 3 (3x) takrorlash
+    repeatIdx: 1          // joriy gap nechanchi marta o'qilyapti (1..repeatCount)
   };
 
   /* ================= Parser ================= */
@@ -309,6 +311,7 @@
   function stopAll() {
     R.playing = false;
     R.alive = false;
+    R.repeatIdx = 1;
     /* Gaplar orasidagi kutish ham bekor qilinsin — aks holda to'xtatilgandan
        keyin yana bitta gap o'qilib ketardi. */
     haltSpeech();
@@ -344,13 +347,14 @@
       R.pendingStop = false;
       R.playing = false;
       R.idx = n;
+      R.repeatIdx = 1;
       highlight(n);
       paintPlayer();
       return;
     }
 
     if (n >= R.sentences.length) {
-      R.playing = false; R.idx = -1;
+      R.playing = false; R.idx = -1; R.repeatIdx = 1;
       highlight(-1); paintPlayer();
       App.toast('✅ Matn tugadi');
       if (window.Activity) Activity.mark();
@@ -366,19 +370,30 @@
     var cur = R.sentences[n];
     /* Sarlavha e'lon qilib o'qiladi: sekinroq, pastroq ohangda va undan
        keyin uzunroq jimlik — quloq bilan "yangi bo'lim boshlandi" degani
-       bilinsin. */
+       bilinsin. Sarlavha takrorlanmaydi. */
     if (cur.k === 'h') {
       speakHeading(cur.text, function () {
+        R.repeatIdx = 1;
         if (R.stepMode) R.pendingStop = true;
         R.gapTimer = setTimeout(function () { step(n + 1); }, Math.round(700 / (R.rate || 1)));
       });
       return;
     }
     speakProsody(cur.text, function (endPause) {
+      if (!R.alive || !R.playing) return;
+
+      /* Gapni 2-3 marta takrorlash funksiyasi */
+      if (R.repeatCount > 1 && R.repeatIdx < R.repeatCount) {
+        R.repeatIdx++;
+        paintPlayer();
+        var repPause = Math.round(340 / (R.rate || 1));
+        R.gapTimer = setTimeout(function () { step(n); }, repPause);
+        return;
+      }
+
+      /* Barcha takrorlar tugadi — keyingi gapga o'tamiz */
+      R.repeatIdx = 1;
       if (R.stepMode) R.pendingStop = true;   // keyingi qadamda to'xtaydi
-      /* Gaplar orasidagi jimlik endi TINISH BELGISIGA bog'liq: nuqtadan
-         keyin qisqa, so'roq/xitobdan keyin uzunroq, ko'p nuqtadan keyin eng
-         uzun. Tezlikka ham bog'liq: sekin o'qilsa pauza ham uzunroq. */
       var pause = Math.round((endPause || 260) / (R.rate || 1));
       R.gapTimer = setTimeout(function () { step(n + 1); }, pause);
     });
@@ -386,7 +401,8 @@
 
   /* ================= Pastki pleyer =================
      Yopiq holatda — bitta tugma. Bosilganda videopleyerdagidek boshqaruv
-     paneliga ochiladi: oldingi/keyingi gap, play/pause, progress va tezlik. */
+     paneliga ochiladi: oldingi/keyingi gap, play/pause, progress, tezlik,
+     2-3x takrorlash va audio yuklab olish. */
 
   function paintPlayer() {
     var box = App.el('rd-player'); if (!box) return;
@@ -404,27 +420,50 @@
     var cur = R.idx < 0 ? 0 : R.idx + 1;
     var pct = Math.round((cur / total) * 100);
 
+    var repInfo = '';
+    if (R.repeatCount > 1) {
+      if (R.playing && cur > 0) {
+        repInfo = ' · ' + R.repeatIdx + '/' + R.repeatCount + ' marta';
+      } else {
+        repInfo = ' · ' + R.repeatCount + 'x takror';
+      }
+    }
+
     box.className = 'rd-player open';
     box.innerHTML =
       '<div class="rd-pl-top">' +
-        '<div class="rd-pl-time">' + cur + ' / ' + total + ' gap</div>' +
-        '<button class="rd-pl-x" data-act="rdCloseBar" aria-label="Yopish">' +
-        '<span data-icon="close" data-icon-size="16"></span></button>' +
+        '<div class="rd-pl-time">' + cur + ' / ' + total + ' gap' + repInfo + '</div>' +
+        '<div class="rd-pl-top-actions">' +
+          '<button class="rd-pl-tool-btn" data-act="rdDownloadAudio" aria-label="Audioni yuklab olish" title="Ovozni yuklab olish (.mp3)">' +
+            '<span data-icon="download" data-icon-size="15"></span></button>' +
+          '<button class="rd-pl-tool-btn" data-act="rdVoice" aria-label="Ovozni tanlash" title="Ovozni tanlash">' +
+            '<span data-icon="volume" data-icon-size="15"></span></button>' +
+          '<button class="rd-pl-x" data-act="rdCloseBar" aria-label="Yopish">' +
+            '<span data-icon="close" data-icon-size="16"></span></button>' +
+        '</div>' +
       '</div>' +
       '<div class="rd-pl-track"><div class="rd-pl-fill" style="width:' + pct + '%"></div></div>' +
       '<div class="rd-pl-ctrls">' +
-        '<button class="rd-pl-b" data-act="rdPrev" aria-label="Oldingi gap">' +
-        '<span data-icon="skipBack" data-icon-size="20"></span></button>' +
-        '<button class="rd-pl-play" data-act="rdToggle" aria-label="' + (R.playing ? 'To\'xtatish' : 'Boshlash') + '">' +
-        '<span data-icon="' + (R.playing ? 'pause' : 'play') + '" data-icon-size="24"></span></button>' +
-        '<button class="rd-pl-b" data-act="rdNext" aria-label="Keyingi gap">' +
-        '<span data-icon="skipFwd" data-icon-size="20"></span></button>' +
-        '<button class="rd-pl-rate" data-act="rdSpeed">' + rateLabel() + '</button>' +
-        '<button class="rd-pl-step' + (R.stepMode ? ' on' : '') + '" data-act="rdStepMode" ' +
-        'aria-label="Gap-ma-gap rejim" title="Har gapdan keyin to\'xtash">' +
-        '<span data-icon="pauseDot" data-icon-size="16"></span></button>' +
-        '<button class="rd-pl-step" data-act="rdVoice" aria-label="Ovozni tanlash" title="Ovozni tanlash">' +
-        '<span data-icon="volume" data-icon-size="16"></span></button>' +
+        '<div class="rd-pl-side left">' +
+          '<button class="rd-pl-step' + (R.stepMode ? ' on' : '') + '" data-act="rdStepMode" ' +
+            'aria-label="Gap-ma-gap rejim" title="Har gapdan keyin to\'xtash">' +
+            '<span data-icon="pauseDot" data-icon-size="16"></span></button>' +
+          '<button class="rd-pl-step' + (R.repeatCount > 1 ? ' on' : '') + '" data-act="rdRepeat" ' +
+            'aria-label="Gapni takrorlash" title="Har bir gapni 2 yoki 3 marta takrorlash">' +
+            '<span data-icon="repeat" data-icon-size="15"></span>' +
+            '<span class="rd-pl-badge">' + R.repeatCount + 'x</span></button>' +
+        '</div>' +
+        '<div class="rd-pl-center">' +
+          '<button class="rd-pl-b" data-act="rdPrev" aria-label="Oldingi gap">' +
+            '<span data-icon="skipBack" data-icon-size="20"></span></button>' +
+          '<button class="rd-pl-play" data-act="rdToggle" aria-label="' + (R.playing ? 'To\'xtatish' : 'Boshlash') + '">' +
+            '<span data-icon="' + (R.playing ? 'pause' : 'play') + '" data-icon-size="24"></span></button>' +
+          '<button class="rd-pl-b" data-act="rdNext" aria-label="Keyingi gap">' +
+            '<span data-icon="skipFwd" data-icon-size="20"></span></button>' +
+        '</div>' +
+        '<div class="rd-pl-side right">' +
+          '<button class="rd-pl-rate" data-act="rdSpeed" title="O\'qish tezligi">' + rateLabel() + '</button>' +
+        '</div>' +
       '</div>';
     App.icons(box);
   }
@@ -452,6 +491,7 @@
     requestWake();
     R.errCount = 0;
     R.playing = true; R.alive = true;
+    R.repeatIdx = 1;
     step(R.idx >= 0 && R.idx < R.sentences.length ? R.idx : 0);
   };
 
@@ -466,6 +506,7 @@
     if (n < 0) n = 0;
     if (n >= R.sentences.length) n = R.sentences.length - 1;
     R.alive = true;
+    R.repeatIdx = 1;
     if (R.playing) { haltSpeech(); step(n); }
     else { R.idx = n; highlight(n); paintPlayer(); }
   }
@@ -476,6 +517,133 @@
     try { localStorage.setItem('reading_step_mode', R.stepMode ? '1' : '0'); } catch (e) {}
     paintPlayer();
     App.toast(R.stepMode ? 'Gap-ma-gap: har gapdan keyin to\'xtaydi' : 'Uzluksiz o\'qish');
+  };
+
+  App.actions.rdRepeat = function () {
+    var counts = [1, 2, 3];
+    var next = counts[(counts.indexOf(R.repeatCount) + 1) % counts.length];
+    R.repeatCount = next;
+    R.repeatIdx = 1;
+    try { localStorage.setItem('reading_repeat_count', String(R.repeatCount)); } catch (e) {}
+    paintPlayer();
+    if (R.repeatCount === 1) {
+      App.toast('Takrorlash o\'chirildi (1 marta)');
+    } else {
+      App.toast('Har bir gap ' + R.repeatCount + ' marta takrorlanadi');
+    }
+  };
+
+  /* ---------- Ovozni yuklab olish (MP3) ---------- */
+  App.actions.rdDownloadAudio = function () {
+    if (!R.sentences || !R.sentences.length) {
+      App.toast('Yuklab olish uchun matn topilmadi');
+      return;
+    }
+
+    var total = R.sentences.length;
+    var curIdx = R.idx >= 0 && R.idx < total ? R.idx : 0;
+    var curSent = R.sentences[curIdx] ? R.sentences[curIdx].text : '';
+    var curShort = curSent.length > 50 ? curSent.slice(0, 47) + '...' : curSent;
+
+    var html =
+      '<p class="muted" style="font-size:12px;margin:0 0 14px">' +
+      'Matn ovozini yuqori sifatli MP3 formatida yuklab oling. ' +
+      'Telefon yoki kompyuterda oflayn tinglash uchun qulay.</p>' +
+      '<div class="rd-dl-list">' +
+        '<button class="list-row" data-act="rdDoDownloadAudio" data-arg=\'' +
+          App.arg({ mode: 'full', repeat: 1 }) + '\'>' +
+          '<span class="li-ic" style="background:var(--accent-soft);color:var(--accent)" data-icon="download" data-icon-size="16"></span>' +
+          '<div class="li-main">' +
+            '<div class="li-title">To\'liq matn audiosi (.mp3)</div>' +
+            '<div class="li-sub">' + total + ' ta gap · Barcha gaplar ketma-ket</div>' +
+          '</div>' +
+        '</button>' +
+        (R.repeatCount > 1 ?
+        '<button class="list-row" data-act="rdDoDownloadAudio" data-arg=\'' +
+          App.arg({ mode: 'full', repeat: R.repeatCount }) + '\'>' +
+          '<span class="li-ic" style="background:var(--purple-soft,var(--card-2));color:var(--purple,#af52de)" data-icon="repeat" data-icon-size="16"></span>' +
+          '<div class="li-main">' +
+            '<div class="li-title">Takrorlangan holda yuklab olish (' + R.repeatCount + 'x .mp3)</div>' +
+            '<div class="li-sub">Har bir gap ' + R.repeatCount + ' marta takrorlangan MP3</div>' +
+          '</div>' +
+        '</button>' : '') +
+        (curSent ?
+        '<button class="list-row" data-act="rdDoDownloadAudio" data-arg=\'' +
+          App.arg({ mode: 'current', idx: curIdx, repeat: 1 }) + '\'>' +
+          '<span class="li-ic" data-icon="volume" data-icon-size="16"></span>' +
+          '<div class="li-main">' +
+            '<div class="li-title">Joriy gap audiosi (' + (curIdx + 1) + '-gap .mp3)</div>' +
+            '<div class="li-sub">' + App.esc(curShort) + '</div>' +
+          '</div>' +
+        '</button>' : '') +
+      '</div>';
+
+    var sh = App.sheet(html, { title: 'Audioni yuklab olish (.mp3)' });
+    App.icons(sh);
+  };
+
+  App.actions.rdDoDownloadAudio = function (a) {
+    App.closeSheet();
+    if (!R.sentences || !R.sentences.length) return;
+
+    var sents = [];
+    var title = (R.name || 'reading_audio').trim();
+    var rep = parseInt(a && a.repeat, 10) || 1;
+
+    if (a && a.mode === 'current') {
+      var idx = parseInt(a.idx, 10);
+      if (isNaN(idx) || idx < 0 || idx >= R.sentences.length) idx = R.idx >= 0 ? R.idx : 0;
+      var cur = R.sentences[idx];
+      if (cur && cur.text) {
+        sents = [cur.text];
+        title += '_gap_' + (idx + 1);
+      }
+    } else {
+      R.sentences.forEach(function (s) {
+        if (s.text) sents.push(s.text);
+      });
+    }
+
+    if (!sents.length) {
+      App.toast('Yuklab olish uchun matn bo\'sh');
+      return;
+    }
+
+    App.toast('⏳ Audio tayyorlanmoqda, biroz kuting...');
+
+    var langCode = R.lang.indexOf('ru') === 0 ? 'ru' : 'en';
+
+    fetch('/api?action=tts_download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sentences: sents,
+        lang: langCode,
+        repeat: rep,
+        title: title
+      })
+    }).then(function (res) {
+      if (!res.ok) {
+        return res.json().catch(function () { return {}; }).then(function (j) {
+          throw new Error(j.message || j.error || ('HTTP ' + res.status));
+        });
+      }
+      return res.blob();
+    }).then(function (blob) {
+      var url = window.URL.createObjectURL(blob);
+      var link = document.createElement('a');
+      link.href = url;
+      var safeName = title.replace(/[^\w\sа-яА-ЯёЁўқғҳЎҚҒҲ-]/gi, '_').replace(/\s+/g, '_');
+      if (rep > 1) safeName += '_' + rep + 'x';
+      link.download = safeName + '.mp3';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      App.toast('✅ Audio yuklab olindi');
+    }).catch(function (err) {
+      App.toast('⚠️ Yuklab olishda xatolik: ' + err.message);
+    });
   };
 
   /* ---------- Ovozni tanlash ----------
@@ -571,6 +739,8 @@
       '<div class="rd-pop-acts">' +
         '<button class="rd-pop-b" data-act="rdSay" data-arg=\'' + App.arg({ t: opts.say }) + '\'>' +
         '<span data-icon="volume" data-icon-size="15"></span>Tinglash</button>' +
+        '<button class="rd-pop-b" data-act="rdSayRepeat" data-arg=\'' + App.arg({ t: opts.say, count: 2 }) + '\' title="2 marta takrorlab tinglash">' +
+        '<span data-icon="repeat" data-icon-size="14"></span>2x</button>' +
         (opts.learn
           ? '<button class="rd-pop-b learn" data-act="rdLearn" data-arg=\'' +
             App.arg({ w: opts.src, t: opts.tr }) + '\'>' +
@@ -616,6 +786,27 @@
     R.alive = true;
     haltSpeech();
     speakProsody(a && a.t);
+  };
+
+  /* Tanlangan gap/so'zni 2 yoki 3 marta takrorlab o'qish */
+  App.actions.rdSayRepeat = function (a) {
+    var txt = a && a.t;
+    if (!txt) return;
+    R.alive = true;
+    haltSpeech();
+    var count = parseInt(a && a.count, 10) || 2;
+    var cur = 1;
+    function speakOnce() {
+      if (!R.alive) return;
+      speakProsody(txt, function () {
+        if (!R.alive) return;
+        if (cur < count) {
+          cur++;
+          R.gapTimer = setTimeout(speakOnce, Math.round(350 / (R.rate || 1)));
+        }
+      });
+    }
+    speakOnce();
   };
 
   App.actions.rdWord = function (a, el) {
@@ -987,6 +1178,9 @@
       R.playing = false; R.alive = true; R.barOpen = false;
       try { R.rate = parseFloat(localStorage.getItem('reading_rate')) || 1; } catch (e) { R.rate = 1; }
       try { R.stepMode = localStorage.getItem('reading_step_mode') === '1'; } catch (e) { R.stepMode = false; }
+      try { R.repeatCount = parseInt(localStorage.getItem('reading_repeat_count'), 10) || 1; } catch (e) { R.repeatCount = 1; }
+      if (R.repeatCount < 1 || R.repeatCount > 3) R.repeatCount = 1;
+      R.repeatIdx = 1;
       R.pendingStop = false;
 
       page.innerHTML =

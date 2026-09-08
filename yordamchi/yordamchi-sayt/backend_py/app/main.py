@@ -11,7 +11,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from .config import settings
 from .errors import ApiError, register_exception_handlers
-from .handlers import activity, auth, boost, dictionary, goals, language_topics, lms, misc, quiz, reja, sport, storage, users
+from .handlers import activity, auth, boost, dictionary, goals, language_topics, lms, misc, quiz, reja, sport, storage, tts, users
 from . import db, idempotency, security
 from .owner import owner_context
 
@@ -284,6 +284,8 @@ async def api_entry(request: Request):
     if action == "reja_file":
         file_id = int(q.get("id") or 0) if str(q.get("id") or "").isdigit() else 0
         return reja.serve(request, file_id, q.get("token", ""), str(q.get("download") or "") == "1")
+    if action == "tts_download":
+        return await tts.handle_tts_download(request, await _read_json_body(request), q)
     if action == "db_export":
         return await misc.db_export(request)
     if action == "db_import":

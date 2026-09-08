@@ -1941,6 +1941,14 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 }
 .rd-pl-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:9px; }
 .rd-pl-time{ font-family:var(--mono); font-size:11.5px; font-weight:700; color:var(--hint); }
+.rd-pl-top-actions{ display:flex; align-items:center; gap:6px; }
+.rd-pl-tool-btn{
+  width:28px; height:28px; border:0; border-radius:50%; cursor:pointer;
+  background:var(--card-2); color:var(--hint);
+  display:flex; align-items:center; justify-content:center;
+  transition:all .15s ease;
+}
+.rd-pl-tool-btn:active{ background:var(--card); transform:scale(.94); }
 .rd-pl-x{
   width:26px; height:26px; border:0; border-radius:50%; cursor:pointer;
   background:var(--card-2); color:var(--hint);
@@ -1949,27 +1957,32 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 .rd-pl-track{ height:3px; border-radius:99px; background:var(--border); overflow:hidden; margin-bottom:12px; }
 .rd-pl-fill{ height:100%; background:var(--accent); border-radius:99px; transition:width .3s ease; }
 
-.rd-pl-ctrls{ display:flex; align-items:center; justify-content:center; gap:18px; }
+.rd-pl-ctrls{ display:flex; align-items:center; justify-content:space-between; width:100%; }
+.rd-pl-side{ display:flex; align-items:center; gap:6px; min-width:76px; }
+.rd-pl-side.left{ justify-content:flex-start; }
+.rd-pl-side.right{ justify-content:flex-end; }
+.rd-pl-center{ display:flex; align-items:center; justify-content:center; gap:14px; flex:1; }
+
 .rd-pl-b{
-  width:40px; height:40px; border:0; border-radius:50%; cursor:pointer;
+  width:38px; height:38px; border:0; border-radius:50%; cursor:pointer;
   background:none; color:var(--text-2);
   display:flex; align-items:center; justify-content:center;
 }
 .rd-pl-b:active{ background:var(--card-2); }
 .rd-pl-play{
-  width:54px; height:54px; border:0; border-radius:50%; cursor:pointer;
+  width:50px; height:50px; border:0; border-radius:50%; cursor:pointer;
   background:var(--accent); color:var(--accent-ink);
   display:flex; align-items:center; justify-content:center;
   box-shadow:0 4px 14px rgba(0,0,0,.25);
 }
 .rd-pl-play:active{ transform:scale(.94); }
 .rd-pl-rate{
-  position:absolute; right:14px;
-  min-width:40px; padding:5px 9px; border:0; border-radius:9px; cursor:pointer;
+  min-width:38px; height:32px; padding:0 8px; border:0; border-radius:9px; cursor:pointer;
   background:var(--card-2); color:var(--text-2);
   font-family:var(--mono); font-size:11.5px; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
 }
-.rd-pl-ctrls{ position:relative; }
+.rd-pl-rate:active{ transform:scale(.94); }
 
 /* ---------- Tarjima oynachasi (popover) ----------
    Bosilgan so'z/gapning yonida chiqadi — o'qish joyidan ko'z uzilmasin. */
@@ -2226,15 +2239,17 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   .nt-bell{ width:36px; height:36px; }
 }
 
-/* Gap-ma-gap rejim tugmasi (Reading pleyeri) — yoqilganda aksent rangda */
+/* Gap-ma-gap va takrorlash rejimi tugmalari (Reading pleyeri) */
 .rd-pl-step{
-  position:absolute; left:14px;
-  width:32px; height:32px; border:0; border-radius:9px; cursor:pointer;
+  height:32px; min-width:32px; padding:0 6px; border:0; border-radius:9px; cursor:pointer;
   background:var(--card-2); color:var(--hint);
-  display:flex; align-items:center; justify-content:center;
+  display:flex; align-items:center; justify-content:center; gap:2px;
+  font-family:var(--mono); font-size:11px; font-weight:700;
+  transition:all .15s ease;
 }
 .rd-pl-step.on{ background:var(--accent-soft); color:var(--accent); }
 .rd-pl-step:active{ transform:scale(.94); }
+.rd-pl-badge{ font-size:10px; font-weight:750; margin-left:1px; line-height:1; }
 
 /* "Mening mashqlarim" — kunlik qisqa ro'yxat sarlavhasi va progress chizig'i */
 .mine-head{ display:flex; align-items:baseline; gap:7px; margin:2px 2px 8px; }
