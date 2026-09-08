@@ -82,79 +82,140 @@
 
   /* Favqulodda kod ekrani. Google bilan bir xil natija beradi: sessiya
      ochiladi va ilova ishga tushadi. */
-    /* --- Zamonaviy Kirish Ekrani (Telefonda to'liq ekran, saytga moslashtirilgan) ---
-     Yuqori qism: to'liq kenglikdagi qora sarlavha, oq avatar konturi va organik to'lqin.
-     Google hisobi: Google Identity Services orqali tezkor kirish.
-     Maxfiy kalit: 12 belgilik kod orqali favqulodda kirish (ko'zcha tugmasi bilan).
-     Ikkalasidan biri bilan kirish mumkin. */
+      /* --- Zamonaviy Kirish Ekrani (Desktop ijodkorlik + Mobile to'liq ekran) ---
+     - Desktopda: chap tomonda boy vitrina va ilhomlantiruvchi brend zonasi, o'ngda karta.
+     - Telefondada: 100% to'liq ekranli (edge-to-edge) qora va oq organik dizayn.
+     - Google hisobi: Premium ko'rinish va "Tezkor" nishoni.
+     - YOKI (OR) ajratgichi.
+     - Maxfiy kalit: 4-4-4 guruhlangan "••••  ••••  ••••" format va brauzer parollar oynasini bloklash. */
 
   function loginScreenModern(clientId, msg) {
     var cId = clientId || (AUTH_INFO && AUTH_INFO.google_client_id) || '';
     var el = screen(
-      '<div class="login-card">' +
-        '<!-- Yuqori qora qavariq sarlavha (Avatar bilan) -->' +
-        '<div class="login-header">' +
-          '<svg class="login-avatar-icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">' +
-            '<circle cx="32" cy="20" r="11"/>' +
-            '<path d="M14 54c0-11 8-19 18-19s18 8 18 19"/>' +
-          '</svg>' +
-          '<svg class="login-curve-svg" viewBox="0 0 350 70" preserveAspectRatio="none">' +
-            '<path d="M 0 0 C 18 40, 65 67, 150 69 L 350 70 L 350 71 L 0 71 Z" fill="#ffffff"/>' +
-          '</svg>' +
+      '<div class="auth-desktop-wrap">' +
+        '<!-- Desktop uchun ijodkorlik va brend paneli (faqat keng ekranda ko\'rinadi) -->' +
+        '<div class="desktop-art-side">' +
+          '<div class="art-glow-1"></div>' +
+          '<div class="art-glow-2"></div>' +
+          '<div class="art-brand">' +
+            '<img class="art-brand-img" data-app-icon src="' + App.appIconSrc() + '" alt="Logo">' +
+            '<span class="art-brand-name">Yordamchi</span>' +
+          '</div>' +
+          '<div class="art-center">' +
+            '<div class="art-hero-tag">' +
+              '<span data-icon="sparkles" data-icon-size="14"></span>' +
+              '<span>Shaxsiy o\'quv maydoni</span>' +
+            '</div>' +
+            '<h2 class="art-hero-title">Bilim olish va intizomda eng yaqin hamrohingiz.</h2>' +
+            '<p class="art-hero-desc">' +
+              '8 800 dan ortiq mavzuli lug\'atlar, interaktiv darsliklar, faollik nazorati va odatlar monitoringi — barchasi bitta qulay tizimda.' +
+            '</p>' +
+            '<div class="art-cards-grid">' +
+              '<div class="art-card-item">' +
+                '<div class="art-card-title">📖 O\'qish uslubi</div>' +
+                '<div class="art-card-desc">Keng formatli, serif shrift va toza tungi mavzudagi darsliklar.</div>' +
+              '</div>' +
+              '<div class="art-card-item">' +
+                '<div class="art-card-title">⚡ 8 800+ So\'zlar</div>' +
+                '<div class="art-card-desc">257 mavzuli tuzilma va so\'zlarning yasalish morfologiyasi.</div>' +
+              '</div>' +
+              '<div class="art-card-item">' +
+                '<div class="art-card-title">🔒 Ikki yo\'lli kirish</div>' +
+                '<div class="art-card-desc">Google hisobi yoki 12 belgilik maxfiy favqulodda kalit.</div>' +
+              '</div>' +
+              '<div class="art-card-item">' +
+                '<div class="art-card-title">📱 Mobil & Oflayn</div>' +
+                '<div class="art-card-desc">Internetsiz ham barcha ma\'lumotlaringiz doimo yoningizda.</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="art-footer">' +
+            '© ' + (new Date().getFullYear()) + ' Yordamchi. Barcha huquqlar himoyalangan.' +
+          '</div>' +
         '</div>' +
 
-        '<!-- Pastki oq kontent qismi -->' +
-        '<div class="login-body">' +
-          '<h1 class="login-title">Kirish</h1>' +
-          '<p class="login-sub">Yordamchi — shaxsiy o\'quv maydoni</p>' +
+        '<!-- Kirish kartasi -->' +
+        '<div class="auth-form-side">' +
+          '<div class="login-card">' +
+            '<!-- Yuqori qora qavariq sarlavha (Avatar bilan) -->' +
+            '<div class="login-header">' +
+              '<svg class="login-avatar-icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">' +
+                '<circle cx="32" cy="20" r="11"/>' +
+                '<path d="M14 54c0-11 8-19 18-19s18 8 18 19"/>' +
+              '</svg>' +
+              '<svg class="login-curve-svg" viewBox="0 0 350 70" preserveAspectRatio="none">' +
+                '<path d="M 0 0 C 18 40, 65 67, 150 69 L 350 70 L 350 71 L 0 71 Z" fill="#ffffff"/>' +
+              '</svg>' +
+            '</div>' +
 
-          (msg ? '<div class="login-err" id="au-err-box" style="display:flex;">' +
-                   '<span data-icon="alert" data-icon-size="16"></span>' +
-                   '<span id="au-err-text">' + App.esc(msg) + '</span>' +
-                 '</div>'
-               : '<div class="login-err" id="au-err-box" style="display:none;">' +
-                   '<span data-icon="alert" data-icon-size="16"></span>' +
-                   '<span id="au-err-text"></span>' +
-                 '</div>') +
+            '<!-- Pastki oq kontent qismi -->' +
+            '<div class="login-body">' +
+              '<h1 class="login-title">Kirish</h1>' +
+              '<p class="login-sub">Yordamchi — shaxsiy o\'quv maydoni</p>' +
 
-          '<!-- 1. Google hisobi bilan kirish -->' +
-          '<div class="login-field">' +
-            '<label class="login-field-label">Google hisobi</label>' +
-            '<div class="login-google-slot" id="au-gslot">' +
-              '<div id="au-gbtn"></div>' +
-              '<button type="button" class="login-google-custom" id="au-gcustom">' +
-                '<svg width="20" height="20" viewBox="0 0 24 24">' +
-                  '<path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>' +
-                  '<path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"/>' +
-                  '<path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 10.04 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>' +
-                  '<path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>' +
-                '</svg>' +
-                '<span>Google bilan kirish</span>' +
-              '</button>' +
+              (msg ? '<div class="login-err" id="au-err-box" style="display:flex;">' +
+                       '<span data-icon="alert" data-icon-size="16"></span>' +
+                       '<span id="au-err-text">' + App.esc(msg) + '</span>' +
+                     '</div>'
+                   : '<div class="login-err" id="au-err-box" style="display:none;">' +
+                       '<span data-icon="alert" data-icon-size="16"></span>' +
+                       '<span id="au-err-text"></span>' +
+                     '</div>') +
+
+              '<!-- 1. Google hisobi bilan kirish -->' +
+              '<div class="login-field">' +
+                '<label class="login-field-label">Google hisobi</label>' +
+                '<div class="login-google-slot" id="au-gslot">' +
+                  '<div id="au-gbtn"></div>' +
+                  '<button type="button" class="login-google-custom" id="au-gcustom">' +
+                    '<div class="login-google-left">' +
+                      '<svg width="20" height="20" viewBox="0 0 24 24">' +
+                        '<path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>' +
+                        '<path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"/>' +
+                        '<path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 10.04 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>' +
+                        '<path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>' +
+                      '</svg>' +
+                      '<span>Google bilan kirish</span>' +
+                    '</div>' +
+                    '<span class="login-google-badge">Tezkor</span>' +
+                  '</button>' +
+                '</div>' +
+              '</div>' +
+
+              '<!-- YOKI ajratgichi -->' +
+              '<div class="login-divider">' +
+                '<span class="login-divider-line"></span>' +
+                '<span class="login-divider-text">yoki</span>' +
+                '<span class="login-divider-line"></span>' +
+              '</div>' +
+
+              '<!-- 2. Maxfiy kalit bilan kirish (4-4-4 dots) -->' +
+              '<div class="login-field">' +
+                '<label class="login-field-label">Maxfiy kalit (kirish kodi)</label>' +
+                '<div class="login-input-wrap">' +
+                  '<input type="text" class="login-input" id="au-code-input" ' +
+                         'name="yordamchi_auth_key_' + Math.floor(Math.random()*9999) + '" ' +
+                         'placeholder="••••  ••••  ••••" maxlength="18" ' +
+                         'autocomplete="off" autocorrect="off" autocapitalize="characters" ' +
+                         'spellcheck="false" data-lpignore="true" data-1p-ignore="true">' +
+                  '<button type="button" class="login-eye-btn" id="au-eye-toggle" aria-label="Ko\'rsatish">' +
+                    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                      '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>' +
+                      '<circle cx="12" cy="12" r="3"/>' +
+                    '</svg>' +
+                  '</button>' +
+                '</div>' +
+              '</div>' +
+
+              '<!-- 3. Kalitni unutdingizmi? -->' +
+              '<div class="login-meta-row">' +
+                '<a class="login-meta-link" href="https://t.me/shamsiyev_shamsiddin" target="_blank" rel="noopener noreferrer">Kalitni unutdingizmi?</a>' +
+              '</div>' +
+
+              '<!-- 4. Kirish tugmasi -->' +
+              '<button type="button" class="login-btn" id="au-login-btn">Kirish</button>' +
             '</div>' +
           '</div>' +
-
-          '<!-- 2. Maxfiy kalit bilan kirish -->' +
-          '<div class="login-field">' +
-            '<label class="login-field-label">Maxfiy kalit (kirish kodi)</label>' +
-            '<div class="login-input-wrap">' +
-              '<input type="password" class="login-input" id="au-code-input" placeholder="••••••••••••" maxlength="24" autocomplete="current-password" spellcheck="false">' +
-              '<button type="button" class="login-eye-btn" id="au-eye-toggle" aria-label="Ko\'rsatish">' +
-                '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-                  '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>' +
-                  '<circle cx="12" cy="12" r="3"/>' +
-                '</svg>' +
-              '</button>' +
-            '</div>' +
-          '</div>' +
-
-          '<!-- 3. Kalitni unutdingizmi? -->' +
-          '<div class="login-meta-row">' +
-            '<a class="login-meta-link" href="https://t.me/shamsiyev_shamsiddin" target="_blank" rel="noopener noreferrer">Kalitni unutdingizmi?</a>' +
-          '</div>' +
-
-          '<!-- 4. Kirish tugmasi -->' +
-          '<button type="button" class="login-btn" id="au-login-btn">Kirish</button>' +
         '</div>' +
       '</div>'
     );
@@ -175,20 +236,36 @@
     var passInp = el.querySelector('#au-code-input');
     var eyeBtn = el.querySelector('#au-eye-toggle');
     var isPass = true;
+
+    /* 4-4-4 guruhlab kiritish formati */
+    if (passInp) {
+      passInp.addEventListener('input', function () {
+        var raw = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+        var parts = [];
+        for (var i = 0; i < raw.length; i += 4) {
+          parts.push(raw.slice(i, i + 4));
+        }
+        this.value = parts.join(' - ');
+      });
+    }
+
     if (eyeBtn && passInp) {
       eyeBtn.onclick = function () {
         isPass = !isPass;
-        passInp.type = isPass ? 'password' : 'text';
-        eyeBtn.innerHTML = isPass
-          ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'
-          : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+        if (isPass) {
+          passInp.classList.remove('revealed');
+          eyeBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+        } else {
+          passInp.classList.add('revealed');
+          eyeBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+        }
       };
     }
 
     /* Kalit orqali kirish */
     var loginBtn = el.querySelector('#au-login-btn');
     var submitCode = function () {
-      var kod = (passInp.value || '').trim();
+      var kod = (passInp.value || '').replace(/[^A-Z0-9]/gi, '').trim();
       if (!kod) {
         setErr('Maxfiy kalitni kiriting yoki Google orqali kiring.');
         passInp.focus();
@@ -205,7 +282,6 @@
           resyncThenStart();
         })
         .catch(function (e) {
-          // Parol rejimida bo'lsa
           if (AUTH_INFO && AUTH_INFO.kirish_usuli === 'parol') {
             return post({ amal: 'kirish', email: 'admin', parol: kod })
               .then(function (j) {
@@ -272,10 +348,9 @@
           size: 'large',
           shape: 'rectangular',
           text: 'signin_with',
-          width: Math.min(360, (el.querySelector('.login-body').clientWidth || 340) - 4),
+          width: Math.min(380, (el.querySelector('.login-body').clientWidth || 340) - 2),
           logo_alignment: 'left'
         });
-        /* Agar Google tugmasi chizilsa, custom tugmani bekitamiz */
         setTimeout(function () {
           if (gBtnHost.children && gBtnHost.children.length > 0 && gCustom) {
             gCustom.style.display = 'none';
