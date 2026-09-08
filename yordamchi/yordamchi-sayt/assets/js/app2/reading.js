@@ -642,16 +642,13 @@
       '<div class="rd-pl-track"><div class="rd-pl-fill" style="width:' + pct + '%"></div></div>' +
       '<div class="rd-pl-ctrls">' +
         '<div class="rd-pl-side left">' +
-          '<button class="rd-pl-step' + (R.stepMode ? ' on' : '') + '" data-act="rdStepMode" ' +
-            'aria-label="Gap-ma-gap rejim" title="Har gapdan keyin to\'xtash">' +
-            '<span data-icon="pauseDot" data-icon-size="16"></span></button>' +
           '<button class="rd-pl-step' + (R.repeatCount > 1 ? ' on' : '') + '" data-act="rdRepeat" ' +
             'aria-label="Gapni takrorlash" title="Har bir gapni 2 yoki 3 marta takrorlash">' +
-            '<span data-icon="repeat" data-icon-size="15"></span>' +
+            '<span data-icon="repeat" data-icon-size="14"></span>' +
             '<span class="rd-pl-badge">' + R.repeatCount + 'x</span></button>' +
           '<button class="rd-pl-step' + (R.shadowMode ? ' shadow-on' : '') + '" data-act="rdShadow" ' +
             'aria-label="Shadowing rejim" title="Hands-Free Shadowing: gapdan keyin takrorlash pauzasi">' +
-            '<span data-icon="headphones" data-icon-size="15"></span>' +
+            '<span data-icon="headphones" data-icon-size="14"></span>' +
             '<span class="rd-pl-badge">SH</span></button>' +
         '</div>' +
         '<div class="rd-pl-center">' +
@@ -663,6 +660,9 @@
             '<span data-icon="skipFwd" data-icon-size="20"></span></button>' +
         '</div>' +
         '<div class="rd-pl-side right">' +
+          '<button class="rd-pl-step' + (R.stepMode ? ' on' : '') + '" data-act="rdStepMode" ' +
+            'aria-label="Gap-ma-gap rejim" title="Gap-ma-gap: har gapdan keyin to\'xtash">' +
+            '<span data-icon="pauseDot" data-icon-size="15"></span></button>' +
           '<button class="rd-pl-rate" data-act="rdSpeed" title="O\'qish tezligi">' + rateLabel() + '</button>' +
         '</div>' +
       '</div>';

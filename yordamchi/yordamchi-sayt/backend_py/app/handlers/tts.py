@@ -162,8 +162,10 @@ async def handle_tts_download(request: Request, body: dict, q: dict) -> Response
 
     final_audio = b"".join(audio_parts)
 
+    safe_ascii = re.sub(r"[^a-zA-Z0-9_\-.]", "_", filename).strip("_") or "audio"
+    encoded_utf8 = urllib.parse.quote(filename)
     headers = {
-        "Content-Disposition": f'attachment; filename="{filename}.mp3"',
+        "Content-Disposition": f'attachment; filename="{safe_ascii}.mp3"; filename*=UTF-8\'\'{encoded_utf8}.mp3',
         "Content-Length": str(len(final_audio)),
         "Cache-Control": "public, max-age=86400",
         "Accept-Ranges": "bytes",

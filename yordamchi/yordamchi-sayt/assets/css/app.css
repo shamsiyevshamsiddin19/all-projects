@@ -1958,10 +1958,10 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 .rd-pl-fill{ height:100%; background:var(--accent); border-radius:99px; transition:width .3s ease; }
 
 .rd-pl-ctrls{ display:flex; align-items:center; justify-content:space-between; width:100%; }
-.rd-pl-side{ display:flex; align-items:center; gap:6px; min-width:76px; }
+.rd-pl-side{ display:flex; align-items:center; gap:6px; flex:1; min-width:auto; }
 .rd-pl-side.left{ justify-content:flex-start; }
 .rd-pl-side.right{ justify-content:flex-end; }
-.rd-pl-center{ display:flex; align-items:center; justify-content:center; gap:14px; flex:1; }
+.rd-pl-center{ display:flex; align-items:center; justify-content:center; gap:12px; flex:0 0 auto; margin:0 6px; }
 
 .rd-pl-b{
   width:38px; height:38px; border:0; border-radius:50%; cursor:pointer;
@@ -1983,6 +1983,17 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   display:flex; align-items:center; justify-content:center;
 }
 .rd-pl-rate:active{ transform:scale(.94); }
+
+@media (max-width:400px){
+  .rd-player.open{ padding:10px 10px 12px; }
+  .rd-pl-side{ gap:4px; }
+  .rd-pl-center{ gap:8px; margin:0 2px; }
+  .rd-pl-b{ width:34px; height:34px; }
+  .rd-pl-play{ width:46px; height:46px; }
+  .rd-pl-step{ height:30px; min-width:30px; padding:0 5px; font-size:10.5px; }
+  .rd-pl-rate{ min-width:32px; height:30px; padding:0 5px; font-size:11px; }
+  .rd-pl-badge{ font-size:9.5px; }
+}
 
 /* ---------- Tarjima oynachasi (popover) ----------
    Bosilgan so'z/gapning yonida chiqadi — o'qish joyidan ko'z uzilmasin. */
