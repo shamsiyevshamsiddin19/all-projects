@@ -1,0 +1,7 @@
+# Root gitignore
+PROMPT/
+__pycache__/
+*.pyc
+.DS_Store
+.deploytmp
+node_modules/

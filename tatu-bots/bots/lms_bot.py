@@ -458,6 +458,31 @@ async def _send_links(bot: Bot, chat_id: int, links):
     await bot.send_message(chat_id, "\n".join(lines), disable_web_page_preview=True)
 
 
+DEAD_LIMIT = 5           # ketma-ket shuncha 404 dan keyin o'sha manbadan so'ramaymiz
+_DEAD_HOST = "dl.tuit.uz"
+
+
+def _is_missing(e: Exception) -> bool:
+    """LMS fayl serveri faylni bermayapti (404/410) — bot tomonidagi xato emas."""
+    r = getattr(e, "response", None)
+    return getattr(r, "status_code", None) in (404, 410)
+
+
+async def _report_files(bot: Bot, chat_id: int, sent: int, dead: list):
+    if sent:
+        await bot.send_message(chat_id, f"✅ Tayyor — {sent} ta fayl yuborildi.")
+    if not dead:
+        return
+    lines = [f"⚠️ <b>{len(dead)} ta fayl LMS serverida topilmadi.</b>",
+             f"<i>{_DEAD_HOST} bu fayllarga 404 qaytaryapti — LMS tomonidagi nosozlik, "
+             "havolalar brauzerda ham ochilmaydi.</i>\n"]
+    for title, url in dead[:20]:
+        lines.append(f"• <a href=\"{esc(url)}\">{esc(title[:60])}</a>")
+    if len(dead) > 20:
+        lines.append(f"\n…va yana {len(dead) - 20} ta.")
+    await bot.send_message(chat_id, "\n".join(lines), disable_web_page_preview=True)
+
+
 @router.callback_query(F.data.startswith("cal:"))
 async def cb_calendar(cq: CallbackQuery, bot: Bot):
     await cq.answer("Tayyorlanyapti…")
@@ -480,41 +505,52 @@ async def cb_calendar(cq: CallbackQuery, bot: Bot):
             await _send_links(bot, chat_id, links)
         return
 
-    # kind: lecture | practice — fayllarni yuklaymiz (takrorlarni olib tashlab)
-    want = [r for r in resources if r.kind == kind and not r.is_external]
-    seen, files = set(), []
-    for r in want:
-        if r.url in seen:
+    # kind: lecture | practice — ikkala manbadan fayl yig'amiz
+    label = "Ma'ruza resurslari" if kind == "lecture" else "Amaliyot resurslari"
+    items, seen = [], set()
+    # 1) kalendar reja materiallari (dl.tuit.uz)
+    for r in resources:
+        if r.kind != kind or r.is_external or r.url in seen:
             continue
         seen.add(r.url)
-        files.append(r)
-    label = "Ma'ruza resurslari" if kind == "lecture" else "Amaliyot resurslari"
-    if not files:
+        items.append((r.title, r.url, r.ext, r.topic))
+    # 2) topshiriqlarga biriktirilgan fayllar (lms.tuit.uz/uploads — ishonchli manba)
+    try:
+        for t, f in await _collect_files(c, int(cid), kind):
+            if f.url in seen:
+                continue
+            seen.add(f.url)
+            items.append((f.name, f.url, f.ext, t.name))
+    except Exception as e:  # noqa: BLE001
+        log.warning("topshiriq fayllari: %s", e)
+
+    if not items:
         await bot.send_message(chat_id, f"📭 {label} topilmadi.")
         return
-    await bot.send_message(chat_id, f"📦 <b>{label}</b>: {len(files)} ta fayl yuklanyapti, "
+    await bot.send_message(chat_id, f"📦 <b>{label}</b>: {len(items)} ta fayl yuklanyapti, "
                                     "biroz kuting…")
-    sent, failed = 0, 0
-    for r in files:
+    sent, dead, misses = 0, [], 0
+    for title, url, ext, topic in items:
+        # manba ketma-ket 404 berayotgan bo'lsa, qolganini bekorga so'ramaymiz
+        if misses >= DEAD_LIMIT and _DEAD_HOST in url:
+            dead.append((title, url))
+            continue
         try:
-            _, data = await c.download(r.url)
-            caption = f"📚 <b>{esc(r.title)}</b>"
-            if r.topic:
-                caption += f"\n<i>{esc(r.topic[:150])}</i>"
-            await _send_doc(bot, chat_id, data, _safe_filename(r.title, r.ext), caption)
+            _, data = await c.download(url)
+            caption = f"📚 <b>{esc(title)}</b>"
+            if topic:
+                caption += f"\n<i>{esc(topic[:150])}</i>"
+            await _send_doc(bot, chat_id, data, _safe_filename(title, ext), caption)
             sent += 1
+            misses = 0
             await asyncio.sleep(0.5)
-        except LmsError as e:
-            failed += 1
-            await bot.send_message(chat_id, f"⚠️ {esc(r.title)}: {esc(str(e))}\n🔗 {esc(r.url)}")
         except Exception as e:  # noqa: BLE001
-            failed += 1
-            log.warning("calendar file: %s", e)
-            await bot.send_message(chat_id, f"🔗 {esc(r.title)}: {esc(r.url)}")
-    msg = f"✅ Tayyor. Yuborildi: {sent}"
-    if failed:
-        msg += f", havola sifatida: {failed}"
-    await bot.send_message(chat_id, msg)
+            if _is_missing(e):
+                misses += 1
+            else:
+                log.warning("resurs %s: %s", url, e)
+            dead.append((title, url))
+    await _report_files(bot, chat_id, sent, dead)
 
 
 # ─────────────────────── deadline'lar ───────────────────────

@@ -1,0 +1,296 @@
+"""Turli endpoint'lar: health, log_client, save_app_icon."""
+
+from __future__ import annotations
+
+import base64
+import gzip
+import os
+import subprocess
+from datetime import datetime
+from starlette.responses import Response
+import io
+import json
+import logging
+import re
+import time
+from urllib.parse import quote
+
+from fastapi import Request
+
+from .. import db
+from ..config import settings
+from ..errors import ApiError, success
+from .common import s
+
+logger = logging.getLogger("yordamchi")
+
+
+def _require_admin(request: Request) -> None:
+    """Faqat admin uchun yozuv amallari.
+
+    `save_app_icon` diskdagi UMUMIY faylga yozadi (`custom-app-icon-*.png`) —
+    u `owner_context` ga bog'lanmagan, ya'ni bitta nusxa hamma foydalanuvchiga
+    ko'rinadi. Shuning uchun bu yerda ham rol tekshiruvi shart.
+    """
+    role = request.session.get("role")
+    email = (request.session.get("doktor_email") or "").strip().lower()
+    if role == "admin" or (email and email in settings.ALLOWED_EMAILS):
+        return
+    raise ApiError("Faqat administrator o'zgartira oladi.", 403)
+
+HEALTH_TABLES = [
+    "app_storage", "reja_files", "quiz_bases", "quiz_questions", "quiz_progress",
+    "goals", "goal_folders", "goal_sections", "dictionary_words", "dictionary_mistakes",
+    "sport_exercises", "users", "user_channels", "plans", "history", "settings", "sent_logs",
+    "activity_log",
+]
+
+
+def _clip(value, limit: int) -> str:
+    # Yangi qatorlarni bo'shliqqa aylantirib, uzunlikni cheklaymiz (log-injection/log-fill himoyasi).
+    text = s(value).replace("\r", " ").replace("\n", " ")
+    return text[:limit]
+
+
+# Faqat ma'lum log darajalari (aks holda mijoz istalgan logging atributini chaqira olardi).
+_ALLOWED_LOG_LEVELS = {"debug", "info", "warning", "error", "critical"}
+
+
+def log_client(request: Request, body: dict):
+    level = s(body.get("level")).lower() or "info"
+    if level not in _ALLOWED_LOG_LEVELS:
+        level = "info"
+    message = _clip(body.get("message"), 1000) or "Frontend log"
+    logger.log(
+        getattr(logging, level.upper(), logging.INFO),
+        "CLIENT: %s | page=%s url=%s",
+        message, _clip(body.get("page"), 200), _clip(body.get("url"), 300),
+    )
+    return success()
+
+
+def _table_count(table: str) -> int | None:
+    if not re.match(r"^[A-Za-z0-9_]+$", table):
+        return None
+    exists = db.fetch_value(
+        "SELECT COUNT(*) FROM information_schema.tables "
+        "WHERE table_schema = current_schema() AND table_name = :t",
+        {"t": table},
+    )
+    if not exists or int(exists) <= 0:
+        return None
+    # table nomi yuqorida qat'iy regex bilan tekshirilgan (injection'siz).
+    return int(db.fetch_value(f'SELECT COUNT(*) FROM "{table}"') or 0)
+
+
+def health(request: Request, body: dict):
+    import sys
+
+    # Baza host/port/nomi kabi ma'lumotlar faqat DEBUG rejimida ochiladi (ochiq endpoint).
+    db_info: dict = {"connected": False, "error": None}
+    if settings.DEBUG:
+        db_info.update({"host": settings.DB_HOST, "port": settings.DB_PORT, "database": settings.DB_NAME})
+
+    payload = {
+        "success": True,
+        "app": "yordamchi",
+        "runtime": {"python": sys.version.split()[0], "framework": "fastapi"},
+        "db": db_info,
+        "tables": {},
+    }
+    try:
+        db.fetch_value("SELECT 1")
+        db_info["connected"] = True
+        for t in HEALTH_TABLES:
+            payload["tables"][t] = _table_count(t)
+    except Exception as e:  # noqa: BLE001
+        payload["success"] = False
+        db_info["error"] = str(e) if settings.DEBUG else "connection error"
+        logger.exception("Health tekshiruvda baza xatosi")
+    return success(payload)
+
+
+# --- App ikonka saqlash -----------------------------------------------------
+
+def save_app_icon(request: Request, body: dict):
+    _require_admin(request)
+    data_url = s(body.get("icon"))
+    if data_url == "":
+        raise ApiError("Icon rasmi yuborilmadi.", 400)
+    if not re.match(r"^data:image/(png|jpeg|jpg|webp);base64,", data_url, re.IGNORECASE):
+        raise ApiError("Icon formati noto'g'ri. PNG, JPG yoki WebP rasm yuboring.", 400)
+
+    raw = re.sub(r"^data:image/[^;]+;base64,", "", data_url, flags=re.IGNORECASE)
+    try:
+        binary = base64.b64decode(raw, validate=True)
+    except Exception:
+        raise ApiError("Icon rasmini o'qib bo'lmadi.", 400)
+
+    if len(binary) < 128:
+        raise ApiError("Icon rasmini o'qib bo'lmadi.", 400)
+    if len(binary) > settings.ICON_MAX_BYTES:
+        raise ApiError("Icon hajmi 2MB dan oshmasligi kerak.", 400)
+
+    png_192 = _render_icon(binary, 192)
+    png_512 = _render_icon(binary, 512)
+    if png_192 is None:
+        raise ApiError("Yaroqli rasm topilmadi.", 400)
+    if png_512 is None:
+        png_512 = png_192
+
+    icon_dir = settings.ICON_DIR
+    icon_dir.mkdir(parents=True, exist_ok=True)
+    (icon_dir / "custom-app-icon-192.png").write_bytes(png_192)
+    (icon_dir / "custom-app-icon-512.png").write_bytes(png_512)
+
+    version = str(int(time.time()))
+    if not _update_manifest_version(version):
+        raise ApiError("Icon saqlandi, lekin manifest faylini yangilab bo'lmadi.", 500)
+
+    return success({
+        "icon_192": f"assets/icons/custom-app-icon-192.png?v={version}",
+        "icon_512": f"assets/icons/custom-app-icon-512.png?v={version}",
+        "version": version,
+    })
+
+
+def _render_icon(binary: bytes, size: int) -> bytes | None:
+    try:
+        from PIL import Image
+    except ImportError:
+        logger.warning("Pillow o'rnatilmagan — ikonka o'lchamsiz saqlanadi.")
+        return binary
+    try:
+        src = Image.open(io.BytesIO(binary)).convert("RGBA")
+    except Exception:
+        return None
+    w, h = src.size
+    side = max(1, min(w, h))
+    left = (w - side) // 2
+    top = (h - side) // 2
+    cropped = src.crop((left, top, left + side, top + side)).resize((size, size), Image.LANCZOS)
+    out = io.BytesIO()
+    cropped.save(out, format="PNG")
+    return out.getvalue()
+
+
+def _update_manifest_version(version: str) -> bool:
+    path = settings.MANIFEST_FILE
+    try:
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return False
+    if not isinstance(manifest, dict):
+        return False
+    safe_version = quote(version, safe="")
+    for icon in manifest.get("icons", []):
+        if isinstance(icon, dict) and "src" in icon:
+            base = icon["src"].split("?", 1)[0]
+            if "custom-app-icon" in base:
+                icon["src"] = f"{base}?v={safe_version}"
+    try:
+        path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        return True
+    except Exception:
+        return False
+
+
+# --- PostgreSQL ma'lumotlar bazasi zaxirasi va tiklash ---
+
+async def db_export(request: Request):
+    """PostgreSQL ma'lumotlar bazasining to'liq .sql zaxirasini yuklab berish."""
+    env = os.environ.copy()
+    if settings.DB_PASS:
+        env["PGPASSWORD"] = settings.DB_PASS
+    
+    cmd = [
+        "pg_dump",
+        "-h", settings.DB_HOST or "127.0.0.1",
+        "-p", str(settings.DB_PORT or 5432),
+        "-U", settings.DB_USER or "yordamchi",
+        "--clean",
+        "--if-exists",
+        "--no-owner",
+        "--no-privileges",
+        settings.DB_NAME or "yordamchi",
+    ]
+    
+    try:
+        proc = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=180)
+    except Exception as e:
+        logger.exception("pg_dump bajarishda xato")
+        raise ApiError(f"Zaxira olishda xatolik: {e}", 500)
+    
+    if proc.returncode != 0:
+        err = proc.stderr.decode("utf-8", errors="replace")
+        logger.error(f"pg_dump xatosi: {err}")
+        raise ApiError(f"Zaxira olishda xatolik: {err[:200]}", 500)
+    
+    sql_data = proc.stdout
+    now_str = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    filename = f"yordamchi_baza_zaxira_{now_str}.sql"
+    
+    return Response(
+        content=sql_data,
+        media_type="application/sql",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "no-cache",
+            "Content-Length": str(len(sql_data)),
+        }
+    )
+
+
+async def db_import(request: Request):
+    """Foydalanuvchi yuklagan .sql (yoki .sql.gz, .dump, .db) fayldan PostgreSQL bazasini to'liq qayta tiklash."""
+    form = await request.form()
+    upload = form.get("file") or form.get("db_file") or form.get("backup")
+    if not upload:
+        raise ApiError("Zaxira fayli yuborilmadi.", 400)
+    
+    filename = getattr(upload, "filename", "") or "backup.sql"
+    content = await upload.read()
+    if not content:
+        raise ApiError("Fayl bo'sh.", 400)
+    
+    # Agar fayl gzip bo'lsa ochamiz
+    if filename.endswith(".gz") or (len(content) > 2 and content[:2] == b"\x1f\x8b"):
+        try:
+            content = gzip.decompress(content)
+        except Exception as e:
+            raise ApiError(f"Gzip faylni ochishda xatolik: {e}", 400)
+    
+    # SQL skriptini tekshiramiz
+    sql_text = content.decode("utf-8", errors="replace")
+    if len(sql_text.strip()) < 10:
+        raise ApiError("Yaroqsiz SQL fayli.", 400)
+    
+    env = os.environ.copy()
+    if settings.DB_PASS:
+        env["PGPASSWORD"] = settings.DB_PASS
+        
+    cmd = [
+        "psql",
+        "-h", settings.DB_HOST or "127.0.0.1",
+        "-p", str(settings.DB_PORT or 5432),
+        "-U", settings.DB_USER or "yordamchi",
+        "-d", settings.DB_NAME or "yordamchi",
+    ]
+    
+    try:
+        proc = subprocess.run(cmd, input=content, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=300)
+    except Exception as e:
+        logger.exception("psql restore xatosi")
+        raise ApiError(f"psql xatosi: {e}", 500)
+    
+    if proc.returncode != 0:
+        err = proc.stderr.decode("utf-8", errors="replace")
+        logger.error(f"psql restore xatosi: {err}")
+        raise ApiError(f"Bazani tiklashda xatolik yuz berdi: {err[:300]}", 500)
+    
+    logger.info(f"Baza muvaffaqiyatli tiklandi: {filename}, {len(content)} bayt")
+    return success({
+        "message": "Ma'lumotlar bazasi muvaffaqiyatli tiklandi!",
+        "filename": filename,
+        "size_bytes": len(content),
+    })

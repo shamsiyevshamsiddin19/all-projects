@@ -1,0 +1,20 @@
+logs/
+.local-logs/
+.local-data/
+*.log
+*.tmp
+uploads/
+Boostdaybot/*.log
+Boostdaybot/*.sqlite
+
+# Ilova belgisi — FOYDALANUVCHI ma'lumoti, serverda `save_app_icon` uni ustiga yozadi.
+# Git'da saqlansa, deploy vaqtida eski nusxa serverdagi haqiqiy belgini bosib ketardi.
+assets/icons/custom-app-icon-*.png
+
+# Deploy arxivi — har safar qaytadan yasaladi
+deploy.tar.gz
+
+# Ishlatilmaydigan eski fayllar (index.html hech qayerda chaqirmaydi)
+_eskirgan/
+dist-desktop/
+node_modules/

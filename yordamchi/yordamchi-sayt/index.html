@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Yordamchi</title>
+  <!-- Joriy qurilma qaysi qurilmani (build) yuklaganini bildiradi.
+       `deploy.sh` uni har o'rnatishda yangilaydi va SERVERDAGI version.json
+       bilan solishtiriladi: farq bo'lsa sahifa keshlarni tozalab o'zini
+       qaytadan yuklaydi. Sabab: tarmoq uzilsa service worker keshdagi ESKI
+       index.html ni beradi va u eski `?v=` manzillarini chaqiradi — natijada
+       butun ilova eski holatda ochilib qolardi. -->
+  <meta name="app-build" content="20260908-212129">
+  <!-- Belgi manzili QATTIQ yozilmaydi: uni pastdagi inline skript localStorage'dan
+       qo'yadi. Ilgari bu yerda `?v=` bilan fayl yo'li turardi va u YANGILANMASDI —
+       brauzer o'sha manzil ostidagi ESKI keshlangan rasmni chizib, keyin JS yangisiga
+       almashtirardi (ochilishdagi "eski logo -> yangi logo" miltillashi shundan edi). -->
+  <link rel="icon" data-app-icon>
+  <link rel="manifest" href="manifest.webmanifest?v=20260908-212129">
+  <meta name="theme-color" content="#1a1a1a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Yordamchi">
+  <link rel="apple-touch-icon" data-app-icon>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/app.css?v=20260908-212129">
+  <link rel="stylesheet" href="assets/css/learn.css?v=20260908-212129">
+  <script>
+    window.MathJax = {
+      startup: { typeset: false },
+      tex: { inlineMath: [['\\(', '\\)'], ['$', '$']], displayMath: [['\\[', '\\]'], ['$$', '$$']], processEscapes: true },
+      options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] }
+    };
+  </script>
+  <!-- MathJax har sahifada emas, faqat LaTeX'li savol uchrasa yuklanadi (App.typeset) -->
+  <style>
+    #splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);transition:opacity .3s}
+    #splash.gone{opacity:0;pointer-events:none}
+    #splash img{width:84px;height:84px;border-radius:22px;object-fit:cover;animation:sp 1.4s ease-in-out infinite}
+    #splash span{margin-top:16px;font-size:12px;font-weight:800;letter-spacing:4px;color:var(--hint);text-transform:uppercase}
+    @keyframes sp{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.07);opacity:.85}}
+  </style>
+<script>
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  window._deferredPWAInstallPrompt = e;
+});
+</script>
+</head>
+<body>
+
+<div id="splash">
+  <img id="splash-logo" data-app-icon alt="Yordamchi">
+  <span>Yordamchi</span>
+</div>
+<!-- Belgi va mavzu BIRINCHI CHIZILISHDAN OLDIN qo'yiladi (miltillamasligi uchun).
+     Ikki marta ishlaydi: darhol (splash + head'dagi link'lar) va DOMContentLoaded'da
+     (sidebar logosi hujjatda pastroqda turadi). Saqlangan belgi bo'lmasagina fayl
+     yo'liga tushamiz — u ham `app_icon_version` bilan, aks holda brauzer eski
+     keshlangan rasmni qaytarardi. -->
+<script>(function(){
+  function iconSrc(){try{
+    var ic=localStorage.getItem('app_custom_icon_192')||localStorage.getItem('app_custom_icon');
+    if(ic)return ic;
+    var v=localStorage.getItem('app_icon_version')||'';
+    return 'assets/icons/custom-app-icon-192.png'+(v?'?v='+v:'');
+  }catch(e){return 'assets/icons/custom-app-icon-192.png';}}
+  function apply(){var s=iconSrc();document.querySelectorAll('[data-app-icon]').forEach(function(el){
+    if(el.tagName==='LINK')el.setAttribute('href',s);else el.src=s;});}
+  apply();
+  document.addEventListener('DOMContentLoaded',apply);
+  try{var th=localStorage.getItem('app_theme');if(th)document.documentElement.setAttribute('data-theme',th);}catch(e){}
+})();</script>
+
+<div class="app">
+  <div class="app-body">
+    <!-- Desktop sidebar -->
+    <aside class="side">
+      <div class="side-brand">
+        <div class="side-brand-box">
+          <img id="side-logo" class="side-brand-img" data-app-icon alt="" src="assets/icons/app-icon-192.png">
+          <b class="side-brand-title">Yordamchi</b>
+        </div>
+      </div>
+      <div class="side-menu-wrap">
+        <div class="side-rail-capsule"></div>
+        <nav class="side-nav" id="side-nav"></nav>
+      </div>
+      <div class="side-footer">
+        <button class="side-logout-btn" data-act="logout">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M16 13v-2H7V9h9V7l5 4-5 4zm3 4v3H4V4h15v3h2V3a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v18a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-4h-2z"/></svg>
+          <span>Chiqish</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <div id="page" class="page"></div>
+    </main>
+  </div>
+
+  <!-- Global SVG Gradients for Tab Bar and UI -->
+  <svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none" aria-hidden="true">
+    <defs>
+      <linearGradient id="tg-ig-home" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#f09433"/><stop offset="25%" stop-color="#e6683c"/><stop offset="50%" stop-color="#dc2743"/><stop offset="75%" stop-color="#cc2366"/><stop offset="100%" stop-color="#bc1888"/>
+      </linearGradient>
+      <linearGradient id="tg-ig-lang" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#f09433"/><stop offset="25%" stop-color="#e6683c"/><stop offset="50%" stop-color="#dc2743"/><stop offset="75%" stop-color="#cc2366"/><stop offset="100%" stop-color="#bc1888"/>
+      </linearGradient>
+      <linearGradient id="tg-ig-kun" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#f09433"/><stop offset="25%" stop-color="#e6683c"/><stop offset="50%" stop-color="#dc2743"/><stop offset="75%" stop-color="#cc2366"/><stop offset="100%" stop-color="#bc1888"/>
+      </linearGradient>
+      <linearGradient id="tg-ig-sport" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#f09433"/><stop offset="25%" stop-color="#e6683c"/><stop offset="50%" stop-color="#dc2743"/><stop offset="75%" stop-color="#cc2366"/><stop offset="100%" stop-color="#bc1888"/>
+      </linearGradient>
+      <linearGradient id="tg-ig-set" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#f09433"/><stop offset="25%" stop-color="#e6683c"/><stop offset="50%" stop-color="#dc2743"/><stop offset="75%" stop-color="#cc2366"/><stop offset="100%" stop-color="#bc1888"/>
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <!-- Mobile bottom nav -->
+  <div class="botnav-wrap" id="botnav-wrap">
+    <svg class="botnav-dome" viewBox="0 0 106 14" preserveAspectRatio="none">
+      <path d="M 0 14 C 32 14, 34 0, 53 0 C 72 0, 74 14, 106 14 Z"/>
+    </svg>
+    <nav class="botnav" id="botnav"></nav>
+  </div>
+</div>
+
+<!-- Core infra (saqlangan) -->
+<!-- O'qish amallari ro'yxati — service-worker.js ham AYNI shu faylni o'qiydi -->
+<script defer src="assets/js/core/read-actions.js?v=20260908-212129"></script>
+<script defer src="assets/js/core/logger.js?v=20260908-212129"></script>
+<script defer src="assets/js/core/remote-storage.js?v=20260908-212129"></script>
+<script defer src="assets/js/core/tts.js?v=20260908-212129"></script>
+<script defer src="assets/js/core/icons.js?v=20260908-212129"></script>
+<script defer src="assets/js/core/paircore.js?v=20260908-212129"></script>
+<script defer src="assets/js/core/wordstate.js?v=20260908-212129"></script>
+<script defer src="assets/js/core/lock.js?v=20260908-212129"></script>
+<script defer src="assets/js/core/readmark.js?v=20260908-212129"></script>
+<script defer src="assets/js/core/mdtheme.js?v=20260908-212129"></script>
+<script defer src="assets/js/core/hilite.js?v=20260908-212129"></script>
+<!-- Yangi SPA -->
+<script defer src="assets/js/app2/core.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/auth.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/activity.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/goals.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/stats.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/tarix.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/notify.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/push.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/habits.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/home.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/profile.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/quiz.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/languages.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/coding.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/boost.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/library.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/reading.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/listening-doc.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/grammar.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/grammar-games.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/listening.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/vocab.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/vocab-browse.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/sport.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/workout.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/arxiv.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/qoidalar.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/kun.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/settings.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/learn-marks.js?v=20260908-212129"></script>
+<script defer src="assets/js/app2/bootstrap.js?v=20260908-212129"></script>
+</body>
+</html>
