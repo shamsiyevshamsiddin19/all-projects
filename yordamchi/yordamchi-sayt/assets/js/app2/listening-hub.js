@@ -132,14 +132,34 @@
       desc: 'Taksida vokzalga borish, tirbandlik va to\'lov',
       folder: 'Город и транспорт',
       content:
+        'youtube: https://www.youtube.com/watch?v=tY8mQGvN0Fk\n\n' +
         '# 06. В такси — поездка по городу\n\n' +
-        '— Здравствуйте! Вы заказывали такси до {вокзала|vokzal}?\n' +
-        '— Да, добрый день! Нам нужно успеть к {поезду|poyezd}, он отправляется через сорок минут.\n' +
-        '— Не переживайте, сейчас нет {пробок|tirbandlik}, доедем за двадцать минут.\n' +
-        '— Отлично, можно включить {кондиционер|konditsioner}, пожалуйста?\n' +
-        '— Конечно. Вам удобно оплатить через {приложение|ilova}?\n' +
-        '— Да, оплата уже привязана к {карте|karta}.\n' +
-        '— Вот мы и приехали. Счастливого {пути|yo\'l}!'
+        '[00:01 - 00:04] — Здравствуйте! Вы заказывали такси до {вокзала|vokzal}?\n' +
+        ':: Assalomu alaykum! Vokzalgacha taksi buyurtma berganmidingiz?\n\n' +
+        '[00:05 - 00:10] — Да, добрый день! Нам нужно успеть к {поезду|poyezd}, он отправляется через сорок минут.\n' +
+        ':: Ha, xayrli kun! Biz poyezdga ulgurishimiz kerak, u qirq daqiqadan so\'ng jo\'naydi.\n\n' +
+        '[00:11 - 00:15] — Не переживайте, сейчас нет {пробок|tirbandlik}, доедем за двадцать минут.\n' +
+        ':: Xavotir olmang, hozir tirbandlik yo\'q, yigirma daqiqada yetib boramiz.\n\n' +
+        '[00:16 - 00:19] — Отлично, можно включить {кондиционер|konditsioner}, пожалуйста?\n' +
+        ':: Ajoyib, iltimos, konditsionerni yoqib bera olasizmi?\n\n' +
+        '[00:20 - 00:24] — Конечно. Вам удобно оплатить через {приложение|ilova}?\n' +
+        ':: Albatta. Sizga ilova orqali to\'lash qulaymi?\n\n' +
+        '[00:25 - 00:28] — Да, оплата уже привязана к {карте|karta}.\n' +
+        ':: Ha, to\'lov allaqachon kartaga bog\'langan.\n\n' +
+        '[00:29 - 00:32] — Вот мы и приехали. Счастливого {пути|yo\'l}!\n' +
+        ':: Mana yetib keldik. Oq yo\'l!\n\n' +
+        '? Savol 1: Yo\'lovchi qayerga ketmoqda?\n' +
+        '+ Vokzalga (poyezdga)\n' +
+        '- Aeroportga\n' +
+        '- Shifoxonaga\n\n' +
+        '? Savol 2: Haydovchining aytishicha yo\'l qancha vaqt oladi?\n' +
+        '+ 20 daqiqa\n' +
+        '- 40 daqiqa\n' +
+        '- 1 soat\n\n' +
+        '? Savol 3: Yo\'lovchi yo\'l haqini qanday to\'laydi?\n' +
+        '+ Ilova orqali kartadan\n' +
+        '- Naqd pul bilan\n' +
+        '- Haydovchiga karta berib'
     },
     {
       id: 'ru_l_07', num: '07', cat: 'city', catName: 'Город & транспорт', level: 'A2',

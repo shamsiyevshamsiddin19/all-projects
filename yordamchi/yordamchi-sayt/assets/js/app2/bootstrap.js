@@ -572,6 +572,8 @@
   /* Ulanish qaytganda ham tekshiramiz: ilova oflayn ochilgan bo'lsa,
      internet kelishi bilan o'zi eng so'nggisiga o'tadi. */
   window.addEventListener('online', guardVersion);
+  window.addEventListener('hashchange', guardVersion);
+  setInterval(guardVersion, 30000);
 
   if ('serviceWorker' in navigator) {
     /* SW o'qish javoblarini keshdan DARHOL beradi, yangisini esa orqa fonda
