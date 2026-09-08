@@ -39,31 +39,6 @@
     return '<img class="auth-logo-img" data-app-icon src="' + App.appIconSrc() + '" alt="">';
   }
 
-  /* --- Kirish ekrani --- */
-  function loginScreen(msg) {
-    var el = screen(
-      logoHtml() +
-      '<h2>Yordamchi</h2>' +
-      '<p class="muted">Davom etish uchun tizimga kiring.</p>' +
-      (msg ? '<div class="auth-err">' + App.esc(msg) + '</div>' : '') +
-      '<label class="field"><span>Email</span><input class="input" id="au-email" type="email" autocomplete="username"></label>' +
-      '<label class="field"><span>Parol</span><input class="input" id="au-pass" type="password" autocomplete="current-password"></label>' +
-      '<button class="btn" id="au-go">Kirish</button>'
-    );
-    var submit = function () {
-      var email = el.querySelector('#au-email').value.trim();
-      var parol = el.querySelector('#au-pass').value;
-      if (!email || !parol) return loginScreen('Email va parolni kiriting.');
-      var btn = el.querySelector('#au-go'); btn.disabled = true; btn.textContent = 'Tekshirilmoqda...';
-      post({ amal: 'kirish', email: email, parol: parol })
-        .then(function (j) { Auth.user = j; closeScreen(); resyncThenStart(); })
-        .catch(function (e) { loginScreen(e.message); });
-    };
-    el.querySelector('#au-go').onclick = submit;
-    el.querySelector('#au-pass').onkeydown = function (e) { if (e.key === 'Enter') submit(); };
-    setTimeout(function () { el.querySelector('#au-email').focus(); }, 100);
-  }
-
   /* --- Google orqali kirish (yagona ruxsat etilgan yo'l) ---
      Google Identity Services (GIS) skripti FAQAT shu ekran kerak bo'lganda
      yuklanadi — oddiy ochilishda tashqi so'rov qo'shilmasin. GIS bizga
@@ -107,128 +82,231 @@
 
   /* Favqulodda kod ekrani. Google bilan bir xil natija beradi: sessiya
      ochiladi va ilova ishga tushadi. */
-  function codeScreen(msg) {
+  /* --- Zamonaviy Login Ekrani (Foydalanuvchi yuborgan dizayn asosida) ---
+     Yuqori qism: qora fon, oq avatar konturi va organik qavariq to'lqin.
+     E-mail o'rnida: Google orqali kirish.
+     Password o'rnida: Maxfiy kalit bilan kirish (ko'zcha tugmasi bilan).
+     Ikkalasidan biri bilan kirish mumkin: Google tugmasi bosilsa Google orqali,
+     kalit kiritilib Login bosilsa kod orqali tizimga kiradi. */
+
+  function loginScreenModern(clientId, msg) {
+    var cId = clientId || (AUTH_INFO && AUTH_INFO.google_client_id) || '';
     var el = screen(
-      '<div class="agate">' +
-        '<div class="agate-mark">' +
-          '<span class="agate-glow" aria-hidden="true"></span>' +
-          '<img class="agate-logo" data-app-icon src="' + App.appIconSrc() + '" alt="">' +
+      '<div class="login-card">' +
+        '<!-- Yuqori qora qavariq sarlavha (Avatar bilan) -->' +
+        '<div class="login-header">' +
+          '<svg class="login-avatar-icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">' +
+            '<circle cx="32" cy="20" r="11"/>' +
+            '<path d="M14 54c0-11 8-19 18-19s18 8 18 19"/>' +
+          '</svg>' +
+          '<svg class="login-curve-svg" viewBox="0 0 350 70" preserveAspectRatio="none">' +
+            '<path d="M 0 0 C 18 40, 65 67, 150 69 L 350 70 L 350 71 L 0 71 Z" fill="#ffffff"/>' +
+          '</svg>' +
         '</div>' +
-        '<h1 class="agate-title">Kirish kodi</h1>' +
-        '<p class="agate-sub">12 belgilik favqulodda kod</p>' +
-        '<div class="agate-card">' +
-          (msg ? '<div class="agate-err"><span data-icon="alert" data-icon-size="15"></span>' +
-                 '<span>' + App.esc(msg) + '</span></div>' : '') +
-          '<input class="agate-input" id="au-code" autocomplete="one-time-code" ' +
-            'autocapitalize="characters" spellcheck="false" ' +
-            'placeholder="Kodingizni kiriting" maxlength="24">' +
-          '<button class="btn" id="au-code-go" style="width:100%;margin-top:12px">Kirish</button>' +
-          '<button class="agate-alt" id="au-code-back">Google bilan kirish</button>' +
+
+        '<!-- Pastki oq kontent qismi -->' +
+        '<div class="login-body">' +
+          '<h1 class="login-title">Login</h1>' +
+
+          (msg ? '<div class="login-err" id="au-err-box" style="display:flex;">' +
+                   '<span data-icon="alert" data-icon-size="15"></span>' +
+                   '<span id="au-err-text">' + App.esc(msg) + '</span>' +
+                 '</div>'
+               : '<div class="login-err" id="au-err-box" style="display:none;">' +
+                   '<span data-icon="alert" data-icon-size="15"></span>' +
+                   '<span id="au-err-text"></span>' +
+                 '</div>') +
+
+          '<!-- 1. E-mail o\'rnida: Google orqali kirish -->' +
+          '<div class="login-field">' +
+            '<label class="login-field-label">E-mail</label>' +
+            '<div class="login-google-slot" id="au-gslot">' +
+              '<div id="au-gbtn"></div>' +
+              '<button type="button" class="login-google-custom" id="au-gcustom">' +
+                '<svg width="18" height="18" viewBox="0 0 24 24">' +
+                  '<path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>' +
+                  '<path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"/>' +
+                  '<path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 10.04 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>' +
+                  '<path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>' +
+                '</svg>' +
+                '<span>Google bilan kirish</span>' +
+              '</button>' +
+            '</div>' +
+          '</div>' +
+
+          '<!-- 2. Password o\'rnida: Maxfiy kalit -->' +
+          '<div class="login-field">' +
+            '<label class="login-field-label">Password</label>' +
+            '<div class="login-input-wrap">' +
+              '<input type="password" class="login-input" id="au-code-input" placeholder="••••••••••••" maxlength="24" autocomplete="current-password" spellcheck="false">' +
+              '<button type="button" class="login-eye-btn" id="au-eye-toggle" aria-label="Ko\'rsatish">' +
+                '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                  '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>' +
+                  '<circle cx="12" cy="12" r="3"/>' +
+                '</svg>' +
+              '</button>' +
+            '</div>' +
+          '</div>' +
+
+          '<!-- 3. Forget Password / Bog\'lanish -->' +
+          '<div class="login-meta-row">' +
+            '<a class="login-meta-link" href="https://t.me/shamsiyev_shamsiddin" target="_blank" rel="noopener noreferrer">Forget Password?</a>' +
+          '</div>' +
+
+          '<!-- 4. Login tugmasi -->' +
+          '<button type="button" class="login-btn" id="au-login-btn">Login</button>' +
         '</div>' +
       '</div>'
     );
 
-    var inp = el.querySelector('#au-code');
-    var go = el.querySelector('#au-code-go');
-    if (inp) {
-      inp.focus();
-      inp.onkeydown = function (e) { if (e.key === 'Enter') go.click(); };
+    var errBox = el.querySelector('#au-err-box');
+    var errText = el.querySelector('#au-err-text');
+    function setErr(t) {
+      if (!errBox || !errText) return;
+      if (t) {
+        errText.textContent = t;
+        errBox.style.display = 'flex';
+      } else {
+        errBox.style.display = 'none';
+        errText.textContent = '';
+      }
     }
-    go.onclick = function () {
-      var kod = (inp.value || '').trim();
-      if (!kod) { inp.focus(); return; }
-      go.disabled = true; go.textContent = 'Tekshirilmoqda…';
+
+    var passInp = el.querySelector('#au-code-input');
+    var eyeBtn = el.querySelector('#au-eye-toggle');
+    var isPass = true;
+    if (eyeBtn && passInp) {
+      eyeBtn.onclick = function () {
+        isPass = !isPass;
+        passInp.type = isPass ? 'password' : 'text';
+        eyeBtn.innerHTML = isPass
+          ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'
+          : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+      };
+    }
+
+    /* Kalit orqali kirish */
+    var loginBtn = el.querySelector('#au-login-btn');
+    var submitCode = function () {
+      var kod = (passInp.value || '').trim();
+      if (!kod) {
+        setErr('Maxfiy kalitni kiriting yoki Google bilan kiring.');
+        passInp.focus();
+        return;
+      }
+      setErr('');
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Tekshirilmoqda…';
       post({ amal: 'kod_bilan_kirish', kod: kod })
         .then(function (j) {
-          /* Google yo'li bilan AYNAN bir xil yakun: sessiya ochilgach
-             mahalliy o'zgarishlar serverga yuboriladi va shundan keyin
-             ilova ishga tushadi (`resyncThenStart`). */
           Auth.user = j;
           gateRemember(true);
           closeScreen();
           resyncThenStart();
         })
         .catch(function (e) {
-          codeScreen(e && e.message ? e.message : 'Kod noto\'g\'ri.');
+          // Agar parol rejimida bo'lsa, oddiy kirishni ham sinab ko'ramiz
+          if (AUTH_INFO && AUTH_INFO.kirish_usuli === 'parol') {
+            return post({ amal: 'kirish', email: 'admin', parol: kod })
+              .then(function (j) {
+                Auth.user = j;
+                gateRemember(true);
+                closeScreen();
+                resyncThenStart();
+              })
+              .catch(function () {
+                throw e;
+              });
+          }
+          throw e;
+        })
+        .catch(function (e) {
+          loginBtn.disabled = false;
+          loginBtn.textContent = 'Login';
+          setErr(e && e.message ? e.message : 'Kod noto\'g\'ri.');
+          passInp.focus();
         });
     };
-    el.querySelector('#au-code-back').onclick = function () {
-      googleScreen(AUTH_INFO.google_client_id);
-    };
-  }
 
-  function googleScreen(clientId, msg) {
-    var el = screen(
-      '<div class="agate">' +
-        '<div class="agate-mark">' +
-          '<span class="agate-glow" aria-hidden="true"></span>' +
-          '<img class="agate-logo" data-app-icon src="' + App.appIconSrc() + '" alt="">' +
-        '</div>' +
+    if (loginBtn) loginBtn.onclick = submitCode;
+    if (passInp) {
+      passInp.onkeydown = function (e) { if (e.key === 'Enter') submitCode(); };
+    }
 
-        '<h1 class="agate-title">Yordamchi</h1>' +
-        '<p class="agate-sub">Shaxsiy o\'quv maydoni</p>' +
+    /* Google bilan kirish */
+    var gCustom = el.querySelector('#au-gcustom');
+    var gBtnHost = el.querySelector('#au-gbtn');
 
-        '<div class="agate-card">' +
-          '<div class="agate-lock">' +
-            '<span data-icon="lock" data-icon-size="14"></span>' +
-            '<span>Faqat egasi kira oladi</span>' +
-          '</div>' +
-
-          (msg ? '<div class="agate-err">' +
-                   '<span data-icon="alert" data-icon-size="15"></span>' +
-                   '<span>' + App.esc(msg) + '</span></div>' : '') +
-
-          '<div id="au-gbtn" class="agate-btnhost"></div>' +
-          '<p class="agate-note" id="au-gnote">Google yuklanmoqda…</p>' +
-
-          /* Favqulodda yo'l — FAQAT kod o'rnatilgan bo'lsa ko'rinadi.
-             Kod yo'q bo'lsa bu tugma foydasiz bo'lardi va faqat
-             chalkashtirardi. */
-          (AUTH_INFO.kod_bor
-            ? '<button class="agate-alt" id="au-code-open">Kod bilan kirish</button>'
-            : '') +
-        '</div>' +
-
-        tgHtml() +
-      '</div>'
-    );
-
-    if (!clientId) {
-      el.querySelector('#au-gnote').textContent =
-        'Google kirishi hali sozlanmagan (GOOGLE_CLIENT_ID yo\'q).';
+    if (!cId) {
+      if (gCustom) {
+        gCustom.onclick = function () {
+          setErr('Google kirishi hali sozlanmagan. Pastdagi Maxfiy kalit bilan kiring.');
+        };
+      }
       return;
     }
 
-    var codeOpen = el.querySelector('#au-code-open');
-    if (codeOpen) codeOpen.onclick = function () { codeScreen(''); };
-
     loadGsi().then(function () {
-      var note = el.querySelector('#au-gnote');
-      var host = el.querySelector('#au-gbtn');
-      if (!host) return;
-      if (note) note.textContent = '';
-
       google.accounts.id.initialize({
-        client_id: clientId,
+        client_id: cId,
         callback: function (resp) {
           var cred = resp && resp.credential;
-          if (!cred) { googleScreen(clientId, 'Google javobi bo\'sh keldi.'); return; }
-          if (note) note.textContent = 'Tekshirilmoqda...';
+          if (!cred) { setErr('Google javobi bo\'sh keldi.'); return; }
+          setErr('Tekshirilmoqda...');
           post({ amal: 'google_kirish', credential: cred })
             .then(function (j) {
-              Auth.user = j; gateRemember(true); closeScreen(); resyncThenStart();
+              Auth.user = j;
+              gateRemember(true);
+              closeScreen();
+              resyncThenStart();
             })
-            .catch(function (e) { googleScreen(clientId, e.message); });
+            .catch(function (e) {
+              setErr(e && e.message ? e.message : 'Google orqali kirib bo\'lmadi.');
+            });
         }
       });
-      google.accounts.id.renderButton(host, {
-        theme: 'filled_blue', size: 'large', shape: 'pill',
-        text: 'signin_with', width: 280
-      });
+
+      if (gBtnHost) {
+        google.accounts.id.renderButton(gBtnHost, {
+          theme: 'outline',
+          size: 'large',
+          shape: 'rectangular',
+          text: 'signin_with',
+          width: 292,
+          logo_alignment: 'left'
+        });
+        /* Agar Google iframe paydo bo'lsa, custom tugmani bekitamiz */
+        setTimeout(function () {
+          if (gBtnHost.children && gBtnHost.children.length > 0 && gCustom) {
+            gCustom.style.display = 'none';
+          }
+        }, 150);
+      }
+
+      if (gCustom) {
+        gCustom.onclick = function () {
+          try { google.accounts.id.prompt(); } catch (_) {}
+        };
+      }
     }).catch(function () {
-      var note = el.querySelector('#au-gnote');
-      if (note) note.textContent = 'Google skriptini yuklab bo\'lmadi. Internetni tekshiring.';
+      if (gCustom) {
+        gCustom.onclick = function () {
+          setErr('Google xizmati yuklanmadi. Internetni tekshiring yoki Maxfiy kalit bilan kiring.');
+        };
+      }
     });
+  }
+
+  function loginScreen(msg) {
+    loginScreenModern(AUTH_INFO.google_client_id, msg);
+  }
+
+  function googleScreen(clientId, msg) {
+    loginScreenModern(clientId, msg);
+  }
+
+  function codeScreen(msg) {
+    loginScreenModern(AUTH_INFO.google_client_id, msg);
   }
 
   /* --- Ilk sozlash: birinchi (va yagona) akkaunt --- */
@@ -325,6 +403,8 @@
 
   window.Auth = {
     data: Auth,
+    loginScreen: loginScreenModern,
+    showLogin: function (msg) { loginScreenModern(AUTH_INFO.google_client_id, msg); },
     /* bootstrap.js shu orqali ishga tushadi */
     gate: function (onReady) {
       startApp = onReady;

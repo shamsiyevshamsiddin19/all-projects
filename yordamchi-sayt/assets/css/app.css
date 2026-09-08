@@ -851,8 +851,8 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 @keyframes micpulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.07); } }
 
 /* ---------- Kirish ekrani (auth) ---------- */
-#auth-screen{ position:fixed; inset:0; z-index:9998; background:var(--bg); display:flex; align-items:center; justify-content:center; padding:24px 18px; overflow-y:auto; }
-.auth-box{ width:100%; max-width:360px; }
+#auth-screen{ position:fixed; inset:0; z-index:9998; background:radial-gradient(circle at 50% 30%, #171b24 0%, #090b0e 100%); display:flex; align-items:center; justify-content:center; padding:24px 16px; overflow-y:auto; }
+.auth-box{ width:100%; max-width:350px; display:flex; justify-content:center; }
 .auth-box h2{ font-size:24px; font-weight:800; margin:0 0 6px; }
 .auth-box > .muted{ font-size:13.5px; margin:0 0 20px; line-height:1.5; }
 .auth-logo{ width:56px; height:56px; border-radius:17px; background:var(--accent-soft); color:var(--accent); display:flex; align-items:center; justify-content:center; margin-bottom:16px; }
@@ -4168,8 +4168,10 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   position:relative;
   display:inline-flex;
   align-items:center;
-  width:58px;
-  height:30px;
+  /* 64x32: ichki joy 58px, tugmacha 26px -> yozuvga 32px qoladi.
+     Ilgari 58px edi va "OFF" (~21px) 28px lik joyga sig'may qirqilardi. */
+  width:64px;
+  height:32px;
   flex-shrink:0;
   padding:3px;
   border:none;
@@ -4199,20 +4201,24 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   color:#ffffff;
   pointer-events:none;
 }
-/* Yozuv tugmachaning QARSHI tomonida — berkitilmasin */
-.sw2      .sw2-txt{ left:7px; }
-.sw2.on   .sw2-txt{ right:7px; }
+/* Yozuv tugmachaning QARSHI tomonida turishi SHART, aks holda uning
+   ostiga tushib qirqilib qoladi:
+     o'chiq — tugmacha CHAPDA, demak yozuv O'NGDA;
+     yoqiq  — tugmacha O'NGDA,  demak yozuv CHAPDA.
+   Ilgari teskari yozilgan edi va ikkala holatda ham yozuv berkilardi. */
+.sw2      .sw2-txt{ right:8px; }
+.sw2.on   .sw2-txt{ left:8px; }
 
 .sw2-knob{
   position:absolute;
   top:3px; left:3px;
-  width:24px; height:24px;
+  width:26px; height:26px;
   border-radius:50%;
   background:linear-gradient(160deg,#4a4f57,#1c1f24);
   box-shadow:0 2px 5px rgba(0,0,0,.5);
   transition:transform .18s ease;
 }
-.sw2.on .sw2-knob{ transform:translateX(28px); }
+.sw2.on .sw2-knob{ transform:translateX(32px); }
 
 @media (prefers-reduced-motion: reduce){
   .sw2-track, .sw2-knob{ transition:none; }
@@ -4381,4 +4387,258 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 /* Tor ekranda kenglik cheklovi ortiqcha — u yerda ekranning o'zi tor */
 @media (max-width: 720px){
   .md-claude .md-content{ font-size: 16px; padding: 18px 15px 26px; border-radius: 12px; }
+}
+
+
+/* ---------- Yangi Login Ekran Dizayni (Foydalanuvchi rasmidagi qora/oq uslub) ---------- */
+.login-card {
+  width: 100%;
+  max-width: 350px;
+  background: #ffffff;
+  border-radius: 34px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  margin: auto;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.login-header {
+  background: #000000;
+  position: relative;
+  height: 220px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 52px;
+}
+
+.login-avatar-icon {
+  width: 64px;
+  height: 64px;
+  color: #ffffff;
+  display: block;
+}
+
+.login-curve-svg {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 70px;
+  pointer-events: none;
+  display: block;
+}
+
+.login-body {
+  background: #ffffff;
+  padding: 16px 28px 36px;
+  display: flex;
+  flex-direction: column;
+}
+
+.login-title {
+  font-size: 30px;
+  font-weight: 800;
+  color: #000000;
+  text-align: center;
+  margin: 10px 0 22px;
+  letter-spacing: -0.4px;
+}
+
+.login-err {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  color: #ef4444;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 9px 12px;
+  border-radius: 10px;
+  margin-bottom: 14px;
+  line-height: 1.4;
+}
+
+.login-err [data-icon] {
+  flex-shrink: 0;
+}
+
+.login-field {
+  margin-bottom: 16px;
+}
+
+.login-field-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #000000;
+  margin-bottom: 8px;
+  letter-spacing: -0.1px;
+}
+
+.login-google-slot {
+  position: relative;
+  width: 100%;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#au-gbtn {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#au-gbtn:empty {
+  display: none;
+}
+
+#au-gbtn .nsm7Bb-HzV7m-LgbsSe {
+  border-radius: 12px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  height: 48px !important;
+  margin: 0 !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: none !important;
+}
+
+#au-gbtn iframe {
+  border-radius: 12px !important;
+  margin: 0 !important;
+}
+
+.login-google-custom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 48px;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  outline: none !important;
+  cursor: pointer;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #1e293b;
+  font-family: inherit;
+  padding: 0 16px;
+  margin: 0;
+  box-sizing: border-box;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.login-google-custom:hover {
+  border-color: #cbd5e1 !important;
+  background: #f8fafc !important;
+}
+
+.login-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.login-input {
+  width: 100%;
+  height: 48px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0 42px 0 14px;
+  font-size: 15px;
+  color: #0f172a;
+  background: #ffffff;
+  letter-spacing: 0.5px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.login-input::placeholder {
+  color: #94a3b8;
+  letter-spacing: 1px;
+}
+
+.login-input:focus {
+  outline: none;
+  border-color: #000000;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+}
+
+.login-eye-btn {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s;
+}
+
+.login-eye-btn:hover {
+  color: #475569;
+}
+
+.login-meta-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+  margin-bottom: 22px;
+}
+
+.login-meta-link {
+  font-size: 12px;
+  color: #94a3b8;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+
+.login-meta-link:hover {
+  color: #475569;
+}
+
+.login-btn {
+  width: 100%;
+  height: 48px;
+  background: #000000;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.15s, background-color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+}
+
+.login-btn:hover {
+  background: #18181b;
+}
+
+.login-btn:active {
+  transform: scale(0.985);
+}
+
+.login-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
 }
