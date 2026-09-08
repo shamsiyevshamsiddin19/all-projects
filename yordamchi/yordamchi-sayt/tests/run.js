@@ -60,6 +60,16 @@ function loadProsody() {
   return scope.prosodyParts;
 }
 
+function loadCompareSentence() {
+  const src = fs.readFileSync(path.join(ROOT, 'assets/js/app2/reading.js'), 'utf8');
+  const a = src.indexOf('  function normWord(');
+  const b = src.indexOf('  var activePronunRec = null;');
+  if (a < 0 || b < 0) throw new Error('reading.js ichidagi compareSentence bloki topilmadi');
+  const scope = {};
+  new Function('exports', src.slice(a, b) + '\nexports.compareSentence = compareSentence;')(scope);
+  return scope.compareSentence;
+}
+
 /* `vocab.js` da .md faylni so'zlarga aylantiruvchi sof funksiya bor —
    uni ham ajratib olamiz. */
 function loadMdParser() {
@@ -304,6 +314,22 @@ const texts = (t) => prosodyParts(t).map((p) => p.text);
   const p = prosodyParts('Мама — врач.');
   eq('tire matndan chiqariladi', p.map((x) => x.text), ['Мама', 'врач.']);
   check('tire oldidan jimlik uzayadi', p[0].pause >= 300, 'pause=' + p[0].pause);
+}
+
+{
+  // Talaffuzni tekshirish algoritmi (compareSentence)
+  const compareSentence = loadCompareSentence();
+
+  const c1 = compareSentence('The old lighthouse stood on the cliff.', 'the old light house stood on the cliff');
+  check('aniq talaffuz 100% ball beradi', c1.score >= 95, 'score=' + c1.score);
+  check('barcha so\'zlar to\'g\'ri deb topildi', c1.words.every((w) => w.status === 'good'));
+
+  const c2 = compareSentence('Каждую ночь его свет указывал путь кораблям.', 'каждую ночь его свет указывал путь');
+  check('tushib qolgan so\'z aniqlanadi', c2.words[c2.words.length - 1].status === 'bad');
+  check('ball mutanosib hisoblanadi', c2.score >= 80 && c2.score < 95, 'score=' + c2.score);
+
+  const c3 = compareSentence('Hello world', 'helo world');
+  check('yaqin so\'z warn status oladi', c3.words[0].status === 'good' || c3.words[0].status === 'warn');
 }
 
 /* =========================================================

@@ -33,7 +33,10 @@
     stepMode: false,      // gap-ma-gap: har gapdan keyin to'xtaydi
     pendingStop: false,
     repeatCount: 1,       // 1 (oddiy), 2 (2x), 3 (3x) takrorlash
-    repeatIdx: 1          // joriy gap nechanchi marta o'qilyapti (1..repeatCount)
+    repeatIdx: 1,         // joriy gap nechanchi marta o'qilyapti (1..repeatCount)
+    shadowMode: false,    // Hands-Free Shadowing: gapdan so'ng takrorlash uchun pauza
+    shadowSecondsLeft: 0,
+    shadowTimer: null
   };
 
   /* ================= Parser ================= */
@@ -302,10 +305,91 @@
      Ikkalasi birga bekor qilinmasa, to'xtatilgandan keyin osilib qolgan
      taymer eski bo'lakni o'qib yuboradi (`R.alive` hamma joyda ham
      o'chirilmaydi — masalan "keyingi gap" bosilganda u ataylab yoqiladi). */
-  function haltSpeech() {
+  function clearShadowTimer() {
+    if (R.shadowTimer) { clearInterval(R.shadowTimer); R.shadowTimer = null; }
     if (R.gapTimer) { clearTimeout(R.gapTimer); R.gapTimer = null; }
+    R.shadowSecondsLeft = 0;
+  }
+
+  function getShadowPause(text) {
+    var words = (text || '').trim().split(/\s+/).filter(Boolean).length;
+    return Math.max(3, Math.min(10, Math.round(words * 0.55) + 2));
+  }
+
+  /* Ovozni ham, KUTAYOTGAN TAYMERLARNI ham birga to'xtatadi.
+     Ikkalasi birga bekor qilinmasa, to'xtatilgandan keyin osilib qolgan
+     taymer eski bo'lakni o'qib yuboradi (`R.alive` hamma joyda ham
+     o'chirilmaydi — masalan "keyingi gap" bosilganda u ataylab yoqiladi). */
+  function haltSpeech() {
+    clearShadowTimer();
     if (R.partTimer) { clearTimeout(R.partTimer); R.partTimer = null; }
     if (window.TTS) TTS.cancel(); else { try { window.speechSynthesis.cancel(); } catch (e) {} }
+  }
+
+  /* ---------- Fondagi pleyer (MediaSession API va Audio Keep-Alive) ----------
+     Mobil qurilmalarda ekran qulflanganda (lockscreen) ham o'qish to'xtab
+     qolmasligi uchun jimjit audio-tsikl o'ynaladi va telefon ekranida
+     boshqaruv pleyeri (play/pause/prev/next) chiqariladi. */
+  var audioKeeper = null;
+  function startAudioKeepAlive() {
+    try {
+      if (!audioKeeper) {
+        audioKeeper = new Audio('data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBIAAAABAAEAQB8AAEAfAAABAAgAAABmYWN0BAAAAAAAAABkYXRhAAAAAA==');
+        audioKeeper.loop = true;
+      }
+      var p = audioKeeper.play();
+      if (p && p.catch) p.catch(function () {});
+    } catch (e) {}
+  }
+
+  function stopAudioKeepAlive() {
+    if (audioKeeper) {
+      try { audioKeeper.pause(); } catch (e) {}
+    }
+  }
+
+  function setupMediaSession() {
+    if (!('mediaSession' in navigator)) return;
+    try {
+      navigator.mediaSession.setActionHandler('play', function () {
+        if (!R.playing) App.actions.rdToggle();
+      });
+      navigator.mediaSession.setActionHandler('pause', function () {
+        if (R.playing) App.actions.rdToggle();
+      });
+      navigator.mediaSession.setActionHandler('previoustrack', function () {
+        jump(-1);
+      });
+      navigator.mediaSession.setActionHandler('nexttrack', function () {
+        jump(1);
+      });
+      navigator.mediaSession.setActionHandler('stop', function () {
+        stopAll();
+      });
+    } catch (e) {}
+  }
+
+  function updateMediaSession() {
+    if (!('mediaSession' in navigator)) return;
+    try {
+      var cur = (R.idx >= 0 && R.sentences && R.sentences[R.idx]) ? R.sentences[R.idx] : null;
+      var title = cur ? cur.text : (R.name || 'Reading');
+      var artist = R.name || (R.sec.indexOf('ru') === 0 ? 'Чтение' : 'Reading');
+      var album = R.sec.indexOf('ru') === 0 ? 'Rus tili (Чтение)' : 'Ingliz tili (Reading)';
+
+      if (window.MediaMetadata) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: title,
+          artist: artist,
+          album: album,
+          artwork: [
+            { src: '/assets/icons/custom-app-icon-192.png', sizes: '192x192', type: 'image/png' },
+            { src: '/assets/icons/custom-app-icon-512.png', sizes: '512x512', type: 'image/png' }
+          ]
+        });
+      }
+      navigator.mediaSession.playbackState = R.playing ? 'playing' : 'paused';
+    } catch (e) {}
   }
 
   function stopAll() {
@@ -315,6 +399,8 @@
     /* Gaplar orasidagi kutish ham bekor qilinsin — aks holda to'xtatilgandan
        keyin yana bitta gap o'qilib ketardi. */
     haltSpeech();
+    stopAudioKeepAlive();
+    updateMediaSession();
     releaseWake();
     highlight(-1);
     paintPlayer();
@@ -349,12 +435,16 @@
       R.idx = n;
       R.repeatIdx = 1;
       highlight(n);
+      updateMediaSession();
       paintPlayer();
       return;
     }
 
     if (n >= R.sentences.length) {
       R.playing = false; R.idx = -1; R.repeatIdx = 1;
+      clearShadowTimer();
+      stopAudioKeepAlive();
+      updateMediaSession();
       highlight(-1); paintPlayer();
       App.toast('✅ Matn tugadi');
       if (window.Activity) Activity.mark();
@@ -366,6 +456,7 @@
     }
     R.idx = n;
     highlight(n);
+    updateMediaSession();
     paintPlayer();
     var cur = R.sentences[n];
     /* Sarlavha e'lon qilib o'qiladi: sekinroq, pastroq ohangda va undan
@@ -391,9 +482,35 @@
         return;
       }
 
-      /* Barcha takrorlar tugadi — keyingi gapga o'tamiz */
+      /* Barcha takrorlar tugadi */
       R.repeatIdx = 1;
-      if (R.stepMode) R.pendingStop = true;   // keyingi qadamda to'xtaydi
+      if (R.stepMode) {
+        R.pendingStop = true;   // keyingi qadamda to'xtaydi
+        var pause = Math.round((endPause || 260) / (R.rate || 1));
+        R.gapTimer = setTimeout(function () { step(n + 1); }, pause);
+        return;
+      }
+
+      /* Hands-Free Shadowing rejimi: gapdan keyin takrorlash pauzasi */
+      if (R.shadowMode) {
+        clearShadowTimer();
+        var waitSec = getShadowPause(cur.text);
+        R.shadowSecondsLeft = waitSec;
+        paintPlayer();
+        R.shadowTimer = setInterval(function () {
+          if (!R.alive || !R.playing) { clearShadowTimer(); return; }
+          R.shadowSecondsLeft--;
+          if (R.shadowSecondsLeft <= 0) {
+            clearShadowTimer();
+            paintPlayer();
+            step(n + 1);
+          } else {
+            paintPlayerTime();
+          }
+        }, 1000);
+        return;
+      }
+
       var pause = Math.round((endPause || 260) / (R.rate || 1));
       R.gapTimer = setTimeout(function () { step(n + 1); }, pause);
     });
@@ -421,7 +538,9 @@
     var pct = Math.round((cur / total) * 100);
 
     var repInfo = '';
-    if (R.repeatCount > 1) {
+    if (R.shadowSecondsLeft > 0) {
+      repInfo = ' · <span class="rd-shadow-badge">🗣️ Qaytaring: ' + R.shadowSecondsLeft + 's</span>';
+    } else if (R.repeatCount > 1) {
       if (R.playing && cur > 0) {
         repInfo = ' · ' + R.repeatIdx + '/' + R.repeatCount + ' marta';
       } else {
@@ -434,6 +553,8 @@
       '<div class="rd-pl-top">' +
         '<div class="rd-pl-time">' + cur + ' / ' + total + ' gap' + repInfo + '</div>' +
         '<div class="rd-pl-top-actions">' +
+          '<button class="rd-pl-tool-btn" data-act="rdCheckCurrentPronun" aria-label="Talaffuzni tekshirish" title="Talaffuzni tekshirish (mikrofon)">' +
+            '<span data-icon="mic" data-icon-size="15"></span></button>' +
           '<button class="rd-pl-tool-btn" data-act="rdDownloadAudio" aria-label="Audioni yuklab olish" title="Ovozni yuklab olish (.mp3)">' +
             '<span data-icon="download" data-icon-size="15"></span></button>' +
           '<button class="rd-pl-tool-btn" data-act="rdVoice" aria-label="Ovozni tanlash" title="Ovozni tanlash">' +
@@ -452,6 +573,10 @@
             'aria-label="Gapni takrorlash" title="Har bir gapni 2 yoki 3 marta takrorlash">' +
             '<span data-icon="repeat" data-icon-size="15"></span>' +
             '<span class="rd-pl-badge">' + R.repeatCount + 'x</span></button>' +
+          '<button class="rd-pl-step' + (R.shadowMode ? ' shadow-on' : '') + '" data-act="rdShadow" ' +
+            'aria-label="Shadowing rejim" title="Hands-Free Shadowing: gapdan keyin takrorlash pauzasi">' +
+            '<span data-icon="headphones" data-icon-size="15"></span>' +
+            '<span class="rd-pl-badge">SH</span></button>' +
         '</div>' +
         '<div class="rd-pl-center">' +
           '<button class="rd-pl-b" data-act="rdPrev" aria-label="Oldingi gap">' +
@@ -468,6 +593,24 @@
     App.icons(box);
   }
 
+  function paintPlayerTime() {
+    var el = document.querySelector('#rd-player .rd-pl-time');
+    if (!el) return;
+    var total = R.sentences.length || 1;
+    var cur = R.idx < 0 ? 0 : R.idx + 1;
+    var repInfo = '';
+    if (R.shadowSecondsLeft > 0) {
+      repInfo = ' · <span class="rd-shadow-badge">🗣️ Qaytaring: ' + R.shadowSecondsLeft + 's</span>';
+    } else if (R.repeatCount > 1) {
+      if (R.playing && cur > 0) {
+        repInfo = ' · ' + R.repeatIdx + '/' + R.repeatCount + ' marta';
+      } else {
+        repInfo = ' · ' + R.repeatCount + 'x takror';
+      }
+    }
+    el.innerHTML = cur + ' / ' + total + ' gap' + repInfo;
+  }
+
   function rateLabel() { return String(R.rate).replace(/\.?0+$/, '') + 'x'; }
 
   App.actions.rdOpenBar = function () { R.barOpen = true; paintPlayer(); };
@@ -480,6 +623,8 @@
     if (R.playing) {
       R.playing = false;
       haltSpeech();
+      stopAudioKeepAlive();
+      updateMediaSession();
       releaseWake();
       paintPlayer();
       return;
@@ -489,9 +634,12 @@
        (aynan shu bosishdan) foydalanib ovozni isitib olamiz. */
     if (window.TTS) TTS.prime();
     requestWake();
+    startAudioKeepAlive();
     R.errCount = 0;
     R.playing = true; R.alive = true;
     R.repeatIdx = 1;
+    setupMediaSession();
+    updateMediaSession();
     step(R.idx >= 0 && R.idx < R.sentences.length ? R.idx : 0);
   };
 
@@ -508,11 +656,12 @@
     R.alive = true;
     R.repeatIdx = 1;
     if (R.playing) { haltSpeech(); step(n); }
-    else { R.idx = n; highlight(n); paintPlayer(); }
+    else { R.idx = n; highlight(n); updateMediaSession(); paintPlayer(); }
   }
 
   App.actions.rdStepMode = function () {
     R.stepMode = !R.stepMode;
+    if (R.stepMode) { R.shadowMode = false; clearShadowTimer(); }
     R.pendingStop = false;
     try { localStorage.setItem('reading_step_mode', R.stepMode ? '1' : '0'); } catch (e) {}
     paintPlayer();
@@ -530,6 +679,19 @@
       App.toast('Takrorlash o\'chirildi (1 marta)');
     } else {
       App.toast('Har bir gap ' + R.repeatCount + ' marta takrorlanadi');
+    }
+  };
+
+  App.actions.rdShadow = function () {
+    R.shadowMode = !R.shadowMode;
+    if (R.shadowMode) R.stepMode = false;
+    clearShadowTimer();
+    try { localStorage.setItem('reading_shadow_mode', R.shadowMode ? '1' : '0'); } catch (e) {}
+    paintPlayer();
+    if (R.shadowMode) {
+      App.toast('🗣️ Hands-Free Shadowing yoqildi (gapdan keyin takrorlash uchun pauza beriladi)');
+    } else {
+      App.toast('Shadowing o\'chirildi');
     }
   };
 
@@ -741,6 +903,9 @@
         '<span data-icon="volume" data-icon-size="15"></span>Tinglash</button>' +
         '<button class="rd-pop-b" data-act="rdSayRepeat" data-arg=\'' + App.arg({ t: opts.say, count: 2 }) + '\' title="2 marta takrorlab tinglash">' +
         '<span data-icon="repeat" data-icon-size="14"></span>2x</button>' +
+        '<button class="rd-pop-b mic" data-act="rdPronunCheck" data-arg=\'' +
+          App.arg({ t: opts.say, tr: opts.tr, n: opts.sent }) + '\' title="Talaffuzni tekshirish">' +
+        '<span data-icon="mic" data-icon-size="14"></span>Talaffuz</button>' +
         (opts.learn
           ? '<button class="rd-pop-b learn" data-act="rdLearn" data-arg=\'' +
             App.arg({ w: opts.src, t: opts.tr }) + '\'>' +
@@ -807,6 +972,284 @@
       });
     }
     speakOnce();
+  };
+
+  /* ================= Talaffuz tekshiruvi (Pronunciation Check) ================= */
+
+  function normWord(s) {
+    return String(s || '').toLowerCase().replace(/[^\wа-яё]/gi, '');
+  }
+
+  function levenshtein(a, b) {
+    if (a.length === 0) return b.length;
+    if (b.length === 0) return a.length;
+    var matrix = [];
+    for (var i = 0; i <= b.length; i++) matrix[i] = [i];
+    for (var j = 0; j <= a.length; j++) matrix[0][j] = j;
+    for (var i = 1; i <= b.length; i++) {
+      for (var j = 1; j <= a.length; j++) {
+        if (b.charAt(i - 1) === a.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1));
+        }
+      }
+    }
+    return matrix[b.length][a.length];
+  }
+
+  function wordSimilarity(a, b) {
+    var na = normWord(a), nb = normWord(b);
+    if (!na && !nb) return 100;
+    if (!na || !nb) return 0;
+    if (na === nb) return 100;
+    var dist = levenshtein(na, nb);
+    var maxLen = Math.max(na.length, nb.length);
+    return Math.max(0, Math.round((1 - dist / maxLen) * 100));
+  }
+
+  function compareSentence(target, said) {
+    var targetTokens = String(target || '').trim().split(/\s+/).filter(Boolean);
+    var saidTokens = String(said || '').trim().split(/\s+/).filter(Boolean);
+
+    var saidIdx = 0;
+    var results = [];
+    var totalScore = 0;
+
+    for (var i = 0; i < targetTokens.length; i++) {
+      var tw = targetTokens[i];
+      var bestSim = 0;
+      var bestStep = 1;
+      var bestSaidIdx = -1;
+
+      var lookEnd = Math.min(saidTokens.length, saidIdx + 4);
+      for (var j = saidIdx; j < lookEnd; j++) {
+        var s1 = wordSimilarity(tw, saidTokens[j]);
+        if (s1 > bestSim) {
+          bestSim = s1;
+          bestStep = 1;
+          bestSaidIdx = j;
+        }
+        if (j + 1 < saidTokens.length) {
+          var s2 = wordSimilarity(tw, saidTokens[j] + saidTokens[j + 1]);
+          if (s2 > bestSim) {
+            bestSim = s2;
+            bestStep = 2;
+            bestSaidIdx = j;
+          }
+        }
+      }
+
+      var status = 'bad';
+      if (bestSim >= 80) {
+        status = 'good';
+        saidIdx = bestSaidIdx + bestStep;
+      } else if (bestSim >= 50) {
+        status = 'warn';
+        saidIdx = bestSaidIdx + bestStep;
+      }
+
+      totalScore += bestSim;
+      results.push({ word: tw, clean: normWord(tw), status: status, sim: bestSim });
+    }
+
+    var score = targetTokens.length ? Math.round(totalScore / targetTokens.length) : 0;
+    return { score: score, words: results };
+  }
+
+  var activePronunRec = null;
+
+  function stopPronunRec() {
+    if (activePronunRec) {
+      try {
+        if (activePronunRec.abort) activePronunRec.abort();
+        else activePronunRec.stop();
+      } catch (e) {}
+      activePronunRec = null;
+    }
+  }
+
+  function openPronunModal(targetText, targetTr, sentIdx) {
+    targetText = String(targetText || '').trim();
+    if (!targetText) { App.toast('Talaffuz uchun matn topilmadi'); return; }
+
+    stopAll();
+    stopPronunRec();
+
+    var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    var hasNext = (typeof sentIdx === 'number' && sentIdx >= 0 && sentIdx + 1 < R.sentences.length);
+
+    var html =
+      '<div class="pr-modal">' +
+        '<div class="pr-target-card">' +
+          '<div class="pr-target-text">' + App.esc(targetText) + '</div>' +
+          (targetTr ? '<div class="pr-trans-text">' + App.esc(targetTr) + '</div>' : '') +
+          '<div class="pr-listen-wrap">' +
+            '<button class="pr-listen-btn" id="pr-listen-btn">' +
+              '<span data-icon="volume" data-icon-size="14"></span>To\'g\'ri talaffuzni tinglash</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="pr-mic-wrap">' +
+          '<button class="pr-mic-btn" id="pr-mic-btn" aria-label="Mikrofon">' +
+            '<span data-icon="mic" data-icon-size="34"></span></button>' +
+          '<div class="pr-status-text" id="pr-status-text">' +
+            (Rec ? 'Mikrofonni bosing va ovoz chiqarib o\'qing' : '⚠️ Brauzeringizda mikrofonli tanish yo\'q — yozib tekshirishingiz mumkin') +
+          '</div>' +
+        '</div>' +
+        '<input class="input" id="pr-typed" placeholder="Yoki yozib tekshiring..." autocomplete="off" style="text-align:center;' + (Rec ? 'display:none;' : 'margin-bottom:12px;') + '">' +
+        '<div class="pr-result-box" id="pr-result-box" style="display:none;">' +
+          '<div style="text-align:center;"><span class="pr-score-badge" id="pr-score-badge"></span></div>' +
+          '<div class="pr-words-feedback" id="pr-words-feedback"></div>' +
+          '<div class="pr-said-wrap" id="pr-said-wrap"><span class="muted">Siz aytdingiz:</span> <b id="pr-said-val"></b></div>' +
+          '<p class="muted" style="font-size:11.5px;text-align:center;margin:8px 0 0">💡 Xato so\'z ustiga bossangiz, uning to\'g\'ri talaffuzini eshitasiz.</p>' +
+        '</div>' +
+        '<div class="btn-row" style="margin-top:14px">' +
+          '<button class="btn sec" data-act="closeSheet">Yopish</button>' +
+          (hasNext ? '<button class="btn" id="pr-next-btn">Keyingi gap ➔</button>' : '') +
+        '</div>' +
+      '</div>';
+
+    var sh = App.sheet(html, { title: 'Talaffuzni tekshirish' });
+    App.icons(sh);
+
+    var micBtn = sh.querySelector('#pr-mic-btn');
+    var statusText = sh.querySelector('#pr-status-text');
+    var listenBtn = sh.querySelector('#pr-listen-btn');
+    var typedInput = sh.querySelector('#pr-typed');
+    var resultBox = sh.querySelector('#pr-result-box');
+    var scoreBadge = sh.querySelector('#pr-score-badge');
+    var wordsBox = sh.querySelector('#pr-words-feedback');
+    var saidVal = sh.querySelector('#pr-said-val');
+    var nextBtn = sh.querySelector('#pr-next-btn');
+
+    listenBtn.onclick = function () {
+      speakProsody(targetText);
+    };
+
+    function displayResult(said) {
+      if (!said) return;
+      var comp = compareSentence(targetText, said);
+      resultBox.style.display = 'block';
+      saidVal.textContent = '"' + said + '"';
+
+      var badgeCls = 'good';
+      var msg = 'A\'lo darajada!';
+      if (comp.score < 60) {
+        badgeCls = 'bad';
+        msg = 'Qaytadan urinib ko\'ring';
+      } else if (comp.score < 85) {
+        badgeCls = 'warn';
+        msg = 'Yaxshi! Qizil so\'zlarga e\'tibor bering';
+      }
+
+      scoreBadge.className = 'pr-score-badge ' + badgeCls;
+      scoreBadge.innerHTML = '<span data-icon="target" data-icon-size="15"></span>' + comp.score + '% aniqlik · ' + msg;
+      App.icons(scoreBadge);
+
+      wordsBox.innerHTML = comp.words.map(function (w) {
+        return '<span class="pr-word ' + w.status + '" data-clean="' + App.esc(w.clean) + '" title="Tinglash uchun bosing">' +
+          App.esc(w.word) + '</span>';
+      }).join('');
+
+      wordsBox.querySelectorAll('.pr-word').forEach(function (el) {
+        el.onclick = function () {
+          var clean = this.getAttribute('data-clean');
+          if (clean) speak(clean);
+        };
+      });
+    }
+
+    var isListening = false;
+    if (Rec) {
+      var rec = new Rec();
+      rec.lang = R.lang;
+      rec.continuous = false;
+      rec.interimResults = false;
+
+      rec.onstart = function () {
+        isListening = true;
+        micBtn.classList.add('listening');
+        statusText.textContent = '🎙️ Eshitilmoqda... Ovoz chiqarib gapiring';
+      };
+
+      rec.onresult = function (e) {
+        isListening = false;
+        micBtn.classList.remove('listening');
+        statusText.textContent = 'Natija tahlil qilindi';
+        var said = (e.results && e.results[0] && e.results[0][0] && e.results[0][0].transcript) || '';
+        displayResult(said.trim());
+      };
+
+      rec.onerror = function () {
+        isListening = false;
+        micBtn.classList.remove('listening');
+        statusText.textContent = '⚠️ Xatolik yoki ovoz eshitilmadi. Qayta urinib ko\'ring.';
+      };
+
+      rec.onend = function () {
+        isListening = false;
+        micBtn.classList.remove('listening');
+      };
+
+      activePronunRec = rec;
+
+      micBtn.onclick = function () {
+        if (isListening) {
+          try { rec.stop(); } catch (e) {}
+          return;
+        }
+        try {
+          rec.start();
+        } catch (e) {
+          try { rec.stop(); setTimeout(function () { rec.start(); }, 150); } catch (e2) {}
+        }
+      };
+    } else {
+      micBtn.onclick = function () {
+        typedInput.style.display = 'block';
+        typedInput.focus();
+      };
+    }
+
+    typedInput.onkeydown = function (e) {
+      if (e.key === 'Enter') {
+        displayResult(this.value.trim());
+        this.value = '';
+      }
+    };
+
+    if (nextBtn) {
+      nextBtn.onclick = function () {
+        App.closeSheet();
+        stopPronunRec();
+        var nextIdx = sentIdx + 1;
+        if (R.sentences[nextIdx]) {
+          R.idx = nextIdx;
+          highlight(nextIdx);
+          paintPlayer();
+          openPronunModal(R.sentences[nextIdx].text, R.sentences[nextIdx].tr, nextIdx);
+        }
+      };
+    }
+  }
+
+  App.actions.rdPronunCheck = function (a) {
+    closePop();
+    var text = (a && a.t) || '';
+    var tr = (a && a.tr) || '';
+    var n = (a && typeof a.n === 'number') ? a.n : -1;
+    openPronunModal(text, tr, n);
+  };
+
+  App.actions.rdCheckCurrentPronun = function () {
+    if (!R.sentences || !R.sentences.length) {
+      App.toast('Talaffuzni tekshirish uchun matn yo\'q');
+      return;
+    }
+    var idx = R.idx >= 0 ? R.idx : 0;
+    var s = R.sentences[idx];
+    if (!s) return;
+    openPronunModal(s.text, s.tr, idx);
   };
 
   App.actions.rdWord = function (a, el) {
@@ -1169,7 +1612,12 @@
 
   App.view('reading_doc', {
     nav: 'languages',
-    leave: function () { stopAll(); closePop(); },
+    leave: function () {
+      stopAll();
+      stopPronunRec();
+      closePop();
+      stopAudioKeepAlive();
+    },
     render: function (page, params) {
       R.sec = params.sec || 'en_reading';
       R.id = params.id;
@@ -1180,7 +1628,10 @@
       try { R.stepMode = localStorage.getItem('reading_step_mode') === '1'; } catch (e) { R.stepMode = false; }
       try { R.repeatCount = parseInt(localStorage.getItem('reading_repeat_count'), 10) || 1; } catch (e) { R.repeatCount = 1; }
       if (R.repeatCount < 1 || R.repeatCount > 3) R.repeatCount = 1;
+      try { R.shadowMode = localStorage.getItem('reading_shadow_mode') === '1'; } catch (e) { R.shadowMode = false; }
       R.repeatIdx = 1;
+      R.shadowSecondsLeft = 0;
+      R.shadowTimer = null;
       R.pendingStop = false;
 
       page.innerHTML =
@@ -1334,7 +1785,8 @@
     prosodyParts: prosodyParts,
     plainText: plainText,
     ttsLang: ttsLang,
-    dictLang: dictLang
+    dictLang: dictLang,
+    compareSentence: compareSentence
   };
 
 })();
