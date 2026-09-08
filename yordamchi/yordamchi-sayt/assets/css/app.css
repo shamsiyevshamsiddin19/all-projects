@@ -4222,6 +4222,112 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 .au-nav .btn{ flex:1; }
 .au-nav .btn.ready{ background:var(--success); }
 
+/* Mode Selector Tabs (Tinglash, Diktant, Test) */
+.au-tabbar{
+  display:flex; background:var(--card-2); border-radius:12px; padding:3px; gap:4px; margin-bottom:14px;
+}
+.au-tabbar-btn{
+  flex:1; padding:9px 4px; border-radius:9px; font-size:13px; font-weight:700;
+  background:none; border:none; color:var(--hint); cursor:pointer;
+  display:flex; align-items:center; justify-content:center; gap:5px;
+  transition:all .15s ease;
+}
+.au-tabbar-btn.active{
+  background:var(--card); color:var(--text); box-shadow:0 2px 6px rgba(0,0,0,.15);
+}
+.au-tabbar-btn:active{ transform:scale(.97); }
+
+/* YouTube Responsive Video Wrap */
+.au-video-wrap{
+  position:relative; width:100%; padding-bottom:56.25%; height:0;
+  border-radius:16px; overflow:hidden; margin-bottom:14px;
+  background:#000; box-shadow:0 6px 22px rgba(0,0,0,.3);
+}
+.au-video-wrap iframe{
+  position:absolute; top:0; left:0; width:100%; height:100%; border:0;
+}
+
+/* Audio Controls Bar (for non-video topics) */
+.au-ctrl-bar{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  background:var(--card); border:1px solid var(--border); border-radius:14px;
+  padding:10px 14px; margin-bottom:14px;
+}
+.au-ctrl-btn{
+  padding:8px 14px; border-radius:99px; border:0; font-size:12.5px; font-weight:700;
+  background:var(--accent); color:var(--accent-ink); cursor:pointer;
+  display:inline-flex; align-items:center; gap:6px;
+  transition:transform .15s ease;
+}
+.au-ctrl-btn:active{ transform:scale(.95); }
+.au-ctrl-btn.sec{
+  background:var(--card-2); color:var(--text);
+}
+
+/* Interactive Subtitle Rows */
+.au-subs{
+  display:flex; flex-direction:column; gap:8px; margin-bottom:18px;
+}
+.au-sub-row{
+  display:flex; flex-direction:column; gap:4px;
+  background:var(--card); border:1px solid var(--border); border-radius:14px;
+  padding:12px 14px; cursor:pointer; text-align:left;
+  transition:all .15s ease;
+}
+.au-sub-row:hover{ border-color:var(--accent-soft); }
+.au-sub-row:active{ transform:scale(.99); }
+.au-sub-row.active{
+  background:var(--accent-soft); border-color:var(--accent);
+  box-shadow:0 2px 10px rgba(0,122,255,.15);
+}
+.au-sub-top{
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:11px; font-weight:700; color:var(--hint); margin-bottom:2px;
+}
+.au-sub-time{
+  font-family:var(--mono); color:var(--accent); font-size:11px;
+}
+.au-sub-text{
+  font-size:15.5px; font-weight:600; line-height:1.45; color:var(--text);
+}
+.au-sub-text .rd-w{
+  color:var(--accent); font-weight:700; border-bottom:1px dashed var(--accent);
+}
+.au-sub-tr{
+  font-size:13px; color:var(--hint); font-style:italic; line-height:1.35; margin-top:2px;
+}
+
+/* Quiz Styles */
+.au-quiz-box{
+  background:var(--card); border:1px solid var(--border); border-radius:18px;
+  padding:18px 16px; margin-bottom:16px;
+}
+.au-q-head{
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:12px; font-weight:800; color:var(--hint); margin-bottom:12px;
+}
+.au-q-title{
+  font-size:17px; font-weight:750; color:var(--text); line-height:1.4; margin-bottom:16px;
+}
+.au-q-opts{
+  display:flex; flex-direction:column; gap:8px;
+}
+.au-q-btn{
+  display:flex; align-items:center; justify-content:space-between;
+  width:100%; padding:13px 16px; border-radius:12px; border:1px solid var(--border);
+  background:var(--card-2); color:var(--text); font-size:14.5px; font-weight:600;
+  text-align:left; cursor:pointer; transition:all .15s ease;
+}
+.au-q-btn:active{ transform:scale(.98); }
+.au-q-btn.correct{
+  background:var(--success-soft); border-color:var(--success); color:var(--success); font-weight:700;
+}
+.au-q-btn.wrong{
+  background:var(--danger-soft); border-color:var(--danger); color:var(--danger);
+}
+.au-q-btn.disabled{ pointer-events:none; }
+
+
 /* ---------- Аудирование Hub (Listening Catalog) ---------- */
 .lh-hero{
   display:flex; align-items:center; justify-content:space-between; gap:12px;

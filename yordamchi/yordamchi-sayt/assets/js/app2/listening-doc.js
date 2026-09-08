@@ -1,58 +1,49 @@
-/* Аудирование / Listening (kutubxona bo'limi) — eshitib tushunish mashqi.
- *
- * DIQQAT — nomlar chalkashmasin: `listening.js` BOSHQA narsa. U "Mashqlar"
- * bo'limidagi raqam/harf/ism eshitib yozish drili (`listening_practice`).
- * Bu fayl esa kutubxonadagi «Аудирование» / «Listening» bo'limi uchun
- * (`ru_listening`, `en_listening`) — `.md` matnlar ustida ishlaydi.
- *
- * G'oya: Chtenie bilan AYNAN BIR XIL `.md` fayl ishlatiladi, faqat mashq
- * teskari. O'qishda matn ochiq turadi va ovoz yordamchi; bu yerda ovoz
- * asosiy, matndagi kalit so'zlar YASHIRIN — ularni quloq bilan tanib
- * to'ldirasiz.
- *
- * BO'SHLIQLAR QAYERDAN OLINADI:
- *   `{слово|tarjima}` deb belgilangan so'zlar. Bu tasodifiy emas: matnda
- *   aynan MUHIM so'zlar shunday belgilanadi, ya'ni tekshirishga arziydigan
- *   so'zlar allaqachon ajratilgan. Shuning uchun mavjud Chtenie
- *   fayllaringiz hech qanday o'zgarishsiz ishlaydi.
- *   Gapda belgilangan so'z bo'lmasa — zaxira sifatida eng uzun so'z
- *   (5+ harf, gap boshidagisi emas) bo'shliqqa aylanadi, shunda
- *   belgilanmagan matn ham mashqqa yaraydi.
- *
- * IKKI DARAJA (`listening_mode` localStorage'da):
- *   'choice' — yengil: 4 variantdan tanlanadi (chalg'ituvchilar shu
- *              matndagi boshqa kalit so'zlardan olinadi).
- *   'type'   — qiyin: so'z klaviaturada yoziladi, imlo ham tekshiriladi.
- *
- * Parser va intonatsiya reading.js dan olinadi (`window.RDCore`). */
+/* =========================================================================
+   Аудирование / Listening Darsligi (Video / Audio, Subtitrlar va Savollar)
+   - 3 ta rejim:
+     1. 🎬 Tinglash: YouTube video / Audio pleyer + Sinxron Subtitrlar
+     2. ✍️ Diktant: Eshitib bo'shliqlarni to'ldirish (Yengil / Qiyin)
+     3. ❓ Test (Quiz): Eshitib tushunish savol-javoblari
+   - YouTube video ID va vaqt kodlari (`[00:01 - 00:05]`) qo'llab-quvvatlanadi
+   - So'z ustiga bosganda tarjima
+   ========================================================================= */
 (function () {
   'use strict';
 
   var L = {
     sec: '', id: null, name: '', lang: 'ru-RU', dict: 'russian',
+    rawContent: '',
     sentences: [], idx: 0,
+    tab: 'listen', // 'listen' | 'dictate' | 'quiz'
     mode: 'choice', rate: 1,
     alive: false, partTimer: null,
     gaps: [],
     good: 0, bad: 0,
     wrongSents: [],
     startedAt: 0, logged: false,
-    pool: []
+    pool: [],
+    youtubeId: null,
+    ytPlayer: null,
+    ytInterval: null,
+    activeSubIdx: -1,
+    audioPlaying: false,
+    audioIdx: 0,
+    questions: [],
+    quizIdx: 0,
+    quizScore: 0,
+    quizAnswered: false
   };
 
   function core() { return window.RDCore || null; }
 
-  /* ================= Ovoz (intonatsiya bilan) ================= */
+  /* ================= Ovoz (TTS) ================= */
 
   function halt() {
+    L.audioPlaying = false;
     if (L.partTimer) { clearTimeout(L.partTimer); L.partTimer = null; }
     if (window.TTS) TTS.cancel(); else { try { window.speechSynthesis.cancel(); } catch (e) {} }
   }
 
-  /* `rate` ATAYLAB argument sifatida olinadi, `L.rate` dan emas: "sekin"
-     tugmasi bosilganda tezlik faqat SHU o'qish uchun pasayishi kerak.
-     Global holatga yozib keyin tiklashga urinilsa ishlamaydi — bo'laklar
-     asinxron o'qiladi, tiklash birinchi bo'lakdan oldin ishlab ulguradi. */
   function say(text, rate, done) {
     var C = core();
     var r = rate || L.rate || 1;
@@ -79,17 +70,93 @@
     say(s.text, rate);
   }
 
-  /* ================= Bo'shliqlarni aniqlash ================= */
+  /* ================= Parser & Yordamchilar ================= */
 
-  function markedIdx(tokens) {
-    var out = [];
-    tokens.forEach(function (tk, i) { if (tk.k === 'w' && tk.t) out.push(i); });
-    return out;
+  function extractYouTubeId(md) {
+    if (!md) return null;
+    var m = md.match(/(?:youtube:\s*|https?:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/))([a-zA-Z0-9_-]{11})/i);
+    return m ? m[1] : null;
   }
 
-  /* Zaxira: belgilangan so'z bo'lmasa — eng uzun so'z (gap boshidagisi emas) */
-  /* Yordamchi so'zlar — bulardan bo'shliq yasash mashq bermaydi: ularni
-     kontekstdan taxmin qilib qo'yish oson, eshitish esa tekshirilmaydi. */
+  function parseTimestamp(str) {
+    if (!str) return null;
+    var m = str.match(/(?:(\d{1,2}):)?(\d{1,2}):(\d{2})/);
+    if (!m) return null;
+    var h = m[1] ? parseInt(m[1], 10) : 0;
+    var min = parseInt(m[2], 10);
+    var sec = parseInt(m[3], 10);
+    return h * 3600 + min * 60 + sec;
+  }
+
+  function formatTime(sec) {
+    sec = Math.max(0, Math.floor(sec || 0));
+    var m = Math.floor(sec / 60);
+    var s = sec % 60;
+    return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  function extractQuestions(md, sentences) {
+    var qs = [];
+    var lines = String(md || '').split('\n');
+    var curQ = null;
+    lines.forEach(function (line) {
+      line = line.trim();
+      var qm = line.match(/^\?\s*(.+)$/);
+      if (qm) {
+        if (curQ && curQ.options.length) qs.push(curQ);
+        curQ = { q: qm[1].trim(), options: [], correct: 0 };
+        return;
+      }
+      var opCorrect = line.match(/^\+\s*(.+)$/);
+      if (opCorrect && curQ) {
+        curQ.correct = curQ.options.length;
+        curQ.options.push(opCorrect[1].trim());
+        return;
+      }
+      var opWrong = line.match(/^-\s*(.+)$/);
+      if (opWrong && curQ) {
+        curQ.options.push(opWrong[1].trim());
+        return;
+      }
+    });
+    if (curQ && curQ.options.length) qs.push(curQ);
+
+    // Agar matnda savollar bo'lmasa — kalit so'zlardan avtomatik generatsiya
+    if (!qs.length && sentences && sentences.length >= 2) {
+      var candidates = [];
+      sentences.forEach(function (s) {
+        (s.tokens || []).forEach(function (tk) {
+          if (tk.k === 'w' && tk.t && tk.w && tk.w.length >= 3) {
+            candidates.push({ ru: tk.w, uz: tk.t, sent: s.text });
+          }
+        });
+      });
+      if (candidates.length >= 2) {
+        var c1 = candidates[0];
+        var d1 = candidates[1] ? candidates[1].uz : 'Boshqa ma\'no';
+        var d2 = candidates[2] ? candidates[2].uz : 'Noto\'g\'ri variant';
+        var opts1 = [c1.uz, d1, d2];
+        opts1.sort(function () { return Math.random() - 0.5; });
+        qs.push({
+          q: 'Dialogdagi «' + c1.ru + '» so\'zining to\'g\'ri tarjimasi nima?',
+          options: opts1,
+          correct: opts1.indexOf(c1.uz)
+        });
+
+        var c2 = candidates[Math.min(candidates.length - 1, 2)];
+        var opts2 = [c2.uz, candidates[0].uz, 'Boshqa tushuncha'];
+        opts2.sort(function () { return Math.random() - 0.5; });
+        qs.push({
+          q: '«' + c2.ru + '» so\'zi qanday tarjima qilinadi?',
+          options: opts2,
+          correct: opts2.indexOf(c2.uz)
+        });
+      }
+    }
+    return qs;
+  }
+
+  /* Bo'shliqlar (gap-fill) uchun stop-words */
   var STOPWORDS = {
     ru: ['и','в','на','с','по','к','у','за','из','от','до','для','о','об','а','но','же',
          'ли','бы','не','ни','то','что','как','так','вот','это','этот','эта','эти','все',
@@ -103,26 +170,25 @@
     return STOPWORDS.ru.indexOf(x) >= 0 || STOPWORDS.en.indexOf(x) >= 0;
   }
 
-  /* Belgilangan so'z bo'lmaganda: eng mazmunli 1-2 so'z tanlanadi.
-     Ilgari faqat ENG UZUN bitta so'z olinardi — uzun gapda bu juda oson
-     bo'lib qolardi, qolgan hamma narsa ochiq turardi. */
+  function markedIdx(tokens) {
+    var out = [];
+    tokens.forEach(function (tk, i) { if (tk.k === 'w' && tk.t) out.push(i); });
+    return out;
+  }
+
   function fallbackIdx(tokens) {
     var cand = [], seen = 0;
     tokens.forEach(function (tk, i) {
       if (tk.k !== 'w') return;
       seen++;
-      if (seen === 1) return;                 // gap boshidagi so'z olinmaydi
+      if (seen === 1) return;
       var w = tk.w || '';
       if (w.length < 5 || isStopword(w)) return;
       cand.push({ i: i, len: w.length });
     });
     if (!cand.length) return [];
-
     cand.sort(function (a, b) { return b.len - a.len; });
     var picked = [cand[0].i];
-    /* Ikkinchi bo'shliq faqat gap yetarlicha uzun bo'lsa va birinchisidan
-       uzoqda tursa qo'shiladi — yonma-yon ikki bo'shliq gapni o'qib
-       bo'lmaydigan qilib qo'yadi. */
     if (cand.length > 1 && seen >= 7) {
       for (var k = 1; k < cand.length; k++) {
         if (Math.abs(cand[k].i - picked[0]) >= 4) { picked.push(cand[k].i); break; }
@@ -136,7 +202,6 @@
     return m.length ? m : fallbackIdx(tokens);
   }
 
-  /* Butun hujjatdagi kalit so'zlar — variantlar shu yerdan olinadi */
   function buildPool(sentences) {
     var seen = {}, out = [];
     sentences.forEach(function (s) {
@@ -155,8 +220,6 @@
       .replace(/[^0-9a-zà-ÿа-я]/gi, '').trim();
   }
 
-  /* Bitta bo'shliq uchun 4 ta variant: to'g'risi + 3 chalg'ituvchi.
-     Uzunligi yaqin so'zlar tanlanadi — ular qiyinroq va foydaliroq. */
   function optionsFor(word) {
     var opts = [word];
     var cand = L.pool.filter(function (w) { return norm(w) !== norm(word); });
@@ -174,11 +237,106 @@
     return opts;
   }
 
-  /* ================= Ko'rinish ================= */
+  /* ================= YouTube Pleyeri ================= */
+
+  function stopYouTubeTracking() {
+    if (L.ytInterval) { clearInterval(L.ytInterval); L.ytInterval = null; }
+  }
+
+  function startYouTubeTracking() {
+    stopYouTubeTracking();
+    L.ytInterval = setInterval(function () {
+      if (!L.ytPlayer || typeof L.ytPlayer.getCurrentTime !== 'function') return;
+      var cur = L.ytPlayer.getCurrentTime();
+      var found = -1;
+      for (var i = 0; i < L.sentences.length; i++) {
+        var s = L.sentences[i];
+        var st = s.startTime != null ? s.startTime : (i * 4);
+        var et = s.endTime != null ? s.endTime : ((i + 1) * 4);
+        if (cur >= st && cur < et) { found = i; break; }
+      }
+      if (found >= 0 && found !== L.activeSubIdx) {
+        L.activeSubIdx = found;
+        highlightSubRow(found);
+      }
+    }, 250);
+  }
+
+  function highlightSubRow(idx) {
+    var box = App.el('au-body'); if (!box) return;
+    box.querySelectorAll('.au-sub-row').forEach(function (el, i) {
+      if (i === idx) {
+        el.classList.add('active');
+        el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      } else {
+        el.classList.remove('active');
+      }
+    });
+  }
+
+  function initYouTubePlayer(box, videoId) {
+    stopYouTubeTracking();
+    if (L.ytPlayer) {
+      try { L.ytPlayer.destroy(); } catch (e) {}
+      L.ytPlayer = null;
+    }
+
+    var holder = box.querySelector('#au-yt-wrap');
+    if (!holder) return;
+
+    holder.innerHTML = '<div id="au-yt-player"></div>';
+
+    function setup() {
+      try {
+        L.ytPlayer = new window.YT.Player('au-yt-player', {
+          videoId: videoId,
+          playerVars: {
+            playsinline: 1, rel: 0, modestbranding: 1, enablejsapi: 1
+          },
+          events: {
+            onStateChange: function (e) {
+              if (e.data === window.YT.PlayerState.PLAYING) {
+                startYouTubeTracking();
+              } else {
+                stopYouTubeTracking();
+              }
+            }
+          }
+        });
+      } catch (e) {
+        holder.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + encodeURIComponent(videoId) + '?playsinline=1&rel=0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>';
+      }
+    }
+
+    if (window.YT && window.YT.Player) {
+      setup();
+    } else {
+      var old = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = function () {
+        if (old) old();
+        setup();
+      };
+      if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+        var s = document.createElement('script');
+        s.src = 'https://www.youtube.com/iframe_api';
+        document.head.appendChild(s);
+      }
+    }
+  }
+
+  /* ================= Asosiy Ko'rinish ================= */
 
   App.view('listening_doc', {
     nav: 'languages',
-    leave: function () { L.alive = false; halt(); },
+    leave: function () {
+      L.alive = false;
+      halt();
+      stopYouTubeTracking();
+      if (L.ytPlayer) {
+        try { L.ytPlayer.destroy(); } catch (e) {}
+        L.ytPlayer = null;
+      }
+    },
     render: function (page, params) {
       var C = core();
       L.sec = params.sec || 'ru_listening';
@@ -187,19 +345,57 @@
       L.dict = C ? C.dictLang(L.sec) : 'russian';
       L.sentences = []; L.idx = 0; L.good = 0; L.bad = 0;
       L.wrongSents = []; L.logged = false; L.startedAt = Date.now();
+      L.tab = 'listen';
+      L.activeSubIdx = -1;
       L.alive = true;
       try { L.rate = parseFloat(localStorage.getItem('reading_rate')) || 1; } catch (e) { L.rate = 1; }
       try { L.mode = localStorage.getItem('listening_mode') === 'type' ? 'type' : 'choice'; } catch (e) { L.mode = 'choice'; }
 
+      var isReadOnly = window.Auth && Auth.isReadOnly && Auth.isReadOnly();
+
       page.innerHTML =
         '<div class="topbar" style="margin:-16px -15px 12px">' +
         '<button class="icon-btn ghost" id="au-back"><span data-icon="arrowLeft" data-icon-size="20"></span></button>' +
-        '<h1 id="au-title"></h1></div>' +
+        '<h1 id="au-title"></h1>' +
+        (isReadOnly ? '' :
+          '<button class="icon-btn ghost" id="au-edit" style="margin-left:auto" aria-label="Tahrirlash" title="Matn va video havolasini tahrirlash">' +
+          '<span data-icon="edit" data-icon-size="18"></span></button>') +
+        '</div>' +
+
+        /* 3 ta rejim: Tinglash, Diktant, Test */
+        '<div class="au-tabbar" id="au-tabbar">' +
+        '<button class="au-tabbar-btn active" data-tab="listen"><span data-icon="headphones" data-icon-size="15"></span> 🎬 Tinglash</button>' +
+        '<button class="au-tabbar-btn" data-tab="dictate"><span data-icon="edit" data-icon-size="15"></span> ✍️ Diktant</button>' +
+        '<button class="au-tabbar-btn" data-tab="quiz"><span data-icon="check" data-icon-size="15"></span> ❓ Test</button>' +
+        '</div>' +
+
         '<div id="au-body"><div class="load-wrap"><div class="spinner"></div></div></div>';
+
       App.icons(page);
+      bindTopbarTabs(page);
       loadDoc(page);
     }
   });
+
+  function bindTopbarTabs(page) {
+    page.querySelectorAll('#au-tabbar button').forEach(function (btn) {
+      btn.onclick = function () {
+        var t = btn.getAttribute('data-tab');
+        if (t === L.tab) return;
+        L.tab = t;
+        page.querySelectorAll('#au-tabbar button').forEach(function (b) {
+          b.classList.toggle('active', b.getAttribute('data-tab') === t);
+        });
+        halt();
+        renderTab(page);
+      };
+    });
+
+    var editBtn = page.querySelector('#au-edit');
+    if (editBtn) {
+      editBtn.onclick = function () { openEditor(page); };
+    }
+  }
 
   function loadDoc(page) {
     var C = core();
@@ -214,6 +410,7 @@
     function applyTopic(t) {
       var box = App.el('au-body'); if (!box) return;
       L.name = t.name || 'Matn';
+      L.rawContent = t.content || '';
       var folder = (t.folder || '').trim();
 
       var back = page.querySelector('#au-back');
@@ -227,26 +424,40 @@
       if (!t.content) {
         box.innerHTML = App.empty({
           icon: 'headphones', title: 'Matn hali yo\'q',
-          text: 'Bu bo\'limga .md faylni yuklasangiz bo\'ladi.'
+          text: 'Tepadagi qalamcha tugmasi orqali YouTube havolasi yoki dialog matnini kiriting.'
         });
         App.icons(box);
         return;
       }
 
+      L.youtubeId = extractYouTubeId(t.content);
+
       var parsed = C.parse(t.content);
-      /* Sarlavhalar reading.js da OVOZ uchun `sentences` ga qo'shiladi, lekin
-         ular mashq bandi emas — "Mavzu 1" dan bo'shliq yasash mantiqsiz. */
+      var lines = String(t.content).split('\n');
+
       L.sentences = parsed.sentences.filter(function (s) {
         return s.k !== 'h' && (s.text || '').trim();
       });
-      L.pool = buildPool(L.sentences);
 
-      if (!L.sentences.length) {
-        box.innerHTML = App.empty({ icon: 'headphones', title: 'Gap topilmadi', text: 'Faylda o\'qiladigan gap yo\'q.' });
-        App.icons(box);
-        return;
-      }
-      renderSentence(page);
+      // Timestamplarni bog'lash
+      L.sentences.forEach(function (s, i) {
+        // Matndan qatorni topish
+        var orig = lines.find(function (l) { return l.indexOf(s.text.slice(0, 15)) >= 0; }) || '';
+        var tm = orig.match(/\[(\d{1,2}:\d{2})(?:\s*-\s*(\d{1,2}:\d{2}))?\]/);
+        if (tm) {
+          s.startTime = parseTimestamp(tm[1]);
+          s.endTime = tm[2] ? parseTimestamp(tm[2]) : (s.startTime + 4);
+        } else {
+          s.startTime = i * 4;
+          s.endTime = (i + 1) * 4;
+        }
+      });
+
+      L.pool = buildPool(L.sentences);
+      L.questions = extractQuestions(t.content, L.sentences);
+      L.quizIdx = 0; L.quizScore = 0; L.quizAnswered = false;
+
+      renderTab(page);
     }
 
     if (builtin) {
@@ -256,11 +467,181 @@
 
     App.call('get_topic', null, { query: 'id=' + encodeURIComponent(L.id) }).then(function (t) {
       applyTopic(t);
-    }).catch(function (e) {
-      var box = App.el('au-body');
-      if (box) box.innerHTML = App.empty({ icon: 'alert', title: 'Yuklanmadi', text: e.message });
+    }).catch(function () {
+      if (builtin) applyTopic(builtin);
+      else {
+        var box = App.el('au-body');
+        if (box) box.innerHTML = App.empty({ icon: 'alert', title: 'Yuklanmadi', text: 'Mavzu topilmadi.' });
+      }
     });
   }
+
+  function renderTab(page) {
+    if (L.tab === 'listen') {
+      renderListenTab(page);
+    } else if (L.tab === 'dictate') {
+      renderSentence(page);
+    } else if (L.tab === 'quiz') {
+      renderQuizTab(page);
+    }
+  }
+
+  /* ================= 1. 🎬 Tinglash va Subtitrlar ================= */
+
+  function renderListenTab(page) {
+    var box = App.el('au-body'); if (!box) return;
+
+    var html = '';
+
+    // YouTube video pleyeri (agar video mavjud bo'lsa)
+    if (L.youtubeId) {
+      html += '<div id="au-yt-wrap" class="au-video-wrap"></div>';
+    } else {
+      // Audio boshqaruv paneli
+      html +=
+        '<div class="au-ctrl-bar">' +
+        '<button class="au-ctrl-btn" id="au-audio-toggle">' +
+          '<span data-icon="' + (L.audioPlaying ? 'pause' : 'play') + '" data-icon-size="16"></span> ' +
+          (L.audioPlaying ? 'To\'xtatish' : 'Barchasini tinglash') +
+        '</button>' +
+        '<button class="au-ctrl-btn sec" id="au-audio-slow">0.7x sekin</button>' +
+        '<button class="au-ctrl-btn sec" id="au-audio-repeat"><span data-icon="refresh" data-icon-size="14"></span> Qayta</button>' +
+        '</div>';
+    }
+
+    // Subtitr qatorlari
+    html += '<p class="muted" style="font-size:12px;margin:4px 2px 10px">' +
+      (L.youtubeId ? '💡 Gap ustiga bosing — video o\'sha sekundga sakraydi va qayta yangraydi.'
+                   : '💡 Gap ustiga bosing — faqat o\'sha gap ovozli aytiladi.') +
+      '</p>';
+
+    html += '<div class="au-subs" id="au-subs">';
+    L.sentences.forEach(function (s, i) {
+      var timeStr = formatTime(s.startTime);
+      var textHtml = (s.tokens || []).map(function (tk) {
+        if (tk.k === 'x') return App.esc(tk.s);
+        if (tk.t) return '<span class="rd-w" title="' + App.esc(tk.t) + '">' + App.esc(tk.w) + '</span>';
+        return App.esc(tk.w);
+      }).join('');
+
+      html +=
+        '<div class="au-sub-row" data-si="' + i + '">' +
+        '<div class="au-sub-top">' +
+          '<span class="au-sub-time">' + timeStr + '</span>' +
+          '<span style="color:var(--hint)">#' + (i + 1) + '</span>' +
+        '</div>' +
+        '<div class="au-sub-text">' + textHtml + '</div>' +
+        (s.tr ? '<div class="au-sub-tr">' + App.esc(s.tr) + '</div>' : '') +
+        '</div>';
+    });
+    html += '</div>';
+
+    box.innerHTML = html;
+    App.icons(box);
+
+    if (L.youtubeId) {
+      initYouTubePlayer(box, L.youtubeId);
+    } else {
+      bindAudioControls(box);
+    }
+
+    // Subtitr bosilganda sakrash
+    box.querySelectorAll('.au-sub-row').forEach(function (row) {
+      row.onclick = function (e) {
+        // Agar so'z tarjimasi bosilgan bo'lsa — toast
+        var rw = e.target.closest('.rd-w');
+        if (rw && rw.getAttribute('title')) {
+          App.toast(rw.textContent + ' — ' + rw.getAttribute('title'));
+          return;
+        }
+        var si = parseInt(row.getAttribute('data-si'), 10);
+        seekToSentence(si);
+      };
+    });
+  }
+
+  function seekToSentence(i) {
+    var s = L.sentences[i];
+    if (!s) return;
+    L.activeSubIdx = i;
+    highlightSubRow(i);
+
+    if (L.youtubeId && L.ytPlayer && typeof L.ytPlayer.seekTo === 'function') {
+      var seekSec = s.startTime != null ? s.startTime : (i * 4);
+      L.ytPlayer.seekTo(seekSec, true);
+      L.ytPlayer.playVideo();
+    } else {
+      halt();
+      L.alive = true;
+      say(s.text);
+    }
+  }
+
+  function bindAudioControls(box) {
+    var toggle = box.querySelector('#au-audio-toggle');
+    if (toggle) {
+      toggle.onclick = function () {
+        if (L.audioPlaying) {
+          halt();
+          renderListenTab(App.page);
+        } else {
+          playAllSentences(0);
+        }
+      };
+    }
+
+    var slow = box.querySelector('#au-audio-slow');
+    if (slow) {
+      slow.onclick = function () {
+        var cur = L.activeSubIdx >= 0 ? L.activeSubIdx : 0;
+        var s = L.sentences[cur];
+        if (!s) return;
+        halt();
+        L.alive = true;
+        say(s.text, 0.7);
+      };
+    }
+
+    var rep = box.querySelector('#au-audio-repeat');
+    if (rep) {
+      rep.onclick = function () {
+        var cur = L.activeSubIdx >= 0 ? L.activeSubIdx : 0;
+        seekToSentence(cur);
+      };
+    }
+  }
+
+  function playAllSentences(startIdx) {
+    halt();
+    L.audioPlaying = true;
+    L.alive = true;
+    var i = startIdx || 0;
+
+    function playNext() {
+      if (!L.audioPlaying || !L.alive || i >= L.sentences.length) {
+        halt();
+        highlightSubRow(-1);
+        renderListenTab(App.page);
+        return;
+      }
+      L.activeSubIdx = i;
+      highlightSubRow(i);
+      var s = L.sentences[i];
+      say(s.text, L.rate, function () {
+        i++;
+        L.partTimer = setTimeout(playNext, 600);
+      });
+    }
+
+    playNext();
+    var toggle = document.querySelector('#au-audio-toggle');
+    if (toggle) {
+      toggle.innerHTML = '<span data-icon="pause" data-icon-size="16"></span> To\'xtatish';
+      App.icons(toggle);
+    }
+  }
+
+  /* ================= 2. ✍️ Diktant (Gap-fill) ================= */
 
   function renderSentence(page) {
     var box = App.el('au-body'); if (!box) return;
@@ -388,8 +769,6 @@
     if (btn) { btn.classList.add('bad'); btn.disabled = true; }
     if (el) { el.classList.add('shake'); setTimeout(function () { el.classList.remove('shake'); }, 400); }
 
-    /* Birinchi xatoda javob ochilmaydi — yana bir bor tinglab ko'rish
-       imkoni beriladi, faqat birinchi harf aytiladi. */
     if (g.tries === 1) {
       App.toast('Yana bir bor tinglang — birinchi harfi «' + g.word.charAt(0) + '»');
       replay();
@@ -399,11 +778,8 @@
     g.done = true;
     if (el) { el.classList.add('shown'); el.innerHTML = '<span class="au-gap-txt">' + App.esc(g.word) + '</span>'; }
     var ab2 = App.el('au-answer'); if (ab2) ab2.innerHTML = '';
-    /* Faqat tarjimasi bor so'z xatolarga tushadi — zaxira bo'shliqda
-       (belgilanmagan so'z) tarjima yo'q, uni lug'atga qo'shib bo'lmaydi. */
     if (g.tr) {
-      App.call('add_mistake', { lang: L.dict, category: L.name, ru: g.word, uz: g.tr })
-        .catch(function () {});
+      App.call('add_mistake', { lang: L.dict, category: L.name, ru: g.word, uz: g.tr }).catch(function () {});
     }
     if (L.wrongSents.indexOf(L.idx) < 0) L.wrongSents.push(L.idx);
     afterGap(page);
@@ -432,7 +808,7 @@
     box.innerHTML =
       '<div style="text-align:center;padding-top:8px">' +
       '<div class="res-circle"><span>' + pct + '%</span></div>' +
-      '<h2 style="margin:0 0 22px">Tinglash tugadi</h2>' +
+      '<h2 style="margin:0 0 22px">Diktant tugadi</h2>' +
       '<div class="stat-strip" style="max-width:280px;margin:0 auto 26px">' +
       '<div class="s"><div class="n" style="color:var(--success)">' + L.good + '</div><div class="l">To\'g\'ri</div></div>' +
       '<div class="s"><div class="n" style="color:var(--danger)">' + L.bad + '</div><div class="l">Xato</div></div>' +
@@ -467,6 +843,156 @@
       L.idx = 0; L.good = 0; L.bad = 0; L.wrongSents = []; L.logged = false;
       L.alive = true;
       renderSentence(page);
+    };
+  }
+
+  /* ================= 3. ❓ Test (Quiz) ================= */
+
+  function renderQuizTab(page) {
+    var box = App.el('au-body'); if (!box) return;
+
+    if (!L.questions || !L.questions.length) {
+      box.innerHTML = App.empty({
+        icon: 'check', title: 'Savollar topilmadi',
+        text: 'Bu mavzuda savollar kiritilmagan. Tepadagi qalamcha orqali savollar qo\'shishingiz mumkin.'
+      });
+      App.icons(box);
+      return;
+    }
+
+    if (L.quizIdx >= L.questions.length) {
+      renderQuizResult(page);
+      return;
+    }
+
+    var q = L.questions[L.quizIdx];
+    var pct = Math.round((L.quizIdx / L.questions.length) * 100);
+
+    var html =
+      '<div class="au-head">' +
+      '<div class="au-progress">Savol: ' + (L.quizIdx + 1) + ' / ' + L.questions.length + '</div>' +
+      '<div style="font-size:12px;font-weight:700;color:var(--accent)">To\'g\'ri: ' + L.quizScore + '</div>' +
+      '</div>' +
+      '<div class="au-bar"><i style="width:' + pct + '%"></i></div>' +
+
+      '<div class="au-quiz-box">' +
+      '<div class="au-q-title">' + App.esc(q.q) + '</div>' +
+      '<div class="au-q-opts">';
+
+    q.options.forEach(function (opt, idx) {
+      html += '<button class="au-q-btn" data-oi="' + idx + '">' +
+        '<span>' + App.esc(opt) + '</span>' +
+        '<span data-icon="check" data-icon-size="16" class="au-q-check" style="display:none"></span>' +
+        '</button>';
+    });
+
+    html += '</div></div>' +
+      '<div class="au-nav" id="au-q-nav" style="display:none">' +
+      '<button class="btn" id="au-q-next">' +
+        (L.quizIdx + 1 >= L.questions.length ? 'Natijani ko\'rish' : 'Keyingi savol ➔') +
+      '</button>' +
+      '</div>';
+
+    box.innerHTML = html;
+    App.icons(box);
+
+    L.quizAnswered = false;
+
+    box.querySelectorAll('.au-q-btn').forEach(function (btn) {
+      btn.onclick = function () {
+        if (L.quizAnswered) return;
+        L.quizAnswered = true;
+        var chosen = parseInt(btn.getAttribute('data-oi'), 10);
+        var isOk = chosen === q.correct;
+
+        if (isOk) {
+          L.quizScore++;
+          btn.classList.add('correct');
+        } else {
+          btn.classList.add('wrong');
+          // To'g'ri variantni ko'rsatish
+          var correctBtn = box.querySelector('.au-q-btn[data-oi="' + q.correct + '"]');
+          if (correctBtn) correctBtn.classList.add('correct');
+        }
+
+        box.querySelectorAll('.au-q-btn').forEach(function (b) { b.classList.add('disabled'); });
+
+        var nav = box.querySelector('#au-q-nav');
+        if (nav) nav.style.display = 'flex';
+      };
+    });
+
+    var nextBtn = box.querySelector('#au-q-next');
+    if (nextBtn) {
+      nextBtn.onclick = function () {
+        L.quizIdx++;
+        renderQuizTab(page);
+      };
+    }
+  }
+
+  function renderQuizResult(page) {
+    var box = App.el('au-body'); if (!box) return;
+    var total = L.questions.length;
+    var pct = total ? Math.round((L.quizScore / total) * 100) : 0;
+
+    box.innerHTML =
+      '<div style="text-align:center;padding-top:12px">' +
+      '<div class="res-circle"><span>' + pct + '%</span></div>' +
+      '<h2 style="margin:0 0 16px">Test yakunlandi!</h2>' +
+      '<p class="muted" style="margin-bottom:20px">' +
+        (pct >= 80 ? 'Ajoyib natija! Eshitib tushunish darajangiz yuqori! 🎯' : 'Yaxshi! Qayta tinglab, natijani yanada oshiring.') +
+      '</p>' +
+      '<div class="stat-strip" style="max-width:240px;margin:0 auto 24px">' +
+      '<div class="s"><div class="n" style="color:var(--success)">' + L.quizScore + '</div><div class="l">To\'g\'ri</div></div>' +
+      '<div class="s"><div class="n" style="color:var(--danger)">' + (total - L.quizScore) + '</div><div class="l">Xato</div></div>' +
+      '</div>' +
+      '<button class="btn" id="au-q-retry">Qayta ishlash</button>' +
+      '</div>';
+    App.icons(box);
+
+    var retry = box.querySelector('#au-q-retry');
+    if (retry) {
+      retry.onclick = function () {
+        L.quizIdx = 0;
+        L.quizScore = 0;
+        L.quizAnswered = false;
+        renderQuizTab(page);
+      };
+    }
+  }
+
+  /* ================= 4. Tahrirlash (Editor) ================= */
+
+  function openEditor(page) {
+    if (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) return;
+    var html =
+      '<div class="rd-editor">' +
+      '<p class="muted" style="font-size:12px;margin:0 0 8px">' +
+        'YouTube video ulash: <code>youtube: https://youtu.be/ID</code><br>' +
+        'Vaqtlar: <code>[00:01 - 00:05] Gap matni | Tarjima</code><br>' +
+        'Savollar: <code>? Savol matni</code>, <code>+ To\'g\'ri javob</code>, <code>- Xato</code>' +
+      '</p>' +
+      '<textarea id="au-ta" class="input" style="height:320px;font-family:var(--mono);font-size:12.5px;line-height:1.5">' +
+      App.esc(L.rawContent || '') + '</textarea>' +
+      '<button class="btn" id="au-ta-save" style="margin-top:10px">Saqlash</button></div>';
+
+    var sh = App.sheet(html, { title: 'Tahrirlash: ' + L.name, cls: 'editor-sheet' });
+    sh.querySelector('#au-ta-save').onclick = function () {
+      var val = sh.querySelector('#au-ta').value;
+      if (typeof L.id === 'number') {
+        App.call('upload_topic_content', { id: L.id, part: 'content', content: val })
+          .then(function () { App.closeSheet(); App.toast('✅ Saqlandi'); loadDoc(page); })
+          .catch(function (err) { App.toast('⚠️ ' + err.message); });
+      } else {
+        // Builtin darslik uchun vaqtinchalik yangilash
+        var b = window.ListeningBuiltin ? ListeningBuiltin.get(L.id) : null;
+        if (b) b.content = val;
+        L.rawContent = val;
+        App.closeSheet();
+        App.toast('✅ Saqlandi');
+        loadDoc(page);
+      }
     };
   }
 

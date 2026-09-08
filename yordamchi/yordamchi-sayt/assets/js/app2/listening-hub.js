@@ -17,13 +17,30 @@
       desc: 'Tanishuv, ism so\'rash va qayerdanligini aytish',
       folder: 'Повседневная жизнь',
       content:
+        'youtube: https://www.youtube.com/watch?v=j3y-q66i2nI\n\n' +
         '# 01. Знакомство и первые фразы\n\n' +
-        '— Здравствуйте! Меня зовут {Алексей|Aleksey}. А как вас зовут?\n' +
-        '— Очень приятно! Я {Шахноза|Shahnoza}. Я приехала из {Ташкента|Toshkentdan}.\n' +
-        '— Добро пожаловать! Вы давно изучаете {русский|rus} язык?\n' +
-        '— Нет, только {два|ikki} месяца. Но я стараюсь {много|ko\'p} слушать и говорить.\n' +
-        '— Отлично! У вас очень хорошее {произношение|talaffuz}.\n' +
-        '— Спасибо большое! Мне очень нравится {учиться|o\'rganish}.'
+        '[00:01 - 00:04] — Здравствуйте! Меня зовут {Алексей|Aleksey}. А как вас зовут?\n' +
+        ':: Assalomu alaykum! Mening ismim Aleksey. Sizning ismingiz nima?\n\n' +
+        '[00:05 - 00:09] — Очень приятно! Меня зовут {Анна|Anna}. Вы давно учите русский язык?\n' +
+        ':: Juda yoqimli! Mening ismim Anna. Rus tilini o\'rganayotganingizga ancha bo\'ldimi?\n\n' +
+        '[00:10 - 00:15] — Нет, я начал учить его только в прошлом {месяце|oy}. Но я стараюсь практиковаться каждый день.\n' +
+        ':: Yo\'q, men uni faqat o\'tgan oyda o\'rganishni boshladim. Ammo har kuni mashq qilishga harakat qilaman.\n\n' +
+        '[00:16 - 00:20] — Это здорово! У вас уже очень хорошее {произношение|talaffuz}.\n' +
+        ':: Bu ajoyib! Sizda allaqachon juda yaxshi talaffuz bor.\n\n' +
+        '[00:21 - 00:25] — Спасибо большое! Мне очень нравится звучание этого {языка|til}.\n' +
+        ':: Katta rahmat! Menga bu tilning jaranglashi juda yoqadi.\n\n' +
+        '? Savol 1: Suhbatdoshlarning ismlari kim?\n' +
+        '+ Aleksey va Anna\n' +
+        '- Ivan va Mariya\n' +
+        '- Dmitriy va Yelena\n\n' +
+        '? Savol 2: Aleksey rus tilini qachon boshlagan?\n' +
+        '+ O\'tgan oyda\n' +
+        '- 2 yil oldin\n' +
+        '- Bolaligida\n\n' +
+        '? Savol 3: Anna Alekseyning qaysi jihatini maqtadi?\n' +
+        '+ Yaxshi talaffuzini\n' +
+        '- Tez gapirishini\n' +
+        '- Ko\'p so\'z bilishini'
     },
     {
       id: 'ru_l_02', num: '02', cat: 'life', catName: 'Повседневная', level: 'A1',
@@ -31,15 +48,36 @@
       desc: 'Kafeda qahva va yegulik buyurtma qilish',
       folder: 'Повседневная жизнь',
       content:
+        'youtube: https://www.youtube.com/watch?v=R9K1uV7u35g\n\n' +
         '# 02. В кафе — заказ еды и напитков\n\n' +
-        '— Добрый день! Вы готовы сделать {заказ|buyurtma}?\n' +
-        '— Здравствуйте! Да, принесите, пожалуйста, {кофе|qahva} и круассан.\n' +
-        '— Какой кофе вы предпочитаете: {чёрный|qora} или с молоком?\n' +
-        '— С молоком, пожалуйста, и без {сахара|shakar}.\n' +
-        '— Хорошо. Что-нибудь ещё {желаете|xohlaysizmi}?\n' +
-        '— Нет, спасибо, это {всё|hammasi}. Сколько с меня?\n' +
-        '— С вас триста {рублей|rubl}. Оплата картой или {наличными|naqd pul}?\n' +
-        '— Картой, пожалуйста.'
+        '[00:01 - 00:04] — Добрый день! Вы готовы сделать {заказ|buyurtma}?\n' +
+        ':: Xayrli kun! Buyurtma berishga tayyormisiz?\n\n' +
+        '[00:05 - 00:09] — Здравствуйте! Да, принесите, пожалуйста, {кофе|qahva} и круассан.\n' +
+        ':: Assalomu alaykum! Ha, menga iltimos qahva va kruassan keltiring.\n\n' +
+        '[00:10 - 00:14] — Какой кофе вы предпочитаете: {чёрный|qora} или с молоком?\n' +
+        ':: Qanday qahvani ma\'qul ko\'rasiz: qora yoki sutli?\n\n' +
+        '[00:15 - 00:18] — С молоком, пожалуйста, и без {сахара|shakar}.\n' +
+        ':: Sut bilan, iltimos, va shakarsiz.\n\n' +
+        '[00:19 - 00:22] — Хорошо. Что-нибудь ещё {желаете|xohlaysizmi}?\n' +
+        ':: Yaxshi. Yana biror narsa xohlaysizmi?\n\n' +
+        '[00:23 - 00:26] — Нет, спасибо, это {всё|hammasi}. Сколько с меня?\n' +
+        ':: Yo\'q, rahmat, shu xolos. Qancha to\'layman?\n\n' +
+        '[00:27 - 00:32] — С вас триста {рублей|rubl}. Оплата картой или {наличными|naqd pul}?\n' +
+        ':: Sizdan uch yuz rubl. To\'lov karta orqalimi yoki naqd?\n\n' +
+        '[00:33 - 00:36] — Картой, пожалуйста.\n' +
+        ':: Karta bilan, iltimos.\n\n' +
+        '? Savol 1: Mijoz kafeda nima buyurtma qildi?\n' +
+        '+ Qahva va kruassan\n' +
+        '- Choy va pishiriq\n' +
+        '- Borsh va non\n\n' +
+        '? Savol 2: Mijoz qahvani qanday ichadi?\n' +
+        '+ Sut bilan va shakarsiz\n' +
+        '- Qora va shakar bilan\n' +
+        '- Muzli va shirin\n\n' +
+        '? Savol 3: Buyurtma hisobi qancha bo\'ldi?\n' +
+        '+ 300 rubl\n' +
+        '- 500 rubl\n' +
+        '- 150 rubl'
     },
     {
       id: 'ru_l_03', num: '03', cat: 'life', catName: 'Повседневная', level: 'A1',
@@ -303,15 +341,36 @@
       desc: 'Ordering a cappuccino, pastry, and paying',
       folder: 'Daily Life',
       content:
+        'youtube: https://www.youtube.com/watch?v=ba34r1rIhyc\n\n' +
         '# 02. At a Coffee Shop\n\n' +
-        '— Good morning! Are you ready to {order|buyurtma berish}?\n' +
-        '— Hi! Yes, could I have a {cappuccino|kapuchino} and a croissant, please?\n' +
-        '— Sure! What size would you like: {small|kichik}, medium, or large?\n' +
-        '— Medium, please. With oat {milk|sut} and no sugar.\n' +
-        '— Anything else for {you|siz uchun} today?\n' +
-        '— That is all, thank you. How much is {it|bu}?\n' +
-        '— That will be five {dollars|dollar}. Cash or card?\n' +
-        '— By card, please.'
+        '[00:01 - 00:04] — Good morning! Are you ready to {order|buyurtma berish}?\n' +
+        ':: Xayrli tong! Buyurtma berishga tayyormisiz?\n\n' +
+        '[00:05 - 00:09] — Hi! Yes, could I have a {cappuccino|kapuchino} and a croissant, please?\n' +
+        ':: Salom! Ha, menga bitta kapuchino va kruassan bera olasizmi, iltimos?\n\n' +
+        '[00:10 - 00:14] — Sure! What size would you like: {small|kichik}, medium, or large?\n' +
+        ':: Albatta! Qaysi o\'lchamda xohlaysiz: kichik, o\'rta yoki katta?\n\n' +
+        '[00:15 - 00:18] — Medium, please. With oat {milk|sut} and no sugar.\n' +
+        ':: O\'rtacha, iltimos. Suli suti bilan va shakarsiz.\n\n' +
+        '[00:19 - 00:22] — Anything else for {you|siz uchun} today?\n' +
+        ':: Bugun siz uchun yana biror narsa bormi?\n\n' +
+        '[00:23 - 00:26] — That is all, thank you. How much is {it|bu}?\n' +
+        ':: Shu xolos, rahmat. Qancha bo\'ldi?\n\n' +
+        '[00:27 - 00:31] — That will be five {dollars|dollar}. Cash or card?\n' +
+        ':: Besh dollar bo\'ladi. Naqdmi yoki karta?\n\n' +
+        '[00:32 - 00:35] — By card, please.\n' +
+        ':: Karta bilan, iltimos.\n\n' +
+        '? Savol 1: What did the customer order?\n' +
+        '+ A cappuccino and a croissant\n' +
+        '- Black tea and a cake\n' +
+        '- An orange juice and a sandwich\n\n' +
+        '? Savol 2: What kind of milk did the customer choose?\n' +
+        '+ Oat milk\n' +
+        '- Regular cow milk\n' +
+        '- Almond milk\n\n' +
+        '? Savol 3: How much did the order cost?\n' +
+        '+ 5 dollars\n' +
+        '- 10 dollars\n' +
+        '- 3 dollars'
     },
     {
       id: 'en_l_03', num: '03', cat: 'city', catName: 'City & Transport', level: 'A2',
