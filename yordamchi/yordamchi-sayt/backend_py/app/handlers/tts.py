@@ -170,3 +170,38 @@ async def handle_tts_download(request: Request, body: dict, q: dict) -> Response
     }
 
     return Response(content=final_audio, media_type="audio/mpeg", headers=headers)
+
+
+async def handle_tts_audio(request: Request, q: dict) -> Response:
+    """Bitta gap yoki matn uchun MP3 audio qaytaradi (fondagi / lockscreen pleyer uchun)."""
+    import httpx
+    text = str(q.get("text") or "").strip()
+    if not text:
+        raise ApiError("Matn ko'rsatilmadi", 400)
+    lang = str(q.get("lang") or "en").lower().strip()
+    tl = "ru" if lang.startswith("ru") else "en"
+
+    chunks = _split_into_chunks(text)
+    if not chunks:
+        raise ApiError("Matn bo'sh", 400)
+
+    async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+        parts: list[bytes] = []
+        for ch in chunks:
+            data = await _fetch_chunk_mp3(client, ch, tl)
+            if data:
+                parts.append(data)
+        if not parts:
+            raise ApiError("TTS audio olib bo'lmadi", 502)
+        full_mp3 = b"".join(parts)
+
+    return Response(
+        content=full_mp3,
+        media_type="audio/mpeg",
+        headers={
+            "Cache-Control": "public, max-age=604800, immutable",
+            "Accept-Ranges": "bytes",
+            "Content-Length": str(len(full_mp3)),
+        },
+    )
+

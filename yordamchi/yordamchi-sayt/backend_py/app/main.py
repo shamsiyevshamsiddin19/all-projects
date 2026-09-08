@@ -79,7 +79,7 @@ def _startup() -> None:
 # Kirmasdan turib ham chaqirilishi mumkin bo'lgan yagona action'lar.
 # Qolgan HAMMASI (o'qish ham) tizimga kirishni talab qiladi — ma'lumot shaxsiy:
 # maqsadlar, lug'at, mavzular, sport va `storage_bootstrap` (ism, bio, avatar...).
-PUBLIC_ACTIONS = {"log_client"}
+PUBLIC_ACTIONS = {"log_client", "tts_audio", "tts_download"}
 
 
 async def _read_json_body(request: Request) -> dict:
@@ -286,6 +286,8 @@ async def api_entry(request: Request):
         return reja.serve(request, file_id, q.get("token", ""), str(q.get("download") or "") == "1")
     if action == "tts_download":
         return await tts.handle_tts_download(request, await _read_json_body(request), q)
+    if action == "tts_audio":
+        return await tts.handle_tts_audio(request, q)
     if action == "db_export":
         return await misc.db_export(request)
     if action == "db_import":

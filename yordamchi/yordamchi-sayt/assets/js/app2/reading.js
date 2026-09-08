@@ -322,19 +322,49 @@
      o'chirilmaydi — masalan "keyingi gap" bosilganda u ataylab yoqiladi). */
   function haltSpeech() {
     clearShadowTimer();
+    if (playerAudio) {
+      playerAudio.onended = null;
+      playerAudio.onerror = null;
+      try { playerAudio.pause(); } catch (e) {}
+    }
+    stopAudioKeepAlive();
     if (R.partTimer) { clearTimeout(R.partTimer); R.partTimer = null; }
     if (window.TTS) TTS.cancel(); else { try { window.speechSynthesis.cancel(); } catch (e) {} }
   }
 
-  /* ---------- Fondagi pleyer (MediaSession API va Audio Keep-Alive) ----------
-     Mobil qurilmalarda ekran qulflanganda (lockscreen) ham o'qish to'xtab
-     qolmasligi uchun jimjit audio-tsikl o'ynaladi va telefon ekranida
-     boshqaruv pleyeri (play/pause/prev/next) chiqariladi. */
+  /* ---------- Fondagi va Lockscreen Audio Pleyeri ----------
+     Mobil qurilmalarda (Android/iOS) ekran qulflanganda yoki foydalanuvchi
+     boshqa ilovalarga o'tganda brauzer `speechSynthesis` ni to'xtatib qo'yadi.
+     Uzluksiz fon ijrosi uchun HTML5 `<audio>` elementi orqali haqiqiy MP3
+     oqimi yangraydi va gaplar orasidagi pauzada ham audio sessiya tirik saqlanadi. */
+  var playerAudio = null;
+  var preloadAudio = null;
   var audioKeeper = null;
+  var SILENT_AUDIO = 'data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBIAAAABAAEAQB8AAEAfAAABAAgAAABmYWN0BAAAAAAAAABkYXRhAAAAAA==';
+
+  function getPlayerAudio() {
+    if (!playerAudio) {
+      playerAudio = new Audio();
+      playerAudio.preload = 'auto';
+    }
+    return playerAudio;
+  }
+
+  function preloadNextSentence(nextIdx) {
+    if (!R.sentences || nextIdx < 0 || nextIdx >= R.sentences.length) return;
+    var nextText = R.sentences[nextIdx].text;
+    if (!nextText) return;
+    var langCode = (R.lang || '').indexOf('ru') === 0 ? 'ru' : 'en';
+    var src = '/api?action=tts_audio&text=' + encodeURIComponent(nextText) + '&lang=' + langCode;
+    if (!preloadAudio) preloadAudio = new Audio();
+    preloadAudio.src = src;
+    preloadAudio.preload = 'auto';
+  }
+
   function startAudioKeepAlive() {
     try {
       if (!audioKeeper) {
-        audioKeeper = new Audio('data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBIAAAABAAEAQB8AAEAfAAABAAgAAABmYWN0BAAAAAAAAABkYXRhAAAAAA==');
+        audioKeeper = new Audio(SILENT_AUDIO);
         audioKeeper.loop = true;
       }
       var p = audioKeeper.play();
@@ -346,6 +376,49 @@
     if (audioKeeper) {
       try { audioKeeper.pause(); } catch (e) {}
     }
+  }
+
+  function keepAudioAliveDuringPause() {
+    startAudioKeepAlive();
+  }
+
+  function playSentenceAudio(text, done) {
+    text = String(text || '').trim();
+    if (!text) { if (done) done(200); return; }
+
+    var audio = getPlayerAudio();
+    var langCode = (R.lang || '').indexOf('ru') === 0 ? 'ru' : 'en';
+    var src = '/api?action=tts_audio&text=' + encodeURIComponent(text) + '&lang=' + langCode;
+
+    audio.loop = false;
+    audio.playbackRate = R.rate || 1;
+
+    var finished = false;
+    function onFinish(p) {
+      if (finished) return;
+      finished = true;
+      audio.onended = null;
+      audio.onerror = null;
+      if (done) done(p || 260);
+    }
+
+    audio.onended = function () {
+      onFinish(260);
+    };
+
+    audio.onerror = function () {
+      speakProsody(text, function (p) { onFinish(p); });
+    };
+
+    audio.src = src;
+    var p = audio.play();
+    if (p && p.catch) {
+      p.catch(function () {
+        speakProsody(text, function (p) { onFinish(p); });
+      });
+    }
+
+    preloadNextSentence(R.idx + 1);
   }
 
   function setupMediaSession() {
@@ -459,24 +532,24 @@
     updateMediaSession();
     paintPlayer();
     var cur = R.sentences[n];
-    /* Sarlavha e'lon qilib o'qiladi: sekinroq, pastroq ohangda va undan
-       keyin uzunroq jimlik — quloq bilan "yangi bo'lim boshlandi" degani
-       bilinsin. Sarlavha takrorlanmaydi. */
+    /* Sarlavha ham, gaplar ham real MP3 orqali o'qiladi — fonda va lockscreen'da to'xtamaydi */
     if (cur.k === 'h') {
-      speakHeading(cur.text, function () {
+      playSentenceAudio(cur.text, function () {
         R.repeatIdx = 1;
         if (R.stepMode) R.pendingStop = true;
+        keepAudioAliveDuringPause();
         R.gapTimer = setTimeout(function () { step(n + 1); }, Math.round(700 / (R.rate || 1)));
       });
       return;
     }
-    speakProsody(cur.text, function (endPause) {
+    playSentenceAudio(cur.text, function (endPause) {
       if (!R.alive || !R.playing) return;
 
       /* Gapni 2-3 marta takrorlash funksiyasi */
       if (R.repeatCount > 1 && R.repeatIdx < R.repeatCount) {
         R.repeatIdx++;
         paintPlayer();
+        keepAudioAliveDuringPause();
         var repPause = Math.round(340 / (R.rate || 1));
         R.gapTimer = setTimeout(function () { step(n); }, repPause);
         return;
@@ -486,6 +559,7 @@
       R.repeatIdx = 1;
       if (R.stepMode) {
         R.pendingStop = true;   // keyingi qadamda to'xtaydi
+        keepAudioAliveDuringPause();
         var pause = Math.round((endPause || 260) / (R.rate || 1));
         R.gapTimer = setTimeout(function () { step(n + 1); }, pause);
         return;
@@ -494,6 +568,7 @@
       /* Hands-Free Shadowing rejimi: gapdan keyin takrorlash pauzasi */
       if (R.shadowMode) {
         clearShadowTimer();
+        keepAudioAliveDuringPause();
         var waitSec = getShadowPause(cur.text);
         R.shadowSecondsLeft = waitSec;
         paintPlayer();
@@ -511,6 +586,7 @@
         return;
       }
 
+      keepAudioAliveDuringPause();
       var pause = Math.round((endPause || 260) / (R.rate || 1));
       R.gapTimer = setTimeout(function () { step(n + 1); }, pause);
     });
@@ -864,8 +940,11 @@
     var opts = [0.6, 0.75, 0.9, 1, 1.15, 1.3];
     R.rate = opts[(opts.indexOf(R.rate) + 1) % opts.length];
     try { localStorage.setItem('reading_rate', String(R.rate)); } catch (e) {}
+    if (playerAudio) {
+      playerAudio.playbackRate = R.rate;
+    }
     paintPlayer();
-    if (R.playing) { haltSpeech(); step(R.idx < 0 ? 0 : R.idx); }
+    if (R.playing && !playerAudio) { haltSpeech(); step(R.idx < 0 ? 0 : R.idx); }
   };
 
   /* ================= Tarjima oynachasi (popover) =================
@@ -950,7 +1029,7 @@
   App.actions.rdSay = function (a) {
     R.alive = true;
     haltSpeech();
-    speakProsody(a && a.t);
+    playSentenceAudio(a && a.t);
   };
 
   /* Tanlangan gap/so'zni 2 yoki 3 marta takrorlab o'qish */
@@ -963,7 +1042,7 @@
     var cur = 1;
     function speakOnce() {
       if (!R.alive) return;
-      speakProsody(txt, function () {
+      playSentenceAudio(txt, function () {
         if (!R.alive) return;
         if (cur < count) {
           cur++;
@@ -1123,7 +1202,7 @@
     var nextBtn = sh.querySelector('#pr-next-btn');
 
     listenBtn.onclick = function () {
-      speakProsody(targetText);
+      playSentenceAudio(targetText);
     };
 
     function displayResult(said) {
