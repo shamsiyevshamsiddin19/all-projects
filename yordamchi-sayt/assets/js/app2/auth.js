@@ -343,19 +343,34 @@
       });
 
       if (gBtnHost) {
+        /* Google tugmasi joylashganda darhol custom tugmani yashirish */
+        try {
+          var obs = new MutationObserver(function () {
+            if (gBtnHost.children && gBtnHost.children.length > 0) {
+              if (gCustom) gCustom.style.display = 'none';
+              obs.disconnect();
+            }
+          });
+          obs.observe(gBtnHost, { childList: true, subtree: true });
+        } catch (_) {}
+
+        var bodyW = (el.querySelector('.login-body') && el.querySelector('.login-body').clientWidth) || 350;
+        var btnW = Math.min(390, Math.max(260, bodyW - 2));
+
         google.accounts.id.renderButton(gBtnHost, {
           theme: 'outline',
           size: 'large',
           shape: 'rectangular',
           text: 'signin_with',
-          width: Math.min(380, (el.querySelector('.login-body').clientWidth || 340) - 2),
+          width: btnW,
           logo_alignment: 'left'
         });
+
         setTimeout(function () {
           if (gBtnHost.children && gBtnHost.children.length > 0 && gCustom) {
             gCustom.style.display = 'none';
           }
-        }, 150);
+        }, 300);
       }
 
       if (gCustom) {

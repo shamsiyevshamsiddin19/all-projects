@@ -4568,12 +4568,18 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   position: relative;
   width: 100%;
   height: 52px;
-  border-radius: 14px;
+  min-height: 52px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 #au-gbtn {
+  position: relative;
+  z-index: 2;
   width: 100%;
   height: 52px;
+  min-height: 52px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -4583,19 +4589,78 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   display: none !important;
 }
 
-#au-gbtn .nsm7Bb-HzV7m-LgbsSe,
-#au-gbtn iframe {
-  border-radius: 14px !important;
+/* Google Identity Services wrapperini 100% to'liq kenglikka cho'zish */
+#au-gbtn > div,
+#au-gbtn .S9gUrf-YoZ4jf,
+#au-gbtn .S9gUrf-YoZ4jf > div {
   width: 100% !important;
   max-width: 100% !important;
   height: 52px !important;
-  margin: 0 !important;
-  border-color: #e2e8f0 !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  margin: 0 auto !important;
+}
+
+/* Google tugmasining o'zi */
+#au-gbtn [role="button"],
+#au-gbtn .nsm7Bb-HzV7m-LgbsSe {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 52px !important;
+  min-height: 52px !important;
+  border-radius: 14px !important;
+  border: 1.5px solid #e2e8f0 !important;
   box-sizing: border-box !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+  margin: 0 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+#au-gbtn [role="button"]:hover,
+#au-gbtn .nsm7Bb-HzV7m-LgbsSe:hover {
+  border-color: #4285F4 !important;
+  background-color: #f8fafc !important;
+  box-shadow: 0 6px 18px rgba(66, 133, 244, 0.12) !important;
+}
+
+/* Agar Google tugmasi iframe ko'rinishida bo'lsa */
+#au-gbtn iframe:not(.L5Fo6c-PQbLGe):not([style*="height: 0px"]):not([style*="height:0px"]) {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 52px !important;
+  border-radius: 14px !important;
+  border: 1.5px solid #e2e8f0 !important;
+  box-sizing: border-box !important;
+  margin: 0 auto !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03) !important;
+}
+
+/* Google-ning yashirin 0x0 kuzatuv iframe-ini chetlab o'tish */
+#au-gbtn iframe.L5Fo6c-PQbLGe,
+#au-gbtn iframe[style*="height: 0px"],
+#au-gbtn iframe[style*="height:0px"] {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 0px !important;
+  height: 0px !important;
+  border: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  box-shadow: none !important;
 }
 
 .login-google-custom {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
