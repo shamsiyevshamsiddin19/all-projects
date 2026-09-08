@@ -422,7 +422,7 @@
         '</div>' +
 
         /* Tezkor maishiy trenajyor blits kartasi (Raqamlar, narxlar, telefon, soat) */
-        '<div class="lh-hero" data-act="go" data-arg=\'' + App.arg({ v: 'listening_practice', p: { lang: isRu ? 'russian' : 'english' } }) + '\'>' +
+        '<div class="lh-hero" data-act="go" data-arg=\'' + App.arg({ v: 'listening_practice', p: { lang: isRu ? 'russian' : 'english', from: 'listening_hub' } }) + '\'>' +
         '<div class="lh-hero-ic"><span data-icon="headphones" data-icon-size="22"></span></div>' +
         '<div class="lh-hero-main">' +
           '<div class="lh-hero-title">' +
