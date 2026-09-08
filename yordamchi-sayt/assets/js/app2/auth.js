@@ -93,44 +93,20 @@
     var cId = clientId || (AUTH_INFO && AUTH_INFO.google_client_id) || '';
     var el = screen(
       '<div class="auth-desktop-wrap">' +
-        '<!-- Desktop uchun ijodkorlik va brend paneli (faqat keng ekranda ko\'rinadi) -->' +
+        '<!-- Desktop uchun video art paneli (losnhaazpv.mp4) -->' +
         '<div class="desktop-art-side">' +
-          '<div class="art-glow-1"></div>' +
-          '<div class="art-glow-2"></div>' +
-          '<div class="art-brand">' +
-            '<img class="art-brand-img" data-app-icon src="' + App.appIconSrc() + '" alt="Logo">' +
-            '<span class="art-brand-name">Yordamchi</span>' +
+          '<div class="art-video-box">' +
+            '<video id="au-art-vid-1" class="art-bg-video active" autoplay loop muted playsinline preload="auto" src="/assets/video/losnhaazpv.mp4"></video>' +
+            '<video id="au-art-vid-2" class="art-bg-video inactive" muted playsinline preload="auto" src="/assets/video/losnhaazpv.mp4"></video>' +
           '</div>' +
-          '<div class="art-center">' +
-            '<div class="art-hero-tag">' +
-              '<span data-icon="sparkles" data-icon-size="14"></span>' +
-              '<span>Shaxsiy o\'quv maydoni</span>' +
+          '<div class="art-video-overlay">' +
+            '<div class="art-brand">' +
+              '<img class="art-brand-img" data-app-icon src="' + App.appIconSrc() + '" alt="Logo">' +
+              '<span class="art-brand-name">Yordamchi</span>' +
             '</div>' +
-            '<h2 class="art-hero-title">Bilim olish va intizomda eng yaqin hamrohingiz.</h2>' +
-            '<p class="art-hero-desc">' +
-              '8 800 dan ortiq mavzuli lug\'atlar, interaktiv darsliklar, faollik nazorati va odatlar monitoringi — barchasi bitta qulay tizimda.' +
-            '</p>' +
-            '<div class="art-cards-grid">' +
-              '<div class="art-card-item">' +
-                '<div class="art-card-title">📖 O\'qish uslubi</div>' +
-                '<div class="art-card-desc">Keng formatli, serif shrift va toza tungi mavzudagi darsliklar.</div>' +
-              '</div>' +
-              '<div class="art-card-item">' +
-                '<div class="art-card-title">⚡ 8 800+ So\'zlar</div>' +
-                '<div class="art-card-desc">257 mavzuli tuzilma va so\'zlarning yasalish morfologiyasi.</div>' +
-              '</div>' +
-              '<div class="art-card-item">' +
-                '<div class="art-card-title">🔒 Ikki yo\'lli kirish</div>' +
-                '<div class="art-card-desc">Google hisobi yoki 12 belgilik maxfiy favqulodda kalit.</div>' +
-              '</div>' +
-              '<div class="art-card-item">' +
-                '<div class="art-card-title">📱 Mobil & Oflayn</div>' +
-                '<div class="art-card-desc">Internetsiz ham barcha ma\'lumotlaringiz doimo yoningizda.</div>' +
-              '</div>' +
+            '<div class="art-footer">' +
+              '© ' + (new Date().getFullYear()) + ' Yordamchi • Shaxsiy o\'quv maydoni' +
             '</div>' +
-          '</div>' +
-          '<div class="art-footer">' +
-            '© ' + (new Date().getFullYear()) + ' Yordamchi. Barcha huquqlar himoyalangan.' +
           '</div>' +
         '</div>' +
 
@@ -385,6 +361,51 @@
         };
       }
     });
+
+    /* Desktop fon videosi uchun uzluksiz choksiz (seamless) loop kontrolleri */
+    (function initSeamlessVideo() {
+      var v1 = el.querySelector('#au-art-vid-1');
+      var v2 = el.querySelector('#au-art-vid-2');
+      if (!v1 || !v2) return;
+
+      var active = v1;
+      var next = v2;
+      var isFading = false;
+      var crossfadeSec = 0.8;
+
+      function checkLoop() {
+        if (active && active.duration && !isFading) {
+          if (active.currentTime >= active.duration - crossfadeSec) {
+            isFading = true;
+            next.currentTime = 0;
+            var p = next.play();
+            if (p && p.then) {
+              p.then(function () {
+                next.style.opacity = '1';
+                next.style.zIndex = '2';
+                active.style.opacity = '0';
+                active.style.zIndex = '1';
+                setTimeout(function () {
+                  try { active.pause(); active.currentTime = 0; } catch (_) {}
+                  var tmp = active;
+                  active = next;
+                  next = tmp;
+                  isFading = false;
+                }, crossfadeSec * 1000);
+              }).catch(function () {
+                isFading = false;
+              });
+            } else {
+              isFading = false;
+            }
+          }
+        }
+        requestAnimationFrame(checkLoop);
+      }
+
+      try { v1.play().catch(function () {}); } catch (_) {}
+      requestAnimationFrame(checkLoop);
+    })();
   }
 
   function loginScreen(msg) {

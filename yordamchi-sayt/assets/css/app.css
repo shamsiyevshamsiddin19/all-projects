@@ -4854,124 +4854,101 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 
   .desktop-art-side {
     display: flex;
-    flex: 1.15;
-    background: radial-gradient(circle at 20% 20%, #161f30 0%, #080a0e 70%);
+    flex: 1.25;
+    background: #000000 !important;
     position: relative;
     overflow: hidden;
     flex-direction: column;
     justify-content: space-between;
-    padding: 60px 64px;
+    padding: 40px 48px;
     color: #ffffff;
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
   }
 
-  .art-glow-1 {
+  .art-video-box {
     position: absolute;
-    width: 450px;
-    height: 450px;
-    background: radial-gradient(circle, rgba(44, 187, 93, 0.15) 0%, transparent 70%);
-    top: -100px;
-    left: -100px;
-    filter: blur(50px);
-    pointer-events: none;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000000 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    z-index: 1;
   }
-  .art-glow-2 {
+
+  .art-bg-video {
     position: absolute;
-    width: 500px;
-    height: 500px;
-    background: radial-gradient(circle, rgba(67, 97, 238, 0.18) 0%, transparent 70%);
-    bottom: -120px;
-    right: -80px;
-    filter: blur(60px);
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000000 !important;
+    opacity: 0;
+    transition: opacity 0.8s ease-in-out;
+  }
+
+  .art-bg-video.active {
+    opacity: 1;
+    z-index: 2;
+  }
+
+  .art-bg-video.inactive {
+    opacity: 0;
+    z-index: 1;
+  }
+
+  .art-video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     pointer-events: none;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 36px 44px;
+    box-sizing: border-box;
   }
 
   .art-brand {
     position: relative;
-    z-index: 2;
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    padding: 8px 18px 8px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    width: fit-content;
   }
   .art-brand-img {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
   .art-brand-name {
-    font-size: 22px;
-    font-weight: 800;
-    letter-spacing: -0.4px;
-    color: #ffffff;
-  }
-
-  .art-center {
-    position: relative;
-    z-index: 2;
-    max-width: 500px;
-    margin: 40px 0;
-  }
-  .art-hero-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 14px;
-    border-radius: 999px;
-    background: rgba(44, 187, 93, 0.12);
-    border: 1px solid rgba(44, 187, 93, 0.25);
-    color: #2cbb5d;
-    font-size: 12.5px;
-    font-weight: 700;
-    margin-bottom: 20px;
-  }
-  .art-hero-title {
-    font-size: 42px;
-    font-weight: 800;
-    line-height: 1.15;
-    letter-spacing: -1px;
-    color: #ffffff;
-    margin-bottom: 16px;
-  }
-  .art-hero-desc {
     font-size: 16px;
-    line-height: 1.6;
-    color: #94a3b8;
-    margin-bottom: 32px;
-  }
-
-  .art-cards-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-  }
-  .art-card-item {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    border-radius: 16px;
-    padding: 16px;
-    backdrop-filter: blur(12px);
-  }
-  .art-card-title {
-    font-size: 14.5px;
     font-weight: 700;
-    color: #f1f5f9;
-    margin-bottom: 4px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .art-card-desc {
-    font-size: 12px;
-    color: #94a3b8;
-    line-height: 1.4;
+    letter-spacing: -0.2px;
+    color: #ffffff;
   }
 
   .art-footer {
     position: relative;
-    z-index: 2;
-    font-size: 13px;
-    color: #64748b;
+    font-size: 12.5px;
+    color: rgba(255, 255, 255, 0.45);
+    letter-spacing: 0.3px;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
   }
 
   .auth-form-side {
