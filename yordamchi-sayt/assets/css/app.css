@@ -851,8 +851,29 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 @keyframes micpulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.07); } }
 
 /* ---------- Kirish ekrani (auth) ---------- */
-#auth-screen{ position:fixed; inset:0; z-index:9998; background:radial-gradient(circle at 50% 30%, #171b24 0%, #090b0e 100%); display:flex; align-items:center; justify-content:center; padding:24px 16px; overflow-y:auto; }
-.auth-box{ width:100%; max-width:350px; display:flex; justify-content:center; }
+#auth-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  margin: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+.auth-box {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+}
 .auth-box h2{ font-size:24px; font-weight:800; margin:0 0 6px; }
 .auth-box > .muted{ font-size:13.5px; margin:0 0 20px; line-height:1.5; }
 .auth-logo{ width:56px; height:56px; border-radius:17px; background:var(--accent-soft); color:var(--accent); display:flex; align-items:center; justify-content:center; margin-bottom:16px; }
@@ -4390,36 +4411,44 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 }
 
 
-/* ---------- Yangi Login Ekran Dizayni (Foydalanuvchi rasmidagi qora/oq uslub) ---------- */
+/* ---------- Yangi Login Ekran Dizayni (Telefonda to'liq ekran, saytga moslashtirilgan) ---------- */
 .login-card {
   width: 100%;
-  max-width: 350px;
-  background: #ffffff;
-  border-radius: 34px;
-  overflow: hidden;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  max-width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  position: relative;
-  margin: auto;
+  background: #ffffff;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+  border: none;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 .login-header {
   background: #000000;
   position: relative;
-  height: 220px;
+  width: 100%;
+  height: 32vh;
+  min-height: 230px;
+  max-height: 290px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  padding-top: 52px;
+  padding-top: max(28px, env(safe-area-inset-top));
+  padding-bottom: 44px;
+  flex-shrink: 0;
 }
 
 .login-avatar-icon {
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
   color: #ffffff;
   display: block;
+  margin-top: -12px;
 }
 
 .login-curve-svg {
@@ -4427,25 +4456,38 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   bottom: -1px;
   left: 0;
   width: 100%;
-  height: 70px;
+  height: 68px;
   pointer-events: none;
   display: block;
 }
 
 .login-body {
   background: #ffffff;
-  padding: 16px 28px 36px;
+  flex: 1;
+  padding: 12px 26px max(28px, env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
+  max-width: 440px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .login-title {
-  font-size: 30px;
+  font-size: 32px;
   font-weight: 800;
   color: #000000;
   text-align: center;
-  margin: 10px 0 22px;
-  letter-spacing: -0.4px;
+  margin: 6px 0 3px;
+  letter-spacing: -0.5px;
+}
+
+.login-sub {
+  font-size: 13.5px;
+  color: #64748b;
+  text-align: center;
+  margin: 0 0 24px;
+  font-weight: 500;
 }
 
 .login-err {
@@ -4455,11 +4497,11 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   background: #fef2f2;
   border: 1px solid #fee2e2;
   color: #ef4444;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
-  padding: 9px 12px;
-  border-radius: 10px;
-  margin-bottom: 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  margin-bottom: 16px;
   line-height: 1.4;
 }
 
@@ -4468,14 +4510,14 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 }
 
 .login-field {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 .login-field-label {
   display: block;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
-  color: #000000;
+  color: #0f172a;
   margin-bottom: 8px;
   letter-spacing: -0.1px;
 }
@@ -4483,57 +4525,51 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 .login-google-slot {
   position: relative;
   width: 100%;
-  min-height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  height: 52px;
+  border-radius: 14px;
+  overflow: hidden;
 }
 
 #au-gbtn {
   width: 100%;
+  height: 52px;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
 #au-gbtn:empty {
-  display: none;
+  display: none !important;
 }
 
-#au-gbtn .nsm7Bb-HzV7m-LgbsSe {
-  border-radius: 12px !important;
+#au-gbtn .nsm7Bb-HzV7m-LgbsSe,
+#au-gbtn iframe {
+  border-radius: 14px !important;
   width: 100% !important;
   max-width: 100% !important;
-  box-sizing: border-box !important;
-  height: 48px !important;
+  height: 52px !important;
   margin: 0 !important;
   border-color: #e2e8f0 !important;
-  box-shadow: none !important;
-}
-
-#au-gbtn iframe {
-  border-radius: 12px !important;
-  margin: 0 !important;
+  box-sizing: border-box !important;
 }
 
 .login-google-custom {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
-  height: 48px;
+  height: 52px;
   background: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 12px !important;
+  border: 1.5px solid #e2e8f0 !important;
+  border-radius: 14px !important;
   outline: none !important;
   cursor: pointer;
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 600;
   color: #1e293b;
   font-family: inherit;
   padding: 0 16px;
-  margin: 0;
   box-sizing: border-box;
   transition: border-color 0.2s, background-color 0.2s;
 }
@@ -4552,11 +4588,11 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 
 .login-input {
   width: 100%;
-  height: 48px;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 0 42px 0 14px;
-  font-size: 15px;
+  height: 52px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 0 46px 0 16px;
+  font-size: 15.5px;
   color: #0f172a;
   background: #ffffff;
   letter-spacing: 0.5px;
@@ -4566,13 +4602,14 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 
 .login-input::placeholder {
   color: #94a3b8;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
+  font-size: 14px;
 }
 
 .login-input:focus {
   outline: none;
   border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 0 0 3.5px rgba(0, 0, 0, 0.06);
 }
 
 .login-eye-btn {
@@ -4582,7 +4619,7 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   border: none;
   color: #94a3b8;
   cursor: pointer;
-  padding: 6px;
+  padding: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4596,30 +4633,30 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 .login-meta-row {
   display: flex;
   justify-content: flex-end;
-  margin-top: 4px;
-  margin-bottom: 22px;
+  margin-top: -2px;
+  margin-bottom: 24px;
 }
 
 .login-meta-link {
-  font-size: 12px;
-  color: #94a3b8;
+  font-size: 13px;
+  color: #64748b;
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 600;
   transition: color 0.15s;
 }
 
 .login-meta-link:hover {
-  color: #475569;
+  color: #0f172a;
 }
 
 .login-btn {
   width: 100%;
-  height: 48px;
+  height: 52px;
   background: #000000;
   color: #ffffff;
   border: none;
-  border-radius: 12px;
-  font-size: 16px;
+  border-radius: 14px;
+  font-size: 16.5px;
   font-weight: 700;
   letter-spacing: -0.2px;
   cursor: pointer;
@@ -4628,6 +4665,7 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   align-items: center;
   justify-content: center;
   font-family: inherit;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
 }
 
 .login-btn:hover {
@@ -4641,4 +4679,31 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 .login-btn:disabled {
   opacity: 0.7;
   cursor: wait;
+}
+
+/* Keng ekranlarda (Desktop / Tablet) chiroyli markazlashgan karta ko'rinishida */
+@media (min-width: 520px) {
+  #auth-screen {
+    background: radial-gradient(circle at 50% 30%, #171b24 0%, #090b0e 100%);
+    padding: 36px 16px;
+    align-items: center;
+    justify-content: center;
+  }
+  .auth-box {
+    max-width: 390px;
+    min-height: auto;
+    flex: none;
+  }
+  .login-card {
+    max-width: 390px;
+    min-height: auto;
+    flex: none;
+    border-radius: 36px;
+    box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+  }
+  .login-header {
+    height: 230px;
+    max-height: 230px;
+  }
 }

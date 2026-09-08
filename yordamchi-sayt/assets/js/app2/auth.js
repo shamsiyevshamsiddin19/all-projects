@@ -82,12 +82,11 @@
 
   /* Favqulodda kod ekrani. Google bilan bir xil natija beradi: sessiya
      ochiladi va ilova ishga tushadi. */
-  /* --- Zamonaviy Login Ekrani (Foydalanuvchi yuborgan dizayn asosida) ---
-     Yuqori qism: qora fon, oq avatar konturi va organik qavariq to'lqin.
-     E-mail o'rnida: Google orqali kirish.
-     Password o'rnida: Maxfiy kalit bilan kirish (ko'zcha tugmasi bilan).
-     Ikkalasidan biri bilan kirish mumkin: Google tugmasi bosilsa Google orqali,
-     kalit kiritilib Login bosilsa kod orqali tizimga kiradi. */
+    /* --- Zamonaviy Kirish Ekrani (Telefonda to'liq ekran, saytga moslashtirilgan) ---
+     Yuqori qism: to'liq kenglikdagi qora sarlavha, oq avatar konturi va organik to'lqin.
+     Google hisobi: Google Identity Services orqali tezkor kirish.
+     Maxfiy kalit: 12 belgilik kod orqali favqulodda kirish (ko'zcha tugmasi bilan).
+     Ikkalasidan biri bilan kirish mumkin. */
 
   function loginScreenModern(clientId, msg) {
     var cId = clientId || (AUTH_INFO && AUTH_INFO.google_client_id) || '';
@@ -106,24 +105,25 @@
 
         '<!-- Pastki oq kontent qismi -->' +
         '<div class="login-body">' +
-          '<h1 class="login-title">Login</h1>' +
+          '<h1 class="login-title">Kirish</h1>' +
+          '<p class="login-sub">Yordamchi — shaxsiy o\'quv maydoni</p>' +
 
           (msg ? '<div class="login-err" id="au-err-box" style="display:flex;">' +
-                   '<span data-icon="alert" data-icon-size="15"></span>' +
+                   '<span data-icon="alert" data-icon-size="16"></span>' +
                    '<span id="au-err-text">' + App.esc(msg) + '</span>' +
                  '</div>'
                : '<div class="login-err" id="au-err-box" style="display:none;">' +
-                   '<span data-icon="alert" data-icon-size="15"></span>' +
+                   '<span data-icon="alert" data-icon-size="16"></span>' +
                    '<span id="au-err-text"></span>' +
                  '</div>') +
 
-          '<!-- 1. E-mail o\'rnida: Google orqali kirish -->' +
+          '<!-- 1. Google hisobi bilan kirish -->' +
           '<div class="login-field">' +
-            '<label class="login-field-label">E-mail</label>' +
+            '<label class="login-field-label">Google hisobi</label>' +
             '<div class="login-google-slot" id="au-gslot">' +
               '<div id="au-gbtn"></div>' +
               '<button type="button" class="login-google-custom" id="au-gcustom">' +
-                '<svg width="18" height="18" viewBox="0 0 24 24">' +
+                '<svg width="20" height="20" viewBox="0 0 24 24">' +
                   '<path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>' +
                   '<path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"/>' +
                   '<path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 10.04 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>' +
@@ -134,13 +134,13 @@
             '</div>' +
           '</div>' +
 
-          '<!-- 2. Password o\'rnida: Maxfiy kalit -->' +
+          '<!-- 2. Maxfiy kalit bilan kirish -->' +
           '<div class="login-field">' +
-            '<label class="login-field-label">Password</label>' +
+            '<label class="login-field-label">Maxfiy kalit (kirish kodi)</label>' +
             '<div class="login-input-wrap">' +
               '<input type="password" class="login-input" id="au-code-input" placeholder="••••••••••••" maxlength="24" autocomplete="current-password" spellcheck="false">' +
               '<button type="button" class="login-eye-btn" id="au-eye-toggle" aria-label="Ko\'rsatish">' +
-                '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
                   '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>' +
                   '<circle cx="12" cy="12" r="3"/>' +
                 '</svg>' +
@@ -148,13 +148,13 @@
             '</div>' +
           '</div>' +
 
-          '<!-- 3. Forget Password / Bog\'lanish -->' +
+          '<!-- 3. Kalitni unutdingizmi? -->' +
           '<div class="login-meta-row">' +
-            '<a class="login-meta-link" href="https://t.me/shamsiyev_shamsiddin" target="_blank" rel="noopener noreferrer">Forget Password?</a>' +
+            '<a class="login-meta-link" href="https://t.me/shamsiyev_shamsiddin" target="_blank" rel="noopener noreferrer">Kalitni unutdingizmi?</a>' +
           '</div>' +
 
-          '<!-- 4. Login tugmasi -->' +
-          '<button type="button" class="login-btn" id="au-login-btn">Login</button>' +
+          '<!-- 4. Kirish tugmasi -->' +
+          '<button type="button" class="login-btn" id="au-login-btn">Kirish</button>' +
         '</div>' +
       '</div>'
     );
@@ -180,8 +180,8 @@
         isPass = !isPass;
         passInp.type = isPass ? 'password' : 'text';
         eyeBtn.innerHTML = isPass
-          ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'
-          : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+          ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'
+          : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
       };
     }
 
@@ -190,7 +190,7 @@
     var submitCode = function () {
       var kod = (passInp.value || '').trim();
       if (!kod) {
-        setErr('Maxfiy kalitni kiriting yoki Google bilan kiring.');
+        setErr('Maxfiy kalitni kiriting yoki Google orqali kiring.');
         passInp.focus();
         return;
       }
@@ -205,7 +205,7 @@
           resyncThenStart();
         })
         .catch(function (e) {
-          // Agar parol rejimida bo'lsa, oddiy kirishni ham sinab ko'ramiz
+          // Parol rejimida bo'lsa
           if (AUTH_INFO && AUTH_INFO.kirish_usuli === 'parol') {
             return post({ amal: 'kirish', email: 'admin', parol: kod })
               .then(function (j) {
@@ -222,7 +222,7 @@
         })
         .catch(function (e) {
           loginBtn.disabled = false;
-          loginBtn.textContent = 'Login';
+          loginBtn.textContent = 'Kirish';
           setErr(e && e.message ? e.message : 'Kod noto\'g\'ri.');
           passInp.focus();
         });
@@ -272,10 +272,10 @@
           size: 'large',
           shape: 'rectangular',
           text: 'signin_with',
-          width: 292,
+          width: Math.min(360, (el.querySelector('.login-body').clientWidth || 340) - 4),
           logo_alignment: 'left'
         });
-        /* Agar Google iframe paydo bo'lsa, custom tugmani bekitamiz */
+        /* Agar Google tugmasi chizilsa, custom tugmani bekitamiz */
         setTimeout(function () {
           if (gBtnHost.children && gBtnHost.children.length > 0 && gCustom) {
             gCustom.style.display = 'none';
