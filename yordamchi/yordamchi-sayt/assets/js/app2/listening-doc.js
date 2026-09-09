@@ -466,11 +466,12 @@
       L.name = t.name || 'Аудирование';
       L.rawContent = t.content || '';
       var folder = (t.folder || '').trim();
+      L.folder = folder;
 
       var back = page.querySelector('#au-back');
       if (back) {
         back.setAttribute('data-act', 'go');
-        back.setAttribute('data-arg', App.arg({ v: 'listening_hub', p: { sec: L.sec, path: folder } }));
+        back.setAttribute('data-arg', App.arg({ v: 'library', p: { sec: L.sec, path: folder } }));
       }
       var h1 = page.querySelector('#au-title');
       if (h1) h1.textContent = L.name;
@@ -887,7 +888,7 @@
       '<div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">' +
         '<button class="btn primary" id="au-drill-retry">🔄 Qayta topshirish</button>' +
         '<button class="btn secondary" id="au-drill-view-words">📜 Barcha so\'zlar ro\'yxati</button>' +
-        '<button class="btn ghost" id="au-drill-back-hub">← Katalogga qaytish</button>' +
+        '<button class="btn ghost" id="au-drill-back-hub">← Bo\'limga qaytish</button>' +
       '</div>' +
       '</div>';
 
@@ -918,7 +919,7 @@
     var backHub = box.querySelector('#au-drill-back-hub');
     if (backHub) {
       backHub.onclick = function () {
-        App.go('listening_hub', { sec: L.sec });
+        App.go('library', { sec: L.sec, path: (L.folder || '') });
       };
     }
   }
@@ -995,6 +996,16 @@
 
   function renderListenTab(page) {
     var box = App.el('au-body'); if (!box) return;
+
+    if (!L.sentences.length) {
+      box.innerHTML = App.empty({
+        icon: 'headphones',
+        title: 'Tinglash uchun matn yo\'q',
+        text: 'Faylda gaplar yoki dialog topilmadi.'
+      });
+      App.icons(box);
+      return;
+    }
 
     var html = '';
 
@@ -1610,5 +1621,83 @@
       }
     };
   }
+
+  /* ================= Namuna va AI qo'llanmasi ================= */
+  var SAMPLE_RU = [
+    '# Разговорная речь — Диалог в кафе',
+    '',
+    '— Здравствуйте! Можно чашку кофе и круассан?',
+    ':: Assalomu alaykum! Bir finjon qahva va kruassan mumkinmi?',
+    '— Конечно. Вам с сахаром или без?',
+    ':: Albatta. Shakarlimi yoki shakarsizmi?',
+    '— Без сахара, пожалуйста.',
+    ':: Shakarsiz, iltimos.',
+    '— С вас триста рублей. Оплата картой или наличными?',
+    ':: Sizdan 300 rubl. To\'lov karta orqalimi yoki naqd pulda?',
+    '— Картой, спасибо.',
+    ':: Karta orqali, rahmat.',
+    '',
+    '? Клиент пьёт кофе с сахаром?',
+    '+ Нет, без сахара',
+    '- Да, с сахаром',
+    '- С молоком'
+  ].join('\n');
+
+  var SAMPLE_EN = [
+    '# Everyday Conversation — At the Cafe',
+    '',
+    '— Hello! Could I have a cup of coffee and a croissant, please?',
+    ':: Salom! Bir finjon qahva va kruassan olsam bo\'ladimi, iltimos?',
+    '— Sure! Would you like sugar with that?',
+    ':: Albatta! Shakar qo\'shasizmi?',
+    '— No sugar, thank you.',
+    ':: Shakarsiz, rahmat.',
+    '— That will be five dollars. Cash or card?',
+    ':: 5 dollar bo\'ladi. Naqd pulmi yoki karta?',
+    '— Card, please.',
+    ':: Karta orqali, iltimos.',
+    '',
+    '? Does the customer want sugar?',
+    '+ No, without sugar',
+    '- Yes, with sugar',
+    '- With extra milk'
+  ].join('\n');
+
+  var AU_GUIDE = [
+    '# Yordamchi — Tinglash (Listening / Аудирование) uchun .md tayyorlash qo\'llanmasi',
+    '',
+    'Ushbu qo\'llanmani matn yoki audio transkripti bilan birga Sun\'iy Intellektga (ChatGPT, Claude yoki Gemini) bering.',
+    '',
+    '## Format qoidalari:',
+    '1. Har bir gap yoki replika yangi qatordan boshlanadi (dialogda — belgisi bilan).',
+    '2. Gap tagiga uning o\'zbekcha tarjimasi `::` bilan yoziladi:',
+    '   — Здравствуйте! Как дела?',
+    '   :: Salom! Ishlar qalay?',
+    '3. Savollar quyidagi belgi bilan yoziladi:',
+    '   ? Savol matni',
+    '   + To\'g\'ri javob varianti',
+    '   - Noto\'g\'ri javob varianti',
+    '4. Fonetik qisqarishlar (Ear Training kartochkalari) formati:',
+    '   card: сейчас',
+    '   sound: [ЩАС]',
+    '   spelling: се[йч]ас -> [щ]ас',
+    '   mean: hozir',
+    '   explain: Og\'zaki nutqda tez aytilganda qisqaradi.',
+    '   example: Щас приду.',
+    '   example_uz: Hozir boraman.'
+  ].join('\n');
+
+  App.actions.auSample = function (a) {
+    App.closeSheet();
+    var isRu = (a && a.sec) === 'ru_listening';
+    App.download(isRu ? 'namuna-audirovanie.md' : 'namuna-listening.md', isRu ? SAMPLE_RU : SAMPLE_EN);
+    App.toast('Namuna yuklandi — shu formatda yoziladi');
+  };
+
+  App.actions.auGuide = function () {
+    App.closeSheet();
+    App.download('yordamchi-audirovanie-qollanma.md', AU_GUIDE);
+    App.toast('Qo\'llanma yuklandi — uni AI ga bering');
+  };
 
 })();

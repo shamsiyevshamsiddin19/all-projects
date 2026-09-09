@@ -245,6 +245,17 @@
           '<span class="li-ic" data-icon="file" data-icon-size="15"></span>' +
           '<div class="li-main"><div class="li-title">AI uchun qo\'llanma</div>' +
           '<div class="li-sub">PDF bilan birga AI ga beriladi</div></div></button>'
+        : '') +
+      /* Tinglash (Listening) ham o'z formatiga ega — namuna va AI qo'llanmasi */
+      ((a.sec === 'en_listening' || a.sec === 'ru_listening')
+        ? '<button class="list-row" data-act="auSample" data-arg=\'' + App.arg({ sec: a.sec }) + '\'>' +
+          '<span class="li-ic" data-icon="download" data-icon-size="15"></span>' +
+          '<div class="li-main"><div class="li-title">Namuna fayl</div>' +
+          '<div class="li-sub">Dialog, tarjima va savollar namunasi</div></div></button>' +
+          '<button class="list-row" data-act="auGuide" data-arg=\'' + App.arg({ sec: a.sec }) + '\'>' +
+          '<span class="li-ic" data-icon="file" data-icon-size="15"></span>' +
+          '<div class="li-main"><div class="li-title">AI uchun qo\'llanma</div>' +
+          '<div class="li-sub">Audio/matnni AI ga berish uchun qoida</div></div></button>'
         : '');
     var sh = App.sheet(html, { title: 'Qo\'shish' });
     App.icons(sh);
