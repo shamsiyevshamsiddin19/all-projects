@@ -27,11 +27,12 @@
     en_listening: { n: 'Listening', parent: 'english', parentName: 'Ingliz tili', ic: 'headphones', doc: 'listening_doc' },
     en_writing:   { n: 'Writing',   parent: 'english', parentName: 'Ingliz tili', ic: 'edit', doc: 'writing_doc' },
     en_speaking:  { n: 'Speaking',  parent: 'english', parentName: 'Ingliz tili', ic: 'mic', doc: 'speaking_doc' },
+    en_shadowing: { n: 'Shadowing', parent: 'english', parentName: 'Ingliz tili', ic: 'refresh', doc: 'reading_doc' },
     ru_reading:   { n: 'Чтение',      parent: 'russian', parentName: 'Русский язык', ic: 'book', doc: 'reading_doc' },
     ru_listening: { n: 'Аудирование', parent: 'russian', parentName: 'Русский язык', ic: 'headphones', doc: 'listening_doc' },
     ru_speaking:  { n: 'Говорение',   parent: 'russian', parentName: 'Русский язык', ic: 'mic', doc: 'speaking_doc' },
     ru_writing:   { n: 'Письмо',      parent: 'russian', parentName: 'Русский язык', ic: 'edit', doc: 'writing_doc' },
-    ru_shadowing: { n: 'Шэдоуинг',    parent: 'russian', parentName: 'Русский язык', ic: 'refresh' }
+    ru_shadowing: { n: 'Шэдоуинг',    parent: 'russian', parentName: 'Русский язык', ic: 'refresh', doc: 'reading_doc' }
   };
   function secInfo(k) { return SECTIONS[k] || { n: 'Materiallar', parent: 'languages', parentName: '', ic: 'book' }; }
 
@@ -232,7 +233,11 @@
         ? '<button class="list-row" data-act="rdSample" data-arg=\'' + App.arg({ sec: a.sec }) + '\'>' +
           '<span class="li-ic" data-icon="download" data-icon-size="15"></span>' +
           '<div class="li-main"><div class="li-title">Namuna fayl</div>' +
-          '<div class="li-sub">So\'z va gap tarjimasi qanday yozilishi</div></div></button>'
+          '<div class="li-sub">So\'z va gap tarjimasi qanday yozilishi</div></div></button>' +
+          '<button class="list-row" data-act="rdGuide" data-arg=\'' + App.arg({ sec: a.sec }) + '\'>' +
+          '<span class="li-ic" data-icon="file" data-icon-size="15"></span>' +
+          '<div class="li-main"><div class="li-title">AI uchun qo\'llanma</div>' +
+          '<div class="li-sub">Kitob/maqolani AI ga berish uchun qoida</div></div></button>'
         : '') +
       /* Говорение / Письмо ham o'z formatiga ega — namuna va AI qo'llanmasi
          shu yerdan olinadi (talkwrite.js). */

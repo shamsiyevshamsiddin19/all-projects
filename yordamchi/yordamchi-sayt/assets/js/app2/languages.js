@@ -473,6 +473,7 @@
         { n: 'Vocabulary', ic: 'list', img: 'vocabulary', d: 'Lug\'at, flashcard va takrorlash', ready: true, v: 'vocab', p: { lang: 'english' } },
         { n: 'Writing', ic: 'edit', img: 'writing', d: 'Yozish namunalari va mashqlari', ready: true, v: 'library', p: { sec: 'en_writing' } },
         { n: 'Speaking', ic: 'mic', img: 'speaking', d: 'Gapirish uchun material va iboralar', ready: true, v: 'library', p: { sec: 'en_speaking' } },
+        { n: 'Shadowing', ic: 'refresh', img: 'shadowing', d: 'Diktordan keyin takrorlash', ready: true, v: 'library', p: { sec: 'en_shadowing' } },
         { n: 'Mashqlar', ic: 'play', img: 'practice', d: 'Raqam, harf, ism eshitib yozish', ready: true, v: 'practice', p: { lang: 'english' } }
       ]);
     }

@@ -1906,8 +1906,10 @@
 
   App.actions.rdSample = function (a) {
     App.closeSheet();
+    var isShadow = String((a && a.sec) || R.sec).indexOf('shadowing') >= 0;
     var ru = String((a && a.sec) || R.sec).indexOf('ru_') === 0;
-    App.download(ru ? 'namuna-chtenie.md' : 'namuna-reading.md', ru ? SAMPLE_RU : SAMPLE_EN);
+    var fileName = isShadow ? (ru ? 'namuna-shedouing.md' : 'namuna-shadowing.md') : (ru ? 'namuna-chtenie.md' : 'namuna-reading.md');
+    App.download(fileName, ru ? SAMPLE_RU : SAMPLE_EN);
     App.toast('Namuna fayl yuklandi — shu formatda yozing');
   };
 
@@ -1933,6 +1935,10 @@
       try { R.repeatCount = parseInt(localStorage.getItem('reading_repeat_count'), 10) || 1; } catch (e) { R.repeatCount = 1; }
       if (R.repeatCount < 1 || R.repeatCount > 3) R.repeatCount = 1;
       try { R.shadowMode = localStorage.getItem('reading_shadow_mode') === '1'; } catch (e) { R.shadowMode = false; }
+      if (String(R.sec || '').indexOf('shadowing') >= 0) {
+        R.shadowMode = true;
+        R.stepMode = false;
+      }
       R.repeatIdx = 1;
       R.shadowSecondsLeft = 0;
       R.shadowTimer = null;
@@ -2082,8 +2088,8 @@
     };
   }
 
-  /* Kutubxona "Qo'shish" menyusi Reading bo'limida namuna faylni ham taklif qiladi */
-  window.Reading = { isReadingSec: function (sec) { return /^(en|ru)_reading$/.test(sec || ''); } };
+  /* Kutubxona "Qo'shish" menyusi Reading va Shadowing bo'limida namuna faylni ham taklif qiladi */
+  window.Reading = { isReadingSec: function (sec) { return /^(en|ru)_(reading|shadowing)$/.test(sec || ''); } };
 
   /* Audirovaniye (listening-doc.js) AYNAN shu parser va intonatsiya
      dvigatelini ishlatadi — bir xil `.md` format, ikki xil mashq. Kod
