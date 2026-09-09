@@ -116,12 +116,30 @@
     return window.Auth.isAllowed('settings');
   }
 
+  /* Mavzu tanlash — Sozlamalar bo'limidagi bilan AYNI (`setTheme` amali
+     settings.js da, u hamma foydalanuvchida yuklanadi). Sozlamalarga
+     kira olmaydigan foydalanuvchi ilgari mavzuni umuman tanlay olmasdi:
+     qurilma "avto" da qolib ketardi. */
+  var THEME_LABEL = { auto: 'Avto', dark: 'Qorong\'u', light: 'Yorug\'' };
+
+  function themeSectionHtml() {
+    var cur = ls('app_theme', 'auto');
+    return '<div class="list-label">Ko\'rinish</div>' +
+      '<div class="list-row" style="border-bottom:none;padding:9px 1px 15px">' +
+      '<div class="seg" style="width:100%">' +
+      Object.keys(THEME_LABEL).map(function (v) {
+        return '<button class="' + (cur === v ? 'active' : '') + '" data-act="setTheme" data-arg=\'' +
+          App.arg({ v: v }) + '\'>' + THEME_LABEL[v] + '</button>';
+      }).join('') + '</div></div>';
+  }
+
   function accountSectionHtml() {
     if (canOpenSettings()) return '';   // adminda bularning hammasi Sozlamalarda
     var u = (window.Auth && Auth.user) || {};
     var email = u.doktor_email || u.email || '';
     var ism = u.doktor_ism || u.ism || '';
-    return '<div class="list-label">Akkaunt</div>' +
+    return themeSectionHtml() +
+      '<div class="list-label">Akkaunt</div>' +
       (email
         ? '<div class="list-row" style="cursor:default">' +
             '<span class="li-ic" style="background:var(--accent-soft);color:var(--accent)" data-icon="user" data-icon-size="15"></span>' +

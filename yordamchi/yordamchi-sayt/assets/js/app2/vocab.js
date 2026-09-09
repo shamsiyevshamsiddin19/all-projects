@@ -106,10 +106,62 @@
         });
       });
       V.order.forEach(function (c) { if (!V.data[c]) V.data[c] = []; });
+      mergeTemp(lang);
       V.loaded = true;
       return V;
     });
   }
+
+  /* ================= Matndan yig'ilgan vaqtinchalik lug'at =================
+     "O'qish" bo'limidagi C tugmasi shu yerga tayanadi: matndagi
+     {so'z|tarjima} juftlari SERVERGA YOZILMAYDI. Ikki sabab:
+
+       1) `save_dict_cat` faqat admin uchun — oddiy foydalanuvchida bu
+          tugma har safar "ruxsat yo'q" xatosi berardi;
+       2) har o'qilgan matn uchun alohida lug'at yaratilsa, Lug'at bo'limi
+          bir martalik ro'yxatlarga to'lib ketardi.
+
+     Shuning uchun to'plam SHU QURILMADA saqlanadi (`localSet` — sinxron
+     qilinmaydigan kalit) va `loadDict` dan keyin `V.data` ga qo'shiladi.
+     `V.order` ga QO'SHILMAYDI — ya'ni Lug'at ro'yxatida ko'rinmaydi,
+     lekin barcha mashq ko'rinishlari uni oddiy lug'atdek ochadi. */
+  var TEMP_KEY = 'vocab_text_sets_v1';
+
+  function tempRead() {
+    try {
+      var raw = (window.RemoteStorageBridge && RemoteStorageBridge.localGet(TEMP_KEY)) || '';
+      var o = raw ? JSON.parse(raw) : null;
+      return (o && typeof o === 'object') ? o : {};
+    } catch (e) { return {}; }
+  }
+  function tempWrite(o) {
+    try {
+      if (window.RemoteStorageBridge) RemoteStorageBridge.localSet(TEMP_KEY, JSON.stringify(o));
+    } catch (e) {}
+  }
+  function mergeTemp(lang) {
+    var all = tempRead()[lang] || {};
+    Object.keys(all).forEach(function (cat) { V.data[cat] = all[cat]; });
+  }
+
+  App.vocabText = {
+    /* Matndagi so'zlarni saqlaydi va mashq uchun tayyor holga keltiradi. */
+    save: function (lang, cat, words) {
+      var all = tempRead();
+      all[lang] = all[lang] || {};
+      all[lang][cat] = words;
+      /* Faqat oxirgi 5 ta matn saqlanadi — bu vaqtinchalik to'plam,
+         qurilma xotirasini cheksiz egallamasligi kerak. */
+      var keys = Object.keys(all[lang]);
+      while (keys.length > 5) { delete all[lang][keys.shift()]; }
+      tempWrite(all);
+      if (V.lang === lang) V.data[cat] = words;
+    },
+    isTemp: function (lang, cat) {
+      var all = tempRead()[lang] || {};
+      return Object.prototype.hasOwnProperty.call(all, cat);
+    }
+  };
 
   /* ---------- Kategoriyalarni yashirish ----------
      Yuzlab kategoriya to'planganda kerak bo'lmaganlarini ro'yxatdan olib
@@ -1501,7 +1553,8 @@
 
       var loaded = V.lang === lang && V.data[cat];
       if (!loaded) {
-        var isRO = window.Auth && Auth.isReadOnly && Auth.isReadOnly();
+        var isRO = (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) ||
+                   App.vocabText.isTemp(lang, cat);
       var rightTopHtml =
         allSwitchHtml(lang, cat) +
         '<button class="icon-btn ghost" data-act="vocabExportCatMD" data-arg=\'' + App.arg({ lang: lang, cat: cat }) + '\' aria-label="MD yuklab olish" title=".md qilib yuklab olish"><span data-icon="download" data-icon-size="18"></span></button>' +
@@ -1530,7 +1583,10 @@
         srsActionHtml = '<span class="srs-done-tag"><span data-icon="check" data-icon-size="13"></span>Takrorlash tugagan</span>';
       }
 
-      var isRO2 = window.Auth && Auth.isReadOnly && Auth.isReadOnly();
+      /* Vaqtinchalik (matndan yig'ilgan) to'plamni "boshqarish" mumkin emas:
+         u serverda yo'q, nomini o'zgartirish/o'chirish amallari xato berardi. */
+      var isRO2 = (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) ||
+                  App.vocabText.isTemp(lang, cat);
       var rightTopHtml =
         allSwitchHtml(lang, cat) +
         '<button class="icon-btn ghost" data-act="vocabExportCatMD" data-arg=\'' + App.arg({ lang: lang, cat: cat }) + '\' aria-label="MD yuklab olish" title=".md qilib yuklab olish"><span data-icon="download" data-icon-size="18"></span></button>' +

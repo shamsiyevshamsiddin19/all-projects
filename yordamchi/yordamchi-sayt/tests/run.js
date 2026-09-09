@@ -118,7 +118,7 @@ function loadAuthPerms(snapshotJson) {
 
 /* `profile.js` dagi akkaunt bloki — boshqa foydalanuvchilar uchun Profil
    sahifasining BUTUN mazmuni (parol + chiqish). */
-function loadAccountSection(ruxsatlar, user) {
+function loadAccountSection(ruxsatlar, user, store) {
   const src = fs.readFileSync(path.join(ROOT, 'assets/js/app2/profile.js'), 'utf8');
   const a = src.indexOf('  function canOpenSettings() {');
   const b = src.indexOf("  /* Parol o'rnatish/almashtirish.");
@@ -131,11 +131,25 @@ function loadAccountSection(ruxsatlar, user) {
   };
   const scope = {};
   /* Brauzerda `Auth` global — sinovda ham shunday beriladi, aks holda
-     manba kodi o'zgartirilishi kerak bo'lardi. */
-  new Function('exports', 'window', 'App', 'Auth',
+     manba kodi o'zgartirilishi kerak bo'lardi. `ls` (localStorage o'quvchi)
+     va `App.arg` ham shu blokdan tashqarida turadi. */
+  new Function('exports', 'window', 'App', 'Auth', 'ls',
     src.slice(a, b) + '\nexports.html = accountSectionHtml();'
-  )(scope, win, { esc: (s) => String(s) }, win.Auth);
+  )(scope, win, { esc: (s) => String(s), arg: (o) => JSON.stringify(o) },
+    win.Auth, (k, d) => (store && k in store ? store[k] : d));
   return scope.html;
+}
+
+/* `listening-doc.js` dagi subtitr filtri. Savol bloki subtitrga tushsa,
+   Tinglash bo'limida TO'G'RI JAVOBLAR ochiq ko'rinib qoladi. */
+function loadSubtitleFilter() {
+  const src = fs.readFileSync(path.join(ROOT, 'assets/js/app2/listening-doc.js'), 'utf8');
+  const a = src.indexOf('  function isSubtitleLine(');
+  const b = src.indexOf('\n  }', a) + 4;
+  if (a < 0 || b < 4) throw new Error('listening-doc.js ichidagi isSubtitleLine topilmadi');
+  const scope = {};
+  new Function('exports', src.slice(a, b) + '\nexports.f = isSubtitleLine;')(scope);
+  return scope.f;
 }
 
 /* `home.js` dagi STORIES massivi — sof ma'lumot. Boshqa foydalanuvchilarga
@@ -204,6 +218,170 @@ function qEnv(responses) {
 /* =========================================================
    1. Juftlash (paircore.js)
    ========================================================= */
+/* `talkwrite.js` — Говорение/Письмо .md parseri. Modul butun `App` ga
+   bog'liq, shuning uchun faqat sof parser qismi ajratib olinadi. */
+function loadTalkWriteParse() {
+  const src = fs.readFileSync(path.join(ROOT, 'assets/js/app2/talkwrite.js'), 'utf8');
+  const a = src.indexOf('  function splitTr(');
+  const b = src.indexOf('  /* ================= Ovoz');
+  if (a < 0 || b < 0) throw new Error('talkwrite.js ichidagi parser bloki topilmadi');
+  const scope = {};
+  new Function('exports', src.slice(a, b) + '\nexports.parse = parse;')(scope);
+  return scope.parse;
+}
+
+/* `talkwrite.js` dagi namuna fayllar — ular haqiqatan ham ko'rinish
+   kutgan tuzilishga parselanishi kerak. */
+function loadTalkWriteSamples() {
+  const src = fs.readFileSync(path.join(ROOT, 'assets/js/app2/talkwrite.js'), 'utf8');
+  const a = src.indexOf('  var SAMPLE_SPEAK = [');
+  const b = src.indexOf('  /* ---------- Qo\'llanma matni ----------');
+  if (a < 0 || b < 0) throw new Error('talkwrite.js ichidagi namunalar topilmadi');
+  const scope = {};
+  new Function('exports', src.slice(a, b) +
+    '\nexports.speak = SAMPLE_SPEAK; exports.write = SAMPLE_WRITE;')(scope);
+  return scope;
+}
+
+/* `reading.js` — surish chizig'i matematikasi va matndagi so'zlar yig'uvchisi.
+   Ikkalasi ham modul ichidagi `R` holatiga tayanadi, shuning uchun u
+   tashqaridan uzatiladi. */
+function loadReadingBits() {
+  const src = fs.readFileSync(path.join(ROOT, 'assets/js/app2/reading.js'), 'utf8');
+  const R = { sentences: [], blocks: [], idx: -1 };
+
+  const s1 = src.indexOf('  function seekIndexAt(');
+  const s2 = src.indexOf('  function paintSeek(');
+  if (s1 < 0 || s2 < 0) throw new Error('reading.js ichidagi seekIndexAt topilmadi');
+
+  const t1 = src.indexOf('  function textWords(');
+  const t2 = src.indexOf('  App.actions.rdPractice');
+  if (t1 < 0 || t2 < 0) throw new Error('reading.js ichidagi textWords topilmadi');
+
+  const scope = {};
+  new Function('exports', 'R',
+    src.slice(s1, s2) + src.slice(t1, t2) +
+    '\nexports.seekIndexAt = seekIndexAt; exports.textWords = textWords;')(scope, R);
+  scope.R = R;
+  return scope;
+}
+
+/* `talkwrite.js` chizuvchisi — qaysi qator OVOZ TUGMASI bo'lishini
+   hal qiladi. Faqat `App.esc` / `App.arg` kerak. */
+function loadTalkWriteRow() {
+  const src = fs.readFileSync(path.join(ROOT, 'assets/js/app2/talkwrite.js'), 'utf8');
+  const a = src.indexOf('  function rowHtml(r, sec) {');
+  const b = src.indexOf('  function blockHtml(');
+  if (a < 0 || b < 0) throw new Error('talkwrite.js ichidagi rowHtml topilmadi');
+  const scope = {};
+  new Function('exports', 'App',
+    src.slice(a, b) + '\nexports.rowHtml = rowHtml;'
+  )(scope, { esc: (x) => String(x), arg: (o) => JSON.stringify(o) });
+  return scope.rowHtml;
+}
+
+/* `talkwrite.js` ni BUTUNLIGICHA yuklaydi — ko'rinish ro'yxatdan o'tyaptimi
+   va chizish yo'li HTML beryaptimi. Sof funksiya testlari modul yuklanishda
+   yiqilsa ham o'tib ketardi (o'shanda bo'lim umuman ochilmaydi). */
+function loadTalkWriteModule(topic) {
+  const src = fs.readFileSync(path.join(ROOT, 'assets/js/app2/talkwrite.js'), 'utf8');
+  const views = {};
+  const nodes = {};
+  const node = (id) => (nodes[id] = nodes[id] || { id, innerHTML: '', textContent: '',
+    attrs: {}, setAttribute(k, v) { this.attrs[k] = v; }, onclick: null, onchange: null });
+
+  const page = {
+    innerHTML: '',
+    querySelector: (sel) => node(sel.replace('#', '')),
+  };
+  const App = {
+    view: (n, d) => { views[n] = d; },
+    actions: {},
+    el: (id) => (id === 'tw-menu' || id === 'tw-file' ? null : node(id)),
+    esc: (x) => String(x == null ? '' : x),
+    arg: (o) => JSON.stringify(o).replace(/'/g, '&#39;'),
+    icons: () => {},
+    empty: (o) => '<div class="empty">' + o.title + '</div>',
+    call: () => Promise.resolve(topic),
+    sheet: () => ({ querySelector: () => ({}) }),
+    closeSheet: () => {},
+    download: () => {},
+    toast: () => {},
+  };
+  const win = { Auth: { isReadOnly: () => true }, TTS: null };
+  new Function('window', 'App', 'Audio', src)(win, App, function () { return {}; });
+  return { views, App, win, page, node };
+}
+
+/* `reading.js` dagi audio buferi. Saytdagi ovoz yuklab olingan MP3 dan
+   yomonroq eshitilardi — sabab uzluksizlik edi: har gap o'z navbati
+   kelganda so'ralardi. Bufer gaplarni oldindan yuklaydi, shuning uchun
+   uning HISOB-KITOBI to'g'ri bo'lishi muhim (eskisini o'chirish,
+   takroriy kalit, qayta urinish). */
+function loadAudioBuffer() {
+  const src = fs.readFileSync(path.join(ROOT, 'assets/js/app2/reading.js'), 'utf8');
+  const a = src.indexOf('  var AUDIO_BUF_MAX =');
+  const b = src.indexOf('  function playSentenceAudio(');
+  if (a < 0 || b < 0) throw new Error('reading.js ichidagi audio buferi topilmadi');
+
+  const R = { lang: 'ru-RU', sentences: [], idx: -1 };
+  const log = { fetches: [], revoked: [] };
+  let n = 0;
+  let failNext = 0;
+
+  const fakeFetch = (url) => {
+    log.fetches.push(url);
+    if (failNext > 0) { failNext--; return Promise.reject(new Error('tarmoq')); }
+    return Promise.resolve({ ok: true, blob: () => Promise.resolve({ size: 5000 }) });
+  };
+  const fakeURL = {
+    createObjectURL: () => 'blob:' + (++n),
+    revokeObjectURL: (u) => log.revoked.push(u),
+  };
+
+  const scope = {};
+  new Function('exports', 'R', 'fetch', 'URL',
+    src.slice(a, b) +
+    '\nexports.fetchAudio = fetchAudio; exports.preload = preloadNextSentence;' +
+    '\nexports.bufClear = bufClear;' +
+    '\nexports.order = function () { return audioOrder.slice(); };' +
+    '\nexports.buf = function () { return audioBuf; };'
+  )(scope, R, fakeFetch, fakeURL);
+
+  scope.R = R;
+  scope.log = log;
+  scope.failNextFetches = (k) => { failNext = k; };
+  return scope;
+}
+
+/* `core.js` dagi markdown chizuvchisi. Butun kutubxona (592 hujjat) shu
+   funksiya orqali ekranga chiqadi, shuning uchun uning xatosi darrov
+   yuzlab sahifaga tarqaydi. */
+function loadMdRenderer() {
+  const src = fs.readFileSync(path.join(ROOT, 'assets/js/app2/core.js'), 'utf8');
+  const a = src.indexOf('  function safeUrl(');
+  const b = src.indexOf('  App._mdToHtml = mdToHtml;');
+  if (a < 0 || b < 0) throw new Error('core.js ichidagi markdown chizuvchisi topilmadi');
+  const esc = (x) => String(x == null ? '' : x)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const scope = {};
+  new Function('exports', 'App', 'window',
+    src.slice(a, b) + '\nexports.md = mdToHtml;'
+  )(scope, { esc: esc }, {});
+  return scope.md;
+}
+
+/* `core.js` — pastki panel yashiriladigan ko'rinishlar ro'yxati. */
+function loadFullscreenViews() {
+  const src = fs.readFileSync(path.join(ROOT, 'assets/js/app2/core.js'), 'utf8');
+  const a = src.indexOf('    _FULL: [');
+  const b = src.indexOf('],', a);
+  if (a < 0 || b < 0) throw new Error('core.js ichidagi _FULL ro\'yxati topilmadi');
+  const scope = {};
+  new Function('exports', 'exports.list = ' + src.slice(a + '    _FULL: '.length, b + 1))(scope);
+  return scope.list;
+}
+
 const PairCore = loadIntoWindow('assets/js/core/paircore.js').PairCore;
 const ru = (list) => list.map((r) => (typeof r === 'string' ? { ru: r, uz: '' } : r));
 const names = (groups) => groups.map((g) => g.map((w) => w.ru).join('|'));
@@ -1066,14 +1244,468 @@ async function offlineQueueTests() {
   check('chiqish tugmasi bor', h.indexOf('data-act="logout"') >= 0);
   check('chiqish ogohlantiruvchi rangda', h.indexOf('--danger') >= 0);
 
+  /* Mavzu tanlash — boshqa foydalanuvchida Sozlamalar yopiq, shuning
+     uchun u faqat shu yerdan mavzuni almashtira oladi. */
+  check('mavzu bo\'limi chiqdi', h.indexOf('Ko\'rinish') >= 0);
+  ['auto', 'dark', 'light'].forEach((t) => {
+    check('mavzu tanlovi: ' + t, h.indexOf('"v":"' + t + '"') >= 0);
+  });
+  /* Saqlangan tanlov belgilangan bo'lishi kerak — aks holda foydalanuvchi
+     qaysi mavzuda turganini bilmaydi. */
+  const hDark = loadAccountSection(RUX, U, { app_theme: 'dark' });
+  const iDark = hDark.indexOf('"v":"dark"');
+  check('saqlangan mavzu belgilangan',
+    hDark.slice(Math.max(0, iDark - 90), iDark).indexOf('class="active"') >= 0,
+    hDark.slice(Math.max(0, iDark - 90), iDark));
+  const iAuto = hDark.indexOf('"v":"auto"');
+  check('tanlanmagan mavzu belgilanmagan',
+    hDark.slice(Math.max(0, iAuto - 90), iAuto).indexOf('class="active"') < 0);
+
   // Adminda bu blok CHIQMASIN — unda hammasi Sozlamalarda
   eq('adminda akkaunt bloki yo\'q', loadAccountSection('*', U), '');
 }
 
 /* =========================================================
+   AUDIROVANIYE: savol bloki subtitrga tushmasin
+   ========================================================= */
+{
+  const f = loadSubtitleFilter();
+  const S = (text, k) => f({ text: text, k: k });
+
+  // Dialog qatorlari — KO'RSATILADI (uzun tire —)
+  check('dialog qatori subtitrda', S('— Здравствуйте! Меня зовут Алексей.'));
+  check('vaqt belgili dialog subtitrda', S('[00:01 - 00:04] — Добрый день!'));
+  check('oddiy matn subtitrda', S('Это простое предложение.'));
+
+  // Savol bloki — KO'RSATILMAYDI
+  eq('savol yashirin', S('? Savol 1: Ismlari kim?'), false);
+  eq('to\'g\'ri javob yashirin', S('+ Aleksey va Anna'), false);
+  eq('noto\'g\'ri javob yashirin', S('- Ivan va Mariya'), false);
+
+  // Sarlavha, bo'sh qator, eski youtube havolasi — KO'RSATILMAYDI
+  eq('sarlavha yashirin', S('01. Знакомство', 'h'), false);
+  eq('bo\'sh qator yashirin', S('   '), false);
+  eq('youtube havolasi yashirin', S('youtube: https://youtu.be/abc'), false);
+
+  // Uzun tire (—) va defis (-) chalkashmasin — bu farq muhim
+  check('uzun tire dialog sifatida qoladi', S('— Нет, я начал учить его.'));
+}
+
+/* =========================================================
+   AUDIROVANIYE: Ear-Training & Fonetika mavzulari va kartochkalari
+   ========================================================= */
+{
+  const srcHub = fs.readFileSync(path.join(ROOT, 'assets/js/app2/listening-hub.js'), 'utf8');
+  const scopeHub = {};
+  const iRu = srcHub.indexOf('  var RU_TOPICS = [');
+  const iRuEnd = srcHub.indexOf('\n  ];', iRu);
+  new Function('exports', srcHub.slice(iRu, iRuEnd + 4) + '\nexports.RU_TOPICS = RU_TOPICS;')(scopeHub);
+  const ruTopics = scopeHub.RU_TOPICS;
+
+  check('ru_listening: kamida 14 ta dars mavjud', ruTopics && ruTopics.length >= 14);
+  const cats = new Set(ruTopics.map(t => t.cat));
+  check('ru_listening: 4 ta toifa bor (reduction, liaison, homophones, phrases)',
+    ['reduction', 'liaison', 'homophones', 'phrases'].every(c => cats.has(c)));
+
+  const srcDoc = fs.readFileSync(path.join(ROOT, 'assets/js/app2/listening-doc.js'), 'utf8');
+  const iCards = srcDoc.indexOf('  function parseCards(');
+  const iCardsEnd = srcDoc.indexOf('\n  }', iCards) + 4;
+  const scopeDoc = {};
+  new Function('exports', srcDoc.slice(iCards, iCardsEnd) + '\nexports.parseCards = parseCards;')(scopeDoc);
+  const parseCards = scopeDoc.parseCards;
+
+  const firstCards = parseCards(ruTopics[0].content);
+  check('ru_listening: birinchi mavzuda kartochkalar bor', firstCards && firstCards.length >= 4);
+  check('ru_listening: kartochkada sound va mean bor', !!firstCards[0].sound && !!firstCards[0].mean);
+}
+
+/* =========================================================
+   Говорение / Письмо — .md parseri (talkwrite.js)
+   ========================================================= */
+{
+  const parse = loadTalkWriteParse();
+
+  const md = [
+    '# Семья',
+    '',
+    '## Расскажите о своей семье.',
+    ':: Oilangiz haqida gapirib bering.',
+    '',
+    '### Javob rejasi',
+    '1. Nechta odam ekaningizni ayting.',
+    '2. Har birini tanishtiring.',
+    '',
+    '### Kerakli iboralar',
+    '- У меня большая семья. :: Mening oilam katta.',
+    '- Нас пятеро. :: Biz beshtamiz.',
+    '',
+    '### Namuna javob',
+    'У меня большая семья.',
+    ':: Mening oilam katta.',
+    '',
+    '## Где вы живёте?',
+    ':: Siz qayerda yashaysiz?'
+  ].join('\n');
+
+  const d = parse(md);
+
+  eq('tw: sarlavha', d.title, 'Семья');
+  eq('tw: savollar soni', d.items.length, 2);
+  eq('tw: savol matni', d.items[0].q, 'Расскажите о своей семье.');
+  eq('tw: savol tarjimasi', d.items[0].tr, 'Oilangiz haqida gapirib bering.');
+  eq('tw: bloklar soni', d.items[0].blocks.length, 3);
+  eq('tw: blok nomlari',
+    d.items[0].blocks.map((b) => b.label),
+    ['Javob rejasi', 'Kerakli iboralar', 'Namuna javob']);
+
+  /* Tartibli ro'yxat raqami saqlanishi kerak — ekranda o'sha raqam chiqadi. */
+  eq('tw: qadam turi', d.items[0].blocks[0].rows[0].k, 'n');
+  eq('tw: qadam raqami', d.items[0].blocks[0].rows[0].n, '1');
+
+  /* Ibora `- matn :: tarjima` — ikkalasi ham ajralishi shart, aks holda
+     tugmada tarjimasi bilan qo'shilib ketgan matn o'qib yuborilardi. */
+  const ph = d.items[0].blocks[1].rows[0];
+  eq('tw: ibora turi', ph.k, 'li');
+  eq('tw: ibora matni', ph.text, 'У меня большая семья.');
+  eq('tw: ibora tarjimasi', ph.tr, 'Mening oilam katta.');
+
+  /* Alohida `::` qatori — YUQORIDAGI oddiy qatorning tarjimasi. */
+  const ex = d.items[0].blocks[2].rows[0];
+  eq('tw: namuna gapi', ex.text, 'У меня большая семья.');
+  eq('tw: namuna tarjimasi', ex.tr, 'Mening oilam katta.');
+
+  /* Ikkinchi savolning `::` si BIRINCHISIGA yopishib qolmasligi kerak. */
+  eq('tw: ikkinchi savol tarjimasi', d.items[1].tr, 'Siz qayerda yashaysiz?');
+
+  /* `##` dan oldingi matn — kirish qismi, savolga tushib ketmasin. */
+  const d2 = parse('# Nom\nKirish gapi.\n\n## Savol?\n:: Tarjima');
+  eq('tw: kirish qismi', d2.intro.length, 1);
+  eq('tw: kirish matni', d2.intro[0].text, 'Kirish gapi.');
+  eq('tw: kirish savolga tushmadi', d2.items[0].blocks.length, 0);
+
+  /* Bo'sh fayl — yiqilmasin, bo'sh ro'yxat qaytsin. */
+  eq('tw: bo\'sh fayl', parse('').items.length, 0);
+
+  /* Tarjimasiz ro'yxat qatori ovoz tugmasi BO'LMASLIGI kerak — o'zbekcha
+     g'oya rus ovozi bilan o'qib berilardi. Chizuvchi shu farqni qiladi. */
+  const d3 = parse('## S?\n:: T\n\n### G\'oyalar\n- Faqat o\'zbekcha g\'oya\n\n### Kerakli iboralar\n- Привет :: Salom');
+  eq('tw: tarjimasiz ro\'yxat', d3.items[0].blocks[0].rows[0].tr, '');
+  eq('tw: iborada tarjima', d3.items[0].blocks[1].rows[0].tr, 'Salom');
+
+  const rowHtml = loadTalkWriteRow();
+  const bullet = rowHtml(d3.items[0].blocks[0].rows[0], 'ru_speaking');
+  const phrase = rowHtml(d3.items[0].blocks[1].rows[0], 'ru_speaking');
+  check('tw: tarjimasiz qatorda ovoz tugmasi yo\'q', bullet.indexOf('twSay') < 0, bullet);
+  check('tw: iborada ovoz tugmasi bor', phrase.indexOf('twSay') >= 0, phrase);
+  check('tw: ovoz tugmasi ASL matnni o\'qiydi',
+    phrase.indexOf('\"t\":\"Привет\"') >= 0, phrase);
+
+  /* Ilova bilan BIRGA tarqatiladigan namunalar haqiqatan ochilishi kerak:
+     ular buzuq bo'lsa foydalanuvchi birinchi qadamdayoq to'xtab qolardi. */
+  const S = loadTalkWriteSamples();
+  [['speak', S.speak], ['write', S.write]].forEach(([kind, text]) => {
+    const doc = parse(text);
+    check('tw: ' + kind + ' namunada savol bor', doc.items.length >= 2,
+      'topildi: ' + doc.items.length);
+    doc.items.forEach((it, i) => {
+      check('tw: ' + kind + ' #' + (i + 1) + ' tarjimasi bor', !!it.tr, it.q);
+      const filled = it.blocks.filter((b) => b.label && b.rows.length);
+      check('tw: ' + kind + ' #' + (i + 1) + ' bloklari to\'liq', filled.length >= 5,
+        'bloklar: ' + filled.length);
+      /* Chet tilidagi ibora bo'limlarida tarjima bo'lishi SHART: aynan
+         shu qatorlar bosilib ovoz chiqaradi. O'zbekcha ro'yxatlar
+         ("G'oyalar") tarjimasiz — ular oddiy nuqtali qator bo'lib chiqadi. */
+      it.blocks.forEach((b) => {
+        if (!/ibora|ulagich|bog'lovchi/i.test(b.label)) return;
+        b.rows.forEach((r) => {
+          if (r.k === 'li') check('tw: ' + kind + ' iborada tarjima bor', !!r.tr, r.text);
+        });
+      });
+    });
+  });
+}
+
+/* =========================================================
+   O'qish — surish chizig'i va matndagi so'zlar
+   ========================================================= */
+{
+  const RB = loadReadingBits();
+  const R = RB.R;
+  /* `getBoundingClientRect` o'rniga soxta chiziq: chapi 0, eni 100px. */
+  const track = { getBoundingClientRect: () => ({ left: 0, width: 100 }) };
+
+  R.sentences = new Array(10).fill(0).map((_, i) => ({ text: 'gap ' + i }));
+
+  eq('seek: eng chap -> 1-gap', RB.seekIndexAt(track, 0), 0);
+  eq('seek: eng o\'ng -> oxirgi gap', RB.seekIndexAt(track, 100), 9);
+  /* 50% — 5-gapning O'NG cheti, ya'ni hali 5-gap (indeks 4).
+     44% — o'sha gap yo'lagining ichi (40-50%). Ikkalasi birga
+     yaxlitlash qoidasini qulflaydi: `round` bilan 44% 4-gapga tushib
+     ketardi, `round(x-0.5)` bilan esa 50% 6-gapga sakrardi. */
+  eq('seek: gap yo\'lagining o\'ng cheti', RB.seekIndexAt(track, 50), 4);
+  eq('seek: gap yo\'lagining ichi', RB.seekIndexAt(track, 44), 4);
+  eq('seek: keyingi yo\'lak boshi', RB.seekIndexAt(track, 51), 5);
+  /* Chiziqdan tashqarida ham chegaradan chiqib ketmasligi kerak: barmoq
+     surilganda ekran chetiga chiqib ketadi. */
+  eq('seek: chapdan tashqari', RB.seekIndexAt(track, -40), 0);
+  eq('seek: o\'ngdan tashqari', RB.seekIndexAt(track, 400), 9);
+
+  /* Eni nol bo'lsa (panel hali chizilmagan) bo'linish NaN berardi. */
+  const zero = { getBoundingClientRect: () => ({ left: 0, width: 0 }) };
+  R.idx = 3;
+  eq('seek: eni nol bo\'lsa joyida qoladi', RB.seekIndexAt(zero, 10), 3);
+
+  /* --- Matndagi so'zlar (C tugmasi) --- */
+  R.blocks = [
+    { tokens: [
+      { k: 'w', w: 'кафе', t: 'kafe' },
+      { k: 'x', s: ' ' },
+      { k: 'w', w: 'меню', t: 'menyu' },
+      { k: 'w', w: 'стол', t: '' }          // tarjimasiz — olinmaydi
+    ] },
+    { k: 'h', tokens: [] },
+    { tokens: [
+      { k: 'w', w: 'Кафе', t: 'kafe' },     // takror (katta harf bilan)
+      { k: 'w', w: 'суп', t: 'sho\'rva' }
+    ] }
+  ];
+  const w = RB.textWords();
+  eq('C: so\'zlar soni', w.length, 3);
+  eq('C: so\'zlar', w.map((x) => x.ru), ['кафе', 'меню', 'суп']);
+  eq('C: tarjimalar', w.map((x) => x.uz), ['kafe', 'menyu', 'sho\'rva']);
+  /* Lug'at ko'rinishlari shu maydonlarni kutadi — bittasi yo'q bo'lsa
+     mashqda `undefined` chiqardi. */
+  check('C: lug\'at maydonlari to\'liq',
+    ['ru', 'uz', 'note', 'ex', 'pairWith', 'meaningGroup'].every((k) => k in w[0]),
+    JSON.stringify(Object.keys(w[0])));
+
+  R.blocks = [{ tokens: [{ k: 'x', s: 'faqat oddiy matn' }] }];
+  eq('C: belgilangan so\'z yo\'q', RB.textWords().length, 0);
+}
+
+/* =========================================================
+   Pastki panel yashiriladigan ko'rinishlar
+   ========================================================= */
+{
+  const full = loadFullscreenViews();
+  /* O'quvchi va pleyer sahifalari — panel PASTDAGI pleyer bilan ustma-ust
+     tushardi (foydalanuvchi rasmda aynan shuni ko'rsatdi). */
+  ['reading_doc', 'listening_doc', 'speaking_doc', 'writing_doc'].forEach((v) => {
+    check('nav: ' + v + ' da panel yashirin', full.indexOf(v) >= 0);
+  });
+  /* Ro'yxat/markaz sahifalarida panel QOLISHI kerak — u yerda foydalanuvchi
+     bo'limlar orasida yuradi. */
+  ['home', 'languages', 'library', 'vocab', 'vocab_practice', 'listening_hub',
+   'profile', 'stats'].forEach((v) => {
+    check('nav: ' + v + ' da panel qoladi', full.indexOf(v) < 0);
+  });
+}
+
+/* =========================================================
+   Говорение / Письмо — modul butunligicha yuklanadi va chizadi
+   ========================================================= */
+async function talkWriteRenderTests() {
+  const md = [
+    '# Семья',
+    '## Расскажите о своей семье.',
+    ':: Oilangiz haqida gapirib bering.',
+    '### Kerakli iboralar',
+    '- Нас пятеро. :: Biz beshtamiz.',
+    '## Где вы живёте?',
+    ':: Siz qayerda yashaysiz?'
+  ].join('\n');
+
+  const M = loadTalkWriteModule({ name: 'Semya', folder: 'A1', content: md });
+
+  check('tw: speaking_doc ro\'yxatdan o\'tdi', !!M.views.speaking_doc);
+  check('tw: writing_doc ro\'yxatdan o\'tdi', !!M.views.writing_doc);
+  check('tw: twSay amali bor', typeof M.App.actions.twSay === 'function');
+  check('tw: twSample amali bor', typeof M.App.actions.twSample === 'function');
+  check('tw: twGuide amali bor', typeof M.App.actions.twGuide === 'function');
+
+  /* --- Ro'yxat ko'rinishi --- */
+  M.views.speaking_doc.render(M.page, { sec: 'ru_speaking', id: 7 });
+  await new Promise((r) => setImmediate(r));
+  const list = M.node('tw-body').innerHTML;
+  check('tw: ro\'yxatda ikkala savol bor',
+    list.indexOf('Расскажите') >= 0 && list.indexOf('Где вы живёте') >= 0, list.slice(0, 200));
+  check('tw: savol bosiladigan', list.indexOf('"v":"speaking_doc"') >= 0);
+  check('tw: ro\'yxatda ovoz tugmasi yo\'q', list.indexOf('twSay') < 0);
+  /* Ro'yxatdan chiqish — papkaga qaytadi. */
+  eq('tw: ro\'yxatdan ortga papkaga',
+    JSON.parse(M.node('tw-back').attrs['data-arg'].replace(/&#39;/g, "'")).p.path, 'A1');
+
+  /* --- Bitta savol ko'rinishi --- */
+  M.views.speaking_doc.render(M.page, { sec: 'ru_speaking', id: 7, q: '0' });
+  await new Promise((r) => setImmediate(r));
+  const one = M.node('tw-body').innerHTML;
+  check('tw: savol matni chiqdi', one.indexOf('Расскажите') >= 0);
+  check('tw: savol tarjimasi chiqdi', one.indexOf('Oilangiz haqida') >= 0);
+  check('tw: blok nomi chiqdi', one.indexOf('Kerakli iboralar') >= 0);
+  check('tw: ibora ovoz tugmasi bo\'ldi', one.indexOf('twSay') >= 0, one.slice(0, 300));
+  check('tw: ikkinchi savol bu yerda yo\'q', one.indexOf('Где вы живёте') < 0);
+  /* Savol ichidan chiqish — RO'YXATGA qaytadi, papkaga emas. */
+  const back = JSON.parse(M.node('tw-back').attrs['data-arg'].replace(/&#39;/g, "'"));
+  eq('tw: savoldan ortga ro\'yxatga', back.v, 'speaking_doc');
+  eq('tw: ortga qaytishda savol raqami yo\'q', back.p.q, undefined);
+
+  /* --- Matn hali yozilmagan holat --- */
+  const E = loadTalkWriteModule({ name: 'Bo\'sh', folder: '', content: '' });
+  E.views.writing_doc.render(E.page, { sec: 'ru_writing', id: 9 });
+  await new Promise((r) => setImmediate(r));
+  const empty = E.node('tw-body').innerHTML;
+  check('tw: bo\'sh materialda namuna tugmasi bor', empty.indexOf('twSample') >= 0);
+  check('tw: bo\'sh materialda qo\'llanma tugmasi bor', empty.indexOf('twGuide') >= 0);
+}
+
+/* =========================================================
+   O'qish — audio buferi
+   ========================================================= */
+async function audioBufferTests() {
+  const B = loadAudioBuffer();
+
+  /* Bir xil gap IKKI marta so'ralsa — tarmoqqa BIR marta chiqiladi. */
+  await B.fetchAudio('Привет');
+  await B.fetchAudio('Привет');
+  eq('audio: takroriy gap keshdan', B.log.fetches.length, 1);
+  eq('audio: ro\'yxatda bitta kalit', B.order().length, 1);
+
+  /* Til o'zgarsa kalit ham boshqa bo'lishi kerak — aks holda ruscha
+     ovoz inglizcha gapga berilardi. */
+  B.R.lang = 'en-US';
+  await B.fetchAudio('Привет');
+  eq('audio: til kalitga kiradi', B.log.fetches.length, 2);
+  B.R.lang = 'ru-RU';
+
+  /* Uzilgan so'rov — bir marta QAYTA uriniladi va ro'yxatda kalit
+     ikkilanmaydi (ikkilansa, o'sha ovoz o'zining nusxasi tufayli
+     vaqtidan oldin o'chib ketardi). */
+  const before = B.order().length;
+  B.failNextFetches(1);
+  const url = await B.fetchAudio('Здравствуйте');
+  check('audio: qayta urinishdan keyin ovoz keldi', /^blob:/.test(url), String(url));
+  eq('audio: ikki marta so\'raldi', B.log.fetches.length, 4);
+  eq('audio: kalit ikkilanmadi', B.order().length, before + 1);
+
+  /* Ikki urinish ham yiqilsa — xato ko'tariladi (chaqiruvchi brauzer
+     ovoziga o'tadi), kesh esa buzuq yozuv bilan qolmaydi. */
+  B.failNextFetches(2);
+  let threw = false;
+  try { await B.fetchAudio('Ошибка'); } catch (e) { threw = true; }
+  check('audio: ikki urinish ham yiqilsa xato', threw);
+  check('audio: yiqilgan gap keshda qolmadi', !('ru|Ошибка' in B.buf()));
+
+  /* Bufer to'lganda ENG ESKISI o'chiriladi va uning blob manzili
+     bo'shatiladi — aks holda xotira oqib ketardi. */
+  const C = loadAudioBuffer();
+  for (let i = 0; i < 20; i++) await C.fetchAudio('gap ' + i);
+  check('audio: bufer chegarada', C.order().length <= 14, 'uzunlik: ' + C.order().length);
+  check('audio: eskilari bo\'shatildi', C.log.revoked.length >= 5,
+    'bo\'shatilgan: ' + C.log.revoked.length);
+  check('audio: eng oxirgi gap saqlanib qoldi', !!C.buf()['ru|gap 19']);
+
+  /* Bo'limdan chiqilganda hammasi bo'shatiladi. */
+  const revokedBefore = C.log.revoked.length;
+  C.bufClear();
+  check('audio: chiqishda hammasi bo\'shatildi',
+    C.log.revoked.length > revokedBefore && C.order().length === 0);
+
+  /* Oldindan yuklash — keyingi 3 ta gap, ro'yxat oxiridan oshib ketmasdan. */
+  const P = loadAudioBuffer();
+  P.R.sentences = [{ text: 'a' }, { text: 'b' }, { text: 'c' }, { text: 'd' }];
+  P.preload(2);
+  await new Promise((r) => setImmediate(r));
+  eq('audio: ro\'yxat oxiridan oshmaydi', P.log.fetches.length, 2);
+
+  /* Nechta gap oldindan olinishi — o'lchov: kam bo'lsa gaplar orasida
+     kutish qoladi, ko'p bo'lsa boshlanishdayoq tarmoqqa yuk tushadi. */
+  const Q = loadAudioBuffer();
+  Q.R.sentences = new Array(10).fill(0).map((_, i) => ({ text: 'gap ' + i }));
+  Q.preload(0);
+  await new Promise((r) => setImmediate(r));
+  eq('audio: oldindan uchta gap', Q.log.fetches.length, 3);
+}
+
+/* =========================================================
+   Markdown chizuvchi — qator tashlash, ko'rinmas belgilar, javob bloki
+   ========================================================= */
+{
+  const md = loadMdRenderer();
+
+  /* HAR QATOR ALOHIDA. Klassik markdown ketma-ket qatorlarni bitta
+     xatboshiga yopishtiradi; bu yerdagi hujjatlarda esa har qator —
+     alohida fikr ("Xato 1 / ❌ / ✅" uchligi bir qatorga yopishib
+     qolardi). */
+  eq('md: qatorlar <br> bilan ajraladi',
+    md('Birinchi qator\nIkkinchi qator'),
+    '<p>Birinchi qator<br>Ikkinchi qator</p>');
+
+  /* Bo'sh qator — YANGI xatboshi, `<br>` emas. */
+  eq('md: bo\'sh qator yangi xatboshi',
+    md('Birinchi\n\nIkkinchi'),
+    '<p>Birinchi</p><p>Ikkinchi</p>');
+
+  /* KO'RINMAS BELGI. Notion nusxasida "bo'sh" qator ichida nol
+     kenglikdagi bo'shliq turadi; u bo'shliq deb tanilmasa butun hujjat
+     bitta uzun xatboshiga aylanardi (2026-09-09 dagi "Django 1-2 kun"). */
+  eq('md: nol kenglikli bo\'shliq — bo\'sh qator',
+    md('Birinchi\n​\nIkkinchi'),
+    '<p>Birinchi</p><p>Ikkinchi</p>');
+  check('md: nol kenglikli bo\'shliq matnda qolmaydi',
+    md('so​z').indexOf('​') < 0, md('so​z'));
+  /* UZILMAS BO'SHLIQ (U+00A0). Word/Google Docs dan nusxa olingan matn
+     unga to'la bo'ladi. Brauzer uzilmas bo'shliqda qatorni BO'LMAYDI —
+     telefonda uzun qator ekrandan chiqib ketadi. Oddiy bo'shliqqa
+     keltiriladi (ko'rinishi bir xil, lekin o'ralishi to'g'ri). */
+  eq('md: uzilmas bo\'shliq oddiysiga aylandi',
+    md('bir\u00a0ikki'), '<p>bir ikki</p>');
+
+  /* Kod bloki ichiga `<br>` tushmasligi kerak — u yerda qatorlar
+     `<pre>` ning o'zi bilan saqlanadi. */
+  const code = md('```python\nbir\nikki\n```');
+  check('md: kod blokida <br> yo\'q', code.indexOf('<br>') < 0, code);
+  check('md: kod bloki saqlandi', code.indexOf('bir\nikki') >= 0, code);
+
+  /* Ro'yxat va sarlavha eskicha ishlashda davom etadi. */
+  check('md: ro\'yxat', md('- bir\n- ikki').indexOf('<li>bir</li><li>ikki</li>') >= 0);
+  check('md: sarlavha', md('# Nom').indexOf('<h2>Nom</h2>') >= 0);
+  check('md: jadval', md('| a | b |\n|---|---|\n| 1 | 2 |').indexOf('<table') >= 0);
+
+  /* YIG'ILADIGAN JAVOB BLOKI. 592 hujjatdan 314 tasi mashq javoblarini
+     `<details>` ichiga yashiradi; ilgari teglar oddiy yozuv bo'lib
+     ko'rinardi va javob doim ochiq turardi. */
+  const det = md('<details>\n<summary>Javoblarni ko\'rish</summary>\n\nJavob matni\n</details>');
+  check('md: details ochildi', det.indexOf('<details class="md-details">') >= 0, det);
+  check('md: summary chizildi', det.indexOf('<summary>Javoblarni ko\'rish</summary>') >= 0, det);
+  check('md: details yopildi', det.indexOf('</details>') >= 0, det);
+  check('md: details qochirilmadi', det.indexOf('&lt;details') < 0, det);
+  check('md: ichidagi matn chizildi', det.indexOf('<p>Javob matni</p>') >= 0, det);
+
+  /* Summary ichidagi `<b>` — qalin matn bo'lishi kerak, yozuv emas. */
+  const detB = md('<details>\n<summary><b>To\'g\'ri javoblar</b></summary>\nX\n</details>');
+  check('md: summary ichidagi <b> qalin bo\'ldi',
+    detB.indexOf('<summary><b>To\'g\'ri javoblar</b></summary>') >= 0, detB);
+
+  /* Yopilmagan blok HTML ni buzmasligi kerak. */
+  const un = md('<details>\n<summary>S</summary>\nmatn');
+  eq('md: yopilmagan details o\'zi yopiladi',
+    (un.match(/<details/g) || []).length, (un.match(/<\/details>/g) || []).length);
+
+  /* Matn ichida `<details>` haqida GAPIRILSA — u teg emas, oddiy yozuv. */
+  check('md: matndagi <details> so\'zi qochiriladi',
+    md('javoblar `<details>` ichida').indexOf('&lt;details&gt;') >= 0,
+    md('javoblar `<details>` ichida'));
+
+  /* Umumiy HTML o'tkazilmasligi kerak — faqat shu ikki teg. */
+  check('md: boshqa HTML qochiriladi',
+    md('<script>alert(1)</script>').indexOf('&lt;script&gt;') >= 0,
+    md('<script>alert(1)</script>'));
+}
+
+/* =========================================================
    Natija
    ========================================================= */
-offlineQueueTests().then(() => {
+Promise.all([offlineQueueTests(), talkWriteRenderTests(), audioBufferTests()]).then(() => {
   console.log('');
   if (fail === 0) {
     console.log('  ' + pass + ' ta test o\'tdi.');

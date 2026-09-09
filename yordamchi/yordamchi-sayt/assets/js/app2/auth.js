@@ -610,6 +610,10 @@
         grammar: 'languages', grammar_topic: 'languages', library: 'languages',
         library_doc: 'languages', reading_doc: 'languages', listening_doc: 'languages',
         listening_hub: 'languages',
+        /* Говорение / Письмо ko'rinishlari (talkwrite.js). Prefiks zaxirasi
+           bularni topa olmaydi (`speaking`/`writing` guruhi yo'q), shuning
+           uchun ATAYLAB yozildi. */
+        speaking_doc: 'languages', writing_doc: 'languages',
         vocab: 'languages', vocab_browse: 'languages',
         /* Lug'at ichidagi EKRANLAR. Bular xaritada yo'q edi va oddiy
            foydalanuvchi lug'at kategoriyasini bosganda "ruxsat etilmagan"

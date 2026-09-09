@@ -25,12 +25,12 @@
   var SECTIONS = {
     en_reading:   { n: 'Reading',   parent: 'english', parentName: 'Ingliz tili', ic: 'book', doc: 'reading_doc' },
     en_listening: { n: 'Listening', parent: 'english', parentName: 'Ingliz tili', ic: 'headphones', doc: 'listening_doc' },
-    en_writing:   { n: 'Writing',   parent: 'english', parentName: 'Ingliz tili', ic: 'edit' },
-    en_speaking:  { n: 'Speaking',  parent: 'english', parentName: 'Ingliz tili', ic: 'mic' },
+    en_writing:   { n: 'Writing',   parent: 'english', parentName: 'Ingliz tili', ic: 'edit', doc: 'writing_doc' },
+    en_speaking:  { n: 'Speaking',  parent: 'english', parentName: 'Ingliz tili', ic: 'mic', doc: 'speaking_doc' },
     ru_reading:   { n: 'Чтение',      parent: 'russian', parentName: 'Русский язык', ic: 'book', doc: 'reading_doc' },
     ru_listening: { n: 'Аудирование', parent: 'russian', parentName: 'Русский язык', ic: 'headphones', doc: 'listening_doc' },
-    ru_speaking:  { n: 'Говорение',   parent: 'russian', parentName: 'Русский язык', ic: 'mic' },
-    ru_writing:   { n: 'Письмо',      parent: 'russian', parentName: 'Русский язык', ic: 'edit' },
+    ru_speaking:  { n: 'Говорение',   parent: 'russian', parentName: 'Русский язык', ic: 'mic', doc: 'speaking_doc' },
+    ru_writing:   { n: 'Письмо',      parent: 'russian', parentName: 'Русский язык', ic: 'edit', doc: 'writing_doc' },
     ru_shadowing: { n: 'Шэдоуинг',    parent: 'russian', parentName: 'Русский язык', ic: 'refresh' }
   };
   function secInfo(k) { return SECTIONS[k] || { n: 'Materiallar', parent: 'languages', parentName: '', ic: 'book' }; }
@@ -233,6 +233,18 @@
           '<span class="li-ic" data-icon="download" data-icon-size="15"></span>' +
           '<div class="li-main"><div class="li-title">Namuna fayl</div>' +
           '<div class="li-sub">So\'z va gap tarjimasi qanday yozilishi</div></div></button>'
+        : '') +
+      /* Говорение / Письмо ham o'z formatiga ega — namuna va AI qo'llanmasi
+         shu yerdan olinadi (talkwrite.js). */
+      ((window.TalkWrite && TalkWrite.isSec(a.sec))
+        ? '<button class="list-row" data-act="twSample" data-arg=\'' + App.arg({ sec: a.sec }) + '\'>' +
+          '<span class="li-ic" data-icon="download" data-icon-size="15"></span>' +
+          '<div class="li-main"><div class="li-title">Namuna fayl</div>' +
+          '<div class="li-sub">Savol/mavzu qanday yoziladi</div></div></button>' +
+          '<button class="list-row" data-act="twGuide" data-arg=\'' + App.arg({ sec: a.sec }) + '\'>' +
+          '<span class="li-ic" data-icon="file" data-icon-size="15"></span>' +
+          '<div class="li-main"><div class="li-title">AI uchun qo\'llanma</div>' +
+          '<div class="li-sub">PDF bilan birga AI ga beriladi</div></div></button>'
         : '');
     var sh = App.sheet(html, { title: 'Qo\'shish' });
     App.icons(sh);

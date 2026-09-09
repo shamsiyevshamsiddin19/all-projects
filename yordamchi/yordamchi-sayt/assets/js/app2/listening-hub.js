@@ -1,341 +1,112 @@
 /* =========================================================================
    Аудирование / Listening Hub — Zamonaviy Mavzular Katalogi
+   - Rus tili uchun: Fonetika, Qisqarishlar (Редукция), Слитная речь, Омофоны va Jonli iboralar
+   - Ingliz tili uchun: Dialoglar va amaliy tinglash darslari
    - Telegram uslubidagi chat-list kartalari (raqamli avatarlar, nishonlar, darajalar)
-   - 4 ta asosiy hayotiy toifa: Hayotiy, Shahar, Sayohat, Ish & Muloqot
    - Yuqori «⚡ Tezkor maishiy trenajyor» blits-kartasi
    - Serverdagi `language_topics` bilan to'liq integratsiya va oflayn zaxira
    ========================================================================= */
 (function () {
   'use strict';
 
-  /* Built-in 18 ta amaliy audio-dialog darsi (Rus tili) */
   var RU_TOPICS = [
-    // ☕ 1. Повседневная жизнь
     {
-      id: 'ru_l_01', num: '01', cat: 'life', catName: 'Повседневная', level: 'A1',
-      name: '01. Знакомство и первые фразы',
-      desc: 'Tanishuv, ism so\'rash va qayerdanligini aytish',
-      folder: 'Повседневная жизнь',
-      content:
-        'youtube: https://www.youtube.com/watch?v=j3y-q66i2nI\n\n' +
-        '# 01. Знакомство и первые фразы\n\n' +
-        '[00:01 - 00:04] — Здравствуйте! Меня зовут {Алексей|Aleksey}. А как вас зовут?\n' +
-        ':: Assalomu alaykum! Mening ismim Aleksey. Sizning ismingiz nima?\n\n' +
-        '[00:05 - 00:09] — Очень приятно! Меня зовут {Анна|Anna}. Вы давно учите русский язык?\n' +
-        ':: Juda yoqimli! Mening ismim Anna. Rus tilini o\'rganayotganingizga ancha bo\'ldimi?\n\n' +
-        '[00:10 - 00:15] — Нет, я начал учить его только в прошлом {месяце|oy}. Но я стараюсь практиковаться каждый день.\n' +
-        ':: Yo\'q, men uni faqat o\'tgan oyda o\'rganishni boshladim. Ammo har kuni mashq qilishga harakat qilaman.\n\n' +
-        '[00:16 - 00:20] — Это здорово! У вас уже очень хорошее {произношение|talaffuz}.\n' +
-        ':: Bu ajoyib! Sizda allaqachon juda yaxshi talaffuz bor.\n\n' +
-        '[00:21 - 00:25] — Спасибо большое! Мне очень нравится звучание этого {языка|til}.\n' +
-        ':: Katta rahmat! Menga bu tilning jaranglashi juda yoqadi.\n\n' +
-        '? Savol 1: Suhbatdoshlarning ismlari kim?\n' +
-        '+ Aleksey va Anna\n' +
-        '- Ivan va Mariya\n' +
-        '- Dmitriy va Yelena\n\n' +
-        '? Savol 2: Aleksey rus tilini qachon boshlagan?\n' +
-        '+ O\'tgan oyda\n' +
-        '- 2 yil oldin\n' +
-        '- Bolaligida\n\n' +
-        '? Savol 3: Anna Alekseyning qaysi jihatini maqtadi?\n' +
-        '+ Yaxshi talaffuzini\n' +
-        '- Tez gapirishini\n' +
-        '- Ko\'p so\'z bilishini'
+      id: 'ru_l_01', num: '01', cat: 'reduction', catName: 'Редукция', level: 'A1',
+      name: "01. \u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435, \u0441\u0435\u0439\u0447\u0430\u0441, \u0441\u043f\u0430\u0441\u0438\u0431\u043e \u2014 \u0413\u043b\u0430\u0432\u043d\u044b\u0435 \u0441\u043e\u043a\u0440\u0430\u0449\u0435\u043d\u0438\u044f",
+      desc: "\u0417\u0434\u0440\u0430\u0441\u044c\u0442\u0435, \u0449\u0430\u0441, \u043f\u0430\u0441\u0438\u0431 \u2014 tezkor nutqda har kuni eshitiladigan qisqarishlar",
+      folder: "\u0420\u0435\u0434\u0443\u043a\u0446\u0438\u044f",
+      content: "# 01. \u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435, \u0441\u0435\u0439\u0447\u0430\u0441, \u0441\u043f\u0430\u0441\u0438\u0431\u043e \u2014 \u0413\u043b\u0430\u0432\u043d\u044b\u0435 \u0441\u043e\u043a\u0440\u0430\u0449\u0435\u043d\u0438\u044f\n> \u0417\u0434\u0440\u0430\u0441\u044c\u0442\u0435, \u0449\u0430\u0441, \u043f\u0430\u0441\u0438\u0431 \u2014 tezkor nutqda har kuni eshitiladigan qisqarishlar\n\n---\ncard: \u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435\nsound: [\u0417\u0434\u0440\u0430\u0441\u044c\u0442\u0435]\nspelling: \u0417\u0434\u0440\u0430[\u0432\u0441\u0442\u0432\u0443\u0439]\u0442\u0435\nmean: Assalomu alaykum / Salom\nexplain: Jonli tez nutqda \u00ab\u0432\u0441\u0442\u0432\u00bb tovush guruhi juda og'ir bo'lgani uchun o'rtadagi harflar butunlay yutiladi va faqat \u00ab\u0417\u0434\u0440\u0430\u0441\u044c\u0442\u0435\u00bb aytiladi.\nexample: \u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435, \u043f\u043e\u0434\u0441\u043a\u0430\u0436\u0438\u0442\u0435, \u043a\u043e\u0442\u043e\u0440\u044b\u0439 \u0447\u0430\u0441?\nexample_audio: \u0417\u0434\u0440\u0430\u0441\u044c\u0442\u0435, \u043f\u043e\u0434\u0441\u043a\u0430\u0436\u0438\u0442\u0435, \u043a\u043e\u0442\u043e\u0440\u044b\u0439 \u0447\u0430\u0441?\nexample_uz: Assalomu alaykum, aytingchi, soat necha bo'ldi?\n\n---\ncard: \u0421\u0435\u0439\u0447\u0430\u0441\nsound: [\u0429\u0430\u0441]\nspelling: \u0421[\u0435\u0439]\u0447\u0430\u0441\nmean: Hozir / Darhol\nexplain: Ruslar og'zaki nutqda deyarli hech qachon \u00ab\u0421\u0435\u0439-\u0447\u0430\u0441\u00bb deb to'liq aytmaydi. Birgina cho'ziq \u00ab\u0429\u0430\u0441\u00bb yoki \u00ab\u0429\u0430\u00bb tovushiga aylanadi.\nexample: \u041f\u043e\u0434\u043e\u0436\u0434\u0438 \u043c\u0438\u043d\u0443\u0442\u0443, \u044f \u0449\u0430\u0441 \u043f\u0440\u0438\u0434\u0443!\nexample_audio: \u041f\u043e\u0434\u043e\u0436\u0434\u0438 \u043c\u0438\u043d\u0443\u0442\u0443, \u044f \u0449\u0430\u0441 \u043f\u0440\u0438\u0434\u0443!\nexample_uz: Bir daqiqa kutib tur, hozir kelaman!\n\n---\ncard: \u0421\u043f\u0430\u0441\u0438\u0431\u043e\nsound: [\u041f\u0430\u0441\u0438\u0431]\nspelling: [\u0421]\u043f\u0430\u0441\u0438\u0431\u043e\nmean: Rahmat\nexplain: Do'stona va tezkor nutqda boshidagi \u00ab\u0421\u00bb harfi tushib qolib, faqat \u00ab\u041f\u0430\u0441\u0438\u0431\u00bb yoki \u00ab\u041f\u0430\u0441\u0438\u0431\u0430\u00bb deb aytiladi.\nexample: \u041f\u0430\u0441\u0438\u0431 \u0437\u0430 \u043f\u043e\u043c\u043e\u0449\u044c, \u0432\u044b\u0440\u0443\u0447\u0438\u043b!\nexample_audio: \u041f\u0430\u0441\u0438\u0431 \u0437\u0430 \u043f\u043e\u043c\u043e\u0449\u044c, \u0432\u044b\u0440\u0443\u0447\u0438\u043b!\nexample_uz: Yordaming uchun rahmat, qutqarding!\n\n---\ncard: \u041f\u043e\u0436\u0430\u043b\u0443\u0439\u0441\u0442\u0430\nsound: [\u041f\u0430\u0436\u0430\u043b\u0441\u0442\u0430]\nspelling: \u041f\u043e\u0436\u0430\u043b[\u0443\u0439]\u0441\u0442\u0430\nmean: Iltimos / Arzimaydi\nexplain: O'rtadagi \u00ab\u0443\u0439\u00bb harflari talaffuz qilinmaydi, so'z tez aytilganda \u00ab\u041f\u0430\u0436\u0430\u043b\u0441\u0442\u0430\u00bb bo'lib eshitiladi.\nexample: \u041f\u0435\u0440\u0435\u0434\u0430\u0439\u0442\u0435 \u0437\u0430 \u043f\u0440\u043e\u0435\u0437\u0434, \u043f\u043e\u0436\u0430\u043b\u0443\u0439\u0441\u0442\u0430.\nexample_audio: \u041f\u0435\u0440\u0435\u0434\u0430\u0439\u0442\u0435 \u0437\u0430 \u043f\u0440\u043e\u0435\u0437\u0434, \u043f\u0430\u0436\u0430\u043b\u0441\u0442\u0430.\nexample_uz: Yo'l haqini uzatib yuboring, iltimos.\n\n\n? Ovozda \u00ab\u0449\u0430\u0441\u00bb deb aytildi. Bu qaysi so'zning qisqartmasi?\n+ \u0421\u0435\u0439\u0447\u0430\u0441\n- \u0427\u0430\u0441\n- \u0421\u0447\u0430\u0441\u0442\u044c\u0435\n\n? \u00ab\u0417\u0434\u0440\u0430\u0441\u044c\u0442\u0435\u00bb eshitilganda aslida qaysi so'z nazarda tutilgan?\n+ \u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435\n- \u0417\u0434\u043e\u0440\u043e\u0432\u044c\u0435\n- \u0417\u0434\u0440\u0430\u0432\u044b\u0439\n\n? \u00ab\u041f\u043e\u0436\u0430\u043b\u0443\u0439\u0441\u0442\u0430\u00bb so'zida tezkor nutqda qaysi harflar yutiladi?\n+ \u0443\u0439\n- \u0436\u0430\n- \u0441\u0442\u0430"
     },
     {
-      id: 'ru_l_02', num: '02', cat: 'life', catName: 'Повседневная', level: 'A1',
-      name: '02. В кафе — заказ еды и напитков',
-      desc: 'Kafeda qahva va yegulik buyurtma qilish',
-      folder: 'Повседневная жизнь',
-      content:
-        'youtube: https://www.youtube.com/watch?v=R9K1uV7u35g\n\n' +
-        '# 02. В кафе — заказ еды и напитков\n\n' +
-        '[00:01 - 00:04] — Добрый день! Вы готовы сделать {заказ|buyurtma}?\n' +
-        ':: Xayrli kun! Buyurtma berishga tayyormisiz?\n\n' +
-        '[00:05 - 00:09] — Здравствуйте! Да, принесите, пожалуйста, {кофе|qahva} и круассан.\n' +
-        ':: Assalomu alaykum! Ha, menga iltimos qahva va kruassan keltiring.\n\n' +
-        '[00:10 - 00:14] — Какой кофе вы предпочитаете: {чёрный|qora} или с молоком?\n' +
-        ':: Qanday qahvani ma\'qul ko\'rasiz: qora yoki sutli?\n\n' +
-        '[00:15 - 00:18] — С молоком, пожалуйста, и без {сахара|shakar}.\n' +
-        ':: Sut bilan, iltimos, va shakarsiz.\n\n' +
-        '[00:19 - 00:22] — Хорошо. Что-нибудь ещё {желаете|xohlaysizmi}?\n' +
-        ':: Yaxshi. Yana biror narsa xohlaysizmi?\n\n' +
-        '[00:23 - 00:26] — Нет, спасибо, это {всё|hammasi}. Сколько с меня?\n' +
-        ':: Yo\'q, rahmat, shu xolos. Qancha to\'layman?\n\n' +
-        '[00:27 - 00:32] — С вас триста {рублей|rubl}. Оплата картой или {наличными|naqd pul}?\n' +
-        ':: Sizdan uch yuz rubl. To\'lov karta orqalimi yoki naqd?\n\n' +
-        '[00:33 - 00:36] — Картой, пожалуйста.\n' +
-        ':: Karta bilan, iltimos.\n\n' +
-        '? Savol 1: Mijoz kafeda nima buyurtma qildi?\n' +
-        '+ Qahva va kruassan\n' +
-        '- Choy va pishiriq\n' +
-        '- Borsh va non\n\n' +
-        '? Savol 2: Mijoz qahvani qanday ichadi?\n' +
-        '+ Sut bilan va shakarsiz\n' +
-        '- Qora va shakar bilan\n' +
-        '- Muzli va shirin\n\n' +
-        '? Savol 3: Buyurtma hisobi qancha bo\'ldi?\n' +
-        '+ 300 rubl\n' +
-        '- 500 rubl\n' +
-        '- 150 rubl'
+      id: 'ru_l_02', num: '02', cat: 'reduction', catName: 'Редукция', level: 'A1',
+      name: "02. \u0427\u0442\u043e, \u043f\u043e\u0442\u043e\u043c\u0443 \u0447\u0442\u043e, \u043a\u043e\u0433\u0434\u0430 \u2014 \u0421\u0432\u044f\u0437\u043a\u0438 \u0432\u043e\u043f\u0440\u043e\u0441\u043e\u0432",
+      desc: "\u0428\u0442\u043e, \u043f\u0430\u0442\u0430\u043c\u0443\u0448\u0442\u0430, \u043a\u0430\u0434\u0430 \u2014 savol va sabab birikmalarining jaranglashi",
+      folder: "\u0420\u0435\u0434\u0443\u043a\u0446\u0438\u044f",
+      content: "# 02. \u0427\u0442\u043e, \u043f\u043e\u0442\u043e\u043c\u0443 \u0447\u0442\u043e, \u043a\u043e\u0433\u0434\u0430 \u2014 \u0421\u0432\u044f\u0437\u043a\u0438 \u0432\u043e\u043f\u0440\u043e\u0441\u043e\u0432\n> \u0428\u0442\u043e, \u043f\u0430\u0442\u0430\u043c\u0443\u0448\u0442\u0430, \u043a\u0430\u0434\u0430 \u2014 savol va sabab birikmalarining jaranglashi\n\n---\ncard: \u0427\u0442\u043e\nsound: [\u0428\u0442\u043e]\nspelling: [\u0427\u2794\u0428]\u0442\u043e\nmean: Nima\nexplain: Rus tilida \u00ab\u0427\u0442\u043e\u00bb so'zi hech qachon \u00ab\u0427\u00bb bilan aytilmaydi, doimo \u00ab\u0428\u0442\u043e\u00bb deb talaffuz qilinadi. \u00ab\u0427\u0442\u043e-\u0442\u043e\u00bb esa \u00ab\u0428\u0442\u043e-\u0442\u0430\u00bb bo'ladi.\nexample: \u0427\u0442\u043e \u0442\u044b \u0434\u0435\u043b\u0430\u0435\u0448\u044c \u0432\u0435\u0447\u0435\u0440\u043e\u043c?\nexample_audio: \u0428\u0442\u043e \u0442\u044b \u0434\u0435\u043b\u0430\u0435\u0448\u044c \u0432\u0435\u0447\u0435\u0440\u043e\u043c?\nexample_uz: Kechqurun nima qilyapsan?\n\n---\ncard: \u041f\u043e\u0442\u043e\u043c\u0443 \u0447\u0442\u043e\nsound: [\u041f\u0430\u0442\u0430\u043c\u0443\u0448\u0442\u0430]\nspelling: \u041f\u043e\u0442\u043e\u043c\u0443 [\u0447\u2794\u0448]\u0442\u043e\nmean: Chunki\nexplain: Jonli nutqda bitta uzun so'z kabi \u00ab\u041f\u0430\u0442\u0430\u043c\u0443\u0448\u0442\u0430\u00bb deb tez va urg'u oxiriga tushib aytiladi.\nexample: \u042f \u043e\u043f\u043e\u0437\u0434\u0430\u043b, \u043f\u043e\u0442\u043e\u043c\u0443 \u0447\u0442\u043e \u0431\u044b\u043b \u0432 \u043f\u0440\u043e\u0431\u043a\u0435.\nexample_audio: \u042f \u043e\u043f\u043e\u0437\u0434\u0430\u043b, \u043f\u0430\u0442\u0430\u043c\u0443\u0448\u0442\u0430 \u0431\u044b\u043b \u0432 \u043f\u0440\u043e\u0431\u043a\u0435.\nexample_uz: Men kechikdim, chunki tirbandlikda edim.\n\n---\ncard: \u041a\u043e\u0433\u0434\u0430\nsound: [\u041a\u0430\u0434\u0430]\nspelling: \u041a[\u043e\u0433]\u0434\u0430\nmean: Qachon\nexplain: Tezkor so'zlashuvda o'rtadagi \u00ab\u043e\u0433\u00bb silliqlashib, \u00ab\u041a\u0430\u0434\u0430\u00bb yoki \u00ab\u041a\u0430\u0433\u0434\u0430\u00bb shaklida eshitiladi.\nexample: \u041a\u043e\u0433\u0434\u0430 \u043c\u044b \u043d\u0430\u043a\u043e\u043d\u0435\u0446 \u0432\u0441\u0442\u0440\u0435\u0442\u0438\u043c\u0441\u044f?\nexample_audio: \u041a\u0430\u0434\u0430 \u043c\u044b \u043d\u0430\u043a\u043e\u043d\u0435\u0446 \u0432\u0441\u0442\u0440\u0435\u0442\u0438\u043c\u0441\u044f?\nexample_uz: Qachon uchrashamiz nihoyat?\n\n---\ncard: \u0427\u0442\u043e\u0431\u044b\nsound: [\u0428\u0442\u043e\u0431\u044b]\nspelling: [\u0427\u2794\u0428]\u0442\u043e\u0431\u044b\nmean: Uchun / ...ish maqsadida\nexplain: Xuddi \u00ab\u0447\u0442\u043e\u00bb kabi \u00ab\u0428\u00bb bilan birikib talaffuz etiladi: [\u0448\u0442\u043e\u0431\u044b].\nexample: \u042f \u043f\u0440\u0438\u0448\u0451\u043b, \u0447\u0442\u043e\u0431\u044b \u043f\u043e\u0433\u043e\u0432\u043e\u0440\u0438\u0442\u044c.\nexample_audio: \u042f \u043f\u0440\u0438\u0448\u0451\u043b, \u0448\u0442\u043e\u0431\u044b \u043f\u043e\u0433\u043e\u0432\u043e\u0440\u0438\u0442\u044c.\nexample_uz: Men gaplashib olish uchun keldim.\n\n\n? Rus tilida \u00ab\u0447\u0442\u043e\u00bb so'zi qoidaga ko'ra qanday o'qiladi?\n+ [\u0428\u0442\u043e]\n- [\u0427\u0442\u043e]\n- [\u0427\u0451\u0442\u043e]\n\n? \u00ab\u041f\u0430\u0442\u0430\u043c\u0443\u0448\u0442\u0430\u00bb qulog'ingizga chalindi. Bu qaysi birikma?\n+ \u041f\u043e\u0442\u043e\u043c\u0443 \u0447\u0442\u043e\n- \u041f\u043e\u044d\u0442\u043e\u043c\u0443\n- \u041f\u043e\u0447\u0435\u043c\u0443-\u0442\u043e\n\n? Tezkor so'zlashuvda \u00ab\u043a\u043e\u0433\u0434\u0430\u00bb so'zidagi qaysi harflar qisqaradi?\n+ \u043e\u0433\n- \u0434\u0430\n- \u043a\u043e"
     },
     {
-      id: 'ru_l_03', num: '03', cat: 'life', catName: 'Повседневная', level: 'A1',
-      name: '03. В супермаркете и покупки',
-      desc: 'Supermarketda non, mevalar va narxlar',
-      folder: 'Повседневная жизнь',
-      content:
-        '# 03. В супермаркете и покупки\n\n' +
-        '— Подскажите, пожалуйста, где у вас {свежий|yangi} хлеб?\n' +
-        '— Пройдите прямо, в самом {конце|oxirida} зала, рядом с молочным отделом.\n' +
-        '— Спасибо! А сколько стоят эти {яблоки|olmalar}?\n' +
-        '— Зелёные яблоки стоят сто пятьдесят {рублей|rubl} за килограмм.\n' +
-        '— Взвесьте мне, пожалуйста, {два|ikki} килограмма.\n' +
-        '— Вот, пожалуйста. Возьмите также {пакет|paket} на кассе.\n' +
-        '— Благодарю за {помощь|yordam}!'
+      id: 'ru_l_03', num: '03', cat: 'reduction', catName: 'Редукция', level: 'A2',
+      name: "03. \u0421\u043a\u043e\u043b\u044c\u043a\u043e, \u0442\u043e\u043b\u044c\u043a\u043e, \u0432\u043e\u043e\u0431\u0449\u0435 \u2014 \u0427\u0438\u0441\u043b\u0430 \u0438 \u043d\u0430\u0440\u0435\u0447\u0438\u044f",
+      desc: "\u0421\u043a\u043e\u043a\u0430, \u0442\u043e\u043a\u0430, \u0432\u0430\u0431\u0449\u0435 \u2014 og'zaki nutqda o'lchov va ravishlar",
+      folder: "\u0420\u0435\u0434\u0443\u043a\u0446\u0438\u044f",
+      content: "# 03. \u0421\u043a\u043e\u043b\u044c\u043a\u043e, \u0442\u043e\u043b\u044c\u043a\u043e, \u0432\u043e\u043e\u0431\u0449\u0435 \u2014 \u0427\u0438\u0441\u043b\u0430 \u0438 \u043d\u0430\u0440\u0435\u0447\u0438\u044f\n> \u0421\u043a\u043e\u043a\u0430, \u0442\u043e\u043a\u0430, \u0432\u0430\u0431\u0449\u0435 \u2014 og'zaki nutqda o'lchov va ravishlar\n\n---\ncard: \u0421\u043a\u043e\u043b\u044c\u043a\u043e\nsound: [\u0421\u043a\u043e\u043a\u0430]\nspelling: \u0421\u043a\u043e[\u043b\u044c]\u043a[\u043e\u2794\u0430]\nmean: Qancha / Nechta\nexplain: Bozorda, do'konda yoki narx so'raganda \u00ab\u0421\u043a\u043e\u043b\u044c\u043a\u043e\u00bb so'zidagi \u00ab\u043b\u044c\u00bb tushib qoladi va \u00ab\u0421\u043a\u043e\u043a\u0430\u00bb eshitiladi.\nexample: \u0421\u043a\u043e\u043b\u044c\u043a\u043e \u044d\u0442\u043e \u0441\u0442\u043e\u0438\u0442?\nexample_audio: \u0421\u043a\u043e\u043a\u0430 \u044d\u0442\u043e \u0441\u0442\u043e\u0438\u0442?\nexample_uz: Bu qancha turadi?\n\n---\ncard: \u0422\u043e\u043b\u044c\u043a\u043e\nsound: [\u0422\u043e\u043a\u0430]\nspelling: \u0422\u043e[\u043b\u044c]\u043a[\u043e\u2794\u0430]\nmean: Faqat / Endigina\nexplain: Xuddi \u00ab\u0441\u043a\u043e\u043b\u044c\u043a\u043e\u00bb kabi \u00ab\u043b\u044c\u00bb yutilib \u00ab\u0422\u043e\u043a\u0430\u00bb deyiladi (masalan: \u00ab\u044f \u0442\u043e\u043a\u0430 \u0441\u043f\u0440\u043e\u0441\u0438\u0442\u044c\u00bb).\nexample: \u042f \u0442\u043e\u043b\u044c\u043a\u043e \u0447\u0442\u043e \u043f\u0440\u0438\u0435\u0445\u0430\u043b \u0434\u043e\u043c\u043e\u0439.\nexample_audio: \u042f \u0442\u043e\u043a\u0430 \u0448\u0442\u043e \u043f\u0440\u0438\u0435\u0445\u0430\u043b \u0434\u043e\u043c\u043e\u0439.\nexample_uz: Men endigina uyga keldim.\n\n---\ncard: \u0412\u043e\u043e\u0431\u0449\u0435\nsound: [\u0412\u0430\u0431\u0449\u0435]\nspelling: \u0412[\u043e]\u043e\u0431\u0449\u0435\nmean: Umuman / Aslida\nexplain: Ikkita \u00ab\u043e\u00bb qo'shilib bitta \u00ab\u0410\u00bb tovushiga aylanadi, so'z juda tez \u00ab\u0412\u0430\u0431\u0449\u0435\u00bb deb urg'ulanadi.\nexample: \u042f \u0432\u043e\u043e\u0431\u0449\u0435 \u043d\u0435 \u043f\u043e\u043d\u0438\u043c\u0430\u044e, \u043e \u0447\u0451\u043c \u0440\u0435\u0447\u044c.\nexample_audio: \u042f \u0432\u0430\u0431\u0449\u0435 \u043d\u0435 \u043f\u043e\u043d\u0438\u043c\u0430\u044e, \u043e \u0447\u0451\u043c \u0440\u0435\u0447\u044c.\nexample_uz: Men umuman tushunmayapman, gap nima haqida.\n\n---\ncard: \u0421\u0435\u0433\u043e\u0434\u043d\u044f\nsound: [\u0421\u0435\u0432\u043e\u0434\u043d\u044f]\nspelling: \u0421\u0435\u0433\u043e[\u0434\u2794\u0432]\u043d\u044f\nmean: Bugun\nexplain: Rus tilining asosiy qoidasi: \u00ab-\u0435\u0433\u043e/-\u043e\u0433\u043e\u00bb qo'shimchasidagi \u00ab\u0433\u00bb harfi doimo \u00ab\u0412\u00bb deb o'qiladi: [\u0421\u0435\u0432\u043e\u0434\u043d\u044f], [\u041d\u0438\u0447\u0435\u0432\u043e].\nexample: \u0421\u0435\u0433\u043e\u0434\u043d\u044f \u043e\u0442\u043b\u0438\u0447\u043d\u0430\u044f \u043f\u043e\u0433\u043e\u0434\u0430!\nexample_audio: \u0421\u0435\u0432\u043e\u0434\u043d\u044f \u043e\u0442\u043b\u0438\u0447\u043d\u0430\u044f \u043f\u043e\u0433\u043e\u0434\u0430!\nexample_uz: Bugun havo ajoyib!\n\n\n? \u00ab\u0421\u043a\u043e\u043a\u0430 \u0441\u0442\u043e\u0438\u0442?\u00bb birikmasida qaysi so'z qisqargan?\n+ \u0421\u043a\u043e\u043b\u044c\u043a\u043e\n- \u0421\u043a\u043e\u0440\u043e\n- \u0421\u043a\u043e\u0440\u043e\u0441\u0442\u043d\u043e\u0439\n\n? \u00ab\u0421\u0435\u0433\u043e\u0434\u043d\u044f\u00bb so'zida \u00ab\u0433\u00bb harfi qanday talaffuz qilinadi?\n+ [\u0412] bo'lib\n- [\u0413] bo'lib\n- [\u0425] bo'lib\n\n? \u00ab\u0412\u0430\u0431\u0449\u0435\u00bb deb aytilgan so'zning lug'aviy to'g'ri yozilishi qaysi?\n+ \u0412\u043e\u043e\u0431\u0449\u0435\n- \u0412 \u043e\u0431\u0449\u0435\u043c\n- \u0412\u043e\u043e\u0431\u0448\u0435"
     },
     {
-      id: 'ru_l_04', num: '04', cat: 'life', catName: 'Повседневная', level: 'A2',
-      name: '04. В аптеке — покупка лекарств',
-      desc: 'Dorixonada tomoq og\'rig\'i va shamollashga dori olish',
-      folder: 'Повседневная жизнь',
-      content:
-        '# 04. В аптеке — покупка лекарств\n\n' +
-        '— Здравствуйте! У меня со вчерашнего дня сильно болит {горло|tomoq} и насморк.\n' +
-        '— Добрый день. Есть ли у вас {температура|harorat}?\n' +
-        '— Утром была тридцать семь и {два|ikki}.\n' +
-        '— Понятно. Я рекомендую вам спрей для горла и растворимые {витамины|vitaminlar}.\n' +
-        '— Как часто нужно {принимать|qabul qilish} этот спрей?\n' +
-        '— Три раза в день после {еды|ovqatdan}. И пейте больше тёплой {воды|suv}.\n' +
-        '— Спасибо, дайте ещё пачку {салфеток|salfetka}.'
+      id: 'ru_l_04', num: '04', cat: 'reduction', catName: 'Редукция', level: 'A2',
+      name: "04. \u0427\u0435\u043b\u043e\u0432\u0435\u043a, \u0433\u043e\u0432\u043e\u0440\u0438\u0442, \u0442\u0435\u0431\u0435 \u2014 \u0421\u0436\u0430\u0442\u0438\u0435 \u0433\u043b\u0430\u0433\u043e\u043b\u043e\u0432 \u0438 \u043c\u0435\u0441\u0442\u043e\u0438\u043c\u0435\u043d\u0438\u0439",
+      desc: "\u0427\u043b\u0430\u0432\u0435\u043a, \u0433\u0440\u0438\u0442, \u0442\u0435, \u0442\u044b\u0449\u0430 \u2014 fe'llar va olmoshlar qisqarishi",
+      folder: "\u0420\u0435\u0434\u0443\u043a\u0446\u0438\u044f",
+      content: "# 04. \u0427\u0435\u043b\u043e\u0432\u0435\u043a, \u0433\u043e\u0432\u043e\u0440\u0438\u0442, \u0442\u0435\u0431\u0435 \u2014 \u0421\u0436\u0430\u0442\u0438\u0435 \u0433\u043b\u0430\u0433\u043e\u043b\u043e\u0432 \u0438 \u043c\u0435\u0441\u0442\u043e\u0438\u043c\u0435\u043d\u0438\u0439\n> \u0427\u043b\u0430\u0432\u0435\u043a, \u0433\u0440\u0438\u0442, \u0442\u0435, \u0442\u044b\u0449\u0430 \u2014 fe'llar va olmoshlar qisqarishi\n\n---\ncard: \u0427\u0435\u043b\u043e\u0432\u0435\u043a\nsound: [\u0427\u043b\u0430\u0432\u0435\u043a]\nspelling: \u0427[\u0435]\u043b\u043e\u0432\u0435\u043a\nmean: Odam / Inson\nexplain: Tez aytilganda birinchi \u00ab\u0435\u00bb unlisi butunlay tushib qoladi: [\u0427\u043b\u0430\u0432\u0435\u043a], [\u0427\u043b\u0430\u0432\u0435\u043a\u0430].\nexample: \u0422\u0430\u043c \u0441\u0442\u043e\u0438\u0442 \u043e\u0434\u0438\u043d \u0437\u043d\u0430\u043a\u043e\u043c\u044b\u0439 \u0447\u0435\u043b\u043e\u0432\u0435\u043a.\nexample_audio: \u0422\u0430\u043c \u0441\u0442\u043e\u0438\u0442 \u043e\u0434\u0438\u043d \u0437\u043d\u0430\u043a\u043e\u043c\u044b\u0439 \u0447\u043b\u0430\u0432\u0435\u043a.\nexample_uz: U yerda bitta tanish odam turibdi.\n\n---\ncard: \u0413\u043e\u0432\u043e\u0440\u0438\u0442\nsound: [\u0413\u0440\u0438\u0442]\nspelling: \u0413[\u043e\u0432\u043e]\u0440\u0438\u0442\nmean: Deyapti / Gapiryapti\nexplain: Hikoya qilganda \u00ab\u043e\u043d \u0433\u043e\u0432\u043e\u0440\u0438\u0442\u00bb o'rniga juda ko'p \u00ab\u043e\u043d \u0433\u0440\u0438\u0442\u00bb yoki \u00ab\u0430 \u043e\u043d\u0430 \u0433\u0440\u0438\u0442\u00bb deb aytiladi.\nexample: \u041e\u043d \u0433\u043e\u0432\u043e\u0440\u0438\u0442, \u0447\u0442\u043e \u0437\u0430\u0432\u0442\u0440\u0430 \u0432\u044b\u0445\u043e\u0434\u043d\u043e\u0439.\nexample_audio: \u041e\u043d \u0433\u0440\u0438\u0442, \u0448\u0442\u043e \u0437\u0430\u0432\u0442\u0440\u0430 \u0432\u044b\u0445\u043e\u0434\u043d\u043e\u0439.\nexample_uz: U aytyaptiki, ertaga dam olish kuni ekan.\n\n---\ncard: \u0422\u0435\u0431\u0435 / \u0421\u0435\u0431\u0435\nsound: [\u0422\u0435 / \u0421\u0435]\nspelling: \u0422\u0435[\u0431\u0435] / \u0421\u0435[\u0431\u0435]\nmean: Senga / O'zingga\nexplain: Og'zaki iboralarda (\u00ab\u044f \u0442\u0435 \u0433\u043e\u0432\u043e\u0440\u044e\u00bb, \u00ab\u043e\u043d \u0441\u0435 \u0432\u0437\u044f\u043b\u00bb) oxirgi bo'g'in tashlab ketiladi.\nexample: \u042f \u0442\u0435\u0431\u0435 \u0442\u043e\u0447\u043d\u043e \u0433\u043e\u0432\u043e\u0440\u044e, \u043f\u043e\u0432\u0435\u0440\u044c \u043c\u043d\u0435!\nexample_audio: \u042f \u0442\u0435 \u0442\u043e\u0447\u043d\u043e \u0433\u043e\u0432\u043e\u0440\u044e, \u043f\u043e\u0432\u0435\u0440\u044c \u043c\u043d\u0435!\nexample_uz: Senga aniq aytyapman, menga ishon!\n\n---\ncard: \u0422\u044b\u0441\u044f\u0447\u0430\nsound: [\u0422\u044b\u0449\u0430]\nspelling: \u0422\u044b\u0441[\u044f]\u0447[\u0430\u2794\u044f]\nmean: Ming (so'm / rubl)\nexplain: Narx va pul sanaganda \u00ab\u043e\u0434\u043d\u0430 \u0442\u044b\u0441\u044f\u0447\u0430\u00bb o'rniga \u00ab\u043e\u0434\u043d\u0430 \u0442\u044b\u0449\u0430\u00bb, \u00ab\u043f\u044f\u0442\u044c \u0442\u044b\u0449\u00bb eshitiladi.\nexample: \u042d\u0442\u043e \u0441\u0442\u043e\u0438\u0442 \u0440\u043e\u0432\u043d\u043e \u043e\u0434\u043d\u0443 \u0442\u044b\u0441\u044f\u0447\u0443 \u0440\u0443\u0431\u043b\u0435\u0439.\nexample_audio: \u042d\u0442\u043e \u0441\u0442\u043e\u0438\u0442 \u0440\u043e\u0432\u043d\u043e \u043e\u0434\u043d\u0443 \u0442\u044b\u0449\u0443 \u0440\u0443\u0431\u043b\u0435\u0439.\nexample_uz: Bu roppa-rosa bir ming rubl turadi.\n\n\n? \u00ab\u041e\u043d \u0433\u0440\u0438\u0442\u00bb eshitilganda qaysi fe'l nazarda tutilgan?\n+ \u0413\u043e\u0432\u043e\u0440\u0438\u0442\n- \u0413\u043e\u0440\u0438\u0442\n- \u0413\u0440\u0435\u0435\u0442\n\n? \u00ab\u042f \u0442\u0435 \u0433\u043e\u0432\u043e\u0440\u044e\u00bb iborasida \u00ab\u0442\u0435\u00bb nima?\n+ \u0422\u0435\u0431\u0435 olmoshi\n- \u0422\u0435\u0430\u0442\u0440 so'zi\n- \u0422\u0435\u043c\u0430 so'zi\n\n? Ovozda \u00ab\u0434\u0432\u0435 \u0442\u044b\u0449\u0438\u00bb aytildi. Bu qancha?\n+ 2000 (\u0434\u0432\u0435 \u0442\u044b\u0441\u044f\u0447\u0438)\n- 200 (\u0434\u0432\u0435\u0441\u0442\u0438)\n- 20 (\u0434\u0432\u0430\u0434\u0446\u0430\u0442\u044c)"
     },
     {
-      id: 'ru_l_05', num: '05', cat: 'life', catName: 'Повседневная', level: 'A2',
-      name: '05. В ресторане — ужин и счёт',
-      desc: 'Restoranda stol band qilish, issiq ovqat va hisob-kitob',
-      folder: 'Повседневная жизнь',
-      content:
-        '# 05. В ресторане — ужин и счёт\n\n' +
-        '— Добрый вечер! У вас есть свободный {столик|stol} на двоих у окна?\n' +
-        '— Добрый вечер! Да, проходите, пожалуйста, вот {удобное|qulay} место.\n' +
-        '— Что вы посоветуете из {горячих|issiq} блюд?\n' +
-        '— Сегодня наш шеф-повар рекомендует {запечённую|pishirilgan} рыбу с овощами.\n' +
-        '— Прекрасно, нам две {порции|porsiya} рыбы и бутылку минеральной воды.\n' +
-        '— Желаете десерт или кофе после {ужина|kechki ovqat}?\n' +
-        '— Пока нет, спасибо. Пожалуйста, принесите {счёт|hisob-kitob}.'
-    },
-
-    // 🚕 2. Город и транспорт
-    {
-      id: 'ru_l_06', num: '06', cat: 'city', catName: 'Город & транспорт', level: 'A1',
-      name: '06. В такси — поездка по городу',
-      desc: 'Taksida vokzalga borish, tirbandlik va to\'lov',
-      folder: 'Город и транспорт',
-      content:
-        'youtube: https://www.youtube.com/watch?v=tY8mQGvN0Fk\n\n' +
-        '# 06. В такси — поездка по городу\n\n' +
-        '[00:01 - 00:04] — Здравствуйте! Вы заказывали такси до {вокзала|vokzal}?\n' +
-        ':: Assalomu alaykum! Vokzalgacha taksi buyurtma berganmidingiz?\n\n' +
-        '[00:05 - 00:10] — Да, добрый день! Нам нужно успеть к {поезду|poyezd}, он отправляется через сорок минут.\n' +
-        ':: Ha, xayrli kun! Biz poyezdga ulgurishimiz kerak, u qirq daqiqadan so\'ng jo\'naydi.\n\n' +
-        '[00:11 - 00:15] — Не переживайте, сейчас нет {пробок|tirbandlik}, доедем за двадцать минут.\n' +
-        ':: Xavotir olmang, hozir tirbandlik yo\'q, yigirma daqiqada yetib boramiz.\n\n' +
-        '[00:16 - 00:19] — Отлично, можно включить {кондиционер|konditsioner}, пожалуйста?\n' +
-        ':: Ajoyib, iltimos, konditsionerni yoqib bera olasizmi?\n\n' +
-        '[00:20 - 00:24] — Конечно. Вам удобно оплатить через {приложение|ilova}?\n' +
-        ':: Albatta. Sizga ilova orqali to\'lash qulaymi?\n\n' +
-        '[00:25 - 00:28] — Да, оплата уже привязана к {карте|karta}.\n' +
-        ':: Ha, to\'lov allaqachon kartaga bog\'langan.\n\n' +
-        '[00:29 - 00:32] — Вот мы и приехали. Счастливого {пути|yo\'l}!\n' +
-        ':: Mana yetib keldik. Oq yo\'l!\n\n' +
-        '? Savol 1: Yo\'lovchi qayerga ketmoqda?\n' +
-        '+ Vokzalga (poyezdga)\n' +
-        '- Aeroportga\n' +
-        '- Shifoxonaga\n\n' +
-        '? Savol 2: Haydovchining aytishicha yo\'l qancha vaqt oladi?\n' +
-        '+ 20 daqiqa\n' +
-        '- 40 daqiqa\n' +
-        '- 1 soat\n\n' +
-        '? Savol 3: Yo\'lovchi yo\'l haqini qanday to\'laydi?\n' +
-        '+ Ilova orqali kartadan\n' +
-        '- Naqd pul bilan\n' +
-        '- Haydovchiga karta berib'
+      id: 'ru_l_05', num: '05', cat: 'reduction', catName: 'Редукция', level: 'B1',
+      name: "05. \u041c\u043e\u0436\u0435\u0442 \u0431\u044b\u0442\u044c, \u043b\u0430\u0434\u043d\u043e, \u0441\u043c\u043e\u0442\u0440\u0438 \u2014 \u0411\u044b\u0441\u0442\u0440\u044b\u0435 \u0440\u0435\u0430\u043a\u0446\u0438\u0438",
+      desc: "\u041c\u043e\u0436\u0431\u044b\u0442\u044c, \u043b\u0430\u043d\u0430, \u043f\u0430\u043d\u0438\u043c\u0430\u0448 \u2014 og'zaki rozilik va ehtimollik",
+      folder: "\u0420\u0435\u0434\u0443\u043a\u0446\u0438\u044f",
+      content: "# 05. \u041c\u043e\u0436\u0435\u0442 \u0431\u044b\u0442\u044c, \u043b\u0430\u0434\u043d\u043e, \u0441\u043c\u043e\u0442\u0440\u0438 \u2014 \u0411\u044b\u0441\u0442\u0440\u044b\u0435 \u0440\u0435\u0430\u043a\u0446\u0438\u0438\n> \u041c\u043e\u0436\u0431\u044b\u0442\u044c, \u043b\u0430\u043d\u0430, \u043f\u0430\u043d\u0438\u043c\u0430\u0448 \u2014 og'zaki rozilik va ehtimollik\n\n---\ncard: \u041c\u043e\u0436\u0435\u0442 \u0431\u044b\u0442\u044c\nsound: [\u041c\u043e\u0436\u0431\u044b\u0442\u044c]\nspelling: \u041c\u043e\u0436[\u0435\u0442] \u0431\u044b\u0442\u044c\nmean: Balki / Ehtimol\nexplain: Ikkita so'z bitta so'zga aylanib, \u00ab\u0435\u0442\u00bb unli guruhi yutiladi: [\u041c\u043e\u0436\u0431\u044b\u0442\u044c].\nexample: \u041c\u043e\u0436\u0435\u0442 \u0431\u044b\u0442\u044c, \u043f\u043e\u0439\u0434\u0451\u043c \u0432 \u043a\u0438\u043d\u043e?\nexample_audio: \u041c\u043e\u0436\u0431\u044b\u0442\u044c, \u043f\u043e\u0439\u0434\u0451\u043c \u0432 \u043a\u0438\u043d\u043e?\nexample_uz: Balki kinoga borarmiz?\n\n---\ncard: \u041b\u0430\u0434\u043d\u043e\nsound: [\u041b\u0430\u043d\u0430]\nspelling: \u041b\u0430[\u0434]\u043d[\u043e\u2794\u0430]\nmean: Xo'p / Mayli\nexplain: Do'stlar orasida \u00ab\u0434\u00bb tovushi aytilmaydi, \u00ab\u043b\u0430\u043d\u0430\u00bb yoki \u00ab\u043b\u0430\u0434\u043d\u0435\u043d\u044c\u043a\u043e\u00bb deyiladi.\nexample: \u041b\u0430\u0434\u043d\u043e, \u0434\u043e\u0433\u043e\u0432\u043e\u0440\u0438\u043b\u0438\u0441\u044c, \u0434\u043e \u0437\u0430\u0432\u0442\u0440\u0430!\nexample_audio: \u041b\u0430\u043d\u0430, \u0434\u043e\u0433\u043e\u0432\u043e\u0440\u0438\u043b\u0438\u0441\u044c, \u0434\u043e \u0437\u0430\u0432\u0442\u0440\u0430!\nexample_uz: Mayli, kelishdik, ertagacha!\n\n---\ncard: \u041f\u043e\u043d\u0438\u043c\u0430\u0435\u0448\u044c\nsound: [\u041f\u0430\u043d\u0438\u043c\u0430\u0448]\nspelling: \u041f\u043e\u043d\u0438\u043c\u0430[\u0435]\u0448\u044c\nmean: Tushunyapsanmi\nexplain: Gap orasida parazit so'z sifatida ishlatilganda \u00ab\u043f\u0430\u043d\u0438\u043c\u0430\u0448\u00bb deb juda tez aytiladi.\nexample: \u0422\u0443\u0442 \u0442\u0430\u043a\u043e\u0435 \u0434\u0435\u043b\u043e, \u043f\u043e\u043d\u0438\u043c\u0430\u0435\u0448\u044c?\nexample_audio: \u0422\u0443\u0442 \u0442\u0430\u043a\u043e\u0435 \u0434\u0435\u043b\u043e, \u043f\u0430\u043d\u0438\u043c\u0430\u0448?\nexample_uz: Bu yerda shunaqa ish bo'lyapti, tushunyapsanmi?\n\n---\ncard: \u0421\u043c\u043e\u0442\u0440\u0438\nsound: [\u0421\u043c\u043e\u0440\u0438]\nspelling: \u0421\u043c[\u043e\u0442]\u0440\u0438\nmean: Qara / Eshitib tur\nexplain: Diqqatni jalb qilish uchun \u00ab\u0441\u043c\u043e\u0442\u0440\u0438\u00bb so'zida \u00ab\u0442\u00bb tushib ketishi odatiy hol: [\u0441\u043c\u043e\u0440\u0438].\nexample: \u0421\u043c\u043e\u0442\u0440\u0438, \u043a\u0430\u043a\u0430\u044f \u0438\u043d\u0442\u0435\u0440\u0435\u0441\u043d\u0430\u044f \u0448\u0442\u0443\u043a\u0430!\nexample_audio: \u0421\u043c\u043e\u0440\u0438, \u043a\u0430\u043a\u0430\u044f \u0438\u043d\u0442\u0435\u0440\u0435\u0441\u043d\u0430\u044f \u0448\u0442\u0443\u043a\u0430!\nexample_uz: Qara, qanday qiziq narsa!\n\n\n? \u00ab\u041c\u043e\u0436\u0431\u044b\u0442\u044c\u00bb ifodasi qaysi ma'noni anglatadi?\n+ Balki, ehtimol (\u041c\u043e\u0436\u0435\u0442 \u0431\u044b\u0442\u044c)\n- Bo'lishi shart\n- Hech qachon\n\n? \u00ab\u041b\u0430\u043d\u0430, \u043f\u043e\u0433\u043d\u0430\u043b\u0438\u00bb gapida \u00ab\u043b\u0430\u043d\u0430\u00bb nima degani?\n+ Mayli, xo'p (\u041b\u0430\u0434\u043d\u043e)\n- Keyinroq\n- Shoshma\n\n? Ovozda \u00ab\u0441\u043c\u043e\u0440\u0438 \u0441\u044e\u0434\u0430\u00bb aytildi. Bu qaysi buyruq fe'li?\n+ \u0421\u043c\u043e\u0442\u0440\u0438 (Qara)\n- \u0421\u043c\u0435\u0440\u044f\u0439 (O'lcha)\n- \u0421\u043c\u043e\u0439 (Yuvib tashla)"
     },
     {
-      id: 'ru_l_07', num: '07', cat: 'city', catName: 'Город & транспорт', level: 'A2',
-      name: '07. Как пройти? Ориентация в городе',
-      desc: 'Shaharda yo\'l, metro bekati va burilishlarni so\'rash',
-      folder: 'Город и транспорт',
-      content:
-        '# 07. Как пройти? Ориентация в городе\n\n' +
-        '— Извините, вы не подскажете, как быстрее дойти до {музея|muzey}?\n' +
-        '— Идите прямо по этой улице до светофора, затем поверните {направо|o\'ngga}.\n' +
-        '— Это далеко отсюда? Сколько минут {пешком|piyoda}?\n' +
-        '— Минут десять не быстрым шагом. Музей будет по {левой|chap} стороне.\n' +
-        '— А там рядом есть станция {метро|metro}?\n' +
-        '— Да, прямо напротив музея находится станция «{Центральная|Markaziy}».\n' +
-        '— Огромное спасибо за подробное {объяснение|tushuntirish}!'
+      id: 'ru_l_06', num: '06', cat: 'liaison', catName: 'Слитная речь', level: 'A1',
+      name: "06. \u0412 \u044d\u0442\u043e\u0442, \u0441 \u043d\u0438\u043c, \u0438\u0437-\u0437\u0430 \u2014 \u0421\u043b\u0438\u044f\u043d\u0438\u0435 \u043f\u0440\u0435\u0434\u043b\u043e\u0433\u043e\u0432",
+      desc: "\u0412\u044d\u0442\u0430\u0442, \u0441\u043d\u0438\u043c, \u0441\u043d\u0435\u0439, \u0438\u0437\u0430 \u2014 predloglarning so'zga qo'shilib o'qilishi",
+      folder: "\u0421\u043b\u0438\u0442\u043d\u0430\u044f \u0440\u0435\u0447\u044c",
+      content: "# 06. \u0412 \u044d\u0442\u043e\u0442, \u0441 \u043d\u0438\u043c, \u0438\u0437-\u0437\u0430 \u2014 \u0421\u043b\u0438\u044f\u043d\u0438\u0435 \u043f\u0440\u0435\u0434\u043b\u043e\u0433\u043e\u0432\n> \u0412\u044d\u0442\u0430\u0442, \u0441\u043d\u0438\u043c, \u0441\u043d\u0435\u0439, \u0438\u0437\u0430 \u2014 predloglarning so'zga qo'shilib o'qilishi\n\n---\ncard: \u0412 \u044d\u0442\u043e\u0442 \u043c\u043e\u043c\u0435\u043d\u0442\nsound: [\u0412\u044d\u0442\u0430\u0442 \u043c\u0430\u043c\u0435\u043d\u0442]\nspelling: \u0412 + \u044d\u0442\u043e\u0442\nmean: Aynan shu lahzada\nexplain: Rus tilida bitta undoshli predloglar (\u00ab\u0432, \u0441, \u043a, \u0438\u0437, \u043f\u043e\u0434\u00bb) keyingi so'zga bitta so'z kabi yopishib aytiladi: [\u0412\u044d\u0442\u0430\u0442].\nexample: \u0412 \u044d\u0442\u043e\u0442 \u043c\u043e\u043c\u0435\u043d\u0442 \u0437\u0430\u0437\u0432\u043e\u043d\u0438\u043b \u0442\u0435\u043b\u0435\u0444\u043e\u043d.\nexample_audio: \u0412 \u044d\u0442\u043e\u0442 \u043c\u043e\u043c\u0435\u043d\u0442 \u0437\u0430\u0437\u0432\u043e\u043d\u0438\u043b \u0442\u0435\u043b\u0435\u0444\u043e\u043d.\nexample_uz: Shu daqiqada telefon jiringlab qoldi.\n\n---\ncard: \u0421 \u043d\u0438\u043c / \u0421 \u043d\u0435\u0439\nsound: [\u0421\u043d\u0438\u043c / \u0421\u043d\u0435\u0439]\nspelling: \u0421 + \u043d\u0438\u043c / \u043d\u0435\u0439\nmean: U bilan (o'g'il / qiz)\nexplain: Hech qanday to'xtovsiz bitta so'z kabi: [\u0421\u043d\u0438\u043c], [\u0421\u043d\u0435\u0439], [\u0421\u043d\u0438\u043c\u0438].\nexample: \u042f \u0432\u0447\u0435\u0440\u0430 \u0434\u043e\u043b\u0433\u043e \u0433\u043e\u0432\u043e\u0440\u0438\u043b \u0441 \u043d\u0438\u043c.\nexample_audio: \u042f \u0432\u0447\u0435\u0440\u0430 \u0434\u043e\u043b\u0433\u043e \u0433\u043e\u0432\u043e\u0440\u0438\u043b \u0441 \u043d\u0438\u043c.\nexample_uz: Men kecha u bilan uzoq gaplashdim.\n\n---\ncard: \u0418\u0437-\u0437\u0430 \u044d\u0442\u043e\u0433\u043e\nsound: [\u0418\u0437\u0430 \u044d\u0442\u0430\u0432\u0430]\nspelling: \u0418\u0437-\u0437\u0430 + \u044d\u0442\u043e\u0433\u043e\nmean: Shu sababli / Shuning dastidan\nexplain: \u00ab\u0418\u0437-\u0437\u0430\u00bb va \u00ab\u044d\u0442\u043e\u0433\u043e\u00bb qo'shilib [\u0418\u0437\u0430-\u044d\u0442\u0430\u0432\u0430] eshitiladi (\u00ab\u0433\u00bb harfi \u00ab\u0432\u00bb bo'lib o'qiladi).\nexample: \u0418\u0437-\u0437\u0430 \u044d\u0442\u043e\u0433\u043e \u043c\u044b \u043d\u0438\u043a\u0443\u0434\u0430 \u043d\u0435 \u043f\u043e\u0435\u0445\u0430\u043b\u0438.\nexample_audio: \u0418\u0437\u0430 \u044d\u0442\u043e\u0433\u043e \u043c\u044b \u043d\u0438\u043a\u0443\u0434\u0430 \u043d\u0435 \u043f\u043e\u0435\u0445\u0430\u043b\u0438.\nexample_uz: Shu sababli biz hech qayerga bormadik.\n\n---\ncard: \u041f\u043e\u0434 \u043e\u043a\u043d\u043e\u043c\nsound: [\u041f\u0430\u0434\u0430\u043a\u043d\u043e\u043c]\nspelling: \u041f\u043e\u0434 + \u043e\u043a\u043d\u043e\u043c\nmean: Deraza tagida\nexplain: Urg'usiz \u00ab\u043f\u043e\u0434\u00bb \u00ab\u043f\u0430\u0434\u00bb bo'ladi va \u00ab\u043e\u043a\u043d\u043e\u043c\u00bb bilan birikadi: [\u043f\u0430\u0434\u0430\u043a\u043d\u043e\u043c].\nexample: \u041c\u0430\u0448\u0438\u043d\u0430 \u0441\u0442\u043e\u0438\u0442 \u043f\u0440\u044f\u043c\u043e \u043f\u043e\u0434 \u043e\u043a\u043d\u043e\u043c.\nexample_audio: \u041c\u0430\u0448\u0438\u043d\u0430 \u0441\u0442\u043e\u0438\u0442 \u043f\u0440\u044f\u043c\u043e \u043f\u043e\u0434 \u043e\u043a\u043d\u043e\u043c.\nexample_uz: Mashina to'g'ridan-to'g'ri deraza tagida turibdi.\n\n\n? \u00ab\u0412 \u044d\u0442\u043e\u0442\u00bb birikmasi jonli nutqda qanday talaffuz qilinadi?\n+ [\u0412\u044d\u0442\u0430\u0442] (birlashgan holda)\n- [\u0412\u044d-\u0442\u043e\u0442] (to'xtab)\n- [\u0412 \u043e\u0442\u0430\u0442]\n\n? Ovozda [\u0418\u0437\u0430 \u044d\u0442\u0430\u0432\u0430] yangradi. Qanday yoziladi?\n+ \u0418\u0437-\u0437\u0430 \u044d\u0442\u043e\u0433\u043e\n- \u0418 \u0437\u0430 \u044d\u0442\u043e\u0433\u043e\n- \u0418\u0437\u043e \u044d\u0442\u0430\u0432\u043e\n\n? \u00ab\u0421 \u043d\u0438\u043c\u00bb birikmasi talaffuzida pauza bormi?\n+ Pauza yo'q, bitta so'zdek [\u0441\u043d\u0438\u043c]\n- Har doim uzun pauza bor\n- Faqat sekin gapirganda bor"
     },
     {
-      id: 'ru_l_08', num: '08', cat: 'city', catName: 'Город & транспорт', level: 'A2',
-      name: '08. В метро и общественном транспорте',
-      desc: 'Metro chiptasi, yo\'l haqi va boshqa liniyaga o\'tish',
-      folder: 'Город и транспорт',
-      content:
-        '# 08. В метро и общественном транспорте\n\n' +
-        '— Скажите, пожалуйста, какой {билет|chipta} выгоднее купить на пять дней?\n' +
-        '— Возьмите единую карту, она действует на все виды {транспорта|transport}.\n' +
-        '— Сколько стоит одна {поездка|safir} по этой карте?\n' +
-        '— Шестьдесят рублей. Вы можете пополнить её в {автомате|avtomatda}.\n' +
-        '— Чтобы доехать до парка, мне нужно делать {пересадку|boshqa poyezdga o\'tish}?\n' +
-        '— Да, на кольцевой линии перейдите на {синюю|ko\'k} ветку.'
+      id: 'ru_l_07', num: '07', cat: 'liaison', catName: 'Слитная речь', level: 'A2',
+      name: "07. \u041d\u0430 \u0441\u0430\u043c\u043e\u043c \u0434\u0435\u043b\u0435, \u0442\u0430\u043a \u0441\u043a\u0430\u0437\u0430\u0442\u044c \u2014 \u0420\u0435\u0447\u0435\u0432\u044b\u0435 \u0441\u0432\u044f\u0437\u043a\u0438",
+      desc: "\u041d\u0430\u0441\u0430\u043c\u0434\u0435\u043b\u0435, \u0442\u0430\u0441\u043a\u0437\u0430\u0442\u044c, \u0432\u043e\u043f\u0449\u0435\u043c\u0442\u0430 \u2014 gapni bog'lovchi jonli konstruksiyalar",
+      folder: "\u0421\u043b\u0438\u0442\u043d\u0430\u044f \u0440\u0435\u0447\u044c",
+      content: "# 07. \u041d\u0430 \u0441\u0430\u043c\u043e\u043c \u0434\u0435\u043b\u0435, \u0442\u0430\u043a \u0441\u043a\u0430\u0437\u0430\u0442\u044c \u2014 \u0420\u0435\u0447\u0435\u0432\u044b\u0435 \u0441\u0432\u044f\u0437\u043a\u0438\n> \u041d\u0430\u0441\u0430\u043c\u0434\u0435\u043b\u0435, \u0442\u0430\u0441\u043a\u0437\u0430\u0442\u044c, \u0432\u043e\u043f\u0449\u0435\u043c\u0442\u0430 \u2014 gapni bog'lovchi jonli konstruksiyalar\n\n---\ncard: \u041d\u0430 \u0441\u0430\u043c\u043e\u043c \u0434\u0435\u043b\u0435\nsound: [\u041d\u0430\u0441\u0430\u043c\u0434\u0435\u043b\u0435]\nspelling: \u041d\u0430 + \u0441\u0430\u043c\u043e\u043c + \u0434\u0435\u043b\u0435\nmean: Aslida / Haqiqatda\nexplain: Uchta so'z bitta ritmda, orasi uzilmay aytiladi: [\u041d\u0430\u0441\u0430\u043c\u0434\u0435\u043b\u0435].\nexample: \u041d\u0430 \u0441\u0430\u043c\u043e\u043c \u0434\u0435\u043b\u0435 \u0432\u0441\u0451 \u0433\u043e\u0440\u0430\u0437\u0434\u043e \u043f\u0440\u043e\u0449\u0435.\nexample_audio: \u041d\u0430 \u0441\u0430\u043c\u043e\u043c \u0434\u0435\u043b\u0435 \u0432\u0441\u0451 \u0433\u043e\u0440\u0430\u0437\u0434\u043e \u043f\u0440\u043e\u0449\u0435.\nexample_uz: Aslida hammasi ancha osonroq.\n\n---\ncard: \u0422\u0430\u043a \u0441\u043a\u0430\u0437\u0430\u0442\u044c\nsound: [\u0422\u0430\u0441\u043a\u0437\u0430\u0442\u044c]\nspelling: \u0422\u0430\u043a + \u0441[\u043a\u0430]\u0437\u0430\u0442\u044c\nmean: Ta'bir joiz bo'lsa / Qisqasi\nexplain: \u00ab\u043a\u00bb va \u00ab\u0441\u00bb birlashib, \u00ab\u043a\u0430\u00bb bo'g'ini deyarli yo'qoladi: [\u0422\u0430\u0441\u043a\u0437\u0430\u0442\u044c].\nexample: \u042d\u0442\u043e \u0431\u044b\u043b, \u0442\u0430\u043a \u0441\u043a\u0430\u0437\u0430\u0442\u044c, \u0446\u0435\u043d\u043d\u044b\u0439 \u043e\u043f\u044b\u0442.\nexample_audio: \u042d\u0442\u043e \u0431\u044b\u043b, \u0442\u0430\u0441\u043a\u0437\u0430\u0442\u044c, \u0446\u0435\u043d\u043d\u044b\u0439 \u043e\u043f\u044b\u0442.\nexample_uz: Bu, ta'bir joiz bo'lsa, qimmatli tajriba bo'ldi.\n\n---\ncard: \u0412 \u043e\u0431\u0449\u0435\u043c-\u0442\u043e\nsound: [\u0412\u043e\u043f\u0449\u0435\u043c\u0442\u0430]\nspelling: \u0412 \u043e\u0431\u0449\u0435\u043c-\u0442[\u043e\u2794\u0430]\nmean: Umuman olganda\nexplain: Boshidagi \u00ab\u0432\u00bb \u00ab\u0444\u00bbga yaqinlashadi, oxiri esa \u00ab\u0442\u0430\u00bb bo'ladi: [\u0412\u043e\u043f\u0449\u0435\u043c\u0442\u0430].\nexample: \u0412 \u043e\u0431\u0449\u0435\u043c-\u0442\u043e, \u0442\u044b \u0430\u0431\u0441\u043e\u043b\u044e\u0442\u043d\u043e \u043f\u0440\u0430\u0432.\nexample_audio: \u0412 \u043e\u0431\u0449\u0435\u043c-\u0442\u043e, \u0442\u044b \u0430\u0431\u0441\u043e\u043b\u044e\u0442\u043d\u043e \u043f\u0440\u0430\u0432.\nexample_uz: Umuman olganda, sen mutlaqo haqsasan.\n\n---\ncard: \u041a\u0430\u043a \u0431\u0443\u0434\u0442\u043e\nsound: [\u041a\u0430\u0431\u0443\u0434\u0442\u0430]\nspelling: \u041a\u0430\u043a + \u0431\u0443\u0434\u0442[\u043e\u2794\u0430]\nmean: Xuddi ...dek / Go'yo\nexplain: Ikkita so'z birlashadi, \u00ab\u043a\u00bb va \u00ab\u0431\u00bb tutashib \u00ab\u043a\u0430\u0431\u0443\u0434\u0442\u0430\u00bb yangraydi.\nexample: \u041e\u043d \u0432\u0435\u0434\u0451\u0442 \u0441\u0435\u0431\u044f \u0442\u0430\u043a, \u043a\u0430\u043a \u0431\u0443\u0434\u0442\u043e \u043d\u0438\u0447\u0435\u0433\u043e \u043d\u0435 \u0437\u043d\u0430\u0435\u0442.\nexample_audio: \u041e\u043d \u0432\u0435\u0434\u0451\u0442 \u0441\u0435\u0431\u044f \u0442\u0430\u043a, \u043a\u0430\u0431\u0443\u0434\u0442\u0430 \u043d\u0438\u0447\u0435\u0433\u043e \u043d\u0435 \u0437\u043d\u0430\u0435\u0442.\nexample_uz: U o'zini xuddi hech narsani bilmaydigandek tutyapti.\n\n\n? \u00ab\u041d\u0430 \u0441\u0430\u043c\u043e\u043c \u0434\u0435\u043b\u0435\u00bb iborasi quloqqa qanday eshitiladi?\n+ [\u041d\u0430\u0441\u0430\u043c\u0434\u0435\u043b\u0435] (bitta yaxlit so'z kabi)\n- [\u041d\u0430 \u0441\u0430\u043c \u0434\u0435 \u043b\u0435] (ajratib)\n- [\u041d\u043e\u0441\u0430\u043c\u0434\u0435\u043b\u0435]\n\n? \u00ab\u0422\u0430\u0441\u043a\u0437\u0430\u0442\u044c\u00bb qaysi kiritma birikmaning qisqarishi?\n+ \u0422\u0430\u043a \u0441\u043a\u0430\u0437\u0430\u0442\u044c\n- \u0422\u043e \u0435\u0441\u0442\u044c\n- \u041a\u0430\u043a \u0441\u043a\u0430\u0437\u0430\u0442\u044c\n\n? Ovozda \u00ab\u043a\u0430\u0431\u0443\u0434\u0442\u0430\u00bb eshitildi. Bu qaysi so'z?\n+ \u041a\u0430\u043a \u0431\u0443\u0434\u0442\u043e\n- \u041a\u0430\u043a \u0431\u044b\n- \u041a\u043e\u0433\u0434\u0430-\u0442\u043e"
     },
     {
-      id: 'ru_l_09', num: '09', cat: 'city', catName: 'Город & транспорт', level: 'A2',
-      name: '09. На вокзале — покупка билетов',
-      desc: 'Kassada poyezd chiptasi, kupe va jo\'nash vaqti',
-      folder: 'Город и транспорт',
-      content:
-        '# 09. На вокзале — покупка билетов\n\n' +
-        '— Здравствуйте! Мне нужен один билет на поезд до {Самары|Samara} на пятницу.\n' +
-        '— На утро или на {вечер|kechki payt}? Есть удобный поезд в восемнадцать тридцать.\n' +
-        '— Лучше на вечер. Какое место: {нижнее|pastki} или верхнее?\n' +
-        '— Осталось одно нижнее место в {купе|kupe}.\n' +
-        '— Отлично, оформляйте. Нужен мой {паспорт|pasport}?\n' +
-        '— Да, предъявите документ для {регистрации|ro\'yxat}.\n' +
-        '— С какого пути будет {отправление|jo\'nash}?\n' +
-        '— Путь объявят за полчаса до прибытия {состава|poyezd tarkibi}.'
+      id: 'ru_l_08', num: '08', cat: 'liaison', catName: 'Слитная речь', level: 'B1',
+      name: "08. \u041d\u0438\u0447\u0435\u0433\u043e \u0441\u0435\u0431\u0435! \u0438 \u0411\u0435\u0437 \u0442\u043e\u043b\u043a\u0443 \u2014 \u042d\u043a\u0441\u043f\u0440\u0435\u0441\u0441\u0438\u0432\u043d\u044b\u0435 \u0444\u0440\u0430\u0437\u044b",
+      desc: "\u041d\u0438\u0447\u0451\u0441\u0435, \u0431\u0435\u0441\u0442\u043e\u043b\u043a\u0443, \u0441\u0433\u043b\u0430\u0437\u0443 \u043d\u0430\u0433\u043b\u0430\u0441 \u2014 hissiy va mustahkam birikmalar",
+      folder: "\u0421\u043b\u0438\u0442\u043d\u0430\u044f \u0440\u0435\u0447\u044c",
+      content: "# 08. \u041d\u0438\u0447\u0435\u0433\u043e \u0441\u0435\u0431\u0435! \u0438 \u0411\u0435\u0437 \u0442\u043e\u043b\u043a\u0443 \u2014 \u042d\u043a\u0441\u043f\u0440\u0435\u0441\u0441\u0438\u0432\u043d\u044b\u0435 \u0444\u0440\u0430\u0437\u044b\n> \u041d\u0438\u0447\u0451\u0441\u0435, \u0431\u0435\u0441\u0442\u043e\u043b\u043a\u0443, \u0441\u0433\u043b\u0430\u0437\u0443 \u043d\u0430\u0433\u043b\u0430\u0441 \u2014 hissiy va mustahkam birikmalar\n\n---\ncard: \u041d\u0438\u0447\u0435\u0433\u043e \u0441\u0435\u0431\u0435!\nsound: [\u041d\u0438\u0447\u0451\u0441\u0435!]\nspelling: \u041d\u0438\u0447[\u0435\u0433\u043e] \u0441\u0435[\u0431\u0435]\nmean: Voy-bo'!, Ana xolos! (Hayrat)\nexplain: Bu ibora shunchalik tezlashganki, yoshlar va tez so'zlashuvda faqat [\u041d\u0438\u0447\u0451\u0441\u0435] yoki [\u041d\u0438\u0447\u0435\u0432\u043e-\u0441\u0435] deyiladi.\nexample: \u041d\u0438\u0447\u0435\u0433\u043e \u0441\u0435\u0431\u0435, \u043a\u0430\u043a\u0443\u044e \u043c\u0430\u0448\u0438\u043d\u0443 \u043e\u043d \u043a\u0443\u043f\u0438\u043b!\nexample_audio: \u041d\u0438\u0447\u0451\u0441\u0435, \u043a\u0430\u043a\u0443\u044e \u043c\u0430\u0448\u0438\u043d\u0443 \u043e\u043d \u043a\u0443\u043f\u0438\u043b!\nexample_uz: Voy-bo', u qanday zo'r mashina sotib olibdi!\n\n---\ncard: \u0411\u0435\u0437 \u0442\u043e\u043b\u043a\u0443\nsound: [\u0411\u0435\u0441\u0442\u043e\u043b\u043a\u0443]\nspelling: \u0411\u0435\u0437 + \u0442\u043e\u043b\u043a\u0443\nmean: Foydasiz / Befoyda\nexplain: \u00ab\u0437\u00bb harfi jarangsiz \u00ab\u0442\u00bb oldida \u00ab\u0441\u00bbga aylanadi: [\u0411\u0435\u0441\u0442\u043e\u043b\u043a\u0443].\nexample: \u0421\u043f\u043e\u0440\u0438\u0442\u044c \u0441 \u043d\u0438\u043c \u0431\u044b\u043b\u043e \u0441\u043e\u0432\u0435\u0440\u0448\u0435\u043d\u043d\u043e \u0431\u0435\u0437 \u0442\u043e\u043b\u043a\u0443.\nexample_audio: \u0421\u043f\u043e\u0440\u0438\u0442\u044c \u0441 \u043d\u0438\u043c \u0431\u044b\u043b\u043e \u0441\u043e\u0432\u0435\u0440\u0448\u0435\u043d\u043d\u043e \u0431\u0435\u0441\u0442\u043e\u043b\u043a\u0443.\nexample_uz: U bilan bahslashish mutlaqo befoyda edi.\n\n---\ncard: \u0421 \u0433\u043b\u0430\u0437\u0443 \u043d\u0430 \u0433\u043b\u0430\u0437\nsound: [\u0421\u0433\u043b\u0430\u0437\u0443 \u043d\u0430\u0433\u043b\u0430\u0441]\nspelling: \u0421 \u0433\u043b\u0430\u0437\u0443 + \u043d\u0430 \u0433\u043b\u0430\u0437\nmean: Yakkama-yakka / Xoli holda\nexplain: Oxirgi \u00ab\u0437\u00bb jarangsizlanib \u00ab\u0441\u00bb bo'ladi, oldidagi predloglar esa qo'shilib ketadi.\nexample: \u041d\u0430\u043c \u043d\u0443\u0436\u043d\u043e \u0441\u0440\u043e\u0447\u043d\u043e \u043f\u043e\u0433\u043e\u0432\u043e\u0440\u0438\u0442\u044c \u0441 \u0433\u043b\u0430\u0437\u0443 \u043d\u0430 \u0433\u043b\u0430\u0437.\nexample_audio: \u041d\u0430\u043c \u043d\u0443\u0436\u043d\u043e \u0441\u0440\u043e\u0447\u043d\u043e \u043f\u043e\u0433\u043e\u0432\u043e\u0440\u0438\u0442\u044c \u0441\u0433\u043b\u0430\u0437\u0443 \u043d\u0430\u0433\u043b\u0430\u0441.\nexample_uz: Biz zudlik bilan yakkama-yakka gaplashib olishimiz kerak.\n\n---\ncard: \u0414\u0440\u0443\u0433 \u0434\u0440\u0443\u0433\u0430\nsound: [\u0414\u0440\u0443\u0433\u0434\u0440\u0443\u0433\u0430]\nspelling: \u0414\u0440\u0443\u0433 + \u0434\u0440\u0443\u0433\u0430\nmean: Bir-birini / Bir-biriga\nexplain: Birinchi \u00ab\u0434\u0440\u0443\u0433\u00bb so'zining oxiridagi \u00ab\u0433\u00bb ikkinchi \u00ab\u0434\u00bbga ulanadi va [\u0434\u0440\u0443\u0433\u0434\u0440\u0443\u0433\u0430] deyiladi.\nexample: \u041e\u043d\u0438 \u0437\u043d\u0430\u044e\u0442 \u0434\u0440\u0443\u0433 \u0434\u0440\u0443\u0433\u0430 \u0441 \u0441\u0430\u043c\u043e\u0433\u043e \u0434\u0435\u0442\u0441\u0442\u0432\u0430.\nexample_audio: \u041e\u043d\u0438 \u0437\u043d\u0430\u044e\u0442 \u0434\u0440\u0443\u0433 \u0434\u0440\u0443\u0433\u0430 \u0441 \u0441\u0430\u043c\u043e\u0433\u043e \u0434\u0435\u0442\u0441\u0442\u0432\u0430.\nexample_uz: Ular bir-birlarini bolalikdan beri bilishadi.\n\n\n? Ovozda hayrat bilan [\u041d\u0438\u0447\u0451\u0441\u0435!] aytildi. Asl yozilishi qanday?\n+ \u041d\u0438\u0447\u0435\u0433\u043e \u0441\u0435\u0431\u0435!\n- \u041d\u0435\u0447\u0435\u0433\u043e \u0435\u0441\u0442\u044c!\n- \u041d\u0438\u0447\u0435\u0433\u043e \u043d\u0435\u0442!\n\n? \u00ab\u0411\u0435\u0441\u0442\u043e\u043b\u043a\u0443\u00bb ifodasi nimani bildiradi?\n+ Foydasiz, befoyda (\u0411\u0435\u0437 \u0442\u043e\u043b\u043a\u0443)\n- Juda foydali\n- Tushunarli\n\n? \u00ab\u0421 \u0433\u043b\u0430\u0437\u0443 \u043d\u0430 \u0433\u043b\u0430\u0437\u00bb iborasida oxirgi so'z qanday eshitiladi?\n+ [\u043d\u0430\u0433\u043b\u0430\u0441] (oxiri s bo'lib)\n- [\u043d\u0430\u0433\u043b\u0430\u0437] (oxiri z bo'lib)\n- [\u043d\u0430\u0433\u043b\u0430\u0437\u043e]"
     },
     {
-      id: 'ru_l_10', num: '10', cat: 'city', catName: 'Город & транспорт', level: 'B1',
-      name: '10. В аэропорту — регистрация и багаж',
-      desc: 'Aeroportda chamadon tortish, joy tanlash va posadochniy talon',
-      folder: 'Город и транспорт',
-      content:
-        '# 10. В аэропорту — регистрация и багаж\n\n' +
-        '— Положите ваш {чемодан|chemodan} на весы, пожалуйста.\n' +
-        '— Скажите, у меня нет {перевеса|ortiqcha vazn}?\n' +
-        '— Вес двадцать один килограмм, норма до {двадцати трёх|yigirma uch} килограммов.\n' +
-        '— Замечательно. А ручную кладь тоже нужно {взвешивать|tortish}?\n' +
-        '— Только проверьте габариты в {рамке|o\'lchov ramkasi}. Какое место предпочитаете?\n' +
-        '— Если можно, у {окна|oyna oldida}, пожалуйста.\n' +
-        '— Вот ваш посадочный {талон|talon}. Выход на посадку номер двенадцать.'
-    },
-
-    // 🏨 3. Путешествия и отель
-    {
-      id: 'ru_l_11', num: '11', cat: 'travel', catName: 'Путешествия', level: 'A2',
-      name: '11. В гостинице — заселение в номер',
-      desc: 'Mehmonxonaga joylashish, kalit, Wi-Fi va nonushta',
-      folder: 'Путешествия и отель',
-      content:
-        '# 11. В гостинице — заселение в номер\n\n' +
-        '— Добрый день! У меня {бронь|bron} на имя Рахимов на три ночи.\n' +
-        '— Здравствуйте! Минутку, проверяю по {базе|baza}... Да, стандартный номер с одной кроватью.\n' +
-        '— В стоимость номера входит {завтрак|nonushta}?\n' +
-        '— Да, завтрак «шведский стол» сервируется с семи до десяти {утра|ertalab}.\n' +
-        '— Подскажите пароль от беспроводного {интернета|internet}?\n' +
-        '— Пароль указан на карточке вашего {ключа|kalit}. Ваш номер триста пять на третьем этаже.'
+      id: 'ru_l_09', num: '09', cat: 'homophones', catName: 'Омофоны', level: 'A1',
+      name: "09. \u0413\u0440\u0438\u0431 vs \u0413\u0440\u0438\u043f\u043f, \u041b\u0443\u043a vs \u041b\u0443\u0433 \u2014 \u041e\u0433\u043b\u0443\u0448\u0435\u043d\u0438\u0435 \u0441\u043e\u0433\u043b\u0430\u0441\u043d\u044b\u0445",
+      desc: "[\u0413\u0440\u0438\u043f], [\u041b\u0443\u043a], [\u041f\u043b\u043e\u0442] \u2014 so'z oxiridagi jarangli undoshlarning jarangsizlanishi",
+      folder: "\u041e\u043c\u043e\u0444\u043e\u043d\u044b",
+      content: "# 09. \u0413\u0440\u0438\u0431 vs \u0413\u0440\u0438\u043f\u043f, \u041b\u0443\u043a vs \u041b\u0443\u0433 \u2014 \u041e\u0433\u043b\u0443\u0448\u0435\u043d\u0438\u0435 \u0441\u043e\u0433\u043b\u0430\u0441\u043d\u044b\u0445\n> [\u0413\u0440\u0438\u043f], [\u041b\u0443\u043a], [\u041f\u043b\u043e\u0442] \u2014 so'z oxiridagi jarangli undoshlarning jarangsizlanishi\n\n---\ncard: \u0413\u0440\u0438\u0431 vs \u0413\u0440\u0438\u043f\u043f\nsound: [\u0413\u0440\u0438\u043f]\nspelling: \u0413\u0440\u0438\u0431 (\u0431\u2794\u043f) / \u0413\u0440\u0438\u043f\u043f\nmean: Qo'ziqorin vs Gripp (kasallik)\nexplain: Rus tilida \u00ab\u0411\u00bb harfi so'z oxirida doimo \u00ab\u041f\u00bb deb o'qiladi. Shuning uchun ikkala so'z bir xil [\u0413\u0440\u0438\u043f] eshitiladi. Ma'noni gap mazmuni hal qiladi!\nexample: \u042f \u043d\u0430\u0448\u0451\u043b \u0432 \u043b\u0435\u0441\u0443 \u0431\u043e\u043b\u044c\u0448\u043e\u0439 \u0433\u0440\u0438\u0431.\nexample_audio: \u042f \u043d\u0430\u0448\u0451\u043b \u0432 \u043b\u0435\u0441\u0443 \u0431\u043e\u043b\u044c\u0448\u043e\u0439 \u0433\u0440\u0438\u0431.\nexample_uz: Men o'rmonda katta qo'ziqorin topdim.\n\n---\ncard: \u041b\u0443\u043a vs \u041b\u0443\u0433\nsound: [\u041b\u0443\u043a]\nspelling: \u041b\u0443\u043a / \u041b\u0443\u0433 (\u0433\u2794\u043a)\nmean: Piyoz (kamalak) vs O'tloq / Yaylov\nexplain: \u00ab\u0413\u00bb harfi so'z oxirida \u00ab\u041a\u00bb bo'lib talaffuz qilinadi: [\u041b\u0443\u043a]. \u00ab\u0417\u0435\u043b\u0451\u043d\u044b\u0439 \u043b\u0443\u043a\u00bb (piyoz) va \u00ab\u0437\u0435\u043b\u0451\u043d\u044b\u0439 \u043b\u0443\u0433\u00bb (o'tloq) quloqqa bir xil eshitiladi!\nexample: \u041f\u043e\u0440\u0435\u0436\u044c \u043c\u0435\u043b\u043a\u043e \u0440\u0435\u043f\u0447\u0430\u0442\u044b\u0439 \u043b\u0443\u043a \u0432 \u0441\u0430\u043b\u0430\u0442.\nexample_audio: \u041f\u043e\u0440\u0435\u0436\u044c \u043c\u0435\u043b\u043a\u043e \u0440\u0435\u043f\u0447\u0430\u0442\u044b\u0439 \u043b\u0443\u043a \u0432 \u0441\u0430\u043b\u0430\u0442.\nexample_uz: Salatga piyozni mayda qilib to'g'ra.\n\n---\ncard: \u041f\u043b\u043e\u0434 vs \u041f\u043b\u043e\u0442\nsound: [\u041f\u043b\u043e\u0442]\nspelling: \u041f\u043b\u043e\u0434 (\u0434\u2794\u0442) / \u041f\u043b\u043e\u0442\nmean: Meva / Hosil vs Sol (suvdagi qayiqcha)\nexplain: \u00ab\u0414\u00bb so'z oxirida \u00ab\u0422\u00bb bo'lib jaranglaydi: ikkalasi ham [\u041f\u043b\u043e\u0442].\nexample: \u042d\u0442\u043e\u0442 \u0444\u0440\u0443\u043a\u0442 \u2014 \u043e\u0447\u0435\u043d\u044c \u0441\u043b\u0430\u0434\u043a\u0438\u0439 \u043f\u043b\u043e\u0434.\nexample_audio: \u042d\u0442\u043e\u0442 \u0444\u0440\u0443\u043a\u0442 \u2014 \u043e\u0447\u0435\u043d\u044c \u0441\u043b\u0430\u0434\u043a\u0438\u0439 \u043f\u043b\u043e\u0434.\nexample_uz: Bu meva \u2014 juda shirin hosil.\n\n---\ncard: \u041a\u043e\u0442 vs \u041a\u043e\u0434\nsound: [\u041a\u043e\u0442]\nspelling: \u041a\u043e\u0442 / \u041a\u043e\u0434 (\u0434\u2794\u0442)\nmean: Mushuk vs Maxfiy kod (raqamlar)\nexplain: \u00ab\u0414\u00bb \u00ab\u0422\u00bbga aylanadi: \u00ab\u0412\u0432\u0435\u0434\u0438 \u043a\u043e\u0434\u00bb va \u00ab\u0420\u044b\u0436\u0438\u0439 \u043a\u043e\u0442\u00bb qulog'ingizga bir xil eshitiladi.\nexample: \u0412\u0432\u0435\u0434\u0438 \u0441\u0435\u043a\u0440\u0435\u0442\u043d\u044b\u0439 \u043a\u043e\u0434 \u0438\u0437 \u0421\u041c\u0421.\nexample_audio: \u0412\u0432\u0435\u0434\u0438 \u0441\u0435\u043a\u0440\u0435\u0442\u043d\u044b\u0439 \u043a\u043e\u0434 \u0438\u0437 \u0421\u041c\u0421.\nexample_uz: SMS dan kelgan maxfiy kodni kirit.\n\n\n? Ovozda: \u00ab\u042f \u0441\u044a\u0435\u043b \u0436\u0430\u0440\u0435\u043d\u044b\u0439 [\u0433\u0440\u0438\u043f]\u00bb. Gapda qaysi so'z aytildi?\n+ \u0413\u0440\u0438\u0431 (qo'ziqorin)\n- \u0413\u0440\u0438\u043f\u043f (kasallik)\n- \u0413\u0440\u043e\u0431 (tobut)\n\n? \u00ab\u041a\u043e\u0440\u043e\u0432\u044b \u043f\u0430\u0441\u0443\u0442\u0441\u044f \u043d\u0430 [\u043b\u0443\u043a\u0443]\u00bb. Bu yerda qaysi so'z?\n+ \u041b\u0443\u0433 (yaylov)\n- \u041b\u0443\u043a (piyoz)\n- \u041b\u044e\u043a (quduq qopqog'i)\n\n? Nega \u00ab\u043a\u043e\u0434\u00bb va \u00ab\u043a\u043e\u0442\u00bb bir xil eshitiladi?\n+ So'z oxirida \u00ab\u0434\u00bb tovushi \u00ab\u0442\u00bb bo'lib jarangsizlanadi\n- Chunki ular bitta ildizdan\n- Urg'u boshqa joyga tushgani uchun"
     },
     {
-      id: 'ru_l_12', num: '12', cat: 'travel', catName: 'Путешествия', level: 'A2',
-      name: '12. В банке — обмен валюты',
-      desc: 'Bankda dollar ayirboshlash kursi va komissiya',
-      folder: 'Путешествия и отель',
-      content:
-        '# 12. В банке — обмен валюты\n\n' +
-        '— Здравствуйте! Я хочу обменять пятьсот {долларов|dollar} на рубли.\n' +
-        '— Какой сегодня установленный {курс|kurs}?\n' +
-        '— Курс покупки девяносто один рубль пятьдесят {копеек|tiyin}.\n' +
-        '— Взимается ли какая-нибудь дополнительная {комиссия|komissiya}?\n' +
-        '— Нет, обмен производится без комиссии. Пожалуйста, ваш {паспорт|pasport}.\n' +
-        '— Вот деньги и документ. Выдайте, пожалуйста, крупными {купюрами|kupyuralar}.'
+      id: 'ru_l_10', num: '10', cat: 'homophones', catName: 'Омофоны', level: 'A2',
+      name: "10. \u041f\u0440\u0443\u0434 vs \u041f\u0440\u0443\u0442, \u0420\u043e\u0442 vs \u0420\u043e\u0434 \u2014 \u041f\u0430\u0440\u043d\u044b\u0435 \u0441\u043e\u0437\u0432\u0443\u0447\u0438\u044f",
+      desc: "[\u041f\u0440\u0443\u0442], [\u0420\u043e\u0442], [\u041f\u0430\u0440\u043e\u043a] \u2014 eshitganda chalkashtiradigan xavfli juftliklar",
+      folder: "\u041e\u043c\u043e\u0444\u043e\u043d\u044b",
+      content: "# 10. \u041f\u0440\u0443\u0434 vs \u041f\u0440\u0443\u0442, \u0420\u043e\u0442 vs \u0420\u043e\u0434 \u2014 \u041f\u0430\u0440\u043d\u044b\u0435 \u0441\u043e\u0437\u0432\u0443\u0447\u0438\u044f\n> [\u041f\u0440\u0443\u0442], [\u0420\u043e\u0442], [\u041f\u0430\u0440\u043e\u043a] \u2014 eshitganda chalkashtiradigan xavfli juftliklar\n\n---\ncard: \u041f\u0440\u0443\u0434 vs \u041f\u0440\u0443\u0442\nsound: [\u041f\u0440\u0443\u0442]\nspelling: \u041f\u0440\u0443\u0434 (\u0434\u2794\u0442) / \u041f\u0440\u0443\u0442\nmean: Hovuz (suv havzasi) vs Novda / Chiviq\nexplain: Oxiridagi \u00ab\u0434\u00bb harfi \u00ab\u0442\u00bbga aylanadi. \u00ab\u0420\u044b\u0431\u0430 \u043f\u043b\u0430\u0432\u0430\u0435\u0442 \u0432 \u043f\u0440\u0443\u0434\u0443\u00bb va \u00ab\u0421\u0443\u0445\u043e\u0439 \u043f\u0440\u0443\u0442\u00bb (novda).\nexample: \u0412\u043e\u0437\u043b\u0435 \u043f\u0430\u0440\u043a\u0430 \u0435\u0441\u0442\u044c \u043a\u0440\u0430\u0441\u0438\u0432\u044b\u0439 \u043f\u0440\u0443\u0434.\nexample_audio: \u0412\u043e\u0437\u043b\u0435 \u043f\u0430\u0440\u043a\u0430 \u0435\u0441\u0442\u044c \u043a\u0440\u0430\u0441\u0438\u0432\u044b\u0439 \u043f\u0440\u0443\u0434.\nexample_uz: Park yonida chiroyli hovuz bor.\n\n---\ncard: \u0420\u043e\u0442 vs \u0420\u043e\u0434\nsound: [\u0420\u043e\u0442]\nspelling: \u0420\u043e\u0442 / \u0420\u043e\u0434 (\u0434\u2794\u0442)\nmean: Og'iz vs Avlod / Grammatik jins\nexplain: Ikkalasi ham so'z oxirida bir xil [\u0420\u043e\u0442] jaranglaydi.\nexample: \u041e\u0442\u043a\u0440\u043e\u0439 \u0440\u043e\u0442 \u0438 \u0441\u043a\u0430\u0436\u0438 \u00ab\u0410-\u0430\u00bb.\nexample_audio: \u041e\u0442\u043a\u0440\u043e\u0439 \u0440\u043e\u0442 \u0438 \u0441\u043a\u0430\u0436\u0438 \u00ab\u0410-\u0430\u00bb.\nexample_uz: Og'zingni och va \u00abA-a\u00bb degin.\n\n---\ncard: \u041f\u043e\u0440\u043e\u0433 vs \u041f\u043e\u0440\u043e\u043a\nsound: [\u041f\u0430\u0440\u043e\u043a]\nspelling: \u041f\u043e\u0440\u043e\u0433 (\u0433\u2794\u043a) / \u041f\u043e\u0440\u043e\u043a\nmean: Ostona vs Nuqson / Yomon illat\nexplain: Birinchi \u00ab\u043e\u00bb urg'usiz bo'lib \u00ab\u0430\u00bbga aylanadi, oxiridagi \u00ab\u0433\u00bb esa \u00ab\u043a\u00bb bo'ladi: [\u041f\u0430\u0440\u043e\u043a].\nexample: \u041e\u043d \u043e\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u043b\u0441\u044f \u043f\u0440\u044f\u043c\u043e \u043d\u0430 \u043f\u043e\u0440\u043e\u0433\u0435.\nexample_audio: \u041e\u043d \u043e\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u043b\u0441\u044f \u043f\u0440\u044f\u043c\u043e \u043d\u0430 \u043f\u043e\u0440\u043e\u0433\u0435.\nexample_uz: U to'g'ri ostonada to'xtab qoldi.\n\n---\ncard: \u0421\u0442\u043e\u043b\u0431 vs \u0421\u0442\u043e\u043b\u043f\nsound: [\u0421\u0442\u043e\u043b\u043f]\nspelling: \u0421\u0442\u043e\u043b\u0431 (\u0431\u2794\u043f) / \u0421\u0442\u043e\u043b\u043f\nmean: Ustun (simyog'och) vs Tayanch / Asos\nexplain: \u00ab\u0431\u00bb jarangsizlanib [\u0421\u0442\u043e\u043b\u043f] deb aytiladi.\nexample: \u041c\u0430\u0448\u0438\u043d\u0430 \u0437\u0430\u0434\u0435\u043b\u0430 \u0444\u043e\u043d\u0430\u0440\u043d\u044b\u0439 \u0441\u0442\u043e\u043b\u0431.\nexample_audio: \u041c\u0430\u0448\u0438\u043d\u0430 \u0437\u0430\u0434\u0435\u043b\u0430 \u0444\u043e\u043d\u0430\u0440\u043d\u044b\u0439 \u0441\u0442\u043e\u043b\u0431.\nexample_uz: Mashina ko'cha chirog'i ustuniga tegib ketdi.\n\n\n? Ovozda: \u00ab\u0412 \u043f\u0430\u0440\u043a\u0435 \u0432\u044b\u043a\u043e\u043f\u0430\u043b\u0438 \u0431\u043e\u043b\u044c\u0448\u043e\u0439 [\u043f\u0440\u0443\u0442]\u00bb. Qaysi so'z nazarda tutilgan?\n+ \u041f\u0440\u0443\u0434 (hovuz)\n- \u041f\u0440\u0443\u0442 (novda)\n- \u041f\u0440\u0443\u0442\u043e\u043a (kichik metall tayoq)\n\n? \u00ab\u041f\u043e\u0440\u043e\u0433\u00bb so'zi og'zaki nutqda qanday talaffuz qilinadi?\n+ [\u041f\u0430\u0440\u043e\u043a]\n- [\u041f\u043e\u0440\u043e\u0433]\n- [\u041f\u0430\u0440\u043e\u0445]\n\n? \u00ab\u041c\u0443\u0436\u0441\u043a\u043e\u0439 [\u0440\u043e\u0442] \u0432 \u0440\u0443\u0441\u0441\u043a\u043e\u043c \u044f\u0437\u044b\u043a\u0435\u00bb. Bu qaysi so'z?\n+ \u0420\u043e\u0434 (jins)\n- \u0420\u043e\u0442 (og'iz)\n- \u0420\u043e\u0442\u0430 (harbiy bo'linma)"
     },
     {
-      id: 'ru_l_13', num: '13', cat: 'travel', catName: 'Путешествия', level: 'B1',
-      name: '13. Экскурсия по городу',
-      desc: 'Shahar bo\'ylab gid bilan sayr va tarixiy joylar',
-      folder: 'Путешествия и отель',
-      content:
-        '# 13. Экскурсия по городу\n\n' +
-        '— Здравствуйте! Какие обзорные {экскурсии|ekskursiyalar} вы предлагаете сегодня?\n' +
-        '— У нас есть двухчасовая прогулка по историческому {центру|markaz} с профессиональным гидом.\n' +
-        '— Во сколько начинается {маршрут|marshrut}?\n' +
-        '— Начало в четырнадцать ноль-ноль от памятника Пушкину.\n' +
-        '— Экскурсия пешеходная или на {автобусе|avtobusda}?\n' +
-        '— Первая часть на комфортабельном автобусе, а затем пешая {прогулка|sayr}.'
+      id: 'ru_l_11', num: '11', cat: 'homophones', catName: 'Омофоны', level: 'B1',
+      name: "11. \u041a\u043e\u043c\u043f\u0430\u043d\u0438\u044f vs \u041a\u0430\u043c\u043f\u0430\u043d\u0438\u044f, \u041f\u043e\u043b\u0430\u0441\u043a\u0430\u0442\u044c vs \u041f\u043e\u043b\u043e\u0441\u043a\u0430\u0442\u044c",
+      desc: "[\u041a\u0430\u043c\u043f\u0430\u043d\u0438\u044f], [\u041f\u0430\u043b\u0430\u0441\u043a\u0430\u0442\u044c] \u2014 urg'usiz unlilar tufayli bir xil eshitilish",
+      folder: "\u041e\u043c\u043e\u0444\u043e\u043d\u044b",
+      content: "# 11. \u041a\u043e\u043c\u043f\u0430\u043d\u0438\u044f vs \u041a\u0430\u043c\u043f\u0430\u043d\u0438\u044f, \u041f\u043e\u043b\u0430\u0441\u043a\u0430\u0442\u044c vs \u041f\u043e\u043b\u043e\u0441\u043a\u0430\u0442\u044c\n> [\u041a\u0430\u043c\u043f\u0430\u043d\u0438\u044f], [\u041f\u0430\u043b\u0430\u0441\u043a\u0430\u0442\u044c] \u2014 urg'usiz unlilar tufayli bir xil eshitilish\n\n---\ncard: \u041a\u043e\u043c\u043f\u0430\u043d\u0438\u044f vs \u041a\u0430\u043c\u043f\u0430\u043d\u0438\u044f\nsound: [\u041a\u0430\u043c\u043f\u0430\u043d\u0438\u044f]\nspelling: \u041a[\u043e]\u043c\u043f\u0430\u043d\u0438\u044f / \u041a\u0430\u043c\u043f\u0430\u043d\u0438\u044f\nmean: Kompaniya (shirkat, oshnalar) vs Kampaniya (aksiya, targ'ibot)\nexplain: Urg'usiz \u00ab\u041e\u00bb \u00ab\u0410\u00bbga aylanadi. Shuning uchun \u00abIT-\u043a\u043e\u043c\u043f\u0430\u043d\u0438\u044f\u00bb va \u00ab\u0440\u0435\u043a\u043b\u0430\u043c\u043d\u0430\u044f \u043a\u0430\u043c\u043f\u0430\u043d\u0438\u044f\u00bb bir xil aytiladi!\nexample: \u041e\u043d \u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0442 \u0432 \u043a\u0440\u0443\u043f\u043d\u043e\u0439 IT-\u043a\u043e\u043c\u043f\u0430\u043d\u0438\u0438.\nexample_audio: \u041e\u043d \u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0442 \u0432 \u043a\u0440\u0443\u043f\u043d\u043e\u0439 IT-\u043a\u043e\u043c\u043f\u0430\u043d\u0438\u0438.\nexample_uz: U yirik IT-kompaniyasida ishlaydi.\n\n---\ncard: \u041f\u043e\u043b\u0430\u0441\u043a\u0430\u0442\u044c vs \u041f\u043e\u043b\u043e\u0441\u043a\u0430\u0442\u044c\nsound: [\u041f\u0430\u043b\u0430\u0441\u043a\u0430\u0442\u044c]\nspelling: \u041f\u043e\u043b[\u0430]\u0441\u043a\u0430\u0442\u044c / \u041f\u043e\u043b[\u043e]\u0441\u043a\u0430\u0442\u044c\nmean: Erkalamoq (silamoq) vs Chaymoq (kir yoki tomoq)\nexplain: \u00ab\u041b\u0430\u0441\u043a\u0430\u00bb (erkalash) va \u00ab\u043f\u043e\u043b\u043e\u0449\u0435\u0442\u00bb (chayish) so'zlarida prefiksdagi unlilar qisqarib, ikkalasi ham [\u041f\u0430\u043b\u0430\u0441\u043a\u0430\u0442\u044c] bo'ladi.\nexample: \u041d\u0443\u0436\u043d\u043e \u043f\u043e\u043b\u043e\u0441\u043a\u0430\u0442\u044c \u0433\u043e\u0440\u043b\u043e \u0442\u0451\u043f\u043b\u043e\u0439 \u0432\u043e\u0434\u043e\u0439.\nexample_audio: \u041d\u0443\u0436\u043d\u043e \u043f\u043e\u043b\u043e\u0441\u043a\u0430\u0442\u044c \u0433\u043e\u0440\u043b\u043e \u0442\u0451\u043f\u043b\u043e\u0439 \u0432\u043e\u0434\u043e\u0439.\nexample_uz: Tomoqni iliq suv bilan chayish kerak.\n\n---\ncard: \u041f\u043e\u0441\u0432\u0435\u0442\u0438\u0442\u044c vs \u041f\u043e\u0441\u0432\u044f\u0442\u0438\u0442\u044c\nsound: [\u041f\u0430\u0441\u0432\u044f\u0442\u0438\u0442\u044c]\nspelling: \u041f\u043e\u0441\u0432[\u0435\u2794\u0438]\u0442\u0438\u0442\u044c / \u041f\u043e\u0441\u0432[\u044f\u2794\u0438]\u0442\u0438\u0442\u044c\nmean: Fonar bilan yoritmoq vs Bag'ishlamoq\nexplain: \u00ab\u0421\u0432\u0435\u0442\u00bb (yorug'lik) va \u00ab\u0441\u0432\u044f\u0442\u043e\u0441\u0442\u044c\u00bb (muqaddaslik) \u2014 og'zaki nutqda ikkalasi ham bir xil jaranglaydi.\nexample: \u041f\u043e\u0441\u0432\u0435\u0442\u0438 \u043c\u043d\u0435 \u0444\u043e\u043d\u0430\u0440\u0438\u043a\u043e\u043c \u043f\u043e\u0434 \u043d\u043e\u0433\u0438, \u043f\u043e\u0436\u0430\u043b\u0443\u0439\u0441\u0442\u0430.\nexample_audio: \u041f\u043e\u0441\u0432\u0435\u0442\u0438 \u043c\u043d\u0435 \u0444\u043e\u043d\u0430\u0440\u0438\u043a\u043e\u043c \u043f\u043e\u0434 \u043d\u043e\u0433\u0438, \u043f\u043e\u0436\u0430\u043b\u0443\u0439\u0441\u0442\u0430.\nexample_uz: Iltimos, oyoqlarim ostiga fonaring bilan yoritib ber.\n\n---\ncard: \u041f\u0440\u0435\u0434\u0430\u0442\u044c vs \u041f\u0440\u0438\u0434\u0430\u0442\u044c\nsound: [\u041f\u0440\u0438\u0434\u0430\u0442\u044c]\nspelling: \u041f\u0440[\u0435]\u0434\u0430\u0442\u044c / \u041f\u0440[\u0438]\u0434\u0430\u0442\u044c\nmean: Xiyonat qilmoq vs Kuch/shakl bermoq\nexplain: Urg'usiz \u00ab\u043f\u0440\u0435-\u00bb va \u00ab\u043f\u0440\u0438-\u00bb prefikslari bir xil [\u043f\u0440\u0438] deb talaffuz etiladi.\nexample: \u041d\u0430\u0441\u0442\u043e\u044f\u0449\u0438\u0439 \u0434\u0440\u0443\u0433 \u043d\u0438\u043a\u043e\u0433\u0434\u0430 \u043d\u0435 \u0441\u043c\u043e\u0436\u0435\u0442 \u043f\u0440\u0435\u0434\u0430\u0442\u044c.\nexample_audio: \u041d\u0430\u0441\u0442\u043e\u044f\u0449\u0438\u0439 \u0434\u0440\u0443\u0433 \u043d\u0438\u043a\u043e\u0433\u0434\u0430 \u043d\u0435 \u0441\u043c\u043e\u0436\u0435\u0442 \u043f\u0440\u0435\u0434\u0430\u0442\u044c.\nexample_uz: Haqiqiy do'st hech qachon xiyonat qila olmaydi.\n\n\n? \u00ab\u0414\u0440\u0443\u0436\u043d\u0430\u044f [\u043a\u0430\u043c\u043f\u0430\u043d\u0438\u044f] \u0441\u0438\u0434\u0435\u043b\u0430 \u0432 \u043a\u0430\u0444\u0435\u00bb. Qaysi so'z to'g'ri yoziladi?\n+ \u041a\u043e\u043c\u043f\u0430\u043d\u0438\u044f (do'stlar davrasi)\n- \u041a\u0430\u043c\u043f\u0430\u043d\u0438\u044f (targ'ibot tadbiri)\n- \u041a\u043e\u043f\u0430\u043d\u0438\u044f (qazish)\n\n? Ovozda: \u00ab[\u041f\u0430\u043b\u0430\u0441\u043a\u0430\u0442\u044c] \u043a\u043e\u0442\u0430\u00bb. Bu nima degani?\n+ Mushukni erkalab silamoq (\u041f\u043e\u043b\u0430\u0441\u043a\u0430\u0442\u044c)\n- Mushukni suvda chaymoq (\u041f\u043e\u043b\u043e\u0441\u043a\u0430\u0442\u044c)\n- Mushukni yuvmoq\n\n? \u00ab\u041f\u043e\u0441\u0432\u0435\u0442\u0438\u0442\u044c \u0444\u043e\u043d\u0430\u0440\u0438\u043a\u043e\u043c\u00bb iborasidagi o'zak qaysi so'zdan?\n+ \u0421\u0432\u0435\u0442 (yorug'lik)\n- \u0421\u0432\u044f\u0442\u043e\u0439 (muqaddas)\n- \u0421\u0432\u0438\u0441\u0442 (hushtak)"
     },
     {
-      id: 'ru_l_14', num: '14', cat: 'travel', catName: 'Путешествия', level: 'B1',
-      name: '14. Аренда автомобиля',
-      desc: 'Avtomobil ijarasi shartlari, avtomat korobka va sug\'urta',
-      folder: 'Путешествия и отель',
-      content:
-        '# 14. Аренда автомобиля\n\n' +
-        '— Добрый день! Я хотел бы арендовать компактный {автомобиль|mashina} на выходные.\n' +
-        '— Какие требования к коробке передач: {автомат|avtomat} или механика?\n' +
-        '— Обязательно автоматическая {коробка|uzatmalar qutisi}.\n' +
-        '— У нас есть новый седан. Требуется стаж вождения от двух {лет|yil}.\n' +
-        '— Мой стаж более пяти лет. Включена ли полная {страховка|sug\'urta}?\n' +
-        '— Да, страховка покрывает все риски, кроме повреждения {колёс|g\'ildiraklar}.'
-    },
-
-    // 💼 4. Работа и дела
-    {
-      id: 'ru_l_15', num: '15', cat: 'work', catName: 'Работа & дела', level: 'A2',
-      name: '15. Телефонный разговор — запись на приём',
-      desc: 'Klinikaga qo\'ng\'iroq qilib shifokor qabuliga yozilish',
-      folder: 'Работа и дела',
-      content:
-        '# 15. Телефонный разговор — запись на приём\n\n' +
-        '— Алло, здравствуйте! Это приёмная доктора Смирнова?\n' +
-        '— Добрый день! Да, вы позвонили в {клинику|klinika}. Чем могу помочь?\n' +
-        '— Я хочу {записаться|yozilish} на консультацию на этой неделе.\n' +
-        '— Есть свободное окно в четверг в шестнадцать {часов|soatda}. Вам подходит?\n' +
-        '— Да, это идеальное {время|vaqt}. Что нужно взять с собой?\n' +
-        '— Возьмите паспорт и результаты предыдущих {анализов|tahlillar}, если они есть.'
+      id: 'ru_l_12', num: '12', cat: 'phrases', catName: 'Разговорные фишки', level: 'A2',
+      name: "12. \u0414\u0430 \u043b\u0430\u0434\u043d\u043e! \u0438 \u0412 \u0441\u043c\u044b\u0441\u043b\u0435? \u2014 \u041c\u043e\u043b\u043d\u0438\u0435\u043d\u043e\u0441\u043d\u044b\u0435 \u0440\u0435\u0430\u043a\u0446\u0438\u0438",
+      desc: "\u0414\u0430 \u043b\u0430\u0434\u043d\u043e!, \u0412 \u0441\u043c\u044b\u0441\u043b\u0435?, \u0414\u0430\u0432\u0430\u0439! \u2014 og'zaki nutqdagi tezkor reaksiyalar",
+      folder: "\u0420\u0430\u0437\u0433\u043e\u0432\u043e\u0440\u043d\u044b\u0435 \u0444\u0438\u0448\u043a\u0438",
+      content: "# 12. \u0414\u0430 \u043b\u0430\u0434\u043d\u043e! \u0438 \u0412 \u0441\u043c\u044b\u0441\u043b\u0435? \u2014 \u041c\u043e\u043b\u043d\u0438\u0435\u043d\u043e\u0441\u043d\u044b\u0435 \u0440\u0435\u0430\u043a\u0446\u0438\u0438\n> \u0414\u0430 \u043b\u0430\u0434\u043d\u043e!, \u0412 \u0441\u043c\u044b\u0441\u043b\u0435?, \u0414\u0430\u0432\u0430\u0439! \u2014 og'zaki nutqdagi tezkor reaksiyalar\n\n---\ncard: \u0414\u0430 \u043b\u0430\u0434\u043d\u043e!\nsound: [\u0414\u0430 \u043b\u0430\u0434\u043d\u043e!]\nspelling: \u0414\u0430 \u043b\u0430\u0434\u043d\u043e!\nmean: Qo'ysang-chi! Bo'lishi mumkin emas! / Mayli endi\nexplain: Intonatsiyaga qarab: hayratlanish (\u00abBo'lishi mumkin emas!\u00bb) yoki beparvolik (\u00abQo'y e'tibor berma\u00bb) ma'nosini bildiradi.\nexample: \u2014 \u042f \u0432\u044b\u0438\u0433\u0440\u0430\u043b \u043c\u0438\u043b\u043b\u0438\u043e\u043d! \u2014 \u0414\u0430 \u043b\u0430\u0434\u043d\u043e! \u041d\u0435 \u0432\u0435\u0440\u044e!\nexample_audio: \u2014 \u042f \u0432\u044b\u0438\u0433\u0440\u0430\u043b \u043c\u0438\u043b\u043b\u0438\u043e\u043d! \u2014 \u0414\u0430 \u043b\u0430\u0434\u043d\u043e! \u041d\u0435 \u0432\u0435\u0440\u044e!\nexample_uz: \u2014 Men bir million yutib oldim! \u2014 Qo'ysang-chi! Ishonmayman!\n\n---\ncard: \u0412 \u0441\u043c\u044b\u0441\u043b\u0435?\nsound: [\u0412\u0441\u043c\u044b\u0441\u043b\u0435?]\nspelling: \u0412 + \u0441\u043c\u044b\u0441\u043b\u0435?\nmean: Qanaqasiga? Nimani nazarda tutyapsan?\nexplain: Ruslar suhbatda biror gapni tushunmasa yoki hayron qolsa, doimo qisqa qilib \u00ab\u0412 \u0441\u043c\u044b\u0441\u043b\u0435?\u00bb deb so'raydi.\nexample: \u2014 \u041c\u044b \u043d\u0438\u043a\u0443\u0434\u0430 \u043d\u0435 \u0435\u0434\u0435\u043c. \u2014 \u0412 \u0441\u043c\u044b\u0441\u043b\u0435? \u041c\u044b \u0436\u0435 \u0434\u043e\u0433\u043e\u0432\u0430\u0440\u0438\u0432\u0430\u043b\u0438\u0441\u044c!\nexample_audio: \u2014 \u041c\u044b \u043d\u0438\u043a\u0443\u0434\u0430 \u043d\u0435 \u0435\u0434\u0435\u043c. \u2014 \u0412 \u0441\u043c\u044b\u0441\u043b\u0435? \u041c\u044b \u0436\u0435 \u0434\u043e\u0433\u043e\u0432\u0430\u0440\u0438\u0432\u0430\u043b\u0438\u0441\u044c!\nexample_uz: \u2014 Biz hech qayerga bormaymiz. \u2014 Qanaqasiga? Kelishgandik-ku!\n\n---\ncard: \u0414\u0430\u0432\u0430\u0439!\nsound: [\u0414\u0430\u0432\u0430\u0439!]\nspelling: \u0414\u0430\u0432\u0430\u0439!\nmean: Xayr! / Boshladik! / Mayli kelishdik!\nexplain: Telefonni o'chirayotganda \u00ab\u0414\u0430\u0432\u0430\u0439, \u043f\u043e\u043a\u0430!\u00bb (Xayr, bo'pti) yoki ishni boshlashda \u00ab\u0414\u0430\u0432\u0430\u0439 \u0431\u044b\u0441\u0442\u0440\u0435\u0435!\u00bb deb har daqiqada aytiladi.\nexample: \u0411\u044b\u043b\u043e \u043f\u0440\u0438\u044f\u0442\u043d\u043e \u043f\u043e\u0431\u043e\u043b\u0442\u0430\u0442\u044c, \u0434\u0430\u0432\u0430\u0439, \u043d\u0430 \u0441\u0432\u044f\u0437\u0438!\nexample_audio: \u0411\u044b\u043b\u043e \u043f\u0440\u0438\u044f\u0442\u043d\u043e \u043f\u043e\u0431\u043e\u043b\u0442\u0430\u0442\u044c, \u0434\u0430\u0432\u0430\u0439, \u043d\u0430 \u0441\u0432\u044f\u0437\u0438!\nexample_uz: Gaplashganimdan xursand bo'ldim, bo'pti, aloqada bo'lamiz!\n\n---\ncard: \u0411\u0435\u0437 \u043f\u0440\u043e\u0431\u043b\u0435\u043c!\nsound: [\u0411\u0435\u0441\u043f\u0440\u0430\u0431\u043b\u0435\u043c!]\nspelling: \u0411\u0435\u0437 + \u043f\u0440\u043e\u0431\u043b\u0435\u043c!\nmean: Muammosiz! Jonim bilan!\nexplain: \u00ab\u0437\u00bb \u00ab\u0441\u00bbga aylanadi va predlog qo'shiladi: [\u0431\u0435\u0441\u043f\u0440\u0430\u0431\u043b\u0435\u043c]. Har qanday iltimosga tezkor ijobiy javob.\nexample: \u2014 \u041f\u043e\u043c\u043e\u0436\u0435\u0448\u044c \u043c\u043d\u0435 \u0437\u0430\u0432\u0442\u0440\u0430? \u2014 \u0411\u0435\u0437 \u043f\u0440\u043e\u0431\u043b\u0435\u043c, \u0437\u0432\u043e\u043d\u0438 \u0443\u0442\u0440\u043e\u043c!\nexample_audio: \u2014 \u041f\u043e\u043c\u043e\u0436\u0435\u0448\u044c \u043c\u043d\u0435 \u0437\u0430\u0432\u0442\u0440\u0430? \u2014 \u0411\u0435\u0437 \u043f\u0440\u043e\u0431\u043b\u0435\u043c, \u0437\u0432\u043e\u043d\u0438 \u0443\u0442\u0440\u043e\u043c!\nexample_uz: \u2014 Ertaga menga yordam berasanmi? \u2014 Muammosiz, ertalab telefon qil!\n\n\n? Rus tilida kutilmagan yangilik eshitganda qanday javob qaytariladi?\n+ \u00ab\u0414\u0430 \u043b\u0430\u0434\u043d\u043e!\u00bb (Bo'lishi mumkin emas!)\n- \u00ab\u0414\u0430\u0432\u0430\u0439 \u0443\u0436\u0435\u00bb\n- \u00ab\u0412 \u043e\u0431\u0449\u0435\u043c\u00bb\n\n? \u00ab\u0412 \u0441\u043c\u044b\u0441\u043b\u0435?\u00bb savoli qachon beriladi?\n+ Suhbatdoshning gapiga tushunmay hayron qolganda\n- Xayrlashayotganda\n- Rahmat aytayotganda\n\n? Do'stlar telefonda xayrlashganda ko'pincha nima deydi?\n+ \u00ab\u0414\u0430\u0432\u0430\u0439, \u043f\u043e\u043a\u0430!\u00bb\n- \u00ab\u0414\u0430\u0432\u0430\u0439 \u0434\u0435\u043b\u0430\u0439\u00bb\n- \u00ab\u041f\u043e\u0436\u0430\u043b\u0443\u0439\u0441\u0442\u0430\u00bb"
     },
     {
-      id: 'ru_l_16', num: '16', cat: 'work', catName: 'Работа & дела', level: 'B1',
-      name: '16. Собеседование — рассказ о себе',
-      desc: 'Ishga kirish suhbati, tajriba va loyihalar haqida',
-      folder: 'Работа и дела',
-      content:
-        '# 16. Собеседование — рассказ о себе\n\n' +
-        '— Добрый день! Расскажите кратко о вашем профессиональном {опыте|tajriba}.\n' +
-        '— Здравствуйте! Последние три года я работал {менеджером|menejer} проектов в IT-компании.\n' +
-        '— С какими основными трудностями вы {сталкивались|duch kelgansiz}?\n' +
-        '— Главное — это координация команды и соблюдение жёстких {сроков|muddatlar}.\n' +
-        '— Почему вы решили сменить место {работы|ish}?\n' +
-        '— Я ищу новые вызовы и хочу развиваться в масштабных международных {проектах|loyihalar}.'
+      id: 'ru_l_13', num: '13', cat: 'phrases', catName: 'Разговорные фишки', level: 'B1',
+      name: "13. \u0414\u0430 \u043d\u0435\u0442, \u043d\u0430\u0432\u0435\u0440\u043d\u043e\u0435 \u0438 \u0411\u0435\u0437 \u043f\u043e\u043d\u044f\u0442\u0438\u044f \u2014 \u041f\u0430\u0440\u0430\u0434\u043e\u043a\u0441\u044b \u0440\u0443\u0441\u0441\u043a\u043e\u0439 \u0440\u0435\u0447\u0438",
+      desc: "\u0414\u0430 \u043d\u0435\u0442, \u043d\u0430\u0432\u0435\u0440\u043d\u043e\u0435, \u0411\u0435\u0437 \u043f\u043e\u043d\u044f\u0442\u0438\u044f, \u0422\u043e\u0447\u043d\u043e \u2014 paradoksal iboralar",
+      folder: "\u0420\u0430\u0437\u0433\u043e\u0432\u043e\u0440\u043d\u044b\u0435 \u0444\u0438\u0448\u043a\u0438",
+      content: "# 13. \u0414\u0430 \u043d\u0435\u0442, \u043d\u0430\u0432\u0435\u0440\u043d\u043e\u0435 \u0438 \u0411\u0435\u0437 \u043f\u043e\u043d\u044f\u0442\u0438\u044f \u2014 \u041f\u0430\u0440\u0430\u0434\u043e\u043a\u0441\u044b \u0440\u0443\u0441\u0441\u043a\u043e\u0439 \u0440\u0435\u0447\u0438\n> \u0414\u0430 \u043d\u0435\u0442, \u043d\u0430\u0432\u0435\u0440\u043d\u043e\u0435, \u0411\u0435\u0437 \u043f\u043e\u043d\u044f\u0442\u0438\u044f, \u0422\u043e\u0447\u043d\u043e \u2014 paradoksal iboralar\n\n---\ncard: \u0414\u0430 \u043d\u0435\u0442, \u043d\u0430\u0432\u0435\u0440\u043d\u043e\u0435\nsound: [\u0414\u0430 \u043d\u0435\u0442, \u043d\u0430\u0432\u0435\u0440\u043d\u043e\u0435]\nspelling: \u0414\u0430 + \u043d\u0435\u0442 + \u043d\u0430\u0432\u0435\u0440\u043d\u043e\u0435\nmean: Yo'q, shekilli / Ehtimol yo'qdir\nexplain: Chet elliklarni eng ko'p lol qoldiradigan ibora: \u00ab\u0414\u0430\u00bb (tasdiq), \u00ab\u043d\u0435\u0442\u00bb (inkor), \u00ab\u043d\u0430\u0432\u0435\u0440\u043d\u043e\u0435\u00bb (gumon). Aslida bu \u00abYo'q, shekilli\u00bb degan qat'iy inkor!\nexample: \u2014 \u0422\u044b \u043f\u043e\u0439\u0434\u0451\u0448\u044c \u043d\u0430 \u0432\u0441\u0442\u0440\u0435\u0447\u0443? \u2014 \u0414\u0430 \u043d\u0435\u0442, \u043d\u0430\u0432\u0435\u0440\u043d\u043e\u0435, \u0443\u0441\u0442\u0430\u043b.\nexample_audio: \u2014 \u0422\u044b \u043f\u043e\u0439\u0434\u0451\u0448\u044c \u043d\u0430 \u0432\u0441\u0442\u0440\u0435\u0447\u0443? \u2014 \u0414\u0430 \u043d\u0435\u0442, \u043d\u0430\u0432\u0435\u0440\u043d\u043e\u0435, \u0443\u0441\u0442\u0430\u043b.\nexample_uz: \u2014 Uchrashuvga borasanmi? \u2014 Yo'q, shekilli, charchadim.\n\n---\ncard: \u0411\u0435\u0437 \u043f\u043e\u043d\u044f\u0442\u0438\u044f\nsound: [\u0411\u0435\u0441\u043f\u0430\u043d\u044f\u0442\u0438\u044f]\nspelling: \u0411\u0435\u0437 + \u043f\u043e\u043d\u044f\u0442\u0438\u044f\nmean: Umuman bilmayman / Mutlaqo tasavvurim yo'q\nexplain: \u00ab\u042f \u043d\u0435 \u0437\u043d\u0430\u044e\u00bb so'ziga qaraganda ancha jonli va qat'iy: \u00abMen qayerdan bilay?\u00bb.\nexample: \u2014 \u0413\u0434\u0435 \u043a\u043b\u044e\u0447\u0438 \u043e\u0442 \u043e\u0444\u0438\u0441\u0430? \u2014 \u0411\u0435\u0437 \u043f\u043e\u043d\u044f\u0442\u0438\u044f, \u044f \u0438\u0445 \u043d\u0435 \u0442\u0440\u043e\u0433\u0430\u043b.\nexample_audio: \u2014 \u0413\u0434\u0435 \u043a\u043b\u044e\u0447\u0438 \u043e\u0442 \u043e\u0444\u0438\u0441\u0430? \u2014 \u0411\u0435\u0437 \u043f\u043e\u043d\u044f\u0442\u0438\u044f, \u044f \u0438\u0445 \u043d\u0435 \u0442\u0440\u043e\u0433\u0430\u043b.\nexample_uz: \u2014 Idora kalitlari qayerda? \u2014 Umuman bilmayman, men ularga tegmadim.\n\n---\ncard: \u0414\u0430 \u0431\u0440\u043e\u0441\u044c \u0442\u044b!\nsound: [\u0414\u0430\u0431\u0440\u043e\u0441\u044c \u0442\u044b!]\nspelling: \u0414\u0430 + \u0431\u0440\u043e\u0441\u044c \u0442\u044b!\nmean: Qo'y unday dema! / Bekor gap!\nexplain: Suhbatdosh xavotir olganda yoki noo'rin narsa aytganda uni tinchlantirish uchun ishlatiladi.\nexample: \u0414\u0430 \u0431\u0440\u043e\u0441\u044c \u0442\u044b \u043f\u0435\u0440\u0435\u0436\u0438\u0432\u0430\u0442\u044c, \u0432\u0441\u0451 \u0431\u0443\u0434\u0435\u0442 \u043e\u0442\u043b\u0438\u0447\u043d\u043e!\nexample_audio: \u0414\u0430 \u0431\u0440\u043e\u0441\u044c \u0442\u044b \u043f\u0435\u0440\u0435\u0436\u0438\u0432\u0430\u0442\u044c, \u0432\u0441\u0451 \u0431\u0443\u0434\u0435\u0442 \u043e\u0442\u043b\u0438\u0447\u043d\u043e!\nexample_uz: Qo'y xavotir olma, hammasi a'lo darajada bo'ladi!\n\n---\ncard: \u0422\u043e\u0447\u043d\u043e!\nsound: [\u0422\u043e\u0447\u043d\u0430!]\nspelling: \u0422\u043e\u0447\u043d[\u043e\u2794\u0430]!\nmean: Roppa-rosa! Aynan shunday! To'ppa-to'g'ri!\nexplain: Birdaniga esga tushganda yoki rozi bo'lganda bir zumda aytiladigan so'z.\nexample: \u0422\u043e\u0447\u043d\u043e! \u042f \u0436\u0435 \u0441\u043e\u0432\u0441\u0435\u043c \u0437\u0430\u0431\u044b\u043b \u043f\u0440\u043e \u044d\u0442\u043e!\nexample_audio: \u0422\u043e\u0447\u043d\u043e! \u042f \u0436\u0435 \u0441\u043e\u0432\u0441\u0435\u043c \u0437\u0430\u0431\u044b\u043b \u043f\u0440\u043e \u044d\u0442\u043e!\nexample_uz: Roppa-rosa! Men buni butunlay unutib yuboribman-ku!\n\n\n? \u00ab\u0414\u0430 \u043d\u0435\u0442, \u043d\u0430\u0432\u0435\u0440\u043d\u043e\u0435\u00bb iborasi aslida nimani bildiradi?\n+ \u00abYo'q, shekilli\u00bb (inkorni bildiradi)\n- \u00abHa, albatta\u00bb (tasdiqni bildiradi)\n- Ikkilanib turib rozilik berishni\n\n? \u00ab\u0411\u0435\u0437 \u043f\u043e\u043d\u044f\u0442\u0438\u044f\u00bb iborasining ma'nosi nima?\n+ Umuman bilmayman / Tasavvurga ega emasman\n- Fikrim juda aniq\n- Yaxshi tushunaman\n\n? Do'stingiz xavotir olganda uni tinchlantirish uchun nima deysiz?\n+ \u00ab\u0414\u0430 \u0431\u0440\u043e\u0441\u044c \u0442\u044b!\u00bb\n- \u00ab\u0411\u0435\u0437 \u043f\u043e\u043d\u044f\u0442\u0438\u044f\u00bb\n- \u00ab\u0412 \u0441\u043c\u044b\u0441\u043b\u0435?\u00bb"
     },
     {
-      id: 'ru_l_17', num: '17', cat: 'work', catName: 'Работа & дела', level: 'B1',
-      name: '17. Разговор с коллегами в офисе',
-      desc: 'Hamkasblar bilan hisobot va taqdimotni muhokama qilish',
-      folder: 'Работа и дела',
-      content:
-        '# 17. Разговор с коллегами в офисе\n\n' +
-        '— Привет! Ты успел посмотреть мой {отчёт|hisobot} по продажам?\n' +
-        '— Привет! Да, отличная работа, цифры выглядят очень {убедительно|ishonarli}.\n' +
-        '— Как думаешь, когда мы презентуем его руководству?\n' +
-        '— Совещание назначено на пятницу после {обеда|tushlikdan keyin}.\n' +
-        '— Нужно подготовить несколько слайдов с наглядными {графиками|grafiklar}.\n' +
-        '— Согласен, давай разделим презентацию на две {части|qism}.'
-    },
-    {
-      id: 'ru_l_18', num: '18', cat: 'work', catName: 'Работа & дела', level: 'B1',
-      name: '18. Аренда жилья — звонок хозяину',
-      desc: 'Kvartira ijarasi bo\'yicha uy egasiga qo\'ng\'iroq qilish',
-      folder: 'Работа и дела',
-      content:
-        '# 18. Аренда жилья — звонок хозяину\n\n' +
-        '— Здравствуйте! Я звоню по объявлению об аренде однокомнатной {квартиры|xonadon}.\n' +
-        '— Добрый день! Квартира ещё свободна, окна выходят в тихий {двор|hovli}.\n' +
-        '— Включены ли коммунальные платежи в общую {стоимость|narx}?\n' +
-        '— Отопление и вода по счётчикам оплачиваются {отдельно|alohida}.\n' +
-        '— Когда можно приехать и посмотреть {жильё|uy}?\n' +
-        '— Я буду на месте сегодня вечером после семи {часов|soat}. Приезжайте!'
+      id: 'ru_l_14', num: '14', cat: 'phrases', catName: 'Разговорные фишки', level: 'B1',
+      name: "14. \u0420\u0443\u043a\u0438 \u043d\u0435 \u0434\u043e\u0445\u043e\u0434\u044f\u0442 \u0438 \u0414\u0435\u043b\u043e \u0432 \u0442\u043e\u043c, \u0447\u0442\u043e \u2014 \u0416\u0438\u0432\u044b\u0435 \u0438\u0434\u0438\u043e\u043c\u044b",
+      desc: "\u0420\u0443\u043a\u0438 \u043d\u0435 \u0434\u043e\u0445\u043e\u0434\u044f\u0442, \u0414\u0435\u043b\u043e \u0432 \u0442\u043e\u043c, \u041d\u0438 \u043f\u0443\u0445\u0430 \u043d\u0438 \u043f\u0435\u0440\u0430 \u2014 jonli ruscha iboralar",
+      folder: "\u0420\u0430\u0437\u0433\u043e\u0432\u043e\u0440\u043d\u044b\u0435 \u0444\u0438\u0448\u043a\u0438",
+      content: "# 14. \u0420\u0443\u043a\u0438 \u043d\u0435 \u0434\u043e\u0445\u043e\u0434\u044f\u0442 \u0438 \u0414\u0435\u043b\u043e \u0432 \u0442\u043e\u043c, \u0447\u0442\u043e \u2014 \u0416\u0438\u0432\u044b\u0435 \u0438\u0434\u0438\u043e\u043c\u044b\n> \u0420\u0443\u043a\u0438 \u043d\u0435 \u0434\u043e\u0445\u043e\u0434\u044f\u0442, \u0414\u0435\u043b\u043e \u0432 \u0442\u043e\u043c, \u041d\u0438 \u043f\u0443\u0445\u0430 \u043d\u0438 \u043f\u0435\u0440\u0430 \u2014 jonli ruscha iboralar\n\n---\ncard: \u0420\u0443\u043a\u0438 \u043d\u0435 \u0434\u043e\u0445\u043e\u0434\u044f\u0442\nsound: [\u0420\u0443\u043a\u0438 \u043d\u0438\u0434\u0430\u0445\u043e\u0434\u044f\u0442]\nspelling: \u0420\u0443\u043a\u0438 + \u043d\u0435 + \u0434\u043e\u0445\u043e\u0434\u044f\u0442\nmean: Vaqt topolmayapman / Qo'lim tegmayapti\nexplain: So'zma-so'z: \u00abqo'llar yetib bormayapti\u00bb. Aslida odamning vaqti yetmayotganini yoki fursat topolmaganini bildiradi.\nexample: \u0412\u0441\u0451 \u043d\u0438\u043a\u0430\u043a \u0440\u0443\u043a\u0438 \u043d\u0435 \u0434\u043e\u0445\u043e\u0434\u044f\u0442 \u043f\u043e\u0447\u0438\u043d\u0438\u0442\u044c \u043a\u0440\u0430\u043d.\nexample_audio: \u0412\u0441\u0451 \u043d\u0438\u043a\u0430\u043a \u0440\u0443\u043a\u0438 \u043d\u0435 \u0434\u043e\u0445\u043e\u0434\u044f\u0442 \u043f\u043e\u0447\u0438\u043d\u0438\u0442\u044c \u043a\u0440\u0430\u043d.\nexample_uz: Hech jo'mrakni tuzatishga qo'lim tegmayapti.\n\n---\ncard: \u0414\u0435\u043b\u043e \u0432 \u0442\u043e\u043c, \u0447\u0442\u043e...\nsound: [\u0414\u0435\u043b\u043e \u0432\u0442\u043e\u043c, \u0448\u0442\u043e...]\nspelling: \u0414\u0435\u043b\u043e \u0432 \u0442\u043e\u043c, [\u0447\u2794\u0448]\u0442\u043e\nmean: Gap shundaki... / Sababi shuki...\nexplain: Vaziyatni tushuntirayotganda doimo ishlatiladi. \u00ab\u0447\u0442\u043e\u00bb so'zi \u00ab\u0448\u0442\u043e\u00bb deb aytiladi.\nexample: \u0414\u0435\u043b\u043e \u0432 \u0442\u043e\u043c, \u0447\u0442\u043e \u043f\u043e\u0435\u0437\u0434 \u0443\u0436\u0435 \u0443\u0448\u0451\u043b.\nexample_audio: \u0414\u0435\u043b\u043e \u0432\u0442\u043e\u043c, \u0448\u0442\u043e \u043f\u043e\u0435\u0437\u0434 \u0443\u0436\u0435 \u0443\u0448\u0451\u043b.\nexample_uz: Gap shundaki, poyezd allaqachon jo'nab ketdi.\n\n---\ncard: \u0418\u043c\u0435\u0442\u044c \u0432 \u0432\u0438\u0434\u0443\nsound: [\u0418\u043c\u0435\u0442\u044c \u0432\u0432\u0438\u0434\u0443]\nspelling: \u0418\u043c\u0435\u0442\u044c + \u0432 + \u0432\u0438\u0434\u0443\nmean: Nazarda tutmoq / Hisobga olmoq\nexplain: \u00ab\u0427\u0442\u043e \u0442\u044b \u0438\u043c\u0435\u0435\u0448\u044c \u0432 \u0432\u0438\u0434\u0443?\u00bb (Nimani nazarda tutyapsan?) yoki \u00ab\u0418\u043c\u0435\u0439 \u0432 \u0432\u0438\u0434\u0443\u00bb (Bilib qo'y / Eslab qol).\nexample: \u0427\u0442\u043e \u043a\u043e\u043d\u043a\u0440\u0435\u0442\u043d\u043e \u0442\u044b \u0438\u043c\u0435\u0435\u0448\u044c \u0432 \u0432\u0438\u0434\u0443?\nexample_audio: \u0427\u0442\u043e \u043a\u043e\u043d\u043a\u0440\u0435\u0442\u043d\u043e \u0442\u044b \u0438\u043c\u0435\u0435\u0448\u044c \u0432 \u0432\u0438\u0434\u0443?\nexample_uz: Aniqroq aytganda nimani nazarda tutyapsan?\n\n---\ncard: \u041d\u0438 \u043f\u0443\u0445\u0430 \u043d\u0438 \u043f\u0435\u0440\u0430!\nsound: [\u041d\u0438\u043f\u0443\u0445\u0430 \u043d\u0438\u043f\u0435\u0440\u0430!]\nspelling: \u041d\u0438 \u043f\u0443\u0445\u0430, \u043d\u0438 \u043f\u0435\u0440\u0430!\nmean: Omad yor bo'lsin! (Imtihon yoki sinov oldidan)\nexplain: Barcha so'zlar tutashib bir nafasda aytiladi. Bunga javoban \u00ab\u041a \u0447\u0451\u0440\u0442\u0443!\u00bb (Bor-e / Qutuldim) deb javob qaytarish rus an'anasidir.\nexample: \u0423 \u0442\u0435\u0431\u044f \u0441\u0435\u0433\u043e\u0434\u043d\u044f \u044d\u043a\u0437\u0430\u043c\u0435\u043d? \u041d\u0438 \u043f\u0443\u0445\u0430 \u043d\u0438 \u043f\u0435\u0440\u0430!\nexample_audio: \u0423 \u0442\u0435\u0431\u044f \u0441\u0435\u0433\u043e\u0434\u043d\u044f \u044d\u043a\u0437\u0430\u043c\u0435\u043d? \u041d\u0438 \u043f\u0443\u0445\u0430 \u043d\u0438 \u043f\u0435\u0440\u0430!\nexample_uz: Bugun imtihoningmi? Omad yor bo'lsin!\n\n\n? \u00ab\u0420\u0443\u043a\u0438 \u043d\u0435 \u0434\u043e\u0445\u043e\u0434\u044f\u0442\u00bb iborasining haqiqiy ma'nosi qaysi?\n+ Vaqt yoki fursat topolmayapman\n- Qo'lim yetmayapti (bo'yim kalta)\n- Qo'lim og'riyapti\n\n? \u00ab\u041d\u0438 \u043f\u0443\u0445\u0430 \u043d\u0438 \u043f\u0435\u0440\u0430!\u00bb tilagiga rus an'anasiga ko'ra qanday javob beriladi?\n+ \u00ab\u041a \u0447\u0451\u0440\u0442\u0443!\u00bb\n- \u00ab\u0421\u043f\u0430\u0441\u0438\u0431\u043e \u0431\u043e\u043b\u044c\u0448\u043e\u0435\u00bb\n- \u00ab\u0418 \u0442\u0435\u0431\u0435 \u0442\u043e\u0433\u043e \u0436\u0435\u00bb\n\n? \u00ab\u0414\u0435\u043b\u043e \u0432 \u0442\u043e\u043c, \u0447\u0442\u043e...\u00bb qachon ishlatiladi?\n+ Asl sababni yoki vaziyatni tushuntirishda\n- Xayrlashganda\n- Bozorda narx talashganda"
     }
   ];
 
@@ -413,7 +184,7 @@
   var ALL_BUILTIN = {};
   RU_TOPICS.concat(EN_TOPICS).forEach(function (t) { ALL_BUILTIN[t.id] = t; });
 
-  // reading-doc.js ga zaxira manba sifatida ulaymiz
+  // listening-doc.js ga zaxira manba sifatida ulaymiz
   window.ListeningBuiltin = {
     get: function (id) { return ALL_BUILTIN[id] || null; },
     list: function (sec) { return sec === 'en_listening' ? EN_TOPICS : RU_TOPICS; }
@@ -458,11 +229,19 @@
 
         /* Kategoriya filtrlari (Pills) */
         '<div class="lh-pills" id="lh-pills">' +
-          pillBtn(isRu ? 'Все темы' : 'All topics', 'all', activeTab, sec) +
-          pillBtn(isRu ? '☕ Повседневная' : '☕ Daily Life', 'life', activeTab, sec) +
-          pillBtn(isRu ? '🚕 Город & транспорт' : '🚕 City & Travel', 'city', activeTab, sec) +
-          pillBtn(isRu ? '🏨 Путешествия' : '🏨 Hotel & Travel', 'travel', activeTab, sec) +
-          pillBtn(isRu ? '💼 Работа & дела' : '💼 Work & Calls', 'work', activeTab, sec) +
+          (isRu ? (
+            pillBtn('Все темы', 'all', activeTab, sec) +
+            pillBtn('⚡ Редукция', 'reduction', activeTab, sec) +
+            pillBtn('🔗 Слитная речь', 'liaison', activeTab, sec) +
+            pillBtn('👂 Омофоны', 'homophones', activeTab, sec) +
+            pillBtn('🗣️ Разговорные фишки', 'phrases', activeTab, sec)
+          ) : (
+            pillBtn('All topics', 'all', activeTab, sec) +
+            pillBtn('☕ Daily Life', 'life', activeTab, sec) +
+            pillBtn('🚕 City & Travel', 'city', activeTab, sec) +
+            pillBtn('🏨 Hotel & Travel', 'travel', activeTab, sec) +
+            pillBtn('💼 Work & Calls', 'work', activeTab, sec)
+          )) +
         '</div>' +
 
         '<div id="lh-list"><div class="load-wrap"><div class="spinner"></div></div></div>';
@@ -505,7 +284,7 @@
     var isRu = sec === 'ru_listening';
     var builtinList = isRu ? RU_TOPICS : EN_TOPICS;
 
-    // Serverdan foydalanuvchi qo'shgan mavzularni ham so'raymiz
+    // Serverdan foydalanuvchi qo\'shgan mavzularni ham so\'raymiz
     App.call('get_topics', null, { query: 'lang=' + encodeURIComponent(sec) }).then(function (j) {
       var serverTopics = (j && j.topics) ? j.topics : [];
       renderMergedList(page, sec, activeTab, builtinList, serverTopics);
@@ -522,14 +301,14 @@
     var items = [];
     var seenNames = {};
 
-    // 1. Agar serverda mavzular bo'lsa
+    // 1. Agar serverda mavzular bo\'lsa
     serverTopics.forEach(function (st) {
       if (!st.name || st.name === '__folder__') return;
       seenNames[st.name.toLowerCase()] = st.id;
     });
 
-    // 2. Builtin ro'yxatni saralash
-    builtinList.forEach(function (bt, i) {
+    // 2. Builtin ro\'yxatni saralash
+    builtinList.forEach(function (bt) {
       var serverId = seenNames[bt.name.toLowerCase()];
       items.push({
         id: serverId || bt.id,
@@ -543,8 +322,8 @@
       });
     });
 
-    // 3. Foydalanuvchi serverga yangi qo'shgan mavzulari (built-inda yo'qlari)
-    serverTopics.forEach(function (st, idx) {
+    // 3. Foydalanuvchi serverga yangi qo\'shgan mavzulari (built-inda yo\'qlari)
+    serverTopics.forEach(function (st) {
       if (!st.name || st.name === '__folder__') return;
       var key = st.name.toLowerCase();
       var exists = builtinList.some(function (b) { return b.name.toLowerCase() === key; });
@@ -555,7 +334,7 @@
           num: sp.num,
           name: st.name,
           desc: st.folder ? ('Papka: ' + st.folder) : 'Qo\'shilgan darslik',
-          cat: 'life',
+          cat: 'reduction',
           level: 'A2',
           hasContent: st.has_content,
           isCustom: true

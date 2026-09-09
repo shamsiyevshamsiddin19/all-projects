@@ -362,6 +362,17 @@ button{ font-family:inherit; cursor:pointer; }
 .icon-btn:hover{ background:var(--card-2); }
 .icon-btn.ghost{ border-color:transparent; background:transparent; }
 
+/* O'quvchi / pleyer / mashq sahifalari — panel yashiriladi (core.js `_FULL`).
+   `--nav-h:0` shu yerda: pastdagi pleyer va `.main` to'ldirmasi shu
+   o'zgaruvchiga tayanadi, aks holda yo'q panel uchun bo'sh joy qolardi. */
+body.nav-off{ --nav-h:0px; }
+/* `.botnav` ning O'ZI ham yashiriladi, faqat o'ram emas: `vocab_flash` va
+   `vocab_pair` kartaning balandligini `getComputedStyle(nav).display` bilan
+   hisoblaydi. Ota element yashirilganda ham bolaning o'z `display` i
+   `flex` bo'lib qolaveradi — o'shanda karta balandligi noto'g'ri chiqardi. */
+body.nav-off .botnav-wrap,
+body.nav-off .botnav{ display:none; }
+
 /* ---------- Modern Floating Capsule Mobile Navigation Bar ---------- */
 .botnav-wrap{
   position:fixed; left:16px; right:16px; bottom:calc(14px + var(--safe-b, 0px));
@@ -956,6 +967,32 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 .md-content pre{ background:var(--card-2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px; overflow-x:auto; margin:0 0 14px; }
 .md-content pre code{ background:none; padding:0; }
 .md-content blockquote{ margin:0 0 14px; padding:8px 14px; border-left:3px solid var(--accent); background:var(--accent-soft); border-radius:0 var(--radius-sm) var(--radius-sm) 0; color:var(--text-2); }
+
+/* Yig'iladigan javob bloki (`<details>` / `<summary>`) — mashq javoblari
+   yopiq turadi, foydalanuvchi o'zi ochadi. Ilgari teglar oddiy yozuv
+   bo'lib ko'rinardi va javob doim ochiq edi. */
+.md-details{
+  margin:0 0 14px; border:1px solid var(--border); border-radius:var(--radius-sm);
+  background:var(--card-2); overflow:hidden;
+}
+.md-details > summary{
+  cursor:pointer; padding:11px 14px; font-weight:650; font-size:14px;
+  color:var(--accent); list-style:none; user-select:none;
+  display:flex; align-items:center; gap:8px;
+}
+.md-details > summary::-webkit-details-marker{ display:none; }
+/* Uchburchak nishon — ochilganda buriladi */
+.md-details > summary::before{
+  content:''; flex:0 0 auto; width:0; height:0;
+  border-left:5px solid currentColor; border-top:4px solid transparent; border-bottom:4px solid transparent;
+  transition:transform .18s ease;
+}
+.md-details[open] > summary::before{ transform:rotate(90deg); }
+.md-details > summary:hover{ background:var(--card); }
+/* Ichkaridagi matn — ramka ichida, tepasida ajratgich chiziq */
+.md-details > *:not(summary){ margin-left:14px; margin-right:14px; }
+.md-details > *:nth-child(2){ margin-top:12px; border-top:1px solid var(--border); padding-top:12px; }
+.md-details > *:last-child{ margin-bottom:14px; }
 .md-content hr{ border:none; border-top:1px solid var(--border); margin:20px 0; }
 .md-content a{ text-decoration:underline; }
 .md-content s{ opacity:.6; }
@@ -1954,8 +1991,23 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   background:var(--card-2); color:var(--hint);
   display:flex; align-items:center; justify-content:center;
 }
-.rd-pl-track{ height:3px; border-radius:99px; background:var(--border); overflow:hidden; margin-bottom:12px; }
+/* Surish chizig'i. Chiziqning O'ZI ingichka (3px) bo'lib qoladi, lekin
+   barmoq uchun tegish maydoni ataylab baland (`.rd-pl-seek` ning padding'i) —
+   3px ga aniq tegish deyarli imkonsiz. */
+.rd-pl-seek{ padding:9px 0 12px; margin-top:-9px; cursor:pointer; touch-action:none; }
+.rd-pl-track{ position:relative; height:3px; border-radius:99px; background:var(--border); margin-bottom:0; }
 .rd-pl-fill{ height:100%; background:var(--accent); border-radius:99px; transition:width .3s ease; }
+.rd-pl-knob{
+  position:absolute; top:50%; width:12px; height:12px; border-radius:50%;
+  background:var(--accent); transform:translate(-50%, -50%);
+  box-shadow:0 1px 5px rgba(0,0,0,.35);
+  transition:left .3s ease, width .15s ease, height .15s ease;
+}
+/* Surish paytida animatsiya O'CHADI (aks holda knob barmoqdan orqada
+   sudralib yurardi) va nishon kattalashadi. */
+.rd-pl-seek.dragging .rd-pl-fill,
+.rd-pl-seek.dragging .rd-pl-knob{ transition:none; }
+.rd-pl-seek.dragging .rd-pl-knob{ width:16px; height:16px; }
 
 .rd-pl-ctrls{ display:flex; align-items:center; justify-content:space-between; width:100%; }
 .rd-pl-side{ display:flex; align-items:center; gap:6px; flex:1; min-width:auto; }
@@ -4327,6 +4379,156 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 }
 .au-q-btn.disabled{ pointer-events:none; }
 
+/* ---------- Ear Training & Phonetics Trainer Styles ---------- */
+.au-ear-container{
+  max-width:560px; margin:0 auto; padding-bottom:24px;
+}
+.au-ear-nav{
+  display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;
+}
+.au-c-counter{
+  font-size:13px; font-weight:700; color:var(--text); background:var(--card-2);
+  border:1px solid var(--border); padding:6px 14px; border-radius:20px;
+}
+.au-c-counter-lbl{
+  color:var(--hint); font-weight:500; margin-right:4px;
+}
+.au-ear-card{
+  background:var(--card); border:1px solid var(--border); border-radius:20px;
+  padding:20px 18px; box-shadow:0 8px 30px rgba(0,0,0,.06);
+}
+.au-sound-badge-wrap{
+  text-align:center; margin-bottom:18px;
+}
+.au-sound-badge{
+  display:inline-flex; align-items:center; gap:10px;
+  background:linear-gradient(135deg, rgba(0,122,255,.14), rgba(175,82,222,.16));
+  border:2px solid var(--accent); border-radius:18px;
+  padding:12px 24px; font-size:26px; font-weight:850; letter-spacing:.5px; color:var(--text);
+  box-shadow:0 6px 20px rgba(0,122,255,.18);
+}
+.au-sound-sub{
+  font-size:12px; font-weight:600; color:var(--hint); margin-top:8px;
+}
+.au-play-row{
+  display:flex; gap:10px; justify-content:center; margin:16px 0 18px;
+}
+.au-play-btn{
+  flex:1; max-width:220px; padding:12px 14px; border-radius:14px; font-size:13.5px; font-weight:700;
+  display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;
+  transition:all .15s ease; border:1px solid var(--border);
+}
+.au-play-btn:active{ transform:scale(.96); }
+.au-play-btn.fast{
+  background:var(--accent); color:#fff; border-color:var(--accent);
+  box-shadow:0 4px 14px rgba(0,122,255,.3);
+}
+.au-play-btn.slow{
+  background:var(--card-2); color:var(--text);
+}
+.au-meta-box{
+  background:var(--card-2); border:1px solid var(--border); border-radius:14px;
+  padding:10px 14px; margin-bottom:14px;
+}
+.au-meta-row{
+  display:flex; justify-content:space-between; align-items:center; padding:8px 0; font-size:14px;
+  border-bottom:1px solid rgba(128,128,128,.12);
+}
+.au-meta-row:last-child{ border-bottom:none; }
+.au-meta-lbl{ font-weight:600; color:var(--hint); font-size:13px; }
+.au-meta-val{ font-weight:700; color:var(--text); text-align:right; }
+.au-meta-val.spelling{ font-size:16px; letter-spacing:.3px; }
+.au-swallow{
+  text-decoration:line-through; color:var(--danger, #ff453a);
+  background:var(--danger-soft, rgba(255,69,58,.15)); padding:1px 5px;
+  border-radius:4px; margin:0 2px; font-weight:800;
+}
+.au-explain-box{
+  background:rgba(255,149,0,.08); border-left:3.5px solid #ff9500; border-radius:10px;
+  padding:12px 14px; margin-bottom:14px; font-size:13.5px; line-height:1.5; color:var(--text);
+}
+.au-explain-title{
+  font-weight:750; color:#ff9500; margin-bottom:4px; display:flex; align-items:center; gap:6px;
+}
+.au-explain-text{ font-weight:500; }
+.au-example-box{
+  background:var(--card-2); border:1px solid var(--border); border-radius:14px;
+  padding:12px 14px; margin-bottom:4px;
+}
+.au-ex-top{
+  display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;
+  font-size:12px; font-weight:700; color:var(--hint);
+}
+.au-ex-speak{
+  background:var(--accent-soft, rgba(0,122,255,.12)); color:var(--accent);
+  border:none; border-radius:8px; padding:4px 10px; font-size:12px; font-weight:700;
+  cursor:pointer; display:flex; align-items:center; gap:4px; transition:all .15s ease;
+}
+.au-ex-speak:active{ transform:scale(.95); }
+.au-ex-ru{
+  font-size:15px; font-weight:650; color:var(--text); line-height:1.4; margin-bottom:4px;
+}
+.au-ex-uz{
+  font-size:13px; color:var(--hint); font-style:italic;
+}
+
+/* Drill Stage */
+.au-drill-container{ max-width:560px; margin:0 auto; }
+.au-drill-stage{
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:24px 16px; background:var(--card); border:1px solid var(--border);
+  border-radius:20px; margin-bottom:14px; box-shadow:0 6px 24px rgba(0,0,0,.04);
+}
+.au-drill-speaker{
+  width:92px; height:92px; border-radius:50%;
+  background:linear-gradient(135deg, var(--accent), #af52de); color:#fff;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  border:none; cursor:pointer; box-shadow:0 8px 24px rgba(0,122,255,.35);
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+.au-drill-speaker:active{ transform:scale(.92); }
+.au-drill-speaker.playing{ animation:aupulse 1.1s infinite alternate; }
+.au-drill-spk-lbl{ font-size:10px; font-weight:750; margin-top:4px; }
+.au-drill-speeds{ display:flex; gap:8px; margin-top:14px; }
+.au-speed-chip{
+  padding:6px 14px; border-radius:20px; font-size:12px; font-weight:700;
+  background:var(--card-2); border:1px solid var(--border); color:var(--text); cursor:pointer;
+  transition:all .15s ease;
+}
+.au-speed-chip:active{ transform:scale(.95); }
+@keyframes aupulse{
+  0%{ transform:scale(1); box-shadow:0 8px 24px rgba(0,122,255,.35); }
+  100%{ transform:scale(1.08); box-shadow:0 12px 32px rgba(175,82,222,.5); }
+}
+
+/* Drill Result */
+.au-result-card{
+  text-align:center; padding:32px 20px; background:var(--card);
+  border:1px solid var(--border); border-radius:20px; max-width:480px; margin:0 auto;
+}
+.au-res-badge{ font-size:48px; margin-bottom:12px; }
+
+/* Words List */
+.au-words-wrap{ max-width:560px; margin:0 auto; }
+.au-words-list{ display:flex; flex-direction:column; gap:8px; }
+.au-word-row{
+  display:flex; align-items:center; gap:12px; padding:12px 14px;
+  background:var(--card); border:1px solid var(--border); border-radius:14px;
+  cursor:pointer; transition:all .15s ease;
+}
+.au-word-row:hover{ border-color:var(--accent); }
+.au-word-row:active{ transform:scale(.99); }
+.au-w-num{
+  width:28px; height:28px; border-radius:50%; background:var(--card-2);
+  display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800;
+  color:var(--hint); flex-shrink:0;
+}
+.au-w-main{ flex:1; min-width:0; }
+.au-w-top{ display:flex; align-items:center; gap:8px; margin-bottom:2px; }
+.au-w-sound{ font-weight:850; color:var(--accent); font-size:15px; }
+.au-w-real{ font-size:14px; color:var(--text); font-weight:600; }
+.au-w-mean{ font-size:12.5px; color:var(--hint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.au-w-speak{ width:34px; height:34px; flex-shrink:0; }
 
 /* ---------- Аудирование Hub (Listening Catalog) ---------- */
 .lh-hero{
@@ -4469,6 +4671,8 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
    Zich to'r: maqsad — ko'p so'zni bir ekranda ko'rish. Shuning uchun
    katakchalar kichik, oraliq tor va shrift ixcham. */
 .voc-key { font-weight: 800; font-size: 15.5px; color: var(--accent); width: 34px; height: 34px; line-height: 1; }
+/* "O'qish" sarlavhasidagi C/V — lug'at bo'limidagi tugma bilan bir xil ko'rinish */
+.rd-voc-btn { font-weight: 800; font-size: 16px; color: var(--accent); width: 34px; height: 34px; line-height: 1; }
 
 .vb-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
 .vb-tab {
@@ -5653,3 +5857,84 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   line-height: 1.25;
 }
 
+
+/* ================= Говорение / Письмо (talkwrite.js) =================
+   Ro'yxat -> bitta savol/mavzu sahifasi. Ranglar mavzu o'zgaruvchilaridan
+   olinadi, shuning uchun yorug' va qorong'u rejimda bir xil ishlaydi. */
+.tw-hint{
+  font-size:12.5px; color:var(--hint); margin:0 0 12px; line-height:1.5;
+}
+.tw-intro{ margin-bottom:14px; }
+
+.tw-list{ display:flex; flex-direction:column; gap:8px; }
+.tw-item{
+  display:flex; align-items:flex-start; gap:11px; width:100%; text-align:left;
+  padding:12px 13px; border:1px solid var(--border); border-radius:var(--radius);
+  background:var(--card); color:var(--text); cursor:pointer;
+  transition:background .15s ease, transform .12s ease;
+}
+.tw-item:active{ transform:scale(.99); background:var(--card-2); }
+.tw-item-n{
+  flex:0 0 auto; width:24px; height:24px; border-radius:50%;
+  background:var(--accent-soft); color:var(--accent);
+  font-size:12px; font-weight:800; line-height:24px; text-align:center;
+}
+.tw-item-main{ flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+.tw-item-q{ font-size:14.5px; font-weight:650; line-height:1.4; }
+.tw-item-tr{ font-size:12.5px; color:var(--text-2); line-height:1.4; }
+.tw-item-meta{ font-size:11px; color:var(--hint); }
+.tw-item-arrow{ flex:0 0 auto; color:var(--hint); transform:rotate(180deg); margin-top:2px; }
+
+/* Ochilgan savol/mavzu — tepada, ovoz tugmasi bilan */
+.tw-q-card{
+  position:relative; padding:15px 46px 15px 15px; margin-bottom:16px;
+  border:1px solid var(--border); border-radius:var(--radius-lg);
+  background:var(--card);
+}
+.tw-q-txt{ font-size:17px; font-weight:700; line-height:1.45; }
+.tw-q-tr{ font-size:13.5px; color:var(--text-2); margin-top:6px; line-height:1.45; }
+.tw-q-say{
+  position:absolute; top:12px; right:12px;
+  width:32px; height:32px; border:0; border-radius:50%; cursor:pointer;
+  background:var(--accent-soft); color:var(--accent);
+  display:flex; align-items:center; justify-content:center;
+}
+.tw-q-say:active{ transform:scale(.94); }
+
+.tw-block{ margin-bottom:18px; }
+.tw-block-label{
+  font-size:11.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase;
+  color:var(--hint); margin-bottom:8px;
+}
+.tw-row{ margin-bottom:8px; }
+.tw-p{ font-size:14px; line-height:1.6; }
+.tw-tr{ font-size:12.5px; color:var(--text-2); line-height:1.5; margin-top:2px; }
+
+/* Ibora — bosilsa ovoz chiqadi (tegish maydoni butun qator) */
+.tw-phrase{
+  display:flex; align-items:flex-start; gap:9px; width:100%; text-align:left;
+  padding:9px 11px; margin-bottom:6px;
+  border:1px solid var(--border-soft); border-radius:var(--radius-sm);
+  background:var(--card-2); color:var(--text); cursor:pointer;
+  transition:background .15s ease, transform .12s ease;
+}
+.tw-phrase:active{ transform:scale(.99); background:var(--card); }
+.tw-ph-ic{ flex:0 0 auto; color:var(--accent); margin-top:2px; }
+.tw-ph-body{ flex:1; min-width:0; }
+.tw-ph-txt{ display:block; font-size:14px; font-weight:600; line-height:1.45; }
+
+/* Tarjimasiz ro'yxat qatori (g'oyalar) — ovoz tugmasi EMAS */
+.tw-bullet{ display:flex; align-items:flex-start; gap:9px; margin-bottom:7px; }
+.tw-bullet-dot{
+  flex:0 0 auto; width:5px; height:5px; border-radius:50%;
+  background:var(--accent); margin-top:8px;
+}
+.tw-bullet-txt{ flex:1; min-width:0; font-size:14px; line-height:1.55; }
+
+.tw-step{ display:flex; align-items:flex-start; gap:10px; margin-bottom:9px; }
+.tw-step-n{
+  flex:0 0 auto; width:21px; height:21px; border-radius:50%;
+  background:var(--card-2); color:var(--text-2);
+  font-size:11.5px; font-weight:800; line-height:21px; text-align:center;
+}
+.tw-step-body{ flex:1; min-width:0; font-size:14px; line-height:1.55; }

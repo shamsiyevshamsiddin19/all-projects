@@ -322,6 +322,8 @@
      o'chirilmaydi — masalan "keyingi gap" bosilganda u ataylab yoqiladi). */
   function haltSpeech() {
     clearShadowTimer();
+    /* Yuklanib kelayotgan gap TO'XTATILGANDAN KEYIN yangramasin. */
+    audioGen++;
     if (playerAudio) {
       playerAudio.onended = null;
       playerAudio.onerror = null;
@@ -338,8 +340,10 @@
      Uzluksiz fon ijrosi uchun HTML5 `<audio>` elementi orqali haqiqiy MP3
      oqimi yangraydi va gaplar orasidagi pauzada ham audio sessiya tirik saqlanadi. */
   var playerAudio = null;
-  var preloadAudio = null;
   var audioKeeper = null;
+  /* Har ijroga yangi raqam. Yuklash tugaguncha foydalanuvchi boshqa gapga
+     o'tsa, kechikib kelgan javob ESKI gapni yangratmasligi kerak. */
+  var audioGen = 0;
   var SILENT_AUDIO = 'data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBIAAAABAAEAQB8AAEAfAAABAAgAAABmYWN0BAAAAAAAAABkYXRhAAAAAA==';
 
   function getPlayerAudio() {
@@ -350,15 +354,96 @@
     return playerAudio;
   }
 
-  function preloadNextSentence(nextIdx) {
-    if (!R.sentences || nextIdx < 0 || nextIdx >= R.sentences.length) return;
-    var nextText = R.sentences[nextIdx].text;
-    if (!nextText) return;
+  /* ---------- Audio bufer ----------
+     MUAMMO: saytda ovoz yuklab olingan MP3 dan YOMONROQ eshitilardi. Ovoz
+     bir xil (ikkalasi ham serverdagi bir xil Google TTS), farq UZLUKSIZLIKDA
+     edi: yuklab olingan fayl bitta yaxlit MP3, saytda esa har gap uchun
+     alohida so'rov ketardi va u AYNAN o'sha gap boshlanishi kerak paytda
+     boshlanardi. Tarmoq sekin bo'lsa gaplar orasida sukut cho'ziladi;
+     so'rov uzilsa esa brauzerning robot ovoziga o'tib ketardi — o'shanda
+     "sayt yomon" eshitiladi.
+
+     YECHIM: gaplar OLDINDAN yuklab qo'yiladi (blob sifatida xotirada).
+     Navbatdagi gap yangraganda fayl allaqachon tayyor — ijro darhol
+     boshlanadi. Bufer chegaralangan: eng eskisi o'chirilib turadi
+     (`URL.revokeObjectURL` bo'lmasa xotira oqib ketardi). */
+  var AUDIO_BUF_MAX = 14;      // xotirada saqlanadigan gap soni
+  var AUDIO_AHEAD = 3;         // oldindan yuklanadigan gap soni
+  var audioBuf = {};           // kalit -> { url } yoki { p: Promise }
+  var audioOrder = [];         // kalitlar — kelish tartibida (eskisi birinchi)
+
+  function audioSrc(text) {
     var langCode = (R.lang || '').indexOf('ru') === 0 ? 'ru' : 'en';
-    var src = '/api?action=tts_audio&text=' + encodeURIComponent(nextText) + '&lang=' + langCode;
-    if (!preloadAudio) preloadAudio = new Audio();
-    preloadAudio.src = src;
-    preloadAudio.preload = 'auto';
+    return '/api?action=tts_audio&text=' + encodeURIComponent(text) + '&lang=' + langCode;
+  }
+  function audioKey(text) {
+    return ((R.lang || '').indexOf('ru') === 0 ? 'ru|' : 'en|') + text;
+  }
+
+  function bufTrim() {
+    while (audioOrder.length > AUDIO_BUF_MAX) {
+      var k = audioOrder.shift();
+      var e = audioBuf[k];
+      delete audioBuf[k];
+      if (e && e.url) { try { URL.revokeObjectURL(e.url); } catch (err) {} }
+    }
+  }
+
+  function bufClear() {
+    audioOrder.forEach(function (k) {
+      var e = audioBuf[k];
+      if (e && e.url) { try { URL.revokeObjectURL(e.url); } catch (err) {} }
+    });
+    audioBuf = {}; audioOrder = [];
+  }
+
+  /* Bitta gap uchun MP3 ni oladi. Keshda bo'lsa darhol, bo'lmasa yuklaydi.
+     Bir marta QAYTA URINADI: bitta uzilgan so'rov uchun butun o'qishni
+     robot ovozga o'tkazish juda qo'pol. */
+  function fetchAudio(text, tries) {
+    var key = audioKey(text);
+    var hit = audioBuf[key];
+    if (hit) return hit.p || Promise.resolve(hit.url);
+
+    var p = fetch(audioSrc(text), { credentials: 'same-origin', cache: 'default' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('tts ' + r.status);
+        return r.blob();
+      })
+      .then(function (b) {
+        if (!b || b.size < 200) throw new Error('tts bo\'sh');
+        var url = URL.createObjectURL(b);
+        /* Kalit `audioOrder` ga QUYIDA, kutish yozuvi bilan birga bir marta
+           qo'shiladi. Bu yerda yana qo'shilsa ro'yxatda ikki nusxa paydo
+           bo'lardi va `bufTrim` birinchisini o'chirganda endigina yuklangan
+           (hatto hozir yangrayotgan) ovozning URL i bekor qilinardi. */
+        audioBuf[key] = { url: url };
+        bufTrim();
+        return url;
+      })
+      .catch(function (e) {
+        delete audioBuf[key];
+        var n = tries == null ? 1 : tries;
+        if (n > 0) return fetchAudio(text, n - 1);
+        throw e;
+      });
+
+    audioBuf[key] = { p: p };
+    /* Kalit ro'yxatda BIR MARTA turadi. Qayta urinish (`catch` -> `fetchAudio`)
+       ham shu yerdan o'tadi — tekshiruvsiz bo'lsa ikki nusxa qolib ketardi. */
+    if (audioOrder.indexOf(key) < 0) audioOrder.push(key);
+    return p;
+  }
+
+  /* Keyingi bir necha gapni jimgina yuklab qo'yadi. */
+  function preloadNextSentence(nextIdx) {
+    if (!R.sentences) return;
+    for (var i = 0; i < AUDIO_AHEAD; i++) {
+      var n = nextIdx + i;
+      if (n < 0 || n >= R.sentences.length) break;
+      var t = R.sentences[n] && R.sentences[n].text;
+      if (t) fetchAudio(t).catch(function () {});   // xato bo'lsa ijro paytida qayta uriniladi
+    }
   }
 
   function startAudioKeepAlive() {
@@ -387,12 +472,17 @@
     if (!text) { if (done) done(200); return; }
 
     var audio = getPlayerAudio();
-    var langCode = (R.lang || '').indexOf('ru') === 0 ? 'ru' : 'en';
-    var src = '/api?action=tts_audio&text=' + encodeURIComponent(text) + '&lang=' + langCode;
-
     audio.loop = false;
     audio.playbackRate = R.rate || 1;
+    /* Tezlik o'zgarganda ovoz "cholg'u"ga aylanmasin (Chrome standarti
+       ovoz balandligini ham suradi). */
+    try {
+      audio.preservesPitch = true;
+      audio.mozPreservesPitch = true;
+      audio.webkitPreservesPitch = true;
+    } catch (e) {}
 
+    var myGen = ++audioGen;
     var finished = false;
     function onFinish(p) {
       if (finished) return;
@@ -401,24 +491,23 @@
       audio.onerror = null;
       if (done) done(p || 260);
     }
-
-    audio.onended = function () {
-      onFinish(260);
-    };
-
-    audio.onerror = function () {
+    function fallback() {
+      if (myGen !== audioGen) return;
       speakProsody(text, function (p) { onFinish(p); });
-    };
-
-    audio.src = src;
-    var p = audio.play();
-    if (p && p.catch) {
-      p.catch(function () {
-        speakProsody(text, function (p) { onFinish(p); });
-      });
     }
 
+    /* Navbatdagi gaplarni ijro BOSHLANISHIDAN oldin so'raymiz — shunda
+       ular hozirgi gap yangrayotgan paytda yuklanib ulguradi. */
     preloadNextSentence(R.idx + 1);
+
+    fetchAudio(text).then(function (url) {
+      if (myGen !== audioGen) return;               // orada boshqa gapga o'tildi
+      audio.onended = function () { onFinish(260); };
+      audio.onerror = fallback;
+      audio.src = url;
+      var p = audio.play();
+      if (p && p.catch) p.catch(fallback);
+    }).catch(fallback);
   }
 
   function setupMediaSession() {
@@ -599,6 +688,9 @@
 
   function paintPlayer() {
     var box = App.el('rd-player'); if (!box) return;
+    /* Surish davomida panel qayta chizilmaydi — barmoq ostidagi element
+       almashsa surish uzilib qolardi. */
+    if (R.seeking) return;
 
     if (!R.barOpen) {
       box.className = 'rd-player';
@@ -639,7 +731,9 @@
             '<span data-icon="close" data-icon-size="16"></span></button>' +
         '</div>' +
       '</div>' +
-      '<div class="rd-pl-track"><div class="rd-pl-fill" style="width:' + pct + '%"></div></div>' +
+      '<div class="rd-pl-seek" id="rd-seek">' +
+        '<div class="rd-pl-track"><div class="rd-pl-fill" style="width:' + pct + '%"></div>' +
+        '<div class="rd-pl-knob" style="left:' + pct + '%"></div></div></div>' +
       '<div class="rd-pl-ctrls">' +
         '<div class="rd-pl-side left">' +
           '<button class="rd-pl-step' + (R.repeatCount > 1 ? ' on' : '') + '" data-act="rdRepeat" ' +
@@ -670,6 +764,7 @@
   }
 
   function paintPlayerTime() {
+    if (R.seeking) return;          // surish paytida raqamni barmoq boshqaradi
     var el = document.querySelector('#rd-player .rd-pl-time');
     if (!el) return;
     var total = R.sentences.length || 1;
@@ -689,7 +784,13 @@
 
   function rateLabel() { return String(R.rate).replace(/\.?0+$/, '') + 'x'; }
 
-  App.actions.rdOpenBar = function () { R.barOpen = true; paintPlayer(); };
+  App.actions.rdOpenBar = function () {
+    R.barOpen = true;
+    paintPlayer();
+    /* Panel ochilishi — "hozir tinglayman" degani. Birinchi gaplarni shu
+       payt yuklab qo'yamiz: ▶ bosilganda kutish bo'lmaydi. */
+    preloadNextSentence(R.idx < 0 ? 0 : R.idx);
+  };
   App.actions.rdCloseBar = function () {
     if (R.playing) { R.playing = false; haltSpeech(); highlight(-1); }
     R.barOpen = false; paintPlayer();
@@ -721,6 +822,84 @@
 
   App.actions.rdPrev = function () { jump(-1); };
   App.actions.rdNext = function () { jump(1); };
+  /* ---------- Surib o'tish (seek) ----------
+     Chiziq ilgari faqat KO'RSATKICH edi — bosish ham, surish ham hech
+     narsa qilmasdi. Endi u boshqa pleyerlardagidek: barmoqni bosib
+     surganda gap raqami jonli o'zgaradi, qo'yib yuborilganda o'sha
+     gapdan o'qish davom etadi.
+
+     Surish davomida `R.seeking` yoqiladi va `paintPlayer` panelni QAYTA
+     CHIZMAYDI: innerHTML almashsa barmoq ostidagi element yo'qolib,
+     surish yarmida uzilib qolardi. */
+  function seekTo(n) {
+    if (!R.sentences.length) return;
+    if (n < 0) n = 0;
+    if (n >= R.sentences.length) n = R.sentences.length - 1;
+    R.alive = true;
+    R.repeatIdx = 1;
+    if (R.playing) { haltSpeech(); step(n); }
+    else { R.idx = n; highlight(n); updateMediaSession(); paintPlayer(); }
+  }
+
+  /* Bosilgan nuqtaning chiziqdagi ulushi -> gap tartib raqami (0 dan). */
+  function seekIndexAt(track, clientX) {
+    var r = track.getBoundingClientRect();
+    if (!r.width) return R.idx < 0 ? 0 : R.idx;
+    var ratio = (clientX - r.left) / r.width;
+    if (ratio < 0) ratio = 0;
+    if (ratio > 1) ratio = 1;
+    var total = R.sentences.length;
+    /* To'ldirish chizig'i n-gap uchun `(n+1)/total` gacha boradi, ya'ni
+       50% — 5-gapning O'NG cheti. Shuning uchun `ceil` — bosilgan nuqta
+       qaysi gapning yo'lagiga tushsa, o'sha gap tanlanadi. */
+    var n = Math.ceil(ratio * total) - 1;
+    if (n < 0) n = 0;
+    if (n >= total) n = total - 1;
+    return n;
+  }
+
+  function paintSeek(n) {
+    var box = App.el('rd-player'); if (!box) return;
+    var total = R.sentences.length || 1;
+    var pct = Math.round(((n + 1) / total) * 100);
+    var fill = box.querySelector('.rd-pl-fill');
+    var knob = box.querySelector('.rd-pl-knob');
+    var time = box.querySelector('.rd-pl-time');
+    if (fill) fill.style.width = pct + '%';
+    if (knob) knob.style.left = pct + '%';
+    if (time) time.innerHTML = (n + 1) + ' / ' + total + ' gap';
+  }
+
+  /* Hodisa BIR MARTA, hujjat darajasida bog'lanadi: panel har chizilganda
+     qayta bog'lash kerak emas va eski tinglovchilar to'planib qolmaydi. */
+  document.addEventListener('pointerdown', function (e) {
+    var seek = e.target && e.target.closest && e.target.closest('#rd-seek');
+    if (!seek || !R.sentences.length) return;
+    var track = seek.querySelector('.rd-pl-track') || seek;
+
+    e.preventDefault();
+    R.seeking = true;
+    seek.classList.add('dragging');
+    var n = seekIndexAt(track, e.clientX);
+    paintSeek(n);
+
+    function move(ev) {
+      n = seekIndexAt(track, ev.clientX);
+      paintSeek(n);
+    }
+    function up() {
+      document.removeEventListener('pointermove', move);
+      document.removeEventListener('pointerup', up);
+      document.removeEventListener('pointercancel', up);
+      R.seeking = false;
+      seek.classList.remove('dragging');
+      seekTo(n);
+    }
+    document.addEventListener('pointermove', move);
+    document.addEventListener('pointerup', up);
+    document.addEventListener('pointercancel', up);
+  });
+
   function jump(d) {
     if (!R.sentences.length) return;
     /* Hali boshlanmagan (idx = -1) holatda "keyingi" BIRINCHI gapga olib
@@ -1423,6 +1602,51 @@
       });
   };
 
+  /* ---------- C tugmasi — matndagi so'zlarni mashq qilish ----------
+     Matnda `{so'z|tarjima}` bilan belgilangan hamma so'z yig'iladi va
+     to'g'ridan-to'g'ri Lug'at bo'limidagi mashqlar sahifasi ochiladi
+     (flashcard, test, juftlash — hammasi shu yerdan).
+
+     Bu to'plam SERVERGA yozilmaydi: `save_dict_cat` faqat adminda ishlaydi
+     va har matn uchun doimiy lug'at yaratish Lug'at ro'yxatini
+     bir martalik yozuvlarga to'ldirib yuborardi. Tafsilot — vocab.js
+     dagi `App.vocabText`. */
+  function textWords() {
+    var seen = {}, out = [];
+    (R.blocks || []).forEach(function (b) {
+      (b.tokens || []).forEach(function (t) {
+        if (t.k === 'x' || !t.t) return;               // belgilanmagan so'z
+        var w = String(t.w || '').trim();
+        var tr = String(t.t || '').trim();
+        if (!w || !tr) return;
+        var k = w.toLowerCase();
+        if (seen[k]) return;
+        seen[k] = 1;
+        out.push({
+          ru: w, uz: tr, note: '', ex: '',
+          pairWith: [], meaningGroup: '',
+          partOfSpeech: '', pronunciation: '', forms: '', formation: '',
+          synonyms: '', antonyms: '', collocations: '', mnemonic: ''
+        });
+      });
+    });
+    return out;
+  }
+
+  App.actions.rdPractice = function () {
+    var words = textWords();
+    if (!words.length) {
+      App.toast('Bu matnda {so\'z|tarjima} bilan belgilangan so\'z yo\'q');
+      return;
+    }
+    var lang = dictLang(R.sec);
+    /* Nomdagi "/" Lug'at bo'limida PAPKA ajratgichi — uni qoldirsak
+       to'plam mavjud bo'lmagan papka ichida qolib ketardi. */
+    var cat = 'Matn: ' + String(R.name || 'Matn').replace(/\//g, '-').trim();
+    App.vocabText.save(lang, cat, words);
+    App.go('vocab_practice', { lang: lang, cat: cat });
+  };
+
   /* ---------- "O'rganish lug'ati" tanlash ----------
      Mavjud lug'atlardan birini tanlash yoki yangi nom yozish. Tanlangan
      lug'atga shu matndan bosilgan so'zlar tushadi va uni Lug'at bo'limida
@@ -1696,13 +1920,14 @@
       stopPronunRec();
       closePop();
       stopAudioKeepAlive();
+      bufClear();          // blob URL'lar bo'shatilmasa xotira oqib ketadi
     },
     render: function (page, params) {
       R.sec = params.sec || 'en_reading';
       R.id = params.id;
       R.lang = ttsLang(R.sec);
       R.blocks = []; R.sentences = []; R.idx = -1;
-      R.playing = false; R.alive = true; R.barOpen = false;
+      R.playing = false; R.alive = true; R.barOpen = false; R.seeking = false;
       try { R.rate = parseFloat(localStorage.getItem('reading_rate')) || 1; } catch (e) { R.rate = 1; }
       try { R.stepMode = localStorage.getItem('reading_step_mode') === '1'; } catch (e) { R.stepMode = false; }
       try { R.repeatCount = parseInt(localStorage.getItem('reading_repeat_count'), 10) || 1; } catch (e) { R.repeatCount = 1; }
@@ -1717,7 +1942,12 @@
         '<div class="topbar" style="margin:-16px -15px 12px">' +
         '<button class="icon-btn ghost" id="rd-back"><span data-icon="arrowLeft" data-icon-size="20"></span></button>' +
         '<h1 id="rd-title"></h1>' +
-        '<button class="icon-btn ghost" id="rd-menu" style="margin-left:auto"><span data-icon="edit" data-icon-size="18"></span></button></div>' +
+        /* C / V — "matndagi so'zlarni mashq qilish". Lug'at bo'limidagi
+           bir xil belgi bilan bir xil ma'noda (C — Словарь, V — Vocabulary). */
+        '<button class="icon-btn ghost rd-voc-btn" data-act="rdPractice" style="margin-left:auto" ' +
+          'aria-label="Matndagi so\'zlarni mashq qilish" title="Matndagi so\'zlarni mashq qilish">' +
+          (dictLang(R.sec) === 'russian' ? 'C' : 'V') + '</button>' +
+        '<button class="icon-btn ghost" id="rd-menu"><span data-icon="edit" data-icon-size="18"></span></button></div>' +
         '<div id="rd-body"><div class="load-wrap"><div class="spinner"></div></div></div>' +
         '<div class="rd-player" id="rd-player"></div>' +
         '<input type="file" id="rd-file" hidden accept=".md,.markdown,.txt,text/markdown,text/plain">';

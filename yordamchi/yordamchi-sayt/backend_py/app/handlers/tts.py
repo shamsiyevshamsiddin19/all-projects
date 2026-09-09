@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import random
+import time
 import re
 import urllib.parse
 from pathlib import Path
@@ -22,6 +24,54 @@ logger = logging.getLogger("yordamchi")
 
 CACHE_DIR = Path("/tmp/yordamchi_tts_cache")
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+# Kesh CHEKSIZ o'sib ketmasin. Ilgari hech qanday tozalash yo'q edi: har
+# yangi gap yangi fayl yaratardi va ular abadiy qolardi. Serverda /tmp
+# to'lsa butun tizim (PostgreSQL ham) muammoga tushadi.
+CACHE_MAX_BYTES = 200 * 1024 * 1024      # ~200 MB
+CACHE_MAX_AGE_DAYS = 30
+_CLEAN_CHANCE = 0.02                      # ~50 so'rovda bir marta
+
+
+def _prune_cache() -> None:
+    """Eskirgan va ortiqcha kesh fayllarini o'chiradi.
+
+    Avval yoshi bo'yicha, keyin hajmi bo'yicha (eng eskisidan boshlab).
+    Xatolar yutiladi: kesh tozalash asosiy ishni to'xtatmasligi kerak.
+    """
+    try:
+        files = []
+        for f in CACHE_DIR.glob("*.mp3"):
+            try:
+                st = f.stat()
+                files.append((st.st_mtime, st.st_size, f))
+            except OSError:
+                continue
+
+        cutoff = time.time() - CACHE_MAX_AGE_DAYS * 86400
+        keep = []
+        for mtime, size, f in files:
+            if mtime < cutoff:
+                try:
+                    f.unlink()
+                except OSError:
+                    pass
+            else:
+                keep.append((mtime, size, f))
+
+        total = sum(s for _, s, _ in keep)
+        if total > CACHE_MAX_BYTES:
+            keep.sort(key=lambda x: x[0])          # eng eskisi birinchi
+            for mtime, size, f in keep:
+                if total <= CACHE_MAX_BYTES:
+                    break
+                try:
+                    f.unlink()
+                    total -= size
+                except OSError:
+                    pass
+    except Exception:  # noqa: BLE001
+        logger.exception("TTS keshini tozalab bo'lmadi")
 
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
 
@@ -78,6 +128,8 @@ async def _fetch_chunk_mp3(client, chunk: str, tl: str) -> bytes:
         if r.status_code == 200 and len(r.content) > 100:
             try:
                 cache_file.write_bytes(r.content)
+                if random.random() < _CLEAN_CHANCE:
+                    _prune_cache()
             except Exception:
                 pass
             return r.content

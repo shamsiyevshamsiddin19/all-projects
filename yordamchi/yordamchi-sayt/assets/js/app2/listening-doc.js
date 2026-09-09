@@ -1,11 +1,10 @@
 /* =========================================================================
-   Аудирование / Listening Darsligi (Video / Audio, Subtitrlar va Savollar)
-   - 3 ta rejim:
-     1. 🎬 Tinglash: YouTube video / Audio pleyer + Sinxron Subtitrlar
-     2. ✍️ Diktant: Eshitib bo'shliqlarni to'ldirish (Yengil / Qiyin)
-     3. ❓ Test (Quiz): Eshitib tushunish savol-javoblari
-   - YouTube video ID va vaqt kodlari (`[00:01 - 00:05]`) qo'llab-quvvatlanadi
-   - So'z ustiga bosganda tarjima
+   Аудирование / Listening Darsligi (Ear Training & Fonetika Trenajyori)
+   - 3 ta asosiy rejim:
+     1. 🎓 Карточки: [ЩАС], [ЗДРАСЬТЕ] — qisqarishlar, tushuntirish va jonli audio
+     2. 🎯 Тренажёр: Quloqni charxlash ovozli testi (tez/sekin TTS + variantlar)
+     3. 📜 Все слова: Darsdagi barcha qisqarish va iboralar jamlanmasi
+   - Zaxira va eski darslar uchun klassik Tinglash / Diktant / Test rejimi
    ========================================================================= */
 (function () {
   'use strict';
@@ -14,7 +13,7 @@
     sec: '', id: null, name: '', lang: 'ru-RU', dict: 'russian',
     rawContent: '',
     sentences: [], idx: 0,
-    tab: 'listen', // 'listen' | 'dictate' | 'quiz'
+    tab: 'cards', // 'cards' | 'drill' | 'words' | 'listen' | 'dictate' | 'quiz'
     mode: 'choice', rate: 1,
     alive: false, partTimer: null,
     gaps: [],
@@ -31,7 +30,16 @@
     questions: [],
     quizIdx: 0,
     quizScore: 0,
-    quizAnswered: false
+    quizAnswered: false,
+
+    // Ear-Training Maxsus Holati
+    isEar: false,
+    cards: [],
+    cardIdx: 0,
+    drillQuestions: [],
+    drillIdx: 0,
+    drillScore: 0,
+    drillPlaying: false
   };
 
   function core() { return window.RDCore || null; }
@@ -40,6 +48,7 @@
 
   function halt() {
     L.audioPlaying = false;
+    L.drillPlaying = false;
     if (L.partTimer) { clearTimeout(L.partTimer); L.partTimer = null; }
     if (window.TTS) TTS.cancel(); else { try { window.speechSynthesis.cancel(); } catch (e) {} }
   }
@@ -47,7 +56,27 @@
   function say(text, rate, done) {
     var C = core();
     var r = rate || L.rate || 1;
-    if (!text || !window.TTS || !TTS.ok() || !C) { if (done) done(); return; }
+    if (!text) { if (done) done(); return; }
+
+    // Agar maxsus qisqartma bo'lsa (masalan [ЩАС]), qavslarni olib tashlaymiz
+    text = String(text).replace(/[\[\]]/g, '').trim();
+
+    if (!window.TTS || !TTS.ok() || !C) {
+      if (window.speechSynthesis) {
+        try {
+          var u = new SpeechSynthesisUtterance(text);
+          u.lang = L.lang || 'ru-RU';
+          u.rate = Math.max(0.5, Math.min(1.5, r));
+          u.onend = function () { if (done) done(); };
+          u.onerror = function () { if (done) done(); };
+          window.speechSynthesis.speak(u);
+          return;
+        } catch (e) {}
+      }
+      if (done) done();
+      return;
+    }
+
     var parts = C.prosodyParts(text);
     if (!parts.length) { if (done) done(); return; }
     var i = 0;
@@ -93,6 +122,48 @@
     var m = Math.floor(sec / 60);
     var s = sec % 60;
     return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  /* Fonetik Ear-Training kartochkalarini o'qish */
+  function parseCards(content) {
+    var cards = [];
+    var raw = String(content || '').replace(/\r/g, '');
+    var chunks = raw.split(/\n---\n/);
+    chunks.forEach(function (chk) {
+      chk = chk.trim();
+      if (!chk || chk.indexOf('card:') < 0) return;
+      var lines = chk.split('\n');
+      var card = {
+        word: '',
+        sound: '',
+        spelling: '',
+        mean: '',
+        explain: '',
+        example: '',
+        example_audio: '',
+        example_uz: ''
+      };
+      lines.forEach(function (l) {
+        l = l.trim();
+        var m = l.match(/^([a-zA-Z_]+):\s*(.+)$/);
+        if (m) {
+          var key = m[1].toLowerCase();
+          var val = m[2].trim();
+          if (key === 'card' || key === 'word') card.word = val;
+          else if (key === 'sound') card.sound = val;
+          else if (key === 'spelling') card.spelling = val;
+          else if (key === 'mean') card.mean = val;
+          else if (key === 'explain') card.explain = val;
+          else if (key === 'example') card.example = val;
+          else if (key === 'example_audio') card.example_audio = val;
+          else if (key === 'example_uz') card.example_uz = val;
+        }
+      });
+      if (card.word || card.sound) {
+        cards.push(card);
+      }
+    });
+    return cards;
   }
 
   function extractQuestions(md, sentences) {
@@ -156,6 +227,26 @@
     return qs;
   }
 
+  /* Subtitr sifatida ko'rsatiladigan qatormi?
+
+     Savol bloki (`? savol`, `+ to'g'ri`, `- noto'g'ri`) SUBTITR EMAS.
+     Ilgari ular ham gap sifatida chizilardi: Tinglash bo'limida savollar
+     va TO'G'RI JAVOBLAR ochiq ko'rinib turardi, ustiga TTS ularni dialog
+     kabi ovoz chiqarib o'qirdi — test butunlay ma'nosini yo'qotardi.
+     Bu qatorlarni `extractQuestions()` allaqachon o'qigan.
+
+     Dialog qatorlari UZUN TIRE (—, U+2014) bilan boshlanadi, javob
+     variantlari esa oddiy defis (-, U+002D) bilan — chalkashmaydi. */
+  function isSubtitleLine(s) {
+    var txt = (s && s.text || '').trim();
+    if (!txt || (s && s.k === 'h')) return false;
+    if (/^\?\s*\S/.test(txt)) return false;      // savol
+    if (/^\+\s*\S/.test(txt)) return false;      // to'g'ri variant
+    if (/^-\s*\S/.test(txt)) return false;        // noto'g'ri variant
+    if (/^youtube\s*:/i.test(txt)) return false;  // video havolasi (eski hujjatlar)
+    return true;
+  }
+
   /* Bo'shliqlar (gap-fill) uchun stop-words */
   var STOPWORDS = {
     ru: ['и','в','на','с','по','к','у','за','из','от','до','для','о','об','а','но','же',
@@ -203,125 +294,71 @@
   }
 
   function buildPool(sentences) {
-    var seen = {}, out = [];
+    var set = {}, list = [];
     sentences.forEach(function (s) {
       (s.tokens || []).forEach(function (tk) {
-        if (tk.k === 'w' && tk.t && tk.w) {
+        if (tk.k === 'w' && tk.w && tk.w.length >= 3 && !isStopword(tk.w)) {
           var k = tk.w.toLowerCase();
-          if (!seen[k]) { seen[k] = 1; out.push(tk.w); }
+          if (!set[k]) { set[k] = true; list.push(tk.w); }
         }
       });
     });
-    return out;
+    return list;
   }
 
-  function norm(s) {
-    return String(s || '').toLowerCase().replace(/ё/g, 'е')
-      .replace(/[^0-9a-zà-ÿа-я]/gi, '').trim();
+  function formatSpelling(str) {
+    str = String(str || '');
+    // [harflar] ni yutiladigan harflar sifatida belgilaymiz
+    return str.replace(/\[([^\]]+)\]/g, '<span class="au-swallow" title="Yutiladigan tovush">$1</span>');
   }
 
-  function optionsFor(word) {
-    var opts = [word];
-    var cand = L.pool.filter(function (w) { return norm(w) !== norm(word); });
-    cand.sort(function (a, b) {
-      return Math.abs(a.length - word.length) - Math.abs(b.length - word.length);
-    });
-    var near = cand.slice(0, 12);
-    while (opts.length < 4 && near.length) {
-      opts.push(near.splice(Math.floor(Math.random() * near.length), 1)[0]);
-    }
-    for (var i = opts.length - 1; i > 0; i--) {
-      var j = Math.floor(Math.random() * (i + 1));
-      var t = opts[i]; opts[i] = opts[j]; opts[j] = t;
-    }
-    return opts;
-  }
-
-  /* ================= YouTube Pleyeri ================= */
-
-  function stopYouTubeTracking() {
-    if (L.ytInterval) { clearInterval(L.ytInterval); L.ytInterval = null; }
-  }
-
-  function startYouTubeTracking() {
-    stopYouTubeTracking();
-    L.ytInterval = setInterval(function () {
-      if (!L.ytPlayer || typeof L.ytPlayer.getCurrentTime !== 'function') return;
-      var cur = L.ytPlayer.getCurrentTime();
-      var found = -1;
-      for (var i = 0; i < L.sentences.length; i++) {
-        var s = L.sentences[i];
-        var st = s.startTime != null ? s.startTime : (i * 4);
-        var et = s.endTime != null ? s.endTime : ((i + 1) * 4);
-        if (cur >= st && cur < et) { found = i; break; }
-      }
-      if (found >= 0 && found !== L.activeSubIdx) {
-        L.activeSubIdx = found;
-        highlightSubRow(found);
-      }
-    }, 250);
-  }
-
-  function highlightSubRow(idx) {
-    var box = App.el('au-body'); if (!box) return;
-    box.querySelectorAll('.au-sub-row').forEach(function (el, i) {
-      if (i === idx) {
-        el.classList.add('active');
-        el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-      } else {
-        el.classList.remove('active');
-      }
-    });
-  }
-
-  function initYouTubePlayer(box, videoId) {
-    stopYouTubeTracking();
-    if (L.ytPlayer) {
-      try { L.ytPlayer.destroy(); } catch (e) {}
-      L.ytPlayer = null;
-    }
-
-    var holder = box.querySelector('#au-yt-wrap');
-    if (!holder) return;
-
-    holder.innerHTML = '<div id="au-yt-player"></div>';
-
-    function setup() {
-      try {
-        L.ytPlayer = new window.YT.Player('au-yt-player', {
-          videoId: videoId,
-          playerVars: {
-            playsinline: 1, rel: 0, modestbranding: 1, enablejsapi: 1
-          },
-          events: {
-            onStateChange: function (e) {
-              if (e.data === window.YT.PlayerState.PLAYING) {
-                startYouTubeTracking();
-              } else {
-                stopYouTubeTracking();
-              }
-            }
-          }
+  function prepareDrillQuestions(rawQs, cards) {
+    var list = [];
+    if (rawQs && rawQs.length) {
+      list = rawQs.map(function (q, qIdx) {
+        var card = cards && cards[qIdx % cards.length] ? cards[qIdx % cards.length] : null;
+        var cue = card ? (card.sound || card.word) : (q.options[q.correct] || '');
+        var opts = q.options.map(function (opt, i) {
+          return { text: opt, isCorrect: i === q.correct };
         });
-      } catch (e) {
-        holder.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + encodeURIComponent(videoId) + '?playsinline=1&rel=0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>';
-      }
+        // Shuffllash (to'g'ri javob doim birinchi bo'lmasligi uchun)
+        for (var i = opts.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var tmp = opts[i]; opts[i] = opts[j]; opts[j] = tmp;
+        }
+        return {
+          q: q.q,
+          cue: cue,
+          explain: card ? card.explain : '',
+          options: opts,
+          answered: false,
+          selected: -1,
+          isCorrect: false
+        };
+      });
+    } else if (cards && cards.length) {
+      // Agar savollar bo'lmasa, kartochkalardan avtomatik tuzish
+      list = cards.map(function (c, idx) {
+        var opts = [
+          { text: c.word, isCorrect: true }
+        ];
+        var other = cards.filter(function (_, i) { return i !== idx; });
+        if (other[0]) opts.push({ text: other[0].word, isCorrect: false });
+        if (other[1]) opts.push({ text: other[1].word, isCorrect: false });
+        else opts.push({ text: 'Boshqa so\'z', isCorrect: false });
+        opts.sort(function () { return Math.random() - 0.5; });
+        return {
+          q: 'Ovozda «' + c.sound + '» yangradi. Bu qaysi so\'zning qisqartmasi?',
+          cue: c.sound,
+          explain: c.explain,
+          options: opts,
+          answered: false,
+          selected: -1,
+          isCorrect: false
+        };
+      });
     }
-
-    if (window.YT && window.YT.Player) {
-      setup();
-    } else {
-      var old = window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady = function () {
-        if (old) old();
-        setup();
-      };
-      if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
-        var s = document.createElement('script');
-        s.src = 'https://www.youtube.com/iframe_api';
-        document.head.appendChild(s);
-      }
-    }
+    return list;
   }
 
   /* ================= Asosiy Ko'rinish ================= */
@@ -345,9 +382,11 @@
       L.dict = C ? C.dictLang(L.sec) : 'russian';
       L.sentences = []; L.idx = 0; L.good = 0; L.bad = 0;
       L.wrongSents = []; L.logged = false; L.startedAt = Date.now();
-      L.tab = 'listen';
       L.activeSubIdx = -1;
       L.alive = true;
+      L.cards = [];
+      L.cardIdx = 0;
+      L.isEar = false;
       try { L.rate = parseFloat(localStorage.getItem('reading_rate')) || 1; } catch (e) { L.rate = 1; }
       try { L.mode = localStorage.getItem('listening_mode') === 'type' ? 'type' : 'choice'; } catch (e) { L.mode = 'choice'; }
 
@@ -358,32 +397,47 @@
         '<button class="icon-btn ghost" id="au-back"><span data-icon="arrowLeft" data-icon-size="20"></span></button>' +
         '<h1 id="au-title"></h1>' +
         (isReadOnly ? '' :
-          '<button class="icon-btn ghost" id="au-edit" style="margin-left:auto" aria-label="Tahrirlash" title="Matn va video havolasini tahrirlash">' +
+          '<button class="icon-btn ghost" id="au-edit" style="margin-left:auto" aria-label="Tahrirlash" title="Matnni tahrirlash">' +
           '<span data-icon="edit" data-icon-size="18"></span></button>') +
         '</div>' +
 
-        /* 3 ta rejim: Tinglash, Diktant, Test */
-        '<div class="au-tabbar" id="au-tabbar">' +
-        '<button class="au-tabbar-btn active" data-tab="listen"><span data-icon="headphones" data-icon-size="15"></span> 🎬 Tinglash</button>' +
-        '<button class="au-tabbar-btn" data-tab="dictate"><span data-icon="edit" data-icon-size="15"></span> ✍️ Diktant</button>' +
-        '<button class="au-tabbar-btn" data-tab="quiz"><span data-icon="check" data-icon-size="15"></span> ❓ Test</button>' +
-        '</div>' +
+        '<div class="au-tabbar" id="au-tabbar"></div>' +
 
         '<div id="au-body"><div class="load-wrap"><div class="spinner"></div></div></div>';
 
       App.icons(page);
-      bindTopbarTabs(page);
       loadDoc(page);
     }
   });
 
-  function bindTopbarTabs(page) {
-    page.querySelectorAll('#au-tabbar button').forEach(function (btn) {
+  function setupTabs(page) {
+    var bar = page.querySelector('#au-tabbar');
+    if (!bar) return;
+
+    if (L.isEar) {
+      // Ear Training rejimi
+      L.tab = 'cards';
+      bar.innerHTML =
+        '<button class="au-tabbar-btn active" data-tab="cards"><span data-icon="book" data-icon-size="15"></span> 🎓 Карточки</button>' +
+        '<button class="au-tabbar-btn" data-tab="drill"><span data-icon="headphones" data-icon-size="15"></span> 🎯 Тренажёр</button>' +
+        '<button class="au-tabbar-btn" data-tab="words"><span data-icon="list" data-icon-size="15"></span> 📜 Все слова</button>';
+    } else {
+      // Standart dialog rejimi
+      L.tab = 'listen';
+      bar.innerHTML =
+        '<button class="au-tabbar-btn active" data-tab="listen"><span data-icon="headphones" data-icon-size="15"></span> 🎬 Tinglash</button>' +
+        '<button class="au-tabbar-btn" data-tab="dictate"><span data-icon="edit" data-icon-size="15"></span> ✍️ Diktant</button>' +
+        '<button class="au-tabbar-btn" data-tab="quiz"><span data-icon="check" data-icon-size="15"></span> ❓ Test</button>';
+    }
+
+    App.icons(bar);
+
+    bar.querySelectorAll('button').forEach(function (btn) {
       btn.onclick = function () {
         var t = btn.getAttribute('data-tab');
         if (t === L.tab) return;
         L.tab = t;
-        page.querySelectorAll('#au-tabbar button').forEach(function (b) {
+        bar.querySelectorAll('button').forEach(function (b) {
           b.classList.toggle('active', b.getAttribute('data-tab') === t);
         });
         halt();
@@ -409,7 +463,7 @@
 
     function applyTopic(t) {
       var box = App.el('au-body'); if (!box) return;
-      L.name = t.name || 'Matn';
+      L.name = t.name || 'Аудирование';
       L.rawContent = t.content || '';
       var folder = (t.folder || '').trim();
 
@@ -424,7 +478,7 @@
       if (!t.content) {
         box.innerHTML = App.empty({
           icon: 'headphones', title: 'Matn hali yo\'q',
-          text: 'Tepadagi qalamcha tugmasi orqali YouTube havolasi yoki dialog matnini kiriting.'
+          text: 'Tepadagi qalamcha orqali yangi mashq qo\'shishingiz mumkin.'
         });
         App.icons(box);
         return;
@@ -432,16 +486,17 @@
 
       L.youtubeId = extractYouTubeId(t.content);
 
+      // Kartochkalarni tekshirish
+      L.cards = parseCards(t.content);
+      L.isEar = L.cards.length > 0;
+      L.cardIdx = 0;
+
       var parsed = C.parse(t.content);
       var lines = String(t.content).split('\n');
+      L.sentences = parsed.sentences.filter(isSubtitleLine);
 
-      L.sentences = parsed.sentences.filter(function (s) {
-        return s.k !== 'h' && (s.text || '').trim();
-      });
-
-      // Timestamplarni bog'lash
+      // Timestamplar
       L.sentences.forEach(function (s, i) {
-        // Matndan qatorni topish
         var orig = lines.find(function (l) { return l.indexOf(s.text.slice(0, 15)) >= 0; }) || '';
         var tm = orig.match(/\[(\d{1,2}:\d{2})(?:\s*-\s*(\d{1,2}:\d{2}))?\]/);
         if (tm) {
@@ -457,6 +512,12 @@
       L.questions = extractQuestions(t.content, L.sentences);
       L.quizIdx = 0; L.quizScore = 0; L.quizAnswered = false;
 
+      // Trenajyor savollari
+      L.drillQuestions = prepareDrillQuestions(L.questions, L.cards);
+      L.drillIdx = 0;
+      L.drillScore = 0;
+
+      setupTabs(page);
       renderTab(page);
     }
 
@@ -477,27 +538,469 @@
   }
 
   function renderTab(page) {
-    if (L.tab === 'listen') {
-      renderListenTab(page);
-    } else if (L.tab === 'dictate') {
-      renderSentence(page);
-    } else if (L.tab === 'quiz') {
-      renderQuizTab(page);
+    if (L.isEar) {
+      if (L.tab === 'cards') renderCardsTab(page);
+      else if (L.tab === 'drill') renderDrillTab(page);
+      else if (L.tab === 'words') renderWordsTab(page);
+    } else {
+      if (L.tab === 'listen') renderListenTab(page);
+      else if (L.tab === 'dictate') renderSentence(page);
+      else if (L.tab === 'quiz') renderQuizTab(page);
     }
   }
 
-  /* ================= 1. 🎬 Tinglash va Subtitrlar ================= */
+  /* =========================================================================
+     A. 🎓 EAR-TRAINING 1: KARTOCHKALAR (Flashcards)
+     ========================================================================= */
+
+  function renderCardsTab(page) {
+    var box = App.el('au-body'); if (!box) return;
+    if (!L.cards.length) {
+      box.innerHTML = App.empty({ icon: 'book', title: 'Kartochkalar yo\'q' });
+      return;
+    }
+
+    var card = L.cards[L.cardIdx];
+    var total = L.cards.length;
+
+    var html =
+      '<div class="au-ear-container">' +
+      // Tepada navigatsiya va hisoblagich
+      '<div class="au-ear-nav">' +
+        '<button class="icon-btn ghost' + (L.cardIdx === 0 ? ' disabled' : '') + '" id="au-c-prev">' +
+          '<span data-icon="arrowLeft" data-icon-size="18"></span></button>' +
+        '<div class="au-c-counter">' +
+          '<span class="au-c-counter-lbl">Kartochka</span> ' +
+          '<strong>' + (L.cardIdx + 1) + '</strong> / ' + total +
+        '</div>' +
+        '<button class="icon-btn ghost' + (L.cardIdx === total - 1 ? ' disabled' : '') + '" id="au-c-next">' +
+          '<span data-icon="arrowLeft" data-icon-size="18" style="transform:rotate(180deg)"></span></button>' +
+      '</div>' +
+
+      // Asosiy kartochka
+      '<div class="au-ear-card">' +
+        // Katta fonetik badge
+        '<div class="au-sound-badge-wrap">' +
+          '<div class="au-sound-badge">' +
+            '<span class="au-sound-ic">👂</span>' +
+            '<span class="au-sound-txt">' + App.esc(card.sound) + '</span>' +
+          '</div>' +
+          '<div class="au-sound-sub">Jonli nutqda eshitilishi (Редукция / Сжатие)</div>' +
+        '</div>' +
+
+        // Ovozli tinglash tugmalari (Tez vs Sekin)
+        '<div class="au-play-row">' +
+          '<button class="au-play-btn fast" id="au-play-fast" title="Jonli tezlikda eshitish">' +
+            '<span class="au-play-ic">⚡</span>' +
+            '<span class="au-play-txt">Jonli nutq (1.0x)</span>' +
+          '</button>' +
+          '<button class="au-play-btn slow" id="au-play-slow" title="Sekin va aniq talaffuz">' +
+            '<span class="au-play-ic">🐢</span>' +
+            '<span class="au-play-txt">Sekin (0.7x)</span>' +
+          '</button>' +
+        '</div>' +
+
+        // Taqqoslash va ma'nosi
+        '<div class="au-meta-box">' +
+          '<div class="au-meta-row">' +
+            '<span class="au-meta-lbl">✍️ Asl yozilishi:</span>' +
+            '<span class="au-meta-val spelling">' + formatSpelling(card.spelling || card.word) + '</span>' +
+          '</div>' +
+          '<div class="au-meta-row">' +
+            '<span class="au-meta-lbl">🇺🇿 Ma\'nosi:</span>' +
+            '<span class="au-meta-val mean">' + App.esc(card.mean) + '</span>' +
+          '</div>' +
+        '</div>' +
+
+        // Tushuntirish qoidasi
+        '<div class="au-explain-box">' +
+          '<div class="au-explain-title"><span data-icon="sparkles" data-icon-size="15"></span> Nega bunday eshitiladi?</div>' +
+          '<div class="au-explain-text">' + App.esc(card.explain) + '</div>' +
+        '</div>' +
+
+        // Jonli gap ichida namunasi
+        (card.example ?
+          '<div class="au-example-box">' +
+            '<div class="au-ex-top">' +
+              '<span>💬 Jonli gap ichida:</span>' +
+              '<button class="au-ex-speak" id="au-play-ex">' +
+                '<span data-icon="volume" data-icon-size="14"></span> Eshitish' +
+              '</button>' +
+            '</div>' +
+            '<div class="au-ex-ru">' + App.esc(card.example) + '</div>' +
+            (card.example_uz ? '<div class="au-ex-uz">' + App.esc(card.example_uz) + '</div>' : '') +
+          '</div>' : '') +
+      '</div>' +
+
+      // Pastki harakat tugmasi
+      '<div style="margin-top:16px">' +
+        (L.cardIdx < total - 1 ?
+          '<button class="btn primary" id="au-card-next-btn" style="width:100%">Keyingi so\'zga o\'tish ➔</button>' :
+          '<button class="btn primary" id="au-go-drill-btn" style="width:100%">🎯 Quloqni charxlash (Тренажёр) ➔</button>') +
+      '</div>' +
+      '</div>';
+
+    box.innerHTML = html;
+    App.icons(box);
+
+    // Voqealarni bog'lash
+    var btnFast = box.querySelector('#au-play-fast');
+    if (btnFast) {
+      btnFast.onclick = function () {
+        halt();
+        L.alive = true;
+        say(card.sound.replace(/[\[\]]/g, ''), 1.05);
+      };
+    }
+
+    var btnSlow = box.querySelector('#au-play-slow');
+    if (btnSlow) {
+      btnSlow.onclick = function () {
+        halt();
+        L.alive = true;
+        say(card.word || card.sound, 0.7);
+      };
+    }
+
+    var btnEx = box.querySelector('#au-play-ex');
+    if (btnEx) {
+      btnEx.onclick = function () {
+        halt();
+        L.alive = true;
+        say(card.example_audio || card.example, 1.0);
+      };
+    }
+
+    var prevBtn = box.querySelector('#au-c-prev');
+    if (prevBtn && L.cardIdx > 0) {
+      prevBtn.onclick = function () {
+        halt();
+        L.cardIdx--;
+        renderCardsTab(page);
+      };
+    }
+
+    var nextBtn = box.querySelector('#au-c-next');
+    if (nextBtn && L.cardIdx < total - 1) {
+      nextBtn.onclick = function () {
+        halt();
+        L.cardIdx++;
+        renderCardsTab(page);
+      };
+    }
+
+    var nextActionBtn = box.querySelector('#au-card-next-btn');
+    if (nextActionBtn) {
+      nextActionBtn.onclick = function () {
+        halt();
+        L.cardIdx++;
+        renderCardsTab(page);
+      };
+    }
+
+    var drillActionBtn = box.querySelector('#au-go-drill-btn');
+    if (drillActionBtn) {
+      drillActionBtn.onclick = function () {
+        halt();
+        // Trenajyorga o'tish
+        var drillTabBtn = page.querySelector('#au-tabbar button[data-tab="drill"]');
+        if (drillTabBtn) drillTabBtn.click();
+      };
+    }
+  }
+
+  /* =========================================================================
+     B. 🎯 EAR-TRAINING 2: TRENAJYOR (Audio Drill & Quiz)
+     ========================================================================= */
+
+  function renderDrillTab(page) {
+    var box = App.el('au-body'); if (!box) return;
+    if (!L.drillQuestions.length) {
+      box.innerHTML = App.empty({ icon: 'check', title: 'Savollar topilmadi' });
+      return;
+    }
+
+    if (L.drillIdx >= L.drillQuestions.length) {
+      renderDrillResult(page);
+      return;
+    }
+
+    var q = L.drillQuestions[L.drillIdx];
+    var total = L.drillQuestions.length;
+    var pct = Math.round(((L.drillIdx) / total) * 100);
+
+    var html =
+      '<div class="au-drill-container">' +
+      // Progress paneli
+      '<div class="au-head">' +
+        '<span class="au-progress">Savol ' + (L.drillIdx + 1) + ' / ' + total + '</span>' +
+        '<span class="au-progress" style="color:var(--accent)">' + (L.drillScore) + ' to\'g\'ri</span>' +
+      '</div>' +
+      '<div class="au-bar"><i style="width:' + pct + '%"></i></div>' +
+
+      // Katta ovoz bosqichi (Audio Stage)
+      '<div class="au-drill-stage">' +
+        '<button class="au-drill-speaker' + (L.drillPlaying ? ' playing' : '') + '" id="au-drill-play">' +
+          '<span data-icon="volume" data-icon-size="34"></span>' +
+          '<span class="au-drill-spk-lbl">' + (L.drillPlaying ? 'Yangramoqda...' : 'Ovozni tinglang') + '</span>' +
+        '</button>' +
+        '<div class="au-drill-speeds">' +
+          '<button class="au-speed-chip" id="au-drill-speed-fast">⚡ 1.0x Tez</button>' +
+          '<button class="au-speed-chip" id="au-speed-slow">🐢 0.7x Sekin</button>' +
+        '</div>' +
+      '</div>' +
+
+      // Savol sarlavhasi
+      '<div class="au-q-title" style="text-align:center;margin-top:14px">' + App.esc(q.q) + '</div>' +
+
+      // Variantlar
+      '<div class="au-q-opts">';
+
+    q.options.forEach(function (opt, i) {
+      var cls = '';
+      if (q.answered) {
+        if (opt.isCorrect) cls = ' correct';
+        else if (q.selected === i) cls = ' wrong';
+        else cls = ' disabled';
+      }
+      html +=
+        '<button class="au-q-btn' + cls + '" data-oi="' + i + '">' +
+        '<span>' + App.esc(opt.text) + '</span>' +
+        (q.answered && opt.isCorrect ? '<span data-icon="check" data-icon-size="16"></span>' : '') +
+        (q.answered && q.selected === i && !opt.isCorrect ? '<span data-icon="close" data-icon-size="16"></span>' : '') +
+        '</button>';
+    });
+
+    html += '</div>';
+
+    // Tushuntirish
+    if (q.answered && q.explain) {
+      html +=
+        '<div class="au-explain-box" style="margin-top:14px;animation:fadein .2s ease">' +
+          '<div class="au-explain-title">💡 Izoh:</div>' +
+          '<div class="au-explain-text">' + App.esc(q.explain) + '</div>' +
+        '</div>';
+    }
+
+    // Keyingi tugma
+    if (q.answered) {
+      html +=
+        '<button class="btn primary" id="au-drill-next" style="width:100%;margin-top:16px">' +
+        (L.drillIdx < total - 1 ? 'Keyingi savol ➔' : 'Natijani ko\'rish ➔') +
+        '</button>';
+    }
+
+    html += '</div>';
+
+    box.innerHTML = html;
+    App.icons(box);
+
+    // Avtomatik ovoz berish (savol ochilganda birinchi marta)
+    if (!q.answered && !L.drillPlaying) {
+      playDrillAudio(q.cue, 1.05);
+    }
+
+    // Ovoz tinglash tugmalari
+    var spk = box.querySelector('#au-drill-play');
+    if (spk) {
+      spk.onclick = function () { playDrillAudio(q.cue, 1.05); };
+    }
+    var spFast = box.querySelector('#au-drill-speed-fast');
+    if (spFast) {
+      spFast.onclick = function () { playDrillAudio(q.cue, 1.05); };
+    }
+    var spSlow = box.querySelector('#au-speed-slow');
+    if (spSlow) {
+      spSlow.onclick = function () { playDrillAudio(q.cue, 0.7); };
+    }
+
+    // Variant tanlash
+    if (!q.answered) {
+      box.querySelectorAll('.au-q-btn').forEach(function (btn) {
+        btn.onclick = function () {
+          var oi = parseInt(btn.getAttribute('data-oi'), 10);
+          q.answered = true;
+          q.selected = oi;
+          if (q.options[oi] && q.options[oi].isCorrect) {
+            L.drillScore++;
+            q.isCorrect = true;
+          } else {
+            q.isCorrect = false;
+          }
+          renderDrillTab(page);
+        };
+      });
+    }
+
+    // Keyingi savolga o'tish
+    var nextBtn = box.querySelector('#au-drill-next');
+    if (nextBtn) {
+      nextBtn.onclick = function () {
+        halt();
+        L.drillIdx++;
+        renderDrillTab(page);
+      };
+    }
+  }
+
+  function playDrillAudio(text, rate) {
+    halt();
+    L.alive = true;
+    L.drillPlaying = true;
+    var spk = document.querySelector('#au-drill-play');
+    if (spk) spk.classList.add('playing');
+
+    say(text, rate, function () {
+      L.drillPlaying = false;
+      if (spk) spk.classList.remove('playing');
+    });
+  }
+
+  function renderDrillResult(page) {
+    var box = App.el('au-body'); if (!box) return;
+    var total = L.drillQuestions.length;
+    var pct = total ? Math.round((L.drillScore / total) * 100) : 0;
+
+    // Darsni tugatilgan deb belgilaymiz
+    if (window.LearnMarks && LearnMarks.markTopicRead) {
+      LearnMarks.markTopicRead(L.id);
+    }
+    if (window.ReadMark && ReadMark.markRead) {
+      ReadMark.markRead(L.sec, 'topic', L.id);
+    }
+
+    box.innerHTML =
+      '<div class="au-result-card">' +
+      '<div class="au-res-badge">' + (pct >= 75 ? '🏆' : '🎯') + '</div>' +
+      '<h2 style="margin:0 0 6px">' + (pct >= 80 ? 'Ajoyib natija!' : 'Mashq bajarildi!') + '</h2>' +
+      '<p class="muted" style="margin:0 0 16px">' +
+        (pct >= 80 ?
+          'Qulog\'ingiz jonli rus nutqidagi qisqarish va tovushlarni a\'lo darajada ilg\'ay oldi!' :
+          'Quloqni charxlashda davom eting! Kartochkalarni qayta tinglab ko\'ring.') +
+      '</p>' +
+
+      '<div class="stat-strip" style="max-width:240px;margin:0 auto 20px">' +
+        '<div class="s"><div class="n" style="color:var(--success)">' + L.drillScore + '</div><div class="l">To\'g\'ri</div></div>' +
+        '<div class="s"><div class="n" style="color:var(--danger)">' + (total - L.drillScore) + '</div><div class="l">Xato</div></div>' +
+      '</div>' +
+
+      '<div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">' +
+        '<button class="btn primary" id="au-drill-retry">🔄 Qayta topshirish</button>' +
+        '<button class="btn secondary" id="au-drill-view-words">📜 Barcha so\'zlar ro\'yxati</button>' +
+        '<button class="btn ghost" id="au-drill-back-hub">← Katalogga qaytish</button>' +
+      '</div>' +
+      '</div>';
+
+    App.icons(box);
+
+    var retry = box.querySelector('#au-drill-retry');
+    if (retry) {
+      retry.onclick = function () {
+        L.drillIdx = 0;
+        L.drillScore = 0;
+        L.drillQuestions.forEach(function (q) {
+          q.answered = false;
+          q.selected = -1;
+          q.isCorrect = false;
+        });
+        renderDrillTab(page);
+      };
+    }
+
+    var viewWords = box.querySelector('#au-drill-view-words');
+    if (viewWords) {
+      viewWords.onclick = function () {
+        var wordsTabBtn = page.querySelector('#au-tabbar button[data-tab="words"]');
+        if (wordsTabBtn) wordsTabBtn.click();
+      };
+    }
+
+    var backHub = box.querySelector('#au-drill-back-hub');
+    if (backHub) {
+      backHub.onclick = function () {
+        App.go('listening_hub', { sec: L.sec });
+      };
+    }
+  }
+
+  /* =========================================================================
+     C. 📜 EAR-TRAINING 3: BARCHA SO'ZLAR (Word list)
+     ========================================================================= */
+
+  function renderWordsTab(page) {
+    var box = App.el('au-body'); if (!box) return;
+    if (!L.cards.length) {
+      box.innerHTML = App.empty({ icon: 'list', title: 'So\'zlar yo\'q' });
+      return;
+    }
+
+    var html =
+      '<div class="au-words-wrap">' +
+      '<p class="muted" style="font-size:12.5px;margin:2px 2px 12px">' +
+        '💡 So\'z ustiga bosing — batafsil kartochkasiga o\'tasiz. Karnaycha ustiga bossangiz — talaffuz yangraydi.' +
+      '</p>' +
+      '<div class="au-words-list">';
+
+    L.cards.forEach(function (c, i) {
+      html +=
+        '<div class="au-word-row" data-ci="' + i + '">' +
+          '<div class="au-w-num">' + (i + 1) + '</div>' +
+          '<div class="au-w-main">' +
+            '<div class="au-w-top">' +
+              '<span class="au-w-sound">' + App.esc(c.sound) + '</span>' +
+              '<span class="au-w-real">' + formatSpelling(c.spelling || c.word) + '</span>' +
+            '</div>' +
+            '<div class="au-w-mean">' + App.esc(c.mean) + '</div>' +
+          '</div>' +
+          '<button class="au-w-speak icon-btn ghost" data-ci="' + i + '" title="Tinglash">' +
+            '<span data-icon="volume" data-icon-size="18"></span>' +
+          '</button>' +
+        '</div>';
+    });
+
+    html += '</div></div>';
+
+    box.innerHTML = html;
+    App.icons(box);
+
+    // Voqealar: satr bosilganda kartaga o'tish
+    box.querySelectorAll('.au-word-row').forEach(function (row) {
+      row.onclick = function (e) {
+        if (e.target.closest('.au-w-speak')) return;
+        var ci = parseInt(row.getAttribute('data-ci'), 10);
+        L.cardIdx = ci;
+        var cardsTabBtn = page.querySelector('#au-tabbar button[data-tab="cards"]');
+        if (cardsTabBtn) cardsTabBtn.click();
+      };
+    });
+
+    // Karnaycha bosilganda ovoz chiqarish
+    box.querySelectorAll('.au-w-speak').forEach(function (btn) {
+      btn.onclick = function (e) {
+        e.stopPropagation();
+        var ci = parseInt(btn.getAttribute('data-ci'), 10);
+        var c = L.cards[ci];
+        if (c) {
+          halt();
+          L.alive = true;
+          say(c.sound.replace(/[\[\]]/g, ''), 1.05);
+        }
+      };
+    });
+  }
+
+  /* =========================================================================
+     D. 🎬 ZAXIRA KLASSIK TINGLASH REJIMI (Subtitrlar & YouTube)
+     ========================================================================= */
 
   function renderListenTab(page) {
     var box = App.el('au-body'); if (!box) return;
 
     var html = '';
 
-    // YouTube video pleyeri (agar video mavjud bo'lsa)
     if (L.youtubeId) {
       html += '<div id="au-yt-wrap" class="au-video-wrap"></div>';
     } else {
-      // Audio boshqaruv paneli
       html +=
         '<div class="au-ctrl-bar">' +
         '<button class="au-ctrl-btn" id="au-audio-toggle">' +
@@ -509,7 +1012,6 @@
         '</div>';
     }
 
-    // Subtitr qatorlari
     html += '<p class="muted" style="font-size:12px;margin:4px 2px 10px">' +
       (L.youtubeId ? '💡 Gap ustiga bosing — video o\'sha sekundga sakraydi va qayta yangraydi.'
                    : '💡 Gap ustiga bosing — faqat o\'sha gap ovozli aytiladi.') +
@@ -540,323 +1042,434 @@
     App.icons(box);
 
     if (L.youtubeId) {
-      initYouTubePlayer(box, L.youtubeId);
+      initYouTubePlayer(L.youtubeId);
     } else {
       bindAudioControls(box);
     }
 
-    // Subtitr bosilganda sakrash
-    box.querySelectorAll('.au-sub-row').forEach(function (row) {
-      row.onclick = function (e) {
-        // Agar so'z tarjimasi bosilgan bo'lsa — toast
-        var rw = e.target.closest('.rd-w');
-        if (rw && rw.getAttribute('title')) {
-          App.toast(rw.textContent + ' — ' + rw.getAttribute('title'));
-          return;
-        }
-        var si = parseInt(row.getAttribute('data-si'), 10);
-        seekToSentence(si);
-      };
-    });
-  }
-
-  function seekToSentence(i) {
-    var s = L.sentences[i];
-    if (!s) return;
-    L.activeSubIdx = i;
-    highlightSubRow(i);
-
-    if (L.youtubeId && L.ytPlayer && typeof L.ytPlayer.seekTo === 'function') {
-      var seekSec = s.startTime != null ? s.startTime : (i * 4);
-      L.ytPlayer.seekTo(seekSec, true);
-      L.ytPlayer.playVideo();
-    } else {
-      halt();
-      L.alive = true;
-      say(s.text);
-    }
+    bindSubClicks(box);
   }
 
   function bindAudioControls(box) {
-    var toggle = box.querySelector('#au-audio-toggle');
-    if (toggle) {
-      toggle.onclick = function () {
+    var toggleBtn = box.querySelector('#au-audio-toggle');
+    if (toggleBtn) {
+      toggleBtn.onclick = function () {
         if (L.audioPlaying) {
           halt();
-          renderListenTab(App.page);
+          toggleBtn.innerHTML = '<span data-icon="play" data-icon-size="16"></span> Barchasini tinglash';
+          App.icons(toggleBtn);
         } else {
-          playAllSentences(0);
+          L.audioPlaying = true;
+          L.audioIdx = 0;
+          toggleBtn.innerHTML = '<span data-icon="pause" data-icon-size="16"></span> To\'xtatish';
+          App.icons(toggleBtn);
+          playSequential(box);
         }
       };
     }
 
-    var slow = box.querySelector('#au-audio-slow');
-    if (slow) {
-      slow.onclick = function () {
-        var cur = L.activeSubIdx >= 0 ? L.activeSubIdx : 0;
-        var s = L.sentences[cur];
-        if (!s) return;
-        halt();
-        L.alive = true;
-        say(s.text, 0.7);
+    var slowBtn = box.querySelector('#au-audio-slow');
+    if (slowBtn) {
+      slowBtn.onclick = function () {
+        var cur = L.sentences[L.activeSubIdx >= 0 ? L.activeSubIdx : 0];
+        if (cur) {
+          halt();
+          L.alive = true;
+          say(cur.text, 0.7);
+        }
       };
     }
 
-    var rep = box.querySelector('#au-audio-repeat');
-    if (rep) {
-      rep.onclick = function () {
-        var cur = L.activeSubIdx >= 0 ? L.activeSubIdx : 0;
-        seekToSentence(cur);
+    var repBtn = box.querySelector('#au-audio-repeat');
+    if (repBtn) {
+      repBtn.onclick = function () {
+        var cur = L.sentences[L.activeSubIdx >= 0 ? L.activeSubIdx : 0];
+        if (cur) {
+          halt();
+          L.alive = true;
+          say(cur.text, 1.0);
+        }
       };
     }
   }
 
-  function playAllSentences(startIdx) {
-    halt();
-    L.audioPlaying = true;
-    L.alive = true;
-    var i = startIdx || 0;
-
-    function playNext() {
-      if (!L.audioPlaying || !L.alive || i >= L.sentences.length) {
-        halt();
-        highlightSubRow(-1);
-        renderListenTab(App.page);
-        return;
+  function playSequential(box) {
+    if (!L.audioPlaying || !L.alive) return;
+    if (L.audioIdx >= L.sentences.length) {
+      L.audioPlaying = false;
+      var toggleBtn = box.querySelector('#au-audio-toggle');
+      if (toggleBtn) {
+        toggleBtn.innerHTML = '<span data-icon="play" data-icon-size="16"></span> Barchasini tinglash';
+        App.icons(toggleBtn);
       }
-      L.activeSubIdx = i;
-      highlightSubRow(i);
-      var s = L.sentences[i];
-      say(s.text, L.rate, function () {
-        i++;
-        L.partTimer = setTimeout(playNext, 600);
-      });
+      return;
     }
 
-    playNext();
-    var toggle = document.querySelector('#au-audio-toggle');
-    if (toggle) {
-      toggle.innerHTML = '<span data-icon="pause" data-icon-size="16"></span> To\'xtatish';
-      App.icons(toggle);
+    var idx = L.audioIdx++;
+    highlightSubRow(box, idx);
+    var s = L.sentences[idx];
+    say(s.text, L.rate || 1, function () {
+      if (L.audioPlaying && L.alive) {
+        setTimeout(function () { playSequential(box); }, 500);
+      }
+    });
+  }
+
+  function bindSubClicks(box) {
+    box.querySelectorAll('.au-sub-row').forEach(function (row) {
+      row.onclick = function () {
+        var si = parseInt(row.getAttribute('data-si'), 10);
+        var s = L.sentences[si];
+        if (!s) return;
+
+        highlightSubRow(box, si);
+
+        if (L.youtubeId && L.ytPlayer && typeof L.ytPlayer.seekTo === 'function') {
+          L.ytPlayer.seekTo(s.startTime, true);
+          L.ytPlayer.playVideo();
+        } else {
+          halt();
+          L.alive = true;
+          say(s.text, L.rate || 1);
+        }
+      };
+    });
+  }
+
+  function highlightSubRow(box, idx) {
+    L.activeSubIdx = idx;
+    box.querySelectorAll('.au-sub-row').forEach(function (r, i) {
+      r.classList.toggle('active', i === idx);
+      if (i === idx) {
+        r.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    });
+  }
+
+  /* YouTube API */
+  function initYouTubePlayer(vid) {
+    if (!window.YT || !window.YT.Player) {
+      var tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      var first = document.getElementsByTagName('script')[0];
+      first.parentNode.insertBefore(tag, first);
+
+      var oldReady = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = function () {
+        if (oldReady) oldReady();
+        buildYT(vid);
+      };
+    } else {
+      buildYT(vid);
     }
   }
 
-  /* ================= 2. ✍️ Diktant (Gap-fill) ================= */
+  function buildYT(vid) {
+    var wrap = document.getElementById('au-yt-wrap');
+    if (!wrap) return;
+    wrap.innerHTML = '<div id="au-yt-player"></div>';
+    L.ytPlayer = new window.YT.Player('au-yt-player', {
+      videoId: vid,
+      playerVars: { playsinline: 1, rel: 0, modestbranding: 1 },
+      events: {
+        onStateChange: function (e) {
+          if (e.data === window.YT.PlayerState.PLAYING) {
+            startYouTubeTracking();
+          } else {
+            stopYouTubeTracking();
+          }
+        }
+      }
+    });
+  }
+
+  function startYouTubeTracking() {
+    stopYouTubeTracking();
+    L.ytInterval = setInterval(function () {
+      if (!L.ytPlayer || typeof L.ytPlayer.getCurrentTime !== 'function') return;
+      var cur = L.ytPlayer.getCurrentTime();
+      for (var i = 0; i < L.sentences.length; i++) {
+        var s = L.sentences[i];
+        if (cur >= s.startTime && cur < s.endTime) {
+          if (L.activeSubIdx !== i) {
+            var box = App.el('au-body');
+            if (box) highlightSubRow(box, i);
+          }
+          break;
+        }
+      }
+    }, 300);
+  }
+
+  function stopYouTubeTracking() {
+    if (L.ytInterval) { clearInterval(L.ytInterval); L.ytInterval = null; }
+  }
+
+  /* =========================================================================
+     E. ✍️ ZAXIRA KLASSIK DIKTANT REJIMI
+     ========================================================================= */
 
   function renderSentence(page) {
     var box = App.el('au-body'); if (!box) return;
-    if (L.idx >= L.sentences.length) { renderResult(page); return; }
-
     var s = L.sentences[L.idx];
-    var tokens = s.tokens || [];
-    var gi = gapIndexes(tokens);
+    if (!s) { renderResult(page); return; }
 
-    L.gaps = gi.map(function (ti) {
-      return { ti: ti, word: tokens[ti].w, tr: tokens[ti].t || '', tries: 0, done: false };
-    });
+    var gis = gapIndexes(s.tokens);
+    var gmap = {};
+    gis.forEach(function (i) { gmap[i] = true; });
 
-    var htmlParts = [];
-    tokens.forEach(function (tk, i) {
-      if (tk.k === 'x') { htmlParts.push(App.esc(tk.s)); return; }
-      var gpos = gi.indexOf(i);
-      if (gpos < 0) { htmlParts.push(App.esc(tk.w)); return; }
-      var w = tk.w || '';
-      htmlParts.push(
-        '<button class="au-gap" data-g="' + gpos + '" style="min-width:' + Math.max(52, w.length * 14) + 'px">' +
-        '<span class="au-gap-txt">' + new Array(w.length + 1).join('·') + '</span></button>'
-      );
-    });
+    L.gaps = [];
+    var sentHtml = (s.tokens || []).map(function (tk, i) {
+      if (tk.k === 'x') return App.esc(tk.s);
+      if (gmap[i]) {
+        var gid = L.gaps.length;
+        L.gaps.push({ tokenIdx: i, answer: tk.w, entered: '', ok: false, shown: false });
+        return '<span class="au-gap" data-gid="' + gid + '">___</span>';
+      }
+      return App.esc(tk.w);
+    }).join('');
 
-    box.innerHTML =
+    var total = L.sentences.length;
+    var pct = Math.round((L.idx / total) * 100);
+
+    var html =
       '<div class="au-head">' +
-      '<div class="au-progress">' + (L.idx + 1) + ' / ' + L.sentences.length + '</div>' +
-      '<div class="seg au-mode" id="au-mode">' +
-      '<button class="' + (L.mode === 'choice' ? 'active' : '') + '" data-m="choice">Yengil</button>' +
-      '<button class="' + (L.mode === 'type' ? 'active' : '') + '" data-m="type">Qiyin</button>' +
-      '</div></div>' +
-      '<div class="au-bar"><i style="width:' + Math.round((L.idx / L.sentences.length) * 100) + '%"></i></div>' +
+      '<span class="au-progress">Gap ' + (L.idx + 1) + ' / ' + total + '</span>' +
+      '<div class="seg au-mode">' +
+      '<button class="seg-btn' + (L.mode === 'choice' ? ' active' : '') + '" id="au-m-choice">Variantlar</button>' +
+      '<button class="seg-btn' + (L.mode === 'type' ? ' active' : '') + '" id="au-m-type">Yozish</button>' +
+      '</div>' +
+      '</div>' +
+      '<div class="au-bar"><i style="width:' + pct + '%"></i></div>' +
 
       '<div class="au-playrow">' +
-      '<button class="au-play" id="au-play" aria-label="Tinglash"><span data-icon="volume" data-icon-size="26"></span></button>' +
-      '<button class="au-slow" id="au-slow">0.7x sekin</button>' +
+      '<button class="icon-btn au-play" id="au-play" title="Tinglash"><span data-icon="volume" data-icon-size="24"></span></button>' +
+      '<button class="icon-btn ghost au-slow" id="au-slow" title="Sekin tinglash">0.7x</button>' +
       '</div>' +
+      '<div class="au-hint muted">Ovozni tinglang va bo\'sh o\'rinni to\'ldiring</div>' +
 
-      '<p class="muted au-hint">Tinglang va tushib qolgan so\'zlarni to\'ldiring. Nuqtalarga bosing.</p>' +
-      '<div class="au-sent" id="au-sent">' + htmlParts.join('') + '</div>' +
-      '<div class="au-tr" id="au-tr"' + (s.tr ? '' : ' hidden') + ' style="display:none">' + App.esc(s.tr || '') + '</div>' +
-      '<div id="au-answer"></div>' +
+      '<div class="au-sent" id="au-sent">' + sentHtml + '</div>' +
+      (s.tr ? '<div class="au-tr">' + App.esc(s.tr) + '</div>' : '') +
+
+      '<div id="au-input-zone"></div>' +
+
       '<div class="au-nav">' +
-      '<button class="btn sec" id="au-prev"' + (L.idx === 0 ? ' disabled' : '') + '>Ortga</button>' +
-      '<button class="btn" id="au-next">' + (L.gaps.length ? 'Tashlab ketish' : 'Keyingi') + '</button>' +
+      '<button class="btn secondary" id="au-skip">O\'tkazish</button>' +
+      '<button class="btn primary" id="au-next" disabled>Keyingisi</button>' +
       '</div>';
-    App.icons(box);
-    bindSentence(page);
 
-    halt();
-    L.alive = true;
-    say(s.text);
+    box.innerHTML = html;
+    App.icons(box);
+
+    bindEvents(page);
+    renderInputZone(page);
+
+    replay(1);
   }
 
-  function bindSentence(page) {
-    var box = App.el('au-body'); if (!box) return;
+  function bindEvents(page) {
+    var pBtn = page.querySelector('#au-play');
+    if (pBtn) pBtn.onclick = function () { replay(1); };
+    var sBtn = page.querySelector('#au-slow');
+    if (sBtn) sBtn.onclick = function () { replay(0.7); };
 
-    box.querySelectorAll('#au-mode button').forEach(function (b) {
-      b.onclick = function () {
-        L.mode = b.getAttribute('data-m');
-        try { localStorage.setItem('listening_mode', L.mode); } catch (e) {}
+    var mChoice = page.querySelector('#au-m-choice');
+    var mType = page.querySelector('#au-m-type');
+    if (mChoice) mChoice.onclick = function () { setMode('choice', page); };
+    if (mType) mType.onclick = function () { setMode('type', page); };
+
+    var skip = page.querySelector('#au-skip');
+    if (skip) {
+      skip.onclick = function () {
+        L.bad++;
+        L.wrongSents.push(L.idx);
+        L.gaps.forEach(function (g) {
+          g.ok = false; g.shown = true;
+          updateGapEl(g);
+        });
+        enableNext(page, true);
+      };
+    }
+
+    var next = page.querySelector('#au-next');
+    if (next) {
+      next.onclick = function () {
+        halt();
+        L.idx++;
         renderSentence(page);
       };
-    });
-
-    var play = box.querySelector('#au-play');
-    if (play) play.onclick = function () { replay(); };
-
-    var slow = box.querySelector('#au-slow');
-    if (slow) slow.onclick = function () { replay(0.7); };
-
-    box.querySelectorAll('.au-gap').forEach(function (el) {
-      el.onclick = function () { openAnswer(page, +el.getAttribute('data-g')); };
-    });
-
-    var prev = box.querySelector('#au-prev');
-    if (prev) prev.onclick = function () { if (L.idx > 0) { L.idx--; renderSentence(page); } };
-
-    var next = box.querySelector('#au-next');
-    if (next) next.onclick = function () { L.idx++; renderSentence(page); };
+    }
   }
 
-  function openAnswer(page, gpos) {
-    var g = L.gaps[gpos];
-    if (!g || g.done) return;
-    var box = App.el('au-answer'); if (!box) return;
+  function setMode(m, page) {
+    L.mode = m;
+    try { localStorage.setItem('listening_mode', m); } catch (e) {}
+    renderSentence(page);
+  }
+
+  function renderInputZone(page) {
+    var zone = page.querySelector('#au-input-zone');
+    if (!zone) return;
+    var cur = currentGap();
+    if (!cur) return;
 
     if (L.mode === 'choice') {
-      box.innerHTML = '<div class="au-opts">' + optionsFor(g.word).map(function (o) {
-        return '<button class="au-opt" data-w="' + App.esc(o) + '">' + App.esc(o) + '</button>';
-      }).join('') + '</div>';
-      box.querySelectorAll('.au-opt').forEach(function (b) {
-        b.onclick = function () { check(page, gpos, b.getAttribute('data-w'), b); };
+      var opts = makeOptions(cur.answer);
+      zone.innerHTML = '<div class="au-opts">' +
+        opts.map(function (w) {
+          return '<button class="btn secondary au-opt" data-word="' + App.esc(w) + '">' + App.esc(w) + '</button>';
+        }).join('') +
+        '</div>';
+      zone.querySelectorAll('.au-opt').forEach(function (btn) {
+        btn.onclick = function () {
+          pickOption(btn.getAttribute('data-word'), btn, page);
+        };
       });
     } else {
-      box.innerHTML =
-        '<div class="au-type">' +
-        '<input class="input" id="au-inp" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Eshitgan so\'zingizni yozing">' +
-        '<button class="btn" id="au-ok">Tekshirish</button>' +
-        '</div>';
-      var inp = box.querySelector('#au-inp');
-      var ok = box.querySelector('#au-ok');
-      if (inp) { inp.focus(); inp.onkeydown = function (e) { if (e.key === 'Enter') ok.click(); }; }
-      if (ok) ok.onclick = function () { check(page, gpos, inp ? inp.value : '', null); };
+      zone.innerHTML =
+        '<form class="au-type" id="au-type-form">' +
+        '<input type="text" class="input" id="au-input" placeholder="Eshitgan so\'zingiz..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">' +
+        '<button type="submit" class="btn primary">Tekshirish</button>' +
+        '</form>';
+      var form = zone.querySelector('#au-type-form');
+      var inp = zone.querySelector('#au-input');
+      setTimeout(function () { if (inp) inp.focus(); }, 100);
+      form.onsubmit = function (e) {
+        e.preventDefault();
+        var val = (inp.value || '').trim();
+        if (!val) return;
+        submitTyped(val, inp, page);
+      };
     }
   }
 
-  function check(page, gpos, answer, btn) {
-    var g = L.gaps[gpos];
-    if (!g || g.done) return;
-    var el = document.querySelector('.au-gap[data-g="' + gpos + '"]');
+  function currentGap() {
+    for (var i = 0; i < L.gaps.length; i++) {
+      if (!L.gaps[i].ok && !L.gaps[i].shown) return L.gaps[i];
+    }
+    return null;
+  }
 
-    if (norm(answer) === norm(g.word)) {
-      g.done = true;
+  function normalize(w) {
+    return String(w || '').toLowerCase().replace(/ё/g, 'е').replace(/[^a-zа-я0-9]/g, '');
+  }
+
+  function pickOption(word, btn, page) {
+    var g = currentGap();
+    if (!g) return;
+    if (normalize(word) === normalize(g.answer)) {
+      g.ok = true;
+      g.entered = g.answer;
+      updateGapEl(g);
+      checkDone(page);
+    } else {
+      btn.classList.add('bad');
+      shakeGap(g);
+      L.bad++;
+      if (L.wrongSents.indexOf(L.idx) < 0) L.wrongSents.push(L.idx);
+    }
+  }
+
+  function submitTyped(val, inp, page) {
+    var g = currentGap();
+    if (!g) return;
+    if (normalize(val) === normalize(g.answer)) {
+      g.ok = true;
+      g.entered = g.answer;
+      updateGapEl(g);
+      checkDone(page);
+    } else {
+      inp.classList.add('bad');
+      setTimeout(function () { inp.classList.remove('bad'); }, 400);
+      shakeGap(g);
+      L.bad++;
+      if (L.wrongSents.indexOf(L.idx) < 0) L.wrongSents.push(L.idx);
+    }
+  }
+
+  function updateGapEl(g) {
+    var gid = L.gaps.indexOf(g);
+    var el = document.querySelector('.au-gap[data-gid="' + gid + '"]');
+    if (!el) return;
+    el.textContent = g.answer;
+    el.className = 'au-gap' + (g.ok ? ' ok' : (g.shown ? ' shown' : ''));
+  }
+
+  function shakeGap(g) {
+    var gid = L.gaps.indexOf(g);
+    var el = document.querySelector('.au-gap[data-gid="' + gid + '"]');
+    if (!el) return;
+    el.classList.add('shake');
+    setTimeout(function () { el.classList.remove('shake'); }, 400);
+  }
+
+  function checkDone(page) {
+    var cur = currentGap();
+    if (cur) {
+      renderInputZone(page);
+    } else {
       L.good++;
-      if (el) { el.classList.add('ok'); el.innerHTML = '<span class="au-gap-txt">' + App.esc(g.word) + '</span>'; }
-      var ab = App.el('au-answer'); if (ab) ab.innerHTML = '';
-      afterGap(page);
-      return;
+      enableNext(page, true);
     }
-
-    g.tries++;
-    L.bad++;
-    if (btn) { btn.classList.add('bad'); btn.disabled = true; }
-    if (el) { el.classList.add('shake'); setTimeout(function () { el.classList.remove('shake'); }, 400); }
-
-    if (g.tries === 1) {
-      App.toast('Yana bir bor tinglang — birinchi harfi «' + g.word.charAt(0) + '»');
-      replay();
-      return;
-    }
-
-    g.done = true;
-    if (el) { el.classList.add('shown'); el.innerHTML = '<span class="au-gap-txt">' + App.esc(g.word) + '</span>'; }
-    var ab2 = App.el('au-answer'); if (ab2) ab2.innerHTML = '';
-    if (g.tr) {
-      App.call('add_mistake', { lang: L.dict, category: L.name, ru: g.word, uz: g.tr }).catch(function () {});
-    }
-    if (L.wrongSents.indexOf(L.idx) < 0) L.wrongSents.push(L.idx);
-    afterGap(page);
   }
 
-  function afterGap(page) {
-    var left = L.gaps.filter(function (g) { return !g.done; }).length;
-    if (left) return;
-
-    var tr = App.el('au-tr');
-    if (tr && tr.textContent.trim()) { tr.hidden = false; tr.style.display = ''; }
-
-    var next = App.el('au-next');
-    if (next) {
-      next.textContent = L.idx + 1 >= L.sentences.length ? 'Natijani ko\'rish' : 'Keyingi gap';
-      next.classList.add('ready');
+  function enableNext(page, auto) {
+    var n = page.querySelector('#au-next');
+    if (n) {
+      n.disabled = false;
+      n.classList.add('ready');
     }
+    var zone = page.querySelector('#au-input-zone');
+    if (zone) zone.innerHTML = '';
+  }
+
+  function makeOptions(target) {
+    var list = [target];
+    var normT = normalize(target);
+    var shuffled = L.pool.slice().sort(function () { return Math.random() - 0.5; });
+    for (var i = 0; i < shuffled.length && list.length < 4; i++) {
+      var w = shuffled[i];
+      if (normalize(w) !== normT && list.indexOf(w) < 0) list.push(w);
+    }
+    while (list.length < 4) list.push('so\'z ' + (list.length + 1));
+    return list.sort(function () { return Math.random() - 0.5; });
   }
 
   function renderResult(page) {
     var box = App.el('au-body'); if (!box) return;
-    halt();
-    var total = L.good + L.bad;
-    var pct = total ? Math.round((L.good / total) * 100) : 0;
+    var total = L.sentences.length;
+    var ok = total - L.wrongSents.length;
+    var pct = total ? Math.round((ok / total) * 100) : 100;
 
     box.innerHTML =
-      '<div style="text-align:center;padding-top:8px">' +
+      '<div style="text-align:center;padding-top:12px">' +
       '<div class="res-circle"><span>' + pct + '%</span></div>' +
-      '<h2 style="margin:0 0 22px">Diktant tugadi</h2>' +
-      '<div class="stat-strip" style="max-width:280px;margin:0 auto 26px">' +
-      '<div class="s"><div class="n" style="color:var(--success)">' + L.good + '</div><div class="l">To\'g\'ri</div></div>' +
-      '<div class="s"><div class="n" style="color:var(--danger)">' + L.bad + '</div><div class="l">Xato</div></div>' +
-      '<div class="s"><div class="n">' + L.sentences.length + '</div><div class="l">Gap</div></div>' +
+      '<h2 style="margin:0 0 16px">Diktant yakunlandi!</h2>' +
+      '<div class="stat-strip" style="max-width:240px;margin:0 auto 24px">' +
+      '<div class="s"><div class="n" style="color:var(--success)">' + ok + '</div><div class="l">To\'g\'ri</div></div>' +
+      '<div class="s"><div class="n" style="color:var(--danger)">' + L.wrongSents.length + '</div><div class="l">Xato</div></div>' +
       '</div>' +
-      (L.wrongSents.length
-        ? '<button class="btn" id="au-retry">⚠ Xato bo\'lgan ' + L.wrongSents.length + ' gapni qaytarish</button>'
-        : '<p class="muted">Hammasini to\'g\'ri eshitdingiz! 🎉</p>') +
-      '<button class="btn ' + (L.wrongSents.length ? 'ghost' : '') + '" style="margin-top:10px" id="au-again">Boshidan</button>' +
+      '<button class="btn" id="au-retry">Qayta ishlash</button>' +
       '</div>';
     App.icons(box);
 
-    if (total > 0 && !L.logged) {
-      if (window.Activity) Activity.mark();
-      App.call('log_activity', {
-        section: 'listening', object: L.name, amount: total, unit: 'so\'z',
-        duration: L.startedAt ? Math.round((Date.now() - L.startedAt) / 1000) : null,
-        meta: { sec: L.sec, good: L.good, bad: L.bad, mode: L.mode }
-      }).catch(function () {});
-      L.logged = true;
+    var retry = box.querySelector('#au-retry');
+    if (retry) {
+      retry.onclick = function () {
+        L.idx = 0; L.good = 0; L.bad = 0; L.wrongSents = [];
+        renderSentence(page);
+      };
     }
-
-    var retry = App.el('au-retry');
-    if (retry) retry.onclick = function () {
-      L.sentences = L.wrongSents.map(function (i) { return L.sentences[i]; });
-      L.idx = 0; L.good = 0; L.bad = 0; L.wrongSents = []; L.logged = false;
-      L.alive = true;
-      renderSentence(page);
-    };
-    var again = App.el('au-again');
-    if (again) again.onclick = function () {
-      L.idx = 0; L.good = 0; L.bad = 0; L.wrongSents = []; L.logged = false;
-      L.alive = true;
-      renderSentence(page);
-    };
   }
 
-  /* ================= 3. ❓ Test (Quiz) ================= */
+  /* =========================================================================
+     F. ❓ ZAXIRA TEST REJIMI (Quiz)
+     ========================================================================= */
 
   function renderQuizTab(page) {
     var box = App.el('au-body'); if (!box) return;
-
-    if (!L.questions || !L.questions.length) {
-      box.innerHTML = App.empty({
-        icon: 'check', title: 'Savollar topilmadi',
-        text: 'Bu mavzuda savollar kiritilmagan. Tepadagi qalamcha orqali savollar qo\'shishingiz mumkin.'
-      });
-      App.icons(box);
+    if (!L.questions.length) {
+      box.innerHTML = App.empty({ icon: 'check', title: 'Savollar yo\'q' });
       return;
     }
 
@@ -866,66 +1479,66 @@
     }
 
     var q = L.questions[L.quizIdx];
-    var pct = Math.round((L.quizIdx / L.questions.length) * 100);
+    var total = L.questions.length;
+    var pct = Math.round((L.quizIdx / total) * 100);
 
     var html =
-      '<div class="au-head">' +
-      '<div class="au-progress">Savol: ' + (L.quizIdx + 1) + ' / ' + L.questions.length + '</div>' +
-      '<div style="font-size:12px;font-weight:700;color:var(--accent)">To\'g\'ri: ' + L.quizScore + '</div>' +
+      '<div class="au-quiz-box">' +
+      '<div class="au-q-head">' +
+        '<span class="au-progress">Savol ' + (L.quizIdx + 1) + ' / ' + total + '</span>' +
+        '<span class="au-progress" style="color:var(--accent)">' + L.quizScore + ' to\'g\'ri</span>' +
       '</div>' +
       '<div class="au-bar"><i style="width:' + pct + '%"></i></div>' +
-
-      '<div class="au-quiz-box">' +
       '<div class="au-q-title">' + App.esc(q.q) + '</div>' +
       '<div class="au-q-opts">';
 
-    q.options.forEach(function (opt, idx) {
-      html += '<button class="au-q-btn" data-oi="' + idx + '">' +
+    q.options.forEach(function (opt, i) {
+      var cls = '';
+      if (L.quizAnswered) {
+        if (i === q.correct) cls = ' correct';
+        else if (L.quizAnswered && i !== q.correct) cls = ' disabled';
+      }
+      html +=
+        '<button class="au-q-btn' + cls + '" data-oi="' + i + '">' +
         '<span>' + App.esc(opt) + '</span>' +
-        '<span data-icon="check" data-icon-size="16" class="au-q-check" style="display:none"></span>' +
+        (L.quizAnswered && i === q.correct ? '<span data-icon="check" data-icon-size="16"></span>' : '') +
         '</button>';
     });
 
-    html += '</div></div>' +
-      '<div class="au-nav" id="au-q-nav" style="display:none">' +
-      '<button class="btn" id="au-q-next">' +
-        (L.quizIdx + 1 >= L.questions.length ? 'Natijani ko\'rish' : 'Keyingi savol ➔') +
-      '</button>' +
-      '</div>';
+    html += '</div>';
+
+    if (L.quizAnswered) {
+      html += '<button class="btn primary" id="au-q-next" style="width:100%;margin-top:20px">' +
+        (L.quizIdx < total - 1 ? 'Keyingi savol ➔' : 'Natijani ko\'rish ➔') +
+        '</button>';
+    }
+
+    html += '</div>';
 
     box.innerHTML = html;
     App.icons(box);
 
-    L.quizAnswered = false;
-
-    box.querySelectorAll('.au-q-btn').forEach(function (btn) {
-      btn.onclick = function () {
-        if (L.quizAnswered) return;
-        L.quizAnswered = true;
-        var chosen = parseInt(btn.getAttribute('data-oi'), 10);
-        var isOk = chosen === q.correct;
-
-        if (isOk) {
-          L.quizScore++;
-          btn.classList.add('correct');
-        } else {
-          btn.classList.add('wrong');
-          // To'g'ri variantni ko'rsatish
-          var correctBtn = box.querySelector('.au-q-btn[data-oi="' + q.correct + '"]');
-          if (correctBtn) correctBtn.classList.add('correct');
-        }
-
-        box.querySelectorAll('.au-q-btn').forEach(function (b) { b.classList.add('disabled'); });
-
-        var nav = box.querySelector('#au-q-nav');
-        if (nav) nav.style.display = 'flex';
-      };
-    });
+    if (!L.quizAnswered) {
+      box.querySelectorAll('.au-q-btn').forEach(function (btn) {
+        btn.onclick = function () {
+          var oi = parseInt(btn.getAttribute('data-oi'), 10);
+          L.quizAnswered = true;
+          if (oi === q.correct) {
+            L.quizScore++;
+            btn.classList.add('correct');
+          } else {
+            btn.classList.add('wrong');
+          }
+          renderQuizTab(page);
+        };
+      });
+    }
 
     var nextBtn = box.querySelector('#au-q-next');
     if (nextBtn) {
       nextBtn.onclick = function () {
         L.quizIdx++;
+        L.quizAnswered = false;
         renderQuizTab(page);
       };
     }
@@ -969,9 +1582,12 @@
     var html =
       '<div class="rd-editor">' +
       '<p class="muted" style="font-size:12px;margin:0 0 8px">' +
-        'YouTube video ulash: <code>youtube: https://youtu.be/ID</code><br>' +
-        'Vaqtlar: <code>[00:01 - 00:05] Gap matni | Tarjima</code><br>' +
-        'Savollar: <code>? Savol matni</code>, <code>+ To\'g\'ri javob</code>, <code>- Xato</code>' +
+        'Kartochka formati:<br>' +
+        '<code>card: Здравствуйте</code><br>' +
+        '<code>sound: [Здрасьте]</code><br>' +
+        '<code>spelling: Здра[вствуй]те</code><br>' +
+        '<code>mean: Salom</code><br>' +
+        '<code>explain: Nega shunday...</code>' +
       '</p>' +
       '<textarea id="au-ta" class="input" style="height:320px;font-family:var(--mono);font-size:12.5px;line-height:1.5">' +
       App.esc(L.rawContent || '') + '</textarea>' +
@@ -985,7 +1601,6 @@
           .then(function () { App.closeSheet(); App.toast('✅ Saqlandi'); loadDoc(page); })
           .catch(function (err) { App.toast('⚠️ ' + err.message); });
       } else {
-        // Builtin darslik uchun vaqtinchalik yangilash
         var b = window.ListeningBuiltin ? ListeningBuiltin.get(L.id) : null;
         if (b) b.content = val;
         L.rawContent = val;

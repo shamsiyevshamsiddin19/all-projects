@@ -79,7 +79,14 @@ def _startup() -> None:
 # Kirmasdan turib ham chaqirilishi mumkin bo'lgan yagona action'lar.
 # Qolgan HAMMASI (o'qish ham) tizimga kirishni talab qiladi — ma'lumot shaxsiy:
 # maqsadlar, lug'at, mavzular, sport va `storage_bootstrap` (ism, bio, avatar...).
-PUBLIC_ACTIONS = {"log_client", "tts_audio", "tts_download"}
+# TTS amallari ILGARI shu ro'yxatda edi — ya'ni internetdagi HAR KIM
+# autentifikatsiyasiz chaqira olardi. Server esa har chaqiruvda Google
+# Translate TTS ga chiqadi va natijani `/tmp` ga keshlaydi: begona odam
+# uni bepul TTS proksi sifatida ishlatib, diskni to'ldirishi va server
+# IP'sini Google tomonidan bloklatishi mumkin edi. 2026-09-09 da olib
+# tashlandi — sayt ichida `<audio src>` bir xil origin, sessiya cookie'si
+# o'zi yuboriladi, shuning uchun ilova ishlashiga ta'sir qilmaydi.
+PUBLIC_ACTIONS = {"log_client"}
 
 
 async def _read_json_body(request: Request) -> dict:

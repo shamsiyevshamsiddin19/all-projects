@@ -66,10 +66,30 @@
       return parts.join('&');
     },
 
+    /* Pastki panel YASHIRILADIGAN ko'rinishlar.
+       Mezon: sahifa BITTA ishga to'liq beriladi va undan chiqish yo'li —
+       tepadagi "orqaga" tugmasi (o'quvchi, pleyer, mashq). Bunday sahifada
+       pastki panel ikki marta zarar qiladi: pastdagi pleyer/tugmalar bilan
+       ustma-ust tushadi (matn ostida qolib ketadi) va e'tiborni boshqa
+       bo'limlarga tortadi. Telegramdagi chat oynasi ham xuddi shunday.
+       Ro'yxat/markaz sahifalarda (library, vocab_practice, listening_hub)
+       panel QOLADI — u yerda foydalanuvchi bo'limlar orasida yuradi. */
+    _FULL: [
+      'reading_doc', 'listening_doc', 'library_doc', 'speaking_doc', 'writing_doc',
+      'vocab_md_read', 'vocab_flash', 'vocab_quiz', 'vocab_pair', 'vocab_memo',
+      'vocab_speaker', 'vocab_speech', 'vocab_reels', 'vocab_mistakes',
+      'quiz_play', 'arxiv_doc', 'qoida_doc'
+    ],
+
     _renderChrome: function (name, v) {
       document.querySelectorAll('[data-nav]').forEach(function (a) {
         a.classList.toggle('active', a.getAttribute('data-nav') === (v.nav || name));
       });
+      /* `nav-off` bir vaqtning o'zida panelni yashiradi VA `--nav-h` ni
+         nolga tushiradi — aks holda pastdagi pleyer va sahifa to'ldirmasi
+         yo'q panel uchun joy bo'sh qoldirardi. */
+      var full = v.fullscreen === true || App._FULL.indexOf(name) >= 0;
+      document.body.classList.toggle('nav-off', full);
     },
 
     reload: function () { App.go(current, App.state._lastParams || {}, { silent: true }); },
@@ -904,11 +924,40 @@
   }
 
   function mdToHtml(md) {
-    var lines = String(md || '').replace(/\r/g, '').split('\n');
+    /* KO'RINMAS BELGILAR.
+       Notion / Google Docs / Word dan nusxa olib qo'yilgan matnda bo'sh
+       qatorlar aslida BO'SH EMAS: ular ichida nol kenglikdagi bo'shliq
+       (U+200B) turadi. `\s` bunday belgini bo'shliq deb bilmaydi, shuning
+       uchun bunday qator xatboshini yopmasdi va butun hujjat BITTA
+       uzun xatboshiga aylanib ketardi (2026-09-09: Notion'dan qo'yilgan
+       "Django 1-2 kun" darsligida 397 qatordan 39 tasi aynan shunday edi).
+       Uzilmas bo'shliq (U+00A0) ham oddiy bo'shliqqa keltiriladi — aks
+       holda `  - ` bilan boshlangan ro'yxat qatori tanilmasdi. */
+    var src = String(md == null ? '' : md)
+      .replace(/\r\n?/g, '\n')
+      .replace(/[\u200b\u200c\u200d\u2060\ufeff]/g, '')
+      .replace(/\u00a0/g, ' ');
+    var lines = src.split('\n');
     var html = '', i = 0, para = [];
+    var detailsOpen = 0;
 
+    /* QATOR TASHLASH.
+       Klassik markdown bitta yangi qatorni "bo'shliq" deb hisoblaydi va
+       ketma-ket qatorlarni bitta xatboshiga yopishtiradi. Bu qoida matn
+       80 belgida qo'lda o'ralgan davrdan qolgan; bu yerdagi hujjatlarda
+       esa har qator — ALOHIDA fikr:
+
+           **Xato 1:** ...
+           ❌ ...
+           ✅ ...
+
+       Uchalasi bitta qatorga yopishib qolardi. Bazadagi 592 hujjatning
+       326 tasida shunday joy bor edi, shuning uchun endi bitta yangi
+       qator = bitta `<br>` (Notion, Obsidian va Telegram ham shunday). */
     function flushPara() {
-      if (para.length) { html += '<p>' + mdInline(para.join(' ')) + '</p>'; para = []; }
+      if (!para.length) return;
+      html += '<p>' + mdInline(para.join('\n')).replace(/\n/g, '<br>') + '</p>';
+      para = [];
     }
 
     /* Ro'yxatni ichma-ich (indent bo'yicha) yig'adi */
@@ -991,6 +1040,33 @@
         continue;
       }
 
+      /* YIG'ILADIGAN JAVOB BLOKI — `<details>` / `<summary>`.
+         Darsliklarning yarmidan ko'pi (592 hujjatdan 314 tasi) mashq
+         javoblarini shu teglar ichiga yashiradi. Chizuvchi butun HTML ni
+         qochirgani uchun ular ekranda `<details>` deb YOZUV bo'lib
+         ko'rinardi va javoblar hech qachon yashirilmasdi.
+
+         Ataylab FAQAT shu ikkita teg taniladi — umumiy HTML o'tkazish
+         emas. Ichkaridagi hamma narsa odatdagidek markdown sifatida
+         chiziladi va qochiriladi. */
+      if (/^\s*<details\s*>\s*$/i.test(line)) {
+        flushPara(); html += '<details class="md-details">'; detailsOpen++; i++; continue;
+      }
+      if (/^\s*<\/details\s*>\s*$/i.test(line)) {
+        flushPara();
+        if (detailsOpen > 0) { html += '</details>'; detailsOpen--; }
+        i++; continue;
+      }
+      var sm = line.match(/^\s*<summary\s*>([\s\S]*?)<\/summary\s*>\s*$/i);
+      if (sm) {
+        flushPara();
+        /* Sarlavha ichidagi `<b>` — markdown qalinligiga aylantiriladi
+           (6 ta hujjatda shunday yozilgan). */
+        var st = sm[1].replace(/<\/?(?:b|strong)\s*>/gi, '**');
+        html += '<summary>' + mdInline(st) + '</summary>';
+        i++; continue;
+      }
+
       var h = line.match(/^(#{1,6})\s+(.*)$/);
       if (h) {
         flushPara();
@@ -1003,7 +1079,7 @@
         flushPara();
         var quote = [];
         while (i < lines.length && /^\s*>\s?/.test(lines[i])) { quote.push(lines[i].replace(/^\s*>\s?/, '')); i++; }
-        html += '<blockquote>' + mdInline(quote.join(' ')) + '</blockquote>';
+        html += '<blockquote>' + mdInline(quote.join('\n')).replace(/\n/g, '<br>') + '</blockquote>';
         continue;
       }
 
@@ -1015,6 +1091,8 @@
       para.push(line); i++;
     }
     flushPara();
+    /* Yopilmagan blok qolsa HTML buziladi — o'zimiz yopamiz. */
+    while (detailsOpen > 0) { html += '</details>'; detailsOpen--; }
     return html;
   }
 
