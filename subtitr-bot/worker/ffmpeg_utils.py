@@ -122,6 +122,27 @@ def split_audio(audio_path: str, chunk_seconds: int) -> list[tuple[str, float]]:
     return chunks or [(audio_path, 0.0)]
 
 
+def cut_audio(audio_path: str, start: float, duration: float, out_path: str) -> None:
+    """Audiodan [start, start+duration] oralig'ini kesib oladi (qayta kodlash
+    bilan — mp3 da `-c copy` freym chegarasiga yaxlitlaydi va vaqt siljiydi).
+
+    Kichik bo'laklar uchun ishlatiladi (qayta o'qish), shuning uchun qayta
+    kodlash arzon."""
+    cmd = [
+        "ffmpeg", "-y",
+        "-ss", f"{max(0.0, start):.3f}",
+        "-t", f"{max(0.1, duration):.3f}",
+        "-i", audio_path,
+        "-vn",
+        "-ac", "1",
+        "-ar", "16000",
+        "-c:a", "libmp3lame",
+        "-b:a", "64k",
+        out_path,
+    ]
+    _run(cmd)
+
+
 def probe_duration(in_path: str) -> float:
     """Video davomiyligini sekundда aniqlaydi (ffprobe). Xato bo'lsa 0.0."""
     cmd = [
@@ -136,6 +157,30 @@ def probe_duration(in_path: str) -> float:
         return float(out) if out else 0.0
     except (ValueError, OSError):
         return 0.0
+
+
+# Dastur bilan keladigan qalin shrift: tizimda odatda Noto Sans faqat Bold
+# (700) gacha bo'ladi, kuydirilgan subtitr esa kuchsiz ko'rinadi.
+BUNDLED_FONT_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "fonts"
+)
+BUNDLED_FONT = os.path.join(BUNDLED_FONT_DIR, "Montserrat-Black.ttf")
+
+
+def bundled_font_name() -> str | None:
+    """Qadoqlangan shrift bor bo'lsa uning ASS'dagi oilasi, yo'q bo'lsa None."""
+    return "Montserrat Black" if os.path.isfile(BUNDLED_FONT) else None
+
+
+def _filter_escape(value: str) -> str:
+    """ffmpeg filtr argumenti uchun yo'lni himoyalash."""
+    return value.replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'")
+
+
+def _ass_fonts_option() -> str:
+    if not os.path.isfile(BUNDLED_FONT):
+        return ""
+    return ":fontsdir=" + _filter_escape(BUNDLED_FONT_DIR)
 
 
 def burn_subtitles(
@@ -155,10 +200,11 @@ def burn_subtitles(
     # Balandlikni kamaytirish (faqat kattaroq bo'lsa) — scale AVVAL, keyin ass:
     # shunda subtitr to'g'ridan-to'g'ri kichik kadrga chizilib tiniq chiqadi.
     max_h = settings.burn_max_height
+    ass_arg = f"ass={ass_name}{_ass_fonts_option()}"
     if src_height and max_h and src_height > max_h:
-        vf = f"scale=-2:{max_h},ass={ass_name}"
+        vf = f"scale=-2:{max_h},{ass_arg}"
     else:
-        vf = f"ass={ass_name}"
+        vf = ass_arg
     cmd = [
         "ffmpeg", "-y",
         "-i", os.path.abspath(in_path),

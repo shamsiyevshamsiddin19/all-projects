@@ -27,6 +27,7 @@ from worker.subtitles import (
     cues_to_ass_dual,
     cues_to_ass_dual_vocab,
     cues_to_srt,
+    resolve_font,
 )
 from worker.titler import make_title
 from worker.transcribe import transcribe
@@ -204,14 +205,14 @@ async def process_video(
         return paths["srt"], "srt"
 
     if mode == "original":
-        cues_to_ass(cues, paths["ass"], width, height, settings.sub_font, layout, style)
+        cues_to_ass(cues, paths["ass"], width, height, resolve_font(), layout, style)
 
     elif mode == "translate":
         await progress("🌐 Tarjima qilinmoqda...")
         texts = [c["text"] for c in cues]
         translated, _ = await asyncio.to_thread(translate_texts, texts, target_lang)
         trans_cues = [{**c, "text": t} for c, t in zip(cues, translated)]
-        cues_to_ass(trans_cues, paths["ass"], width, height, settings.sub_font, layout, style)
+        cues_to_ass(trans_cues, paths["ass"], width, height, resolve_font(), layout, style)
 
     elif mode == "dual":
         await progress("🌐 Tarjima qilinmoqda...")
@@ -221,7 +222,7 @@ async def process_video(
             {"start": c["start"], "end": c["end"], "orig": c["text"], "trans": t}
             for c, t in zip(cues, translated)
         ]
-        cues_to_ass_dual(items, paths["ass"], width, height, settings.sub_font, layout, style)
+        cues_to_ass_dual(items, paths["ass"], width, height, resolve_font(), layout, style)
 
     elif mode == "dual_vocab":
         # Ikki qatlam subtitr + ekranda aytilgan so'zlar lug'ati (chap, suzuvchi)
@@ -238,7 +239,7 @@ async def process_video(
         )
         cues_to_ass_dual_vocab(
             items, words, vocab_map, paths["ass"],
-            width, height, settings.sub_font, layout, style,
+            width, height, resolve_font(), layout, style,
         )
     else:
         raise RuntimeError(f"Noma'lum rejim: {mode}")

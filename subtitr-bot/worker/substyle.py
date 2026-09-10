@@ -13,11 +13,18 @@ import re
 DEFAULTS = {
     "text_color": "#FFFFFF",     # matn rangi (PrimaryColour)
     "outline_color": "#000000",  # kontur rangi (OutlineColour)
-    "trans_color": "#FFE580",    # ikki qatlamда tarjima rangi (och sariq)
+    # Ikki qatlamda tarjima rangi. Och (pastel) ohang kuydirilgandan keyin
+    # ekranda xira ko'rinardi — to'yingan neon yashil ancha aniq o'qiladi.
+    "trans_color": "#39FF14",
     "font_size": "medium",       # small / medium / large
     "position": "bottom",        # bottom / center / top
     "bold": True,
-    "box": False,                # orqa fon qutisi
+    "box": False,                # orqa fon qutisi (butun subtitr uchun)
+    # Asl (yuqori) qatorni to'ldirilgan sariq quti ustida qora qalin matn
+    # bilan chiqarish — montaj uslubi. Tarjima qatori quti tashqarisida qoladi.
+    "orig_box": True,
+    "box_color": "#FFD400",
+    "box_text_color": "#000000",
 }
 
 FONT_SCALE = {"small": 0.028, "medium": 0.033, "large": 0.040}
@@ -34,7 +41,8 @@ def normalize(raw) -> dict:
     """Kelgan (ishonchsiz) uslubni tekshirib, to'liq xavfsiz dict qaytaradi."""
     raw = raw if isinstance(raw, dict) else {}
     out = dict(DEFAULTS)
-    for key in ("text_color", "outline_color", "trans_color"):
+    for key in ("text_color", "outline_color", "trans_color",
+                "box_color", "box_text_color"):
         if _is_hex(raw.get(key)):
             out[key] = "#" + raw[key].lstrip("#")
     if raw.get("font_size") in FONT_SCALE:
@@ -43,6 +51,7 @@ def normalize(raw) -> dict:
         out["position"] = raw["position"]
     out["bold"] = bool(raw.get("bold", DEFAULTS["bold"]))
     out["box"] = bool(raw.get("box", DEFAULTS["box"]))
+    out["orig_box"] = bool(raw.get("orig_box", DEFAULTS["orig_box"]))
     return out
 
 
