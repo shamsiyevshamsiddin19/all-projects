@@ -1,0 +1,85 @@
+Subtitr Desktop — Linux (Ubuntu) uchun o'rnatish va ishlatish
+=============================================================
+
+TALABLAR
+--------
+- Ubuntu 22.04 / 24.04 (yoki shunga o'xshash), 64-bit
+- ffmpeg:  sudo apt install ffmpeg
+  (Boshqa hamma narsa — Python muhiti, yt-dlp — dastur ichida keladi.)
+
+O'RNATISH
+---------
+1. Arxivni yoyib oling:
+       tar xzf SubtitrDesktop-linux-x64.tar.gz
+2. O'rnatuvchini ishga tushiring (administrator huquqi shart emas):
+       ./SubtitrDesktop/install.sh
+3. Menyudan "Subtitr Desktop" ni oching.
+
+Dastur ~/.local/share/SubtitrDesktop ga o'rnatiladi.
+
+API KALIT KIRITISH (bir marta)
+------------------------------
+Dastur AI xizmatlaridan foydalanadi. Har kim O'ZINING kalitini kiritadi:
+1. Yuqori o'ngdagi kalit (🔑) ikonkasini bosing.
+2. Kamida bittasini kiriting:
+   - Groq  — BEPUL, tez. https://console.groq.com/keys
+   - OpenAI — eng sifatli tarjima. https://platform.openai.com/api-keys
+   - Gemini — muqobil. https://aistudio.google.com/apikey
+3. "Saqlash" ni bosing. Kalit faqat shu kompyuterda saqlanadi.
+
+Kalitsiz ham ishlaydi: ichki faster-whisper bilan oflayn transkripsiya va
+oflayn lug'at mavjud (sekinroq).
+
+ISHLATISH
+---------
+1. Videoni ~/Videos papkasiga tashlang yoki "Tashqi video" tugmasi orqali
+   istalgan joydan tanlang.
+2. Rejimni tanlang (tarjima+lug'at, ikki qatorli subtitr, SRT, matn, h.k.).
+3. Video tili va tarjima tilini tanlang.
+4. "Boshlash" ni bosing.
+5. Natijalar: ~/Videos/Subtitr natijalar/<video nomi>
+
+PAPKALAR
+--------
+- Dastur:        ~/.local/share/SubtitrDesktop
+- Natijalar:     ~/Videos/Subtitr natijalar
+- Ishchi fayllar va AI modellar: ~/.cache/SubtitrDesktop
+  (o'chirsangiz modellar qaytadan yuklanadi, boshqa zarari yo'q)
+Yo'llarni o'zgartirish: SUBTITR_OUT_DIR, SUBTITR_DATA_DIR, SUBTITR_KINO_DIR
+muhit o'zgaruvchilari.
+
+SIFAT (muhim)
+-------------
+Dastur faqat eshitilgan so'zlarni yozadi: sukunatda yoki musiqa ustida
+model to'qib chiqargan matn, takrorlanib qolgan qatorlar va tarjima
+topilmagan so'zlar natijaga tushmaydi.
+
+- Til noto'g'ri aniqlansa ("til aniq emas" ogohlantirishi chiqsa) — "Video
+  tili" ro'yxatidan tilni qo'lda tanlang. Avtomatik aniqlash kam
+  qo'llanadigan tillarda adashadi va begona matn beradi.
+- Kalitsiz tarjima bo'lmaydi: ichki lug'at faqat qisqa, to'liq mos
+  keladigan iboralarni tarjima qiladi ("thank you" -> "rahmat"), qolgan
+  qatorlar tarjimasiz qoladi. To'liq tarjima uchun kalit kiriting.
+- O'zbek/qozoq kabi tillar uchun lokal model kuchsiz — Groq kaliti bilan
+  whisper-large-v3 ishlatilsa natija ancha yaxshi bo'ladi (Groq bepul).
+- Lokal model o'lchamini almashtirish: WHISPER_MODEL=medium (yoki large-v3).
+  Kattaroq model aniqroq, lekin protsessorda ancha sekin.
+
+VIDEO RENDER (tezlik)
+---------------------
+Kodlagich avtomatik tanlanadi: NVENC / QSV / AMF topilmasa, Linux'da VAAPI
+(/dev/dri/renderD128) sinaladi, u ham bo'lmasa libx264 (CPU).
+Majburiy tanlash: SUB_ENCODER=vaapi|x264|nvenc|qsv|amf muhit o'zgaruvchisi.
+Boshqa GPU tugunini ko'rsatish: VAAPI_DEVICE=/dev/dri/renderD129
+
+MUAMMOLAR
+---------
+- "python topilmadi" — dastur yonidagi .venv/bin/python ishlatiladi; papka
+  to'liq ko'chirilganiga ishonch hosil qiling.
+- Havoladan yuklash ishlamasa: tools/yt-dlp ni yangilang (dastur o'zi ham
+  yangilaydi) yoki internetni tekshiring.
+- ffmpeg yo'q bo'lsa render ishlamaydi: sudo apt install ffmpeg
+
+O'CHIRISH
+---------
+    ~/.local/share/SubtitrDesktop/uninstall.sh

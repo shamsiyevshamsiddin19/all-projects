@@ -1,0 +1,15 @@
+# Katta binarlar va build chiqishlari repoga tushmasin (README ga qarang).
+tools/
+dist/
+build/
+.venv/
+
+# API kalitlar
+.env
+
+# Ish vaqtida yaratiladigan papkalar
+AI modellar/
+Ishchi fayllar/
+Lugatlar/
+Tayyor natijalar/
+cache/
