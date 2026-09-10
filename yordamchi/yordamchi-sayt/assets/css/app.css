@@ -4954,6 +4954,47 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   .vd-b { text-align: left; }
 }
 
+/* Telefonda so'zlar kengroq ko'rinishi uchun ekranni 2 chetiga surish (bo'sh joylarni to'ldirish) */
+@media (max-width: 640px) {
+  .page.page-vocab-dict,
+  .page:has(#vd-list) {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+  }
+  .page.page-vocab-dict .topbar,
+  .page:has(#vd-list) .topbar {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+  .vd-bar {
+    padding: 0 6px;
+    margin-bottom: 8px;
+  }
+  .vd-list {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .vd-row {
+    padding: 10px 4px !important;
+    gap: 8px !important;
+  }
+  .vd-n {
+    min-width: 22px !important;
+    font-size: 11px !important;
+    text-align: center !important;
+  }
+  .vd-main {
+    gap: 6px !important;
+  }
+  .vd-a {
+    font-size: 15px !important;
+  }
+  .vd-b {
+    font-size: 13.5px !important;
+    text-align: right !important;
+  }
+}
+
 /* ==========================================================================
    Lug'at menyusi — O'ng tomon tortma paneli (Right-side Drawer Panel)
    ========================================================================== */
@@ -5070,6 +5111,32 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 
 .vd-p-close:active {
   transform: scale(0.95);
+}
+
+/* Gamburger ichidagi tezkor vositalar paneli (Til va Xiralashtirish) */
+.vd-p-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.vd-p-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vd-p-tool-lbl {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
 }
 
 /* Bo'limlar tablari (Juftlash | Ko'rsatish | Belgilash) */
