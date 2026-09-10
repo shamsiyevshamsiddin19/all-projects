@@ -275,20 +275,32 @@ def normalize_word(word: str) -> str:
     return w.replace("’", "'").replace("ʼ", "'").replace("ʻ", "'")
 
 
-def _vocab_style_line(font: str, layout: dict) -> str:
-    """Chap-tepa (align 7) lug'at uslubi — fonsiz, qalin qora konturli.
+# Lug'at kartochkasining foni (yarim shaffof to'q rang).
+VOCAB_BG = os.getenv("SUB_VOCAB_BG", "#0B1020")
+VOCAB_BG_ALPHA = os.getenv("SUB_VOCAB_BG_ALPHA", "3C")
 
-    To'ldirilgan quti (BorderStyle=3) yaramaydi: libass qutini rang o'zgargan
-    joyda uzib qo'yadi, natijada so'z, ajratgich va tarjima uchta alohida
-    to'rtburchakka bo'linib, chetlari tishli bo'lib ko'rinadi."""
+
+def _vocab_style_line(font: str, layout: dict) -> str:
+    """Chap-tepa (align 7) lug'at uslublari: matn va uning foni.
+
+    Fon hiylasi: AYNAN o'sha matn ikkinchi marta, harflari butunlay shaffof
+    holda (PrimaryColour alpha = FF) va BorderStyle=3 bilan chiziladi —
+    libass matn kengligini o'zi o'lchab, uzluksiz quti chizadi. To'g'ridan-
+    to'g'ri rangli matnga BorderStyle=3 berib bo'lmaydi: libass qutini rang
+    o'zgargan joyda uzib, so'z/ajratgich/tarjimani uchta tishli
+    to'rtburchakka ajratadi."""
     vocab_font = max(16, round(layout["font_size"] * 0.9))
-    outline = max(3, round(vocab_font * 0.11))
+    outline = max(2, round(vocab_font * 0.07))
+    pad = max(5, round(vocab_font * 0.20))
     text_c = substyle.ass_color("#FFFFFF")
     outline_c = substyle.ass_color("#000000")
     shadow_c = substyle.ass_color("#000000", "60")
+    bg_c = substyle.ass_color(VOCAB_BG, VOCAB_BG_ALPHA)
     return (
         f"Style: Vocab,{font},{vocab_font},{text_c},&H000000FF,"
-        f"{outline_c},{shadow_c},1,0,0,0,100,100,0,0,1,{outline},1,7,24,24,24,1\n"
+        f"{outline_c},{shadow_c},1,0,0,0,100,100,0,0,1,{outline},0,7,24,24,24,1\n"
+        f"Style: VocabBg,{font},{vocab_font},&HFF000000,&H000000FF,"
+        f"{bg_c},&H00000000,0,0,0,0,100,100,0,0,3,{pad},0,7,24,24,24,1\n"
     )
 
 
@@ -309,6 +321,10 @@ def _write_vocab_scroll(f, words: list[dict], vocab_map: dict[str, str],
     # Nutq zich bo'lsa so'zlar surila-surila aytilgan joyidan uzoqlashadi —
     # bunchalik kechikkanini ko'rsatmaymiz (tomoshabinni chalg'itadi).
     max_drift = float(os.getenv("VOCAB_MAX_DRIFT", "3.0"))
+    # Bir so'z ketma-ket takrorlanganda ikkita bir xil kartochka yonma-yon
+    # suzib chiqadi — shuni oldini olamiz.
+    repeat_window = float(os.getenv("VOCAB_REPEAT_WINDOW", "20.0"))
+    shown_at: dict[str, float] = {}
     word_c = substyle.ass_inline("#FFFFFF")
     sep_c = substyle.ass_inline("#8A93A6")
     trans_c = substyle.ass_inline(
@@ -320,19 +336,24 @@ def _write_vocab_scroll(f, words: list[dict], vocab_map: dict[str, str],
         if not tr:
             continue
         spoken = float(w.get("start", 0.0))
+        prev = shown_at.get(key)
+        if prev is not None and spoken - prev < repeat_window:
+            continue
         actual_start = max(spoken, last_start + min_time_gap)
         if actual_start - spoken > max_drift:
             continue
         last_start = actual_start
+        shown_at[key] = spoken
         start = _format_ass_ts(actual_start)
         end = _format_ass_ts(actual_start + duration_sec)
         # Yumshoq chiqish/yo'qolish: faqat shaffoflik (\fad) va kichik "pop".
         # Ilgari oxirida 50% ga kichrayib xiralashardi — kadr chetida qora
         # dog' bo'lib qolardi. \bord/\shad ga tegmaymiz: ular uslubda.
-        override = (
-            "{\\fad(250,450)\\move(%d,%d,%d,%d)"
-            "\\fscx92\\fscy92\\t(0,220,\\fscx100\\fscy100)}"
-        ) % (x, base_y, x, target_y)
+        override = "{\\fad(250,450)\\move(%d,%d,%d,%d)}" % (x, base_y, x, target_y)
+        # Avval fon (ko'rinmas matn — libass kengligini o'zi o'lchaydi),
+        # keyin ustiga rangli matn.
+        plain = f"{_ass_text(key)}  \u00b7  {_ass_text(tr)}"
+        f.write(f"Dialogue: 0,{start},{end},VocabBg,,0,0,0,,{override}{plain}\n")
         body = (
             f"{override}{word_c}{_ass_text(key)}"
             f"{sep_c}  \u00b7  {trans_c}{_ass_text(tr)}"
