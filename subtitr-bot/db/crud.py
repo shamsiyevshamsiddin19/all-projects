@@ -234,14 +234,21 @@ async def get_payment(payment_id: int) -> Payment | None:
         return await session.get(Payment, payment_id)
 
 
-async def mark_payment_paid(payment_id: int, click_trans_id: str | None) -> None:
+async def mark_payment_paid(payment_id: int, click_trans_id: str | None) -> bool:
+    """To'lovni "paid" qiladi. True = aynan shu chaqiruv o'zgartirdi.
+
+    Shart `status != 'paid'` bevosita UPDATE ichida tekshiriladi: Click bir
+    vaqtda ikkita `Complete` yuborsa, ikkalasi ham "hali paid emas" deb
+    o'tib ketmasin (aks holda kun ikki marta yoziladi yoki video ikki marta
+    navbatga qo'yiladi)."""
     async with async_session() as session:
-        await session.execute(
+        result = await session.execute(
             update(Payment)
-            .where(Payment.id == payment_id)
+            .where(Payment.id == payment_id, Payment.status != "paid")
             .values(status="paid", click_trans_id=click_trans_id, paid_at=utcnow())
         )
         await session.commit()
+        return result.rowcount > 0
 
 
 async def get_dashboard_stats() -> dict:
@@ -564,20 +571,21 @@ async def get_donation(donation_id: int) -> Donation | None:
         return await session.get(Donation, donation_id)
 
 
-async def mark_donation_paid(donation_id: int, click_trans_id: str | None) -> None:
+async def mark_donation_paid(donation_id: int, click_trans_id: str | None) -> bool:
     # is_public=True: to'langan donat darrov minnatdorchilik devorida ko'rinadi
     # (Mini App profil pasti). Admin panel "Devorda" tugmasi bilan yashirsa bo'ladi;
     # izoh matni esa faqat tasdiqlangach (is_approved) ko'rinadi.
     async with async_session() as session:
-        await session.execute(
+        result = await session.execute(
             update(Donation)
-            .where(Donation.id == donation_id)
+            .where(Donation.id == donation_id, Donation.status != "paid")
             .values(
                 status="paid", click_trans_id=click_trans_id,
                 paid_at=utcnow(), is_public=True,
             )
         )
         await session.commit()
+        return result.rowcount > 0
 
 
 async def list_donations(limit: int = 60) -> list[dict]:
@@ -934,9 +942,20 @@ async def admin_set_blocked(user_id: int, blocked: bool) -> bool:
 
 
 async def admin_set_plan(user_id: int, plan: str, days: int) -> bool:
-    """Foydalanuvchiga tarif beradi (id bo'yicha — admin paneldan). True = topildi."""
-    until = utcnow() + dt.timedelta(days=days) if plan != "free" else None
+    """Foydalanuvchiga tarif beradi (id bo'yicha — admin paneldan). True = topildi.
+
+    set_plan kabi: tugamagan obuna ustiga qo'shilsa, qolgan kunlar saqlanadi."""
     async with async_session() as session:
+        if plan == "free":
+            until = None
+        else:
+            row = await session.execute(select(User.plan_until).where(User.id == user_id))
+            current = row.scalar_one_or_none()
+            if current is not None and current.tzinfo is None:
+                current = current.replace(tzinfo=dt.timezone.utc)
+            now = utcnow()
+            base = current if (current and current > now) else now
+            until = base + dt.timedelta(days=days)
         result = await session.execute(
             update(User).where(User.id == user_id).values(plan=plan, plan_until=until)
         )
@@ -944,9 +963,30 @@ async def admin_set_plan(user_id: int, plan: str, days: int) -> bool:
         return result.rowcount > 0
 
 
+async def get_plan_until(telegram_id: int) -> dt.datetime | None:
+    """Foydalanuvchining joriy obuna tugash sanasi (bo'lmasa None)."""
+    async with async_session() as session:
+        row = await session.execute(
+            select(User.plan_until).where(User.telegram_id == telegram_id)
+        )
+        value = row.scalar_one_or_none()
+    if value is not None and value.tzinfo is None:
+        value = value.replace(tzinfo=dt.timezone.utc)
+    return value
+
+
 async def set_plan(telegram_id: int, plan: str, days: int) -> bool:
-    """Foydalanuvchiga tarif beradi (admin/to'lov uchun). True = topildi."""
-    until = utcnow() + dt.timedelta(days=days) if plan != "free" else None
+    """Foydalanuvchiga tarif beradi (admin/to'lov uchun). True = topildi.
+
+    Muddati tugamagan obuna ustiga sotib olinsa, qolgan kunlar YO'QOLMAYDI —
+    yangi muddat mavjud tugash sanasidan boshlab qo'shiladi."""
+    if plan == "free":
+        until = None
+    else:
+        now = utcnow()
+        current = await get_plan_until(telegram_id)
+        base = current if (current and current > now) else now
+        until = base + dt.timedelta(days=days)
     async with async_session() as session:
         result = await session.execute(
             update(User)

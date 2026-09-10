@@ -24,10 +24,23 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable, NamedTuple
 
-if sys.stdout.encoding.lower() != "utf-8":
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", line_buffering=True)
-if sys.stderr.encoding.lower() != "utf-8":
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", line_buffering=True)
+def _force_utf8(stream_name: str) -> None:
+    """Oqimni UTF-8 ga o'tkazadi.
+
+    GUI rejimida (konsolsiz) yoki oqim qayta yo'naltirilganda `encoding` None
+    bo'lishi mumkin — o'shanda `.lower()` AttributeError bilan dasturni
+    ochilishidayoq to'xtatib qo'yardi."""
+    stream = getattr(sys, stream_name, None)
+    buffer = getattr(stream, "buffer", None)
+    if buffer is None:
+        return
+    encoding = getattr(stream, "encoding", None) or ""
+    if encoding.lower() != "utf-8":
+        setattr(sys, stream_name, io.TextIOWrapper(buffer, encoding="utf-8", line_buffering=True))
+
+
+_force_utf8("stdout")
+_force_utf8("stderr")
 
 try:
     from dotenv import load_dotenv

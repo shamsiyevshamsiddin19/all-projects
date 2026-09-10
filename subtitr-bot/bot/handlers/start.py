@@ -13,6 +13,7 @@ from aiogram.types import (
 
 from db.crud import effective_plan, get_or_create_user, videos_done_today
 from db.crud import get_effective_tariff, videos_done_this_month
+from tariffs import TARIFFS
 
 router = Router()
 
@@ -255,7 +256,8 @@ async def cmd_profile(message: Message) -> None:
             "🗓 Limit har oy avtomatik yangilanadi\n\n"
             "🎁 <b>Do'st taklif qilib bepul video oling</b> → /invite\n\n"
             "<b>💎 BASIC obuna bilan:</b>\n"
-            "✅ Kuniga 10 ta video (45 daqiqagacha)\n"
+            f"✅ Kuniga {TARIFFS['basic'].daily_videos} ta video "
+            f"({TARIFFS['basic'].max_minutes} daqiqagacha)\n"
             "✅ Barcha rejimlar cheksiz\n\n"
             "👉 /subscribe — obuna olish"
         )

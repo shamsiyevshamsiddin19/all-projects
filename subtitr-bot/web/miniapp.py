@@ -509,8 +509,28 @@ async def api_process(request: web.Request) -> web.Response:
     return web.json_response({"job_id": job_id})
 
 
+# Mini App vazifalari Celery navbatidan tashqarida, shu veb-jarayonning
+# o'zida bajariladi. Server 945 MB RAM bilan ishlaydi va ikkita parallel
+# FFmpeg filtri uni OOM ga olib boradi — shuning uchun bir vaqtda faqat
+# MINIAPP_CONCURRENCY ta ish ketadi, qolganlari navbatda kutadi.
+_JOB_SLOTS = asyncio.Semaphore(int(os.getenv("MINIAPP_CONCURRENCY", "1")))
+
+
 async def _run_job(job_id, in_path, modes, source_lang, target_lang,
                    video_id, max_minutes, url=None, style=None) -> None:
+    """Navbat bilan bajaradi (bir vaqtda MINIAPP_CONCURRENCY ta ish)."""
+    job = _JOBS.get(job_id)
+    if job is not None and _JOB_SLOTS.locked():
+        job["progress"] = "Navbatda — oldingi video tugashini kutmoqda..."
+    async with _JOB_SLOTS:
+        await _run_job_locked(
+            job_id, in_path, modes, source_lang, target_lang,
+            video_id, max_minutes, url=url, style=style,
+        )
+
+
+async def _run_job_locked(job_id, in_path, modes, source_lang, target_lang,
+                          video_id, max_minutes, url=None, style=None) -> None:
     job = _JOBS[job_id]
 
     async def progress(text: str) -> None:

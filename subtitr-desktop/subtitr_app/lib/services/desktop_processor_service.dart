@@ -525,6 +525,14 @@ class DesktopProcessorService {
         process.kill(ProcessSignal.sigkill);
       }
     } else {
+      // Linux/macOS: Process.kill() faqat Python'ni o'ldiradi, u ishga
+      // tushirgan ffmpeg/yt-dlp esa "yetim" bo'lib fonda ishlab qolaveradi
+      // va protsessorni band qilib turadi. Avval bolalarini o'ldiramiz.
+      try {
+        await Process.run('pkill', ['-9', '-P', '${process.pid}']);
+      } catch (_) {
+        // pkill yo'q bo'lsa ham asosiy jarayonni to'xtatamiz.
+      }
       process.kill(ProcessSignal.sigkill);
     }
   }

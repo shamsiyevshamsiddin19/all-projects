@@ -20,6 +20,8 @@ Bu modul beradi:
 from __future__ import annotations
 
 import logging
+import os
+import re
 import time
 
 from config import settings
@@ -196,6 +198,103 @@ def claude_generate(payload: str, system_prompt: str) -> str:
     if not text:
         raise ValueError("Claude bo'sh javob qaytardi")
     return text
+
+
+# Groq — bepul va tez zaxira. Gemini/OpenAI kunlik kvotasi tugaganda tarjima
+# butunlay to'xtab qolmasligi uchun zanjirga qo'shilgan.
+_GROQ_TIMEOUT_S = int(os.getenv("GROQ_TIMEOUT_S", "60"))
+_GROQ_DEAD_S = int(os.getenv("GROQ_DEAD_S", "900"))
+_groq_dead_until = 0.0
+# Groq modellarni vaqti-vaqti bilan iste'moldan chiqaradi (llama-3.3-70b
+# shunday yo'qoldi) — nom topilmasa hisobdagi mavjud modeldan foydalanamiz.
+_groq_discovered: str | None = None
+_GROQ_SKIP_MODEL_RE = re.compile(r"whisper|tts|guard|orpheus|embed", re.I)
+
+
+def groq_available() -> bool:
+    return bool(settings.groq_api_key) and time.monotonic() >= _groq_dead_until
+
+
+def _groq_models() -> list[str]:
+    raw = os.getenv("GROQ_TEXT_MODEL", "").strip()
+    fallback = os.getenv("GROQ_TEXT_FALLBACK_MODELS", "").strip()
+    models = [m.strip() for m in ([raw] + fallback.split(",")) if m.strip()]
+    models += ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"]
+    if _groq_discovered and _groq_discovered not in models:
+        models.append(_groq_discovered)
+    out: list[str] = []
+    for m in models:
+        if m not in out:
+            out.append(m)
+    return out
+
+
+def _groq_pick_available(client) -> str | None:
+    """Hisobda mavjud, matn uchun yaroqli eng katta modelni topadi."""
+    global _groq_discovered
+    if _groq_discovered:
+        return _groq_discovered
+    try:
+        ids = sorted(m.id for m in client.models.list().data)
+    except Exception:
+        return None
+    usable = [m for m in ids if not _GROQ_SKIP_MODEL_RE.search(m)]
+    if not usable:
+        return None
+
+    def size(name: str) -> float:
+        found = re.findall(r"(\d+(?:\.\d+)?)\s*b\b", name, re.I)
+        return max((float(x) for x in found), default=0.0)
+
+    usable.sort(key=size, reverse=True)
+    _groq_discovered = usable[0]
+    return _groq_discovered
+
+
+def groq_generate(
+    payload: str,
+    system_prompt: str,
+    *,
+    temperature: float = 0.15,
+    json_mode: bool = True,
+) -> str:
+    """Groq chaqiruvi — modellar ro'yxati bo'ylab, oxirida avto-topish bilan."""
+    global _groq_dead_until
+    from groq import Groq
+
+    from worker import usage
+
+    usage.bump("groq")
+    client = Groq(api_key=settings.groq_api_key, timeout=_GROQ_TIMEOUT_S)
+    last: Exception | None = None
+    for attempt in range(2):
+        for model in _groq_models():
+            kwargs: dict = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": payload},
+                ],
+                "temperature": temperature,
+            }
+            if json_mode:
+                kwargs["response_format"] = {"type": "json_object"}
+            try:
+                resp = client.chat.completions.create(**kwargs)
+            except Exception as exc:
+                last = exc
+                if "rate_limit" in str(exc).lower():
+                    _groq_dead_until = time.monotonic() + _GROQ_DEAD_S
+                    logger.warning("Groq limiti — %d daqiqa tanaffus", _GROQ_DEAD_S // 60)
+                    raise
+                continue
+            content = (resp.choices[0].message.content or "").strip()
+            if content:
+                return content
+            last = ValueError("Groq bo'sh javob qaytardi")
+        if attempt == 0 and not _groq_pick_available(client):
+            break
+    raise last or RuntimeError("Groq ishlamadi")
 
 
 def openai_available() -> bool:

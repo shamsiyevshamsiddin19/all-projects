@@ -107,6 +107,10 @@ def _gemini(words: list[str], target_name: str, src_name: str) -> str:
     )
 
 
+def _groq(words: list[str], target_name: str, src_name: str) -> str:
+    return aiclient.groq_generate(to_payload(words), _prompt(target_name, src_name))
+
+
 def _claude(words: list[str], target_name: str, src_name: str) -> str:
     return aiclient.claude_generate(to_payload(words), _prompt(target_name, src_name))
 
@@ -149,6 +153,7 @@ _MIN_SPLIT = 8      # bundan kichik to'plamni bo'lishning ma'nosi yo'q
 def _classify_chunk(words: list[str], target_name: str, src_name: str) -> list[dict]:
     providers = [
         ("gemini", aiclient.gemini_available(), _gemini),
+        ("groq", aiclient.groq_available(), _groq),
         ("claude", aiclient.claude_available(), _claude),
         ("openai", aiclient.openai_available(), _openai),
     ]
