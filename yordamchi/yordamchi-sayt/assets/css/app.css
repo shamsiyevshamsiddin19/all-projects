@@ -4674,9 +4674,20 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 /* "O'qish" sarlavhasidagi C/V — lug'at bo'limidagi tugma bilan bir xil ko'rinish */
 .rd-voc-btn { font-weight: 800; font-size: 16px; color: var(--accent); width: 34px; height: 34px; line-height: 1; }
 
-.vb-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+/* Beshta ilova telefon ekraniga sig'maydi ("Yodlanmaganlar" va
+   "O'rganilganlar" uzun). Shuning uchun qator YON TOMONGA suriladi va
+   yorliqlar siqilmaydi — siqilsa matn ikki qatorga tushib, tugmalar
+   har xil balandlikda bo'lib qolardi. Keng ekranda esa `flex-grow`
+   ularni avvalgidek teng taqsimlaydi. */
+.vb-tabs {
+  display: flex; gap: 6px; margin-bottom: 12px;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.vb-tabs::-webkit-scrollbar { display: none; }
 .vb-tab {
-  flex: 1; padding: 9px 10px; border-radius: var(--radius-sm);
+  flex: 1 0 auto; white-space: nowrap;
+  padding: 9px 12px; border-radius: var(--radius-sm);
   border: 1px solid var(--border); background: var(--card);
   color: var(--hint); font-size: 13px; font-weight: 700; cursor: pointer;
 }
@@ -4689,6 +4700,148 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   box-shadow: 0 0 0 1px var(--accent) inset, 0 0 12px -2px var(--accent);
 }
 .vb-tab.active { background: var(--accent-soft); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
+
+/* ==================== Lug'at ro'yxati (vocab_dict) ====================
+   Yodlash uchun ro'yxat: raqam, so'z, tarjima va holat belgisi. */
+.vd-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.vd-count { font-size: 12.5px; color: var(--hint); font-weight: 600; }
+/* Menyu tugmasi — tez rejim yoki filtr yoqilgan bo'lsa yonib turadi.
+   Rang inline beriladi (tez rejim rangi), shu sabab bu yerda faqat fon:
+   `color` yozilsa u inline uslubdan kuchsizroq bo'lib, holat rangini
+   bosib qo'ymasligi kerak. */
+.vd-menu-btn.on { background: var(--accent-soft); color: var(--accent); }
+
+/* ON - OFF - ON xiralashtirish (masking) tugmasi */
+.vd-mask-switch {
+  margin-left: auto; display: inline-flex; align-items: center;
+  padding: 2px; background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); gap: 2px; user-select: none; flex-shrink: 0;
+}
+.vd-ms-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 4px 11px; border: 0; background: transparent;
+  color: var(--hint); font-size: 12px; font-weight: 700;
+  font-family: var(--mono), inherit;
+  border-radius: calc(var(--radius-sm) - 2px);
+  cursor: pointer; white-space: nowrap;
+  transition: background .15s ease, color .15s ease, box-shadow .15s ease;
+  line-height: 1.25;
+}
+.vd-ms-btn:hover { color: var(--text); }
+.vd-ms-btn.active {
+  background: var(--accent-soft); color: var(--accent);
+  font-weight: 800; box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
+}
+
+/* Kompyuterda qator 1100 pikselgacha cho'zilib ketardi: so'z chap
+   chekkada, tarjimasi o'ng chekkada qolib, ko'z butun ekranni kesib
+   o'tishga majbur bo'lardi.
+
+   Ikki ustun sinab ko'rildi va RAD ETILDI (foydalanuvchi tanlovi).
+   O'rniga ro'yxat bitta ustunda qoladi, lekin o'qishga qulay enda
+   cheklanadi — qolgan bo'sh joy shunchaki bo'sh turadi. */
+.vd-list { display: block; max-width: 680px; }
+.vd-row {
+  position: relative; display: flex; align-items: center; gap: 12px;
+  width: 100%; text-align: left; padding: 10px 4px;
+  border: 0; border-bottom: 1px solid var(--border-soft);
+  background: none; color: var(--text); cursor: pointer;
+  transition: background .15s ease, transform .18s ease;
+}
+.vd-row:last-child { border-bottom: 0; }
+.vd-row:active { background: var(--card-2); }
+.vd-n {
+  flex: 0 0 auto; min-width: 26px; text-align: right;
+  font-family: var(--mono); font-size: 11.5px; font-weight: 700; color: var(--hint);
+}
+.vd-main { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 8px; }
+.vd-a { font-size: 15px; font-weight: 650; }
+/* Tarjima o'ng tomonga qisiladi: ikkala ustun ko'z bilan ajralib tursin. */
+.vd-b {
+  flex: 1; min-width: 0; text-align: right;
+  font-size: 13.5px; color: var(--text-2);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* Holat belgisi. Yodlanganda galichka, qolganida rangli nuqta —
+   SHAKLI ham boshqa, ya'ni rangni ajratolmaydigan ekranda ham bilinadi. */
+.vd-st { flex: 0 0 auto; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; }
+.vd-st-ok { color: #22c55e; }
+.vd-st-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--st, transparent); }
+/* Yodlangan qator biroz so'nadi — e'tibor qolganlariga qaratilsin */
+.vd-row.st-learned .vd-a { opacity: .6; }
+.vd-row.st-learned .vd-b { opacity: .55; }
+
+/* Xira holat (Masking): so'z ko'z bilan o'qilmaydi, lekin shakli turadi */
+.vd-mask-left .vd-a,
+.vd-mask-right .vd-b {
+  filter: blur(5.5px);
+  opacity: 0.22;
+  user-select: none;
+  transition: filter .18s ease, opacity .18s ease;
+}
+/* Kursor borganda (hover), faol bo'lganda (active) yoki bosilganda (.revealed) ochiladi */
+.vd-mask-left .vd-row:hover .vd-a,
+.vd-mask-left .vd-row.revealed .vd-a,
+.vd-mask-right .vd-row:hover .vd-b,
+.vd-mask-right .vd-row.revealed .vd-b,
+.vd-mask-left .vd-a:hover,
+.vd-mask-right .vd-b:hover,
+.vd-mask-left .vd-a:active,
+.vd-mask-right .vd-b:active {
+  filter: none;
+  opacity: 1;
+}
+.vd-mask-left .vd-row.st-learned:hover .vd-a,
+.vd-mask-left .vd-row.st-learned.revealed .vd-a {
+  opacity: .6;
+}
+.vd-mask-right .vd-row.st-learned:hover .vd-b,
+.vd-mask-right .vd-row.st-learned.revealed .vd-b {
+  opacity: .55;
+}
+
+/* Keng ekranda tarjimalar BIR CHIZIQDA tekislanadi. O'ngga qisilsa
+   har qatorda boshqa joydan boshlanardi va ko'z uni har safar qidirib
+   yurardi. `min-width` (qat'iy en emas) — uzun so'z kesilmaydi, shunchaki
+   tarjimani o'ngroqqa suradi. */
+@media (min-width: 620px) {
+  .vd-a { flex: 0 0 auto; min-width: 44%; }
+  .vd-b { text-align: left; }
+}
+
+
+
+/* Qidiruv qatori: chapda tilni almashtirish, o'ngda qidiruv maydoni. */
+.vb-bar { display: flex; align-items: stretch; gap: 8px; margin-bottom: 14px; }
+.vb-bar .vb-search { flex: 1; margin-bottom: 0; }
+
+.vb-flip {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 6px;
+  padding: 0 12px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--card);
+  color: var(--text-2); font-size: 12.5px; font-weight: 800;
+  font-family: var(--mono); letter-spacing: .02em;
+  white-space: nowrap; cursor: pointer;
+  transition: background .18s ease, color .18s ease, border-color .18s ease;
+}
+/* Teskari yo'nalish YAQQOL bilinishi kerak: qaysi tomonda turganingizni
+   bilmasangiz, mashqning ma'nosi yo'qoladi. */
+.vb-flip.flipped {
+  background: var(--accent-soft); color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+}
+.vb-flip:active { transform: scale(.97); }
+.vb-flip-ic { display: flex; transition: transform .3s ease; }
+.vb-flip.flipped .vb-flip-ic { transform: rotate(180deg); }
+
+/* Ro'yxat "ag'darilishi" — yangi tomon o'rniga kelayotgani bilinsin. */
+.vb-turning { opacity: 0; transform: translateY(-4px); }
+#vb-content { transition: opacity .13s ease, transform .13s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .vb-turning { opacity: 1; transform: none; }
+  #vb-content { transition: none; }
+}
 
 .vb-search {
   display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
@@ -5930,6 +6083,23 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   background:var(--accent); margin-top:8px;
 }
 .tw-bullet-txt{ flex:1; min-width:0; font-size:14px; line-height:1.55; }
+
+/* Namuna javobdagi gap — bosilsa o'qib beriladi.
+   `.tw-phrase` dan farqi: bu KARTA emas, oqib boradigan matn qatori.
+   Namuna javob ketma-ket gaplardan iborat, har biri alohida kartaga
+   solinsa matn parchalanib ketardi. */
+.tw-say-line{
+  display:flex; align-items:flex-start; gap:10px; width:100%; text-align:left;
+  padding:8px 2px; border:0; border-bottom:1px solid var(--border-soft);
+  background:none; color:var(--text); cursor:pointer;
+  transition:background .15s ease;
+}
+.tw-say-line:last-child{ border-bottom:0; }
+.tw-say-line:active{ background:var(--card-2); }
+.tw-sl-body{ flex:1; min-width:0; }
+.tw-sl-txt{ display:block; font-size:14px; line-height:1.55; }
+.tw-sl-ic{ flex:0 0 auto; color:var(--hint); margin-top:3px; }
+.tw-say-line:active .tw-sl-ic{ color:var(--accent); }
 
 .tw-step{ display:flex; align-items:flex-start; gap:10px; margin-bottom:9px; }
 .tw-step-n{

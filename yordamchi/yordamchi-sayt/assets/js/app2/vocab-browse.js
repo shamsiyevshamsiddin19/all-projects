@@ -29,7 +29,7 @@
      'master' | 'save' | '#rrggbb' bo'lsa esa oynacha OCHILMAYDI, bosilgan
      so'zga o'sha amal darrov qo'llanadi. Yuzlab so'zni tartiblashda har
      safar oynacha ochib yopish juda sekin edi. */
-  var B = { lang: 'russian', tab: 'all', q: '', data: null, order: [], mode: '', folder: '' };
+  var B = { lang: 'russian', tab: 'all', q: '', data: null, order: [], mode: '', folder: '', flip: false };
 
   /* Kategoriya SHU papka ichidami. Bo'sh papka = ildiz = hammasi. */
   function inScope(cat) {
@@ -48,6 +48,40 @@
   }
 
   function WS() { return window.WordState; }
+
+  /* ---------- Tomonni almashtirish (ru -> uz / uz -> ru) ----------
+     Katakchada QAYSI til turishini hal qiladi. Ikki yo'nalish ikki xil
+     mashq: chet tilidagi so'zni ko'rib tarjimasini eslash — va aksincha,
+     o'zbekchasini ko'rib chet tilidagi so'zni eslash. Ilgari faqat
+     birinchisi mumkin edi.
+
+     Tanlov qurilmada saqlanadi: har kirganda qayta bosish zerikarli. */
+  var FLIP_KEY = 'vocab_browse_flip_v1';
+  function readFlip() {
+    try { return localStorage.getItem(FLIP_KEY) === '1'; } catch (e) { return false; }
+  }
+  function writeFlip(on) {
+    try { localStorage.setItem(FLIP_KEY, on ? '1' : '0'); } catch (e) {}
+  }
+
+  /* Katakchada ko'rinadigan matn va oynachadagi juftlik shu yerdan
+     olinadi — ikkalasi bir joyda tursin, aks holda biri almashib
+     ikkinchisi eskisicha qolardi. */
+  function faceOf(w) {
+    /* Qisqartirish `WordState` da — Lug'at ro'yxati ham AYNI qoidani
+       ishlatadi, ikki nusxa bo'lsa biri o'zgarib ikkinchisi qolardi. */
+    var ws = WS();
+    return B.flip ? ((ws ? ws.firstMeaning(w.uz) : w.uz) || w.ru) : w.ru;
+  }
+  function backOf(w) {
+    return B.flip ? w.ru : w.uz;
+  }
+
+  /* Tugma yozuvi: rus bo'limida "RU → UZ", ingliz bo'limida "EN → UZ". */
+  function flipLabel() {
+    var src = B.lang === 'russian' ? 'RU' : 'EN';
+    return B.flip ? 'UZ → ' + src : src + ' → UZ';
+  }
 
   /* ---------- Ma'lumot ---------- */
   function load(lang) {
@@ -72,11 +106,22 @@
       B.tab = params.tab || 'all';
       B.q = '';
       B.folder = params.folder || '';
+      B.flip = readFlip();
+
+      /* ORTGA QAYERGA.
+         Odatda "C" papka sahifasida bosiladi va ortga o'sha papkaga
+         qaytiladi. Lekin bitta lug'at ichidan bosilganda `folder` —
+         PAPKA emas, kategoriyaning to'liq yo'li; uni `vocab` ga
+         uzatsak, mavjud bo'lmagan papka ochilib "Bo'sh papka" chiqardi.
+         Shuning uchun chaqiruvchi `back=practice` deb belgilaydi. */
+      var backArg = params.back === 'practice'
+        ? App.arg({ v: 'vocab_practice', p: { lang: B.lang, cat: B.folder } })
+        : App.arg({ v: 'vocab', p: { lang: B.lang, folder: B.folder } });
 
       page.innerHTML =
         '<div class="topbar" style="margin:-16px -15px 12px">' +
         '<button class="icon-btn ghost" data-act="go" data-arg=\'' +
-        App.arg({ v: 'vocab', p: { lang: B.lang, folder: B.folder } }) + '\'><span data-icon="arrowLeft" data-icon-size="20"></span></button>' +
+        backArg + '\'><span data-icon="arrowLeft" data-icon-size="20"></span></button>' +
         /* Sarlavha QAYERDAN kelinganini aytadi. Ilgari doim til nomi
            turardi, endi esa "1-1000" ichidan kirilsa shu yoziladi —
            aks holda ekrandagi so'zlar qaysi to'plamdanligi bilinmasdi. */
@@ -125,13 +170,28 @@
     box.innerHTML =
       '<div class="vb-tabs">' +
         tabBtn('all', 'Lug\'at') +
+        /* "Yodlanmaganlar" — "O'rganilganlar" ning TESKARISI. Ro'yxatda
+           eng ko'p kerak bo'ladigan ko'rinish aynan shu: qaysi so'z hali
+           qolganini ko'rish. Shuning uchun u "Lug'at" dan keyin, birinchi
+           o'ringa qo'yildi. */
+        tabBtn('todo', 'Yodlanmaganlar') +
         tabBtn('saved', 'Saqlanganlar') +
         tabBtn('groups', 'Guruhlar') +
         tabBtn('learned', 'O\'rganilganlar') +
       '</div>' +
-      '<div class="vb-search">' +
-        '<span data-icon="search" data-icon-size="15"></span>' +
-        '<input class="vb-inp" id="vb-q" placeholder="So\'z qidirish..." value="' + App.esc(B.q) + '">' +
+      /* Chapda — tomonni almashtirish, o'ngda — qidiruv. Almashtirish
+         tugmasi qidiruvdan MUHIMROQ: u ro'yxatning butun ma'nosini
+         o'zgartiradi, qidiruv esa faqat toraytiradi. */
+      '<div class="vb-bar">' +
+        '<button class="vb-flip' + (B.flip ? ' flipped' : '') + '" id="vb-flip" ' +
+          'aria-label="Tilni almashtirish" title="Qaysi til ko\'rinishini almashtirish">' +
+          '<span class="vb-flip-txt">' + App.esc(flipLabel()) + '</span>' +
+          '<span class="vb-flip-ic" data-icon="refresh" data-icon-size="14"></span>' +
+        '</button>' +
+        '<div class="vb-search">' +
+          '<span data-icon="search" data-icon-size="15"></span>' +
+          '<input class="vb-inp" id="vb-q" placeholder="So\'z qidirish..." value="' + App.esc(B.q) + '">' +
+        '</div>' +
       '</div>' +
       '<div id="vb-content"></div>' +
       '<div class="vb-pop" id="vb-pop" hidden></div>';
@@ -140,6 +200,29 @@
     box.querySelectorAll('.vb-tab').forEach(function (t) {
       t.onclick = function () { B.tab = t.getAttribute('data-t'); paint(page); };
     });
+
+    var flipBtn = box.querySelector('#vb-flip');
+    if (flipBtn) flipBtn.onclick = function () {
+      B.flip = !B.flip;
+      writeFlip(B.flip);
+      /* Animatsiya: butun ro'yxat qayta chizilgani bilinmasin — kataklar
+         "ag'darilib" yangi tomonini ko'rsatadi. Sinf qo'shilib, chizish
+         keyingi kadrga qoldiriladi, aks holda brauzer o'tishni
+         umuman ko'rsatmasdi. */
+      var content = App.el('vb-content');
+      if (content) content.classList.add('vb-turning');
+      flipBtn.classList.toggle('flipped', B.flip);
+      var t = flipBtn.querySelector('.vb-flip-txt');
+      if (t) t.textContent = flipLabel();
+      setTimeout(function () {
+        paintContent(page);
+        var c2 = App.el('vb-content');
+        if (c2) {
+          c2.classList.add('vb-turning');
+          requestAnimationFrame(function () { c2.classList.remove('vb-turning'); });
+        }
+      }, 130);
+    };
 
     var inp = box.querySelector('#vb-q');
     if (inp) {
@@ -168,7 +251,8 @@
     var host = App.el('vb-content'); if (!host) return;
     if (B.tab === 'saved') return paintSaved(host, page);
     if (B.tab === 'groups') return paintGroups(host, page);
-    if (B.tab === 'learned') return paintLearned(host, page);
+    if (B.tab === 'learned') return paintMastery(host, page, true);
+    if (B.tab === 'todo') return paintMastery(host, page, false);
     paintAll(host, page);
   }
 
@@ -181,12 +265,17 @@
     /* Uzun so'zga kichikroq o'lcham. O'lchash bilan qilinmadi: 8000+
        katakni o'lchash sahifani qotirardi. Harf soni yetarli aniq
        ko'rsatkich — ustun eni barcha kataklarda bir xil. */
-    var n = (w.ru || '').length;
+    /* `data-ru` HAR DOIM asl (chet tilidagi) so'z: barcha holat va
+       amallar shu kalit orqali ishlaydi. Almashtirish faqat KO'RINISHNI
+       o'zgartiradi — aks holda tomonni almashtirgan zahoti barcha
+       belgilar (o'rgandim, rang) yo'qolib qolardi. */
+    var face = faceOf(w);
+    var n = (face || '').length;
     var sizeCls = n >= 16 ? ' len-l' : (n >= 11 ? ' len-m' : '');
     var cls = 'vb-w' + sizeCls + (mastered ? ' done' : '') + (saved ? ' saved' : '');
     var style = color ? ' style="--wcolor:' + color + '"' : '';
     return '<button class="' + cls + (color ? ' tinted' : '') + '" data-ru="' + App.esc(w.ru) + '"' +
-      style + '>' + App.esc(w.ru) + '</button>';
+      style + '>' + App.esc(face) + '</button>';
   }
 
   /* "1-8000/1-1000/1-100" -> guruh "1-8000", bo'lim "1-100".
@@ -364,7 +453,9 @@
   function showTip(el, w) {
     if (!w.uz) return;
     tipEl = App.el('vb-pop'); if (!tipEl) return;
-    tipEl.innerHTML = '<b>' + App.esc(w.ru) + '</b><span>' + App.esc(w.uz) + '</span>';
+    /* Oynachada TO'LIQ tarjima turadi (katakchada qisqartirilgani emas) —
+       ko'p ma'noli so'zning qolgan ma'nolari shu yerdan ko'rinadi. */
+    tipEl.innerHTML = '<b>' + App.esc(faceOf(w)) + '</b><span>' + App.esc(backOf(w)) + '</span>';
     tipEl.hidden = false;
     place(tipEl, el);
   }
@@ -455,32 +546,56 @@
     });
   }
 
-  /* ---------- O'rganilganlar ---------- */
+  /* ---------- O'rganilganlar / Yodlanmaganlar ----------
 
-  /* O'rgangan so'zlar O'Z BO'LIMIDA turadi (1-100, 101-200 ...), ya'ni
-     qaysi qismni qanchalik o'zlashtirganingiz ko'rinadi. Oddiy tekis
-     ro'yxat buni ko'rsatmasdi. */
-  function paintLearned(host, page) {
+     Ikkala ko'rinish AYNI: so'zlar o'z bo'limida turadi (1-100,
+     101-200 ...), ya'ni qaysi qismni qanchalik o'zlashtirganingiz
+     ko'rinadi. Tekis ro'yxat buni ko'rsatmasdi.
+
+     Farqi FAQAT filtrda: `want = true` — "O'rgandim" deb belgilanganlar,
+     `want = false` — hali belgilanmaganlar. Ikkita alohida funksiya
+     yozilmadi: ular bir-birining nusxasi bo'lardi va birini tuzatib
+     ikkinchisini unutish oson bo'lardi. */
+  var MASTERY = {
+    'true': {
+      icon: 'check',
+      emptyTitle: 'Hali o\'rganilgan so\'z yo\'q',
+      emptyText: 'So\'zni bosib "O\'rgandim" ni tanlang — u shu yerga tushadi va mashqlarda chiqmaydi.',
+      unit: 'o\'rganilgan'
+    },
+    'false': {
+      icon: 'list',
+      emptyTitle: 'Hammasi o\'rganilgan',
+      emptyText: 'Bu bo\'limdagi har bir so\'z "O\'rgandim" deb belgilangan.',
+      unit: 'qoldi'
+    }
+  };
+
+  function paintMastery(host, page, want) {
     var ws = WS(); if (!ws) return;
+    var L = MASTERY[want ? 'true' : 'false'];
     var groups = [], byTop = {}, total = 0;
 
     B.order.forEach(function (cat) {
-      var words = (B.data[cat] || []).filter(function (w) {
-        return ws.isMastered(w.ru) && matches(w);
+      var all = B.data[cat] || [];
+      var words = all.filter(function (w) {
+        return !!ws.isMastered(w.ru) === want && matches(w);
       });
       if (!words.length) return;
       total += words.length;
       var top = groupSeg(cat);
       if (!byTop[top]) { byTop[top] = { name: top, secs: [], total: 0 }; groups.push(byTop[top]); }
-      byTop[top].secs.push({ leaf: leafSeg(cat), words: words, all: (B.data[cat] || []).length });
+      byTop[top].secs.push({ leaf: leafSeg(cat), words: words, all: all.length });
       byTop[top].total += words.length;
     });
 
     if (!total) {
-      host.innerHTML = App.empty({
-        icon: 'check', title: 'Hali o\'rganilgan so\'z yo\'q',
-        text: 'So\'zni bosib "O\'rgandim" ni tanlang — u shu yerga tushadi va mashqlarda chiqmaydi.'
-      });
+      /* Qidiruv natija bermagani bilan bo'lim bo'shligi BOSHQA narsa —
+         "Hammasi o'rganilgan" deb yozib qo'yish chalg'itardi. */
+      host.innerHTML = B.q
+        ? App.empty({ icon: 'search', title: 'Topilmadi',
+                      text: '"' + B.q + '" bo\'yicha bu bo\'limda so\'z yo\'q.' })
+        : App.empty({ icon: L.icon, title: L.emptyTitle, text: L.emptyText });
       App.icons(host);
       return;
     }
@@ -488,7 +603,7 @@
     host.innerHTML = groups.map(function (g) {
       return '<div class="vb-group">' +
         '<div class="vb-group-h"><span>' + App.esc(g.name) + '</span>' +
-        '<i>' + g.total + ' o\'rganilgan</i></div>' +
+        '<i>' + g.total + ' ' + L.unit + '</i></div>' +
         g.secs.map(function (sec) {
           return '<div class="vb-sec">' +
             '<div class="vb-sec-h"><span>' + App.esc(sec.leaf) + '</span>' +
