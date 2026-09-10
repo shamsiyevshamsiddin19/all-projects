@@ -1641,8 +1641,11 @@ def ai_translate_batch(
                 parsed = json_object_from_text(data)
                 out_tr, _, _ = indexed_values(parsed, len(texts), texts)
                 matched = sum(1 for i, value in enumerate(out_tr) if value and value != texts[i])
-                if matched < max(1, len(texts) // 4):
-                    raise RuntimeError("AI javobida tarjima kam")
+                # Javob to'liq bo'lmasa qolgan qatorlar asl matn bilan qoladi —
+                # to'plamni bo'lib qayta so'raganimiz ma'qul.
+                need = max(1, int(len(texts) * _env_float("TRANSLATE_MIN_COVERAGE", 0.8)))
+                if matched < need:
+                    raise RuntimeError(f"AI javobida tarjima kam ({matched}/{len(texts)})")
                 ai_throttle()
                 return out_tr, name
             except Exception as exc:
@@ -2319,50 +2322,77 @@ def translate_word_list(words: list[str], target_lang: str) -> tuple[list[str], 
     lemma_list: list[str] = []
     provider = ""
 
-    batch_size = max(20, int(os.getenv("VOCAB_BATCH", "80")))
-    for start in range(0, len(words), batch_size):
-        chunk = words[start:start + batch_size]
-        payload = json.dumps({str(i): word for i, word in enumerate(chunk)}, ensure_ascii=False)
-        chunk_tr, chunk_pos, chunk_lemma, p = [], [], [], ""
+    providers = [
+        ("openai", bool(os.getenv("OPENAI_API_KEY")), translate_openai),
+        ("claude", bool(os.getenv("ANTHROPIC_API_KEY")), translate_claude),
+        ("gemini", bool(os.getenv("GEMINI_API_KEY")), translate_gemini),
+        ("groq", bool(os.getenv("GROQ_API_KEY")), translate_groq),
+    ]
+    if not any(enabled for _, enabled, _ in providers):
+        return ([offline_translate_word(w) for w in words], [""] * len(words),
+                [""] * len(words), "offline_dictionary")
 
-        for attempt in range(5):
-            for name, enabled, fn in [
-                ("openai", bool(os.getenv("OPENAI_API_KEY")), translate_openai),
-                ("claude", bool(os.getenv("ANTHROPIC_API_KEY")), translate_claude),
-                ("gemini", bool(os.getenv("GEMINI_API_KEY")), translate_gemini),
-                ("groq", bool(os.getenv("GROQ_API_KEY")), translate_groq),
-            ]:
+    def translate_chunk(chunk: list[str]) -> tuple[list[str], list[str], list[str], str]:
+        """Bitta to'plamni tarjima qiladi; ishlamasa ikkiga bo'lib qayta uradi."""
+        payload = json.dumps({str(i): w for i, w in enumerate(chunk)}, ensure_ascii=False)
+        for _attempt in range(3):
+            for name, enabled, fn in providers:
                 if not enabled:
                     continue
                 try:
                     parsed = json_object_from_text(fn(prompt, payload))
-                    chunk_tr, chunk_pos, chunk_lemma = indexed_values(parsed, len(chunk), [offline_translate_word(word) for word in chunk])
-
-                    matched = sum(1 for i, tr in enumerate(chunk_tr) if tr and tr.lower() != chunk[i].lower() and tr != offline_translate_word(chunk[i]))
-                    if matched < max(1, len(chunk) // 5):
-                        raise RuntimeError("Lug'atda yetarli tarjima qilinmadi")
-
-                    p = name
-                    break
+                    c_tr, c_pos, c_lemma = indexed_values(
+                        parsed, len(chunk), [offline_translate_word(w) for w in chunk]
+                    )
+                    matched = sum(
+                        1 for i, tr in enumerate(c_tr)
+                        if tr and tr.lower() != chunk[i].lower()
+                        and tr != offline_translate_word(chunk[i])
+                    )
+                    # Model to'plamning bir qismiga javob bermasligi mumkin —
+                    # o'shanda qolgan so'zlar o'z-o'ziga "tarjima" bo'lib
+                    # qoladi va lug'atdan tushib ketadi (ekranda o'sha
+                    # daqiqalarda kartochka chiqmaydi). Shuning uchun javob
+                    # deyarli to'liq bo'lishini talab qilamiz; bo'lmasa
+                    # to'plam ikkiga bo'linib qayta so'raladi.
+                    need = max(1, int(len(chunk) * _env_float("VOCAB_MIN_COVERAGE", 0.8)))
+                    if matched < need:
+                        raise RuntimeError(
+                            f"Lug'atda yetarli tarjima qilinmadi ({matched}/{len(chunk)})"
+                        )
+                    ai_throttle()
+                    return c_tr, c_pos, c_lemma, name
                 except Exception:
                     continue
-            if chunk_tr:
-                break
             ai_retry_backoff()
 
-        if not chunk_tr:
-            chunk_tr = [offline_translate_word(word) for word in chunk]
-            chunk_pos = ["" for _ in chunk]
-            chunk_lemma = ["" for _ in chunk]
-            p = "offline_dictionary"
+        # Katta to'plam bir marta ishlamasligi ko'pincha vaqtinchalik. Ikkiga
+        # bo'lib qayta urinamiz — aks holda butun bir bo'lak so'z tarjimasiz
+        # qoladi va ular lug'atdan butunlay tushib qoladi (ekranda o'sha
+        # daqiqalarda hech qanday so'z chiqmaydi).
+        if len(chunk) > AI_MIN_SPLIT_BATCH:
+            half = len(chunk) // 2
+            l_tr, l_pos, l_lem, l_p = translate_chunk(chunk[:half])
+            r_tr, r_pos, r_lem, r_p = translate_chunk(chunk[half:])
+            best = l_p if l_p != "offline_dictionary" else r_p
+            return l_tr + r_tr, l_pos + r_pos, l_lem + r_lem, best
 
-        tr_list.extend(chunk_tr)
-        pos_list.extend(chunk_pos)
-        lemma_list.extend(chunk_lemma)
+        emit(
+            "progress",
+            message=f"Diqqat: {len(chunk)} so'z lug'atga tarjima qilinmadi",
+            progress=0.58,
+        )
+        return ([offline_translate_word(w) for w in chunk], [""] * len(chunk),
+                [""] * len(chunk), "offline_dictionary")
+
+    batch_size = max(20, int(os.getenv("VOCAB_BATCH", "80")))
+    for start in range(0, len(words), batch_size):
+        chunk = words[start:start + batch_size]
+        c_tr, c_pos, c_lemma, p = translate_chunk(chunk)
+        tr_list.extend(c_tr)
+        pos_list.extend(c_pos)
+        lemma_list.extend(c_lemma)
         provider = p or provider
-
-        # Kichik pauza — API rate-limitlariga tushib qolmaslik uchun (AI_THROTTLE_SEC bilan sozlanadi)
-        ai_throttle()
 
     return tr_list, pos_list, lemma_list, provider
 
@@ -2463,7 +2493,8 @@ def layout_for(width: int, height: int, dual: bool, font_scale: float = 1.0) -> 
         "box_pad": max(4, round(font_size * 0.16)),
         "box_spacing": max(0, round(font_size * 0.04)),
         "line_h": round(font_size * 1.28),
-        "vocab_outline": max(3, round(font_size * 0.11)),
+        "vocab_outline": max(2, round(font_size * 0.07)),
+        "vocab_pad": max(5, round(font_size * 0.20)),
     }
 
 
@@ -2496,6 +2527,9 @@ def ass_fonts_option() -> str:
 # Asl matn uslubi: "plain" — oq matn + qora kontur (eski ko'rinish),
 # "box" — sariq to'ldirilgan quti ustida qora qalin matn (montaj uslubi).
 BOX_FILL = os.getenv("SUB_BOX_COLOR", "#FFD400")
+# Lug'at kartochkasining foni (yarim shaffof to'q rang).
+VOCAB_BG = os.getenv("SUB_VOCAB_BG", "#0B1020")
+VOCAB_BG_ALPHA = os.getenv("SUB_VOCAB_BG_ALPHA", "3C")
 BOX_TEXT = os.getenv("SUB_BOX_TEXT_COLOR", "#000000")
 
 
@@ -2543,7 +2577,16 @@ def ass_header(
     vocab = (
         f"Style: Vocab,{font},{layout['vocab_font']},{ass_color('#FFFFFF')},&H000000FF,"
         f"{ass_color('#000000')},{ass_color('#000000', '60')},0,0,0,0,100,100,"
-        f"{layout['box_spacing']},0,1,{layout['vocab_outline']},{max(1, shadow)},7,"
+        f"{layout['box_spacing']},0,1,{layout['vocab_outline']},0,7,"
+        f"{layout['margin_lr']},{layout['margin_lr']},{layout['margin_v']},1\n"
+        # Kartochka foni. Hiyla: fon ham AYNAN o'sha matn bilan chiziladi,
+        # lekin harflari butunlay shaffof (PrimaryColour alpha = FF) va
+        # BorderStyle=3 — libass matn kengligini o'zi o'lchab, uzluksiz quti
+        # chizadi. Shu bilan matn kengligini taxminlash kerak bo'lmaydi;
+        # rang o'zgarishi ham yo'q, demak quti bo'laklarga ajralmaydi.
+        f"Style: VocabBg,{font},{layout['vocab_font']},&HFF000000,&H000000FF,"
+        f"{ass_color(VOCAB_BG, VOCAB_BG_ALPHA)},&H00000000,0,0,0,0,100,100,"
+        f"{layout['box_spacing']},0,3,{layout['vocab_pad']},0,7,"
         f"{layout['margin_lr']},{layout['margin_lr']},{layout['margin_v']},1\n\n"
     )
     return (
@@ -2634,13 +2677,22 @@ def write_ass(
             # ikkita so'z orasidagi minimal vaqt oralig'i
             min_time_gap = line_height / speed
             max_drift = _env_float("SUBTITR_VOCAB_MAX_DRIFT", 3.0)
-            
+            # Bir so'z ketma-ket takrorlanganda ikkita bir xil kartochka
+            # yonma-yon suzib chiqadi — shuni oldini olamiz.
+            repeat_window = _env_float("SUBTITR_VOCAB_REPEAT_WINDOW", 20.0)
+            shown_at: dict[str, float] = {}
+
+            sep = "  ·  "
+
             last_start_time = -999.0
             
             for item in vocab_words:
                 key = normalize_word(item.word)
                 tr = vocab_map.get(key, "")
                 if not tr:
+                    continue
+                prev = shown_at.get(key)
+                if prev is not None and item.start - prev < repeat_window:
                     continue
                 
                 # So'z paydo bo'ladigan vaqtni hisoblash (oldingi so'zdan yetarlicha uzoqda bo'lishi kerak)
@@ -2652,24 +2704,25 @@ def write_ass(
                     continue
                 actual_end = actual_start + duration_sec
                 last_start_time = actual_start
-                
+                shown_at[key] = item.start
+
                 start = seconds_to_ass_time(actual_start)
                 end = seconds_to_ass_time(actual_end)
                 word = ass_escape(key)
                 translation = ass_escape(tr)
-                
-                # Yumshoq chiqish/yo'qolish: faqat shaffoflik bilan (\fad) va
-                # kichik "pop" (92% -> 100%). Ilgari oxirida 50% ga kichrayib,
-                # xiralashib qolardi — kadr chetida qora dog' bo'lib ko'rinardi.
-                # \bord/\shad ni bu yerda o'zgartirmaymiz: BorderStyle=3 da
-                # \bord kartochkaning ichki bo'shlig'i (uslubda belgilangan).
-                override = "{\\fad(250,450)\\move(%d,%d,%d,%d)\\fscx92\\fscy92\\t(0,220,\\fscx100\\fscy100)}" % (
+
+                # Fon: aynan o'sha matn, lekin harflari ko'rinmas — libass
+                # kengligini o'zi o'lchab, uzluksiz quti chizadi.
+                override = "{\\fad(250,450)\\move(%d,%d,%d,%d)}" % (
                     x, base_y, x, target_y
                 )
-                
+                plain = f"{word}{sep}{translation}"
+                f.write(f"Dialogue: 0,{start},{end},VocabBg,,0,0,0,,{override}{plain}\n")
+
+                # Ko'rinadigan matn — xuddi shu joyda, fon ustida.
                 body = (
                     f"{override}{inline_color('#FFFFFF')}{word}"
-                    f"{inline_color('#8A93A6')}  ·  "
+                    f"{inline_color('#8A93A6')}{sep}"
                     f"{inline_color(trans_color)}{translation}"
                 )
                 f.write(f"Dialogue: 1,{start},{end},Vocab,,0,0,0,,{body}\n")
@@ -3028,7 +3081,9 @@ def _prepare_data(
         entries: list[dict[str, Any]] = []
         if needs_vocab:
             emit("progress", message="Lug'at tuzilmoqda", progress=0.58)
-            vocab_cache = cdir / f"vocab_{effective_lang}_{target_lang}.json"
+            # Nom ichidagi versiya: lug'at tuzish mantig'i o'zgarganda eski
+            # (yarim bo'sh) lug'at qaytarilib turmasin.
+            vocab_cache = cdir / f"vocab_v2_{effective_lang}_{target_lang}.json"
             cached_vocab = _load_json(vocab_cache) if _cache_enabled() else None
             if isinstance(cached_vocab, list) and cached_vocab:
                 entries = cached_vocab
