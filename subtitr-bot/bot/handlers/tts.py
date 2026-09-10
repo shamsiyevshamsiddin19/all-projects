@@ -162,13 +162,18 @@ async def on_tts_lang(call: CallbackQuery, state: FSMContext) -> None:
     except Exception:
         pass
 
-    status = await call.message.answer("🎙 Ovoz tayyorlanmoqda...")
+    # Uzun matnda kodlash bir necha daqiqa olishi mumkin — kutish sababini
+    # aytib qo'yamiz, aks holda bot "qotib qolgan"dek ko'rinadi.
+    note = "\n(matn uzun — bir necha daqiqa olishi mumkin)" if len(text) > 4000 else ""
+    status = await call.message.answer(f"🎙 Ovoz tayyorlanmoqda...{note}")
     try:
         ogg_path = await asyncio.to_thread(text_to_voice, text, lang)
     except QuotaExceeded:
+        # Google Translate TTS da kunlik limit yo'q — bu shox amalda
+        # ishlamaydi, limitli provayder qaytsa ishlaydi.
         await status.edit_text(
-            "❌ Bugungi ovoz (TTS) limiti tugadi.\n"
-            "Iltimos, ertaga qayta urinib ko'ring."
+            "❌ Ovoz xizmati vaqtincha band.\n"
+            "Iltimos, birozdan keyin qayta urinib ko'ring."
         )
         return
     except Exception:
