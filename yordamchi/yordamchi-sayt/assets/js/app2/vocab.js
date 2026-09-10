@@ -449,13 +449,18 @@
           var actC = lockedC
             ? 'data-act="vocabLocked" data-arg=\'' + App.arg({ p: it.full }) + '\''
             : 'data-act="go" data-arg=\'' + App.arg({ v: 'vocab_practice', p: { lang: lang, cat: it.full } }) + '\'';
-          return '<div class="chat-item' + (lockedC ? ' chat-item-locked' : '') + '">' +
-            '<button class="chat-row" ' + actC + '>' +
-            vocabBadgeHtml(it.name) +
+          /* Qulflangan qatorda belgilash yo'q: uni hali ocholmaydi. */
+          var doneC = !lockedC && isMarked(lang, 'dict', it.full);
+          return '<div class="chat-item' + (lockedC ? ' chat-item-locked' : '') +
+            (doneC ? ' rm-done' : '') + '">' +
+            '<button class="chat-row" ' + actC +
+              (lockedC ? '' : holdAttrs('dict', it.full, it.name)) + '>' +
+            avatarHtml(vocabBadgeHtml(it.name), doneC) +
             '<span class="chat-main">' +
               '<span class="chat-title">' + App.esc(it.name) + '</span>' +
-              '<span class="chat-sub">' + it.count + ' so\'z</span>' +
+              '<span class="chat-sub">' + it.count + ' so\'z' + (doneC ? ' · yodlandi' : '') + '</span>' +
             '</span>' +
+            (lockedC ? '' : '<span class="rm-hold-bar"></span>') +
             (lockedC
               ? '<span class="chat-lock" data-icon="lock" data-icon-size="15"></span>'
               : '<span class="chat-arrow" data-icon="arrowLeft" data-icon-size="16"></span>') +
@@ -484,13 +489,18 @@
             var actF = lockedF
               ? 'data-act="vocabLocked" data-arg=\'' + App.arg({ p: path }) + '\''
               : 'data-act="go" data-arg=\'' + App.arg({ v: 'vocab', p: { lang: lang, folder: path } }) + '\'';
-            return '<div class="chat-item' + itemClass + (lockedF ? ' chat-item-locked' : '') + '">' +
-              '<button class="chat-row' + magicClass + '" ' + actF + '>' +
-              vocabBadgeHtml(f.name) +
+            var doneF = !lockedF && isMarked(lang, 'dictfolder', path);
+            return '<div class="chat-item' + itemClass + (lockedF ? ' chat-item-locked' : '') +
+              (doneF ? ' rm-done' : '') + '">' +
+              '<button class="chat-row' + magicClass + '" ' + actF +
+                (lockedF ? '' : holdAttrs('dictfolder', path, f.name)) + '>' +
+              avatarHtml(vocabBadgeHtml(f.name), doneF) +
               '<span class="chat-main">' +
                 '<span class="chat-title">' + App.esc(f.name) + titleExtra + '</span>' +
-                '<span class="chat-sub">' + f.items + ' bo\'lim · ' + f.words + ' so\'z</span>' +
+                '<span class="chat-sub">' + f.items + ' bo\'lim · ' + f.words + ' so\'z' +
+                (doneF ? ' · yodlandi' : '') + '</span>' +
               '</span>' +
+              (lockedF ? '' : '<span class="rm-hold-bar"></span>') +
               (lockedF
                 ? '<span class="chat-lock" data-icon="lock" data-icon-size="15"></span>'
                 : '<span class="chat-arrow" data-icon="arrowLeft" data-icon-size="16"></span>') +
@@ -527,6 +537,7 @@
 
         box.innerHTML = html || App.empty({ icon: 'list', title: 'Kategoriya yo\'q', text: 'Yuqoridagi tugma bilan birinchi kategoriyani qo\'shing.' });
         App.icons(box);
+        bindHold(box, lang);
       }).catch(function (e) {
         var box = App.el('vocab-list'); if (box) box.innerHTML = App.empty({ icon: 'alert', title: 'Xatolik', text: e.message });
       });
@@ -1433,10 +1444,123 @@
     var on = isAllMode(lang, cat);
     return '<button class="all-sw' + (on ? ' on' : '') + '" data-act="vocabAllToggle" data-arg=\'' +
       App.arg({ lang: lang, cat: cat }) + '\' role="switch" aria-checked="' + (on ? 'true' : 'false') +
-      '" title="' + (on ? 'Hammasi yoqilgan — oraliq va o\'rganilganlar hisobga olinmaydi'
-                        : 'Yoqilsa lug\'atdagi barcha so\'z mashqqa tushadi') + '">' +
+      '" title="' + (on ? 'Yoqilgan: o\'rganilgan so\'zlar ham mashqqa tushadi (oraliq baribir ishlaydi)'
+                        : 'Yoqilsa o\'rganilgan so\'zlar ham mashqqa qo\'shiladi') + '">' +
       '<span class="all-sw-txt">' + (on ? 'ON' : 'OFF') + '</span>' +
       '<span class="all-sw-knob"></span></button>';
+  }
+
+  /* ================= "Yodladim" belgisi =================
+     Darsliklardagi bilan AYNI mexanizm (`readmark.js`): qatorni 3 soniya
+     bosib turilsa varaq chiqadi, tasdiqlansa doiraning burchagida yashil
+     galichka paydo bo'ladi.
+
+     Nega uzoq bosish: qator bosilganda lug'at OCHILADI. Belgilash ham
+     shu qatorda bo'lgani uchun ikkisi ajratilishi kerak, aks holda
+     tasodifan bosilib "yodladim" bo'lib qolardi.
+
+     Kalit `dict` / `dictfolder` deb nomlangan — darsliklardagi
+     `topic` / `folder` bilan chalkashmasin (ikkalasi bir xil `lang`
+     qiymatini ishlatishi mumkin). */
+  function RM() { return window.ReadMark; }
+
+  function tickHtml() {
+    return '<span class="rm-tick"><svg viewBox="0 0 24 24" width="11" height="11" fill="none">' +
+      '<path d="M5 12l5 5L20 6" stroke="currentColor" stroke-width="3.4" ' +
+      'stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
+  }
+
+  /* Doira + galichka birga tursin. Galichkasiz o'ramning keragi yo'q —
+     ortiqcha element chizmaymiz. */
+  function avatarHtml(badge, done) {
+    if (!done) return badge;
+    return '<span class="rm-av-wrap">' + badge + tickHtml() + '</span>';
+  }
+
+  function isMarked(lang, kind, key) {
+    return !!(RM() && RM().isRead(lang, kind, key));
+  }
+
+  function holdAttrs(kind, key, name) {
+    return ' data-hold="' + kind + '" data-hold-key="' + App.esc(key) +
+           '" data-hold-name="' + App.esc(name) + '"';
+  }
+
+  /* Uzoq bosishni qatorlarga bog'laydi. Uch narsa kerak:
+       1) bosib turilgan vaqt ko'rinsin (`rm-holding` -> to'ladigan chiziq);
+       2) uzoq bosish tugagach qo'yib yuborilgan bosish HISOBGA OLINMASIN,
+          aks holda varaq ochilib, orqasidan lug'at ham ochilib ketardi;
+       3) barmoq surilsa bekor qilinsin (ro'yxat aylantirilayotgandir). */
+  function bindHold(box, lang) {
+    if (!box || !RM()) return;
+    box.querySelectorAll('[data-hold]').forEach(function (row) {
+      var kind = row.getAttribute('data-hold');
+      var key = row.getAttribute('data-hold-key');
+      var name = row.getAttribute('data-hold-name') || '';
+      var timer = null, fired = false, sx = 0, sy = 0;
+
+      function stop() {
+        if (timer) { clearTimeout(timer); timer = null; }
+        row.classList.remove('rm-holding');
+      }
+      row.addEventListener('pointerdown', function (e) {
+        if (e.button != null && e.button !== 0) return;
+        sx = e.clientX; sy = e.clientY;
+        fired = false;
+        row.classList.add('rm-holding');
+        timer = setTimeout(function () {
+          fired = true;
+          stop();
+          try { if (navigator.vibrate) navigator.vibrate(35); } catch (e2) {}
+          openLearnSheet(lang, kind, key, name);
+        }, RM().HOLD_MS);
+      });
+      row.addEventListener('pointermove', function (e) {
+        if (timer && (Math.abs(e.clientX - sx) > 10 || Math.abs(e.clientY - sy) > 10)) stop();
+      });
+      ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) {
+        row.addEventListener(ev, stop);
+      });
+      row.addEventListener('click', function (e) {
+        if (!fired) return;
+        fired = false;
+        e.preventDefault();
+        e.stopPropagation();
+      }, true);
+    });
+  }
+
+  function openLearnSheet(lang, kind, key, name) {
+    var done = isMarked(lang, kind, key);
+    var what = kind === 'dictfolder' ? 'Papka' : 'Lug\'at';
+    var sh = App.sheet(
+      '<p class="muted" style="margin:0 0 14px;font-size:13px;line-height:1.5">' +
+        what + ': <b>' + App.esc(name) + '</b><br>' +
+        (done ? 'Bu bo\'lim yodlangan deb belgilangan.'
+              : 'Yodlab bo\'lgan bo\'lsangiz belgilang — ro\'yxatda galichka chiqadi.') +
+        '<br><span style="opacity:.7">Belgi mashqdagi so\'zlarni o\'zgartirmaydi — ' +
+        'u faqat qayerga yetganingizni ko\'rsatadi.</span>' +
+      '</p>' +
+      (done
+        ? '<button class="btn sec" id="vm-off">Belgini olib tashlash</button>'
+        : '<button class="btn" id="vm-on">Yodladim</button>'),
+      { title: done ? 'Yodlangan' : 'Belgilash' }
+    );
+    var on = sh.querySelector('#vm-on'), off = sh.querySelector('#vm-off');
+    if (on) on.onclick = function () { RM().setRead(lang, kind, key, true); App.closeSheet(); App.reload(); };
+    if (off) off.onclick = function () { RM().setRead(lang, kind, key, false); App.closeSheet(); App.reload(); };
+  }
+
+  /* C / V — "faqat shu lug'atning so'zlarini ko'rish".
+     Lug'at bo'limining bosh sahifasida bu tugma butun papkani ochadi;
+     bitta lug'at ichida esa `folder` sifatida SHU kategoriyaning to'liq
+     yo'li beriladi, ya'ni ko'rgichda faqat shu lug'at chiqadi
+     (`vocab-browse.js` dagi `inScope`). */
+  function browseBtnHtml(lang, cat) {
+    return '<button class="icon-btn ghost voc-key" data-act="go" data-arg=\'' +
+      App.arg({ v: 'vocab_browse', p: { lang: lang, folder: cat, back: 'practice' } }) + '\' ' +
+      'aria-label="Shu lug\'atdagi so\'zlar" title="Shu lug\'atdagi so\'zlar">' +
+      (lang === 'russian' ? 'C' : 'V') + '</button>';
   }
 
   App.actions.vocabAllToggle = function (a) {
@@ -1485,19 +1609,30 @@
     /* Ikkinchi to'siq. Kirish qatorda yopilgan, lekin mashqqa boshqa yo'l
        bilan (eski havola, saqlangan holat) kelib qolinsa ham qulflangan
        kategoriyadan so'z chiqmasligi kerak. */
-    if (window.WordLock && WordLock.isLocked(cat)) return [];
+    /* `window.` prefiksi ikkala joyda ham yozilgan. Aralash yozuv
+       (`window.WordLock` tekshiruvi + yalang'och `WordLock` chaqiruvi)
+       brauzerda ishlaydi, chunki ular global — lekin bu tasodif, va
+       modul boshqa muhitda yuklansa darrov yiqiladi. */
+    if (window.WordLock && window.WordLock.isLocked(cat)) return [];
     var words = V.data[cat] || [];
     if (!words.length) return [];
-    /* "Hammasi" yoqilgan bo'lsa — oraliq ham, o'rganilganlar filtri ham
-       o'tkazib yuboriladi va ro'yxat butunligicha qaytadi. */
-    if (isAllMode(lang, cat)) return words.slice();
+    /* ORALIQ HAR DOIM ISHLAYDI — "Hammasi" yoqilganda ham.
+
+       Ilgari ON rejimi oraliqni ham o'chirardi va bu ikki sozlamani
+       BIR-BIRIGA BOG'LAB qo'ygan edi: "1-50 ni takrorlayman, lekin
+       o'rganilganlarini ham qo'sh" deyish imkonsiz edi — ON bosilishi
+       bilan 8000 ta so'zning hammasi mashqqa tushardi.
+
+       Endi ular MUSTAQIL: oraliq — QAYSI so'zlar, ON — o'rganilganlari
+       ham qo'shiladimi. */
     var r = getRange(lang, cat, words.length);
     var slice = words.slice(r.from - 1, r.to);
+    if (isAllMode(lang, cat)) return slice;
     /* "O'rgandim" deb belgilangan so'z mashqqa TUSHMAYDI. Flashcard,
        svayp, reels, test, tinglash, juftlash — hammasi shu funksiyadan
        so'z oladi, shuning uchun filtr shu yerda. Ilgari bu belgi faqat
        bosh sahifadagi filtr edi va o'rganilgan so'z mashqda chiqaverardi. */
-    return window.WordState ? WordState.forPractice(slice) : slice;
+    return window.WordState ? window.WordState.forPractice(slice) : slice;
   }
 
   App.actions.vocabRange = function (a) {
@@ -1557,6 +1692,7 @@
                    App.vocabText.isTemp(lang, cat);
       var rightTopHtml =
         allSwitchHtml(lang, cat) +
+        browseBtnHtml(lang, cat) +
         '<button class="icon-btn ghost" data-act="vocabExportCatMD" data-arg=\'' + App.arg({ lang: lang, cat: cat }) + '\' aria-label="MD yuklab olish" title=".md qilib yuklab olish"><span data-icon="download" data-icon-size="18"></span></button>' +
         (isRO ? '' : '<button class="icon-btn ghost" data-act="vocabCatManage" data-arg=\'' + App.arg({ lang: lang, cat: cat }) + '\' aria-label="Boshqarish" title="Kategoriyani boshqarish"><span data-icon="settings" data-icon-size="18"></span></button>');
 
@@ -1589,6 +1725,7 @@
                   App.vocabText.isTemp(lang, cat);
       var rightTopHtml =
         allSwitchHtml(lang, cat) +
+        browseBtnHtml(lang, cat) +
         '<button class="icon-btn ghost" data-act="vocabExportCatMD" data-arg=\'' + App.arg({ lang: lang, cat: cat }) + '\' aria-label="MD yuklab olish" title=".md qilib yuklab olish"><span data-icon="download" data-icon-size="18"></span></button>' +
         (isRO2 ? '' : '<button class="icon-btn ghost" data-act="vocabCatManage" data-arg=\'' + App.arg({ lang: lang, cat: cat }) + '\' aria-label="Boshqarish" title="Kategoriyani boshqarish"><span data-icon="settings" data-icon-size="18"></span></button>');
 
@@ -1601,26 +1738,24 @@
         '<div class="bar"><i style="width:' + (prog.total ? Math.round(prog.learned * 100 / prog.total) : 0) + '%"></i></div></div>' +
         '<button class="list-row" data-act="vocabRange" data-arg=\'' + App.arg({ lang: lang, cat: cat }) + '\' style="margin-bottom:14px">' +
         '<span class="li-ic" data-icon="list" data-icon-size="15"></span>' +
-        /* "Hammasi" yoqilganda oraliq ISHLAMAYDI — qator shuni ochiq
-           aytishi kerak, aks holda foydalanuvchi "21-100" yozuviga qarab
-           mashqda 80 ta so'z bo'ladi deb o'ylardi. */
+        /* Oraliq HAR DOIM ko'rsatiladi — ON yoqilganda ham u ishlaydi. */
         '<div class="li-main"><div class="li-title">' +
-        (allOn ? 'Hammasi yoqilgan — oraliq ishlamaydi'
-               : 'Oraliq: ' + r.from + '–' + r.to + (full ? ' (barchasi)' : '')) + '</div>' +
+        'Oraliq: ' + r.from + '–' + r.to + (full ? ' (barchasi)' : '') + '</div>' +
         /* Mashqda NECHTA so'z qolganini ham ko'rsatamiz: oraliq 150 bo'lsa
            ham, o'rganilganlar chiqarilgach 40 ta qolishi mumkin. Ilgari
            yorliq faqat oraliq kengligini aytardi va bu chalg'itardi. */
         '<div class="li-sub">' +
+        (r.to - r.from + 1) + ' ta so\'z' +
         (allOn
-          ? 'mashqda ' + practiceLeft + ' ta · o\'rganilganlar ham qo\'shildi'
-          : (r.to - r.from + 1) + ' ta so\'z' +
-            (practiceLeft < (r.to - r.from + 1) ? ' · mashqda ' + practiceLeft + ' ta' : '') +
-            ' · jami ' + total) +
+          ? ' · mashqda ' + practiceLeft + ' ta (o\'rganilganlar ham)'
+          : (practiceLeft < (r.to - r.from + 1) ? ' · mashqda ' + practiceLeft + ' ta' : '')) +
+        ' · jami ' + total +
         '</div></div>' +
         '<span class="li-chev" data-icon="arrowLeft" data-icon-size="16" style="transform:rotate(180deg)"></span></button>' +
         '<div class="btn-row" style="flex-direction:column;gap:10px">' +
         methodBtn('vocab_reels', lang, cat, 'play', 'Reels', 'btn-reels-ig') +
         methodBtn('vocab_flash', lang, cat, 'refresh', 'Flashcardlar', 'sec') +
+        methodBtn('vocab_dict', lang, cat, 'book', 'Lug\'at (so\'z va tarjima)') +
         methodBtn('vocab_pair', lang, cat, 'copy', 'Juftlash (o\'xshash so\'zlar)') +
         methodBtn('vocab_memo', lang, cat, 'check', 'Yodlash (svayp)') +
         methodBtn('vocab_speaker', lang, cat, 'volume', 'Tinglash (Speaker)') +
@@ -1969,6 +2104,422 @@
     }
     App.go('vocab_practice', { lang: SR.lang, cat: SR.cat });
   };
+
+  /* ================= LUG'AT — o'qish uchun ro'yxat =================
+
+     "So'zlar ro'yxati" dan FARQI: u tahrir vositasi (izoh, misol, qo'shish,
+     o'chirish — faqat adminda ma'noli). Bu esa YODLASH uchun: raqamlangan
+     ro'yxat, so'z va faqat tarjimasi, har qatorda holat belgisi.
+
+     Uch narsa:
+       1) UZ <-> RU almashtirish — chapda qaysi til turishini hal qiladi;
+       2) uzoq bosish -> holat (yodlangan / takrorlash kerak / qiynalyapman);
+       3) filtr — faqat kerakli holatdagi so'zlarni ko'rish.
+
+     Holat `WordState` da saqlanadi, ya'ni u mashqlarga ham ta'sir qiladi
+     ("yodlangan" so'z mashqda chiqmaydi) va boshqa qurilmaga sinxronlanadi. */
+
+  /* Ko'rinish holati — `App.reload()` dan keyin ham saqlanib qolsin. */
+  var VD = { flip: false, filter: '', mode: '', mask: '' };
+  var VD_FLIP_KEY = 'vocab_dict_flip_v1';
+  var VD_MASK_KEY = 'vocab_dict_mask_v1';
+
+  function vdReadFlip() {
+    try { return localStorage.getItem(VD_FLIP_KEY) === '1'; } catch (e) { return false; }
+  }
+  function vdWriteFlip(on) {
+    try { localStorage.setItem(VD_FLIP_KEY, on ? '1' : '0'); } catch (e) {}
+  }
+  function vdReadMask() {
+    try { return localStorage.getItem(VD_MASK_KEY) || ''; } catch (e) { return ''; }
+  }
+  function vdWriteMask(val) {
+    try { localStorage.setItem(VD_MASK_KEY, val || ''); } catch (e) {}
+  }
+
+  function vdWS() { return window.WordState; }
+
+  /* Qatorning chap va o'ng ustuni. Kalit (`w.ru`) HECH QACHON
+     o'zgarmaydi — almashtirish faqat ko'rinishga tegadi. */
+  function vdFace(w) {
+    var ws = vdWS();
+    if (!VD.flip) return w.ru;
+    return (ws ? ws.firstMeaning(w.uz) : w.uz) || w.ru;
+  }
+  function vdBack(w) {
+    var ws = vdWS();
+    if (!VD.flip) return (ws ? ws.firstMeaning(w.uz) : w.uz) || '';
+    return w.ru;
+  }
+
+  function vdStatuses() {
+    var ws = vdWS();
+    return (ws && ws.STATUSES) || [];
+  }
+  function vdStatusOf(ru) {
+    var ws = vdWS();
+    return ws && ws.statusOf ? ws.statusOf(ru) : '';
+  }
+  function vdStatusInfo(id) {
+    var list = vdStatuses();
+    for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+    return null;
+  }
+
+  var VD_FILTERS = [
+    { id: '', name: 'Hammasi' },
+    { id: 'learned', name: 'Yodlangan' },
+    { id: 'review', name: 'Takrorlash kerak' },
+    { id: 'hard', name: 'Qiynalyapman' },
+    { id: 'none', name: 'Belgilanmagan' }
+  ];
+  function vdFilterName(id) {
+    for (var i = 0; i < VD_FILTERS.length; i++) if (VD_FILTERS[i].id === id) return VD_FILTERS[i].name;
+    return 'Hammasi';
+  }
+  function vdPasses(ru) {
+    if (!VD.filter) return true;
+    var st = vdStatusOf(ru);
+    return VD.filter === 'none' ? !st : st === VD.filter;
+  }
+
+  /* Holat belgisi: yodlanganda galichka, qolganida rangli nuqta.
+     Rang YAKKA ko'rsatkich emas — rangni ajratolmaydigan ekranda ham
+     bilinishi uchun galichka shakli boshqa. */
+  function vdBadge(st) {
+    if (st === 'learned') {
+      return '<span class="vd-st vd-st-ok"><svg viewBox="0 0 24 24" width="12" height="12" fill="none">' +
+        '<path d="M5 12l5 5L20 6" stroke="currentColor" stroke-width="3.4" ' +
+        'stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
+    }
+    var inf = vdStatusInfo(st);
+    if (!inf) return '<span class="vd-st"></span>';
+    return '<span class="vd-st vd-st-dot" style="--st:' + inf.color + '"></span>';
+  }
+
+  function vdFlipLabel(lang) {
+    var src = lang === 'russian' ? 'RU' : 'EN';
+    return VD.flip ? 'UZ → ' + src : src + ' → UZ';
+  }
+
+  /* Xiralashtirish (ON - OFF - ON) holatini o'zgartirish */
+  function vdSetMask(target) {
+    if (VD.mask === target && target !== '') target = '';
+    VD.mask = target;
+    vdWriteMask(VD.mask);
+
+    var sw = App.el('vd-mask-switch');
+    if (sw) {
+      sw.querySelectorAll('.vd-ms-btn').forEach(function (b) {
+        b.classList.toggle('active', b.getAttribute('data-mask') === (VD.mask || ''));
+      });
+    }
+
+    var list = document.querySelector('.vd-list');
+    if (list) {
+      list.classList.remove('vd-mask-left', 'vd-mask-right');
+      if (VD.mask) list.classList.add('vd-mask-' + VD.mask);
+      list.querySelectorAll('.vd-row.revealed').forEach(function (r) {
+        r.classList.remove('revealed');
+      });
+    }
+
+    if (VD.mask === 'left') App.toast('Chap tomon xiralashtirildi (ko\'rish uchun ustiga bosing)');
+    else if (VD.mask === 'right') App.toast('O\'ng tomon xiralashtirildi (ko\'rish uchun ustiga bosing)');
+    else App.toast('Xiralashtirish o\'chirildi');
+  }
+
+  App.view('vocab_dict', {
+    nav: 'languages',
+    render: function (page, params) {
+      var lang = params.lang === 'russian' ? 'russian' : 'english', cat = params.cat;
+      VD.flip = vdReadFlip();
+      VD.mask = vdReadMask();
+
+      /* BITTA tugma — o'ngdagi menyu. Ilgari ikkita edi (tez rejim va
+         filtr), lekin sarlavhada ikki bir xil ko'rinishdagi tugma
+         turgani chalkash edi: qaysi biri nima qilishini eslab qolish
+         kerak bo'lardi. Endi ikkalasi ham shu menyuning ichida. */
+      var modeInf = vdStatusInfo(VD.mode);
+      var menuBtn =
+        '<button class="icon-btn ghost vd-menu-btn' + (VD.mode || VD.filter ? ' on' : '') + '" id="vd-menu" ' +
+        (modeInf ? 'style="color:' + modeInf.color + '" ' : '') +
+        'aria-label="Menyu" title="' +
+        (modeInf ? 'Tez rejim: ' + App.esc(modeInf.name)
+                 : (VD.filter ? 'Filtr: ' + App.esc(vdFilterName(VD.filter)) : 'Belgilash va filtr')) + '">' +
+        '<span data-icon="list" data-icon-size="17"></span></button>';
+
+      page.innerHTML = topbar(lastSeg(cat), 'vocab_practice', { lang: lang, cat: cat }, menuBtn) +
+        '<div class="vd-bar">' +
+          '<button class="vb-flip' + (VD.flip ? ' flipped' : '') + '" id="vd-flip" ' +
+            'aria-label="Tilni almashtirish" title="Chapda qaysi til turishini almashtirish">' +
+            '<span class="vb-flip-txt">' + App.esc(vdFlipLabel(lang)) + '</span>' +
+            '<span class="vb-flip-ic" data-icon="refresh" data-icon-size="14"></span>' +
+          '</button>' +
+          '<span class="vd-count" id="vd-count"></span>' +
+          '<div class="vd-mask-switch" id="vd-mask-switch" role="group" aria-label="Xiralashtirish (ON-OFF-ON)">' +
+            '<button type="button" class="vd-ms-btn' + (VD.mask === 'left' ? ' active' : '') + '" data-mask="left" title="Chap tomonni xiralashtirish (ON)">' +
+              '<span class="vd-ms-txt">Chap</span>' +
+            '</button>' +
+            '<button type="button" class="vd-ms-btn' + (!VD.mask ? ' active' : '') + '" data-mask="" title="Xiralashtirish o\'chiq (OFF)">' +
+              '<span class="vd-ms-txt">OFF</span>' +
+            '</button>' +
+            '<button type="button" class="vd-ms-btn' + (VD.mask === 'right' ? ' active' : '') + '" data-mask="right" title="O\'ng tomonni xiralashtirish (ON)">' +
+              '<span class="vd-ms-txt">O\'ng</span>' +
+            '</button>' +
+          '</div>' +
+        '</div>' +
+        '<div id="vd-list"><div class="load-wrap"><div class="spinner"></div></div></div>';
+      App.icons(page);
+
+      var mb = App.el('vd-menu');
+      if (mb) mb.onclick = function () { vdMenuSheet(page, lang, cat); };
+
+      var maskSw = App.el('vd-mask-switch');
+      if (maskSw) {
+        maskSw.querySelectorAll('.vd-ms-btn').forEach(function (btn) {
+          btn.onclick = function () {
+            vdSetMask(btn.getAttribute('data-mask'));
+          };
+        });
+      }
+
+      var flip = App.el('vd-flip');
+      if (flip) flip.onclick = function () {
+        VD.flip = !VD.flip;
+        vdWriteFlip(VD.flip);
+        flip.classList.toggle('flipped', VD.flip);
+        var t = flip.querySelector('.vb-flip-txt');
+        if (t) t.textContent = vdFlipLabel(lang);
+        var list = App.el('vd-list');
+        if (list) list.classList.add('vb-turning');
+        setTimeout(function () { vdPaint(page, lang, cat); }, 130);
+      };
+
+      if (V.lang === lang && V.data[cat]) vdPaint(page, lang, cat);
+      else loadDict(lang).then(function () { vdPaint(page, lang, cat); });
+    }
+  });
+
+  function vdPaint(page, lang, cat) {
+    var box = App.el('vd-list'); if (!box) return;
+    var words = V.data[cat] || [];
+
+    /* Raqam HAR DOIM lug'atdagi asl o'rni bo'yicha: filtrlanganda ham
+       "127-so'z" o'sha so'z bo'lib qolsin, aks holda filtrni yoqib-o'chirib
+       turganda raqamlar sakrab, so'zni topib bo'lmasdi. */
+    var rows = [];
+    words.forEach(function (w, i) {
+      if (!vdPasses(w.ru)) return;
+      rows.push({ w: w, n: i + 1, st: vdStatusOf(w.ru) });
+    });
+
+    var cnt = App.el('vd-count');
+    if (cnt) {
+      cnt.textContent = VD.filter
+        ? rows.length + ' / ' + words.length + ' · ' + vdFilterName(VD.filter)
+        : words.length + ' ta so\'z';
+    }
+
+    if (!rows.length) {
+      box.innerHTML = App.empty({
+        icon: 'list',
+        title: VD.filter ? 'Bu holatda so\'z yo\'q' : 'Lug\'at bo\'sh',
+        text: VD.filter
+          ? '«' + vdFilterName(VD.filter) + '» deb belgilangan so\'z topilmadi. Filtrni o\'zgartiring.'
+          : 'Bu lug\'atda hali so\'z yo\'q.'
+      });
+      App.icons(box);
+      box.classList.remove('vb-turning');
+      return;
+    }
+
+    box.innerHTML = '<div class="vd-list' + (VD.mask ? ' vd-mask-' + VD.mask : '') + '">' + rows.map(function (r) {
+      return '<button class="vd-row' + (r.st ? ' st-' + r.st : '') + '" data-ru="' + App.esc(r.w.ru) + '">' +
+        '<span class="vd-n">' + r.n + '</span>' +
+        '<span class="vd-main">' +
+          '<span class="vd-a">' + App.esc(vdFace(r.w)) + '</span>' +
+          '<span class="vd-b">' + App.esc(vdBack(r.w)) + '</span>' +
+        '</span>' +
+        vdBadge(r.st) +
+        '<span class="rm-hold-bar"></span></button>';
+    }).join('') + '</div>';
+    App.icons(box);
+    box.classList.remove('vb-turning');
+    vdBindRows(box, page, lang, cat);
+  }
+
+  /* Uzoq bosish — holat varag'i. Qisqa bosish — so'zni ovoz bilan o'qish.
+     Ikkisi ajratilishi shart: qisqa bosish ham holat qo'ysa, ro'yxatni
+     aylantirayotganda tasodifan belgilanib ketardi. */
+  function vdBindRows(box, page, lang, cat) {
+    box.querySelectorAll('.vd-row').forEach(function (row) {
+      var ru = row.getAttribute('data-ru');
+      var timer = null, fired = false, sx = 0, sy = 0;
+
+      function stop() {
+        if (timer) { clearTimeout(timer); timer = null; }
+        row.classList.remove('rm-holding');
+      }
+      row.addEventListener('pointerdown', function (e) {
+        if (e.button != null && e.button !== 0) return;
+        sx = e.clientX; sy = e.clientY;
+        fired = false;
+        row.classList.add('rm-holding');
+        timer = setTimeout(function () {
+          fired = true;
+          stop();
+          try { if (navigator.vibrate) navigator.vibrate(35); } catch (e2) {}
+          vdStatusSheet(page, lang, cat, ru);
+        }, (window.ReadMark && window.ReadMark.HOLD_MS) || 3000);
+      });
+      row.addEventListener('pointermove', function (e) {
+        if (timer && (Math.abs(e.clientX - sx) > 10 || Math.abs(e.clientY - sy) > 10)) stop();
+      });
+      ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) {
+        row.addEventListener(ev, stop);
+      });
+      row.addEventListener('click', function (e) {
+        if (fired) { fired = false; e.preventDefault(); e.stopPropagation(); return; }
+        /* TEZ REJIM yoqilgan bo'lsa — bosilgan so'z darrov shu belgini
+           oladi. O'nlab so'zni belgilash uchun har birini 3 soniya
+           bosib turish juda sekin edi. */
+        if (VD.mode) { vdQuickMark(row, ru); return; }
+
+        /* Xiralashtirish (mask) yoqilgan bo'lsa — bosilganda ochish/yopish */
+        if (VD.mask) {
+          row.classList.toggle('revealed');
+        }
+
+        /* Aks holda qisqa bosish — talaffuz. */
+        if (window.TTS) window.TTS.speak(ru, { lang: lang === 'russian' ? 'ru-RU' : 'en-US' });
+      });
+    });
+  }
+
+  /* Bosilgan qatorga joriy rejim belgisini qo'yadi.
+     BUTUN RO'YXAT QAYTA CHIZILMAYDI: 8000 qatorli lug'atda har bosishda
+     qayta chizish sezilarli sekinlik berar, ustiga ro'yxat boshiga
+     sakrab ketardi. Faqat shu qatorning ko'rinishi yangilanadi.
+
+     Qayta bosilsa belgi olinadi — xato bosilganini darrov qaytarish
+     uchun (rejimni o'chirishga hojat yo'q). */
+  function vdQuickMark(row, ru) {
+    var ws = vdWS(); if (!ws) return;
+    var next = vdStatusOf(ru) === VD.mode ? '' : VD.mode;
+    ws.setStatus(ru, next);
+
+    vdStatuses().forEach(function (st) { row.classList.remove('st-' + st.id); });
+    if (next) row.classList.add('st-' + next);
+
+    var badge = row.querySelector('.vd-st');
+    if (badge) {
+      var tmp = document.createElement('div');
+      tmp.innerHTML = vdBadge(next);
+      row.replaceChild(tmp.firstChild, badge);
+    }
+    try { if (navigator.vibrate) navigator.vibrate(next ? 18 : 8); } catch (e) {}
+  }
+
+  /* O'ngdagi menyu — IKKI bo'lim bitta varaqda.
+
+     Ular bir-biriga o'xshaydi (uchala holat ikki marta chiqadi), lekin
+     ma'nosi butunlay boshqa, shuning uchun har bo'lim tepasida nima
+     qilishi ochiq yozilgan:
+       Belgilash — bosilgan so'zga belgi QO'YADI;
+       Ko'rsatish — faqat shu belgidagilarni QOLDIRADI. */
+  function vdMenuSheet(page, lang, cat) {
+    var words = V.data[cat] || [];
+    var counts = { '': words.length, learned: 0, review: 0, hard: 0, none: 0 };
+    words.forEach(function (w) {
+      var st = vdStatusOf(w.ru);
+      if (st) counts[st]++; else counts.none++;
+    });
+
+    function iconOf(id) { return id === 'learned' ? 'check' : 'alert'; }
+
+    var html =
+      '<div class="list-label">Belgilash (tez rejim)</div>' +
+      '<p class="muted" style="font-size:12px;margin:0 0 8px;line-height:1.45">' +
+      'Belgini tanlang — shundan keyin bosilgan HAR SO\'Z shu holatga o\'tadi. ' +
+      'Qayta bosilsa belgi olinadi.</p>' +
+      vdStatuses().map(function (st) {
+        var on = VD.mode === st.id;
+        return '<button class="list-row vd-mpick" data-m="' + st.id + '">' +
+          '<span class="li-ic" style="background:color-mix(in srgb, ' + st.color + ' 18%, transparent);color:' + st.color + '" ' +
+            'data-icon="' + iconOf(st.id) + '" data-icon-size="15"></span>' +
+          '<div class="li-main"><div class="li-title">' + App.esc(st.name) + '</div>' +
+          '<div class="li-sub">' + App.esc(st.hint) + '</div></div>' +
+          (on ? '<span class="li-chev" data-icon="check" data-icon-size="16"></span>' : '') +
+          '</button>';
+      }).join('') +
+      (VD.mode ? '<button class="list-row vd-mpick" data-m="">' +
+        '<span class="li-ic" data-icon="close" data-icon-size="15"></span>' +
+        '<div class="li-main"><div class="li-title">Tez rejimni o\'chirish</div>' +
+        '<div class="li-sub">Bosilganda so\'z ovoz bilan o\'qiladi</div></div></button>' : '') +
+
+      '<div class="list-label" style="margin-top:16px">Ko\'rsatish (filtr)</div>' +
+      VD_FILTERS.map(function (f) {
+        var on = VD.filter === f.id;
+        return '<button class="list-row vd-fpick" data-f="' + f.id + '">' +
+          '<span class="li-ic"' + (on ? ' style="background:var(--accent-soft);color:var(--accent)"' : '') +
+            ' data-icon="' + (on ? 'check' : 'list') + '" data-icon-size="15"></span>' +
+          '<div class="li-main"><div class="li-title">' + App.esc(f.name) + '</div>' +
+          '<div class="li-sub">' + (counts[f.id] || 0) + ' ta so\'z</div></div></button>';
+      }).join('');
+
+    var sh = App.sheet(html, { title: 'Lug\'at' });
+    App.icons(sh);
+
+    /* Belgilash — ro'yxat o'zgarmaydi, faqat sarlavhadagi tugma yonadi. */
+    sh.querySelectorAll('.vd-mpick').forEach(function (b) {
+      b.onclick = function () {
+        var m = b.getAttribute('data-m');
+        VD.mode = (VD.mode === m) ? '' : m;     // qayta bosilsa o'chadi
+        App.closeSheet();
+        var inf = vdStatusInfo(VD.mode);
+        App.toast(inf ? 'Belgilash: ' + inf.name : 'Tez rejim o\'chirildi');
+        App.reload();
+      };
+    });
+
+    sh.querySelectorAll('.vd-fpick').forEach(function (b) {
+      b.onclick = function () {
+        VD.filter = b.getAttribute('data-f');
+        App.closeSheet();
+        App.reload();
+      };
+    });
+  }
+
+  function vdStatusSheet(page, lang, cat, ru) {
+    var cur = vdStatusOf(ru);
+    var html = '<p class="muted" style="margin:0 0 12px;font-size:13px"><b>' + App.esc(ru) + '</b></p>' +
+      vdStatuses().map(function (st) {
+        var on = cur === st.id;
+        return '<button class="list-row vd-pick" data-st="' + st.id + '">' +
+          '<span class="li-ic" style="background:color-mix(in srgb, ' + st.color + ' 18%, transparent);color:' + st.color + '" ' +
+            'data-icon="' + (st.id === 'learned' ? 'check' : 'alert') + '" data-icon-size="15"></span>' +
+          '<div class="li-main"><div class="li-title">' + App.esc(st.name) + '</div>' +
+          '<div class="li-sub">' + App.esc(st.hint) + '</div></div>' +
+          (on ? '<span class="li-chev" data-icon="check" data-icon-size="16"></span>' : '') +
+          '</button>';
+      }).join('') +
+      (cur ? '<button class="list-row vd-pick" data-st="" style="color:var(--danger)">' +
+        '<span class="li-ic" style="background:var(--danger-soft);color:var(--danger)" data-icon="close" data-icon-size="15"></span>' +
+        '<div class="li-main"><div class="li-title" style="color:var(--danger)">Belgini olib tashlash</div></div></button>' : '');
+
+    var sh = App.sheet(html, { title: 'Holat' });
+    App.icons(sh);
+    sh.querySelectorAll('.vd-pick').forEach(function (b) {
+      b.onclick = function () {
+        var ws = vdWS();
+        if (ws) ws.setStatus(ru, b.getAttribute('data-st'));
+        App.closeSheet();
+        vdPaint(page, lang, cat);
+      };
+    });
+  }
 
   /* ---------- So'zlar ro'yxati: qidiruv + bitta so'zni tahrirlash ---------- */
   function saveWords(lang, cat, words) {

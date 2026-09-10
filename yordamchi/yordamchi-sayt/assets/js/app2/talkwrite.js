@@ -584,7 +584,7 @@
           ["### Kerakli iboralar", "Tayyor iboralar, har biri `- ibora :: tarjima` ko'rinishida."],
           ["### Ulagichlar", "Gapirayotganda TO'XTAB QOLMASLIK uchun ulovchi so'zlar: во-первых, кроме того, что касается..."],
           ["### Namuna javob", "To'liq javob namunasi; har gapdan keyin `:: tarjima`."],
-          ["### Tez-tez qilinadigan xato", "IXTIYORIY. Nimadan ehtiyot bo'lish kerak."]
+          ["### Tez-tez qilinadigan xato", "Uchta xato: xato nima, nega xato, to'g'ri varianti qanday."]
         ]
       : [
           ["### Mavzu nima haqida", "Mavzuning ma'nosi: nima haqida yozish kerak, qaysi tomonini ochish kerak."],
@@ -593,7 +593,7 @@
           ["### Kerakli iboralar", "Tayyor iboralar, har biri `- ibora :: tarjima` ko'rinishida."],
           ["### Bog'lovchilar", "Matnni DAVOM ETTIRISH uchun bog'lovchilar: во-первых, кроме того, в заключение..."],
           ["### Namuna matn", "To'liq namuna matn; har gapdan keyin `:: tarjima`."],
-          ["### Tez-tez qilinadigan xato", "IXTIYORIY. Nimadan ehtiyot bo'lish kerak."]
+          ["### Tez-tez qilinadigan xato", "Uchta xato: xato nima, nega xato, to'g'ri varianti qanday."]
         ];
 
     var out = [];
@@ -688,16 +688,38 @@
       out.push("<" + b[1].replace(/`/g, '') + ">");
       out.push("");
     });
+    out.push("HAJM — eng muhimi. Qisqa yozma:");
+    out.push("- «" + blocks[0][0].replace('### ', '') + "» — 4-6 gap.");
+    out.push("- «" + blocks[1][0].replace('### ', '') + "» — 5-7 qadam, har biri to'liq gap.");
+    out.push("- Iboralar — 10-14 ta, har biri tayyor to'liq gap.");
+    out.push("- " + (speak ? "«Ulagichlar»" : "«Bog'lovchilar»") + " — 8-10 ta. Bu bo'lim eng muhimi: odam aynan");
+    out.push("  shu yerda to'xtab qoladi.");
+    out.push("- Namuna — 10-14 gap, rejaga amal qilsin.");
+    out.push("- «Tez-tez qilinadigan xato» — 3 ta: xato nima, nega xato, to'g'risi qanday.");
+    out.push("");
     out.push("QOIDALAR:");
-    out.push("- PDF dagi HAR " + unit + " uchun shu bloklarning HAMMASINI yoz");
-    out.push("  («Tez-tez qilinadigan xato» ixtiyoriy).");
+    out.push("- PDF dagi HAR " + unit + " uchun shu bloklarning HAMMASINI yoz.");
     out.push("- `## ` va `### ` sarlavhalarini AYNAN yuqoridagidek nomla.");
     out.push("- Har iborani `- ibora :: o'zbekcha tarjima` ko'rinishida yoz.");
-    out.push("- " + (speak ? "«Ulagichlar»" : "«Bog'lovchilar»") + " bo'limida kamida 4 ta ifoda bo'lsin.");
-    out.push("- Namunada kamida 5 ta gap bo'lsin, har biridan keyin `:: tarjima`.");
-    out.push("- Tarjimalar O'ZBEK tilida, tabiiy va qisqa bo'lsin.");
-    out.push("- `**`, jadval, havola va boshqa markdown belgilarini ishlatma.");
-    out.push("- Javobni faqat .md matn sifatida ber, izohsiz.");
+    out.push("- Namunada har gapdan keyin alohida qatorda `:: tarjima`.");
+    out.push("- Tarjimalar O'ZBEK tilida, tabiiy bo'lsin — so'zma-so'z emas.");
+    out.push("- `**qalin**`, jadval, havola, emoji ishlatma: bo'lim matnni bezaksiz");
+    out.push("  ko'rsatadi va ekranda `**` yozuv bo'lib qoladi.");
+    out.push("- " + unit.charAt(0).toUpperCase() + unit.slice(1) + "larni PDF dagi tartibda qoldir, birortasini tashlab ketma.");
+    out.push("");
+    /* ISH TARTIBI — foydalanuvchi shikoyatidan keyin (2026-09-09):
+       AI javobni ``` kod bloki ichida berardi va uni qo'lda .md ga
+       ko'chirish kerak bo'lardi; qismlarni ham o'zi ulash kerak edi. */
+    out.push("ISH TARTIBI:");
+    out.push("- Avval PDF da nechta " + unit + " borligini sana va ayt.");
+    out.push("- Hammasini bitta javobga sig'dirma — kesilib qoladi. Ko'pi bilan");
+    out.push("  5 tadan bo'lib yoz (10 ta bo'lsa 5+5, 8 ta bo'lsa 5+3).");
+    out.push("- Har qism oxirida «DAVOM» deb qo'y, men «davom et» deyman.");
+    out.push("- OXIRGI qismdan keyin hammasini BIRLASHTIRIB, bitta to'liq .md");
+    out.push("  FAYL qilib ber (yuklab olsam bo'ladigan).");
+    out.push("- Faylni ``` kod bloki ichiga SOLMA — u .md fayl bo'lishi kerak,");
+    out.push("  kod emas. Fayl yarata olmasang, ``` belgilarisiz toza matn ber.");
+    out.push("- Izoh, kirish so'zi va «mana tayyor» kabi gaplarni yozma.");
     out.push("");
     out.push("PDF: <shu yerga faylni biriktiring>");
     out.push("```");
