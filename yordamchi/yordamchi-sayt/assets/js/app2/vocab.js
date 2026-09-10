@@ -2341,16 +2341,19 @@
 
   App.view('vocab_dict', {
     nav: 'languages',
+    leave: function () {
+      var p = App.el('page');
+      if (p) p.classList.remove('page-vocab-dict');
+    },
     render: function (page, params) {
       var lang = params.lang === 'russian' ? 'russian' : 'english', cat = params.cat;
+      page.classList.add('page-vocab-dict');
       VD.flip = vdReadFlip();
       VD.mask = vdReadMask();
       VD.join = vdReadJoin();
 
-      /* BITTA tugma — o'ngdagi menyu. Ilgari ikkita edi (tez rejim va
-         filtr), lekin sarlavhada ikki bir xil ko'rinishdagi tugma
-         turgani chalkash edi: qaysi biri nima qilishini eslab qolish
-         kerak bo'lardi. Endi ikkalasi ham shu menyuning ichida. */
+      /* BITTA tugma — o'ngdagi menyu. Til (uz - ru) va xiralashtirish
+         (ON-OFF-ON) ham shu menyuning ichiga ko'chirildi. */
       var modeInf = vdStatusInfo(VD.mode);
       var menuBtn =
         '<button class="icon-btn ghost vd-menu-btn' + (VD.mode || VD.filter || VD.join ? ' on' : '') + '" id="vd-menu" ' +
@@ -2363,49 +2366,13 @@
 
       page.innerHTML = topbar(lastSeg(cat), 'vocab_practice', { lang: lang, cat: cat }, menuBtn) +
         '<div class="vd-bar">' +
-          '<button type="button" class="vd-lang-toggle' + (VD.flip ? ' flipped' : '') + '" id="vd-flip" ' +
-            'aria-label="' + App.esc(vdFlipLabel(lang)) + '" title="' + App.esc(vdFlipLabel(lang)) + '">' +
-            '<div class="vd-lt-track">' +
-              '<span class="vd-lt-knob"><span class="vd-lt-ring"><span class="vd-lt-core"></span></span></span>' +
-              '<span class="vd-lt-txt">' + App.esc(VD.flip ? 'UZ' : (lang === 'russian' ? 'RU' : 'EN')) + '</span>' +
-            '</div>' +
-          '</button>' +
           '<span class="vd-count" id="vd-count"></span>' +
-          '<div class="vd-mask-switch" id="vd-mask-switch" data-val="' + (VD.mask || 'off') + '" role="group" aria-label="Xiralashtirish (ON-OFF-ON)">' +
-            '<div class="vd-ms-thumb"></div>' +
-            '<button type="button" class="vd-ms-btn' + (VD.mask === 'left' ? ' active' : '') + '" data-mask="left" title="Chap tomonni xiralashtirish (ON)">ON</button>' +
-            '<button type="button" class="vd-ms-btn' + (!VD.mask ? ' active' : '') + '" data-mask="" title="Xiralashtirish o\'chiq (OFF)">OFF</button>' +
-            '<button type="button" class="vd-ms-btn' + (VD.mask === 'right' ? ' active' : '') + '" data-mask="right" title="O\'ng tomonni xiralashtirish (ON)">ON</button>' +
-          '</div>' +
         '</div>' +
         '<div id="vd-list"><div class="load-wrap"><div class="spinner"></div></div></div>';
       App.icons(page);
 
       var mb = App.el('vd-menu');
       if (mb) mb.onclick = function () { vdMenuSheet(page, lang, cat); };
-
-      var maskSw = App.el('vd-mask-switch');
-      if (maskSw) {
-        maskSw.querySelectorAll('.vd-ms-btn').forEach(function (btn) {
-          btn.onclick = function () {
-            vdSetMask(btn.getAttribute('data-mask'));
-          };
-        });
-      }
-
-      var flip = App.el('vd-flip');
-      if (flip) flip.onclick = function () {
-        VD.flip = !VD.flip;
-        vdWriteFlip(VD.flip);
-        flip.classList.toggle('flipped', VD.flip);
-        flip.setAttribute('aria-label', vdFlipLabel(lang));
-        flip.setAttribute('title', vdFlipLabel(lang));
-        var t = flip.querySelector('.vd-lt-txt');
-        if (t) t.textContent = VD.flip ? 'UZ' : (lang === 'russian' ? 'RU' : 'EN');
-        var list = App.el('vd-list');
-        if (list) list.classList.add('vb-turning');
-        setTimeout(function () { vdPaint(page, lang, cat); }, 130);
-      };
 
       if (V.lang === lang && V.data[cat]) vdPaint(page, lang, cat);
       else loadDict(lang).then(function () { vdPaint(page, lang, cat); });
@@ -2434,12 +2401,12 @@
         });
       });
     } else {
-      /* Oddiy holatda har bir so'zning asl o'rni: i + 1 (1, 2, 3, 4, 5...) */
+      /* Filtrlanganda ham so'zlar 1, 2, 3... deb ketadi */
       words.forEach(function (w, i) {
         if (!vdPasses(w.ru)) return;
         rows.push({
           w: w,
-          n: i + 1,
+          n: rows.length + 1,
           st: vdStatusOf(w.ru),
           familyId: null,
           familyColor: null
@@ -2598,6 +2565,27 @@
           '<span data-icon="close" data-icon-size="16"></span>' +
         '</button>' +
       '</div>' +
+      '<div class="vd-p-toolbar">' +
+        '<div class="vd-p-tool">' +
+          '<span class="vd-p-tool-lbl">Til:</span>' +
+          '<button type="button" class="vd-lang-toggle' + (VD.flip ? ' flipped' : '') + '" id="vd-flip" ' +
+            'aria-label="' + App.esc(vdFlipLabel(lang)) + '" title="' + App.esc(vdFlipLabel(lang)) + '">' +
+            '<div class="vd-lt-track">' +
+              '<span class="vd-lt-knob"><span class="vd-lt-ring"><span class="vd-lt-core"></span></span></span>' +
+              '<span class="vd-lt-txt">' + App.esc(VD.flip ? 'UZ' : (lang === 'russian' ? 'RU' : 'EN')) + '</span>' +
+            '</div>' +
+          '</button>' +
+        '</div>' +
+        '<div class="vd-p-tool">' +
+          '<span class="vd-p-tool-lbl">Xira:</span>' +
+          '<div class="vd-mask-switch" id="vd-mask-switch" data-val="' + (VD.mask || 'off') + '" role="group" aria-label="Xiralashtirish (ON-OFF-ON)">' +
+            '<div class="vd-ms-thumb"></div>' +
+            '<button type="button" class="vd-ms-btn' + (VD.mask === 'left' ? ' active' : '') + '" data-mask="left" title="Chap tomonni xiralashtirish (ON)">ON</button>' +
+            '<button type="button" class="vd-ms-btn' + (!VD.mask ? ' active' : '') + '" data-mask="" title="Xiralashtirish o\'chiq (OFF)">OFF</button>' +
+            '<button type="button" class="vd-ms-btn' + (VD.mask === 'right' ? ' active' : '') + '" data-mask="right" title="O\'ng tomonni xiralashtirish (ON)">ON</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
 
       '<div class="vd-p-tabs" role="tablist">' +
         '<button type="button" class="vd-p-tab' + (activeTab === 'join' ? ' active' : '') + '" data-tab="join">' +
@@ -2693,6 +2681,35 @@
 
     var closeBtn = (sh.querySelectorAll && sh.querySelectorAll('#vd-panel-close')[0]) || (sh.querySelector && sh.querySelector('#vd-panel-close'));
     if (closeBtn) closeBtn.onclick = function () { App.closeSheet(); };
+
+    var flip = (sh.querySelectorAll && sh.querySelectorAll('#vd-flip')[0]) || (sh.querySelector && sh.querySelector('#vd-flip'));
+    if (flip) {
+      flip.onclick = function () {
+        VD.flip = !VD.flip;
+        vdWriteFlip(VD.flip);
+        flip.classList.toggle('flipped', VD.flip);
+        flip.setAttribute('aria-label', vdFlipLabel(lang));
+        flip.setAttribute('title', vdFlipLabel(lang));
+        var t = flip.querySelector ? flip.querySelector('.vd-lt-txt') : (flip.querySelectorAll ? flip.querySelectorAll('.vd-lt-txt')[0] : null);
+        if (t) t.textContent = VD.flip ? 'UZ' : (lang === 'russian' ? 'RU' : 'EN');
+        if (page) vdPaint(page, lang, cat);
+      };
+    }
+
+    var maskSw = (sh.querySelectorAll && sh.querySelectorAll('#vd-mask-switch')[0]) || (sh.querySelector && sh.querySelector('#vd-mask-switch'));
+    if (maskSw) {
+      var maskBtns = maskSw.querySelectorAll ? maskSw.querySelectorAll('.vd-ms-btn') : [];
+      maskBtns.forEach(function (btn) {
+        btn.onclick = function () {
+          var m = btn.getAttribute('data-mask');
+          vdSetMask(m);
+          maskSw.setAttribute('data-val', VD.mask || 'off');
+          maskBtns.forEach(function (b) {
+            b.classList.toggle('active', b.getAttribute('data-mask') === (VD.mask || ''));
+          });
+        };
+      });
+    }
 
     var tabs = sh.querySelectorAll('.vd-p-tab');
     tabs.forEach(function (tab) {

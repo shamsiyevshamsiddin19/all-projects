@@ -2185,15 +2185,15 @@ async function audioBufferTests() {
   eq('filtr: belgilanmagan',
     words.filter((w) => D.vdPasses(w.ru)).map((w) => w.ru), ['бежать', 'а', 'дверь']);
 
-  /* --- Raqamlash: filtrda ham ASL o'rni saqlanadi ---
-     Bu muhim: filtrni yoqib-o'chirib turganda raqamlar sakrasa, so'zni
-     "127-chi" deb topib bo'lmasdi. */
+  /* --- Raqamlash: filtrlanganda ham 1, 2, 3... deb ketadi ---
+     Foydalanuvchi talabi: filtrlanganda so'zlar 1, 2, 3... deb ketsin,
+     o'zining raqami bilan chiqishi shart emas. */
   D.VD.filter = 'none';
   D.vdPaint(null, 'russian', 'Test');
   const html = D.node('vd-list').innerHTML;
   const nums = (html.match(/<span class="vd-n">(\d+)<\/span>/g) || [])
     .map((x) => x.replace(/\D/g, ''));
-  eq('raqamlar asl o\'rnida qoladi', nums, ['2', '3', '5']);
+  eq('raqamlar filtrda 1 2 3 deb ketadi', nums, ['1', '2', '3']);
   check('filtrlangan so\'z chizildi', html.indexOf('бежать') >= 0, html.slice(0, 200));
   check('filtrlanmagani chizilmadi', html.indexOf('дом') < 0);
 
