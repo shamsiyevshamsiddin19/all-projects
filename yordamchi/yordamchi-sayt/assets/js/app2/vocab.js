@@ -2472,36 +2472,15 @@
       return;
     }
 
-    var lastFamId = null;
-    var hasShownSingletonDivider = false;
-
     var rowsHtml = rows.map(function (r) {
-      var dividerHtml = '';
-      if (VD.join && r.familyId && r.familyId !== lastFamId) {
-        lastFamId = r.familyId;
-        dividerHtml = '<div class="vd-family-divider" style="--fam-accent:' + r.familyAccent + ';--fam-color:' + r.familyColor + '">' +
-          '<span class="vd-fd-dot"></span>' +
-          '<span class="vd-fd-title">' + App.esc(r.groupTitle || 'Oila') + '</span>' +
-          '<span class="vd-fd-badge">' + r.familySize + ' ta so\'z</span>' +
-          '</div>';
-      } else if (VD.join && r.isSingleton && !hasShownSingletonDivider && joinData && joinData.familyCount > 0) {
-        hasShownSingletonDivider = true;
-        dividerHtml = '<div class="vd-family-divider vd-fd-singletons">' +
-          '<span class="vd-fd-dot"></span>' +
-          '<span class="vd-fd-title">Yakka so\'zlar</span>' +
-          '<span class="vd-fd-badge">' + (joinData.singletonCount || '') + ' ta</span>' +
-          '</div>';
-      }
-
       var rowStyle = '';
       var rowClass = 'vd-row' + (r.st ? ' st-' + r.st : '');
       if (r.familyColor) {
         rowClass += ' vd-row-pair';
-        rowStyle = ' style="--fam-color:' + r.familyColor + ';--fam-accent:' + r.familyAccent + '"';
+        rowStyle = ' style="--fam-color:' + r.familyColor + '"';
       }
 
-      return dividerHtml +
-        '<button class="' + rowClass + '"' + rowStyle + ' data-ru="' + App.esc(r.w.ru) + '">' +
+      return '<button class="' + rowClass + '"' + rowStyle + ' data-ru="' + App.esc(r.w.ru) + '">' +
         '<span class="vd-n">' + r.n + '</span>' +
         '<span class="vd-main">' +
           '<span class="vd-a">' + App.esc(vdFace(r.w)) + '</span>' +
