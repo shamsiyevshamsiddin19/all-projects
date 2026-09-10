@@ -2436,7 +2436,7 @@
       if (!vdPasses(w.ru)) return;
       rows.push({
         w: w,
-        n: wordOrigIndex[w.ru] || 1,
+        n: (VD.join && joinData) ? (rows.length + 1) : (wordOrigIndex[w.ru] || 1),
         st: vdStatusOf(w.ru),
         familyId: item.familyId,
         familySize: item.familySize,

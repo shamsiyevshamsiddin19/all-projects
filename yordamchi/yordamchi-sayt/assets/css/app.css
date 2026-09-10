@@ -4871,10 +4871,10 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   font-weight: 950;
 }
 
-/* ==================== 3. Juftlash (Bir oilaning yozuv rangini bir xil qilish) ==================== */
-.vd-row.vd-row-pair .vd-a {
+/* ==================== 3. Juftlash (Faqat raqamlarni o'zi bo'yaladi) ==================== */
+.vd-row.vd-row-pair .vd-n {
   color: var(--fam-color);
-  font-weight: 750;
+  font-weight: 800;
 }
 
 /* Kompyuterda qator 1100 pikselgacha cho'zilib ketardi: so'z chap
