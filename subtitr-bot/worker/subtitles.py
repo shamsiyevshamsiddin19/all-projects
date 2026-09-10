@@ -7,8 +7,10 @@ bo'ladi va uslub beradi (toza kontur).
 from __future__ import annotations
 
 import math
+import os
 import textwrap
 
+from config import settings
 from worker import substyle
 
 
@@ -106,6 +108,37 @@ def wrap_lines(text: str, cpl: int, max_lines: int = 2) -> list[str]:
     return lines
 
 
+def resolve_font() -> str:
+    """Subtitr shrifti nomi.
+
+    SUB_FONT berilgan bo'lsa — o'sha. Aks holda dastur bilan keladigan qalin
+    shrift (assets/fonts/), u ham bo'lmasa tizimdagi Noto Sans."""
+    explicit = (settings.sub_font or "").strip()
+    if explicit:
+        return explicit
+    from worker.ffmpeg_utils import bundled_font_name
+    return bundled_font_name() or "Noto Sans"
+
+
+def _orig_box_style_line(font: str, layout: dict, style: dict, align: int) -> str:
+    """Asl qator uchun to'ldirilgan quti uslubi (BorderStyle=3).
+
+    Quti faqat shu uslubdagi qatorni o'raydi — shuning uchun asl matn va
+    tarjima alohida Dialogue bo'lib yoziladi (aks holda sariq fon tarjimani
+    ham yutib yuboradi)."""
+    if not style.get("orig_box"):
+        return ""
+    pad = max(4, round(layout["font_size"] * 0.16))
+    spacing = max(0, round(layout["font_size"] * 0.04))
+    text_c = substyle.ass_color(style.get("box_text_color") or "#000000")
+    fill_c = substyle.ass_color(style.get("box_color") or "#FFD400")
+    return (
+        f"Style: OrigBox,{font},{layout['font_size']},{text_c},&H000000FF,"
+        f"{fill_c},&H00000000,0,0,0,0,100,100,{spacing},0,3,{pad},0,{align},"
+        f"{layout['margin_lr']},{layout['margin_lr']},{layout['margin_v']},1\n"
+    )
+
+
 def _ass_header(width: int, height: int, font: str, layout: dict,
                 style: dict) -> str:
     primary = substyle.ass_color(style["text_color"])
@@ -135,7 +168,9 @@ def _ass_header(width: int, height: int, font: str, layout: dict,
         f"Style: Default,{font},{layout['font_size']},{primary},&H000000FF,"
         f"{outline_c},{back},{bold},0,0,0,100,100,0,0,{border_style},"
         f"{layout['outline']},{shadow},{align},"
-        f"{layout['margin_lr']},{layout['margin_lr']},{layout['margin_v']},1\n\n"
+        f"{layout['margin_lr']},{layout['margin_lr']},{layout['margin_v']},1\n"
+        + _orig_box_style_line(font, layout, style, align)
+        + "\n"
         "[Events]\n"
         "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, "
         "Effect, Text\n"
@@ -175,11 +210,31 @@ def _write_dual_events(f, items: list[dict], layout: dict, style: dict) -> None:
     c_orig = substyle.ass_inline(style["text_color"])
     c_trans = substyle.ass_inline(style["trans_color"])
     wrap_w = layout["cpl"] + 4
+    align = substyle.alignment(style)
+    line_h = round(layout["font_size"] * 1.28)
+    gap = max(2, round(layout["font_size"] * 0.12))
     for it in items:
         start = _format_ass_ts(it["start"])
         end = _format_ass_ts(it["end"])
         orig_lines = wrap_lines(it.get("orig", ""), wrap_w, max_lines=2)
         trans_lines = wrap_lines(it.get("trans", ""), wrap_w, max_lines=2)
+        if style.get("orig_box"):
+            # Sariq quti faqat asl matnni o'rashi kerak: ikkita alohida
+            # hodisa yozib, MarginV bilan ustma-ust qo'yamiz.
+            if align == 8:      # tepada: asl yuqorida, tarjima ostida
+                orig_v = layout["margin_v"]
+                trans_v = orig_v + len(orig_lines) * line_h + gap
+            else:               # pastda/markazda: tarjima eng pastda
+                trans_v = layout["margin_v"]
+                orig_v = trans_v + len(trans_lines) * line_h + gap
+            if orig_lines:
+                body = r"\N".join(_ass_text(x) for x in orig_lines)
+                f.write(f"Dialogue: 0,{start},{end},OrigBox,,0,0,{orig_v},,{body}\n")
+            if trans_lines:
+                body = c_trans + r"\N".join(_ass_text(x) for x in trans_lines)
+                f.write(f"Dialogue: 0,{start},{end},Default,,0,0,{trans_v},,{body}\n")
+            continue
+
         parts = []
         if orig_lines:
             parts.append(c_orig + r"\N".join(_ass_text(x) for x in orig_lines))
@@ -221,20 +276,25 @@ def normalize_word(word: str) -> str:
 
 
 def _vocab_style_line(font: str, layout: dict) -> str:
-    """Chap-tepa (align 7) noshaffof quti ichida lug'at uslubi."""
+    """Chap-tepa (align 7) lug'at uslubi — fonsiz, qalin qora konturli.
+
+    To'ldirilgan quti (BorderStyle=3) yaramaydi: libass qutini rang o'zgargan
+    joyda uzib qo'yadi, natijada so'z, ajratgich va tarjima uchta alohida
+    to'rtburchakka bo'linib, chetlari tishli bo'lib ko'rinadi."""
     vocab_font = max(16, round(layout["font_size"] * 0.9))
-    outline = max(1, layout.get("outline", 2) // 2)
+    outline = max(3, round(vocab_font * 0.11))
     text_c = substyle.ass_color("#FFFFFF")
-    box_c = substyle.ass_color("#08111F")           # to'q ko'k quti
-    back_c = substyle.ass_color("#08111F", "55")    # yarim shaffof orqa fon
+    outline_c = substyle.ass_color("#000000")
+    shadow_c = substyle.ass_color("#000000", "60")
     return (
         f"Style: Vocab,{font},{vocab_font},{text_c},&H000000FF,"
-        f"{box_c},{back_c},1,0,0,0,100,100,0,0,3,{outline},1,7,24,24,24,1\n"
+        f"{outline_c},{shadow_c},1,0,0,0,100,100,0,0,1,{outline},1,7,24,24,24,1\n"
     )
 
 
 def _write_vocab_scroll(f, words: list[dict], vocab_map: dict[str, str],
-                        width: int, height: int, layout: dict) -> None:
+                        width: int, height: int, layout: dict,
+                        style: dict | None = None) -> None:
     """So'zlar chap tomonда paydo bo'lib tepaga suzadi (Vocab, layer 1)."""
     vocab_font = max(16, round(layout["font_size"] * 0.9))
     x = max(24, round(width * 0.04))
@@ -246,26 +306,37 @@ def _write_vocab_scroll(f, words: list[dict], vocab_map: dict[str, str],
     speed = distance / duration_sec
     min_time_gap = line_height / speed          # so'zlar ustma-ust chiqmasin
     last_start = -999.0
+    # Nutq zich bo'lsa so'zlar surila-surila aytilgan joyidan uzoqlashadi —
+    # bunchalik kechikkanini ko'rsatmaymiz (tomoshabinni chalg'itadi).
+    max_drift = float(os.getenv("VOCAB_MAX_DRIFT", "3.0"))
     word_c = substyle.ass_inline("#FFFFFF")
-    trans_c = substyle.ass_inline("#7DD3FC")    # ochiq ko'k tarjima
-    dur_ms = int(duration_sec * 1000)
-    exit_start, exit_end = dur_ms - 400, dur_ms
+    sep_c = substyle.ass_inline("#8A93A6")
+    trans_c = substyle.ass_inline(
+        (style or {}).get("trans_color") or substyle.DEFAULTS["trans_color"]
+    )
     for w in words:
         key = normalize_word(w.get("word", ""))
         tr = vocab_map.get(key, "") if key else ""
         if not tr:
             continue
-        actual_start = max(float(w.get("start", 0.0)), last_start + min_time_gap)
+        spoken = float(w.get("start", 0.0))
+        actual_start = max(spoken, last_start + min_time_gap)
+        if actual_start - spoken > max_drift:
+            continue
         last_start = actual_start
         start = _format_ass_ts(actual_start)
         end = _format_ass_ts(actual_start + duration_sec)
-        # Pop-in (xira+kichik -> tiniq+to'liq), tepaga suzish, oxirida pop-out
+        # Yumshoq chiqish/yo'qolish: faqat shaffoflik (\fad) va kichik "pop".
+        # Ilgari oxirida 50% ga kichrayib xiralashardi — kadr chetida qora
+        # dog' bo'lib qolardi. \bord/\shad ga tegmaymiz: ular uslubda.
         override = (
-            "{\\bord1\\shad1\\fad(300,400)\\move(%d,%d,%d,%d)"
-            "\\blur3\\fscx50\\fscy50\\t(0,300,\\blur0\\fscx100\\fscy100)"
-            "\\t(%d,%d,\\blur3\\fscx50\\fscy50)}"
-        ) % (x, base_y, x, target_y, exit_start, exit_end)
-        body = f"{override}{word_c}{_ass_text(key)} - {trans_c}{_ass_text(tr)}"
+            "{\\fad(250,450)\\move(%d,%d,%d,%d)"
+            "\\fscx92\\fscy92\\t(0,220,\\fscx100\\fscy100)}"
+        ) % (x, base_y, x, target_y)
+        body = (
+            f"{override}{word_c}{_ass_text(key)}"
+            f"{sep_c}  \u00b7  {trans_c}{_ass_text(tr)}"
+        )
         f.write(f"Dialogue: 1,{start},{end},Vocab,,0,0,0,,{body}\n")
 
 
@@ -284,4 +355,4 @@ def cues_to_ass_dual_vocab(items: list[dict], words: list[dict],
         f.write(header)
         _write_dual_events(f, items, layout, style)
         if words and vocab_map:
-            _write_vocab_scroll(f, words, vocab_map, width, height, layout)
+            _write_vocab_scroll(f, words, vocab_map, width, height, layout, style)

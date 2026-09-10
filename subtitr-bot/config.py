@@ -55,7 +55,9 @@ class Settings:
     clean_transcription: bool = os.getenv("CLEAN_TRANSCRIPTION", "1") not in ("0", "false", "")
     # Subtitr shrifti — Noto Sans (Google, ekran uchun, to'liq Unicode:
     # o'zbek lotin + rus kiril + ingliz). Eng o'qiluvchan zamonaviy shrift.
-    sub_font: str = os.getenv("SUB_FONT", "Noto Sans")
+    # Bo'sh qoldirilsa: assets/fonts/ dagi qalin shrift (bo'lsa), aks holda
+    # Noto Sans. Qiymat berilsa — o'sha ishlatiladi (worker/subtitles.py).
+    sub_font: str = os.getenv("SUB_FONT", "")
     # PDF suvbelgisi/futeri uchun bot brendi. Celery worker (PDF shu yerda
     # yaratiladi) main.py'ni ishga tushirmaydi, shuning uchun .env'dan o'qiladi.
     bot_brand: str = os.getenv("BOT_BRAND", "@subtitle_srtbot")
@@ -65,7 +67,8 @@ class Settings:
     # ffmpeg burn sozlamalari (hajmni nazoratda tutish uchun):
     # veryfast = tez + hajmi me'yorida; crf 28 = yaxshi sifat, kichik fayl
     sub_preset: str = os.getenv("SUB_PRESET", "veryfast")
-    sub_crf: int = int(os.getenv("SUB_CRF", "28"))
+    # 28 da kuydirilgan harf chetlari yemirilib, video "xira" ko'rinardi.
+    sub_crf: int = int(os.getenv("SUB_CRF", "20"))
     # Subtitr KUYDIRISHDA maksimal balandlik (px). Kattaroq video shu balandlikka
     # tushiriladi — kodlash ANCHA tez va fayl kichik (1080p->720p ~2x tez), subtitr
     # baribir tiniq. 0 = tushirmaydi (asl o'lchamda). 480 qilsa yanada tez, lekin
@@ -92,7 +95,7 @@ class Settings:
     bot_request_timeout: int = int(os.getenv("BOT_REQUEST_TIMEOUT", "300"))
     # YouTube/Instagram yuklab olishda maksimal video balandligi (px).
     # Kichikroq = tez yuklab olish + kichik fayl. 720 = HD, yetarli.
-    ytdlp_max_height: int = int(os.getenv("YTDLP_MAX_HEIGHT", "720"))
+    ytdlp_max_height: int = int(os.getenv("YTDLP_MAX_HEIGHT", "1080"))
     # yt-dlp cookie — YouTube "bot tekshiruvi"ni (Sign in to confirm) chetlab o'tish.
     # Brauzerdan: chrome / edge / firefox / brave ...  YOKI cookies.txt fayl yo'li.
     ytdlp_cookies_browser: str = os.getenv("YTDLP_COOKIES_BROWSER", "")
