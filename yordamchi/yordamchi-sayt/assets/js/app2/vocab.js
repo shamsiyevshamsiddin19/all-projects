@@ -2120,7 +2120,7 @@
      ("yodlangan" so'z mashqda chiqmaydi) va boshqa qurilmaga sinxronlanadi. */
 
   /* Ko'rinish holati — `App.reload()` dan keyin ham saqlanib qolsin. */
-  var VD = { flip: false, filter: '', mode: '', mask: '', join: '' };
+  var VD = { flip: false, filter: '', mode: '', mask: '', join: '', menuTab: 'join' };
   var VD_FLIP_KEY = 'vocab_dict_flip_v1';
   var VD_MASK_KEY = 'vocab_dict_mask_v1';
   var VD_JOIN_KEY = 'vocab_dict_join_v1';
@@ -2584,57 +2584,127 @@
 
     function iconOf(id) { return id === 'learned' ? 'check' : 'alert'; }
 
+    var activeTab = VD.menuTab || (VD.join ? 'join' : (VD.filter ? 'filter' : (VD.mode ? 'mode' : 'join')));
+
+    var catName = (typeof lastSeg === 'function') ? lastSeg(cat) : String(cat || '').split('/').pop().trim();
+
     var html =
-      '<div class="list-label">Belgilash (tez rejim)</div>' +
-      '<p class="muted" style="font-size:12px;margin:0 0 8px;line-height:1.45">' +
-      'Belgini tanlang — shundan keyin bosilgan HAR SO\'Z shu holatga o\'tadi. ' +
-      'Qayta bosilsa belgi olinadi.</p>' +
-      vdStatuses().map(function (st) {
-        var on = VD.mode === st.id;
-        return '<button class="list-row vd-mpick" data-m="' + st.id + '">' +
-          '<span class="li-ic" style="background:color-mix(in srgb, ' + st.color + ' 18%, transparent);color:' + st.color + '" ' +
-            'data-icon="' + iconOf(st.id) + '" data-icon-size="15"></span>' +
-          '<div class="li-main"><div class="li-title">' + App.esc(st.name) + '</div>' +
-          '<div class="li-sub">' + App.esc(st.hint) + '</div></div>' +
-          (on ? '<span class="li-chev" data-icon="check" data-icon-size="16"></span>' : '') +
-          '</button>';
-      }).join('') +
-      (VD.mode ? '<button class="list-row vd-mpick" data-m="">' +
-        '<span class="li-ic" data-icon="close" data-icon-size="15"></span>' +
-        '<div class="li-main"><div class="li-title">Tez rejimni o\'chirish</div>' +
-        '<div class="li-sub">Bosilganda so\'z ovoz bilan o\'qiladi</div></div></button>' : '') +
+      '<div class="vd-p-head">' +
+        '<div class="vd-p-title-wrap">' +
+          '<div class="vd-p-title">Lug\'at menyusi</div>' +
+          '<div class="vd-p-cat">' + App.esc(catName) + ' · ' + words.length + ' so\'z</div>' +
+        '</div>' +
+        '<button type="button" class="vd-p-close" id="vd-panel-close" aria-label="Yopish">' +
+          '<span data-icon="close" data-icon-size="16"></span>' +
+        '</button>' +
+      '</div>' +
 
-      '<div class="list-label" style="margin-top:16px">Ko\'rsatish (filtr)</div>' +
-      VD_FILTERS.map(function (f) {
-        var on = VD.filter === f.id;
-        return '<button class="list-row vd-fpick" data-f="' + f.id + '">' +
-          '<span class="li-ic"' + (on ? ' style="background:var(--accent-soft);color:var(--accent)"' : '') +
-            ' data-icon="' + (on ? 'check' : 'list') + '" data-icon-size="15"></span>' +
-          '<div class="li-main"><div class="li-title">' + App.esc(f.name) + '</div>' +
-          '<div class="li-sub">' + (counts[f.id] || 0) + ' ta so\'z</div></div></button>';
-      }).join('') +
+      '<div class="vd-p-tabs" role="tablist">' +
+        '<button type="button" class="vd-p-tab' + (activeTab === 'join' ? ' active' : '') + '" data-tab="join">' +
+          '<span data-icon="link" data-icon-size="14"></span>' +
+          '<span>Juftlash</span>' +
+          (VD.join ? '<span class="vd-pt-badge"></span>' : '') +
+        '</button>' +
+        '<button type="button" class="vd-p-tab' + (activeTab === 'filter' ? ' active' : '') + '" data-tab="filter">' +
+          '<span data-icon="list" data-icon-size="14"></span>' +
+          '<span>Ko\'rsatish</span>' +
+          (VD.filter ? '<span class="vd-pt-badge"></span>' : '') +
+        '</button>' +
+        '<button type="button" class="vd-p-tab' + (activeTab === 'mode' ? ' active' : '') + '" data-tab="mode">' +
+          '<span data-icon="edit" data-icon-size="14"></span>' +
+          '<span>Belgilash</span>' +
+          (VD.mode ? '<span class="vd-pt-badge"></span>' : '') +
+        '</button>' +
+      '</div>' +
 
-      '<div class="list-label" style="margin-top:16px">Juftlash</div>' +
-      '<p class="muted" style="font-size:12px;margin:0 0 8px;line-height:1.45">' +
-      'Tanlanganda so\'zlar oilalarga ajratiladi va ranglar bilan bo\'yaladi. ' +
-      'Eng ko\'p bog\'langan oila tepada, yakka so\'zlar oxirida turadi.</p>' +
-      [
-        { key: '', label: 'O\'chiq', sub: 'Oddiy tartibda ko\'rsatish' },
-        { key: 'words', label: 'So\'zlarni juftlash', sub: 'Yozilishi o\'xshash: храню / храплю' },
-        { key: 'meaning', label: 'Ma\'noni juftlash', sub: 'Ma\'nosi bog\'liq: иду / хожу / еду' }
-      ].map(function (j) {
-        var isChecked = (VD.join || '') === j.key;
-        return '<label class="ws-radio-row vd-jpick" data-j="' + j.key + '">' +
-          '<span class="ws-radio-circle ' + (isChecked ? 'checked' : '') + '">' +
-            (isChecked ? '<span class="ws-radio-dot"></span>' : '') +
-          '</span>' +
-          '<span class="ws-row-label">' + App.esc(j.label) +
-            '<i class="ws-row-hint">' + App.esc(j.sub) + '</i></span>' +
-        '</label>';
-      }).join('');
+      '<div class="vd-p-body">' +
+        /* PANE 1: JUFTLASH */
+        '<div class="vd-pane' + (activeTab === 'join' ? ' active' : '') + '" data-pane="join">' +
+          '<div class="list-label" style="display:none">Juftlash</div>' +
+          '<p class="vd-p-desc">Tanlanganda so\'zlar oilalarga ajratiladi va ranglar bilan bo\'yaladi. Eng ko\'p bog\'langan oila tepada, yakka so\'zlar oxirida turadi.</p>' +
+          '<div class="vd-p-cards">' +
+            [
+              { key: '', label: 'O\'chiq', sub: 'Oddiy tartibda ko\'rsatish' },
+              { key: 'words', label: 'So\'zlarni juftlash', sub: 'Yozilishi o\'xshash: храню / храплю' },
+              { key: 'meaning', label: 'Ma\'noni juftlash', sub: 'Ma\'nosi bog\'liq: иду / хожу / еду' }
+            ].map(function (j) {
+              var on = (VD.join || '') === j.key;
+              return '<button type="button" class="vd-opt-card vd-jpick' + (on ? ' active' : '') + '" data-j="' + j.key + '">' +
+                '<span class="ws-radio-circle' + (on ? ' checked' : '') + '">' +
+                  (on ? '<span class="ws-radio-dot"></span>' : '') +
+                '</span>' +
+                '<div class="vd-oc-main">' +
+                  '<div class="vd-oc-title">' + App.esc(j.label) + '</div>' +
+                  '<div class="vd-oc-sub">' + App.esc(j.sub) + '</div>' +
+                '</div>' +
+                (on ? '<span class="vd-oc-check" data-icon="check" data-icon-size="16"></span>' : '') +
+                '</button>';
+            }).join('') +
+          '</div>' +
+        '</div>' +
 
-    var sh = App.sheet(html, { title: 'Lug\'at' });
+        /* PANE 2: KO'RSATISH (FILTR) */
+        '<div class="vd-pane' + (activeTab === 'filter' ? ' active' : '') + '" data-pane="filter">' +
+          '<div class="list-label" style="display:none">Ko\'rsatish (filtr)</div>' +
+          '<p class="vd-p-desc">Ro\'yxatda faqat tanlangan holatdagi so\'zlar ko\'rinadi.</p>' +
+          '<div class="vd-p-cards">' +
+            VD_FILTERS.map(function (f) {
+              var on = VD.filter === f.id;
+              return '<button type="button" class="vd-opt-card vd-fpick' + (on ? ' active' : '') + '" data-f="' + f.id + '">' +
+                '<span class="li-ic"' + (on ? ' style="background:var(--accent-soft);color:var(--accent)"' : '') +
+                  ' data-icon="' + (on ? 'check' : 'list') + '" data-icon-size="15"></span>' +
+                '<div class="vd-oc-main">' +
+                  '<div class="vd-oc-title">' + App.esc(f.name) + '</div>' +
+                '</div>' +
+                '<span class="vd-oc-badge">' + (counts[f.id] || 0) + ' ta so\'z</span>' +
+                (on ? '<span class="vd-oc-check" data-icon="check" data-icon-size="16"></span>' : '') +
+                '</button>';
+            }).join('') +
+          '</div>' +
+        '</div>' +
+
+        /* PANE 3: BELGILASH (TEZ REJIM) */
+        '<div class="vd-pane' + (activeTab === 'mode' ? ' active' : '') + '" data-pane="mode">' +
+          '<div class="list-label" style="display:none">Belgilash (tez rejim)</div>' +
+          '<p class="vd-p-desc">Belgini tanlang — shundan keyin bosilgan HAR SO\'Z shu holatga o\'tadi. Qayta bosilsa belgi olinadi.</p>' +
+          '<div class="vd-p-cards">' +
+            vdStatuses().map(function (st) {
+              var on = VD.mode === st.id;
+              return '<button type="button" class="vd-opt-card vd-mpick' + (on ? ' active' : '') + '" data-m="' + st.id + '">' +
+                '<span class="li-ic" style="background:color-mix(in srgb, ' + st.color + ' 18%, transparent);color:' + st.color + '" ' +
+                  'data-icon="' + iconOf(st.id) + '" data-icon-size="15"></span>' +
+                '<div class="vd-oc-main">' +
+                  '<div class="vd-oc-title">' + App.esc(st.name) + '</div>' +
+                  '<div class="vd-oc-sub">' + App.esc(st.hint) + '</div>' +
+                '</div>' +
+                (on ? '<span class="vd-oc-check" data-icon="check" data-icon-size="16"></span>' : '') +
+                '</button>';
+            }).join('') +
+            (VD.mode ? '<button type="button" class="vd-opt-card vd-mpick" data-m="" style="border-color:rgba(239,68,68,0.3)">' +
+              '<span class="li-ic" style="background:var(--danger-soft);color:var(--danger)" data-icon="close" data-icon-size="15"></span>' +
+              '<div class="vd-oc-main"><div class="vd-oc-title" style="color:var(--danger)">Tez rejimni o\'chirish</div>' +
+              '<div class="vd-oc-sub">Bosilganda so\'z ovoz bilan o\'qiladi</div></div></button>' : '') +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    var sh = App.sheet(html, { cls: 'vd-side-panel' });
     App.icons(sh);
+
+    var closeBtn = (sh.querySelectorAll && sh.querySelectorAll('#vd-panel-close')[0]) || (sh.querySelector && sh.querySelector('#vd-panel-close'));
+    if (closeBtn) closeBtn.onclick = function () { App.closeSheet(); };
+
+    var tabs = sh.querySelectorAll('.vd-p-tab');
+    tabs.forEach(function (tab) {
+      tab.onclick = function () {
+        var target = tab.getAttribute('data-tab');
+        VD.menuTab = target;
+        tabs.forEach(function (t) { t.classList.toggle('active', t === tab); });
+        sh.querySelectorAll('.vd-pane').forEach(function (p) {
+          p.classList.toggle('active', p.getAttribute('data-pane') === target);
+        });
+      };
+    });
 
     /* Belgilash — ro'yxat o'zgarmaydi, faqat sarlavhadagi tugma yonadi. */
     sh.querySelectorAll('.vd-mpick').forEach(function (b) {

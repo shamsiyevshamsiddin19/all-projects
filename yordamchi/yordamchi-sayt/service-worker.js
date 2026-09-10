@@ -1,5 +1,5 @@
 /* Yordamchi service worker — OFFLINE REJIM. */
-const VERSION = '20260910-111244';
+const VERSION = '20260910-112554';
 const SHELL_CACHE = 'yordamchi-shell-' + VERSION;
 const DATA_CACHE = 'yordamchi-data-' + VERSION;
 
