@@ -5351,14 +5351,6 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   background: var(--accent);
 }
 
-.vd-opt-card.active .vd-oc-check::after {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #ffffff;
-}
-
 /* Oraliqni ko'rsatuvchi chip (Asosiy sahifada) */
 .vd-range-chip {
   display: inline-flex;
@@ -5394,7 +5386,7 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   border: 1.5px solid var(--border);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   box-sizing: border-box;
 }
 
@@ -5405,7 +5397,7 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 }
 
 .vd-rc-title {
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--text);
 }
@@ -5418,7 +5410,8 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 .vd-rc-inputs {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  width: 100%;
 }
 
 .vd-rc-field {
@@ -5427,55 +5420,83 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   gap: 6px;
   flex: 1;
   min-width: 0;
+  background: var(--bg-elev);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  height: 40px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  transition: border-color 0.18s ease;
+}
+
+.vd-rc-field:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
 }
 
 .vd-rc-lbl {
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
   color: var(--muted);
   white-space: nowrap;
 }
 
 .vd-rc-input {
   width: 100%;
-  padding: 7px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--bg-elev);
+  height: 100%;
+  border: none;
+  background: transparent;
   color: var(--text);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14.5px;
+  font-weight: 700;
   font-family: var(--mono);
   box-sizing: border-box;
-}
-
-.vd-rc-input:focus {
-  border-color: var(--accent);
+  padding: 0;
   outline: none;
 }
 
 .vd-rc-sep {
   color: var(--muted);
   font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
 }
 
-.vd-rc-btn {
-  padding: 7px 14px !important;
-  font-size: 12.5px !important;
-  border-radius: 8px !important;
-  white-space: nowrap;
-  flex-shrink: 0;
+.vd-rc-apply-btn {
+  width: 100%;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--accent-ink, #000);
+  font-size: 13.5px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-sizing: border-box;
+}
+
+.vd-rc-apply-btn:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.vd-rc-apply-btn:active {
+  transform: scale(0.99);
 }
 
 .vd-rc-clear-btn {
   background: transparent;
   border: 0;
   color: var(--danger, #ef4444);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  padding: 4px 0 0;
-  text-align: left;
+  padding: 2px 0 0;
+  text-align: center;
   transition: opacity 0.15s;
 }
 

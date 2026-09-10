@@ -2722,8 +2722,8 @@
                 '<span class="vd-rc-lbl">Gacha:</span>' +
                 '<input type="number" id="vd-rc-to" class="vd-rc-input" min="1" max="' + filteredTotal + '" value="' + (VD.rangeTo || '') + '" placeholder="' + filteredTotal + '">' +
               '</div>' +
-              '<button type="button" class="btn primary btn-sm vd-rc-btn" id="vd-rc-apply">Qo\'llash</button>' +
             '</div>' +
+            '<button type="button" class="vd-rc-apply-btn" id="vd-rc-apply">Oraliqni qo\'llash</button>' +
             ((VD.rangeFrom || VD.rangeTo) ? '<button type="button" class="vd-rc-clear-btn" id="vd-rc-clear">✕ Oraliqni bekor qilish (Hammasi)</button>' : '') +
           '</div>' +
           '<div class="vd-p-cards">' +
@@ -2737,7 +2737,6 @@
                   '<div class="vd-oc-title">' + App.esc(p.label) + '</div>' +
                   '<div class="vd-oc-sub">' + App.esc(p.sub) + '</div>' +
                 '</div>' +
-                (on ? '<span class="vd-oc-check" data-icon="check" data-icon-size="16"></span>' : '') +
                 '</button>';
             }).join('') +
           '</div>' +
@@ -2761,7 +2760,6 @@
                   '<div class="vd-oc-title">' + App.esc(j.label) + '</div>' +
                   '<div class="vd-oc-sub">' + App.esc(j.sub) + '</div>' +
                 '</div>' +
-                (on ? '<span class="vd-oc-check" data-icon="check" data-icon-size="16"></span>' : '') +
                 '</button>';
             }).join('') +
           '</div>' +
