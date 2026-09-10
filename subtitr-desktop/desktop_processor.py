@@ -9,6 +9,7 @@ Flutter can show live progress.
 from __future__ import annotations
 
 import argparse
+import bisect
 import hashlib
 import json
 import os
@@ -21,7 +22,7 @@ import threading
 import io
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, NamedTuple
 
 if sys.stdout.encoding.lower() != "utf-8":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", line_buffering=True)
@@ -52,7 +53,31 @@ else:
     MODEL_DIR = ROOT / "AI modellar"
     DICT_DIR = ROOT / "Lugatlar"
     CACHE_DIR = ROOT / "cache"
+
+# O'rnatilgan ilova (Linux) manba ko'rinishida ishlaydi, lekin natijalar ilova
+# papkasiga emas — ko'rinadigan Videolar papkasiga tushishi kerak. Yo'llarni
+# launcher skripti muhit o'zgaruvchilari orqali beradi.
+_kino_override = os.getenv("SUBTITR_KINO_DIR", "").strip()
+if _kino_override:
+    KINO_DIR = Path(_kino_override).expanduser()
+_out_override = os.getenv("SUBTITR_OUT_DIR", "").strip()
+if _out_override:
+    OUT_DIR = Path(_out_override).expanduser()
+_data_override = os.getenv("SUBTITR_DATA_DIR", "").strip()
+if _data_override:
+    _data_root = Path(_data_override).expanduser()
+    TMP_DIR = _data_root / "Ishchi fayllar"
+    MODEL_DIR = _data_root / "AI modellar"
+    DICT_DIR = _data_root / "Lugatlar"
+    CACHE_DIR = _data_root / "cache"
+
 ENV_FILE = ROOT / ".env"
+VENV_DIR = ROOT / ".venv"
+
+
+def venv_python() -> Path:
+    """Interpreter of the virtualenv shipped next to the processor."""
+    return VENV_DIR / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 
 
 def resolve_tool(name: str) -> str:
@@ -316,6 +341,11 @@ def ai_throttle() -> None:
         time.sleep(delay)
 
 
+# Tarjima to'plami bir necha marta ishlamasa, ikkiga bo'lib qayta urinamiz;
+# shundan kichik to'plam uchun bo'lish foyda bermaydi.
+AI_MIN_SPLIT_BATCH = 8
+
+
 def ai_retry_backoff() -> None:
     """Pause before retrying after every provider failed (likely rate limited)."""
     import time
@@ -410,54 +440,76 @@ def download_video(
 
     emit("progress", message="Video havolasi tekshirilmoqda", progress=progress_lo)
     ffmpeg_dir = str(Path(FFMPEG).parent)
-    cmd = [
-        YTDLP, "--no-playlist", "--no-warnings", "--no-mtime",
-        "-f", "bv*[height<=1080]+ba/b[height<=1080]/bv*+ba/b",
-        "--merge-output-format", "mp4",
-        "--ffmpeg-location", ffmpeg_dir,
-        "--newline",
-        "-o", out_tmpl,
-        "--print", "after_move:filepath",
-        url,
-    ]
-    # stderr'ni stdout'ga qo'shamiz — progress ba'zan stderr'da, ba'zan stdout'da
-    # bo'ladi; bitta oqimda hammasini o'qib, ambiguity'dan qutulamiz.
-    proc = subprocess.Popen(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-        text=True, encoding="utf-8", errors="replace",
-    )
-    tail: list[str] = []
-    final_path: Path | None = None
-    last_pct = -1
-    assert proc.stdout is not None
-    for line in proc.stdout:
-        line = line.rstrip("\r\n")
-        tail.append(line)
-        if len(tail) > 40:
-            tail.pop(0)
-        m = re.search(r"\[download\]\s+([\d.]+)%", line)
-        if m:
-            try:
-                pct = int(float(m.group(1)))
-            except ValueError:
-                pct = last_pct
-            if pct != last_pct:
-                last_pct = pct
-                emit("progress", message=f"Video yuklab olinmoqda {pct}%",
-                     progress=progress_lo + span * (pct / 100.0))
-        elif line.strip() and not line.lstrip().startswith("[") and (
-            line.strip().lower().endswith((".mp4", ".mkv", ".webm", ".mov", ".m4v", ".avi"))
-        ):
-            final_path = Path(line.strip())
-    proc.wait()
 
-    if final_path is None or not final_path.exists():
-        # Zaxira: papkadagi eng yangi mos faylni topamiz.
-        pattern = f"*__{key}.*" if use_cache else "*"
-        candidates = [p for p in dl_dir.glob(pattern) if p.suffix.lower() in VIDEO_EXTS and p.stat().st_size > 0]
-        final_path = max(candidates, key=lambda p: p.stat().st_mtime) if candidates else None
+    def attempt(extra_args: list[str]) -> tuple[int, Path | None, list[str]]:
+        cmd = [
+            YTDLP, "--no-playlist", "--no-warnings", "--no-mtime",
+            "-f", "bv*[height<=1080]+ba/b[height<=1080]/bv*+ba/b",
+            "--merge-output-format", "mp4",
+            "--ffmpeg-location", ffmpeg_dir,
+            "--newline",
+            "-o", out_tmpl,
+            "--print", "after_move:filepath",
+            *extra_args,
+            url,
+        ]
+        # stderr'ni stdout'ga qo'shamiz — progress ba'zan stderr'da, ba'zan stdout'da
+        # bo'ladi; bitta oqimda hammasini o'qib, ambiguity'dan qutulamiz.
+        proc = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, encoding="utf-8", errors="replace",
+        )
+        tail: list[str] = []
+        found: Path | None = None
+        last_pct = -1
+        assert proc.stdout is not None
+        for line in proc.stdout:
+            line = line.rstrip("\r\n")
+            tail.append(line)
+            if len(tail) > 40:
+                tail.pop(0)
+            m = re.search(r"\[download\]\s+([\d.]+)%", line)
+            if m:
+                try:
+                    pct = int(float(m.group(1)))
+                except ValueError:
+                    pct = last_pct
+                if pct != last_pct:
+                    last_pct = pct
+                    emit("progress", message=f"Video yuklab olinmoqda {pct}%",
+                         progress=progress_lo + span * (pct / 100.0))
+            elif line.strip() and not line.lstrip().startswith("[") and (
+                line.strip().lower().endswith((".mp4", ".mkv", ".webm", ".mov", ".m4v", ".avi"))
+            ):
+                found = Path(line.strip())
+        proc.wait()
 
-    if proc.returncode != 0 or final_path is None or not final_path.exists():
+        if found is None or not found.exists():
+            # Zaxira: papkadagi eng yangi mos faylni topamiz.
+            pattern = f"*__{key}.*" if use_cache else "*"
+            candidates = [p for p in dl_dir.glob(pattern) if p.suffix.lower() in VIDEO_EXTS and p.stat().st_size > 0]
+            found = max(candidates, key=lambda p: p.stat().st_mtime) if candidates else None
+        return proc.returncode, found, tail
+
+    # YouTube vaqti-vaqti bilan ayrim "player client"larni bloklaydi va butunlay
+    # ishlaydigan video uchun ham "This video is not available" deydi. Shu sababli
+    # birinchi urinish muvaffaqiyatsiz bo'lsa, boshqa klientlar bilan qaytaramiz.
+    attempts: list[list[str]] = [[]]
+    if re.search(r"(youtube\.com|youtu\.be)", url, re.I):
+        attempts += [
+            ["--extractor-args", "youtube:player_client=android"],
+            ["--extractor-args", "youtube:player_client=tv,web_safari,ios,mweb"],
+        ]
+
+    code, final_path, tail = 1, None, []
+    for index, extra in enumerate(attempts):
+        if index:
+            emit("progress", message="Boshqa usul bilan qayta urinilmoqda", progress=progress_lo)
+        code, final_path, tail = attempt(extra)
+        if code == 0 and final_path is not None and final_path.exists():
+            break
+
+    if code != 0 or final_path is None or not final_path.exists():
         err = "\n".join(tail)[-600:] or "noma'lum"
         raise RuntimeError("Videoni yuklab bo'lmadi: " + err)
     emit("progress", message="Video yuklandi", progress=progress_hi)
@@ -685,13 +737,19 @@ def probe_duration_seconds(path: Path) -> float:
         return 0.0
 
 
-def extract_audio(video: Path, audio_path: Path) -> None:
+def extract_audio(video: Path, audio_path: Path, lossless: bool = False) -> None:
+    """Nutqni ajratib oladi (mono, 16 kHz).
+
+    `lossless=False` — Groq'ga yuklash uchun kuchli siqilgan opus (tarmoq/limit).
+    `lossless=True` — lokal Whisper uchun siqilmagan WAV: 12 kbit/s opus nutqni
+    buzib, modelni yo'q so'zlarni "eshitish"ga majbur qiladi."""
     require_tool("ffmpeg")
+    codec = ["-c:a", "pcm_s16le"] if lossless else ["-c:a", "libopus", "-b:a", "12k"]
     proc = run(
         [
             FFMPEG, "-y", "-i", str(video),
             "-vn", "-ac", "1", "-ar", "16000",
-            "-c:a", "libopus", "-b:a", "12k",
+            *codec,
             str(audio_path),
         ]
     )
@@ -775,7 +833,232 @@ def _groq_transcribe_file(
     return segments, words, detected
 
 
-def transcribe_with_groq(audio_path: Path, language: str) -> tuple[list[Segment], list[Word], str]:
+# --- Musiqa ostida "yutib yuborilgan" nutqni qayta o'qish -------------------
+# Whisper audioni 30 soniyalik oynalarda tinglaydi. Oynaning katta qismi musiqa
+# bo'lsa, model butun oynani BITTA qisqa soxta qatorga siqib yuboradi
+# ("Девушки отдыхают", "Музыка") va oynadagi haqiqiy nutq butunlay yo'qoladi —
+# subtitrda bo'sh joy qoladi. STOCK_PHRASE_RE soxta qatorni o'chiradi, lekin
+# yo'qolgan nutqni qaytarmaydi.
+#
+# Bunday joyni matn ZICHLIGI ochib beradi: haqiqiy nutq ~10-20 belgi/sek, soxta
+# qator esa 30 soniyaga 16 belgi (~0.5 belgi/sek). O'sha oraliqni qisqa —
+# musiqa bilan to'lib ketmaydigan — oynalarda qayta o'qiymiz.
+RESCAN_MIN_DUR = 10.0      # shubha uchun eng kam segment davomiyligi (sek)
+RESCAN_MAX_CPS = 4.0       # belgi/sek — bundan past bo'lsa shubhali
+RESCAN_WINDOW = 12.0       # qayta o'qish oynasi (sek)
+RESCAN_OVERLAP = 6.0       # oynalar ustma-ustligi — jumla chegarada kesilmasin
+RESCAN_PAD = 3.0           # oraliq chetidan tashqariga qo'shimcha
+RESCAN_MAX_TOTAL = 180.0   # jami qayta o'qiladigan vaqt chegarasi (xarajat)
+RESCAN_MAX_WINDOWS = 30    # qo'shimcha so'rovlar soni chegarasi
+RESCAN_EDGE = 0.6          # segment oyna boshiga shuncha yaqin = jumla kesilgan
+RESCAN_SHIFTS = (2.0, 4.0)  # kesilgan joyni shuncha oldinroqdan qayta o'qiymiz
+RESCAN_MAX_RETRY = 8       # surilgan qo'shimcha oynalar soni chegarasi
+
+
+def seg_density(seg: Segment) -> float:
+    """Segment matn zichligi (belgi/sek). Haqiqiy nutq ~10-20, soxta qator <1."""
+    return len((seg.text or "").strip()) / max(0.01, seg.end - seg.start)
+
+
+def suspect_ranges(segments: list[Segment]) -> list[tuple[float, float]]:
+    """Nutq yutib yuborilgan bo'lishi mumkin bo'lgan oraliqlar."""
+    ranges: list[tuple[float, float]] = []
+    for seg in segments:
+        if seg.end - seg.start < RESCAN_MIN_DUR or seg_density(seg) > RESCAN_MAX_CPS:
+            continue
+        if ranges and seg.start - ranges[-1][1] < 1.0:
+            ranges[-1] = (ranges[-1][0], seg.end)
+        else:
+            ranges.append((seg.start, seg.end))
+
+    total = 0.0
+    picked: list[tuple[float, float]] = []
+    for rng in sorted(ranges, key=lambda r: r[1] - r[0], reverse=True):
+        span = rng[1] - rng[0]
+        if total + span > RESCAN_MAX_TOTAL:
+            continue
+        picked.append(rng)
+        total += span
+    return sorted(picked)
+
+
+def rescan_windows(rs: float, re_: float) -> list[float]:
+    """Oraliqni USTMA-UST oynalarga bo'ladi (oyna boshlanish nuqtalari)."""
+    step = max(1.0, RESCAN_WINDOW - RESCAN_OVERLAP)
+    out: list[float] = []
+    pos = rs
+    while pos < re_ - 0.5:
+        out.append(pos)
+        pos += step
+    return out
+
+
+def pick_best_segments(cands: list[tuple[Segment, float]]) -> list[tuple[Segment, float]]:
+    """Ustma-ust oynalardan kelgan nomzodlardan eng to'liqlarini tanlaydi.
+
+    Matni eng UZUN nomzoddan boshlab olamiz; vaqt bo'yicha unga jiddiy tegib
+    turgan qolganlari tashlanadi. Shunda oyna chetida kesilgan yarim jumla
+    ("Май ещё долго будет") o'rniga to'liq varianti ("Гена, зима ещё долго
+    будет?") saqlanadi."""
+    kept: list[tuple[Segment, float]] = []
+    for seg, win in sorted(cands, key=lambda c: (len(c[0].text.strip()), seg_density(c[0])), reverse=True):
+        dur = max(0.01, seg.end - seg.start)
+        if any(
+            min(p.end, seg.end) - max(p.start, seg.start) > 0.5 * min(dur, p.end - p.start)
+            for p, _w in kept
+        ):
+            continue
+        kept.append((seg, win))
+    return sorted(kept, key=lambda c: c[0].start)
+
+
+def _rescan_one(
+    client: Any,
+    models: list[str],
+    media_path: Path,
+    language: str,
+    start: float,
+    dur: float,
+    tmp_dir: Path,
+) -> tuple[list[Segment], list[Word]]:
+    """Bitta oynani kesib olib qayta transkripsiya qiladi.
+
+    Oyna atigi ~12 soniya, ya'ni hajm muammo emas — shuning uchun uni 12 kbit/s
+    opus emas, 64 kbit/s mp3 qilib kesamiz. Kuchli siqilish nutqni buzadi va
+    aynan shu soxta matnni keltirib chiqaradi (extract_audio izohiga qarang),
+    qayta o'qishda esa bizga eng toza audio kerak."""
+    part = tmp_dir / f"rescan_{int(start * 1000)}.mp3"
+    try:
+        proc = run(
+            [
+                FFMPEG, "-y", "-ss", f"{start:.3f}", "-t", f"{dur:.3f}",
+                "-i", str(media_path),
+                "-vn", "-ac", "1", "-ar", "16000",
+                "-c:a", "libmp3lame", "-b:a", "64k",
+                str(part),
+            ]
+        )
+        if proc.returncode != 0 or not part.exists() or part.stat().st_size == 0:
+            return [], []
+        segs, words, _ = _groq_transcribe_file(client, models, part, language, start)
+    except Exception:
+        return [], []  # bitta oyna tushsa ham butun ish to'xtamasin
+    finally:
+        part.unlink(missing_ok=True)
+
+    # Soxta qator nomzodlikka ham tushmasin — u haqiqiy jumlaning o'rnini
+    # egallab qolishi mumkin
+    return [s for s in segs if not is_hallucination(s.text)], words
+
+
+def rescan_swallowed_speech(
+    client: Any,
+    models: list[str],
+    audio_path: Path,
+    language: str,
+    segments: list[Segment],
+    words: list[Word],
+    source_media: Path | None = None,
+) -> tuple[list[Segment], list[Word]]:
+    """Shubhali oraliqlarni qisqa oynalarda qayta o'qib, natijani almashtiradi.
+
+    `source_media` berilsa (asl video/audio) — oynalar o'shandan kesiladi:
+    Groq'ga yuborilgan 12 kbit/s opus nutqni allaqachon buzgan bo'ladi."""
+    ranges = suspect_ranges(segments)
+    if not ranges:
+        return segments, words
+    cut_from = source_media if source_media and source_media.exists() else audio_path
+
+    starts: list[float] = []
+    for rs, re_ in ranges:
+        starts.extend(rescan_windows(max(0.0, rs - RESCAN_PAD), re_ + RESCAN_PAD))
+    starts = starts[:RESCAN_MAX_WINDOWS]
+    emit("progress", message=f"Nutq yutilgan {len(ranges)} joy qayta o'qilmoqda", progress=0.32)
+
+    cands: list[tuple[Segment, float]] = []
+    new_words: list[tuple[Word, float]] = []
+
+    def sweep(points: list[float]) -> None:
+        for st in points:
+            segs, wds = _rescan_one(
+                client, models, cut_from, language, st, RESCAN_WINDOW, audio_path.parent
+            )
+            cands.extend((s, st) for s in segs)
+            new_words.extend((w, st) for w in wds)
+
+    sweep(starts)
+
+    # 2-bosqich: oynaning ENG BOSHIDA turgan segment — jumla chegarada kesilgan
+    # degani. Whisper oynani musiqadan emas, nutqdan boshlaganda to'g'ri
+    # eshitadi, shuning uchun o'sha joyni bir-ikki soniya oldinroqdan qayta
+    # o'qiymiz va to'liqroq variantini olamiz.
+    done = {round(st, 2) for st in starts}
+    retries: list[float] = []
+    for seg, win in cands:
+        if seg.start - win > RESCAN_EDGE:
+            continue
+        for shift in RESCAN_SHIFTS:
+            st = max(0.0, win - shift)
+            if round(st, 2) in done or st >= win:
+                continue
+            done.add(round(st, 2))
+            retries.append(st)
+    if retries:
+        sweep(sorted(retries)[:RESCAN_MAX_RETRY])
+
+    # Pad tufayli oraliqdan tashqariga chiqqanlar kerak emas — u yerni asosiy
+    # transkripsiya allaqachon to'g'ri o'qigan
+    cands = [
+        c for c in cands
+        if any(rs <= (c[0].start + c[0].end) / 2.0 <= re_ for rs, re_ in ranges)
+    ]
+    best = pick_best_segments(cands)
+    # Qisqa oynada ham zichligi past qolgani — nutq emas, musiqa ustidagi soxta
+    # qator. Uni saqlagandan ko'ra tashlagan ma'qul.
+    best = [
+        c for c in best
+        if c[0].end - c[0].start < RESCAN_MIN_DUR or seg_density(c[0]) > RESCAN_MAX_CPS
+    ]
+    if not best:
+        return segments, words
+
+    spans = {(win, s.start, s.end) for s, win in best}
+    kept_new_words = [
+        w for w, win in new_words
+        if any(win == wn and a - 0.05 <= w.start <= b + 0.05 for wn, a, b in spans)
+    ]
+    new_segments = [s for s, _win in best]
+
+    # Faqat HAQIQATAN yangi matn topilgan oraliqlar almashtiriladi: bo'sh
+    # qaytgan oraliqda eski matn joyida qolsin (yo'qotmaylik).
+    replaced = [
+        (rs, re_) for rs, re_ in ranges
+        if any(rs <= (s.start + s.end) / 2.0 <= re_ for s in new_segments)
+    ]
+
+    def outside(start: float, end: float) -> bool:
+        mid = (start + end) / 2.0
+        return not any(rs <= mid <= re_ for rs, re_ in replaced)
+
+    merged = sorted(
+        [s for s in segments if outside(s.start, s.end)] + new_segments,
+        key=lambda s: s.start,
+    )
+    # Qayta o'qilgan oyna qo'shni segmentga tegib ketishi mumkin — ekranda
+    # ikkita subtitr bir vaqtda chiqmasin
+    for cur, nxt in zip(merged, merged[1:]):
+        if cur.end > nxt.start:
+            cur.end = max(cur.start + 0.2, nxt.start)
+    merged_words = sorted(
+        [w for w in words if outside(w.start, w.end)] + kept_new_words,
+        key=lambda w: w.start,
+    )
+    return merged, merged_words
+
+
+def transcribe_with_groq(
+    audio_path: Path, language: str, source_media: Path | None = None
+) -> tuple[list[Segment], list[Word], str]:
     key = os.getenv("GROQ_API_KEY", "").strip()
     if not key:
         raise RuntimeError("GROQ_API_KEY topilmadi")
@@ -794,7 +1077,11 @@ def transcribe_with_groq(audio_path: Path, language: str) -> tuple[list[Segment]
     size = audio_path.stat().st_size
     size_limit = int(os.getenv("GROQ_AUDIO_CHUNK_BYTES", str(20 * 1024 * 1024)))
     if size <= size_limit:
-        return _groq_transcribe_file(client, models, audio_path, language, 0.0)
+        segs, wds, det = _groq_transcribe_file(client, models, audio_path, language, 0.0)
+        segs, wds = rescan_swallowed_speech(
+            client, models, audio_path, language, segs, wds, source_media
+        )
+        return segs, wds, det
 
     duration = probe_duration_seconds(audio_path)
     chunk_sec = max(60.0, float(os.getenv("GROQ_CHUNK_SECONDS", "1200")))  # 20 daqiqa
@@ -835,7 +1122,80 @@ def transcribe_with_groq(audio_path: Path, language: str) -> tuple[list[Segment]
 
     if not segments_all:
         raise RuntimeError("Groq Whisper bo'laklab transkripsiya qila olmadi")
+    segments_all, words_all = rescan_swallowed_speech(
+        client, models, audio_path, language, segments_all, words_all, source_media
+    )
     return segments_all, words_all, detected
+
+
+def speech_regions(audio_path: Path) -> list[tuple[float, float]]:
+    """Silero VAD bilan nutq bor oraliqlarni qaytaradi (soniyada).
+
+    Whisper'ning ichki `vad_filter`i sukunatni kesib tashlaydi-yu, uzun
+    jimlikdan keyingi bo'laklarning vaqtini asl o'ringa qaytara olmaydi —
+    subtitr nutqdan 15-20 soniya oldin chiqib qoladi. Shuning uchun modelga
+    to'liq audio beriladi (vaqtlari to'g'ri bo'lsin), nutq bo'lmagan joydagi
+    matn esa shu ro'yxat yordamida keyin olib tashlanadi."""
+    try:
+        from faster_whisper.audio import decode_audio
+        from faster_whisper.vad import VadOptions, get_speech_timestamps
+    except Exception:
+        return []
+    try:
+        audio = decode_audio(str(audio_path), sampling_rate=16000)
+        options = VadOptions(
+            min_silence_duration_ms=int(os.getenv("WHISPER_MIN_SILENCE_MS", "500")),
+            speech_pad_ms=int(os.getenv("WHISPER_SPEECH_PAD_MS", "400")),
+        )
+        chunks = get_speech_timestamps(audio, options, sampling_rate=16000)
+        return [(c["start"] / 16000.0, c["end"] / 16000.0) for c in chunks]
+    except Exception:
+        return []
+
+
+def clamp_to_speech(
+    start: float, end: float, regions: list[tuple[float, float]]
+) -> tuple[float, float] | None:
+    """Bo'lak vaqtini nutq oralig'iga qisqartiradi.
+
+    Whisper bo'lakni ko'pincha oldingi sukunatdan boshlab beradi — matn to'g'ri,
+    lekin ekranda nutqdan ancha oldin chiqadi. Bunday bo'lakni o'chirmaymiz
+    (aytilgan gap yo'qolmasin), faqat vaqtini nutq boshlangan joyga suramiz.
+    Nutq umuman yo'q bo'lsa — None (bu matn to'qilgan)."""
+    if not regions or end <= start:
+        return (start, end)
+    lo_hi: list[tuple[float, float]] = []
+    i = max(0, bisect.bisect_right([r[0] for r in regions], start) - 1)
+    while i < len(regions) and regions[i][0] < end:
+        lo, hi = regions[i]
+        if hi > start:
+            lo_hi.append((max(lo, start), min(hi, end)))
+        i += 1
+    if not lo_hi:
+        return None
+    return lo_hi[0][0], lo_hi[-1][1]
+
+
+def gate_by_speech(
+    segments: list[Segment], words: list[Word], audio_path: Path
+) -> tuple[list[Segment], list[Word]]:
+    """Nutq bo'lmagan joydagi matnni olib tashlaydi.
+
+    Lokal Whisper buni o'z ichida qiladi; Groq natijasi esa hech qanday
+    tekshiruvdan o'tmasdi — u ham sukunat/musiqa ustida matn to'qib qo'yadi."""
+    if os.getenv("WHISPER_VAD", "1") in {"0", "false", "no"}:
+        return segments, words
+    regions = speech_regions(audio_path)
+    if not regions:
+        return segments, words
+    out_segments: list[Segment] = []
+    for seg in segments:
+        span = clamp_to_speech(seg.start, seg.end, regions)
+        if span is None:
+            continue  # nutq yo'q joyda paydo bo'lgan matn — to'qilgan
+        out_segments.append(Segment(span[0], span[1], seg.text))
+    out_words = [w for w in words if clamp_to_speech(w.start, w.end, regions) is not None]
+    return out_segments, out_words
 
 
 def transcribe_with_faster_whisper(audio_path: Path, language: str) -> tuple[list[Segment], list[Word], str]:
@@ -845,20 +1205,110 @@ def transcribe_with_faster_whisper(audio_path: Path, language: str) -> tuple[lis
     device = os.getenv("WHISPER_DEVICE", "auto")
     compute_type = os.getenv("WHISPER_COMPUTE_TYPE", "int8")
     model = WhisperModel(model_name, device=device, compute_type=compute_type, download_root=str(MODEL_DIR))
-    kwargs: dict[str, Any] = {"word_timestamps": True}
+    # Whisper sukut bo'yicha sukunatni ham "eshitadi" va oldingi matnga qarab
+    # gapni o'zi to'qib davom ettiradi. Quyidagilar shuni to'xtatadi:
+    #   vad_filter                 — nutq bo'lmagan qismlarni modelga bermaydi
+    #   condition_on_previous_text — oldingi matndan takrorlanuvchi tsikl chiqmaydi
+    #   hallucination_silence_threshold — uzoq sukutda paydo bo'lgan matnni tashlaydi
+    kwargs: dict[str, Any] = {
+        "word_timestamps": True,
+        # Ichki VAD o'chirilgan — vaqtlar buzilmasin. Nutqsiz joydagi matn
+        # `speech_regions()` yordamida quyida olib tashlanadi.
+        "vad_filter": False,
+        "condition_on_previous_text": False,
+        "no_speech_threshold": _env_float("WHISPER_NO_SPEECH", 0.6),
+        "compression_ratio_threshold": _env_float("WHISPER_COMPRESSION_RATIO", 2.4),
+        "log_prob_threshold": _env_float("WHISPER_LOGPROB", -1.0),
+        "hallucination_silence_threshold": _env_float("WHISPER_HALLUCINATION_SILENCE", 2.0),
+    }
     if language and language != "auto":
         kwargs["language"] = language
     seg_iter, info = model.transcribe(str(audio_path), **kwargs)
+    # Til past ishonch bilan aniqlansa, model taxmin qilyapti — natija ko'pincha
+    # aslida aytilmagan matn bo'ladi. Foydalanuvchini ogohlantiramiz.
+    prob = float(getattr(info, "language_probability", 0.0) or 0.0)
+    if (not language or language == "auto") and 0 < prob < _env_float("WHISPER_MIN_LANG_PROB", 0.5):
+        emit(
+            "progress",
+            message=f"Diqqat: til aniq emas ({getattr(info, 'language', '?')} {prob:.0%}) — "
+                    "video tilini qo'lda tanlang",
+            progress=0.32,
+        )
+    # VAD yoqilganda faster-whisper (1.2.x) ba'zan bo'lakning birinchi so'ziga
+    # sukunatning boshini (0.00) yozib yuboradi: subtitr nutqdan 10-15 soniya
+    # oldin chiqib, ekranda osilib qoladi. Bitta so'z bir soniyadan uzun
+    # cho'zilmaydi — shunday "cho'zilgan" so'zni oxiriga tortamiz va bo'lak
+    # vaqtini so'z vaqtlaridan qayta hisoblaymiz.
+    max_word_dur = _env_float("WHISPER_MAX_WORD_DUR", 1.0)
+    max_word_gap = _env_float("WHISPER_MAX_WORD_GAP", 2.0)
+    # Uchinchi himoya qatlami (VAD va tayyor ibora ro'yxatidan keyin): model
+    # "bu yerda nutq yo'q" deb baholagan, lekin baribir matn yozgan bo'laklar.
+    # O'lchov: haqiqiy nutqda bu ko'rsatkich 0.87 gacha chiqdi (musiqa fonidagi
+    # multfilm), to'qilgan matnlarda 0.95-0.98. Chegara pastroq bo'lsa haqiqiy
+    # nutq o'chib ketadi.
+    max_no_speech = _env_float("WHISPER_MAX_NO_SPEECH", 0.93)
+    use_vad = os.getenv("WHISPER_VAD", "1") not in {"0", "false", "no"}
+    regions = speech_regions(audio_path) if use_vad else []
+
+    def repair_leading(items: list[Word]) -> list[Word]:
+        """Bo'lak boshidagi noto'g'ri vaqtli so'zlarni keyingisiga tortadi.
+
+        Xato ko'rinishi: birinchi so'z 0.00 da, ikkinchisi 16.5 da — ya'ni
+        birinchi so'z sukunat boshiga tashlab yuborilgan. Uni o'chirmaymiz
+        (aytilgan so'z), faqat vaqtini haqiqiy nutqqa yaqinlashtiramiz."""
+        if len(items) < 2:
+            return items
+        k = 0
+        while k + 1 < len(items) and items[k + 1].start - items[k].end > max_word_gap:
+            k += 1
+        if k == 0:
+            return items
+        out = list(items)
+        for i in range(k - 1, -1, -1):
+            end = out[i + 1].start
+            dur = min(max_word_dur, max(0.05, out[i].end - out[i].start))
+            out[i] = Word(max(0.0, end - dur), end, out[i].word)
+        return out
+
     segments: list[Segment] = []
     words: list[Word] = []
     for seg in seg_iter:
+        if float(getattr(seg, "no_speech_prob", 0.0) or 0.0) > max_no_speech:
+            continue
+        seg_start, seg_end = float(seg.start), float(seg.end)
+        if regions:
+            span = clamp_to_speech(seg_start, seg_end, regions)
+            if span is None:
+                continue  # nutq bo'lmagan joyda paydo bo'lgan matn — to'qilgan
+            seg_start, seg_end = span
         text = strip_tags(seg.text or "")
-        if text:
-            segments.append(Segment(float(seg.start), float(seg.end), text))
+        seg_words: list[Word] = []
         for w in seg.words or []:
             word = strip_tags(w.word or "")
-            if word:
-                words.append(Word(float(w.start), float(w.end), word))
+            if not word:
+                continue
+            start, end = float(w.start), float(w.end)
+            if end - start > max_word_dur:
+                start = end - max_word_dur
+            seg_words.append(Word(start, end, word))
+        seg_words = repair_leading(seg_words)
+        if text:
+            # So'z vaqtlari bo'lsa — aniqrog'i shular, lekin ular ham nutq
+            # oralig'idan chiqib ketmasligi kerak.
+            start = seg_words[0].start if seg_words else seg_start
+            end = seg_words[-1].end if seg_words else seg_end
+            start = min(max(start, seg_start), seg_end)
+            end = max(min(end, seg_end), seg_start)
+            segments.append(Segment(min(start, end), max(start, end), text))
+        words.extend(seg_words)
+    if not segments:
+        # Barcha bo'laklar ishonchsizligi uchun chiqarib tashlandi — bu "model
+        # bu tilni tanimadi" degani. To'qib chiqarilgan matn berishdan ko'ra
+        # nima qilish kerakligini aytamiz.
+        raise RuntimeError(
+            f"lokal model nutqni ishonchli tanimadi (til: {getattr(info, 'language', '?')}). "
+            "Video tilini qo'lda tanlang yoki Groq kalitini kiriting (whisper-large-v3)"
+        )
     return segments, words, getattr(info, "language", "") or ""
 
 
@@ -896,29 +1346,47 @@ def get_transcription(video: Path, tmp_dir: Path, source_lang: str) -> tuple[lis
         segments = parse_srt(embedded)
         return segments, words_from_segments(segments), source_lang if source_lang != "auto" else "", "embedded_srt"
 
-    audio = tmp_dir / "audio.webm"
-    emit("progress", message="Audio ajratilmoqda (yuqori siqilishda)", progress=0.18)
-    extract_audio(video, audio)
+    # Audio ikki xil sifatda kerak bo'ladi: Groq'ga siqilgani (yuklash tez),
+    # lokal Whisper'ga siqilmagani (aniqlik). Faqat kerak bo'lganda ajratamiz.
+    cache: dict[str, Path] = {}
+
+    def audio_for(lossless: bool) -> Path:
+        key = "wav" if lossless else "opus"
+        if key not in cache:
+            path = tmp_dir / ("audio.wav" if lossless else "audio.webm")
+            emit(
+                "progress",
+                message="Audio ajratilmoqda" if lossless else "Audio ajratilmoqda (yuqori siqilishda)",
+                progress=0.18,
+            )
+            extract_audio(video, path, lossless=lossless)
+            cache[key] = path
+        return cache[key]
 
     errors: list[str] = []
     if os.getenv("GROQ_API_KEY", "").strip():
         try:
             emit("progress", message="Groq Whisper transkripsiya qilmoqda", progress=0.30)
-            segments, words, detected = transcribe_with_groq(audio, source_lang)
+            segments, words, detected = transcribe_with_groq(
+                audio_for(False), source_lang, video
+            )
+            segments, words = gate_by_speech(segments, words, audio_for(False))
+            if not segments:
+                raise RuntimeError("nutq topilmadi")
             return segments, words or words_from_segments(segments), detected, "groq"
         except Exception as exc:
             errors.append(f"Groq: {exc}")
 
     try:
         emit("progress", message="Lokal faster-whisper tekshirilmoqda", progress=0.30)
-        segments, words, detected = transcribe_with_faster_whisper(audio, source_lang)
+        segments, words, detected = transcribe_with_faster_whisper(audio_for(True), source_lang)
         return segments, words or words_from_segments(segments), detected, "faster_whisper"
     except Exception as exc:
         errors.append(f"faster-whisper: {exc}")
 
     try:
         emit("progress", message="Lokal whisper CLI tekshirilmoqda", progress=0.30)
-        segments, words, detected = transcribe_with_whisper_cli(audio, tmp_dir, source_lang)
+        segments, words, detected = transcribe_with_whisper_cli(audio_for(True), tmp_dir, source_lang)
         return segments, words, detected, "whisper_cli"
     except Exception as exc:
         errors.append(f"whisper CLI: {exc}")
@@ -965,11 +1433,34 @@ def _save_json(path: Path, data: Any) -> None:
         pass
 
 
+# Transkripsiya sozlamalari (VAD, anti-hallucination) o'zgarganda eski kesh
+# eski — yomon — natijani abadiy qaytarib turmasligi uchun versiya raqami.
+TRANSCRIPTION_CACHE_VERSION = 3
+
+# Kesh faqat versiya bilan emas, transkripsiya sozlamalari bilan ham bog'lanadi:
+# VAD/chegara/model o'zgarganda eski (yomon) natija qaytarilib turmasin.
+_CACHE_SIGNATURE_KEYS = (
+    "WHISPER_MODEL", "WHISPER_VAD", "WHISPER_MAX_NO_SPEECH", "WHISPER_LOGPROB",
+    "WHISPER_COMPRESSION_RATIO", "WHISPER_HALLUCINATION_SILENCE",
+    "WHISPER_MIN_SILENCE_MS", "WHISPER_SPEECH_PAD_MS", "WHISPER_MAX_WORD_DUR",
+    "WHISPER_MAX_WORD_GAP", "GROQ_WHISPER_MODEL",
+)
+
+
+def transcription_signature() -> str:
+    raw = "|".join(f"{k}={os.getenv(k, '')}" for k in _CACHE_SIGNATURE_KEYS)
+    return hashlib.sha1(raw.encode("utf-8", "replace")).hexdigest()[:12]
+
+
 def load_transcription(cdir: Path) -> tuple[list[Segment], list[Word], str, str] | None:
     if not _cache_enabled():
         return None
     data = _load_json(cdir / "transcription.json")
     if not isinstance(data, dict) or not data.get("segments"):
+        return None
+    if int(data.get("v", 1)) != TRANSCRIPTION_CACHE_VERSION:
+        return None
+    if str(data.get("sig", "")) != transcription_signature():
         return None
     segs = [Segment(float(s[0]), float(s[1]), str(s[2])) for s in data["segments"]]
     words = [Word(float(w[0]), float(w[1]), str(w[2])) for w in data.get("words", [])]
@@ -980,6 +1471,8 @@ def save_transcription(cdir: Path, segs: list[Segment], words: list[Word], lang:
     if not _cache_enabled():
         return
     _save_json(cdir / "transcription.json", {
+        "v": TRANSCRIPTION_CACHE_VERSION,
+        "sig": transcription_signature(),
         "segments": [[s.start, s.end, s.text] for s in segs],
         "words": [[w.start, w.end, w.word] for w in words],
         "lang": lang,
@@ -1094,6 +1587,11 @@ def ai_translate_batch(
         ("gemini", bool(os.getenv("GEMINI_API_KEY")), translate_gemini),
         ("groq", bool(os.getenv("GROQ_API_KEY")), translate_groq),
     ]
+    # Umuman kalit yo'q bo'lsa — kutish va qayta urinishning ma'nosi yo'q
+    # (ilgari har bir to'plam uchun 30 soniya behuda kutilardi).
+    if not any(enabled for _, enabled, _ in providers):
+        return [offline_translate_text(text) for text in texts], "offline_dictionary"
+
     errors: list[str] = []
 
     for attempt in range(5):
@@ -1114,6 +1612,25 @@ def ai_translate_batch(
                 continue
         ai_retry_backoff()
 
+    # Katta to'plam bir marta ishlamasligi ko'pincha vaqtinchalik (limit yoki
+    # javob uzunligi) — ikkiga bo'lib qayta urinamiz. Aks holda 50 ta qator
+    # jimgina tarjimasiz qolib ketadi.
+    if len(texts) > AI_MIN_SPLIT_BATCH:
+        half = len(texts) // 2
+        left, lp = ai_translate_batch(
+            texts[:half], target_lang, source_lang, before, texts[half:half + 4], glossary
+        )
+        right, rp = ai_translate_batch(
+            texts[half:], target_lang, source_lang, texts[max(0, half - 4):half], after, glossary
+        )
+        provider = lp if lp != "offline_dictionary" else rp
+        return left + right, provider
+
+    emit(
+        "progress",
+        message=f"Diqqat: {len(texts)} qator tarjima qilinmadi (AI javob bermadi)",
+        progress=0.5,
+    )
     return [offline_translate_text(text) for text in texts], "offline_dictionary"
 
 
@@ -1233,46 +1750,102 @@ def translate_gemini(prompt: str, payload: str) -> str:
     raise RuntimeError(f"Gemini tarjima ishlamadi: {last_error}")
 
 
+# Groq matn modellarini vaqti-vaqti bilan iste'moldan chiqaradi (llama-3.3-70b
+# va llama-3.1-8b shunday yo'qoldi va tarjima jimgina oflayn lug'atga tushib
+# qoldi). Shuning uchun nom topilmasa, hisobdagi mavjud modellar so'raladi.
+_GROQ_DISCOVERED_MODEL: str | None = None
+
+# Tarjimaga yaramaydigan (nutq, xavfsizlik, TTS) modellar.
+_GROQ_SKIP_MODEL_RE = re.compile(r"whisper|tts|guard|orpheus|embed", re.I)
+
+
+def _groq_available_model(client: Any) -> str | None:
+    """Hisobda mavjud, matn uchun yaroqli birinchi modelni topadi."""
+    global _GROQ_DISCOVERED_MODEL
+    if _GROQ_DISCOVERED_MODEL:
+        return _GROQ_DISCOVERED_MODEL
+    try:
+        ids = sorted(m.id for m in client.models.list().data)
+    except Exception:
+        return None
+    usable = [m for m in ids if not _GROQ_SKIP_MODEL_RE.search(m)]
+    if not usable:
+        return None
+    # Kattaroq model odatda sifatliroq — nomidagi eng katta raqamga qarab.
+    def size(name: str) -> float:
+        found = re.findall(r"(\d+(?:\.\d+)?)\s*b\b", name, re.I)
+        return max((float(x) for x in found), default=0.0)
+    usable.sort(key=size, reverse=True)
+    _GROQ_DISCOVERED_MODEL = usable[0]
+    return _GROQ_DISCOVERED_MODEL
+
+
 def translate_groq(prompt: str, payload: str) -> str:
     from groq import Groq
 
     client = Groq(api_key=os.getenv("GROQ_API_KEY"))
     last_error: Exception | None = None
-    for model in model_candidates(
+    candidates = model_candidates(
         "GROQ_TEXT_MODEL",
-        "llama-3.3-70b-versatile",
+        "openai/gpt-oss-120b",
         "GROQ_TEXT_FALLBACK_MODELS",
-        ["llama-3.1-8b-instant"],
-    ):
-        kwargs: dict[str, Any] = {
-            "model": model,
-            "messages": [
-                {"role": "system", "content": prompt},
-                {"role": "user", "content": payload},
-            ],
-            "temperature": 0.15,
-        }
-        try:
+        ["openai/gpt-oss-20b", "qwen/qwen3.8-27b"],
+    )
+    discovered = _GROQ_DISCOVERED_MODEL
+    if discovered and discovered not in candidates:
+        candidates.append(discovered)
+
+    for attempt in range(2):
+        for model in candidates:
+            kwargs: dict[str, Any] = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": payload},
+                ],
+                "temperature": 0.15,
+            }
             try:
-                resp = client.chat.completions.create(response_format={"type": "json_object"}, **kwargs)
-            except Exception:
-                resp = client.chat.completions.create(**kwargs)
-            return resp.choices[0].message.content or "{}"
-        except Exception as exc:
-            last_error = exc
-            continue
+                try:
+                    resp = client.chat.completions.create(response_format={"type": "json_object"}, **kwargs)
+                except Exception:
+                    resp = client.chat.completions.create(**kwargs)
+                return resp.choices[0].message.content or "{}"
+            except Exception as exc:
+                last_error = exc
+                continue
+        if attempt == 0:
+            # Hech biri ishlamadi — ehtimol modellar nomi eskirgan. Hisobdagi
+            # mavjud ro'yxatdan yaroqlisini topib, yana bir marta urinamiz.
+            found = _groq_available_model(client)
+            if not found or found in candidates:
+                break
+            candidates = [found]
     raise RuntimeError(f"Groq tarjima ishlamadi: {last_error}")
 
 
 def offline_translate_text(text: str) -> str:
+    """Kalitsiz ishlaydigan zaxira tarjima — faqat ichki lug'at asosida.
+
+    Lug'at qamrovi past bo'lsa bo'sh satr qaytaradi: yarim tarjima qilingan
+    aralash matn ekranda aytilmagan so'zlar bo'lib ko'rinadi, bo'sh satr esa
+    faqat originalni qoldiradi (`SUBTITR_OFFLINE_MIN_COVERAGE` bilan sozlanadi)."""
     source = " ".join(text.split())
     if not source:
         return ""
-    lower = source.lower()
+
+    # Avval ko'p so'zli iboralar ("thank you" -> "rahmat"), keyin alohida so'zlar.
+    working = source
+    phrase_hits = 0
     for phrase, translation in PHRASES.items():
-        lower = re.sub(r"\b" + re.escape(phrase) + r"\b", translation, lower)
+        working, n = re.subn(r"\b" + re.escape(phrase) + r"\b", translation, working, flags=re.I)
+        if n:
+            phrase_hits += n * len(phrase.split())
+
     parts: list[str] = []
-    for token in re.findall(r"[A-Za-z']+|[^\w\s]+|\s+|\w+", source, re.UNICODE):
+    total = len(re.findall(r"\w[\w']*", source, re.UNICODE))
+    known = phrase_hits
+    for token in re.findall(r"[A-Za-z']+|[^\w\s]+|\s+|\w+", working, re.UNICODE):
         if token.isspace() or re.fullmatch(r"[^\w\s]+", token):
             parts.append(token)
             continue
@@ -1280,11 +1853,21 @@ def offline_translate_text(text: str) -> str:
         translated = COMMON_WORDS.get(key)
         if translated is None:
             translated = token
+        else:
+            known += 1
         if token[:1].isupper() and translated:
             translated = translated[:1].upper() + translated[1:]
         parts.append(translated)
-    result = " ".join("".join(parts).split())
-    return result or source
+
+    # So'zma-so'z almashtirish gap tuzilishini saqlamaydi: uzun gapda natija
+    # hech kim aytmagan matnga aylanadi. Shu sababli faqat qisqa va to'liq
+    # lug'atda bor satrlarni qaytaramiz ("thank you" -> "rahmat"), qolganini
+    # bo'sh qoldiramiz — ekranda faqat original eshitilgan matn qoladi.
+    max_words = int(os.getenv("SUBTITR_OFFLINE_MAX_WORDS", "4"))
+    min_coverage = _env_float("SUBTITR_OFFLINE_MIN_COVERAGE", 1.0)
+    if not total or total > max_words or (known / total) < min_coverage:
+        return ""
+    return " ".join("".join(parts).split())
 
 
 def translate_segments(
@@ -1304,12 +1887,16 @@ def translate_segments(
     total = len(segments)
 
     # Checkpoint: oldingi (uzilib qolgan) ishdan tayyor tarjimalarni yuklaymiz.
+    # Kalit — bo'lak tartib raqami emas, matnning o'zi: bo'laklarga bo'lish
+    # o'zgarsa, indeks bo'yicha kesh tarjimalarni boshqa qatorlarga yopishtirib
+    # yuboradi (ekranda aytilmagan gap paydo bo'ladi).
     cached: dict[str, str] = {}
     if cache_path is not None and _cache_enabled():
         data = _load_json(cache_path)
         if isinstance(data, dict):
             cached = {str(k): str(v) for k, v in data.items()}
-    out_texts: list[str | None] = [cached.get(str(i)) for i in range(total)]
+    keys = [_text_key(seg.text) for seg in segments]
+    out_texts: list[str | None] = [cached.get(key) for key in keys]
     provider = "cache" if any(t is not None for t in out_texts) else ""
 
     for start in range(0, total, batch):
@@ -1334,14 +1921,29 @@ def translate_segments(
         )
         for j, i in enumerate(idxs):
             out_texts[i] = translated[j] if j < len(translated) else chunk[j].text
-            cached[str(i)] = out_texts[i] or chunk[j].text
+            cached[keys[i]] = out_texts[i] or ""
         if cache_path is not None and _cache_enabled():
             _save_json(cache_path, cached)  # har batchdan keyin saqlaymiz
         emit("progress", message=f"Tarjima {done}/{total}",
              progress=progress_lo + (progress_hi - progress_lo) * frac)
 
-    out = [Segment(segments[i].start, segments[i].end, out_texts[i] or segments[i].text) for i in range(total)]
+    # Bo'sh satr — "bu qatorni tarjima qilib bo'lmadi" degani; originalni
+    # tarjima o'rniga qo'ymaymiz (aks holda bir gap ikki marta ko'rinadi).
+    out = [
+        Segment(
+            segments[i].start,
+            segments[i].end,
+            segments[i].text if out_texts[i] is None else out_texts[i],
+        )
+        for i in range(total)
+    ]
     return out, provider
+
+
+def _text_key(text: str) -> str:
+    """Kesh kaliti: matnning o'zidan (indeksdan emas) hosil qilinadi."""
+    norm = " ".join((text or "").split()).lower()
+    return hashlib.sha1(norm.encode("utf-8", "replace")).hexdigest()[:16]
 
 
 def normalize_word(word: str) -> str:
@@ -1379,35 +1981,120 @@ def build_glossary(segments: list[Segment], target_lang: str, source_lang: str) 
 # --- #2: Whisper "hallucination" (soxta matn) filtri ------------------------
 # Whisper musiqa/jim sahnalarda takroriy yoki soxta matn chiqaradi. Ularni
 # tozalaymiz (faqat transkripsiya natijasiga; tayyor .srt ga tegmaymiz).
+# Whisper sukunatda yoki musiqa ustida shu iboralarni "eshitib" qo'yadi —
+# ular hech qachon aytilmagan, shuning uchun subtitrga tushmasligi kerak.
 HALLUCINATION_RE = [
     re.compile(r"amara\.org|opensubtitles|subscene|addic7ed", re.I),
     re.compile(r"subtitles?\s+by|субтитры\s+(?:подготовил|сделал|от)|редактор\s+субтитров", re.I),
+    re.compile(r"sous-titres\s+(?:réalisés|par)|sottotitoli\s+(?:e\s+revisione|a\s+cura)|untertitel(?:ung)?\s+(?:von|im\s+auftrag)", re.I),
     re.compile(r"продолжение\s+следует|thanks?\s+for\s+watching|thank\s+you\s+for\s+watching", re.I),
+    re.compile(r"подписывайтесь\s+на\s+канал|ставьте\s+лайк|like\s+and\s+subscribe|請不吝|字幕", re.I),
+    re.compile(r"dimatorzok|редактор\s+субтитров\s+[А-ЯЁ]\.|корректор\s+[А-ЯЁ]\.", re.I),
     re.compile(r"^\s*\[?\s*(music|музыка|музика|applause|аплодисменты|laughter|смех)\s*\]?\s*$", re.I),
+    re.compile(r"(?:https?://|www\.)\S+", re.I),
     re.compile(r"^[\s♪♫🎵.,!?\-–—…]*$"),
 ]
+
+# Model nutqni eshitmaganda o'qitish ma'lumotlaridan shu "bo'sh joy
+# to'ldiruvchi" iboralarni qaytaradi. Ular butun qatorni egallaydi — shuning
+# uchun naqsh qatorning boshidan oxirigacha mos kelishi shart, aks holda
+# "Девушки отдыхают на пляже" kabi haqiqiy gap ham o'chib ketadi.
+STOCK_PHRASE_RE = [
+    re.compile(r"^\W*девушк\w*\s+(?:отдыха\w*|отход\w*)\W*$", re.I),
+    re.compile(r"^\W*спасибо\s+за\s+(?:просмотр|внимание)\W*$", re.I),
+    re.compile(r"^\W*спасибо,?\s+что\s+смотр\w+(\s+\w+){0,2}\W*$", re.I),
+    re.compile(r"^\W*подпис\w+(\s+(?:на|наш\w*|канал|нас))*\W*$", re.I),
+    re.compile(r"^\W*продолжение\s+в\s+следующей\s+серии\W*$", re.I),
+    re.compile(r"^\W*(?:до\s+новых\s+встреч|всем\s+пока)\W*$", re.I),
+    re.compile(r"^\W*(?:bye\s*bye|see\s+you\s+next\s+time)\W*$", re.I),
+]
+
+# Qator ichida takrorlangan so'z ("... dey dey dey dey.") — Whisper tsikli.
+# Butun qatorni o'chirib yubormaymiz: aytilgan qismi qoladi, takror olib tashlanadi.
+REPEAT_RUN_RE = re.compile(r"\b(\w+)(?:[\s,.!?…-]+\1\b){2,}", re.I | re.U)
+
+
+def collapse_repeats(text: str) -> str:
+    """Ketma-ket 3+ marta takrorlangan so'zni bittaga tushiradi."""
+    return REPEAT_RUN_RE.sub(lambda m: m.group(1), text)
+
+
+# Tovush izohi ("ДИНАМИЧНАЯ МУЗЫКА") — Whisper uni butunlay bosh harf bilan
+# yozadi; shu ikki belgi (bosh harf + kalit so'z) birga kelsa, bu aytilgan gap
+# emas. "Музыка была прекрасной" kabi haqiqiy gaplarda kichik harflar bor.
+ANNOTATION_WORD_RE = re.compile(r"музык|аплодисмент|смех|music|applause|laughter|звучит", re.I)
+
+
+def is_sound_annotation(text: str) -> bool:
+    letters = [c for c in text if c.isalpha()]
+    if not letters or any(c.islower() for c in letters):
+        return False
+    return bool(ANNOTATION_WORD_RE.search(text))
 
 
 def is_hallucination(text: str) -> bool:
     t = (text or "").strip()
     if len(t) < 1:
         return True
-    return any(rx.search(t) for rx in HALLUCINATION_RE)
+    if any(rx.search(t) for rx in HALLUCINATION_RE):
+        return True
+    if is_sound_annotation(t):
+        return True
+    return any(rx.match(t) for rx in STOCK_PHRASE_RE)
 
 
 def clean_transcription(segments: list[Segment]) -> list[Segment]:
-    """Soxta matn va ketma-ket takrorlangan qatorlarni olib tashlaydi."""
+    """Soxta matn va takrorlangan qatorlarni olib tashlaydi.
+
+    Whisper tsiklga tushganda bitta qatorni o'nlab marta qaytaradi — ular
+    ketma-ket ham, oralatib ham kelishi mumkin, shuning uchun ketma-ketligidan
+    tashqari umumiy takror soni ham cheklanadi."""
+    max_repeat = max(1, int(os.getenv("SUBTITR_MAX_REPEAT", "3")))
+    window = _env_float("SUBTITR_REPEAT_WINDOW", 30.0)
+    recent: dict[str, list[float]] = {}
     out: list[Segment] = []
-    prev_norm = None
     for seg in segments:
         text = " ".join((seg.text or "").split())
         if is_hallucination(text):
             continue
+        text = collapse_repeats(text)
         norm = text.lower()
-        if norm == prev_norm:  # ketma-ket bir xil (Whisper looping) — tashlab yuboramiz
+        # Takror chegarasi faqat qisqa vaqt oynasida ishlaydi: Whisper tsikli
+        # bitta joyda to'planadi, "Ha." kabi tabiiy takrorlanuvchi gaplar esa
+        # film bo'ylab tarqoq keladi — ularni o'chirish nutqni yo'qotish bo'ladi.
+        times = [t for t in recent.get(norm, []) if seg.start - t <= window]
+        if len(times) >= max_repeat:
+            recent[norm] = times
             continue
-        prev_norm = norm
+        times.append(seg.start)
+        recent[norm] = times
         out.append(Segment(seg.start, seg.end, text))
+    return out
+
+
+def filter_words(words: list[Word], segments: list[Segment]) -> list[Word]:
+    """Lug'at uchun so'zlarni tozalangan subtitrga moslaydi.
+
+    `clean_transcription` olib tashlagan (soxta) bo'laklardagi so'zlar lug'atga
+    tushib qolmasligi kerak — aks holda lug'atda hech kim aytmagan so'zlar
+    paydo bo'ladi."""
+    if not words or not segments:
+        return []
+    spans = sorted(((s.start, s.end) for s in segments), key=lambda x: x[0])
+    starts = [x[0] for x in spans]
+    tol = _env_float("SUBTITR_WORD_TOLERANCE", 0.2)
+    out: list[Word] = []
+    for w in words:
+        if is_hallucination(w.word) or len(normalize_word(w.word)) < 2:
+            continue
+        i = bisect.bisect_right(starts, w.start + tol) - 1
+        if i < 0:
+            continue
+        lo, hi = spans[i]
+        # So'z butunlay shu bo'lak ichida bo'lishi kerak — chegaraga tegib
+        # turgan (o'chirilgan bo'lakdan qolgan) so'zlar o'tib ketmasin.
+        if lo - tol <= w.start and w.end <= hi + tol:
+            out.append(w)
     return out
 
 
@@ -1433,7 +2120,12 @@ def _split_text(text: str, limit: int) -> list[str]:
         parts.append(rest[:cut + 1].strip())
         rest = rest[cut + 1:].strip()
     if rest:
-        parts.append(rest)
+        # Juda qisqa "quyruq" (masalan bitta so'z) alohida subtitr bo'lib
+        # bir zumga chaqnab o'tmasin — oldingi bo'lakka qo'shib yuboramiz.
+        if parts and len(rest) < limit * 0.35:
+            parts[-1] = (parts[-1] + " " + rest).strip()
+        else:
+            parts.append(rest)
     return [p for p in parts if p]
 
 
@@ -1466,12 +2158,21 @@ def polish_segments(segments: list[Segment]) -> list[Segment]:
         i += 1
 
     # 2) Uzun bo'laklarni bo'lish (vaqtni belgilar soniga mutanosib taqsimlaymiz).
+    #    Faqat matn uzunligi emas, davomiyligi ham hisobga olinadi: VAD nutqni
+    #    yirik bo'laklarga yig'ib yuborganda bitta gap ekranda 10-15 soniya
+    #    osilib qoladi va aytilayotgan so'z bilan mos kelmaydi.
+    max_dur = _env_float("SUB_MAX_DUR", 6.0)
     out: list[Segment] = []
     for seg in merged:
-        if len(seg.text) <= max_chars:
+        duration = seg.end - seg.start
+        if len(seg.text) <= max_chars and duration <= max_dur:
             out.append(seg)
             continue
-        parts = _split_text(seg.text, max_chars)
+        by_chars = -(-len(seg.text) // max_chars)
+        by_dur = -(-int(duration * 100) // int(max(0.5, max_dur) * 100)) if duration > 0 else 1
+        pieces = max(1, by_chars, by_dur)
+        limit = max(12, -(-len(seg.text) // pieces))
+        parts = _split_text(seg.text, limit)
         total = sum(len(p) for p in parts) or 1
         dur = seg.end - seg.start
         acc = 0
@@ -1520,6 +2221,10 @@ def build_vocabulary(words: list[Word], source_lang: str, target_lang: str) -> l
     translations, pos_list, lemma_list, provider = translate_word_list(keys, target_lang)
     entries: list[dict[str, Any]] = []
     for key, tr, pos, lemma in zip(keys, translations, pos_list, lemma_list):
+        # Tarjima topilmagan so'z ("brought - brought") lug'atda ham, ekrandagi
+        # animatsiyada ham foyda bermaydi — tashlab yuboramiz.
+        if not tr or normalize_word(tr) == normalize_word(key):
+            continue
         entries.append(
             {
                 "word": key,
@@ -1786,6 +2491,7 @@ def write_ass(
             # Bir-birining ustiga chiqib ketmasligi uchun 
             # ikkita so'z orasidagi minimal vaqt oralig'i
             min_time_gap = line_height / speed
+            max_drift = _env_float("SUBTITR_VOCAB_MAX_DRIFT", 3.0)
             
             last_start_time = -999.0
             
@@ -1797,6 +2503,11 @@ def write_ass(
                 
                 # So'z paydo bo'ladigan vaqtni hisoblash (oldingi so'zdan yetarlicha uzoqda bo'lishi kerak)
                 actual_start = max(item.start, last_start_time + min_time_gap)
+                # Nutq zich bo'lsa surilish to'planib ketadi va so'z aytilganidan
+                # ancha keyin chiqadi. Bunday so'zni ko'rsatmaymiz — noto'g'ri
+                # joyda chiqqan so'z tomoshabinni chalg'itadi.
+                if actual_start - item.start > max_drift:
+                    continue
                 actual_end = actual_start + duration_sec
                 last_start_time = actual_start
                 
@@ -1825,32 +2536,61 @@ def write_ass(
 
 
 _HW_ENCODER_CACHE: str | None = None
+VAAPI_DEVICE = os.getenv("VAAPI_DEVICE", "/dev/dri/renderD128")
 
 
-def _encoder_works(codec: str) -> bool:
+class EncoderChoice(NamedTuple):
+    """One video encoder recipe: the codec, its quality args, a human name, any
+    args that must precede the input (VAAPI device), and filters appended to the
+    subtitle filter chain (VAAPI needs the frames uploaded to the GPU)."""
+
+    codec: str
+    args: list[str]
+    name: str
+    pre_args: list[str] = []
+    filters: list[str] = []
+
+
+def _encoder_works(choice: EncoderChoice) -> bool:
     proc = run(
         [
             FFMPEG, "-hide_banner", "-loglevel", "error",
+            *choice.pre_args,
             "-f", "lavfi", "-i", "color=c=black:s=128x128:d=0.1",
-            "-c:v", codec, "-f", "null", "-",
+            *(["-vf", ",".join(choice.filters)] if choice.filters else []),
+            "-c:v", choice.codec, *choice.args, "-f", "null", "-",
         ]
     )
     return proc.returncode == 0
 
 
-def pick_video_encoder() -> tuple[str, list[str], str]:
-    """Return (codec, extra_ffmpeg_args, name) for the subtitle burn.
+def pick_video_encoder() -> EncoderChoice:
+    """Return the encoder recipe for the subtitle burn.
 
     Prefers a working GPU encoder (NVIDIA/Intel/AMD) — much faster on long
-    films — falling back to CPU libx264. Configurable via SUB_ENCODER
-    (auto|nvenc|qsv|amf|x264).
+    films — falling back to CPU libx264. On Linux the vendor-neutral path is
+    VAAPI (AMD/Intel drivers ship it; NVENC/QSV/AMF are mostly Windows).
+    Configurable via SUB_ENCODER (auto|nvenc|qsv|amf|vaapi|x264).
     """
     q = os.getenv("SUB_CRF", "25")
-    x264 = ("libx264", ["-preset", os.getenv("SUB_PRESET", "veryfast"), "-crf", q], "libx264 (CPU)")
-    presets: dict[str, tuple[str, list[str], str]] = {
-        "nvenc": ("h264_nvenc", ["-preset", "p5", "-rc", "vbr", "-cq", q, "-b:v", "0"], "NVIDIA NVENC"),
-        "qsv": ("h264_qsv", ["-global_quality", q, "-preset", "faster"], "Intel QSV"),
-        "amf": ("h264_amf", ["-rc", "cqp", "-qp_i", q, "-qp_p", q], "AMD AMF"),
+    x264 = EncoderChoice(
+        "libx264",
+        ["-preset", os.getenv("SUB_PRESET", "veryfast"), "-crf", q],
+        "libx264 (CPU)",
+    )
+    presets: dict[str, EncoderChoice] = {
+        "nvenc": EncoderChoice(
+            "h264_nvenc", ["-preset", "p5", "-rc", "vbr", "-cq", q, "-b:v", "0"], "NVIDIA NVENC"
+        ),
+        "qsv": EncoderChoice("h264_qsv", ["-global_quality", q, "-preset", "faster"], "Intel QSV"),
+        "amf": EncoderChoice("h264_amf", ["-rc", "cqp", "-qp_i", q, "-qp_p", q], "AMD AMF"),
+        "vaapi": EncoderChoice(
+            "h264_vaapi",
+            ["-rc_mode", "CQP", "-qp", q],
+            "VAAPI (GPU)",
+            ["-vaapi_device", VAAPI_DEVICE],
+            ["format=nv12", "hwupload"],
+        ),
         "x264": x264,
     }
     choice = os.getenv("SUB_ENCODER", "auto").strip().lower()
@@ -1860,9 +2600,12 @@ def pick_video_encoder() -> tuple[str, list[str], str]:
     global _HW_ENCODER_CACHE
     if _HW_ENCODER_CACHE is None:
         _HW_ENCODER_CACHE = "x264"
-        for name, codec in [("nvenc", "h264_nvenc"), ("qsv", "h264_qsv"), ("amf", "h264_amf")]:
+        candidates = ["nvenc", "qsv", "amf"]
+        if os.path.exists(VAAPI_DEVICE):
+            candidates.append("vaapi")
+        for name in candidates:
             try:
-                if _encoder_works(codec):
+                if _encoder_works(presets[name]):
                     _HW_ENCODER_CACHE = name
                     break
             except Exception:
@@ -1882,13 +2625,16 @@ def burn_subtitles(
     total = probe_duration_seconds(video)
     suffix = f": {label}" if label else ""
 
-    def _run(codec: str, venc_args: list[str], enc_name: str) -> tuple[int, str]:
+    def _run(choice: EncoderChoice) -> tuple[int, str]:
+        enc_name = choice.name
         emit("progress", message=f"Video render qilinmoqda ({enc_name}){suffix}", progress=progress_lo)
+        vf = ",".join([f"ass={ass_path.name}", *choice.filters])
         cmd = [
             FFMPEG, "-y",
+            *choice.pre_args,
             "-i", str(video),
-            "-vf", f"ass={ass_path.name}",
-            "-c:v", codec, *venc_args,
+            "-vf", vf,
+            "-c:v", choice.codec, *choice.args,
             "-c:a", "aac",
             "-b:a", "128k",
             "-movflags", "+faststart",
@@ -1934,13 +2680,19 @@ def burn_subtitles(
         stderr_thread.join(timeout=5)
         return proc.returncode, "".join(stderr_chunks)
 
-    codec, venc_args, enc_name = pick_video_encoder()
-    code, err = _run(codec, venc_args, enc_name)
-    if code != 0 and codec != "libx264":
+    choice = pick_video_encoder()
+    code, err = _run(choice)
+    if code != 0 and choice.codec != "libx264":
         # Apparat kodlash uzildi (drayver/format) — libx264 (CPU) ga qaytamiz.
         global _HW_ENCODER_CACHE
         _HW_ENCODER_CACHE = "x264"
-        code, err = _run("libx264", ["-preset", os.getenv("SUB_PRESET", "veryfast"), "-crf", os.getenv("SUB_CRF", "25")], "libx264 (CPU)")
+        code, err = _run(
+            EncoderChoice(
+                "libx264",
+                ["-preset", os.getenv("SUB_PRESET", "veryfast"), "-crf", os.getenv("SUB_CRF", "25")],
+                "libx264 (CPU)",
+            )
+        )
     if code != 0:
         raise RuntimeError("Video render xato: " + (err[-900:] or "noma'lum"))
 
@@ -2080,7 +2832,10 @@ def _prepare_data(
         # (Whisper natijasiga qo'llaymiz; sozlash: SUBTITR_NO_POLISH=1 o'chiradi.)
         if os.getenv("SUBTITR_NO_POLISH", "") not in {"1", "true", "yes"}:
             cleaned = clean_transcription(original)
-            original = polish_segments(cleaned) or original
+            if cleaned:
+                original = polish_segments(cleaned) or cleaned
+                # Lug'at tozalangan matndagi so'zlardan tuziladi.
+                words = filter_words(words, original) or words
 
         effective_lang = (source_lang if source_lang != "auto" else detected_lang) or "en"
         emit("progress", message=f"Matn tayyor ({transcriber})", progress=0.35)
@@ -2336,9 +3091,19 @@ def install_deps() -> None:
         "google-genai>=1.0.0",
         "anthropic>=0.40.0",
     ]
-    cmd = [sys.executable, "-m", "pip", "install", "--user", *packages]
+    # Debian/Ubuntu (PEP 668) tizim Python'iga `pip install --user` ni bloklaydi,
+    # shuning uchun paketlar dastur yonidagi virtual muhitga o'rnatiladi.
+    python = venv_python()
+    if not python.exists():
+        emit("progress", message="Virtual muhit yaratilmoqda", progress=0.05)
+        proc = run([sys.executable, "-m", "venv", str(VENV_DIR)])
+        if proc.returncode != 0:
+            raise RuntimeError(
+                (proc.stderr[-800:] or "venv yaratib bo'lmadi")
+                + "\n(Ubuntu: `sudo apt install python3-venv` kerak bo'lishi mumkin)"
+            )
     emit("progress", message="Python paketlar o'rnatilmoqda", progress=0.1)
-    proc = run(cmd)
+    proc = run([str(python), "-m", "pip", "install", "--upgrade", *packages])
     if proc.returncode != 0:
         raise RuntimeError(proc.stderr[-1000:] or "pip install xato")
     emit("done", message="Paketlar o'rnatildi")

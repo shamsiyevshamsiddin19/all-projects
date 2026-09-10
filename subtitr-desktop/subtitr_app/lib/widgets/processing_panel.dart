@@ -255,6 +255,27 @@ class _ResultView extends StatelessWidget {
     };
   }
 
+  /// Ichki dvigatel nomlarini odam o'qiydigan ko'rinishga o'giradi.
+  static String _engineLabel(String raw) {
+    const names = <String, String>{
+      'groq': 'Groq Whisper',
+      'faster_whisper': 'Lokal Whisper',
+      'whisper_cli': 'Lokal Whisper (CLI)',
+      'sidecar_srt': 'Tayyor SRT fayl',
+      'embedded_srt': 'Videoning ichki subtitri',
+      'openai': 'OpenAI',
+      'claude': 'Claude',
+      'gemini': 'Gemini',
+      'cache': 'Saqlangan natija',
+      'offline_dictionary': 'Ichki lug\'at',
+      'none': 'yo\'q',
+      '': 'yo\'q',
+    };
+    final base = raw.replaceAll('+cache', '');
+    final label = names[base] ?? base;
+    return raw.endsWith('+cache') ? '$label (keshdan)' : label;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -269,11 +290,36 @@ class _ResultView extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          'Transkripsiya: ${result.transcriber}  •  Tarjima: ${result.translator}',
+          'Transkripsiya: ${_engineLabel(result.transcriber)}'
+          '  •  Tarjima: ${_engineLabel(result.translator)}',
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
+        // Kalitsiz ishlaganda AI tarjima bo'lmaydi: ichki lug'at faqat qisqa,
+        // to'liq mos keladigan iboralarni tarjima qiladi, qolgan qatorlar
+        // tarjimasiz qoladi — buni aytib qo'yamiz, aks holda "tarjima yo'q"
+        // bo'lib ko'rinadi.
+        if (result.translator == 'offline_dictionary') ...[
+          const SizedBox(height: 6),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.info_outline_rounded,
+                  size: 16, color: theme.colorScheme.tertiary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'AI kaliti yo\'q — faqat ichki lug\'atdagi qisqa iboralar '
+                  'tarjima qilindi. To\'liq tarjima uchun kalit kiriting (Groq bepul).',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.tertiary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
         const SizedBox(height: 12),
         for (final output in result.outputs)
           Padding(

@@ -356,10 +356,15 @@ class DesktopProcessorService {
 
   /// Resolves a bundled tool (ffmpeg/ffprobe) next to the app, else PATH.
   String resolveTool(String name) {
-    final bundled = File(
-      '${root.path}${Platform.pathSeparator}$name${Platform.isWindows ? '.exe' : ''}',
-    );
-    return bundled.existsSync() ? bundled.path : name;
+    final sep = Platform.pathSeparator;
+    final fname = '$name${Platform.isWindows ? '.exe' : ''}';
+    for (final base in ['${root.path}$sep', '${root.path}${sep}tools$sep']) {
+      final bundled = File('$base$fname');
+      if (bundled.existsSync()) {
+        return bundled.path;
+      }
+    }
+    return name;
   }
 
   /// Video duration in seconds via ffprobe (0 on any failure).
@@ -401,9 +406,20 @@ class DesktopProcessorService {
   Map<String, String>? get _env =>
       processEnvironment.isEmpty ? null : processEnvironment;
 
+  /// The frozen (PyInstaller) processor shipped next to the app, or null when
+  /// only the `.py` source is present. Windows builds carry the `.exe`
+  /// suffix, Linux/macOS ones do not.
+  File? get _frozenProcessor {
+    final file = File(
+      '${root.path}${Platform.pathSeparator}desktop_processor'
+      '${Platform.isWindows ? '.exe' : ''}',
+    );
+    return file.existsSync() ? file : null;
+  }
+
   Future<ProcessResult> _executeRun(List<String> args) async {
-    final exeFile = File('${root.path}${Platform.pathSeparator}desktop_processor.exe');
-    if (exeFile.existsSync()) {
+    final exeFile = _frozenProcessor;
+    if (exeFile != null) {
       return Process.run(
         exeFile.path,
         args,
@@ -430,8 +446,8 @@ class DesktopProcessorService {
   }
 
   Future<Process> _executeStart(List<String> args) async {
-    final exeFile = File('${root.path}${Platform.pathSeparator}desktop_processor.exe');
-    if (exeFile.existsSync()) {
+    final exeFile = _frozenProcessor;
+    if (exeFile != null) {
       return Process.start(
         exeFile.path,
         args,
@@ -551,14 +567,36 @@ class DesktopProcessorService {
     return payload;
   }
 
-  static Future<String> _pythonExecutable() async {
-    final python = await Process.run('python', [
-      '--version',
-    ], runInShell: Platform.isWindows);
-    if (python.exitCode == 0) {
-      return 'python';
+  static String? _cachedPython;
+
+  /// Locates a usable Python interpreter. A virtualenv shipped next to the
+  /// processor wins (its site-packages already hold groq/openai/gemini), then
+  /// `python3` (the only name that exists on most Linux distros), then `python`.
+  Future<String> _pythonExecutable() async {
+    final cached = _cachedPython;
+    if (cached != null) {
+      return cached;
     }
-    return 'python';
+    final sep = Platform.pathSeparator;
+    final venv = Platform.isWindows
+        ? '${root.path}$sep.venv${sep}Scripts${sep}python.exe'
+        : '${root.path}$sep.venv${sep}bin${sep}python';
+    if (File(venv).existsSync()) {
+      return _cachedPython = venv;
+    }
+    for (final name in const ['python3', 'python']) {
+      try {
+        final probe = await Process.run(name, [
+          '--version',
+        ], runInShell: Platform.isWindows);
+        if (probe.exitCode == 0) {
+          return _cachedPython = name;
+        }
+      } catch (_) {
+        // Not on PATH — try the next candidate.
+      }
+    }
+    return _cachedPython = 'python3';
   }
 
   static Directory _findRoot() {
@@ -576,7 +614,8 @@ class DesktopProcessorService {
           '${dir.path}${Platform.pathSeparator}desktop_processor.py',
         );
         final exeFile = File(
-          '${dir.path}${Platform.pathSeparator}desktop_processor.exe',
+          '${dir.path}${Platform.pathSeparator}desktop_processor'
+          '${Platform.isWindows ? '.exe' : ''}',
         );
         if (pyFile.existsSync() || exeFile.existsSync()) {
           return dir;

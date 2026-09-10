@@ -1,6 +1,6 @@
 # Subtitr Desktop
 
-Video subtitr/tarjima qiluvchi Windows desktop ilova (Flutter GUI + Python backend).
+Video subtitr/tarjima qiluvchi desktop ilova (Flutter GUI + Python backend). Windows va Linux.
 
 - Video/audio transkripsiya (Groq Whisper / faster-whisper)
 - Tarjima (OpenAI / Anthropic Claude / Google Gemini / Groq)
@@ -12,10 +12,13 @@ Video subtitr/tarjima qiluvchi Windows desktop ilova (Flutter GUI + Python backe
 ## Tuzilma
 
 - `desktop_processor.py` — Python backend (PyInstaller bilan `.exe`ga qotiriladi)
-- `subtitr_app/` — Flutter Windows desktop GUI
+- `subtitr_app/` — Flutter desktop GUI (Windows + Linux)
 - `chrome-extension/` — "Subtitr Grabber" Chrome kengaytmasi
-- `build_release.ps1` — to'liq release (`.exe` + installer + zip) yig'ish skripti
-- `installer.iss` — Inno Setup skripti
+- `build_release.ps1` — Windows release (`.exe` + installer + zip) yig'ish skripti
+- `installer.iss` — Inno Setup skripti (Windows)
+- `build_release.sh` — Linux release (`dist/SubtitrDesktop` + tar.gz) yig'ish skripti
+- `install.sh` — Linux o'rnatuvchi (menyu yorlig'i bilan, sudo shart emas)
+- `ISHLATISH_LINUX.txt` — Linux uchun qo'llanma
 
 ## Eslatma
 
