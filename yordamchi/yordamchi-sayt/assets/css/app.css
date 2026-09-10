@@ -5139,35 +5139,37 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   letter-spacing: 0.4px;
 }
 
-/* Bo'limlar tablari (Juftlash | Ko'rsatish | Belgilash) */
+/* Bo'limlar tablari (Oraliq | Juftlash va Ko'rsatish | Belgilash) */
 .vd-p-tabs {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   align-items: stretch;
   gap: 6px;
-  padding: 10px 16px;
+  padding: 10px 14px;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 
 .vd-p-tab {
-  flex: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 8px 10px;
+  gap: 5px;
+  padding: 8px 6px;
   border-radius: 10px;
   border: 1px solid transparent;
   background: transparent;
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   position: relative;
   transition: all 0.18s ease;
   white-space: nowrap;
   font-family: inherit;
+  min-width: 0;
+  text-align: center;
 }
 
 .vd-p-tab:hover {
@@ -5180,6 +5182,31 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   background: var(--bg-elev);
   border-color: var(--border);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.vd-p-tab-lbl {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vd-lbl-full { display: none; }
+.vd-lbl-mid { display: none; }
+.vd-lbl-short { display: inline; }
+
+@media (min-width: 440px) {
+  .vd-lbl-full { display: inline; }
+  .vd-lbl-mid { display: none; }
+  .vd-lbl-short { display: none; }
+}
+
+@media (min-width: 375px) and (max-width: 439px) {
+  .vd-lbl-full { display: none; }
+  .vd-lbl-mid { display: inline; }
+  .vd-lbl-short { display: none; }
 }
 
 .vd-pt-badge {
@@ -5238,6 +5265,42 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/* Birlashtirilgan bo'lim ichidagi guruhlar (Juftlash va Ko'rsatish) */
+.vd-pane-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vd-pane-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 4px 2px 2px;
+}
+
+.vd-pane-group-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vd-pane-group-hint {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.vd-pane-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 6px 0;
+  border: 0;
+  opacity: 0.6;
 }
 
 /* Variant kartochkalari */
