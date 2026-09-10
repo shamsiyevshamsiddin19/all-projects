@@ -87,7 +87,8 @@
   var STYLE_KEY = "subtitr_style";
   var STYLE_DEFAULTS = { text_color: "#FFFFFF", outline_color: "#000000",
     trans_color: "#39FF14", font_size: "medium", position: "bottom", bold: true,
-    box: false, orig_box: true, box_color: "#FFD400", box_text_color: "#000000" };
+    box: false, orig_box: true, box_color: "#FFD400", box_text_color: "#000000",
+    quality: "1080" };
   var SIZE_PX = { small: 16, medium: 21, large: 27 };
 
   var el = function (id) { return document.getElementById(id); };
@@ -945,6 +946,7 @@
     el("tBold").checked = state.style.bold;
     el("tBox").checked = state.style.box;
     el("tOrigBox").checked = state.style.orig_box !== false;
+    setSeg("qualitySeg", state.style.quality || "1080");
     setSeg("sizeSeg", state.style.font_size);
     setSeg("posSeg", state.style.position);
   }
@@ -970,6 +972,7 @@
     el("tBold").onchange = function () { state.style.bold = this.checked; styleChanged(); };
     el("tBox").onchange = function () { state.style.box = this.checked; styleChanged(); };
     el("tOrigBox").onchange = function () { state.style.orig_box = this.checked; styleChanged(); };
+    bindSeg("qualitySeg", "quality");
     bindSeg("sizeSeg", "font_size");
     bindSeg("posSeg", "position");
     el("styleSave").onclick = function () { saveStyle(); haptic("success"); setSection("create"); };

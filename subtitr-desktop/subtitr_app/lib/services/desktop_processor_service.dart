@@ -260,6 +260,7 @@ class DesktopProcessorService {
     String position = 'bottom',
     String subColor = '#FFE680',
     String origStyle = 'box',
+    String quality = '1080',
   }) async {
     final payload = await _streamProcess([
       'process',
@@ -279,6 +280,8 @@ class DesktopProcessorService {
       subColor,
       '--orig-style',
       origStyle,
+      '--quality',
+      quality,
     ], onProgress: onProgress);
     return ProcessorResult.fromJson(payload);
   }
@@ -316,6 +319,7 @@ class DesktopProcessorService {
     String position = 'bottom',
     String subColor = '#FFE680',
     String origStyle = 'box',
+    String quality = '1080',
   }) async {
     // Write the edited segments next to the session so the processor can pick
     // them up (they fully replace the originals for rendering).
@@ -341,6 +345,8 @@ class DesktopProcessorService {
         subColor,
         '--orig-style',
         origStyle,
+        '--quality',
+        quality,
       ], onProgress: onProgress);
       return ProcessorResult.fromJson(payload);
     } finally {
@@ -356,8 +362,12 @@ class DesktopProcessorService {
   Future<Map<String, dynamic>> downloadUrl({
     required String url,
     required void Function(ProcessorProgress progress) onProgress,
+    String quality = '1080',
   }) async {
-    return _streamProcess(['download', '--url', url], onProgress: onProgress);
+    return _streamProcess(
+      ['download', '--url', url, '--quality', quality],
+      onProgress: onProgress,
+    );
   }
 
   /// Resolves a bundled tool (ffmpeg/ffprobe) next to the app, else PATH.

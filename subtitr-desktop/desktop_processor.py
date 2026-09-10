@@ -386,6 +386,17 @@ def is_url(value: str) -> bool:
 _JS_RUNTIME_CACHE: str | None = None
 
 
+# Video sifati: foydalanuvchi tanlaydigan maksimal balandlik.
+QUALITY_HEIGHTS = {"720": 720, "1080": 1080, "1440": 1440, "2160": 2160}
+DEFAULT_QUALITY = os.getenv("SUB_QUALITY", "1080")
+
+
+def quality_height(value: str | None) -> int:
+    """Tanlangan sifatni piksel balandligiga aylantiradi."""
+    return QUALITY_HEIGHTS.get(str(value or "").strip(), QUALITY_HEIGHTS[DEFAULT_QUALITY]
+                               if DEFAULT_QUALITY in QUALITY_HEIGHTS else 1080)
+
+
 def js_runtime_args() -> list[str]:
     """yt-dlp uchun JavaScript runtime argumenti.
 
@@ -433,6 +444,7 @@ def download_video(
     use_cache: bool = True,
     progress_lo: float = 0.01,
     progress_hi: float = 0.05,
+    quality: str | None = None,
 ) -> Path:
     """yt-dlp qo'llab-quvvatlaydigan istalgan havoladan (YouTube, Instagram,
     kino saytlari va h.k.) videoni yuklab oladi.
@@ -461,12 +473,15 @@ def download_video(
 
     emit("progress", message="Video havolasi tekshirilmoqda", progress=progress_lo)
     ffmpeg_dir = str(Path(FFMPEG).parent)
+    max_height = quality_height(quality)
 
     def attempt(extra_args: list[str]) -> tuple[int, Path | None, list[str]]:
         cmd = [
             YTDLP, "--no-playlist", "--no-warnings", "--no-mtime",
             *js_runtime_args(),
-            "-f", "bv*[height<=1080]+ba/b[height<=1080]/bv*+ba/b",
+            "-f", (
+                f"bv*[height<={max_height}]+ba/b[height<={max_height}]/bv*+ba/b"
+            ),
             "--merge-output-format", "mp4",
             "--ffmpeg-location", ffmpeg_dir,
             "--newline",
@@ -538,9 +553,9 @@ def download_video(
     return final_path
 
 
-def normalize_video_path(value: str) -> Path:
+def normalize_video_path(value: str, quality: str | None = None) -> Path:
     if is_url(value):
-        return download_video(value)
+        return download_video(value, quality=quality)
     path = Path(value)
     if not path.is_absolute():
         local = (ROOT / value).resolve()
@@ -2745,15 +2760,26 @@ def burn_subtitles(
     progress_lo: float = 0.76,
     progress_hi: float = 0.98,
     label: str = "",
+    max_height: int = 0,
 ) -> None:
     require_tool("ffmpeg")
     total = probe_duration_seconds(video)
     suffix = f": {label}" if label else ""
+    # Kichraytirish subtitrdan OLDIN: shunda matn to'g'ridan-to'g'ri kichik
+    # kadrga chiziladi va tiniq chiqadi (kattasini kichraytirish emas).
+    scale_filter = ""
+    if max_height:
+        _, src_h = probe_resolution(video)
+        if src_h and src_h > max_height:
+            scale_filter = f"scale=-2:{max_height}"
 
     def _run(choice: EncoderChoice) -> tuple[int, str]:
         enc_name = choice.name
         emit("progress", message=f"Video render qilinmoqda ({enc_name}){suffix}", progress=progress_lo)
-        vf = ",".join([f"ass={ass_path.name}{ass_fonts_option()}", *choice.filters])
+        vf = ",".join(
+            ([scale_filter] if scale_filter else [])
+            + [f"ass={ass_path.name}{ass_fonts_option()}", *choice.filters]
+        )
         cmd = [
             FFMPEG, "-y",
             *choice.pre_args,
@@ -2924,6 +2950,7 @@ def _prepare_data(
     mode: str,
     source_lang: str,
     target_lang: str,
+    quality: str | None = None,
 ) -> dict[str, Any]:
     """Transkripsiya + (kerak bo'lsa) tarjima + lug'at. Renderlashga kerak
     bo'lgan hamma narsani lug'at (dict) qilib qaytaradi. `process()` (bir-martalik
@@ -2932,7 +2959,7 @@ def _prepare_data(
     ensure_dirs()
     require_tool("ffmpeg")
     require_tool("ffprobe")
-    video = normalize_video_path(video_value)
+    video = normalize_video_path(video_value, quality=quality)
     stem = safe_stem(video.name)
     job_tmp = Path(tempfile.mkdtemp(prefix=stem + "_", dir=str(TMP_DIR)))
 
@@ -3037,6 +3064,7 @@ def _render_outputs(
     position: str = "bottom",
     sub_color: str = "#FFE680",
     orig_style: str = "box",
+    quality: str | None = None,
 ) -> dict[str, Any]:
     """`_prepare_data()` qaytargan (yoki foydalanuvchi tahrirlagan) `job`dan
     SRT/ASS/DOCX fayllar va subtitr kuydirilgan videoni tayyorlaydi."""
@@ -3124,7 +3152,10 @@ def _render_outputs(
         # Render progressini bir necha video orasida bo'lib ko'rsatamiz.
         lo = 0.70 + (0.28 * i / n_render)
         hi = 0.70 + (0.28 * (i + 1) / n_render)
-        burn_subtitles(video, ass, out, progress_lo=lo, progress_hi=hi, label=render_mode)
+        burn_subtitles(
+            video, ass, out, progress_lo=lo, progress_hi=hi, label=render_mode,
+            max_height=quality_height(quality),
+        )
         add_output("video", f"{render_mode} video", out)
 
     # Vocab-li video rejimlar uchun lug'at faylini ham saqlab qo'yamiz.
@@ -3154,10 +3185,11 @@ def _session_path_for(job: dict[str, Any]) -> Path:
     return d / f"{safe_stem(str(job.get('stem') or 'session'))}_{key}.json"
 
 
-def prepare_session(video_value: str, mode: str, source_lang: str, target_lang: str) -> dict[str, Any]:
+def prepare_session(video_value: str, mode: str, source_lang: str, target_lang: str,
+                    quality: str | None = None) -> dict[str, Any]:
     """Renderlashdan OLDIN transkripsiya+tarjimani tayyorlab, seans faylига saqlaydi.
     Foydalanuvchi tarjimalarni ko'rib/tahrirlab, keyin `render` bilan yakunlaydi."""
-    job = _prepare_data(video_value, mode, source_lang, target_lang)
+    job = _prepare_data(video_value, mode, source_lang, target_lang, quality=quality)
     session_path = _session_path_for(job)
     session_path.write_text(json.dumps(job, ensure_ascii=False), encoding="utf-8")
     return {
@@ -3180,6 +3212,7 @@ def render_session(
     position: str = "bottom",
     sub_color: str = "#FFE680",
     orig_style: str = "box",
+    quality: str | None = None,
 ) -> dict[str, Any]:
     """Seans faylini (va agar berilgan bo'lsa, tahrirlangan segmentlarni) o'qib,
     videoni renderlaydi."""
@@ -3193,7 +3226,7 @@ def render_session(
             data["segments"] = edited
     return _render_outputs(
         data, font_scale=font_scale, position=position,
-        sub_color=sub_color, orig_style=orig_style,
+        sub_color=sub_color, orig_style=orig_style, quality=quality,
     )
 
 
@@ -3206,11 +3239,12 @@ def process(
     position: str = "bottom",
     sub_color: str = "#FFE680",
     orig_style: str = "box",
+    quality: str | None = None,
 ) -> dict[str, Any]:
-    job = _prepare_data(video_value, mode, source_lang, target_lang)
+    job = _prepare_data(video_value, mode, source_lang, target_lang, quality=quality)
     return _render_outputs(
         job, font_scale=font_scale, position=position,
-        sub_color=sub_color, orig_style=orig_style,
+        sub_color=sub_color, orig_style=orig_style, quality=quality,
     )
 
 
@@ -3266,9 +3300,11 @@ def main() -> int:
     p_process.add_argument("--position", default="bottom", choices=["bottom", "top"])
     p_process.add_argument("--sub-color", default="#FFE680")
     p_process.add_argument("--orig-style", default="box", choices=["box", "plain"])
+    p_process.add_argument("--quality", default=DEFAULT_QUALITY, choices=list(QUALITY_HEIGHTS))
 
     p_download = sub.add_parser("download")
     p_download.add_argument("--url", required=True)
+    p_download.add_argument("--quality", default=DEFAULT_QUALITY, choices=list(QUALITY_HEIGHTS))
 
     sub.add_parser("update-ytdlp")
 
@@ -3282,6 +3318,7 @@ def main() -> int:
     )
     p_prepare.add_argument("--source-lang", default="auto")
     p_prepare.add_argument("--target-lang", default="uz")
+    p_prepare.add_argument("--quality", default=DEFAULT_QUALITY, choices=list(QUALITY_HEIGHTS))
 
     p_render = sub.add_parser("render")
     p_render.add_argument("--session", required=True)
@@ -3290,6 +3327,7 @@ def main() -> int:
     p_render.add_argument("--position", default="bottom", choices=["bottom", "top"])
     p_render.add_argument("--sub-color", default="#FFE680")
     p_render.add_argument("--orig-style", default="box", choices=["box", "plain"])
+    p_render.add_argument("--quality", default=DEFAULT_QUALITY, choices=list(QUALITY_HEIGHTS))
 
     args = parser.parse_args()
     try:
@@ -3299,25 +3337,31 @@ def main() -> int:
             install_deps()
         elif args.command == "download":
             dest = KINO_DIR / "Yuklab olingan"
-            path = download_video(args.url, dest_dir=dest, use_cache=False, progress_lo=0.0, progress_hi=1.0)
+            path = download_video(
+                args.url, dest_dir=dest, use_cache=False,
+                progress_lo=0.0, progress_hi=1.0, quality=args.quality,
+            )
             emit("done", path=str(path), name=path.name, dir=str(dest))
         elif args.command == "update-ytdlp":
             emit("done", **update_ytdlp())
         elif args.command == "prepare":
-            result = prepare_session(args.video, args.mode, args.source_lang, args.target_lang)
+            result = prepare_session(
+                args.video, args.mode, args.source_lang, args.target_lang,
+                quality=args.quality,
+            )
             emit("done", **result)
         elif args.command == "render":
             result = render_session(
                 args.session, segments_path=args.segments,
                 font_scale=args.font_scale, position=args.position, sub_color=args.sub_color,
-                orig_style=args.orig_style,
+                orig_style=args.orig_style, quality=args.quality,
             )
             emit("done", **result)
         elif args.command == "process":
             result = process(
                 args.video, args.mode, args.source_lang, args.target_lang,
                 font_scale=args.font_scale, position=args.position, sub_color=args.sub_color,
-                orig_style=args.orig_style,
+                orig_style=args.orig_style, quality=args.quality,
             )
             emit("done", **result)
         return 0

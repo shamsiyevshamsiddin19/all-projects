@@ -101,24 +101,28 @@ class AppearanceSettings {
     this.position = 'bottom',
     this.subColor = '#39FF14',
     this.origStyle = 'box',
+    this.quality = '1080',
   });
 
   final double fontScale; // 0.85 kichik, 1.0 o'rta, 1.2 katta
   final String position; // 'bottom' | 'top'
   final String subColor; // tarjima qatori rangi (hex)
   final String origStyle; // asl matn uslubi: 'box' (sariq quti) yoki 'plain'
+  final String quality;   // video sifati: '720' | '1080' | '1440' | '2160'
 
   AppearanceSettings copyWith({
     double? fontScale,
     String? position,
     String? subColor,
     String? origStyle,
+    String? quality,
   }) {
     return AppearanceSettings(
       fontScale: fontScale ?? this.fontScale,
       position: position ?? this.position,
       subColor: subColor ?? this.subColor,
       origStyle: origStyle ?? this.origStyle,
+      quality: quality ?? this.quality,
     );
   }
 }
@@ -194,6 +198,7 @@ class SettingsStore {
       position: prefs.getString('sub_position') ?? 'bottom',
       subColor: prefs.getString('sub_color') ?? '#39FF14',
       origStyle: prefs.getString('sub_orig_style') ?? 'box',
+      quality: prefs.getString('sub_quality') ?? '1080',
     );
   }
 
@@ -203,5 +208,6 @@ class SettingsStore {
     await prefs.setString('sub_position', a.position);
     await prefs.setString('sub_color', a.subColor);
     await prefs.setString('sub_orig_style', a.origStyle);
+    await prefs.setString('sub_quality', a.quality);
   }
 }
