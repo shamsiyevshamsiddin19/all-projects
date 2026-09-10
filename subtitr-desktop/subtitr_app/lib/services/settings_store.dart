@@ -99,18 +99,26 @@ class AppearanceSettings {
   const AppearanceSettings({
     this.fontScale = 1.0,
     this.position = 'bottom',
-    this.subColor = '#FFE680',
+    this.subColor = '#39FF14',
+    this.origStyle = 'box',
   });
 
   final double fontScale; // 0.85 kichik, 1.0 o'rta, 1.2 katta
   final String position; // 'bottom' | 'top'
   final String subColor; // tarjima qatori rangi (hex)
+  final String origStyle; // asl matn uslubi: 'box' (sariq quti) yoki 'plain'
 
-  AppearanceSettings copyWith({double? fontScale, String? position, String? subColor}) {
+  AppearanceSettings copyWith({
+    double? fontScale,
+    String? position,
+    String? subColor,
+    String? origStyle,
+  }) {
     return AppearanceSettings(
       fontScale: fontScale ?? this.fontScale,
       position: position ?? this.position,
       subColor: subColor ?? this.subColor,
+      origStyle: origStyle ?? this.origStyle,
     );
   }
 }
@@ -184,7 +192,8 @@ class SettingsStore {
     return AppearanceSettings(
       fontScale: prefs.getDouble('sub_font_scale') ?? 1.0,
       position: prefs.getString('sub_position') ?? 'bottom',
-      subColor: prefs.getString('sub_color') ?? '#FFE680',
+      subColor: prefs.getString('sub_color') ?? '#39FF14',
+      origStyle: prefs.getString('sub_orig_style') ?? 'box',
     );
   }
 
@@ -193,5 +202,6 @@ class SettingsStore {
     await prefs.setDouble('sub_font_scale', a.fontScale);
     await prefs.setString('sub_position', a.position);
     await prefs.setString('sub_color', a.subColor);
+    await prefs.setString('sub_orig_style', a.origStyle);
   }
 }

@@ -149,7 +149,12 @@ class SettingsPanel extends StatelessWidget {
         Expanded(
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
-            child: _ModePreview(key: ValueKey(mode), mode: mode),
+            child: _ModePreview(
+              key: ValueKey('$mode|${appearance.subColor}|${appearance.origStyle}'),
+              mode: mode,
+              subColor: appearance.subColor,
+              origStyle: appearance.origStyle,
+            ),
           ),
         ),
       ],
@@ -169,11 +174,14 @@ class _AppearanceRow extends StatelessWidget {
   final bool enabled;
   final ValueChanged<AppearanceSettings> onChanged;
 
+  // Yorqin, to'yingan ranglar: oldingi och (pastel) ohanglar kuydirilgandan
+  // keyin ekranda xira ko'rinardi.
   static const _colors = {
+    '#39FF14': 'Neon yashil',
     '#FFE680': 'Sariq',
     '#FFFFFF': 'Oq',
-    '#7DD3FC': 'Ko\'k',
-    '#A7F3D0': 'Yashil',
+    '#00E5FF': 'Ko\'k',
+    '#FF2D95': 'Pushti',
   };
 
   @override
@@ -202,8 +210,18 @@ class _AppearanceRow extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(
           child: _MiniDropdown<String>(
+            label: 'Asl matn',
+            value: appearance.origStyle,
+            items: const {'box': 'Sariq quti', 'plain': 'Oddiy'},
+            enabled: enabled,
+            onChanged: (v) => onChanged(appearance.copyWith(origStyle: v)),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _MiniDropdown<String>(
             label: 'Rang',
-            value: _colors.containsKey(appearance.subColor) ? appearance.subColor : '#FFE680',
+            value: _colors.containsKey(appearance.subColor) ? appearance.subColor : '#39FF14',
             items: _colors,
             enabled: enabled,
             onChanged: (v) => onChanged(appearance.copyWith(subColor: v)),
@@ -251,7 +269,21 @@ class _MiniDropdown<T> extends StatelessWidget {
 
 class _ModePreview extends StatelessWidget {
   final String mode;
-  const _ModePreview({super.key, required this.mode});
+  final String subColor;
+  final String origStyle;
+  const _ModePreview({
+    super.key,
+    required this.mode,
+    this.subColor = '#39FF14',
+    this.origStyle = 'box',
+  });
+
+  /// "#RRGGBB" -> Color (noto'g'ri qiymatda neon yashilga qaytadi).
+  Color get _subColor {
+    final hex = subColor.replaceAll('#', '');
+    final value = int.tryParse(hex, radix: 16);
+    return value == null ? const Color(0xFF39FF14) : Color(0xFF000000 | value);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -305,9 +337,16 @@ class _ModePreview extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('This is the original text', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold, shadows: [Shadow(blurRadius: 4, color: Colors.black)])),
+                    if (origStyle == 'box')
+                      Container(
+                        color: const Color(0xFFFFD400),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        child: const Text('This is the original text', textAlign: TextAlign.center, style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.w900)),
+                      )
+                    else
+                      const Text('This is the original text', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900, shadows: [Shadow(blurRadius: 4, color: Colors.black)])),
                     if (isDual)
-                      const Text('Bu tarjima qilingan matn', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFFFFE680), fontSize: 13, fontWeight: FontWeight.bold, shadows: [Shadow(blurRadius: 4, color: Colors.black)])),
+                      Text('Bu tarjima qilingan matn', textAlign: TextAlign.center, style: TextStyle(color: _subColor, fontSize: 13, fontWeight: FontWeight.w900, shadows: const [Shadow(blurRadius: 4, color: Colors.black)])),
                   ],
                 ),
               ),
@@ -374,8 +413,9 @@ class _ModePreview extends StatelessWidget {
       child: RichText(
         text: TextSpan(
           children: [
-            TextSpan(text: '$en - ', style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600, shadows: [Shadow(blurRadius: 3)])),
-            TextSpan(text: uz, style: const TextStyle(color: Color(0xFF7DD3FC), fontSize: 13, fontWeight: FontWeight.w500, shadows: [Shadow(blurRadius: 3)])),
+            TextSpan(text: en, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900, shadows: [Shadow(blurRadius: 3, color: Colors.black)])),
+            const TextSpan(text: '  ·  ', style: TextStyle(color: Color(0xFF8A93A6), fontSize: 13, fontWeight: FontWeight.w900)),
+            TextSpan(text: uz, style: TextStyle(color: _subColor, fontSize: 13, fontWeight: FontWeight.w900, shadows: const [Shadow(blurRadius: 3, color: Colors.black)])),
           ],
         ),
       ),

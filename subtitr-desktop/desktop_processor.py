@@ -383,6 +383,27 @@ def is_url(value: str) -> bool:
     return bool(re.match(r"^https?://", (value or "").strip(), re.IGNORECASE))
 
 
+_JS_RUNTIME_CACHE: str | None = None
+
+
+def js_runtime_args() -> list[str]:
+    """yt-dlp uchun JavaScript runtime argumenti.
+
+    YouTube 2025 yildan beri format havolalarini JS "challenge" bilan yopadi:
+    runtime bo'lmasa yt-dlp faqat 360p (format 18) ni ko'radi yoki umuman
+    "This video is not available" deydi. Sukut bo'yicha faqat `deno` yoqilgan,
+    shuning uchun tizimda topilgan runtime'ni o'zimiz ko'rsatamiz."""
+    global _JS_RUNTIME_CACHE
+    if _JS_RUNTIME_CACHE is None:
+        for name in ("deno", "node", "bun"):
+            if shutil.which(name):
+                _JS_RUNTIME_CACHE = name
+                break
+        else:
+            _JS_RUNTIME_CACHE = ""
+    return ["--js-runtimes", _JS_RUNTIME_CACHE] if _JS_RUNTIME_CACHE else []
+
+
 def update_ytdlp() -> dict[str, Any]:
     """yt-dlp'ni o'zini-o'zi yangilaydi (`yt-dlp -U`). Kino/video saytlar tez-tez
     o'zgargani uchun yuklovchini yangi tutish yuklashning ishlab turishini ta'minlaydi.
@@ -444,6 +465,7 @@ def download_video(
     def attempt(extra_args: list[str]) -> tuple[int, Path | None, list[str]]:
         cmd = [
             YTDLP, "--no-playlist", "--no-warnings", "--no-mtime",
+            *js_runtime_args(),
             "-f", "bv*[height<=1080]+ba/b[height<=1080]/bv*+ba/b",
             "--merge-output-format", "mp4",
             "--ffmpeg-location", ffmpeg_dir,
@@ -2406,7 +2428,9 @@ def wrap_text(text: str, limit: int) -> str:
 def layout_for(width: int, height: int, dual: bool, font_scale: float = 1.0) -> dict[str, int]:
     ar = width / max(1, height)
     base = width if ar < 0.85 else height
-    font_size = max(16, round(base * (0.035 if not dual else 0.031) * font_scale))
+    # Subtitr balandlikning ~4-4.5% i bo'lgani o'qishga qulay; oldingi 3.1-3.5%
+    # 1080p da 33 px chiqib, ekranda mayda va kuchsiz ko'rinardi.
+    font_size = max(18, round(base * (0.045 if not dual else 0.040) * font_scale))
     margin_lr = max(24, round(width * 0.06))
     cpl = max(18, min(48, int((width - margin_lr * 2) / (font_size * 0.52))))
     return {
@@ -2415,11 +2439,97 @@ def layout_for(width: int, height: int, dual: bool, font_scale: float = 1.0) -> 
         "margin_lr": margin_lr,
         "margin_v": max(28, round(height * (0.07 if ar >= 1.0 else 0.15))),
         "cpl": cpl,
-        "outline": max(2, round(font_size * 0.09)),
+        # Qalinroq qora kontur — matn har qanday fonda ajralib turadi. 0.09 da
+        # yorug' sahnada harflar fonga singib, "xira" ko'rinardi.
+        "outline": max(3, round(font_size * 0.13)),
+        # Sariq quti uchun: ichki bo'shliq va harflar orasi (montaj uslubida
+        # matn quti ichida biroz keng joylashadi).
+        "box_pad": max(4, round(font_size * 0.16)),
+        "box_spacing": max(0, round(font_size * 0.04)),
+        "line_h": round(font_size * 1.28),
+        "vocab_outline": max(3, round(font_size * 0.11)),
     }
 
 
-def ass_header(width: int, height: int, layout: dict[str, int], alignment: int = 2) -> str:
+# Subtitr shrifti: dastur yonidagi `fonts/` da qalin (Black) shrift bo'lsa
+# o'shani ishlatamiz — tizimdagi Noto Sans faqat Bold (700) gacha bo'lgani
+# uchun matn ekranda kuchsiz ko'rinardi. Topilmasa Noto Sans'ga qaytamiz.
+FONTS_DIR = ROOT / "fonts"
+_BUNDLED_FONT = FONTS_DIR / "Montserrat-Black.ttf"
+
+
+def subtitle_font_name() -> str:
+    override = os.getenv("SUB_FONT", "").strip()
+    if override:
+        return override
+    return "Montserrat Black" if _BUNDLED_FONT.exists() else "Noto Sans"
+
+
+def _filter_escape(value: str) -> str:
+    """ffmpeg filtr argumenti uchun yo'lni himoyalash."""
+    return value.replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'")
+
+
+def ass_fonts_option() -> str:
+    """`ass` filtriga qo'shiladigan `:fontsdir=...` (shrift bo'lsa)."""
+    if not _BUNDLED_FONT.exists():
+        return ""
+    return ":fontsdir=" + _filter_escape(str(FONTS_DIR))
+
+
+# Asl matn uslubi: "plain" — oq matn + qora kontur (eski ko'rinish),
+# "box" — sariq to'ldirilgan quti ustida qora qalin matn (montaj uslubi).
+BOX_FILL = os.getenv("SUB_BOX_COLOR", "#FFD400")
+BOX_TEXT = os.getenv("SUB_BOX_TEXT_COLOR", "#000000")
+
+
+def ass_header(
+    width: int,
+    height: int,
+    layout: dict[str, int],
+    alignment: int = 2,
+    orig_style: str = "plain",
+) -> str:
+    font = subtitle_font_name()
+    outline = layout["outline"]
+    shadow = max(1, outline // 2)
+    fmt = (
+        "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, "
+        "BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, "
+        "BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
+    )
+    # Asl matn: oddiy (kontur) yoki sariq quti (BorderStyle=3 — to'ldirilgan fon).
+    if orig_style == "box":
+        bottom = (
+            f"Style: Bottom,{font},{layout['font']},{ass_color(BOX_TEXT)},&H000000FF,"
+            f"{ass_color(BOX_FILL)},&H00000000,0,0,0,0,100,100,{layout['box_spacing']},0,3,"
+            f"{layout['box_pad']},0,{alignment},{layout['margin_lr']},{layout['margin_lr']},"
+            f"{layout['margin_v']},1\n"
+        )
+    else:
+        bottom = (
+            f"Style: Bottom,{font},{layout['font']},{ass_color('#FFFFFF')},&H000000FF,"
+            f"{ass_color('#000000')},&H00000000,1,0,0,0,100,100,0,0,1,{outline},"
+            f"{shadow},{alignment},{layout['margin_lr']},{layout['margin_lr']},"
+            f"{layout['margin_v']},1\n"
+        )
+    # Tarjima qatori alohida uslub — quti faqat asl matnga tegishli bo'lsin.
+    trans = (
+        f"Style: Trans,{font},{layout['font']},{ass_color('#FFFFFF')},&H000000FF,"
+        f"{ass_color('#000000')},&H00000000,1,0,0,0,100,100,0,0,1,{outline},"
+        f"{shadow},{alignment},{layout['margin_lr']},{layout['margin_lr']},"
+        f"{layout['margin_v']},1\n"
+    )
+    # Lug'at kartochkasi: fonsiz, qalin qora konturli matn.
+    # To'ldirilgan fon (BorderStyle=3) yaramadi — libass qutini rang o'zgargan
+    # joyda uzib qo'yadi, natijada so'z, nuqta va tarjima uchta alohida
+    # to'rtburchakka bo'linib, chetlari tishli bo'lib ko'rinardi.
+    vocab = (
+        f"Style: Vocab,{font},{layout['vocab_font']},{ass_color('#FFFFFF')},&H000000FF,"
+        f"{ass_color('#000000')},{ass_color('#000000', '60')},0,0,0,0,100,100,"
+        f"{layout['box_spacing']},0,1,{layout['vocab_outline']},{max(1, shadow)},7,"
+        f"{layout['margin_lr']},{layout['margin_lr']},{layout['margin_v']},1\n\n"
+    )
     return (
         "[Script Info]\n"
         "ScriptType: v4.00+\n"
@@ -2428,16 +2538,7 @@ def ass_header(width: int, height: int, layout: dict[str, int], alignment: int =
         "WrapStyle: 0\n"
         "ScaledBorderAndShadow: yes\n\n"
         "[V4+ Styles]\n"
-        "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, "
-        "BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, "
-        "BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
-        f"Style: Bottom,Noto Sans,{layout['font']},{ass_color('#FFFFFF')},&H000000FF,"
-        f"{ass_color('#000000')},&H00000000,1,0,0,0,100,100,0,0,1,{layout['outline']},"
-        f"{max(1, layout['outline'] // 2)},{alignment},{layout['margin_lr']},{layout['margin_lr']},"
-        f"{layout['margin_v']},1\n"
-        f"Style: Vocab,Noto Sans,{layout['vocab_font']},{ass_color('#FFFFFF')},&H000000FF,"
-        f"{ass_color('#08111F')},{ass_color('#08111F', '55')},1,0,0,0,100,100,0,0,3,"
-        f"{max(1, layout['outline'] // 2)},1,7,24,24,24,1\n\n"
+        + fmt + bottom + trans + vocab +
         "[Events]\n"
         "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
     )
@@ -2454,22 +2555,47 @@ def write_ass(
     font_scale: float = 1.0,
     position: str = "bottom",
     trans_color: str = "#FFE680",
+    orig_style: str = "plain",
 ) -> None:
     layout = layout_for(width, height, dual=translated is not None, font_scale=font_scale)
     alignment = 8 if position == "top" else 2  # ASS: 8=tepa markaz, 2=past markaz
+    line_h = layout["line_h"]
+    gap = max(2, round(layout["font"] * 0.12))
     with path.open("w", encoding="utf-8") as f:
-        f.write(ass_header(width, height, layout, alignment=alignment))
+        f.write(ass_header(width, height, layout, alignment=alignment, orig_style=orig_style))
         for i, seg in enumerate(original):
             start = seconds_to_ass_time(seg.start)
             end = seconds_to_ass_time(seg.end)
             orig_lines = wrap_lines(seg.text, layout["cpl"] + (5 if translated else 0), 2)
+            trans_lines: list[str] = []
+            if translated and i < len(translated):
+                trans_lines = wrap_lines(translated[i].text, layout["cpl"] + 5, 2)
+
+            if orig_style == "box":
+                # Sariq quti faqat asl matnni o'rashi kerak, shuning uchun asl
+                # va tarjima alohida hodisa bo'lib yoziladi va MarginV bilan
+                # ustma-ust qo'yiladi (quti tarjima qatorini ham yutmasin).
+                if alignment == 8:  # tepada: asl yuqorida
+                    orig_v = layout["margin_v"]
+                    trans_v = orig_v + len(orig_lines) * line_h + gap
+                else:               # pastda: tarjima eng pastda
+                    trans_v = layout["margin_v"]
+                    orig_v = trans_v + len(trans_lines) * line_h + gap
+                if orig_lines:
+                    body = r"\N".join(ass_escape(x) for x in orig_lines)
+                    f.write(f"Dialogue: 0,{start},{end},Bottom,,0,0,{orig_v},,{body}\n")
+                if trans_lines:
+                    body = inline_color(trans_color) + r"\N".join(
+                        ass_escape(x) for x in trans_lines
+                    )
+                    f.write(f"Dialogue: 0,{start},{end},Trans,,0,0,{trans_v},,{body}\n")
+                continue
+
             lines: list[str] = []
             if orig_lines:
                 lines.append(inline_color("#FFFFFF") + r"\N".join(ass_escape(x) for x in orig_lines))
-            if translated and i < len(translated):
-                trans_lines = wrap_lines(translated[i].text, layout["cpl"] + 5, 2)
-                if trans_lines:
-                    lines.append(inline_color(trans_color) + r"\N".join(ass_escape(x) for x in trans_lines))
+            if trans_lines:
+                lines.append(inline_color(trans_color) + r"\N".join(ass_escape(x) for x in trans_lines))
             if lines:
                 joined = r"\N".join(lines)
                 f.write(f"Dialogue: 0,{start},{end},Bottom,,0,0,0,,{joined}\n")
@@ -2516,21 +2642,19 @@ def write_ass(
                 word = ass_escape(key)
                 translation = ass_escape(tr)
                 
-                duration_ms = int(duration_sec * 1000)
-                exit_start = duration_ms - 400
-                exit_end = duration_ms
-                
-                # Chiroyli va zamonaviy chiqish/yo'qolish animatsiyasi (Pop-in va Pop-out)
-                # \blur3, \fscx50, \fscy50 -> Boshida xira va kichik
-                # \t(0,300) -> Tiniqlashib, 100% razmerga kattalashadi (chiroyli sakrab chiqish)
-                # \t(exit_start,exit_end) -> Oxirida yana xiralashib kichrayadi
-                override = "{\\bord1\\shad1\\fad(300,400)\\move(%d,%d,%d,%d)\\blur3\\fscx50\\fscy50\\t(0,300,\\blur0\\fscx100\\fscy100)\\t(%d,%d,\\blur3\\fscx50\\fscy50)}" % (
-                    x, base_y, x, target_y, exit_start, exit_end
+                # Yumshoq chiqish/yo'qolish: faqat shaffoflik bilan (\fad) va
+                # kichik "pop" (92% -> 100%). Ilgari oxirida 50% ga kichrayib,
+                # xiralashib qolardi — kadr chetida qora dog' bo'lib ko'rinardi.
+                # \bord/\shad ni bu yerda o'zgartirmaymiz: BorderStyle=3 da
+                # \bord kartochkaning ichki bo'shlig'i (uslubda belgilangan).
+                override = "{\\fad(250,450)\\move(%d,%d,%d,%d)\\fscx92\\fscy92\\t(0,220,\\fscx100\\fscy100)}" % (
+                    x, base_y, x, target_y
                 )
                 
                 body = (
-                    f"{override}{inline_color('#FFFFFF')}{word} - "
-                    f"{inline_color('#7DD3FC')}{translation}"
+                    f"{override}{inline_color('#FFFFFF')}{word}"
+                    f"{inline_color('#8A93A6')}  ·  "
+                    f"{inline_color(trans_color)}{translation}"
                 )
                 f.write(f"Dialogue: 1,{start},{end},Vocab,,0,0,0,,{body}\n")
 
@@ -2572,7 +2696,8 @@ def pick_video_encoder() -> EncoderChoice:
     VAAPI (AMD/Intel drivers ship it; NVENC/QSV/AMF are mostly Windows).
     Configurable via SUB_ENCODER (auto|nvenc|qsv|amf|vaapi|x264).
     """
-    q = os.getenv("SUB_CRF", "25")
+    # 25 juda past edi — kuydirilgan matn chetlari yemirilib, "xira" ko'rinardi.
+    q = os.getenv("SUB_CRF", "20")
     x264 = EncoderChoice(
         "libx264",
         ["-preset", os.getenv("SUB_PRESET", "veryfast"), "-crf", q],
@@ -2628,7 +2753,7 @@ def burn_subtitles(
     def _run(choice: EncoderChoice) -> tuple[int, str]:
         enc_name = choice.name
         emit("progress", message=f"Video render qilinmoqda ({enc_name}){suffix}", progress=progress_lo)
-        vf = ",".join([f"ass={ass_path.name}", *choice.filters])
+        vf = ",".join([f"ass={ass_path.name}{ass_fonts_option()}", *choice.filters])
         cmd = [
             FFMPEG, "-y",
             *choice.pre_args,
@@ -2689,7 +2814,7 @@ def burn_subtitles(
         code, err = _run(
             EncoderChoice(
                 "libx264",
-                ["-preset", os.getenv("SUB_PRESET", "veryfast"), "-crf", os.getenv("SUB_CRF", "25")],
+                ["-preset", os.getenv("SUB_PRESET", "veryfast"), "-crf", os.getenv("SUB_CRF", "20")],
                 "libx264 (CPU)",
             )
         )
@@ -2911,6 +3036,7 @@ def _render_outputs(
     font_scale: float = 1.0,
     position: str = "bottom",
     sub_color: str = "#FFE680",
+    orig_style: str = "box",
 ) -> dict[str, Any]:
     """`_prepare_data()` qaytargan (yoki foydalanuvchi tahrirlagan) `job`dan
     SRT/ASS/DOCX fayllar va subtitr kuydirilgan videoni tayyorlaydi."""
@@ -2992,6 +3118,7 @@ def _render_outputs(
         write_ass(
             ass, display_original, use_trans, use_words, vocab_map, width, height,
             font_scale=font_scale, position=position, trans_color=sub_color,
+            orig_style=orig_style,
         )
         add_output("ass", f"{render_mode} ASS", ass)
         # Render progressini bir necha video orasida bo'lib ko'rsatamiz.
@@ -3052,6 +3179,7 @@ def render_session(
     font_scale: float = 1.0,
     position: str = "bottom",
     sub_color: str = "#FFE680",
+    orig_style: str = "box",
 ) -> dict[str, Any]:
     """Seans faylini (va agar berilgan bo'lsa, tahrirlangan segmentlarni) o'qib,
     videoni renderlaydi."""
@@ -3063,7 +3191,10 @@ def render_session(
         if isinstance(edited, list) and edited:
             # Foydalanuvchi tahrirlagan segmentlar butunlay almashtiradi.
             data["segments"] = edited
-    return _render_outputs(data, font_scale=font_scale, position=position, sub_color=sub_color)
+    return _render_outputs(
+        data, font_scale=font_scale, position=position,
+        sub_color=sub_color, orig_style=orig_style,
+    )
 
 
 def process(
@@ -3074,9 +3205,13 @@ def process(
     font_scale: float = 1.0,
     position: str = "bottom",
     sub_color: str = "#FFE680",
+    orig_style: str = "box",
 ) -> dict[str, Any]:
     job = _prepare_data(video_value, mode, source_lang, target_lang)
-    return _render_outputs(job, font_scale=font_scale, position=position, sub_color=sub_color)
+    return _render_outputs(
+        job, font_scale=font_scale, position=position,
+        sub_color=sub_color, orig_style=orig_style,
+    )
 
 
 def install_deps() -> None:
@@ -3130,6 +3265,7 @@ def main() -> int:
     p_process.add_argument("--font-scale", type=float, default=1.0)
     p_process.add_argument("--position", default="bottom", choices=["bottom", "top"])
     p_process.add_argument("--sub-color", default="#FFE680")
+    p_process.add_argument("--orig-style", default="box", choices=["box", "plain"])
 
     p_download = sub.add_parser("download")
     p_download.add_argument("--url", required=True)
@@ -3153,6 +3289,7 @@ def main() -> int:
     p_render.add_argument("--font-scale", type=float, default=1.0)
     p_render.add_argument("--position", default="bottom", choices=["bottom", "top"])
     p_render.add_argument("--sub-color", default="#FFE680")
+    p_render.add_argument("--orig-style", default="box", choices=["box", "plain"])
 
     args = parser.parse_args()
     try:
@@ -3173,12 +3310,14 @@ def main() -> int:
             result = render_session(
                 args.session, segments_path=args.segments,
                 font_scale=args.font_scale, position=args.position, sub_color=args.sub_color,
+                orig_style=args.orig_style,
             )
             emit("done", **result)
         elif args.command == "process":
             result = process(
                 args.video, args.mode, args.source_lang, args.target_lang,
                 font_scale=args.font_scale, position=args.position, sub_color=args.sub_color,
+                orig_style=args.orig_style,
             )
             emit("done", **result)
         return 0
