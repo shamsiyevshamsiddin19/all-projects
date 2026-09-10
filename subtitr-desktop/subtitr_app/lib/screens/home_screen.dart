@@ -336,6 +336,7 @@ class _HomeScreenState extends State<HomeScreen> {
         subColor: _appearance.subColor,
         origStyle: _appearance.origStyle,
         quality: _appearance.quality,
+        upscale: _appearance.upscale,
       );
       if (!mounted) return;
       setState(() {
@@ -450,6 +451,7 @@ class _HomeScreenState extends State<HomeScreen> {
         subColor: _appearance.subColor,
         origStyle: _appearance.origStyle,
         quality: _appearance.quality,
+        upscale: _appearance.upscale,
       );
       if (!mounted) return;
       setState(() {
@@ -531,6 +533,7 @@ class _HomeScreenState extends State<HomeScreen> {
             subColor: _appearance.subColor,
             origStyle: _appearance.origStyle,
             quality: _appearance.quality,
+            upscale: _appearance.upscale,
           );
           done++;
           if (mounted) setState(() => _result = result);
