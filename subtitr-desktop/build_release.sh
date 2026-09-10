@@ -39,6 +39,16 @@ if [ ! -x "$ROOT/tools/yt-dlp" ]; then
   chmod +x "$ROOT/tools/yt-dlp"
 fi
 
+say "3.5/5 Subtitr shrifti tekshirilmoqda"
+# Tizimdagi Noto Sans faqat Bold (700) gacha — kuydirilgan subtitr kuchsiz
+# ko'rinadi. Montserrat Black (OFL, kirill + o'zbek harflari bor) qo'shiladi.
+mkdir -p "$ROOT/fonts"
+if [ ! -s "$ROOT/fonts/Montserrat-Black.ttf" ]; then
+  curl -fsSL --retry 3 -o "$ROOT/fonts/Montserrat-Black.ttf" \
+    https://github.com/google/fonts/raw/main/ofl/montserrat/static/Montserrat-Black.ttf \
+    || echo "Shrift yuklanmadi — Noto Sans bilan ishlaydi"
+fi
+
 say "4/5 dist/ yig'ilmoqda"
 rm -rf "$DIST"
 mkdir -p "$DIST"
@@ -50,6 +60,10 @@ cp "$ROOT/.env.example" "$DIST/"
 cp "$APP_DIR/assets/app_logo.png" "$DIST/"
 mkdir -p "$DIST/tools"
 cp "$ROOT/tools/yt-dlp" "$DIST/tools/"
+if [ -s "$ROOT/fonts/Montserrat-Black.ttf" ]; then
+  mkdir -p "$DIST/fonts"
+  cp "$ROOT/fonts/Montserrat-Black.ttf" "$DIST/fonts/"
+fi
 # Virtual muhit ko'chirilganda ham ishlaydi: interpretator yonidagi
 # pyvenv.cfg orqali o'z site-packages'ini topadi (`python -m pip` bilan
 # chaqiramiz, shuning uchun eski shebang'lar muammo qilmaydi).

@@ -330,6 +330,7 @@ class _HomeScreenState extends State<HomeScreen> {
         fontScale: _appearance.fontScale,
         position: _appearance.position,
         subColor: _appearance.subColor,
+        origStyle: _appearance.origStyle,
       );
       if (!mounted) return;
       setState(() {
@@ -442,6 +443,7 @@ class _HomeScreenState extends State<HomeScreen> {
         fontScale: _appearance.fontScale,
         position: _appearance.position,
         subColor: _appearance.subColor,
+        origStyle: _appearance.origStyle,
       );
       if (!mounted) return;
       setState(() {
@@ -521,6 +523,7 @@ class _HomeScreenState extends State<HomeScreen> {
             fontScale: _appearance.fontScale,
             position: _appearance.position,
             subColor: _appearance.subColor,
+            origStyle: _appearance.origStyle,
           );
           done++;
           if (mounted) setState(() => _result = result);

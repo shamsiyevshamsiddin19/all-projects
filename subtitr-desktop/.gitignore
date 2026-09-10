@@ -1,5 +1,6 @@
 # Katta binarlar va build chiqishlari repoga tushmasin (README ga qarang).
 tools/
+fonts/
 dist/
 build/
 .venv/
