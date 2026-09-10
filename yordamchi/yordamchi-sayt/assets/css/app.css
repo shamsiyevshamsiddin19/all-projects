@@ -4711,26 +4711,164 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
    bosib qo'ymasligi kerak. */
 .vd-menu-btn.on { background: var(--accent-soft); color: var(--accent); }
 
-/* ON - OFF - ON xiralashtirish (masking) tugmasi */
+/* ==================== 1. Til Almashtirgich (Image 2 Uslubi: RU - UZ) ==================== */
+.vd-lang-toggle {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+  border-radius: 999px;
+  outline: none;
+  display: inline-block;
+  vertical-align: middle;
+}
+.vd-lang-toggle:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.vd-lt-track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 92px;
+  height: 36px;
+  background: #18181a;
+  border: 2px solid #2d2d32;
+  border-radius: 999px;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.75);
+  box-sizing: border-box;
+  overflow: hidden;
+  transition: border-color .2s ease, background .2s ease;
+}
+.vd-lang-toggle:hover .vd-lt-track {
+  border-color: #44444c;
+}
+.vd-lt-knob {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #28282b;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform .28s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+  z-index: 2;
+}
+.vd-lt-ring {
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+.vd-lt-core {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #00e676;
+  box-shadow: 0 0 8px #00e676;
+  transition: background .2s ease, box-shadow .2s ease;
+}
+.vd-lt-txt {
+  position: absolute;
+  right: 14px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14.5px;
+  font-weight: 900;
+  letter-spacing: .05em;
+  color: #00e676;
+  text-shadow: 0 0 10px rgba(0, 230, 118, 0.5);
+  transition: transform .28s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+  user-select: none;
+}
+/* Flipped (UZ) holati: tugma o'ngga suriladi, yozuv chapga o'tadi */
+.vd-lang-toggle.flipped .vd-lt-knob {
+  transform: translateX(54px);
+}
+.vd-lang-toggle.flipped .vd-lt-txt {
+  transform: translateX(-40px);
+}
+
+/* ==================== 2. ON - OFF - ON Xiralashtirish (Image 1 Uslubi) ==================== */
 .vd-mask-switch {
-  margin-left: auto; display: inline-flex; align-items: center;
-  padding: 2px; background: var(--card); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); gap: 2px; user-select: none; flex-shrink: 0;
+  margin-left: auto;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 138px;
+  height: 36px;
+  background: #050505;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  box-sizing: border-box;
+  user-select: none;
+  flex-shrink: 0;
+  overflow: hidden;
+  padding: 2px;
 }
+/* 3D Oq siljish tugmasi (Thumb) */
+.vd-ms-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 42px;
+  height: 28px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffffff 0%, #e2e2e6 100%);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.5), inset 0 -1px 2px rgba(0, 0, 0, 0.15);
+  transition: transform .25s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+  z-index: 1;
+  pointer-events: none;
+}
+/* Holatlar bo'yicha siljish (x: 0px, 44px, 88px) */
+.vd-mask-switch[data-val="left"] .vd-ms-thumb {
+  transform: translateX(0px);
+}
+.vd-mask-switch[data-val="off"] .vd-ms-thumb,
+.vd-mask-switch:not([data-val="left"]):not([data-val="right"]) .vd-ms-thumb {
+  transform: translateX(44px);
+}
+.vd-mask-switch[data-val="right"] .vd-ms-thumb {
+  transform: translateX(88px);
+}
+
+/* 3 ta tugma (ON, OFF, ON) */
 .vd-ms-btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  padding: 4px 11px; border: 0; background: transparent;
-  color: var(--hint); font-size: 12px; font-weight: 700;
-  font-family: var(--mono), inherit;
-  border-radius: calc(var(--radius-sm) - 2px);
-  cursor: pointer; white-space: nowrap;
-  transition: background .15s ease, color .15s ease, box-shadow .15s ease;
-  line-height: 1.25;
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: #ffffff;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 11.5px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: color .2s ease;
+  line-height: 1;
 }
-.vd-ms-btn:hover { color: var(--text); }
+.vd-ms-btn:hover {
+  opacity: .9;
+}
+/* Faol tugma oq yumaloq ustida turgani uchun matni QORA bo'ladi (1-rasm uslubi) */
 .vd-ms-btn.active {
-  background: var(--accent-soft); color: var(--accent);
-  font-weight: 800; box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
+  color: #000000;
+  font-weight: 950;
 }
 
 /* Kompyuterda qator 1100 pikselgacha cho'zilib ketardi: so'z chap

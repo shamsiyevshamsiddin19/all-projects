@@ -2210,6 +2210,7 @@
 
     var sw = App.el('vd-mask-switch');
     if (sw) {
+      sw.setAttribute('data-val', VD.mask || 'off');
       sw.querySelectorAll('.vd-ms-btn').forEach(function (b) {
         b.classList.toggle('active', b.getAttribute('data-mask') === (VD.mask || ''));
       });
@@ -2251,22 +2252,19 @@
 
       page.innerHTML = topbar(lastSeg(cat), 'vocab_practice', { lang: lang, cat: cat }, menuBtn) +
         '<div class="vd-bar">' +
-          '<button class="vb-flip' + (VD.flip ? ' flipped' : '') + '" id="vd-flip" ' +
-            'aria-label="Tilni almashtirish" title="Chapda qaysi til turishini almashtirish">' +
-            '<span class="vb-flip-txt">' + App.esc(vdFlipLabel(lang)) + '</span>' +
-            '<span class="vb-flip-ic" data-icon="refresh" data-icon-size="14"></span>' +
+          '<button type="button" class="vd-lang-toggle' + (VD.flip ? ' flipped' : '') + '" id="vd-flip" ' +
+            'aria-label="' + App.esc(vdFlipLabel(lang)) + '" title="' + App.esc(vdFlipLabel(lang)) + '">' +
+            '<div class="vd-lt-track">' +
+              '<span class="vd-lt-knob"><span class="vd-lt-ring"><span class="vd-lt-core"></span></span></span>' +
+              '<span class="vd-lt-txt">' + App.esc(VD.flip ? 'UZ' : (lang === 'russian' ? 'RU' : 'EN')) + '</span>' +
+            '</div>' +
           '</button>' +
           '<span class="vd-count" id="vd-count"></span>' +
-          '<div class="vd-mask-switch" id="vd-mask-switch" role="group" aria-label="Xiralashtirish (ON-OFF-ON)">' +
-            '<button type="button" class="vd-ms-btn' + (VD.mask === 'left' ? ' active' : '') + '" data-mask="left" title="Chap tomonni xiralashtirish (ON)">' +
-              '<span class="vd-ms-txt">Chap</span>' +
-            '</button>' +
-            '<button type="button" class="vd-ms-btn' + (!VD.mask ? ' active' : '') + '" data-mask="" title="Xiralashtirish o\'chiq (OFF)">' +
-              '<span class="vd-ms-txt">OFF</span>' +
-            '</button>' +
-            '<button type="button" class="vd-ms-btn' + (VD.mask === 'right' ? ' active' : '') + '" data-mask="right" title="O\'ng tomonni xiralashtirish (ON)">' +
-              '<span class="vd-ms-txt">O\'ng</span>' +
-            '</button>' +
+          '<div class="vd-mask-switch" id="vd-mask-switch" data-val="' + (VD.mask || 'off') + '" role="group" aria-label="Xiralashtirish (ON-OFF-ON)">' +
+            '<div class="vd-ms-thumb"></div>' +
+            '<button type="button" class="vd-ms-btn' + (VD.mask === 'left' ? ' active' : '') + '" data-mask="left" title="Chap tomonni xiralashtirish (ON)">ON</button>' +
+            '<button type="button" class="vd-ms-btn' + (!VD.mask ? ' active' : '') + '" data-mask="" title="Xiralashtirish o\'chiq (OFF)">OFF</button>' +
+            '<button type="button" class="vd-ms-btn' + (VD.mask === 'right' ? ' active' : '') + '" data-mask="right" title="O\'ng tomonni xiralashtirish (ON)">ON</button>' +
           '</div>' +
         '</div>' +
         '<div id="vd-list"><div class="load-wrap"><div class="spinner"></div></div></div>';
@@ -2289,8 +2287,10 @@
         VD.flip = !VD.flip;
         vdWriteFlip(VD.flip);
         flip.classList.toggle('flipped', VD.flip);
-        var t = flip.querySelector('.vb-flip-txt');
-        if (t) t.textContent = vdFlipLabel(lang);
+        flip.setAttribute('aria-label', vdFlipLabel(lang));
+        flip.setAttribute('title', vdFlipLabel(lang));
+        var t = flip.querySelector('.vd-lt-txt');
+        if (t) t.textContent = VD.flip ? 'UZ' : (lang === 'russian' ? 'RU' : 'EN');
         var list = App.el('vd-list');
         if (list) list.classList.add('vb-turning');
         setTimeout(function () { vdPaint(page, lang, cat); }, 130);
