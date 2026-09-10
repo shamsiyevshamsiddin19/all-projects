@@ -25,7 +25,11 @@ DEFAULTS = {
     "orig_box": True,
     "box_color": "#FFD400",
     "box_text_color": "#000000",
+    # Video sifati (maksimal balandlik): yuklashda ham, kuydirishda ham.
+    "quality": "1080",
 }
+
+QUALITY_HEIGHTS = {"720": 720, "1080": 1080, "1440": 1440, "2160": 2160}
 
 FONT_SCALE = {"small": 0.028, "medium": 0.033, "large": 0.040}
 ALIGN = {"bottom": 2, "center": 5, "top": 8}
@@ -52,7 +56,15 @@ def normalize(raw) -> dict:
     out["bold"] = bool(raw.get("bold", DEFAULTS["bold"]))
     out["box"] = bool(raw.get("box", DEFAULTS["box"]))
     out["orig_box"] = bool(raw.get("orig_box", DEFAULTS["orig_box"]))
+    if str(raw.get("quality")) in QUALITY_HEIGHTS:
+        out["quality"] = str(raw["quality"])
     return out
+
+
+def quality_height(style: dict | None) -> int:
+    """Uslubdagi sifat tanlovini piksel balandligiga aylantiradi."""
+    key = str((style or {}).get("quality") or DEFAULTS["quality"])
+    return QUALITY_HEIGHTS.get(key, QUALITY_HEIGHTS[DEFAULTS["quality"]])
 
 
 def font_scale(style: dict) -> float:

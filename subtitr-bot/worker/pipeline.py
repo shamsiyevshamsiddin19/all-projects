@@ -246,7 +246,8 @@ async def process_video(
 
     await progress("🎬 Subtitr videoga kuydirılmoqda...")
     await asyncio.to_thread(
-        burn_subtitles, in_path, paths["ass"], paths["out"], height
+        burn_subtitles, in_path, paths["ass"], paths["out"], height,
+        substyle.quality_height(style),
     )
     _write_name(paths["out"], slug)
     return paths["out"], "video"

@@ -210,6 +210,21 @@ class _AppearanceRow extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(
           child: _MiniDropdown<String>(
+            label: 'Sifat',
+            value: appearance.quality,
+            items: const {
+              '720': '720p',
+              '1080': '1080p',
+              '1440': '2K',
+              '2160': '4K',
+            },
+            enabled: enabled,
+            onChanged: (v) => onChanged(appearance.copyWith(quality: v)),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _MiniDropdown<String>(
             label: 'Asl matn',
             value: appearance.origStyle,
             items: const {'box': 'Sariq quti', 'plain': 'Oddiy'},

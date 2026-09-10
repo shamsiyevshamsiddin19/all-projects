@@ -184,7 +184,8 @@ def _ass_fonts_option() -> str:
 
 
 def burn_subtitles(
-    in_path: str, ass_path: str, out_path: str, src_height: int | None = None
+    in_path: str, ass_path: str, out_path: str, src_height: int | None = None,
+    max_height: int | None = None,
 ) -> None:
     """ASS subtitrni videoga yozadi (burn).
 
@@ -199,7 +200,7 @@ def burn_subtitles(
 
     # Balandlikni kamaytirish (faqat kattaroq bo'lsa) — scale AVVAL, keyin ass:
     # shunda subtitr to'g'ridan-to'g'ri kichik kadrga chizilib tiniq chiqadi.
-    max_h = settings.burn_max_height
+    max_h = max_height or settings.burn_max_height
     ass_arg = f"ass={ass_name}{_ass_fonts_option()}"
     if src_height and max_h and src_height > max_h:
         vf = f"scale=-2:{max_h},{ass_arg}"

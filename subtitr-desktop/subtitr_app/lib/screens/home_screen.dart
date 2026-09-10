@@ -199,7 +199,11 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) setState(() {});
     });
     try {
-      final res = await _service.downloadUrl(url: url, onProgress: _applyProgress);
+      final res = await _service.downloadUrl(
+        url: url,
+        onProgress: _applyProgress,
+        quality: _appearance.quality,
+      );
       if (!mounted) return;
       final dir = res['dir'] as String? ?? '';
       final name = res['name'] as String? ?? 'video';
@@ -331,6 +335,7 @@ class _HomeScreenState extends State<HomeScreen> {
         position: _appearance.position,
         subColor: _appearance.subColor,
         origStyle: _appearance.origStyle,
+        quality: _appearance.quality,
       );
       if (!mounted) return;
       setState(() {
@@ -444,6 +449,7 @@ class _HomeScreenState extends State<HomeScreen> {
         position: _appearance.position,
         subColor: _appearance.subColor,
         origStyle: _appearance.origStyle,
+        quality: _appearance.quality,
       );
       if (!mounted) return;
       setState(() {
@@ -524,6 +530,7 @@ class _HomeScreenState extends State<HomeScreen> {
             position: _appearance.position,
             subColor: _appearance.subColor,
             origStyle: _appearance.origStyle,
+            quality: _appearance.quality,
           );
           done++;
           if (mounted) setState(() => _result = result);

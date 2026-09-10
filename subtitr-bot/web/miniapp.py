@@ -38,6 +38,7 @@ from db.crud import (
     videos_done_today,
 )
 from web.server import base_url, publish_file
+from worker import substyle
 from worker.download import detect_source, download_video, probe_url
 from worker.ffmpeg_utils import probe_duration
 from worker.pipeline import cleanup, cleanup_all, job_paths, process_video_modes
@@ -518,7 +519,9 @@ async def _run_job(job_id, in_path, modes, source_lang, target_lang,
     try:
         if url:
             job["progress"] = "Video havoladan yuklab olinmoqda..."
-            await asyncio.to_thread(download_video, url, in_path)
+            await asyncio.to_thread(
+                download_video, url, in_path, substyle.quality_height(style)
+            )
         duration = await asyncio.to_thread(probe_duration, in_path)
         if max_minutes and duration > max_minutes * 60:
             raise RuntimeError(
