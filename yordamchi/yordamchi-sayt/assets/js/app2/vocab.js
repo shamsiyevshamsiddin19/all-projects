@@ -2416,37 +2416,36 @@
     var box = App.el('vd-list'); if (!box) return;
     var words = V.data[cat] || [];
 
-    var wordOrigIndex = {};
-    words.forEach(function (w, i) {
-      wordOrigIndex[w.ru] = i + 1;
-    });
-
     var joinData = (VD.join && typeof window !== 'undefined' && window.PairCore)
       ? vdBuildJoinList(words, lang, VD.join) : null;
-    var sourceList = joinData ? joinData.items : words.map(function (w) {
-      return { w: w, familyId: null, isSingleton: false };
-    });
 
-    /* Raqam HAR DOIM lug'atdagi asl o'rni bo'yicha: filtrlanganda ham
-       "127-so'z" o'sha so'z bo'lib qolsin, aks holda filtrni yoqib-o'chirib
-       turganda raqamlar sakrab, so'zni topib bo'lmasdi. */
     var rows = [];
-    sourceList.forEach(function (item) {
-      var w = item.w;
-      if (!vdPasses(w.ru)) return;
-      rows.push({
-        w: w,
-        n: (VD.join && joinData) ? (rows.length + 1) : (wordOrigIndex[w.ru] || 1),
-        st: vdStatusOf(w.ru),
-        familyId: item.familyId,
-        familySize: item.familySize,
-        familyColor: item.familyColor,
-        familyAccent: item.familyAccent,
-        groupTitle: item.groupTitle,
-        isFirstInGroup: item.isFirstInGroup,
-        isSingleton: item.isSingleton
+    if (joinData) {
+      joinData.items.forEach(function (item) {
+        if (!vdPasses(item.w.ru)) return;
+        rows.push({
+          w: item.w,
+          n: rows.length + 1,
+          st: vdStatusOf(item.w.ru),
+          familyId: item.familyId,
+          familySize: item.familySize,
+          familyColor: item.familyColor,
+          familyAccent: item.familyAccent
+        });
       });
-    });
+    } else {
+      /* Oddiy holatda har bir so'zning asl o'rni: i + 1 (1, 2, 3, 4, 5...) */
+      words.forEach(function (w, i) {
+        if (!vdPasses(w.ru)) return;
+        rows.push({
+          w: w,
+          n: i + 1,
+          st: vdStatusOf(w.ru),
+          familyId: null,
+          familyColor: null
+        });
+      });
+    }
 
     var cnt = App.el('vd-count');
     if (cnt) {
