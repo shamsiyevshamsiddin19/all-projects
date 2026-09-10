@@ -5359,6 +5359,131 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   background: #ffffff;
 }
 
+/* Oraliqni ko'rsatuvchi chip (Asosiy sahifada) */
+.vd-range-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: var(--accent-soft, rgba(99, 102, 241, 0.12));
+  color: var(--accent, #6366f1);
+  border: 1px solid var(--accent);
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.vd-range-chip:hover {
+  background: var(--accent);
+  color: #ffffff;
+  transform: scale(1.03);
+}
+
+.vd-range-chip:active {
+  transform: scale(0.97);
+}
+
+/* Oraliq ixtiyoriy kiritish kartochkasi */
+.vd-range-custom-card {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--card, rgba(255, 255, 255, 0.03));
+  border: 1.5px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-sizing: border-box;
+}
+
+.vd-rc-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.vd-rc-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.vd-rc-hint {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.vd-rc-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vd-rc-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.vd-rc-lbl {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.vd-rc-input {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--mono);
+  box-sizing: border-box;
+}
+
+.vd-rc-input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.vd-rc-sep {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.vd-rc-btn {
+  padding: 7px 14px !important;
+  font-size: 12.5px !important;
+  border-radius: 8px !important;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.vd-rc-clear-btn {
+  background: transparent;
+  border: 0;
+  color: var(--danger, #ef4444);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0 0;
+  text-align: left;
+  transition: opacity 0.15s;
+}
+
+.vd-rc-clear-btn:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
 
 
 /* Qidiruv qatori: chapda tilni almashtirish, o'ngda qidiruv maydoni. */

@@ -2203,6 +2203,21 @@ async function audioBufferTests() {
   D.vdPaint(null, 'russian', 'Test');
   eq('hisoblagich filtrsiz', D.node('vd-count').textContent, "5 ta so'z");
 
+  /* --- Oraliq (Range: 1-10, 30-100 kabi) ---
+     Filtr va juftlashdan keyingi tartib raqamlar bo'yicha oraliq ajratadi. */
+  D.VD.filter = '';
+  D.VD.rangeFrom = 2;
+  D.VD.rangeTo = 4;
+  D.vdPaint(null, 'russian', 'Test');
+  const rngHtml = D.node('vd-list').innerHTML;
+  const rngNums = (rngHtml.match(/<span class="vd-n">(\d+)<\/span>/g) || [])
+    .map((x) => x.replace(/\D/g, ''));
+  eq('oraliq: 2 dan 4 gacha raqamlar', rngNums, ['2', '3', '4']);
+  eq('oraliq hisoblagichi', D.node('vd-count').textContent, '3 / 5 ta so\'z · 2–4 oralig\'i');
+  D.VD.rangeFrom = 0;
+  D.VD.rangeTo = 0;
+  D.vdPaint(null, 'russian', 'Test');
+
   /* Holat belgisi: yodlanganda GALICHKA, qolganida rangli nuqta —
      shakli boshqa, ya'ni rangsiz ekranda ham farqlanadi. */
   check('belgi: yodlangan galichka', D.vdBadge('learned').indexOf('vd-st-ok') >= 0);
