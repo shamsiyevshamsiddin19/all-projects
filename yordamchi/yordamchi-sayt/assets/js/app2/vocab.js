@@ -2120,9 +2120,10 @@
      ("yodlangan" so'z mashqda chiqmaydi) va boshqa qurilmaga sinxronlanadi. */
 
   /* Ko'rinish holati — `App.reload()` dan keyin ham saqlanib qolsin. */
-  var VD = { flip: false, filter: '', mode: '', mask: '' };
+  var VD = { flip: false, filter: '', mode: '', mask: '', join: '' };
   var VD_FLIP_KEY = 'vocab_dict_flip_v1';
   var VD_MASK_KEY = 'vocab_dict_mask_v1';
+  var VD_JOIN_KEY = 'vocab_dict_join_v1';
 
   function vdReadFlip() {
     try { return localStorage.getItem(VD_FLIP_KEY) === '1'; } catch (e) { return false; }
@@ -2135,6 +2136,12 @@
   }
   function vdWriteMask(val) {
     try { localStorage.setItem(VD_MASK_KEY, val || ''); } catch (e) {}
+  }
+  function vdReadJoin() {
+    try { return localStorage.getItem(VD_JOIN_KEY) || ''; } catch (e) { return ''; }
+  }
+  function vdWriteJoin(val) {
+    try { localStorage.setItem(VD_JOIN_KEY, val || ''); } catch (e) {}
   }
 
   function vdWS() { return window.WordState; }
@@ -2230,12 +2237,115 @@
     else App.toast('Xiralashtirish o\'chirildi');
   }
 
+  /* Har bir oila uchun uyg'un ranglar palitrasi */
+  var VD_PAIR_PALETTE = [
+    { color: '#818cf8', accent: '#6366f1', name: 'Binafsha' },
+    { color: '#38bdf8', accent: '#0284c7', name: 'Moviy' },
+    { color: '#34d399', accent: '#059669', name: 'Zumrad' },
+    { color: '#fb923c', accent: '#f97316', name: 'To\'q sariq' },
+    { color: '#f472b6', accent: '#ec4899', name: 'Pushti' },
+    { color: '#a78bfa', accent: '#7c3aed', name: 'Siren' },
+    { color: '#facc15', accent: '#eab308', name: 'Sariq' },
+    { color: '#2dd4bf', accent: '#14b8a6', name: 'Feruza' },
+    { color: '#fb7185', accent: '#f43f5e', name: 'Yoqut' }
+  ];
+
+  /* Juftlangan ro'yxatni yasash:
+     - So'zlarni guruhlash ('words' yoki 'meaning').
+     - Har bir oila o'z hajmi bo'yicha kamayish tartibida saralanadi (eng ko'p bog'langan oila tepada).
+     - Yakka so'zlar (singletons) oxirida joylashtiriladi.
+  */
+  function vdBuildJoinList(words, lang, mode) {
+    if (!mode || typeof window === 'undefined' || !window.PairCore) return null;
+
+    var rawGroups = [];
+    if (mode === 'meaning') {
+      rawGroups = window.PairCore.buildMeaning ? window.PairCore.buildMeaning(words) : [];
+    } else if (mode === 'words') {
+      rawGroups = window.PairCore.build ? window.PairCore.build(words, lang) : [];
+    }
+    if (!rawGroups || !rawGroups.length) return null;
+
+    // Har bir so'z faqat bir marta — eng katta oilaga kirsin
+    rawGroups.sort(function (a, b) { return b.length - a.length; });
+
+    var used = {};
+    var validGroups = [];
+    rawGroups.forEach(function (g) {
+      var fresh = g.filter(function (w) {
+        var k = String(w.ru || '').toLowerCase();
+        return !used[k];
+      });
+      if (fresh.length >= 2) {
+        fresh.forEach(function (w) {
+          used[String(w.ru || '').toLowerCase()] = true;
+        });
+        validGroups.push(fresh);
+      }
+    });
+
+    if (!validGroups.length) return null;
+
+    // Eng ko'p bog'langan oila tepada turadi:
+    validGroups.sort(function (a, b) { return b.length - a.length; });
+
+    var result = [];
+    var familySeq = 0;
+
+    validGroups.forEach(function (group) {
+      familySeq++;
+      var pal = VD_PAIR_PALETTE[(familySeq - 1) % VD_PAIR_PALETTE.length];
+      var groupTitle = mode === 'meaning'
+        ? (group[0].meaningGroup ? 'Ma\'no: «' + group[0].meaningGroup + '»' : 'Ma\'no oilasi')
+        : 'O\'xshash so\'zlar oilasi';
+
+      group.forEach(function (w, idxInGroup) {
+        result.push({
+          w: w,
+          familyId: familySeq,
+          familySize: group.length,
+          familyColor: pal.color,
+          familyAccent: pal.accent,
+          groupTitle: groupTitle,
+          isFirstInGroup: (idxInGroup === 0),
+          isSingleton: false
+        });
+      });
+    });
+
+    // Yakka so'zlar oxirida:
+    var singletons = [];
+    words.forEach(function (w) {
+      var k = String(w.ru || '').toLowerCase();
+      if (!used[k]) {
+        used[k] = true;
+        singletons.push({
+          w: w,
+          familyId: null,
+          familySize: 1,
+          familyColor: null,
+          familyAccent: null,
+          groupTitle: null,
+          isFirstInGroup: false,
+          isSingleton: true
+        });
+      }
+    });
+
+    return {
+      items: result.concat(singletons),
+      familyCount: validGroups.length,
+      singletonCount: singletons.length
+    };
+  }
+
   App.view('vocab_dict', {
     nav: 'languages',
     render: function (page, params) {
       var lang = params.lang === 'russian' ? 'russian' : 'english', cat = params.cat;
       VD.flip = vdReadFlip();
       VD.mask = vdReadMask();
+      VD.join = vdReadJoin();
 
       /* BITTA tugma — o'ngdagi menyu. Ilgari ikkita edi (tez rejim va
          filtr), lekin sarlavhada ikki bir xil ko'rinishdagi tugma
@@ -2243,11 +2353,12 @@
          kerak bo'lardi. Endi ikkalasi ham shu menyuning ichida. */
       var modeInf = vdStatusInfo(VD.mode);
       var menuBtn =
-        '<button class="icon-btn ghost vd-menu-btn' + (VD.mode || VD.filter ? ' on' : '') + '" id="vd-menu" ' +
+        '<button class="icon-btn ghost vd-menu-btn' + (VD.mode || VD.filter || VD.join ? ' on' : '') + '" id="vd-menu" ' +
         (modeInf ? 'style="color:' + modeInf.color + '" ' : '') +
         'aria-label="Menyu" title="' +
         (modeInf ? 'Tez rejim: ' + App.esc(modeInf.name)
-                 : (VD.filter ? 'Filtr: ' + App.esc(vdFilterName(VD.filter)) : 'Belgilash va filtr')) + '">' +
+                 : (VD.join ? 'Juftlash: ' + (VD.join === 'words' ? 'O\'xshash so\'zlar' : 'Ma\'no')
+                 : (VD.filter ? 'Filtr: ' + App.esc(vdFilterName(VD.filter)) : 'Belgilash, filtr va juftlash'))) + '">' +
         '<span data-icon="list" data-icon-size="17"></span></button>';
 
       page.innerHTML = topbar(lastSeg(cat), 'vocab_practice', { lang: lang, cat: cat }, menuBtn) +
@@ -2305,20 +2416,47 @@
     var box = App.el('vd-list'); if (!box) return;
     var words = V.data[cat] || [];
 
+    var wordOrigIndex = {};
+    words.forEach(function (w, i) {
+      wordOrigIndex[w.ru] = i + 1;
+    });
+
+    var joinData = (VD.join && typeof window !== 'undefined' && window.PairCore)
+      ? vdBuildJoinList(words, lang, VD.join) : null;
+    var sourceList = joinData ? joinData.items : words.map(function (w) {
+      return { w: w, familyId: null, isSingleton: false };
+    });
+
     /* Raqam HAR DOIM lug'atdagi asl o'rni bo'yicha: filtrlanganda ham
        "127-so'z" o'sha so'z bo'lib qolsin, aks holda filtrni yoqib-o'chirib
        turganda raqamlar sakrab, so'zni topib bo'lmasdi. */
     var rows = [];
-    words.forEach(function (w, i) {
+    sourceList.forEach(function (item) {
+      var w = item.w;
       if (!vdPasses(w.ru)) return;
-      rows.push({ w: w, n: i + 1, st: vdStatusOf(w.ru) });
+      rows.push({
+        w: w,
+        n: wordOrigIndex[w.ru] || 1,
+        st: vdStatusOf(w.ru),
+        familyId: item.familyId,
+        familySize: item.familySize,
+        familyColor: item.familyColor,
+        familyAccent: item.familyAccent,
+        groupTitle: item.groupTitle,
+        isFirstInGroup: item.isFirstInGroup,
+        isSingleton: item.isSingleton
+      });
     });
 
     var cnt = App.el('vd-count');
     if (cnt) {
-      cnt.textContent = VD.filter
-        ? rows.length + ' / ' + words.length + ' · ' + vdFilterName(VD.filter)
-        : words.length + ' ta so\'z';
+      if (VD.filter) {
+        cnt.textContent = rows.length + ' / ' + words.length + ' · ' + vdFilterName(VD.filter);
+      } else if (VD.join && joinData) {
+        cnt.textContent = rows.length + ' ta so\'z · ' + joinData.familyCount + ' ta oila';
+      } else {
+        cnt.textContent = words.length + ' ta so\'z';
+      }
     }
 
     if (!rows.length) {
@@ -2334,8 +2472,36 @@
       return;
     }
 
-    box.innerHTML = '<div class="vd-list' + (VD.mask ? ' vd-mask-' + VD.mask : '') + '">' + rows.map(function (r) {
-      return '<button class="vd-row' + (r.st ? ' st-' + r.st : '') + '" data-ru="' + App.esc(r.w.ru) + '">' +
+    var lastFamId = null;
+    var hasShownSingletonDivider = false;
+
+    var rowsHtml = rows.map(function (r) {
+      var dividerHtml = '';
+      if (VD.join && r.familyId && r.familyId !== lastFamId) {
+        lastFamId = r.familyId;
+        dividerHtml = '<div class="vd-family-divider" style="--fam-accent:' + r.familyAccent + ';--fam-color:' + r.familyColor + '">' +
+          '<span class="vd-fd-dot"></span>' +
+          '<span class="vd-fd-title">' + App.esc(r.groupTitle || 'Oila') + '</span>' +
+          '<span class="vd-fd-badge">' + r.familySize + ' ta so\'z</span>' +
+          '</div>';
+      } else if (VD.join && r.isSingleton && !hasShownSingletonDivider && joinData && joinData.familyCount > 0) {
+        hasShownSingletonDivider = true;
+        dividerHtml = '<div class="vd-family-divider vd-fd-singletons">' +
+          '<span class="vd-fd-dot"></span>' +
+          '<span class="vd-fd-title">Yakka so\'zlar</span>' +
+          '<span class="vd-fd-badge">' + (joinData.singletonCount || '') + ' ta</span>' +
+          '</div>';
+      }
+
+      var rowStyle = '';
+      var rowClass = 'vd-row' + (r.st ? ' st-' + r.st : '');
+      if (r.familyColor) {
+        rowClass += ' vd-row-pair';
+        rowStyle = ' style="--fam-color:' + r.familyColor + ';--fam-accent:' + r.familyAccent + '"';
+      }
+
+      return dividerHtml +
+        '<button class="' + rowClass + '"' + rowStyle + ' data-ru="' + App.esc(r.w.ru) + '">' +
         '<span class="vd-n">' + r.n + '</span>' +
         '<span class="vd-main">' +
           '<span class="vd-a">' + App.esc(vdFace(r.w)) + '</span>' +
@@ -2343,7 +2509,9 @@
         '</span>' +
         vdBadge(r.st) +
         '<span class="rm-hold-bar"></span></button>';
-    }).join('') + '</div>';
+    }).join('');
+
+    box.innerHTML = '<div class="vd-list' + (VD.mask ? ' vd-mask-' + VD.mask : '') + '">' + rowsHtml + '</div>';
     App.icons(box);
     box.classList.remove('vb-turning');
     vdBindRows(box, page, lang, cat);
@@ -2466,6 +2634,25 @@
             ' data-icon="' + (on ? 'check' : 'list') + '" data-icon-size="15"></span>' +
           '<div class="li-main"><div class="li-title">' + App.esc(f.name) + '</div>' +
           '<div class="li-sub">' + (counts[f.id] || 0) + ' ta so\'z</div></div></button>';
+      }).join('') +
+
+      '<div class="list-label" style="margin-top:16px">Juftlash</div>' +
+      '<p class="muted" style="font-size:12px;margin:0 0 8px;line-height:1.45">' +
+      'Tanlanganda so\'zlar oilalarga ajratiladi va ranglar bilan bo\'yaladi. ' +
+      'Eng ko\'p bog\'langan oila tepada, yakka so\'zlar oxirida turadi.</p>' +
+      [
+        { key: '', label: 'O\'chiq', sub: 'Oddiy tartibda ko\'rsatish' },
+        { key: 'words', label: 'So\'zlarni juftlash', sub: 'Yozilishi o\'xshash: храню / храплю' },
+        { key: 'meaning', label: 'Ma\'noni juftlash', sub: 'Ma\'nosi bog\'liq: иду / хожу / еду' }
+      ].map(function (j) {
+        var isChecked = (VD.join || '') === j.key;
+        return '<label class="ws-radio-row vd-jpick" data-j="' + j.key + '">' +
+          '<span class="ws-radio-circle ' + (isChecked ? 'checked' : '') + '">' +
+            (isChecked ? '<span class="ws-radio-dot"></span>' : '') +
+          '</span>' +
+          '<span class="ws-row-label">' + App.esc(j.label) +
+            '<i class="ws-row-hint">' + App.esc(j.sub) + '</i></span>' +
+        '</label>';
       }).join('');
 
     var sh = App.sheet(html, { title: 'Lug\'at' });
@@ -2487,6 +2674,19 @@
       b.onclick = function () {
         VD.filter = b.getAttribute('data-f');
         App.closeSheet();
+        App.reload();
+      };
+    });
+
+    sh.querySelectorAll('.vd-jpick').forEach(function (b) {
+      b.onclick = function () {
+        var j = b.getAttribute('data-j') || '';
+        VD.join = (VD.join === j) ? '' : j;
+        vdWriteJoin(VD.join);
+        App.closeSheet();
+        if (VD.join === 'words') App.toast('So\'zlar yozilishi bo\'yicha juftlandi');
+        else if (VD.join === 'meaning') App.toast('So\'zlar ma\'nosi bo\'yicha juftlandi');
+        else App.toast('Juftlash o\'chirildi');
         App.reload();
       };
     });

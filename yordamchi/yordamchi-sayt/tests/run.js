@@ -2325,6 +2325,11 @@ async function audioBufferTests() {
     eq('menyu: o\'chirish qatori qo\'shildi', (sheet2.match(/vd-mpick/g) || []).length, 4);
     check('menyu: o\'chirish yozuvi', sheet2.indexOf("Tez rejimni o'chirish") >= 0);
     D.VD.mode = '';
+
+    /* Juftlash bo'limi — 3 ta variant (O'chiq, So'zlarni juftlash, Ma'noni juftlash). */
+    eq('menyu: juftlash qatorlari', (sheet.match(/vd-jpick/g) || []).length, 3);
+    check('menyu: juftlashda «So\'zlarni juftlash»', sheet.indexOf("So'zlarni juftlash") >= 0);
+    check('menyu: juftlashda «Ma\'noni juftlash»', sheet.indexOf("Ma'noni juftlash") >= 0);
   }
 
   /* Bosishda: rejim yoqilgan bo'lsa belgi, aks holda talaffuz.
