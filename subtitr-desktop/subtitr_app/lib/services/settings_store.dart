@@ -102,6 +102,7 @@ class AppearanceSettings {
     this.subColor = '#39FF14',
     this.origStyle = 'box',
     this.quality = '1080',
+    this.upscale = false,
   });
 
   final double fontScale; // 0.85 kichik, 1.0 o'rta, 1.2 katta
@@ -109,6 +110,10 @@ class AppearanceSettings {
   final String subColor; // tarjima qatori rangi (hex)
   final String origStyle; // asl matn uslubi: 'box' (sariq quti) yoki 'plain'
   final String quality;   // video sifati: '720' | '1080' | '1440' | '2160'
+  // Manba past sifatli bo'lsa ham tanlangan o'lchamga kattalashtirish.
+  // Tasvirga tafsilot qo'shmaydi, lekin subtitr matni yangi o'lchamda
+  // vektor sifatida chizilib, ancha tiniq chiqadi.
+  final bool upscale;
 
   AppearanceSettings copyWith({
     double? fontScale,
@@ -116,6 +121,7 @@ class AppearanceSettings {
     String? subColor,
     String? origStyle,
     String? quality,
+    bool? upscale,
   }) {
     return AppearanceSettings(
       fontScale: fontScale ?? this.fontScale,
@@ -123,6 +129,7 @@ class AppearanceSettings {
       subColor: subColor ?? this.subColor,
       origStyle: origStyle ?? this.origStyle,
       quality: quality ?? this.quality,
+      upscale: upscale ?? this.upscale,
     );
   }
 }
@@ -199,6 +206,7 @@ class SettingsStore {
       subColor: prefs.getString('sub_color') ?? '#39FF14',
       origStyle: prefs.getString('sub_orig_style') ?? 'box',
       quality: prefs.getString('sub_quality') ?? '1080',
+      upscale: prefs.getBool('sub_upscale') ?? false,
     );
   }
 
@@ -209,5 +217,6 @@ class SettingsStore {
     await prefs.setString('sub_color', a.subColor);
     await prefs.setString('sub_orig_style', a.origStyle);
     await prefs.setString('sub_quality', a.quality);
+    await prefs.setBool('sub_upscale', a.upscale);
   }
 }

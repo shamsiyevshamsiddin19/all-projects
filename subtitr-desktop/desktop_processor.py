@@ -445,6 +445,7 @@ def download_video(
     progress_lo: float = 0.01,
     progress_hi: float = 0.05,
     quality: str | None = None,
+    upscale: bool = False,
 ) -> Path:
     """yt-dlp qo'llab-quvvatlaydigan istalgan havoladan (YouTube, Instagram,
     kino saytlari va h.k.) videoni yuklab oladi.
@@ -2761,17 +2762,28 @@ def burn_subtitles(
     progress_hi: float = 0.98,
     label: str = "",
     max_height: int = 0,
+    upscale: bool = False,
 ) -> None:
     require_tool("ffmpeg")
     total = probe_duration_seconds(video)
     suffix = f": {label}" if label else ""
-    # Kichraytirish subtitrdan OLDIN: shunda matn to'g'ridan-to'g'ri kichik
-    # kadrga chiziladi va tiniq chiqadi (kattasini kichraytirish emas).
+    # O'lcham o'zgartirish subtitrdan OLDIN: shunda matn to'g'ridan-to'g'ri
+    # chiqish kadriga chiziladi va tiniq bo'ladi (tayyor kadrni cho'zish emas).
+    #
+    # `upscale` — manba past sifatli bo'lsa ham kattaroq kadrga chiqarish.
+    # Diqqat: bu tasvirga tafsilot QO'SHMAYDI; foydasi shundaki, subtitr va
+    # lug'at matni vektor sifatida yangi o'lchamda chiziladi — ular haqiqatan
+    # tiniq chiqadi. Shu sababli yumshoq `unsharp` ham qo'shiladi.
     scale_filter = ""
     if max_height:
         _, src_h = probe_resolution(video)
         if src_h and src_h > max_height:
-            scale_filter = f"scale=-2:{max_height}"
+            scale_filter = f"scale=-2:{max_height}:flags=lanczos"
+        elif src_h and upscale and src_h < max_height:
+            sharpen = os.getenv("SUB_UPSCALE_SHARPEN", "unsharp=5:5:0.7:5:5:0.0")
+            scale_filter = f"scale=-2:{max_height}:flags=lanczos"
+            if sharpen:
+                scale_filter += "," + sharpen
 
     def _run(choice: EncoderChoice) -> tuple[int, str]:
         enc_name = choice.name
@@ -2951,6 +2963,7 @@ def _prepare_data(
     source_lang: str,
     target_lang: str,
     quality: str | None = None,
+    upscale: bool = False,
 ) -> dict[str, Any]:
     """Transkripsiya + (kerak bo'lsa) tarjima + lug'at. Renderlashga kerak
     bo'lgan hamma narsani lug'at (dict) qilib qaytaradi. `process()` (bir-martalik
@@ -3065,6 +3078,7 @@ def _render_outputs(
     sub_color: str = "#FFE680",
     orig_style: str = "box",
     quality: str | None = None,
+    upscale: bool = False,
 ) -> dict[str, Any]:
     """`_prepare_data()` qaytargan (yoki foydalanuvchi tahrirlagan) `job`dan
     SRT/ASS/DOCX fayllar va subtitr kuydirilgan videoni tayyorlaydi."""
@@ -3154,7 +3168,7 @@ def _render_outputs(
         hi = 0.70 + (0.28 * (i + 1) / n_render)
         burn_subtitles(
             video, ass, out, progress_lo=lo, progress_hi=hi, label=render_mode,
-            max_height=quality_height(quality),
+            max_height=quality_height(quality), upscale=upscale,
         )
         add_output("video", f"{render_mode} video", out)
 
@@ -3213,6 +3227,7 @@ def render_session(
     sub_color: str = "#FFE680",
     orig_style: str = "box",
     quality: str | None = None,
+    upscale: bool = False,
 ) -> dict[str, Any]:
     """Seans faylini (va agar berilgan bo'lsa, tahrirlangan segmentlarni) o'qib,
     videoni renderlaydi."""
@@ -3227,6 +3242,7 @@ def render_session(
     return _render_outputs(
         data, font_scale=font_scale, position=position,
         sub_color=sub_color, orig_style=orig_style, quality=quality,
+        upscale=upscale,
     )
 
 
@@ -3240,11 +3256,13 @@ def process(
     sub_color: str = "#FFE680",
     orig_style: str = "box",
     quality: str | None = None,
+    upscale: bool = False,
 ) -> dict[str, Any]:
     job = _prepare_data(video_value, mode, source_lang, target_lang, quality=quality)
     return _render_outputs(
         job, font_scale=font_scale, position=position,
         sub_color=sub_color, orig_style=orig_style, quality=quality,
+        upscale=upscale,
     )
 
 
@@ -3301,6 +3319,8 @@ def main() -> int:
     p_process.add_argument("--sub-color", default="#FFE680")
     p_process.add_argument("--orig-style", default="box", choices=["box", "plain"])
     p_process.add_argument("--quality", default=DEFAULT_QUALITY, choices=list(QUALITY_HEIGHTS))
+    p_process.add_argument("--upscale", action="store_true",
+                           help="manba past sifatli bo'lsa ham tanlangan o'lchamga kattalashtirish")
 
     p_download = sub.add_parser("download")
     p_download.add_argument("--url", required=True)
@@ -3328,6 +3348,7 @@ def main() -> int:
     p_render.add_argument("--sub-color", default="#FFE680")
     p_render.add_argument("--orig-style", default="box", choices=["box", "plain"])
     p_render.add_argument("--quality", default=DEFAULT_QUALITY, choices=list(QUALITY_HEIGHTS))
+    p_render.add_argument("--upscale", action="store_true")
 
     args = parser.parse_args()
     try:
@@ -3355,6 +3376,7 @@ def main() -> int:
                 args.session, segments_path=args.segments,
                 font_scale=args.font_scale, position=args.position, sub_color=args.sub_color,
                 orig_style=args.orig_style, quality=args.quality,
+                upscale=args.upscale,
             )
             emit("done", **result)
         elif args.command == "process":
@@ -3362,6 +3384,7 @@ def main() -> int:
                 args.video, args.mode, args.source_lang, args.target_lang,
                 font_scale=args.font_scale, position=args.position, sub_color=args.sub_color,
                 orig_style=args.orig_style, quality=args.quality,
+                upscale=args.upscale,
             )
             emit("done", **result)
         return 0

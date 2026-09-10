@@ -261,6 +261,7 @@ class DesktopProcessorService {
     String subColor = '#FFE680',
     String origStyle = 'box',
     String quality = '1080',
+    bool upscale = false,
   }) async {
     final payload = await _streamProcess([
       'process',
@@ -282,6 +283,7 @@ class DesktopProcessorService {
       origStyle,
       '--quality',
       quality,
+      if (upscale) '--upscale',
     ], onProgress: onProgress);
     return ProcessorResult.fromJson(payload);
   }
@@ -320,6 +322,7 @@ class DesktopProcessorService {
     String subColor = '#FFE680',
     String origStyle = 'box',
     String quality = '1080',
+    bool upscale = false,
   }) async {
     // Write the edited segments next to the session so the processor can pick
     // them up (they fully replace the originals for rendering).
@@ -347,6 +350,7 @@ class DesktopProcessorService {
         origStyle,
         '--quality',
         quality,
+        if (upscale) '--upscale',
       ], onProgress: onProgress);
       return ProcessorResult.fromJson(payload);
     } finally {

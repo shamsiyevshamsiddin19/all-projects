@@ -186,8 +186,18 @@ class _AppearanceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    // Ikki qator: bitta qatorga oltita ro'yxat sig'maydi.
+    return Column(
       children: [
+        Row(children: _rowOne()),
+        const SizedBox(height: 10),
+        Row(children: _rowTwo()),
+      ],
+    );
+  }
+
+  List<Widget> _rowOne() {
+    return [
         Expanded(
           child: _MiniDropdown<double>(
             label: 'Shrift',
@@ -222,6 +232,20 @@ class _AppearanceRow extends StatelessWidget {
             onChanged: (v) => onChanged(appearance.copyWith(quality: v)),
           ),
         ),
+    ];
+  }
+
+  List<Widget> _rowTwo() {
+    return [
+        Expanded(
+          child: _MiniDropdown<bool>(
+            label: 'Kattalash',
+            value: appearance.upscale,
+            items: const {false: 'Yo\'q', true: 'Ha'},
+            enabled: enabled,
+            onChanged: (v) => onChanged(appearance.copyWith(upscale: v)),
+          ),
+        ),
         const SizedBox(width: 10),
         Expanded(
           child: _MiniDropdown<String>(
@@ -242,8 +266,7 @@ class _AppearanceRow extends StatelessWidget {
             onChanged: (v) => onChanged(appearance.copyWith(subColor: v)),
           ),
         ),
-      ],
-    );
+    ];
   }
 }
 
