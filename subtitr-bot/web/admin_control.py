@@ -94,18 +94,29 @@ def _svc_badge(status: str) -> str:
     return _badge(label, cls)
 
 
+# Oxirgi /proc/stat namunasi. CPU foizini o'lchash uchun ikkita namuna
+# kerak — ilgari ular orasida `time.sleep(0.15)` turardi va bu ASINXRON
+# event loop'ni to'liq muzlatib qo'yardi (o'sha paytda hech kimga javob
+# berilmasdi). Endi oldingi chaqiruvdagi namuna bilan solishtiramiz.
+_cpu_prev: tuple[int, int] | None = None
+
+
 def _cpu_percent() -> float:
+    """CPU bandligi (%). Bloklamaydi: oldingi chaqiruvga nisbatan hisoblanadi."""
+    global _cpu_prev
     try:
-        def read():
-            with open("/proc/stat") as f:
-                vals = list(map(int, f.readline().split()[1:]))
-            idle = vals[3] + (vals[4] if len(vals) > 4 else 0)
-            return idle, sum(vals)
-        i1, t1 = read()
-        time.sleep(0.15)
-        i2, t2 = read()
-        dt = t2 - t1
-        return round(100 * (1 - (i2 - i1) / dt), 1) if dt > 0 else 0.0
+        with open("/proc/stat") as f:
+            vals = list(map(int, f.readline().split()[1:]))
+        idle = vals[3] + (vals[4] if len(vals) > 4 else 0)
+        total = sum(vals)
+        prev = _cpu_prev
+        _cpu_prev = (idle, total)
+        if prev is None:
+            return 0.0
+        d_total = total - prev[1]
+        if d_total <= 0:
+            return 0.0
+        return round(100 * (1 - (idle - prev[0]) / d_total), 1)
     except Exception:
         return 0.0
 
