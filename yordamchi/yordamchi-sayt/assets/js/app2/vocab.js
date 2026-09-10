@@ -2617,7 +2617,8 @@
 
     function iconOf(id) { return id === 'learned' ? 'check' : 'alert'; }
 
-    var activeTab = VD.menuTab || ((VD.rangeFrom || VD.rangeTo) ? 'range' : (VD.join ? 'join' : (VD.filter ? 'filter' : (VD.mode ? 'mode' : 'range'))));
+    var activeTab = VD.menuTab || ((VD.rangeFrom || VD.rangeTo) ? 'range' : ((VD.join || VD.filter) ? 'filter' : (VD.mode ? 'mode' : 'range')));
+    if (activeTab === 'join') activeTab = 'filter';
 
     var catName = (typeof lastSeg === 'function') ? lastSeg(cat) : String(cat || '').split('/').pop().trim();
 
@@ -2686,15 +2687,14 @@
           '<span>Oraliq</span>' +
           ((VD.rangeFrom || VD.rangeTo) ? '<span class="vd-pt-badge"></span>' : '') +
         '</button>' +
-        '<button type="button" class="vd-p-tab' + (activeTab === 'join' ? ' active' : '') + '" data-tab="join">' +
-          '<span data-icon="link" data-icon-size="14"></span>' +
-          '<span>Juftlash</span>' +
-          (VD.join ? '<span class="vd-pt-badge"></span>' : '') +
-        '</button>' +
-        '<button type="button" class="vd-p-tab' + (activeTab === 'filter' ? ' active' : '') + '" data-tab="filter">' +
+        '<button type="button" class="vd-p-tab' + (activeTab === 'filter' ? ' active' : '') + '" data-tab="filter" title="Juftlash va ko\'rsatish (filtr)">' +
           '<span data-icon="list" data-icon-size="14"></span>' +
-          '<span>Ko\'rsatish</span>' +
-          (VD.filter ? '<span class="vd-pt-badge"></span>' : '') +
+          '<span class="vd-p-tab-lbl">' +
+            '<span class="vd-lbl-full">Juftlash va ko\'rsatish</span>' +
+            '<span class="vd-lbl-mid">Juft &amp; Ko\'rsatish</span>' +
+            '<span class="vd-lbl-short">Ko\'rsatish</span>' +
+          '</span>' +
+          ((VD.join || VD.filter) ? '<span class="vd-pt-badge"></span>' : '') +
         '</button>' +
         '<button type="button" class="vd-p-tab' + (activeTab === 'mode' ? ' active' : '') + '" data-tab="mode">' +
           '<span data-icon="edit" data-icon-size="14"></span>' +
@@ -2741,51 +2741,60 @@
             }).join('') +
           '</div>' +
         '</div>' +
-        /* PANE 1: JUFTLASH */
-        '<div class="vd-pane' + (activeTab === 'join' ? ' active' : '') + '" data-pane="join">' +
-          '<div class="list-label" style="display:none">Juftlash</div>' +
-          '<p class="vd-p-desc">Tanlanganda so\'zlar oilalarga ajratiladi va ranglar bilan bo\'yaladi. Eng ko\'p bog\'langan oila tepada, yakka so\'zlar oxirida turadi.</p>' +
-          '<div class="vd-p-cards">' +
-            [
-              { key: '', label: 'O\'chiq', sub: 'Oddiy tartibda ko\'rsatish' },
-              { key: 'words', label: 'So\'zlarni juftlash', sub: 'Yozilishi o\'xshash: храню / храплю' },
-              { key: 'meaning', label: 'Ma\'noni juftlash', sub: 'Ma\'nosi bog\'liq: иду / хожу / еду' }
-            ].map(function (j) {
-              var on = (VD.join || '') === j.key;
-              return '<button type="button" class="vd-opt-card vd-jpick' + (on ? ' active' : '') + '" data-j="' + j.key + '">' +
-                '<span class="ws-radio-circle' + (on ? ' checked' : '') + '">' +
-                  (on ? '<span class="ws-radio-dot"></span>' : '') +
-                '</span>' +
-                '<div class="vd-oc-main">' +
-                  '<div class="vd-oc-title">' + App.esc(j.label) + '</div>' +
-                  '<div class="vd-oc-sub">' + App.esc(j.sub) + '</div>' +
-                '</div>' +
-                '</button>';
-            }).join('') +
-          '</div>' +
-        '</div>' +
-
-        /* PANE 2: KO'RSATISH (FILTR) */
+        /* PANE 1: JUFTLASH VA KO'RSATISH (FILTR) */
         '<div class="vd-pane' + (activeTab === 'filter' ? ' active' : '') + '" data-pane="filter">' +
-          '<div class="list-label" style="display:none">Ko\'rsatish (filtr)</div>' +
-          '<p class="vd-p-desc">Ro\'yxatda faqat tanlangan holatdagi so\'zlar ko\'rinadi.</p>' +
-          '<div class="vd-p-cards">' +
-            VD_FILTERS.map(function (f) {
-              var on = VD.filter === f.id;
-              return '<button type="button" class="vd-opt-card vd-fpick' + (on ? ' active' : '') + '" data-f="' + f.id + '">' +
-                '<span class="li-ic"' + (on ? ' style="background:var(--accent-soft);color:var(--accent)"' : '') +
-                  ' data-icon="' + (on ? 'check' : 'list') + '" data-icon-size="15"></span>' +
-                '<div class="vd-oc-main">' +
-                  '<div class="vd-oc-title">' + App.esc(f.name) + '</div>' +
-                '</div>' +
-                '<span class="vd-oc-badge">' + (counts[f.id] || 0) + ' ta so\'z</span>' +
-                (on ? '<span class="vd-oc-check" data-icon="check" data-icon-size="16"></span>' : '') +
-                '</button>';
-            }).join('') +
+          '<div class="vd-pane-group">' +
+            '<div class="vd-pane-group-head">' +
+              '<div class="vd-pane-group-title"><span data-icon="link" data-icon-size="14"></span><span>Juftlash</span></div>' +
+              '<div class="vd-pane-group-hint">O\'xshash so\'zlar oilasi</div>' +
+            '</div>' +
+            '<p class="vd-p-desc">Tanlanganda so\'zlar oilalarga ajratiladi va ranglar bilan bo\'yaladi. Eng ko\'p bog\'langan oila tepada turadi.</p>' +
+            '<div class="vd-p-cards">' +
+              [
+                { key: '', label: 'O\'chiq', sub: 'Oddiy tartibda ko\'rsatish' },
+                { key: 'words', label: 'So\'zlarni juftlash', sub: 'Yozilishi o\'xshash: храню / храплю' },
+                { key: 'meaning', label: 'Ma\'noni juftlash', sub: 'Ma\'nosi bog\'liq: иду / хожу / еду' }
+              ].map(function (j) {
+                var on = (VD.join || '') === j.key;
+                return '<button type="button" class="vd-opt-card vd-jpick' + (on ? ' active' : '') + '" data-j="' + j.key + '">' +
+                  '<span class="ws-radio-circle' + (on ? ' checked' : '') + '">' +
+                    (on ? '<span class="ws-radio-dot"></span>' : '') +
+                  '</span>' +
+                  '<div class="vd-oc-main">' +
+                    '<div class="vd-oc-title">' + App.esc(j.label) + '</div>' +
+                    '<div class="vd-oc-sub">' + App.esc(j.sub) + '</div>' +
+                  '</div>' +
+                  '</button>';
+              }).join('') +
+            '</div>' +
+          '</div>' +
+
+          '<div class="vd-pane-divider"></div>' +
+
+          '<div class="vd-pane-group">' +
+            '<div class="vd-pane-group-head">' +
+              '<div class="vd-pane-group-title"><span data-icon="list" data-icon-size="14"></span><span>Ko\'rsatish (filtr)</span></div>' +
+              '<div class="vd-pane-group-hint">Holat bo\'yicha</div>' +
+            '</div>' +
+            '<p class="vd-p-desc">Ro\'yxatda faqat tanlangan holatdagi so\'zlar ko\'rinadi.</p>' +
+            '<div class="vd-p-cards">' +
+              VD_FILTERS.map(function (f) {
+                var on = VD.filter === f.id;
+                return '<button type="button" class="vd-opt-card vd-fpick' + (on ? ' active' : '') + '" data-f="' + f.id + '">' +
+                  '<span class="ws-radio-circle' + (on ? ' checked' : '') + '">' +
+                    (on ? '<span class="ws-radio-dot"></span>' : '') +
+                  '</span>' +
+                  '<div class="vd-oc-main">' +
+                    '<div class="vd-oc-title">' + App.esc(f.name) + '</div>' +
+                  '</div>' +
+                  '<span class="vd-oc-badge">' + (counts[f.id] || 0) + ' ta so\'z</span>' +
+                  '</button>';
+              }).join('') +
+            '</div>' +
           '</div>' +
         '</div>' +
 
-        /* PANE 3: BELGILASH (TEZ REJIM) */
+        /* PANE 2: BELGILASH (TEZ REJIM) */
         '<div class="vd-pane' + (activeTab === 'mode' ? ' active' : '') + '" data-pane="mode">' +
           '<div class="list-label" style="display:none">Belgilash (tez rejim)</div>' +
           '<p class="vd-p-desc">Belgini tanlang — shundan keyin bosilgan HAR SO\'Z shu holatga o\'tadi. Qayta bosilsa belgi olinadi.</p>' +
