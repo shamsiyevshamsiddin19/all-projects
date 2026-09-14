@@ -1,0 +1,99 @@
+{% load static %}
+{% comment %}
+Kirish va ro'yxatdan o'tish sahifalarining umumiy qobig'i.
+
+Nega base.html dan meros olmaydi?
+    Bu sahifalar butun ekranni egallaydi — ularda sayt menyusi,
+    footer va pleyer kerak emas. Faqat logotip qoladi (bosh sahifaga
+    qaytish uchun).
+
+Tuzilishi (orqadan oldinga):
+    1. Gradient fon        — saytning asosiy rangi
+    2. Tepadagi binolar    — yorug', shaffof siluet
+    3. Pastdagi binolar    — to'q siluet
+    4. Uchib yurgan notalar
+    5. Kontent: chapda rasm, o'ngda forma
+{% endcomment %}
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Kirish{% endblock %} — SCARPION Music</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body class="auth-page">
+
+<div class="auth">
+
+  {# ---- Tepadagi binolar (yuqoridan osilib turadi) ---- #}
+  {# preserveAspectRatio="none" = SVG ekran kengligiga cho'ziladi, #}
+  {# nisbatini saqlamaydi. Siluet uchun aynan shu kerak.           #}
+  <svg class="auth__city auth__city--top" viewBox="0 0 1200 190"
+       preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0,0 H58 V88 H98 V48 H146 V118 H188 V68 H238 V138 H284 V58 H328 V108
+             H374 V38 H420 V128 H468 V78 H518 V148 H564 V58 H608 V98 H658 V44
+             H704 V124 H748 V74 H798 V144 H844 V54 H888 V104 H938 V64 H984 V132
+             H1028 V84 H1078 V114 H1128 V48 H1200 V0 Z"/>
+  </svg>
+
+  {# ---- Pastdagi binolar (pastdan ko'tariladi) ---- #}
+  <svg class="auth__city auth__city--bottom" viewBox="0 0 1200 210"
+       preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0,210 V148 H54 V98 H94 V168 H138 V58 H184 V128 H228 V88 H278 V158
+             H324 V108 H368 V38 H418 V118 H464 V78 H514 V148 H558 V98 H608 V54
+             H658 V138 H704 V94 H754 V162 H798 V68 H848 V124 H898 V84 H948 V152
+             H998 V104 H1048 V48 H1098 V134 H1148 V94 H1200 V210 Z"/>
+  </svg>
+
+  {# ---- Uchib yurgan notalar ---- #}
+  <span class="auth__note auth__note--1">&#9835;</span>
+  <span class="auth__note auth__note--2">&#9834;</span>
+  <span class="auth__note auth__note--3">&#9835;</span>
+  <span class="auth__note auth__note--4">&#9834;</span>
+  <span class="auth__note auth__note--5">&#9839;</span>
+
+  <a class="auth__logo" href="{% url 'music:album_list' %}">SCARPION<span> MUSIC</span></a>
+
+  <div class="auth__inner">
+
+    {# ---- Chapdagi dumaloq rasm ---- #}
+    <div class="auth__art" aria-hidden="true">
+      <svg viewBox="0 0 200 200">
+        {# Ichki krem doira #}
+        <circle cx="100" cy="100" r="100" fill="#f6efe9"/>
+
+        {# Yelka va bosh — sodda siluet #}
+        <path d="M100 112c-30 0-54 21-58 49a100 100 0 0 0 116 0c-4-28-28-49-58-49z"
+              fill="#221a2e"/>
+        <circle cx="100" cy="74" r="30" fill="#e8b9a0"/>
+        {# Soch #}
+        <path d="M70 70c0-18 13-32 30-32s30 14 30 32c0 4-1 8-2 11-2-14-10-19-18-21
+                 -9-2-20 2-26 9-3 4-5 8-6 13-1-4-2-8-2-12z" fill="#221a2e"/>
+
+        {# Quloqchin #}
+        <path d="M64 78a36 36 0 0 1 72 0" fill="none" stroke="#221a2e" stroke-width="7"
+              stroke-linecap="round"/>
+        <rect x="56" y="74" width="16" height="26" rx="8" fill="#221a2e"/>
+        <rect x="128" y="74" width="16" height="26" rx="8" fill="#221a2e"/>
+
+        {# Yon tarafdagi kichik notalar #}
+        <text x="30" y="60" font-size="24" fill="#c9bfd6">&#9834;</text>
+        <text x="158" y="132" font-size="20" fill="#c9bfd6">&#9835;</text>
+      </svg>
+    </div>
+
+    {# ---- O'ngdagi forma ---- #}
+    <div class="auth__panel">
+      {% block auth_content %}{% endblock %}
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

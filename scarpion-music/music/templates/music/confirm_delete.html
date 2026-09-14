@@ -1,0 +1,39 @@
+{% extends 'music/base.html' %}
+
+{% comment %}
+KONTEKST: nima (turi), nomi, izoh, bekor_url
+Uchala model uchun ham (albom, ijrochi, qo'shiq) BITTA shablon.
+
+Nega alohida tasdiqlash sahifasi kerak?
+    O'chirish qaytarib bo'lmaydigan amal. Agar u oddiy havola bo'lsa,
+    qidiruv roboti yoki brauzerning oldindan yuklash funksiyasi
+    havolani ochib, yozuvni o'chirib yuborishi mumkin.
+    Shuning uchun o'chirish faqat POST so'rovda bajariladi —
+    ya'ni odam tugmani bosgandagina.
+{% endcomment %}
+
+{% block title %}{{ nomi }} — o'chirish{% endblock %}
+
+{% block content %}
+<div class="wrap section">
+  <div class="form-card form-card--danger">
+
+    <div class="confirm__icon">&#9888;</div>
+
+    <h1>{{ nima }}ni o'chirish</h1>
+    <p class="lead">
+      <b style="color:var(--text)">{{ nomi }}</b> butunlay o'chiriladi.
+      {% if izoh %}<br>{{ izoh }}{% endif %}
+    </p>
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-actions">
+        <button class="btn btn--danger" type="submit">Ha, o'chirilsin</button>
+        <a href="{{ bekor_url }}" class="btn btn--ghost">Bekor qilish</a>
+      </div>
+    </form>
+
+  </div>
+</div>
+{% endblock %}

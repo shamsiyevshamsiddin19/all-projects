@@ -1,0 +1,1938 @@
+/* =================================================================
+   SCARPION MUSIC — dizayn
+   Tuzilishi:
+     1. Ranglar va o'zgaruvchilar
+     2. Asos (reset, tipografiya)
+     3. Header va menyu
+     4. Hero (katta rasm)
+     5. Bo'lim sarlavhalari
+     6. Albom kartalari
+     7. Top albomlar jadvali
+     8. Ijrochi kartalari
+     9. Albom sahifasi + qo'shiqlar ro'yxati
+    10. Formalar
+    11. Import sahifasi
+    12. Xabarlar, sahifalash, footer
+    13. Pastdagi pleyer
+    14. Mobil (responsive)
+   ================================================================= */
+
+/* ---------- 1. RANGLAR ------------------------------------------
+   :root = "butun sahifa". Bu yerda e'lon qilingan --nom larni
+   pastda var(--nom) deb chaqiramiz. Rangni bir joyda o'zgartirsak,
+   butun sayt bo'ylab o'zgaradi.                                    */
+:root {
+  --bg:        #14121e;   /* eng orqa fon */
+  --bg-2:      #1b1829;   /* kartalar foni */
+  --bg-3:      #241f36;   /* input, hover */
+  --line:      rgba(255, 255, 255, .08);
+  --text:      #f3f1f8;
+  --muted:     #8d88a8;
+  --accent:    #ef5da8;   /* PUSHTI — saytning asosiy urg'u rangi */
+  --accent-2:  #a855f7;   /* binafsha — gradientdagi sherigi */
+  --pink:      #ef5da8;   /* --accent bilan bir xil, eski nom saqlangan */
+  --pink-2:    #ff8ac4;
+  --danger:    #f0506e;
+  --ok:        #2ecc8f;
+  --radius:    14px;
+  --shadow:    0 18px 40px rgba(0, 0, 0, .45);
+  --wrap:      1180px;    /* kontent maksimal kengligi */
+
+  /* --- ASOSIY GRADIENT ---
+     Butun sayt bo'ylab bitta rang o'tishi ishlatiladi: siyoh -> binafsha
+     -> pushti. Uni bir joyda o'zgartirsangiz, tugmalar, chiplar,
+     sahifalash, pleyer chizig'i — hammasi birdan o'zgaradi.          */
+  --grad:      linear-gradient(135deg, #a855f7 0%, #ef5da8 52%, #ff8ac4 100%);
+  /* Shaffof, yumshoq varianti — fon va panellar uchun */
+  --grad-soft: linear-gradient(135deg, rgba(168,85,247,.15), rgba(239,93,168,.20));
+  /* Sarlavhalardagi matn gradienti uchun (chapdan o'ngga) */
+  --grad-text: linear-gradient(90deg, #dcb8ff 0%, #ffa6d2 100%);
+}
+
+/* --- KENG EKRANLARGA MOSLASHUV ---
+   1180px 1920px li monitorda juda tor ko'rinadi: ikki yonda
+   370px dan bo'sh joy qoladi. Ekran kattalashgani sayin kontent
+   maydonini ham kengaytiramiz.
+   Faqat --wrap o'zgaradi — qolgan hamma narsa (grid, rail, hero)
+   o'zi moslashadi, chunki ular foiz va minmax() bilan yozilgan.    */
+@media (min-width: 1500px) { :root { --wrap: 1380px; } }
+@media (min-width: 1800px) { :root { --wrap: 1580px; } }
+@media (min-width: 2200px) { :root { --wrap: 1780px; } }
+
+/* ---------- 2. ASOS --------------------------------------------- */
+/* box-sizing: border-box = padding va border kenglikka QO'SHILMAYDI.
+   Busiz 100% + 20px padding jami 100% dan oshib ketadi.            */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Poppins', 'Segoe UI', system-ui, -apple-system, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+img { max-width: 100%; display: block; }
+a   { color: inherit; text-decoration: none; }
+a:hover { color: #fff; }
+
+/* Kontentni markazga oladigan asosiy o'ram */
+.wrap {
+  max-width: var(--wrap);
+  margin: 0 auto;
+  padding: 0 22px;
+}
+
+/* Tugmalar */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 22px;
+  border: 0;
+  border-radius: 999px;          /* to'liq dumaloq chekka */
+  font: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s, background .15s;
+}
+.btn:hover { transform: translateY(-2px); }
+
+.btn--primary {
+  background: var(--grad);
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(239, 93, 168, .34);
+}
+.btn--primary:hover { color: #fff; box-shadow: 0 12px 30px rgba(239, 93, 168, .48); }
+
+.btn--ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+.btn--ghost:hover { background: var(--bg-3); }
+
+.btn--light { background: #fff; color: #191627; }
+
+/* Hero uchun pushti tugma (namunadagi "Listen Now") */
+.btn--pink {
+  background: linear-gradient(135deg, var(--pink), var(--pink-2));
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(239, 93, 168, .32);
+}
+.btn--pink:hover { color: #fff; box-shadow: 0 12px 30px rgba(239, 93, 168, .48); }
+
+/* Oq konturli tugma — rasm ustida turadi, shuning uchun kontrast oq */
+.btn--outline {
+  background: transparent;
+  color: #fff;
+  border: 1.5px solid rgba(255, 255, 255, .5);
+}
+.btn--outline:hover { background: rgba(255, 255, 255, .12); border-color: #fff; color: #fff; }
+
+/* O'chirish tugmalari — qizil. Ikki xil: to'ldirilgan (tasdiqlash
+   sahifasida) va shaffof konturli (sahifadagi amallar qatorida). */
+.btn--danger {
+  background: linear-gradient(135deg, #e03e5c, #f0506e);
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(240, 80, 110, .3);
+}
+.btn--danger:hover { color: #fff; box-shadow: 0 12px 30px rgba(240, 80, 110, .45); }
+
+.btn--danger-ghost {
+  background: transparent;
+  color: #ff8095;
+  border: 1px solid rgba(240, 80, 110, .35);
+}
+.btn--danger-ghost:hover {
+  background: rgba(240, 80, 110, .14);
+  border-color: rgba(240, 80, 110, .6);
+  color: #ffa8b6;
+}
+
+/* ---------- 3. HEADER ------------------------------------------- */
+.topbar {
+  position: sticky;              /* sahifa bilan birga yuqorida qoladi */
+  top: 0;
+  z-index: 50;
+  background: rgba(20, 18, 30, .82);
+  backdrop-filter: blur(14px);   /* orqa fonni xiralashtiradi */
+  border-bottom: 1px solid var(--line);
+}
+.topbar__inner {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  height: 68px;
+}
+.logo {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  white-space: nowrap;
+}
+.logo span { font-weight: 300; color: var(--muted); }
+
+/* Menyu CHAPDA, logotipdan keyin (avval o'ngda edi).
+   Katta harflar + keng oraliq — namunadagi "DISCOVER PLAYLIST LIVE". */
+.nav { display: flex; gap: 24px; }
+.nav a {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding: 6px 0;
+  border-bottom: 2px solid transparent;
+  transition: color .15s, border-color .15s;
+}
+.nav a:hover { color: #fff; }
+/* Faol bo'lim tagida PUSHTI chiziq */
+.nav a.is-active { color: #fff; border-color: var(--pink); }
+/* Boshqaruv havolasi faqat mobil menyuda kerak — katta ekranda
+   uning o'rnida o'ngdagi avatar turadi. */
+.nav__admin { display: none; }
+
+/* Qidiruv "tabletka" si. margin-left:auto uni o'ngga suradi,
+   flex:0 1 360px = 360px bo'lsin, lekin joy tor bo'lsa qisqarsin. */
+.topsearch {
+  margin-left: auto;
+  flex: 0 1 360px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 42px;
+  padding: 0 18px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  transition: border-color .15s, box-shadow .15s;
+}
+/* :focus-within = "ichidagi biror element fokusda bo'lsa".
+   Shunda butun tabletka yonadi, faqat input emas. */
+.topsearch:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(239, 93, 168, .18);
+}
+.topsearch__icon {
+  width: 16px; height: 16px;
+  flex: none;
+  stroke: var(--muted);
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+}
+.topsearch input {
+  flex: 1;
+  min-width: 0;              /* busiz input qisqarmaydi va tashqariga chiqadi */
+  background: none;
+  border: 0;
+  outline: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+}
+.topsearch input::placeholder { color: var(--muted); }
+/* Chrome qo'shadigan "x" tugmasini olib tashlaymiz — dizaynga to'g'ri kelmaydi */
+.topsearch input::-webkit-search-cancel-button { display: none; }
+
+/* Avatar — namunadagi dumaloq rasm o'rnida */
+.avatar {
+  width: 38px; height: 38px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  transition: .15s;
+}
+.avatar svg {
+  width: 19px; height: 19px;
+  stroke: var(--muted);
+  stroke-width: 1.8;
+  fill: none;
+  stroke-linecap: round;
+}
+.avatar:hover { background: var(--grad); border-color: transparent; }
+.avatar:hover svg { stroke: #fff; }
+
+/* ---- PROFIL OYNASI ----
+   Avatar bosilganda pastda ochiladigan panel.                      */
+.account { position: relative; flex: none; }
+
+/* Avatar endi tugma — ko'rinishi oldingi havoladek qoladi */
+button.avatar { padding: 0; cursor: pointer; font: inherit; }
+.avatar__letter {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+/* Tizimga kirgan foydalanuvchida avatar rangli bo'ladi */
+.account .avatar:has(.avatar__letter) {
+  background: var(--grad);
+  border-color: transparent;
+}
+
+.account__menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  z-index: 90;
+  width: 280px;
+  padding: 6px;
+  background: #1d1a2c;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 24px 54px rgba(0, 0, 0, .62);
+}
+.account.is-open .account__menu { display: block; }
+
+/* Yuqoridagi kichik "uchburchak" — oyna avatardan chiqayotgandek */
+.account__menu::before {
+  content: '';
+  position: absolute;
+  top: -5px; right: 16px;
+  width: 10px; height: 10px;
+  background: #1d1a2c;
+  border-left: 1px solid var(--line);
+  border-top: 1px solid var(--line);
+  transform: rotate(45deg);
+}
+
+.account__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 12px 12px;
+}
+.account__ava {
+  width: 44px; height: 44px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--grad);
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+.account__who { min-width: 0; }
+.account__who b {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.account__who small {
+  font-size: 12px;
+  color: var(--muted);
+  word-break: break-all;
+}
+
+.account__badge {
+  display: inline-block;
+  margin: 0 12px 10px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--grad-soft);
+  border: 1px solid rgba(239, 93, 168, .4);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  color: #ffc4e2;
+}
+
+/* Uchta raqam yonma-yon */
+.account__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  margin: 4px 6px 8px;
+  padding: 12px 0;
+  background: var(--bg-3);
+  border-radius: 11px;
+}
+.account__stats div { text-align: center; }
+.account__stats b { display: block; font-size: 16px; font-weight: 700; }
+.account__stats span { font-size: 11px; color: var(--muted); }
+
+.account__links { padding: 4px 0; border-top: 1px solid var(--line); }
+.account__links a {
+  display: block;
+  padding: 9px 12px;
+  margin: 2px 6px;
+  border-radius: 9px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.account__links a:hover { background: var(--bg-3); color: #fff; }
+
+.account__out { padding: 4px 0; border-top: 1px solid var(--line); }
+.account__out button {
+  display: block;
+  width: calc(100% - 12px);
+  margin: 2px 6px;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: #ff8095;
+  font: inherit;
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+}
+.account__out button:hover { background: rgba(240, 80, 110, .14); }
+
+/* Mobil uchun "uch chiziq" tugmasi — katta ekranda yashirin */
+.burger {
+  display: none;
+  margin-left: auto;
+  background: none;
+  border: 0;
+  color: var(--text);
+  font-size: 24px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+/* ---------- 4. HERO --------------------------------------------- */
+.hero {
+  position: relative;
+  min-height: 440px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+/* QATLAMLAR (pastdan yuqoriga):
+     .hero__bg    z:0  — xiralashtirilgan rasm, faqat rang beradi
+     .hero__art   z:1  — TINIQ portret
+     .hero::after z:2  — qora parda; rasm chekkalarini fonga eritadi
+     .hero__inner z:3  — matn, hammasining ustida
+   Aynan shu tartib tufayli rasmni alohida "ramka" ga solish shart emas:
+   parda uning chekkasini o'zi yumshatadi — namunadagidek.            */
+.hero__bg {
+  position: absolute;
+  inset: -10%;
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(65px) saturate(1.7);
+  opacity: .5;
+  transform: scale(1.1);
+}
+
+/* Asosiy rasm — IJROCHINING portreti (bo'lmasa albom muqovasi).
+   position:absolute + top/bottom:0 = hero ning butun balandligini
+   egallaydi va tepadan "kesilib" chiqadi, namunadagidek.
+   object-fit:cover — kvadrat suratni baland ustunga kesib joylaydi.
+   object-position ... 22% — yuz odatda suratning tepa qismida bo'ladi,
+   shuning uchun kesishni tepadan olamiz, iyagi kesilib qolmaydi.     */
+.hero__art {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  bottom: 0;
+  left: 8%;
+  width: min(44vw, 500px);
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 22%;
+
+  /* mask-image = rasmning QAYSI qismi ko'rinishini belgilaydi.
+     Qora (#000) joy — to'liq ko'rinadi, transparent joy — yo'qoladi,
+     oradagi gradient esa asta-sekin so'nadi.
+     Natijada rasmning to'rtburchak chekkasi yo'qoladi va u fonga
+     singib ketadi — namunadagi suratdagidek "ramkasiz" ko'rinish.
+     Ellips markazi 38% da: yuz odatda tepada bo'ladi, shuning uchun
+     ochiq qism ham tepaga suriladi.
+     -webkit- prefiksi Safari uchun kerak.                            */
+  -webkit-mask-image: radial-gradient(ellipse 76% 92% at 50% 38%,
+                        #000 40%, rgba(0,0,0,.75) 62%, transparent 85%);
+          mask-image: radial-gradient(ellipse 76% 92% at 50% 38%,
+                        #000 40%, rgba(0,0,0,.75) 62%, transparent 85%);
+}
+
+/* Foni kesilgan (shaffof PNG) rasm uchun boshqacha qoidalar.
+   contain — odamni KESMAYDI, butunligicha ko'rsatadi (cover kesardi).
+   Maska ham kerak emas: rasmning o'zida chekka yo'q, u allaqachon
+   shaffof. Faqat pastki qismini yumshoq so'ndiramiz.               */
+.hero__art--cutout {
+  object-fit: contain;
+  object-position: 50% 100%;
+
+  /* Rasm kvadrat, hero esa keng — "contain" da ko'rinadigan o'lcham
+     eni va bo'yining KICHIGIGA teng bo'ladi. Ya'ni odam hero
+     balandligidan katta bo'la olmaydi va kichkina bo'lib qoladi.
+     Yechim: elementni hero dan balandroq qilamiz va pastga
+     yopishtiramiz. Ortiqcha qismi .hero dagi overflow:hidden bilan
+     kesiladi, odam esa kattaroq ko'rinadi — namunadagidek.          */
+  top: auto;
+  bottom: 0;
+  height: 118%;
+  width: min(48vw, 560px);
+
+  /* CHEKKALARNI ERITISH.
+     Nega kerak? TheAudioDB dagi "cutout" rasmlarning hammasi ham to'liq
+     shaffof emas — masalan The Beatles rasmining pastki burchaklari
+     to'ldirilgan (alfa 255). Natijada fonda to'rtburchakning chizig'i
+     ko'rinib qoladi.
+
+     Yechim: ikkita maska qatlami va ularning KESISHMASI:
+       1-qatlam (90deg) — chap va o'ng chekkani so'ndiradi
+       2-qatlam (0deg)  — pastki chekkani so'ndiradi
+     Tepasi tegilmaydi: rasm menyu tagidan "kesilib" chiqishi kerak.
+
+     mask-composite: intersect = "ikkala qatlamda ham ko'ringan joy
+     qoladi". -webkit- varianti eski Chrome/Safari uchun.
+     Maska shaffof piksellarga ta'sir qilmaydi, shuning uchun to'g'ri
+     kesilgan rasmlar uchun hech narsa o'zgarmaydi.                   */
+  -webkit-mask-image:
+    linear-gradient(90deg, transparent 0%, #000 15%, #000 85%, transparent 100%),
+    linear-gradient(0deg, transparent 0%, #000 15%);
+  -webkit-mask-composite: source-in;
+          mask-image:
+    linear-gradient(90deg, transparent 0%, #000 15%, #000 85%, transparent 100%),
+    linear-gradient(0deg, transparent 0%, #000 15%);
+          mask-composite: intersect;
+}
+
+/* Rasm ustidagi qora parda — matn o'qilishi uchun SHART.
+   Ikkita gradient ustma-ust turadi:
+     1-qator (90deg) — CHAP va O'NG chekkani qoraytiradi, o'rtada rasm
+       ochiq qoladi. Matn o'ng tomonda turgani uchun o'ng tarafdagi
+       qorayish kuchliroq — busiz oq harflar rasmga singib ketadi.
+     2-qator (0deg)  — pastki chekkani fonga ulaydi, "kesilgan rasm"
+       taassuroti yo'qoladi.                                          */
+.hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;                       /* = top/right/bottom/left: 0 */
+  z-index: 2;
+  background:
+    /* yon chekkalar: chapda ham, o'ngda ham fonga eriydi */
+    linear-gradient(90deg,
+      var(--bg) 0%,
+      rgba(20,18,30,.35) 20%,
+      rgba(20,18,30,.30) 40%,
+      rgba(20,18,30,.86) 62%,
+      var(--bg) 84%),
+    /* pastki chekka: rasm sahifa foniga qo'shilib ketadi */
+    linear-gradient(0deg, var(--bg) 0%, transparent 46%);
+}
+
+/* Muqova va matn — yonma-yon.
+   z-index:1 = yuqoridagi qora parda USTIDA turadi, aks holda
+   muqova ham qorayib ketardi.                                        */
+.hero__inner {
+  position: relative;
+  z-index: 3;                     /* qora pardaning USTIDA */
+  /* DIQQAT: bu element .wrap klassini ham oladi, u esa "padding: 0 22px"
+     beradi. Qisqa yozuv TO'RT tomonni qayta belgilaydi, shuning uchun
+     yon bo'shliqni takrorlaymiz — aks holda tor ekranda matn chekkaga
+     yopishib qoladi.                                                  */
+  padding: 0 22px 56px;
+  width: 100%;
+}
+
+/* Matn bloki O'NG tomonda va o'ngga tekislangan.
+   margin-left:auto = chapdagi bo'sh joyni "yeb", blokni o'ngga suradi. */
+.hero__content {
+  max-width: 620px;
+  margin-left: auto;
+  text-align: right;
+}
+
+/* Sodda hero (ijrochilar, import) — matn chapda qolaveradi */
+.hero--plain .hero__content { margin-left: 0; text-align: left; }
+
+.hero__tag {
+  display: inline-block;
+  padding: 5px 14px;
+  margin-bottom: 16px;
+  border-radius: 999px;
+  background: var(--grad);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+}
+
+/* "Trending Now" uslubidagi yozuv — belgi emas, oddiy matn */
+.hero__kicker {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 400;
+  color: #e4e0f0;
+  letter-spacing: .2px;
+}
+.hero__title {
+  margin: 0 0 6px;
+  /* clamp(eng kichik, moslashuvchan, eng katta) — ekranga qarab o'zi
+     o'zgaradi, lekin 88px dan oshmaydi va 34px dan kichraymaydi.    */
+  font-size: clamp(34px, 7vw, 88px);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -1.5px;
+}
+/* Uzun nomlar uchun kichikroq o'lchamlar (shablon klass qo'yadi) */
+.hero__title--sm { font-size: clamp(30px, 5vw, 62px); letter-spacing: -1px; }
+.hero__title--xs { font-size: clamp(26px, 3.6vw, 46px); letter-spacing: -.4px; line-height: 1.1; }
+
+.hero__sub {
+  margin: 0 0 28px;
+  color: #d7d2e6;
+  font-size: 19px;
+  font-weight: 500;
+}
+/* Tugmalar ham o'ngga — flex-end matnning tekisligiga mos keladi */
+.hero__actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+.hero--plain .hero__actions { justify-content: flex-start; }
+
+/* Sarlavha uchun sodda hero (ijrochilar, import sahifalari).
+   Bu yerda sarlavha oddiy sahifa nomi — bosh sahifadagidek ulkan
+   bo'lishi kerak emas, shuning uchun alohida kichikroq o'lcham. */
+/* Sodda hero (Ijrochilar, Import, qidiruv natijasi).
+   Bosh sahifada rangni ijrochi surati beradi — bu yerda surat yo'q,
+   shuning uchun uning o'rnini ikkita rangli "yorug'lik" bosadi:
+     1-radial — chapdan siyoh, 2-radial — o'ngdan pushti.
+   Natijada sahifalar bir oilaga o'xshab qoladi.                    */
+.hero--plain {
+  min-height: 280px;
+  background:
+    radial-gradient(ellipse 70% 120% at 8% 0%, rgba(168, 85, 247, .26), transparent 62%),
+    radial-gradient(ellipse 60% 110% at 92% 100%, rgba(239, 93, 168, .22), transparent 60%),
+    linear-gradient(135deg, #241f36, #14121e);
+}
+/* Pastida fonga yumshoq o'tish — keskin chiziq qolmasin */
+.hero--plain::after {
+  background: linear-gradient(0deg, var(--bg) 0%, transparent 40%);
+}
+.hero--plain .hero__title { font-size: clamp(28px, 4vw, 44px); letter-spacing: -.5px; }
+.hero--plain .hero__sub { font-size: 16px; font-weight: 400; }
+
+/* Katta ekranda bosh sahifadagi hero butun ekranni egallaydi.
+   100vh EMAS, calc(100vh - 68px):
+     68px = tepadagi header balandligi. Ayirmasak, header + hero
+     birgalikda ekrandan 68px oshib ketadi va sahifa "chala" ko'rinadi.
+   :not(.hero--plain) = bu qoida faqat rasmli heroga tegishli;
+     ijrochilar/import sahifasidagi sodda sarlavha 260px bo'lib qolaveradi.
+   Faqat 901px dan keng ekranda — telefon va planshetda hero baland
+   bo'lsa, foydalanuvchi albomlarni ko'rish uchun uzoq scroll qiladi.  */
+@media (min-width: 901px) {
+  /* Balandlik: namunada hero butun ekranni EGALLAMAYDI — uning ostidan
+     "Top albomlar" qatori ko'rinib turadi va sahifada davomi borligini
+     bildiradi. Shuning uchun 100vh dan voz kechdik.
+       clamp(420px, 58vh, 640px)
+         420px = past noutbukda ham matn sig'adigan eng kichik o'lcham
+         58vh  = ekran balandligining ~58% i
+         640px = katta monitorda cheksiz cho'zilib ketmasligi uchun chek */
+  .hero:not(.hero--plain) {
+    min-height: clamp(420px, 58vh, 640px);
+    align-items: center;
+  }
+  .hero:not(.hero--plain) .hero__inner { padding-bottom: 0; }
+}
+
+/* Keng monitorda albom/ijrochi sahifasining tepasi ham kengayadi:
+   kontent maydoni kattalashgach, 248px li muqova kichkina ko'rinadi. */
+@media (min-width: 1500px) {
+  .hero__content { max-width: 760px; }
+  .album-head { padding: 74px 0; }
+  .album-head__cover { width: 300px; }
+  .album-head__inner { gap: 48px; }
+}
+@media (min-width: 1800px) {
+  .album-head__cover { width: 330px; }
+}
+
+/* ---- SLAYDER ----
+   Har bir slayd hero ni to'liq qoplaydi va faqat "is-active"
+   bo'lgani ko'rinadi. opacity bilan almashgani uchun o'tish
+   silliq bo'ladi (display:none bunday qila olmaydi).            */
+.hero__slide {
+  position: absolute;
+  inset: 0;
+  z-index: 0;                 /* qora pardaning (z:2) TAGIDA */
+  opacity: 0;
+  transition: opacity .8s ease;
+}
+.hero__slide.is-active { opacity: 1; }
+
+/* Matn panellari bir xil katakda ustma-ust turadi.
+   grid-area: 1/1 = "hammasi birinchi katakka".
+   Grid balandligi eng balandiga qarab olinadi, shuning uchun
+   panel almashganda sahifa sakramaydi.                          */
+.hero__panels { display: grid; }
+.hero__panels > .hero__content {
+  grid-area: 1 / 1;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity .5s ease, transform .5s ease;
+  pointer-events: none;       /* ko'rinmaydigan panel bosilmasin */
+}
+.hero__panels > .hero__content.is-active {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+/* Nuqtalar */
+.hero__dots {
+  display: flex;
+  gap: 9px;
+  justify-content: flex-end;
+  margin-top: 28px;
+}
+.hero__dot {
+  width: 9px; height: 9px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .3);
+  cursor: pointer;
+  transition: width .3s, background .3s;
+}
+.hero__dot:hover { background: rgba(255, 255, 255, .55); }
+.hero__dot.is-active { width: 26px; background: var(--grad); }
+
+/* ---------- 5. BO'LIM SARLAVHALARI ------------------------------ */
+.section { padding: 52px 0; }
+.section--tight { padding: 34px 0; }
+
+/* "So'nggi Albomlar" — birinchi so'z ingichka, ikkinchisi qalin */
+.section-title {
+  margin: 0 0 24px;
+  font-size: 23px;
+  font-weight: 300;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.section-title b { color: var(--text); font-weight: 600; }
+.section-title .more {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.section-title .more:hover { color: #fff; }
+
+/* Ikki ustunli joylashuv (Top albomlar | O'ng blok) */
+.cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 44px;
+  align-items: start;
+}
+
+/* ---------- 6. ALBOM KARTALARI ---------------------------------- */
+.grid {
+  display: grid;
+  gap: 24px;
+  /* auto-fill + minmax = ekran kengligiga qarab ustunlar soni o'zi
+     o'zgaradi. Media query yozish shart emas.                      */
+  grid-template-columns: repeat(auto-fill, minmax(178px, 1fr));
+}
+.grid--wide { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+
+/* Karta endi <div>. Havola ::after orqali butun kartani qoplaydi
+   ("stretched link" usuli), shuning uchun position:relative kerak. */
+.card { position: relative; display: block; }
+
+.card__link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;        /* play tugmasidan (z:2) PAST */
+}
+
+/* Muqova — har doim kvadrat */
+.card__cover {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg-3);
+  box-shadow: var(--shadow);
+}
+.card__cover img {
+  width: 100%; height: 100%;
+  object-fit: cover;            /* cho'zilmaydi, kesiladi */
+  transition: transform .45s;
+}
+.card:hover .card__cover img { transform: scale(1.07); }
+
+/* Muqovasi yo'q albom uchun harfli o'rinbosar */
+.card__blank {
+  width: 100%; height: 100%;
+  display: grid; place-items: center;
+  background: var(--grad);
+  font-size: 40px; font-weight: 700; color: #fff;
+}
+
+/* Hover'da chiqadigan qorayish + play tugmasi */
+.card__cover::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: rgba(15, 13, 23, .5);
+  opacity: 0;
+  transition: opacity .25s;
+}
+.card:hover .card__cover::after { opacity: 1; }
+
+.card__play {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -42%) scale(.85);
+  z-index: 2;              /* havola qoplamasining USTIDA */
+  width: 50px; height: 50px;
+  display: grid; place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  color: #191627;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .25s, transform .25s, background .2s;
+}
+.card:hover .card__play,
+.card__play:focus-visible { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.card__play:hover { background: var(--grad); color: #fff; }
+
+/* Chalinayotgan bo'lsa doim ko'rinib tursin */
+.card__play.is-playing {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  background: var(--grad);
+  color: #fff;
+}
+
+/* Sensorli ekranda "hover" yo'q — tugma doim ko'rinadi,
+   aks holda telefonda uni bosib bo'lmasdi. */
+@media (hover: none) {
+  .card__play { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+.card__body { padding: 13px 2px 0; }
+.card__title {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 600;
+  /* Uzun nom ikki qatordan oshsa "..." qo'yadi */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card__meta { margin: 3px 0 0; font-size: 12.5px; color: var(--muted); }
+
+/* Gorizontal albom qatori ("Top albomlar" — namunadagidek).
+   Grid emas, flex: elementlar qatorga tizilib, sig'maganlari
+   o'ngga surilib ketadi va gorizontal scroll bilan ko'riladi.       */
+.rail {
+  display: flex;
+  gap: 18px;
+  overflow-x: auto;
+  padding-bottom: 12px;
+  /* barmoq/sichqoncha bilan surilganda kartalar chekkaga "yopishadi" */
+  scroll-snap-type: x proximity;
+}
+/* flex: 0 0 <kenglik> = cho'zilma, qisqarma, aynan shu kenglikda tur.
+   Busiz kartalar bir-birini siqib, ingichka bo'lib qolardi.          */
+.rail > * {
+  flex: 0 0 clamp(132px, 13vw, 168px);
+  scroll-snap-align: start;
+}
+/* Scroll chizig'ini ham mavzuga moslaymiz (Chrome/Safari) */
+.rail::-webkit-scrollbar { height: 6px; }
+.rail::-webkit-scrollbar-track { background: transparent; }
+.rail::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 999px; }
+.rail::-webkit-scrollbar-thumb:hover { background: #332c4a; }
+
+/* Kichik belgi (yil, qo'shiqlar soni) */
+.pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.pill--accent {
+  background: var(--grad-soft);
+  border-color: rgba(239, 93, 168, .42);
+  color: #ffc4e2;
+}
+
+/* Janr chiplari qatori */
+.chips { display: flex; flex-wrap: wrap; gap: 9px; margin-bottom: 26px; }
+.chips a {
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--muted);
+  transition: .15s;
+}
+.chips a:hover { background: var(--bg-3); color: #fff; }
+.chips a.is-active {
+  background: var(--grad);
+  border-color: transparent;
+  color: #fff;
+}
+
+/* ---------- 7. TOP ALBOMLAR JADVALI ----------------------------- */
+.chart { width: 100%; border-collapse: collapse; }
+.chart th {
+  text-align: left;
+  padding: 0 10px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+}
+.chart td {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+.chart tr:hover td { background: rgba(255, 255, 255, .03); }
+.chart__rank { width: 34px; color: var(--muted); font-size: 15px; font-weight: 600; }
+.chart__thumb {
+  width: 44px; height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--bg-3);
+}
+.chart__name { display: flex; align-items: center; gap: 12px; }
+.chart__name b { display: block; font-size: 14px; font-weight: 600; }
+.chart__name span { font-size: 12px; color: var(--muted); }
+.chart__num { text-align: right; color: var(--muted); font-size: 13px; }
+
+/* Dumaloq play tugmasi (jadval va qo'shiqlar ro'yxatida) */
+.play {
+  width: 30px; height: 30px;
+  flex: none;
+  display: grid; place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: .15s;
+  padding: 0;
+}
+.play:hover { background: var(--grad); border-color: transparent; color: #fff; }
+.play.is-playing { background: var(--grad); border-color: transparent; color: #fff; }
+.play[disabled] { opacity: .28; cursor: default; }
+.play[disabled]:hover { background: transparent; border-color: var(--line); color: var(--muted); }
+
+/* ---------- 8. IJROCHI KARTALARI -------------------------------- */
+.grid--artists { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+
+.artist-card { text-align: center; }
+.artist-card__photo {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;           /* dumaloq */
+  overflow: hidden;
+  background: var(--bg-3);
+  border: 3px solid transparent;
+  transition: border-color .2s, transform .2s;
+}
+.artist-card:hover .artist-card__photo {
+  border-color: var(--accent);
+  transform: translateY(-4px);
+}
+.artist-card__photo img { width: 100%; height: 100%; object-fit: cover; }
+.artist-card h3 { margin: 14px 0 2px; font-size: 15px; font-weight: 600; }
+.artist-card p  { margin: 0; font-size: 12.5px; color: var(--muted); }
+
+/* ---------- 9. ALBOM SAHIFASI ----------------------------------- */
+/* Tepadagi katta blok: chapda muqova, o'ngda ma'lumot */
+.album-head {
+  position: relative;
+  padding: 56px 0;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+}
+/* Orqa fonda muqovaning xira, kattalashtirilgan nusxasi */
+.album-head__bg {
+  position: absolute; inset: -60px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(50px) saturate(1.6);
+  opacity: .42;
+}
+/* Muqova rangi ustiga umumiy gradient — albom sahifasi ham bosh
+   sahifa bilan bir xil "kayfiyat" da bo'lsin.                      */
+.album-head::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 60% 100% at 85% 0%, rgba(239, 93, 168, .16), transparent 60%),
+    linear-gradient(0deg, var(--bg) 0%, transparent 55%);
+}
+.album-head__bg::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(0deg, var(--bg) 4%, rgba(20,18,30,.7) 100%);
+}
+.album-head__inner {
+  position: relative;
+  display: flex;
+  gap: 38px;
+  align-items: flex-end;
+}
+.album-head__cover {
+  width: 248px; flex: none;
+  aspect-ratio: 1 / 1;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, .6);
+  background: var(--bg-3);
+}
+.album-head__cover img { width: 100%; height: 100%; object-fit: cover; }
+.album-head__info { min-width: 0; }   /* uzun matn tashqariga chiqmasin */
+.album-head__kicker {
+  font-size: 11.5px;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+.album-head h1 {
+  margin: 0 0 12px;
+  font-size: clamp(26px, 4vw, 44px);
+  font-weight: 700;
+  line-height: 1.1;
+}
+.album-head__by { margin: 0 0 16px; font-size: 17px; color: #d3cee6; }
+.album-head__by a:hover { color: var(--accent-2); }
+.album-head__facts { display: flex; flex-wrap: wrap; gap: 9px; margin-bottom: 22px; }
+.album-head__actions { display: flex; gap: 11px; flex-wrap: wrap; }
+
+/* Qo'shiqlar ro'yxati */
+.tracks { width: 100%; border-collapse: collapse; }
+.tracks td {
+  padding: 11px 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+.tracks tr:hover td { background: rgba(255, 255, 255, .03); }
+.tracks__no   { width: 40px; color: var(--muted); font-size: 13px; }
+.tracks__btn  { width: 46px; }
+.tracks__title { font-weight: 500; }
+.tracks__time { text-align: right; color: var(--muted); font-size: 13px; width: 62px; }
+.tracks tr.is-playing .tracks__title { color: #ffb3da; }
+
+/* Qo'shiq qatoridagi tahrir/o'chir tugmalari.
+   Sukut bo'yicha ko'rinmaydi — qatorga sichqoncha kelganda chiqadi.
+   visibility (display emas) ishlatiladi: element joyini egallab
+   turadi, shuning uchun jadval "sakramaydi".                      */
+.tracks__actions { width: 62px; text-align: right; }
+.row-actions {
+  display: inline-flex;
+  gap: 4px;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.tracks tr:hover .row-actions,
+.row-actions:focus-within { visibility: visible; opacity: 1; }
+
+.row-actions a {
+  width: 26px; height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  color: var(--muted);
+  transition: .15s;
+}
+.row-actions a svg {
+  width: 14px; height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.row-actions a:hover { background: var(--bg-3); color: #fff; }
+.row-actions a.is-danger:hover { background: rgba(240, 80, 110, .18); color: #ff8095; }
+
+/* O'ng ustundagi yordamchi bloklar */
+.panel {
+  /* Yassi rang o'rniga tepadan pastga yengil o'tish — kartalar
+     "tekis qog'oz" emas, biroz hajmli ko'rinadi.                   */
+  background: linear-gradient(160deg, #201c30 0%, var(--bg-2) 60%);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 22px;
+}
+.panel h3 { margin: 0 0 14px; font-size: 15px; font-weight: 600; }
+.panel--flush { padding: 0; overflow: hidden; }
+
+/* Bo'sh holat ("hech narsa yo'q") */
+.empty {
+  text-align: center;
+  padding: 64px 20px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  color: var(--muted);
+}
+.empty__icon { font-size: 42px; margin-bottom: 12px; }
+.empty h3 { margin: 0 0 8px; color: var(--text); font-weight: 600; }
+.empty p  { margin: 0 0 20px; }
+
+/* ---------- 10. FORMALAR ---------------------------------------- */
+.form-card {
+  max-width: 620px;
+  margin: 0 auto;
+  background: linear-gradient(160deg, #201c30 0%, var(--bg-2) 55%);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 34px;
+  box-shadow: var(--shadow);
+  /* ::before ni joyiga qo'yish uchun kerak */
+  position: relative;
+  overflow: hidden;
+}
+
+/* Kartaning tepasidagi ingichka rangli chiziq — bosh sahifadagi
+   gradientning aks-sadosi.
+   Nega border-image emas? U qo'llanganda border-radius ISHLAMAY
+   qoladi va karta burchaklari o'tkir bo'lib qolardi. Pseudo-element
+   esa dumaloq burchaklarga tegmaydi.                              */
+.form-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--grad);
+}
+.form-card h1 { margin: 0 0 6px; font-size: 25px; font-weight: 600; }
+.form-card .lead { margin: 0 0 26px; color: var(--muted); font-size: 14px; }
+
+/* Har bir maydon _form_fields.html da .field ichiga o'ralgan */
+.form-card .field { margin: 0 0 18px; }
+.form-card .field > label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #cfcade;
+}
+
+/* Barcha kirish maydonlariga bir xil ko'rinish */
+.form-card input[type=text],
+.form-card input[type=number],
+.form-card input[type=date],
+.form-card input[type=url],
+.form-card input[type=search],
+.form-card select,
+.form-card textarea,
+.field-input {
+  width: 100%;
+  padding: 12px 15px;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.form-card input:focus,
+.form-card select:focus,
+.form-card textarea:focus,
+.field-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(239, 93, 168, .18);
+}
+.form-card textarea { resize: vertical; min-height: 110px; }
+
+/* Fayl tanlash */
+.form-card input[type=file] {
+  width: 100%;
+  padding: 11px;
+  background: var(--bg-3);
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Janrlar — bosiladigan "chip" lar qatori */
+.chips-field { display: flex; flex-wrap: wrap; gap: 9px; }
+.chip-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 15px;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 13px;
+  user-select: none;
+  transition: border-color .15s, background .15s;
+}
+.chip-check:hover { border-color: rgba(255, 255, 255, .22); }
+
+/* :has() = "ichida belgilangan checkbox bo'lsa".
+   Shu yordamida tanlangan chip rangini JS siz o'zgartiramiz. */
+.chip-check:has(input:checked) {
+  background: rgba(239, 93, 168, .20);
+  border-color: var(--accent);
+  color: #fff;
+}
+.form-card input[type=checkbox] { accent-color: var(--accent); margin: 0; }
+
+/* Yordamchi matn va xatolar */
+.form-card .helptext { display: block; margin-top: 6px; font-size: 12px; color: var(--muted); }
+.form-card .errorlist {
+  list-style: none;
+  display: block;
+  margin: 0 0 8px;
+  padding: 0;
+  color: var(--danger);
+  font-size: 13px;
+}
+.form-card .errorlist li { background: none; border: 0; padding: 0; }
+
+.form-actions {
+  display: flex; gap: 12px; align-items: center;
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+
+/* O'chirishni tasdiqlash kartasi — qizil urg'u bilan */
+.form-card--danger { max-width: 520px; text-align: center; }
+.form-card--danger::before { background: linear-gradient(135deg, #e03e5c, #f0506e); }
+.form-card--danger .form-actions { justify-content: center; border-top: 0; }
+.confirm__icon {
+  width: 58px; height: 58px;
+  margin: 0 auto 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(240, 80, 110, .14);
+  border: 1px solid rgba(240, 80, 110, .3);
+  font-size: 26px;
+  color: #ff8095;
+}
+
+/* ---------- 11. QIDIRUV + IMPORT -------------------------------- */
+.search { display: flex; gap: 10px; max-width: 540px; }
+.search input {
+  flex: 1;
+  /* min-width:0 SHART. Flex elementlarda sukut bo'yicha
+     "min-width: auto" turadi — ya'ni input o'zining tabiiy kengligidan
+     (taxminan 20 ta belgi) kichraya olmaydi. Tor ekranda u qisqarish
+     o'rniga "Qidirish" tugmasini tashqariga itarib yuboradi.         */
+  min-width: 0;
+  padding: 13px 18px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+.search input::placeholder { color: var(--muted); }
+.search input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(239, 93, 168, .18);
+}
+
+/* Import natijasi: forma ichidagi karta.
+   Nomlar bir qatorli yoki ikki qatorli bo'lishi mumkin — shunda tugmalar
+   turli balandlikda qolib, qator qiyshiq ko'rinadi.
+   Yechim: formani ustunli flex qilamiz, tugmaga margin-top:auto beramiz —
+   u qolgan bo'sh joyni "itarib", doim pastga yopishadi.               */
+.import-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.import-item .card { flex: 1; }
+.import-item button {
+  width: 100%;
+  margin-top: auto;
+  padding-top: 11px;
+  justify-content: center;
+}
+.import-item .card__body { padding-bottom: 12px; }
+
+/* Qaysi xizmat ishlayotgani haqidagi eslatma */
+.notice {
+  display: flex;
+  gap: 13px;
+  align-items: flex-start;
+  padding: 16px 18px;
+  margin-bottom: 26px;
+  background: linear-gradient(160deg, #201c30 0%, var(--bg-2) 60%);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 13.5px;
+  color: var(--muted);
+  /* Chapdagi rangli chiziq uchun */
+  position: relative;
+  overflow: hidden;
+}
+/* Chap chekkadagi gradient chiziq.
+   border-image ishlatmaymiz: u border-radius ni o'chirib yuboradi
+   va burchaklar o'tkir bo'lib qoladi.                              */
+.notice::before {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0; left: 0;
+  width: 3px;
+  background: var(--grad);
+}
+.notice b { color: var(--text); }
+.notice code {
+  background: var(--bg-3);
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 12.5px;
+  color: #ffb3da;
+}
+
+/* ---- AVTOTO'LDIRISH RO'YXATI ----
+   Qidiruv maydonining tagida chiqadigan takliflar.
+   Ota-element (forma) position:relative bo'lishi SHART — aks holda
+   ro'yxat sahifaning tepasiga tushib ketadi.                       */
+.has-suggest, .combo { position: relative; }
+
+.suggest {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0; right: 0;
+  z-index: 80;              /* header (50) va pleyerdan (60) yuqorida */
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 6px;
+  background: #1d1a2c;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 22px 50px rgba(0, 0, 0, .6);
+}
+.suggest.is-open { display: block; }
+
+.suggest__group {
+  padding: 8px 10px 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.suggest__item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.suggest__item:hover,
+.suggest__item.is-active { background: var(--bg-3); color: #fff; }
+
+.suggest__item img,
+.suggest__blank {
+  width: 38px; height: 38px;
+  flex: none;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--bg-3);
+}
+.suggest__item .is-round { border-radius: 50%; }
+
+.suggest__text { min-width: 0; }
+.suggest__text b {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.suggest__text small { font-size: 12px; color: var(--muted); }
+
+.suggest__empty {
+  padding: 16px 12px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Ijrochi tanlash maydoni: haqiqiy <select> yashirin turadi, lekin
+   forma baribir uni yuboradi. JS o'chgan bo'lsa select ko'rinadi. */
+.combo__native {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  height: 0;
+  width: 0;
+}
+
+/* ---------- 12. XABARLAR, SAHIFALASH, FOOTER -------------------- */
+.messages { margin: 22px 0 0; padding: 0; list-style: none; }
+.messages li {
+  padding: 13px 18px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  font-size: 14px;
+}
+.messages .success { border-left: 3px solid var(--ok); }
+.messages .error   { border-left: 3px solid var(--danger); }
+.messages .info    { border-left: 3px solid var(--accent); }
+
+.pager {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 40px;
+}
+.pager a, .pager span {
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.pager a:hover { background: var(--bg-3); color: #fff; }
+.pager .current {
+  background: var(--grad);
+  border-color: transparent;
+  color: #fff;
+}
+
+.footer {
+  position: relative;
+  margin-top: 70px;
+  padding: 56px 0 0;
+  background: #100e18;
+  border-top: 1px solid var(--line);
+}
+/* Footer tepasida ingichka rangli chiziq — sahifa gradient bilan
+   boshlanib, gradient bilan tugaydi.                               */
+.footer::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: 0; right: 0;
+  height: 2px;
+  background: var(--grad);
+  opacity: .65;
+}
+.footer__cols {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1.4fr;
+  gap: 40px;
+  padding-bottom: 44px;
+}
+.footer h4 {
+  margin: 0 0 18px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .3px;
+}
+.footer p, .footer li, .footer a { color: var(--muted); font-size: 13.5px; }
+.footer ul { list-style: none; margin: 0; padding: 0; }
+.footer li { margin-bottom: 10px; }
+.footer a:hover { color: #fff; }
+.footer__bottom {
+  padding: 20px 0;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.social { display: flex; gap: 10px; margin-top: 18px; }
+.social a {
+  width: 38px; height: 38px;
+  display: grid; place-items: center;
+  border-radius: 11px;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  transition: transform .18s, background .18s, color .18s, border-color .18s;
+}
+/* fill: currentColor = ikonka rangi havolaning rangidan olinadi.
+   Shu sababli hover da faqat bitta "color" ni o'zgartirish yetarli. */
+.social a svg { width: 17px; height: 17px; fill: currentColor; display: block; }
+.social a:hover {
+  background: var(--grad);
+  border-color: transparent;
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+/* ---------- 13. PASTDAGI PLEYER --------------------------------- */
+/* Deezer 30 soniyalik namuna beradi — shu blok o'shani chaladi.
+   Boshida yashirin (hidden), qo'shiq bosilganda JS ko'rsatadi.     */
+.player {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 22px;
+  background: rgba(27, 24, 41, .96);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid var(--line);
+  transform: translateY(110%);
+  transition: transform .3s;
+}
+.player.is-open { transform: translateY(0); }
+.player__cover {
+  width: 44px; height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--bg-3);
+  flex: none;
+}
+.player__info { min-width: 0; flex: 1; }
+.player__info b {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.player__info span { font-size: 12px; color: var(--muted); }
+.player__bar {
+  flex: 2;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--bg-3);
+  overflow: hidden;
+  max-width: 420px;
+}
+.player__fill {
+  height: 100%;
+  width: 0;
+  background: var(--grad);
+}
+.player__close {
+  background: none; border: 0;
+  color: var(--muted);
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+}
+.player__close:hover { color: #fff; }
+
+/* Pleyer ochilganda sahifa oxiri uning tagida qolmasin */
+body.has-player { padding-bottom: 76px; }
+
+/* ---------- 14. MOBIL ------------------------------------------- */
+@media (max-width: 900px) {
+  .cols { grid-template-columns: 1fr; gap: 34px; }
+  .footer__cols { grid-template-columns: 1fr 1fr; gap: 30px; }
+  .album-head__inner { flex-direction: column; align-items: flex-start; gap: 26px; }
+  .album-head__cover { width: 180px; }
+}
+
+/* ---- MENYUNI YIG'ISH CHEGARASI ----
+   Header ga hammasi sig'ishi uchun kamida ~1100px kerak:
+     logotip 178 + menyu 432 + qidiruv 360 + avatar 38 + oraliqlar 112
+   Shundan tor ekranda menyu "uch chiziq" tugmasi ichiga yig'iladi.
+   Ilgari bu chegara 680px edi va 768px li planshetda header ekrandan
+   chiqib ketib, sahifa yon tomonga surilardi.                        */
+@media (max-width: 1100px) {
+  .burger { display: block; }
+
+  /* Menyu sukut bo'yicha yashirin, .is-open qo'shilganda ochiladi */
+  .nav {
+    display: none;
+    position: absolute;
+    top: 68px; left: 0; right: 0;
+    flex-direction: column;
+    gap: 0;
+    padding: 10px 22px 18px;
+    background: rgba(20, 18, 30, .98);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav.is-open { display: flex; }
+  .nav__admin { display: block; }
+  .nav a { padding: 12px 0; border-bottom: 1px solid var(--line); }
+
+  .topsearch { flex: 0 1 320px; }
+  .burger { margin-left: 0; }
+}
+
+@media (max-width: 680px) {
+  /* Eng tor ekranda yana ham qisqartiramiz: tartib logo | qidiruv | burger.
+     Logotipdagi "MUSIC" va avatar olib tashlanadi — avatardagi havola
+     (boshqaruv paneli) burger menyuda va footerda baribir bor.          */
+  .topbar__inner { gap: 12px; }
+  .logo { font-size: 17px; }
+  .logo span { display: none; }
+  .account { display: none; }
+  .topsearch {
+    flex: 1 1 auto;              /* qolgan joyni egallaydi va qisqara oladi */
+    min-width: 0;
+    margin-left: 0;
+    height: 38px;
+    padding: 0 14px;
+  }
+
+  .hero { min-height: 360px; }
+  .hero__inner { padding-bottom: 40px; }
+
+  /* Tor ekranda o'ngga tekislangan matn yomon o'qiladi (har qatorning
+     boshi turli joyda bo'ladi) — chapga qaytaramiz.
+     Rasm esa o'ng tomonga suriladi va kichrayadi: matn uning ustida
+     emas, YONIDA turadi.                                            */
+  .hero__content { max-width: none; margin-left: 0; text-align: left; }
+  .hero__actions { justify-content: flex-start; }
+  .hero__dots { justify-content: flex-start; margin-top: 20px; }
+  .hero__art { left: auto; right: -8%; width: 62%; }
+  .hero:not(.hero--plain)::after {
+    background:
+      linear-gradient(90deg, var(--bg) 12%, rgba(20,18,30,.72) 58%, rgba(20,18,30,.45) 100%),
+      linear-gradient(0deg, var(--bg) 0%, transparent 46%);
+  }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 18px; }
+  .grid--artists { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+  .section { padding: 38px 0; }
+  .footer__cols { grid-template-columns: 1fr; }
+  .form-card { padding: 24px 20px; }
+
+  /* Jadvalda janr ustunini yashiramiz — joy yetmaydi */
+  .chart__hide-sm { display: none; }
+
+  .player { gap: 11px; padding: 10px 14px; }
+  .player__bar { display: none; }
+}
+
+/* =================================================================
+   15. KIRISH / RO'YXATDAN O'TISH SAHIFALARI
+   Namunadagi dizayn, lekin pushti fon o'rniga saytning gradienti.
+   Bu sahifalar base.html dan meros olmaydi — menyu ham, footer ham
+   yo'q, shuning uchun uslublari ham alohida turadi.
+   ================================================================= */
+
+.auth-page { background: var(--bg); }
+
+.auth {
+  position: relative;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 40px 22px;
+  overflow: hidden;
+
+  /* Saytning asosiy gradienti. Ustiga yengil to'q parda qo'yamiz:
+     busiz oq inputlar fonga singib ketadi va matn kontrasti yo'qoladi. */
+  background:
+    radial-gradient(ellipse 80% 70% at 50% 50%, rgba(20, 18, 30, .18), transparent 70%),
+    var(--grad);
+}
+
+/* ---- Binolar siluetlari ---- */
+.auth__city {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  pointer-events: none;         /* bosishga xalaqit bermasin */
+}
+.auth__city--top {
+  top: 0;
+  height: clamp(90px, 17vh, 190px);
+  fill: rgba(255, 255, 255, .93);
+}
+.auth__city--bottom {
+  bottom: 0;
+  height: clamp(100px, 20vh, 210px);
+  fill: #211a2c;
+}
+
+/* ---- Uchib yurgan notalar ---- */
+.auth__note {
+  position: absolute;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+  animation: notaSuzadi 7s ease-in-out infinite;
+}
+.auth__note--1 { left: 5%;  top: 26%; font-size: 54px; color: #211a2c; }
+.auth__note--2 { left: 17%; top: 68%; font-size: 40px; color: rgba(255,255,255,.9); animation-delay: -1.4s; }
+.auth__note--3 { right: 7%; top: 34%; font-size: 46px; color: #211a2c; animation-delay: -2.8s; }
+.auth__note--4 { right: 16%; top: 66%; font-size: 34px; color: rgba(255,255,255,.85); animation-delay: -4.2s; }
+.auth__note--5 { left: 46%; top: 15%; font-size: 30px; color: rgba(255,255,255,.55); animation-delay: -5.6s; }
+
+@keyframes notaSuzadi {
+  0%, 100% { transform: translateY(0) rotate(-6deg); }
+  50%      { transform: translateY(-16px) rotate(6deg); }
+}
+
+/* Harakatni kamaytirishni so'raganlar uchun animatsiya o'chadi */
+@media (prefers-reduced-motion: reduce) {
+  .auth__note { animation: none; }
+}
+
+/* ---- Logotip ---- */
+.auth__logo {
+  position: absolute;
+  top: 26px; left: 30px;
+  z-index: 3;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  /* Logotip tepadagi OQ binolar ustida turadi — shuning uchun to'q
+     rangda. Soya esa binolar orasidagi gradient fonda ham o'qilishi
+     uchun (u yerda to'q matn fonga singib ketishi mumkin). */
+  color: #241b33;
+  text-shadow: 0 1px 10px rgba(255, 255, 255, .55);
+}
+.auth__logo span { font-weight: 300; opacity: .6; }
+.auth__logo:hover { color: #241b33; opacity: .78; }
+
+/* ---- Kontent: chapda rasm, o'ngda forma ---- */
+.auth__inner {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: clamp(30px, 6vw, 76px);
+  width: 100%;
+  max-width: 880px;
+}
+
+.auth__art {
+  width: clamp(150px, 22vw, 230px);
+  flex: none;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 26px 60px rgba(33, 26, 44, .3);
+}
+.auth__art svg { width: 100%; display: block; }
+
+.auth__panel { flex: 1; min-width: 0; }
+
+.auth__title {
+  margin: 0 0 4px;
+  font-size: clamp(26px, 3.4vw, 36px);
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -.5px;
+}
+.auth__lead {
+  margin: 0 0 26px;
+  font-size: 14.5px;
+  color: rgba(255, 255, 255, .82);
+}
+
+/* ---- Maydonlar ---- */
+.auth__field { margin-bottom: 16px; }
+.auth__field label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #241b33;
+}
+
+/* Oq "tabletka" input — namunadagidek */
+.auth__input {
+  width: 100%;
+  height: 44px;
+  padding: 0 20px;
+  background: #fff;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  color: #241b33;
+  font: inherit;
+  font-size: 14px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.auth__input::placeholder { color: #9b93a8; }
+.auth__input:focus {
+  outline: none;
+  border-color: #241b33;
+  box-shadow: 0 0 0 4px rgba(36, 27, 51, .16);
+}
+
+.auth__hint {
+  display: block;
+  margin: 6px 0 0 18px;
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, .8);
+}
+.auth__hint--error { color: #3d1020; font-weight: 600; }
+
+.auth__error {
+  margin-bottom: 18px;
+  padding: 11px 18px;
+  border-radius: 12px;
+  background: rgba(36, 27, 51, .82);
+  color: #ffd9e8;
+  font-size: 13.5px;
+}
+
+/* ---- Tugmalar: IKKALASI BIR QATORDA ---- */
+.auth__actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+.auth__btn {
+  flex: 1;                    /* ikkovi teng kenglikda */
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s, background .15s;
+}
+.auth__btn:hover { transform: translateY(-2px); }
+
+.auth__btn--dark {
+  background: #241b33;
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(36, 27, 51, .3);
+}
+.auth__btn--dark:hover { background: #322544; color: #fff; box-shadow: 0 12px 26px rgba(36, 27, 51, .42); }
+
+.auth__btn--light {
+  background: #fff;
+  color: #241b33;
+  box-shadow: 0 8px 20px rgba(36, 27, 51, .18);
+}
+.auth__btn--light:hover { background: #f3eef8; color: #241b33; }
+
+/* ---- "yoki" ajratgichi ---- */
+/* Ikki yonida chiziq, o'rtasida so'z. Chiziqlar ::before/::after
+   emas, flex bilan: matn kengligi o'zgarsa ham markazda qoladi.  */
+.auth__divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 22px 0 16px;
+  color: rgba(255, 255, 255, .75);
+  font-size: 12.5px;
+}
+.auth__divider::before,
+.auth__divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, .35);
+}
+
+/* ---- Google tugmasi ---- */
+.auth__google {
+  width: 100%;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: #3c4043;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(36, 27, 51, .18);
+  transition: transform .15s, box-shadow .15s, background .15s;
+}
+.auth__google:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: #f6f3fa;
+  box-shadow: 0 12px 26px rgba(36, 27, 51, .26);
+}
+.auth__google svg { width: 18px; height: 18px; flex: none; }
+
+/* Bosilgach kutish holati */
+.auth__google:disabled { opacity: .7; cursor: default; }
+.auth__google.is-loading span::after {
+  content: '...';
+  animation: kutish 1s steps(4) infinite;
+}
+@keyframes kutish {
+  0%   { content: ''; }
+  25%  { content: '.'; }
+  50%  { content: '..'; }
+  75%  { content: '...'; }
+}
+
+/* Google xatolari matni tugma tagida */
+.auth__google + .auth__hint { margin: 10px 0 0; text-align: center; }
+
+/* ---- Mobil ---- */
+@media (max-width: 720px) {
+  /* Rasm tepaga chiqadi, forma tagiga tushadi */
+  .auth__inner { flex-direction: column; gap: 26px; text-align: center; }
+  .auth__art { width: 130px; }
+  .auth__panel { width: 100%; }
+  .auth__field label { text-align: left; }
+  .auth__hint { text-align: left; }
+
+  /* Tugmalar tor ekranda ham BIR QATORDA qoladi — shrift va
+     ichki bo'shliq kichrayadi. Faqat juda tor ekranda (360px dan
+     past) ustma-ust tushadi, aks holda yozuv sig'may qoladi. */
+  .auth__btn { font-size: 13px; padding: 0 10px; }
+}
+
+@media (max-width: 360px) {
+  .auth__actions { flex-direction: column; }
+
+  /* Yon tarafdagi notalar matnga xalaqit bermasin */
+  .auth__note--2, .auth__note--4, .auth__note--5 { display: none; }
+  .auth__note--1 { font-size: 34px; left: 3%; top: 18%; }
+  .auth__note--3 { font-size: 30px; right: 3%; top: 22%; }
+}

@@ -1,0 +1,110 @@
+{# KONTEKST: q, provider, results (dict ro'yxati)                     #}
+{# natija: .external_id .title .artist_name .cover_url .total_tracks  #}
+{% extends 'music/base.html' %}
+
+{% block title %}Katalog{% endblock %}
+
+{% block hero %}
+<section class="hero hero--plain">
+  <div class="wrap hero__inner">
+    <div class="hero__content">
+      <span class="hero__tag">Katalog</span>
+      <h1 class="hero__title">Katalogdan albom qo'shish</h1>
+      <p class="hero__sub">
+        Albom yoki ijrochi nomini yozing &mdash; muqovasi, chiqqan sanasi,
+        janri va barcha qo'shiqlari bilan birga qo'shiladi
+      </p>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+
+{% block content %}
+<div class="wrap">
+  <section class="section section--tight">
+
+    {# ---------- QAYSI XIZMAT ISHLAYAPTI --------------------- #}
+    <div class="notice">
+      <span style="font-size:18px">&#9835;</span>
+      <div>
+        Millionlab albom ichidan qidiring. Qidiruvda topilmasa &mdash;
+        masalan mahalliy yoki yangi ijrochi bo'lsa &mdash; albomni
+        <a href="{% url 'music:album_create' %}"><b>qo'lda qo'shishingiz</b></a>
+        mumkin.
+      </div>
+    </div>
+
+    {# ---------- QIDIRUV ------------------------------------- #}
+    <form class="search" method="get" style="max-width:620px">
+      <input type="search" name="q" value="{{ q }}" autofocus
+             placeholder="Masalan: The Eminem Show, Konsert, Yulduz Usmonova...">
+      <button class="btn btn--primary" type="submit">Qidirish</button>
+    </form>
+  </section>
+
+
+  {# ---------- NATIJALAR ----------------------------------- #}
+  {% if results %}
+    <section class="section section--tight">
+      <h2 class="section-title">
+        Topildi <b>{{ results|length }} ta</b>
+        <span class="more">Import qilinadiganini tanlang</span>
+      </h2>
+
+      <div class="grid grid--wide">
+        {% for item in results %}
+          {# Har bir karta — alohida forma. Bosilganda POST ketadi,   #}
+          {# view esa external_id ni olib import qiladi.              #}
+          {# csrf_token = soxta so'rovlardan himoya, POST da MAJBURIY.#}
+          <form method="post" class="import-item">
+            {% csrf_token %}
+            <input type="hidden" name="external_id" value="{{ item.external_id }}">
+
+            <div class="card">
+              <div class="card__cover">
+                {% if item.cover_url %}
+                  <img src="{{ item.cover_url }}" alt="{{ item.title }}" loading="lazy">
+                {% else %}
+                  <div class="card__blank">{{ item.title|first|upper }}</div>
+                {% endif %}
+              </div>
+              <div class="card__body">
+                <h3 class="card__title">{{ item.title }}</h3>
+                <p class="card__meta">
+                  {{ item.artist_name }}
+                  {% if item.total_tracks %} &middot; {{ item.total_tracks }} ta qo'shiq{% endif %}
+                </p>
+              </div>
+            </div>
+
+            <button class="btn btn--primary" type="submit">Import qilish</button>
+          </form>
+        {% endfor %}
+      </div>
+    </section>
+
+  {% elif q %}
+    <section class="section section--tight">
+      <div class="empty">
+        <div class="empty__icon">&#128269;</div>
+        <h3>Hech narsa topilmadi</h3>
+        <p>"{{ q }}" bo'yicha natija yo'q. Nomni boshqacha yozib ko'ring.</p>
+      </div>
+    </section>
+
+  {% else %}
+    <section class="section section--tight">
+      <div class="empty">
+        <div class="empty__icon">&#11015;</div>
+        <h3>Qidiruvni boshlang</h3>
+        <p>
+          Albom nomini yoki ijrochi ismini yuqoridagi maydonga yozing.<br>
+          Masalan: <b>Abbey Road</b>, <b>Queen</b>, <b>Discovery</b>
+        </p>
+      </div>
+    </section>
+  {% endif %}
+
+</div>
+{% endblock %}

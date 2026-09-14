@@ -1,0 +1,23 @@
+{
+  // DIQQAT: interpretator yo'li ataylab yozilmagan.
+  // Windows da venv\Scripts\python.exe, Linux/Mac da venv/bin/python —
+  // bitta yo'lni yozsak boshqa tizimda xato berardi. VS Code ning
+  // Python kengaytmasi loyihadagi venv ni o'zi topadi.
+  // Topmasa: Ctrl+Shift+P -> "Python: Select Interpreter" -> venv.
+
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true
+  },
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+
+  // Django shablonlari oddiy HTML deb emas, shablon deb tanilsin —
+  // aks holda {% %} teglari xato deb belgilanadi.
+  "files.associations": {
+    "**/templates/**/*.html": "django-html"
+  },
+  "emmet.includeLanguages": {
+    "django-html": "html"
+  }
+}

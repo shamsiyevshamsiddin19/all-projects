@@ -1,0 +1,43 @@
+{# KONTEKST: form (ArtistForm)                                       #}
+{% extends 'music/base.html' %}
+
+{% block title %}{% if object %}{{ object.name }} — tahrirlash{% else %}Ijrochi qo'shish{% endif %}{% endblock %}
+
+{% block content %}
+<div class="wrap section">
+  <div class="form-card">
+    {% if object %}
+      <h1>Ijrochini tahrirlash</h1>
+      <p class="lead">
+        <b style="color:var(--text)">{{ object.name }}</b> ma'lumotlarini
+        o'zgartirasiz. Rasmni almashtirmasangiz eskisi joyida qoladi.
+      </p>
+    {% else %}
+      <h1>Ijrochi qo'shish</h1>
+      <p class="lead">Albom qo'shishdan oldin uning ijrochisi ro'yxatda bo'lishi kerak.</p>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <ul class="errorlist">
+          {% for xato in form.non_field_errors %}<li>{{ xato }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+
+      {% include 'music/partials/_form_fields.html' %}
+
+      <div class="form-actions">
+        <button class="btn btn--primary" type="submit">Saqlash</button>
+        <a href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'music:artist_list' %}{% endif %}"
+           class="btn btn--ghost">Bekor qilish</a>
+        {% if object %}
+          <a href="{% url 'music:artist_delete' object.slug %}"
+             class="btn btn--danger-ghost" style="margin-left:auto">O'chirish</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{# KONTEKST: form (AlbumForm)                                        #}
+{# enctype - rasm yuklash uchun SHART, busiz cover saqlanmaydi       #}
+{% extends 'music/base.html' %}
+
+{% block title %}{% if object %}{{ object.title }} — tahrirlash{% else %}Albom qo'shish{% endif %}{% endblock %}
+
+{% block content %}
+<div class="wrap section">
+  <div class="form-card">
+    {% comment %}
+      object = UpdateView bergan mavjud albom. CreateView da u bo'lmaydi,
+      shuning uchun bitta shablon ikkala holatga ham xizmat qiladi.
+    {% endcomment %}
+    {% if object %}
+      <h1>Albomni tahrirlash</h1>
+      <p class="lead">
+        <b style="color:var(--text)">{{ object.title }}</b> ma'lumotlarini
+        o'zgartirasiz. Muqovani almashtirmasangiz eskisi joyida qoladi.
+      </p>
+    {% else %}
+      <h1>Albom qo'shish</h1>
+      <p class="lead">
+        Mashhur albomni <a href="{% url 'music:import' %}">katalogdan qidirib</a>
+        qo'shgan tezroq. Bu forma — katalogda topilmagan albomlar uchun.
+      </p>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      {# form.non_field_errors = biror maydonga tegishli bo'lmagan xatolar #}
+      {% if form.non_field_errors %}
+        <ul class="errorlist">
+          {% for xato in form.non_field_errors %}<li>{{ xato }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+
+      {% include 'music/partials/_form_fields.html' %}
+
+      <div class="form-actions">
+        <button class="btn btn--primary" type="submit">Saqlash</button>
+        <a href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'music:album_list' %}{% endif %}"
+           class="btn btn--ghost">Bekor qilish</a>
+        {% if object %}
+          <a href="{% url 'music:album_delete' object.pk %}"
+             class="btn btn--danger-ghost" style="margin-left:auto">O'chirish</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

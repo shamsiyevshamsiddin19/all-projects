@@ -1,0 +1,43 @@
+{% extends 'music/auth_base.html' %}
+{% load static %}
+
+{% block title %}Kirish{% endblock %}
+
+{% block auth_content %}
+  <h1 class="auth__title">Xush kelibsiz</h1>
+  <p class="auth__lead">Davom etish uchun akkauntingizga kiring</p>
+
+  <form method="post" action="{% url 'music:login' %}">
+    {% csrf_token %}
+
+    {# form.non_field_errors = "parol noto'g'ri" kabi umumiy xatolar #}
+    {% if form.non_field_errors %}
+      <div class="auth__error">
+        {% for xato in form.non_field_errors %}{{ xato }}{% endfor %}
+      </div>
+    {% endif %}
+
+    {% for field in form %}
+      <div class="auth__field">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+          <small class="auth__hint auth__hint--error">{{ field.errors.0 }}</small>
+        {% endif %}
+      </div>
+    {% endfor %}
+
+    {# next = kirishdan oldin qaysi sahifaga borayotgan edi #}
+    {% if request.GET.next %}
+      <input type="hidden" name="next" value="{{ request.GET.next }}">
+    {% endif %}
+
+    {# Ikkala tugma BIR QATORDA #}
+    <div class="auth__actions">
+      <button class="auth__btn auth__btn--dark" type="submit">Kirish</button>
+      <a class="auth__btn auth__btn--light" href="{% url 'music:signup' %}">Ro'yxatdan o'tish</a>
+    </div>
+  </form>
+
+  {% include 'music/partials/_google_button.html' %}
+{% endblock %}

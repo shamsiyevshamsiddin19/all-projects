@@ -1,0 +1,197 @@
+{# KONTEKST: album, songs, other_albums, total_minutes                #}
+{# song: .track_number .title .duration_display .preview_url          #}
+{% extends 'music/base.html' %}
+
+{% block title %}{{ album.title }}{% endblock %}
+
+{# ---------- TEPADAGI BLOK: muqova + ma'lumot -------------------- #}
+{% block hero %}
+<section class="album-head">
+  {# Orqa fonda muqovaning xiralashtirilgan nusxasi — rangni beradi #}
+  {% if album.cover %}
+    <div class="album-head__bg" style="background-image:url('{{ album.cover.url }}')"></div>
+  {% endif %}
+
+  <div class="wrap album-head__inner">
+    <div class="album-head__cover">
+      {% if album.cover %}
+        <img src="{{ album.cover.url }}" alt="{{ album.title }} muqovasi">
+      {% else %}
+        <div class="card__blank">{{ album.title|first|upper }}</div>
+      {% endif %}
+    </div>
+
+    <div class="album-head__info">
+      <p class="album-head__kicker">Albom</p>
+      <h1>{{ album.title }}</h1>
+      <p class="album-head__by">
+        <a href="{{ album.artist.get_absolute_url }}">{{ album.artist.name }}</a>
+      </p>
+
+      <div class="album-head__facts">
+        {% if album.release_date %}
+          <span class="pill">{{ album.release_date|date:"Y" }}</span>
+        {% endif %}
+        <span class="pill">{{ songs|length }} ta qo'shiq</span>
+        {% if total_minutes %}
+          <span class="pill">{{ total_minutes }} daqiqa</span>
+        {% endif %}
+        {% for janr in album.genres.all %}
+          <span class="pill pill--accent">{{ janr.name }}</span>
+        {% endfor %}
+        {% if album.source != 'manual' %}
+          <span class="pill">{{ album.get_source_display }}</span>
+        {% endif %}
+      </div>
+
+      <div class="album-head__actions">
+        <a href="{% url 'music:song_create' album.pk %}" class="btn btn--primary">
+          + Qo'shiq biriktirish
+        </a>
+        {% if album.external_url %}
+          <a href="{{ album.external_url }}" target="_blank" rel="noopener"
+             class="btn btn--ghost">{{ album.get_source_display }}'da ochish</a>
+        {% endif %}
+        <a href="{{ album.artist.get_absolute_url }}" class="btn btn--ghost">Ijrochi sahifasi</a>
+        <a href="{% url 'music:album_update' album.pk %}" class="btn btn--ghost">Tahrirlash</a>
+        <a href="{% url 'music:album_delete' album.pk %}" class="btn btn--danger-ghost">O'chirish</a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+
+{% block content %}
+<div class="wrap">
+  <section class="section">
+    <div class="cols">
+
+      {# ---------- QO'SHIQLAR RO'YXATI ------------------------- #}
+      <div>
+        <h2 class="section-title">
+          Qo'shiqlar <b>ro'yxati</b>
+          <span class="more">{{ songs|length }} ta</span>
+        </h2>
+
+        {% if songs %}
+          <table class="tracks">
+            <tbody>
+              {% for song in songs %}
+                <tr>
+                  <td class="tracks__no">{{ song.track_number }}</td>
+                  <td class="tracks__btn">
+                    {# data-* atributlari — JS shu yerdan ma'lumot oladi.   #}
+                    {# preview_url bo'lmasa tugma o'chirilgan holda turadi. #}
+                    {% if song.preview_url %}
+                      <button class="play" type="button"
+                              data-preview="{{ song.preview_url }}"
+                              data-title="{{ song.title }}"
+                              data-artist="{{ album.artist.name }}"
+                              {% if album.cover %}data-cover="{{ album.cover.url }}"{% endif %}
+                              aria-label="{{ song.title }} namunasini chalish">&#9654;</button>
+                    {% else %}
+                      <button class="play" type="button" disabled
+                              title="Bu qo'shiq uchun namuna yo'q">&#9654;</button>
+                    {% endif %}
+                  </td>
+                  <td class="tracks__title">{{ song.title }}</td>
+                  <td class="tracks__time">{{ song.duration_display|default:"&mdash;" }}</td>
+                  {% comment %}
+                    Amallar faqat qatorga sichqoncha olib borilganda ko'rinadi
+                    (CSS: .tracks tr:hover .row-actions). Shunda ro'yxat
+                    tartibli qoladi, lekin amallar bir bosishda qo'l ostida.
+                  {% endcomment %}
+                  <td class="tracks__actions">
+                    <span class="row-actions">
+                      <a href="{% url 'music:song_update' song.pk %}" title="Tahrirlash" aria-label="Tahrirlash">
+                        <svg viewBox="0 0 24 24"><path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="M14.5 5.5l4 4"/></svg>
+                      </a>
+                      <a href="{% url 'music:song_delete' song.pk %}" class="is-danger" title="O'chirish" aria-label="O'chirish">
+                        <svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9.5 7V5.5A1.5 1.5 0 0 1 11 4h2a1.5 1.5 0 0 1 1.5 1.5V7"/><path d="M6.5 7l.8 12a2 2 0 0 0 2 1.9h5.4a2 2 0 0 0 2-1.9l.8-12"/></svg>
+                      </a>
+                    </span>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <div class="empty">
+            <div class="empty__icon">&#9834;</div>
+            <h3>Qo'shiq yo'q</h3>
+            <p>Bu albomga hali birorta qo'shiq biriktirilmagan.</p>
+            <a href="{% url 'music:song_create' album.pk %}" class="btn btn--primary">
+              Birinchi qo'shiqni qo'shish
+            </a>
+          </div>
+        {% endif %}
+      </div>
+
+      {# ---------- O'NG USTUN --------------------------------- #}
+      <div>
+        {% if album.embed_url %}
+          <h2 class="section-title">Tinglash</h2>
+          <div class="panel panel--flush" style="margin-bottom:26px">
+            {# iframe = boshqa saytning pleyerini shu yerga joylaydi.    #}
+            {# To'liq qo'shiqni faqat shu yo'l bilan eshitish mumkin —   #}
+            {# API audio fayl bermaydi.                                  #}
+            <iframe src="{{ album.embed_url }}"
+                    width="100%" height="300" frameborder="0"
+                    allow="encrypted-media; clipboard-write"
+                    title="{{ album.title }} pleyeri"
+                    style="display:block;border:0"></iframe>
+          </div>
+        {% endif %}
+
+        <div class="panel">
+          <h3>Albom haqida</h3>
+          <table style="width:100%;font-size:13.5px;color:var(--muted)">
+            <tr>
+              <td style="padding:7px 0">Ijrochi</td>
+              <td style="text-align:right;color:var(--text)">
+                <a href="{{ album.artist.get_absolute_url }}">{{ album.artist.name }}</a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:7px 0">Chiqqan sana</td>
+              <td style="text-align:right;color:var(--text)">
+                {{ album.release_date|date:"d.m.Y"|default:"—" }}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:7px 0">Qo'shiqlar</td>
+              <td style="text-align:right;color:var(--text)">{{ songs|length }}</td>
+            </tr>
+            <tr>
+              <td style="padding:7px 0">Manba</td>
+              <td style="text-align:right;color:var(--text)">{{ album.get_source_display }}</td>
+            </tr>
+            <tr>
+              <td style="padding:7px 0">Bazaga qo'shildi</td>
+              <td style="text-align:right;color:var(--text)">{{ album.created_at|date:"d.m.Y" }}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  {# ---------- SHU IJROCHINING BOSHQA ALBOMLARI ---------------- #}
+  {% if other_albums %}
+    <section class="section">
+      <h2 class="section-title">
+        {{ album.artist.name }} &mdash; <b>boshqa albomlari</b>
+        <a class="more" href="{{ album.artist.get_absolute_url }}">Hammasi &rarr;</a>
+      </h2>
+      <div class="grid">
+        {% for album in other_albums %}
+          {% include 'music/partials/_album_card.html' %}
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+</div>
+{% endblock %}

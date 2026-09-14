@@ -1,0 +1,54 @@
+{# KONTEKST: form (SongForm), album                                  #}
+{% extends 'music/base.html' %}
+
+{% block title %}{{ album.title }} — qo'shiq qo'shish{% endblock %}
+
+{% block content %}
+<div class="wrap section">
+  <div class="form-card">
+
+    {# Qaysi albomga qo'shayotganini ko'rsatib turamiz — adashmaslik uchun #}
+    <div style="display:flex;gap:15px;align-items:center;margin-bottom:24px;
+                padding-bottom:20px;border-bottom:1px solid var(--line)">
+      {% if album.cover %}
+        <img src="{{ album.cover.url }}" alt=""
+             style="width:56px;height:56px;border-radius:10px;object-fit:cover">
+      {% endif %}
+      <div>
+        <div style="font-size:11.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted)">
+          {% if object %}Tahrirlanmoqda{% else %}Albomga biriktirilmoqda{% endif %}
+        </div>
+        <div style="font-weight:600">{{ album.title }}</div>
+        <div style="font-size:13px;color:var(--muted)">{{ album.artist.name }}</div>
+      </div>
+    </div>
+
+    <h1>{% if object %}Qo'shiqni tahrirlash{% else %}Qo'shiq qo'shish{% endif %}</h1>
+    <p class="lead">
+      Trek raqami avtomatik to'ldirilgan. Davomiylik millisekundda
+      (masalan 3:35 = 215000). Bilmasangiz bo'sh qoldiring.
+    </p>
+
+    <form method="post">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <ul class="errorlist">
+          {% for xato in form.non_field_errors %}<li>{{ xato }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+
+      {% include 'music/partials/_form_fields.html' %}
+
+      <div class="form-actions">
+        <button class="btn btn--primary" type="submit">Saqlash</button>
+        <a href="{{ album.get_absolute_url }}" class="btn btn--ghost">Albomga qaytish</a>
+        {% if object %}
+          <a href="{% url 'music:song_delete' object.pk %}"
+             class="btn btn--danger-ghost" style="margin-left:auto">O'chirish</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
