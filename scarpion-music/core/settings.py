@@ -60,6 +60,14 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # Butun saytga kirish uchun login TALAB qiladi.
+    # AuthenticationMiddleware dan KEYIN turishi shart — u request.user
+    # ni to'ldiradi, bu esa o'shani tekshiradi.
+    # Istisnolar @login_not_required bilan belgilanadi (urls.py, views.py).
+    #
+    # Django niki emas, o'zimizniki: farqi shundaki, "qayerga bormoqchi
+    # edingiz" ma'lumotini manzilga (?next=...) emas, sessiyaga yozadi.
+    'music.middleware.KirishTalabMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -169,18 +177,16 @@ AUDIODB_KEY = os.environ.get('AUDIODB_KEY', '')
 # https://docs.djangoproject.com/en/6.1/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
+    # Django nikidan meros olingan, faqat xabarlari o'zbekcha.
+    # Sababi: Django ning o'zbekcha tarjima to'plamida aynan parol
+    # xabarlari yo'q, LANGUAGE_CODE='uz' bo'lsa ham inglizcha chiqadi.
+    {'NAME': 'music.password_validators.OxshashlikTekshiruvchi'},
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        'NAME': 'music.password_validators.UzunlikTekshiruvchi',
+        'OPTIONS': {'min_length': 8},
     },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'music.password_validators.OddiyParolTekshiruvchi'},
+    {'NAME': 'music.password_validators.RaqamliParolTekshiruvchi'},
 ]
 
 

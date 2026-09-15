@@ -1768,6 +1768,21 @@ body.has-player { padding-bottom: 76px; }
   color: rgba(255, 255, 255, .82);
 }
 
+/* ---- Kirish sahifasidagi xabarlar ---- */
+.auth__messages { margin-bottom: 20px; }
+.auth__message {
+  padding: 11px 18px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  background: rgba(36, 27, 51, .8);
+  border-left: 3px solid rgba(255, 255, 255, .5);
+  color: #fff;
+  font-size: 13.5px;
+}
+.auth__message--success { border-left-color: #6ee7b7; }
+.auth__message--error   { border-left-color: #ff8095; }
+.auth__message--info    { border-left-color: #ffc4e2; }
+
 /* ---- Maydonlar ---- */
 .auth__field { margin-bottom: 16px; }
 .auth__field label {

@@ -89,6 +89,21 @@ Tuzilishi (orqadan oldinga):
 
     {# ---- O'ngdagi forma ---- #}
     <div class="auth__panel">
+
+      {% comment %}
+        Xabarlar SHU YERDA ham chizilishi shart.
+        Busiz "Tizimdan chiqdingiz" kabi xabar hech kim ko'rmagan
+        holda sessiyada qolib ketadi va keyingi sahifada, butunlay
+        boshqa xabar bilan birga chiqib qoladi.
+      {% endcomment %}
+      {% if messages %}
+        <div class="auth__messages">
+          {% for message in messages %}
+            <div class="auth__message auth__message--{{ message.tags }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
       {% block auth_content %}{% endblock %}
     </div>
 

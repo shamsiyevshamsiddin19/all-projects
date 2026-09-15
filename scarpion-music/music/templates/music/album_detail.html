@@ -44,17 +44,27 @@
         {% endif %}
       </div>
 
+      {% comment %}
+        ozgartira_oladi — views.py dan keladi: egasi yoki administrator
+        bo'lsa True. Begona odamga tahrirlash tugmalari umuman
+        ko'rsatilmaydi. Server tomonda ham alohida tekshiriladi —
+        tugmani yashirish o'zi himoya emas.
+      {% endcomment %}
       <div class="album-head__actions">
-        <a href="{% url 'music:song_create' album.pk %}" class="btn btn--primary">
-          + Qo'shiq biriktirish
-        </a>
+        {% if ozgartira_oladi %}
+          <a href="{% url 'music:song_create' album.pk %}" class="btn btn--primary">
+            + Qo'shiq biriktirish
+          </a>
+        {% endif %}
         {% if album.external_url %}
           <a href="{{ album.external_url }}" target="_blank" rel="noopener"
              class="btn btn--ghost">{{ album.get_source_display }}'da ochish</a>
         {% endif %}
         <a href="{{ album.artist.get_absolute_url }}" class="btn btn--ghost">Ijrochi sahifasi</a>
-        <a href="{% url 'music:album_update' album.pk %}" class="btn btn--ghost">Tahrirlash</a>
-        <a href="{% url 'music:album_delete' album.pk %}" class="btn btn--danger-ghost">O'chirish</a>
+        {% if ozgartira_oladi %}
+          <a href="{% url 'music:album_update' album.pk %}" class="btn btn--ghost">Tahrirlash</a>
+          <a href="{% url 'music:album_delete' album.pk %}" class="btn btn--danger-ghost">O'chirish</a>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -103,6 +113,7 @@
                     tartibli qoladi, lekin amallar bir bosishda qo'l ostida.
                   {% endcomment %}
                   <td class="tracks__actions">
+                    {% if ozgartira_oladi %}
                     <span class="row-actions">
                       <a href="{% url 'music:song_update' song.pk %}" title="Tahrirlash" aria-label="Tahrirlash">
                         <svg viewBox="0 0 24 24"><path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="M14.5 5.5l4 4"/></svg>
@@ -111,6 +122,7 @@
                         <svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9.5 7V5.5A1.5 1.5 0 0 1 11 4h2a1.5 1.5 0 0 1 1.5 1.5V7"/><path d="M6.5 7l.8 12a2 2 0 0 0 2 1.9h5.4a2 2 0 0 0 2-1.9l.8-12"/></svg>
                       </a>
                     </span>
+                    {% endif %}
                   </td>
                 </tr>
               {% endfor %}
@@ -121,9 +133,11 @@
             <div class="empty__icon">&#9834;</div>
             <h3>Qo'shiq yo'q</h3>
             <p>Bu albomga hali birorta qo'shiq biriktirilmagan.</p>
-            <a href="{% url 'music:song_create' album.pk %}" class="btn btn--primary">
-              Birinchi qo'shiqni qo'shish
-            </a>
+            {% if ozgartira_oladi %}
+              <a href="{% url 'music:song_create' album.pk %}" class="btn btn--primary">
+                Birinchi qo'shiqni qo'shish
+              </a>
+            {% endif %}
           </div>
         {% endif %}
       </div>
@@ -162,6 +176,12 @@
             <tr>
               <td style="padding:7px 0">Qo'shiqlar</td>
               <td style="text-align:right;color:var(--text)">{{ songs|length }}</td>
+            </tr>
+            <tr>
+              <td style="padding:7px 0">Qo'shgan</td>
+              <td style="text-align:right;color:var(--text)">
+                {{ album.owner.username|default:"—" }}
+              </td>
             </tr>
             <tr>
               <td style="padding:7px 0">Manba</td>

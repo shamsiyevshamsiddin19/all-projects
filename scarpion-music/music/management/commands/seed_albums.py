@@ -187,6 +187,12 @@ class Command(BaseCommand):
         return None
 
     def handle(self, *args, **options):
+        # Terminaldan qo'shilgan albomlar birinchi administratorga
+        # tegishli bo'lsin — aks holda egasiz qolib, ularni faqat
+        # admin panel orqali boshqarish mumkin bo'lardi.
+        from django.contrib.auth.models import User
+        egasi = User.objects.filter(is_superuser=True).order_by('id').first()
+
         client = get_client()
         royxat = ALBOMLAR[:options['limit']] if options['limit'] else ALBOMLAR
 
@@ -211,7 +217,9 @@ class Command(BaseCommand):
                     self.stdout.write(f'  =  {nom}  — allaqachon bor')
                     continue
 
-                obj, yangi = import_album(tanlangan['external_id'], client=client)
+                obj, yangi = import_album(
+                    tanlangan['external_id'], client=client, owner=egasi
+                )
                 qoshildi += 1
                 self.stdout.write(self.style.SUCCESS(
                     f"  +  {obj}  ({obj.songs.count()} ta qo'shiq)"

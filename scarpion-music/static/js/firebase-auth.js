@@ -1,48 +1,48 @@
 /* =================================================================
    Google orqali kirish (Firebase)
 
-   Bu fayl <script type="module"> sifatida yuklanadi — shuning uchun
-   ichida import ishlatsa bo'ladi. Firebase SDK Google'ning CDN sidan
-   keladi, loyihaga yuklab olinmaydi.
+   NEGA POPUP EMAS, YO'NALTIRISH?
+     Avval signInWithPopup ishlatilgandi. U shunday ishlaydi:
+       1. Kichik oyna ochiladi
+       2. Google da akkaunt tanlanadi
+       3. Oyna ASOSIY SAHIFAGA xabar yuboradi (postMessage)
+       4. Oyna yopiladi
 
-   Oqim:
-     1. "Google bilan kirish" bosiladi
-     2. Google oynasi ochiladi (signInWithPopup)
-     3. Google ID token beradi
-     4. Tokenni serverga yuboramiz (/google-kirish/)
-     5. Server uni TEKSHIRADI va sessiya ochadi
-     6. Bosh sahifaga o'tamiz
+     3-qadam ko'p brauzerlarda buziladi: Chrome uchinchi tomon
+     saqlash va oynalararo aloqani cheklaydi. Natijada oyna oq
+     bo'lib yopiladi, asosiy sahifa esa hech narsa olmaydi.
 
-   MUHIM: token brauzerda tekshirilmaydi. Brauzerdagi har qanday
-   tekshiruvni chetlab o'tish mumkin — haqiqiy tekshiruv serverda
-   (views.py dagi google_login).
+     signInWithRedirect da oyna umuman yo'q: butun sahifa Google ga
+     o'tadi, keyin o'zimizga qaytadi. Oynalararo aloqa kerak emas,
+     shuning uchun ancha ishonchli.
+
+   MUHIM: token brauzerda tekshirilmaydi. Haqiqiy tekshiruv
+   serverda — views.py dagi google_login.
    ================================================================= */
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {
   getAuth,
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
 const tugma = document.querySelector('[data-google-login]');
+
 if (tugma) {
-  // Sozlamalar shablondan keladi (context_processors.py -> firebase_config)
+  const xatoJoyi = document.querySelector('[data-google-error]');
   const config = JSON.parse(
     document.getElementById('firebase-config').textContent
   );
 
   const app = initializeApp(config);
   const auth = getAuth(app);
-  auth.useDeviceLanguage();          // Google oynasi brauzer tilida chiqadi
+  auth.useDeviceLanguage();
 
   const provider = new GoogleAuthProvider();
-  // Har safar akkaunt tanlash oynasi chiqsin — bitta brauzerda
-  // bir nechta Google akkaunti bo'lishi mumkin.
   provider.setCustomParameters({ prompt: 'select_account' });
-
-  const xatoJoyi = document.querySelector('[data-google-error]');
 
   function xatoKorsat(matn) {
     if (xatoJoyi) {
@@ -53,60 +53,88 @@ if (tugma) {
     tugma.classList.remove('is-loading');
   }
 
-  tugma.addEventListener('click', async () => {
-    if (xatoJoyi) xatoJoyi.hidden = true;
-    tugma.disabled = true;
-    tugma.classList.add('is-loading');
+  function kutish(yoq) {
+    tugma.disabled = yoq;
+    tugma.classList.toggle('is-loading', yoq);
+  }
 
-    let token;
+  /* Firebase xato kodini o'zbekcha izohga aylantiradi */
+  function izoh(e) {
+    const kod = e && e.code ? e.code : '';
+    if (kod === 'auth/unauthorized-domain') {
+      return 'Bu manzil Firebase da ruxsat etilmagan. Konsolda ' +
+             'Authentication -> Settings -> Authorized domains ga qo\'shing.';
+    }
+    if (kod === 'auth/operation-not-allowed') {
+      return 'Firebase konsolida Google usuli yoqilmagan.';
+    }
+    if (kod === 'auth/network-request-failed') {
+      return 'Internet bilan aloqa yo\'q.';
+    }
+    if (kod === 'auth/web-storage-unsupported') {
+      return 'Brauzer saqlashga ruxsat bermayapti. Cookie larni yoqing ' +
+             'yoki yashirin rejimdan chiqing.';
+    }
+    // Noma'lum xatoda kodning o'zini ko'rsatamiz — shunda uni
+    // izlash yoki aytib berish mumkin bo'ladi.
+    return 'Google bilan kirib bo\'lmadi: ' + (kod || e.message || 'noma\'lum xato');
+  }
+
+  /* Tokenni serverga yuboradi. Server uni tekshirib sessiya ochadi. */
+  async function tokenniYubor(token) {
+    const forma = new FormData();
+    forma.append('id_token', token);
+    forma.append('csrfmiddlewaretoken', tugma.dataset.csrf);
+
+    const javob = await fetch(tugma.dataset.googleLoginUrl, {
+      method: 'POST',
+      body: forma,
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    });
+    const natija = await javob.json();
+
+    if (natija.ok) {
+      // Firebase sessiyasi endi kerak emas — Django sessiyasi ochildi
+      signOut(auth).catch(() => {});
+      window.location = natija.keyingi || '/';
+    } else {
+      xatoKorsat(natija.xato || 'Server tokenni qabul qilmadi.');
+    }
+  }
+
+  /* --------------------------------------------------------------
+     1-QISM: Google dan qaytganimizda
+     Sahifa har yuklanganda tekshiramiz — yo'naltirishdan keyin
+     natija shu yerda kutib turadi.
+     -------------------------------------------------------------- */
+  (async function qaytganNatija() {
+    kutish(true);
     try {
-      const natija = await signInWithPopup(auth, provider);
-      token = await natija.user.getIdToken();
+      const natija = await getRedirectResult(auth);
+      if (natija && natija.user) {
+        const token = await natija.user.getIdToken();
+        await tokenniYubor(token);
+        return;               // sahifa almashadi, tugmani tiklamaymiz
+      }
     } catch (e) {
-      // Foydalanuvchi oynani yopdi — bu xato emas, jim qolamiz
-      if (e.code === 'auth/popup-closed-by-user' ||
-          e.code === 'auth/cancelled-popup-request') {
-        tugma.disabled = false;
-        tugma.classList.remove('is-loading');
-        return;
-      }
-      if (e.code === 'auth/unauthorized-domain') {
-        xatoKorsat('Bu manzil Firebase da ruxsat etilmagan. ' +
-                   'Konsolda Authorized domains ga qo\'shing.');
-        return;
-      }
-      if (e.code === 'auth/operation-not-allowed') {
-        xatoKorsat('Firebase konsolida Google usuli yoqilmagan.');
-        return;
-      }
-      xatoKorsat('Google bilan kirib bo\'lmadi: ' + (e.code || e.message));
+      xatoKorsat(izoh(e));
       return;
     }
+    kutish(false);            // natija yo'q — oddiy holat, tugma tayyor
+  })();
 
-    // Tokenni serverga yuboramiz
+  /* --------------------------------------------------------------
+     2-QISM: Tugma bosilganda
+     Butun sahifa Google ga o'tadi. Qaytganda 1-qism ushlab oladi.
+     -------------------------------------------------------------- */
+  tugma.addEventListener('click', async () => {
+    if (xatoJoyi) xatoJoyi.hidden = true;
+    kutish(true);
     try {
-      const forma = new FormData();
-      forma.append('id_token', token);
-      forma.append('csrfmiddlewaretoken', tugma.dataset.csrf);
-
-      // data-google-login-url  ->  dataset.googleLoginUrl
-      const javob = await fetch(tugma.dataset.googleLoginUrl, {
-        method: 'POST',
-        body: forma,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-      });
-      const natija = await javob.json();
-
-      if (natija.ok) {
-        // Firebase sessiyasi endi kerak emas — bizning Django
-        // sessiyamiz ochildi. Brauzerda ortiqcha holat qoldirmaymiz.
-        signOut(auth).catch(() => {});
-        window.location = natija.keyingi || '/';
-      } else {
-        xatoKorsat(natija.xato || 'Server tokenni qabul qilmadi.');
-      }
+      await signInWithRedirect(auth, provider);
+      // Bu yerga yetib kelmaydi — brauzer allaqachon Google ga ketgan
     } catch (e) {
-      xatoKorsat('Serverga ulanib bo\'lmadi.');
+      xatoKorsat(izoh(e));
     }
   });
 }

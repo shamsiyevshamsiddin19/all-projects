@@ -27,11 +27,6 @@
       </div>
     {% endfor %}
 
-    {# next = kirishdan oldin qaysi sahifaga borayotgan edi #}
-    {% if request.GET.next %}
-      <input type="hidden" name="next" value="{{ request.GET.next }}">
-    {% endif %}
-
     {# Ikkala tugma BIR QATORDA #}
     <div class="auth__actions">
       <button class="auth__btn auth__btn--dark" type="submit">Kirish</button>

@@ -1,7 +1,7 @@
 # Fayl arxitekturasi
 
 SCARPION Music loyihasidagi har bir faylning vazifasi.
-Qator sonlari 2026-yil 14-sentabr holatiga ko'ra.
+Qator sonlari 2026-yil 15-sentabr holatiga ko'ra.
 
 ---
 
@@ -9,16 +9,95 @@ Qator sonlari 2026-yil 14-sentabr holatiga ko'ra.
 
 ```
 alboms/
-├── manage.py              Django buyruqlarini ishga tushiruvchi
-├── requirements.txt       kutubxonalar ro'yxati
-├── .env                   maxfiy sozlamalar (git'ga TUSHMAYDI)
-├── .env.example           .env uchun namuna (git'da bor)
-├── db.sqlite3             baza (git'ga tushmaydi)
 │
-├── core/                  loyiha sozlamalari
-├── music/                 asosiy ilova — butun mantiq shu yerda
-├── static/                CSS va JS
-└── media/                 yuklab olingan rasmlar (git'ga tushmaydi)
+├── manage.py                            22  Django buyruqlarini ishga tushiruvchi
+├── requirements.txt                     15  kutubxonalar ro'yxati
+├── ishga-tushir.ps1                    306  Windows uchun: hammasini o'rnatib ishga tushiradi
+├── README.md                           385  o'rnatish va ishlatish yo'riqnomasi
+├── ARXITEKTURA.md                      358  shu fayl
+├── .env                                     maxfiy sozlamalar — git'ga TUSHMAYDI
+├── .env.example                         45  .env uchun namuna (git'da bor)
+├── .gitignore                           14  git nimalarni e'tiborsiz qoldirishi
+├── db.sqlite3                               baza — git'ga tushmaydi
+│
+├── .vscode/                                 VS Code sozlamalari (F5 bilan ishga tushirish)
+│   ├── launch.json                      39  uchta tayyor konfiguratsiya
+│   └── settings.json                    23  shablonlarni django-html deb tanish
+│
+├── core/                                    LOYIHA KARKASI
+│   ├── settings.py                     229  barcha sozlamalar, .env dan o'qiydi
+│   ├── urls.py                          40  /admin/ va qolganini music.urls ga uzatadi
+│   ├── wsgi.py                          16  serverga ulanish nuqtasi
+│   ├── asgi.py                          16  asinxron ulanish nuqtasi
+│   └── __init__.py                       0  papkani Python moduli qiladi
+│
+├── music/                                   ASOSIY ILOVA — butun mantiq shu yerda
+│   │
+│   ├── models.py                       447  4 ta model: Genre, Artist, Album, Song
+│   ├── views.py                        819  sahifalar mantiqi + egalik tekshiruvi
+│   ├── urls.py                          69  manzil -> view bog'lanishi
+│   ├── forms.py                        206  albom/ijrochi/qo'shiq + kirish/ro'yxat formalari
+│   ├── admin.py                         82  admin panel sozlamalari
+│   ├── apps.py                           5  ilova nomi
+│   ├── middleware.py                    44  saytga kirish uchun login talab qiladi
+│   ├── auth_backends.py                 45  e-pochta bilan ham kirish
+│   ├── password_validators.py           92  parol qoidalari, o'zbekcha xabarlar
+│   ├── context_processors.py            51  har sahifaga: janrlar, statistika, Firebase
+│   │
+│   ├── services/                            TASHQI XIZMATLAR
+│   │   ├── deezer.py                   144  Deezer API — kalitsiz, asosiy manba
+│   │   ├── spotify.py                  181  Spotify API — bir xil interfeys, zaxira
+│   │   ├── providers.py                 58  qaysi xizmat ishlashini hal qiladi
+│   │   ├── artwork.py                   91  TheAudioDB — ijrochi rasmlari
+│   │   ├── importers.py                279  API dict -> Django modellari (tarjimon)
+│   │   └── __init__.py                   0
+│   │
+│   ├── management/commands/                 TERMINAL BUYRUQLARI
+│   │   ├── seed_albums.py              247  bazani mashhur albomlar bilan to'ldiradi
+│   │   ├── import_album.py              67  bitta albomni import qiladi
+│   │   ├── fetch_artist_art.py          78  ijrochi rasmlarini oladi
+│   │   └── __init__.py                   0
+│   │
+│   ├── migrations/                          BAZA O'ZGARISHLARI TARIXI
+│   │   ├── 0001_initial.py              88  dastlabki 4 ta jadval
+│   │   ├── 0002_..._spotify_id_...py    72  spotify_id -> source + external_id
+│   │   ├── 0003_artist_banner_...py     23  Artist.cutout va Artist.banner
+│   │   ├── 0004_album_owner_...py       26  owner maydoni (kim qo'shgan)
+│   │   ├── 0005_egasiz_...py            54  mavjud yozuvlarni adminga biriktiradi
+│   │   └── __init__.py                   0
+│   │
+│   └── templates/music/                     SAHIFALAR
+│       ├── base.html                   220  BARCHA sahifalarning asosi
+│       ├── album_list.html             239  bosh sahifa: slayder, grid, jadval
+│       ├── album_detail.html           217  albom: qo'shiqlar, pleyer, ma'lumot
+│       ├── artist_list.html             73  ijrochilar katalogi
+│       ├── artist_detail.html           73  ijrochi va uning albomlari
+│       ├── album_form.html              52  albom qo'shish VA tahrirlash
+│       ├── artist_form.html             43  ijrochi qo'shish va tahrirlash
+│       ├── song_form.html               54  qo'shiq qo'shish va tahrirlash
+│       ├── confirm_delete.html          39  o'chirishni tasdiqlash (3 model uchun bitta)
+│       ├── import.html                 110  katalogdan albom qidirish
+│       │
+│       ├── auth_base.html              114  kirish sahifalari qobig'i (base.html dan MEROS OLMAYDI)
+│       ├── login.html                   38  kirish formasi
+│       ├── signup.html                  38  ro'yxatdan o'tish formasi
+│       │
+│       └── partials/                         QAYTA ISHLATILADIGAN BO'LAKLAR
+│           ├── _album_card.html         47  bitta albom kartasi — 4 joyda
+│           ├── _form_fields.html        47  forma maydonlari (form.as_p o'rniga)
+│           └── _google_button.html      36  "Google bilan kirish" + Firebase SDK
+│
+├── static/                                  BRAUZER FAYLLARI
+│   ├── css/style.css                  1953  BUTUN DIZAYN — 15 ta raqamlangan bo'lim
+│   └── js/
+│       ├── app.js                      436  menyu, slayder, pleyer, avtoto'ldirish
+│       └── firebase-auth.js            140  Google orqali kirish
+│
+└── media/                                   YUKLAB OLINGAN RASMLAR — git'ga tushmaydi
+    ├── covers/                          65  albom muqovalari
+    └── artists/                         37  ijrochi portretlari
+        ├── cutouts/                     35  foni kesilgan PNG — hero uchun
+        └── banners/                     37  keng suratlar — hero foni
 ```
 
 **Asosiy qoida:** `core/` — loyihaning "karkasi", `music/` — uning
@@ -30,8 +109,8 @@ alboms/
 
 | Fayl | Qator | Vazifasi |
 |---|---|---|
-| `settings.py` | 192 | Barcha sozlamalar: baza, ilovalar, shablon yo'llari, statik/media papkalari, `.env` dan o'qiladigan kalitlar (`MUSIC_PROVIDER`, `SPOTIFY_*`, `AUDIODB_KEY`), SQLite `timeout` |
-| `urls.py` | 32 | Eng yuqori manzillar: `/admin/` va qolgan hammasini `music.urls` ga uzatadi. DEBUG rejimda media fayllarni ham tarqatadi |
+| `settings.py` | 229 | Barcha sozlamalar: baza, ilovalar, shablon yo'llari, statik/media papkalari, `.env` dan o'qiladigan kalitlar (`MUSIC_PROVIDER`, `SPOTIFY_*`, `AUDIODB_KEY`), SQLite `timeout` |
+| `urls.py` | 69 | Eng yuqori manzillar: `/admin/` va qolgan hammasini `music.urls` ga uzatadi. DEBUG rejimda media fayllarni ham tarqatadi |
 | `wsgi.py` / `asgi.py` | 16+16 | Serverga ulanish nuqtalari. Django o'zi yaratgan, qo'l tegilmagan |
 | `__init__.py` | 0 | Papkani Python moduliga aylantiradi |
 
@@ -43,10 +122,12 @@ alboms/
 
 | Fayl | Qator | Vazifasi |
 |---|---|---|
-| `models.py` | 412 | **4 ta model + 1 ta ro'yxat.** `Source` (manba turlari), `Genre`, `Artist`, `Album`, `Song`. Bazadagi jadvallar shu yerdan tug'iladi |
+| `models.py` | 447 | **4 ta model + 1 ta ro'yxat.** `Source` (manba turlari), `Genre`, `Artist`, `Album`, `Song`. Bazadagi jadvallar shu yerdan tug'iladi |
 | `migrations/0001_initial.py` | 88 | Dastlabki 4 ta jadval |
 | `migrations/0002_...spotify_id...` | 72 | `spotify_id` → `source` + `external_id`, `Song.preview_url` qo'shildi |
 | `migrations/0003_artist_banner_cutout.py` | 23 | `Artist.cutout` va `Artist.banner` qo'shildi |
+| `migrations/0004_album_owner_artist_owner.py` | — | `owner` maydoni (kim qo'shgan) |
+| `migrations/0005_egasiz_yozuvlarni_adminga_berish.py` | 54 | Mavjud yozuvlarni administratorga biriktiradi |
 
 **`models.py` ichidagi muhim qismlar:**
 
@@ -60,14 +141,18 @@ alboms/
 
 | Fayl | Qator | Vazifasi |
 |---|---|---|
-| `views.py` | 543 | **16 ta view** (14 ta klass + 2 ta funksiya) va 1 ta yordamchi. Har bir sahifa qanday ma'lumot olishi va qaysi shablonni ishlatishi |
-| `urls.py` | 61 | Manzil → view bog'lanishi. Tartib MUHIM (pastga qarang) |
-| `forms.py` | 84 | `ArtistForm`, `AlbumForm`, `SongForm` — maydonlar, yorliqlar va tekshiruvlar |
-| `context_processors.py` | 33 | HAR bir sahifaga avtomatik qo'shiladigan ma'lumot: footer janrlari va profil oynasidagi raqamlar |
+| `views.py` | 819 | **16 ta view** (14 ta klass + 2 ta funksiya) va 1 ta yordamchi. Har bir sahifa qanday ma'lumot olishi va qaysi shablonni ishlatishi |
+| `urls.py` | 69 | Manzil → view bog'lanishi. Tartib MUHIM (pastga qarang) |
+| `forms.py` | 206 | `ArtistForm`, `AlbumForm`, `SongForm` — maydonlar, yorliqlar va tekshiruvlar |
+| `context_processors.py` | 51 | HAR bir sahifaga avtomatik qo'shiladigan ma'lumot: footer janrlari va profil oynasidagi raqamlar |
 | `auth_backends.py` | 45 | E-pochta bilan ham kirish imkonini beradi. Django sukut bo'yicha faqat `username` ni qabul qiladi |
+| `middleware.py` | 44 | Saytga kirish uchun login talab qiladi. Django nikidan farqi — "qayerga bormoqchi edingiz" ni manzilga (`?next=`) emas, sessiyaga yozadi |
+
+**Sayt yopiq:** `LoginRequiredMiddleware` butun saytga kirish uchun login
+talab qiladi. Istisnolar `@login_not_required` bilan belgilangan —
+kirish, ro'yxatdan o'tish, Google kirish, chiqish va `/media/`.
 | `admin.py` | 82 | Django admin paneli sozlamalari (`SongInline` — albom ichida qo'shiqlar) |
 | `apps.py` | 5 | Ilova nomi |
-| `tests.py` | 3 | Bo'sh — testlar hali yozilmagan |
 
 **`views.py` tarkibi:**
 
@@ -113,7 +198,7 @@ API o'zgarsa, faqat shu ikki fayl o'zgaradi.
 | `spotify.py` | 181 | Spotify API. Aynan o'sha metodlar, aynan o'sha `dict` shakli. Hozir ishlamaydi (egasida Premium yo'q → 403) |
 | `providers.py` | 58 | Qaysi xizmat ishlashini hal qiladi. `.env` dagi `MUSIC_PROVIDER` ga qaraydi. Bitta qator o'zgarsa butun loyiha boshqa xizmatga o'tadi |
 | `artwork.py` | 91 | TheAudioDB — ijrochi rasmlari: `cutout` (foni kesilgan PNG), `fanart` (keng banner), `thumb` (portret) |
-| `importers.py` | 270 | **Tarjimon qatlami.** API `dict` ini Django modellariga aylantiradi. Rasm yuklaydi, albom nomini tozalaydi, qo'shiqlarni bitta so'rovda yozadi |
+| `importers.py` | 279 | **Tarjimon qatlami.** API `dict` ini Django modellariga aylantiradi. Rasm yuklaydi, albom nomini tozalaydi, qo'shiqlarni bitta so'rovda yozadi |
 
 **`importers.py` ichidagi muhim funksiyalar:**
 
@@ -128,7 +213,7 @@ API o'zgarsa, faqat shu ikki fayl o'zgaradi.
 
 | Fayl | Qator | Buyruq | Vazifasi |
 |---|---|---|---|
-| `seed_albums.py` | 239 | `seed_albums` | Bazani 60+ mashhur albom bilan to'ldiradi. Karaoke/tribute/jonli yozuvlarni filtrlaydi |
+| `seed_albums.py` | 247 | `seed_albums` | Bazani 60+ mashhur albom bilan to'ldiradi. Karaoke/tribute/jonli yozuvlarni filtrlaydi |
 | `import_album.py` | 67 | `import_album` | Bitta albomni ID yoki nom bo'yicha import qiladi |
 | `fetch_artist_art.py` | 78 | `fetch_artist_art` | Mavjud ijrochilarga TheAudioDB dan rasm qo'shadi |
 
@@ -136,22 +221,22 @@ API o'zgarsa, faqat shu ikki fayl o'zgaradi.
 
 | Fayl | Qator | Vazifasi |
 |---|---|---|
-| `base.html` | 219 | **Barcha sahifalarning asosi.** Header (menyu, qidiruv, profil oynasi), xabarlar, footer, pastdagi pleyer |
+| `base.html` | 220 | **Barcha sahifalarning asosi.** Header (menyu, qidiruv, profil oynasi), xabarlar, footer, pastdagi pleyer |
 | `album_list.html` | 239 | Bosh sahifa: hero slayderi (10 ta albom), "Top albomlar" qatori, janr chiplari, grid, jadval |
-| `album_detail.html` | 197 | Albom sahifasi: muqova, qo'shiqlar ro'yxati, Deezer pleyeri, "Albom haqida" jadvali |
+| `album_detail.html` | 217 | Albom sahifasi: muqova, qo'shiqlar ro'yxati, Deezer pleyeri, "Albom haqida" jadvali |
 | `artist_list.html` | 73 | Ijrochilar katalogi (dumaloq rasmlar) |
-| `artist_detail.html` | 71 | Ijrochi sahifasi va uning albomlari |
+| `artist_detail.html` | 73 | Ijrochi sahifasi va uning albomlari |
 | `album_form.html` | 52 | Albom qo'shish **va** tahrirlash (bitta shablon ikkalasiga) |
 | `artist_form.html` | 43 | Ijrochi qo'shish va tahrirlash |
 | `song_form.html` | 54 | Qo'shiq qo'shish va tahrirlash |
 | `confirm_delete.html` | 39 | O'chirishni tasdiqlash. Uchala model uchun ham bitta shablon |
 | `import.html` | 110 | Katalogdan qidirib albom qo'shish |
-| `partials/_album_card.html` | 45 | **Bitta albom kartasi.** 4 joyda ishlatiladi |
+| `partials/_album_card.html` | 47 | **Bitta albom kartasi.** 4 joyda ishlatiladi |
 | `partials/_form_fields.html` | 47 | Forma maydonlarini qo'lda chizadi (`{{ form.as_p }}` o'rniga) |
-| `auth_base.html` | 116 | Kirish/ro'yxat sahifalarining qobig'i: gradient fon, binolar siluetlari, uchuvchi notalar, dumaloq rasm. **`base.html` dan meros olmaydi** — menyu va footer kerak emas |
-| `login.html` | 43 | Kirish formasi |
-| `signup.html` | 42 | Ro'yxatdan o'tish formasi |
-| `partials/_google_button.html` | 38 | "Google bilan kirish" tugmasi + Firebase SDK ulanishi |
+| `auth_base.html` | 114 | Kirish/ro'yxat sahifalarining qobig'i: gradient fon, binolar siluetlari, uchuvchi notalar, dumaloq rasm. **`base.html` dan meros olmaydi** — menyu va footer kerak emas |
+| `login.html` | 38 | Kirish formasi |
+| `signup.html` | 38 | Ro'yxatdan o'tish formasi |
+| `partials/_google_button.html` | 36 | "Google bilan kirish" tugmasi + Firebase SDK ulanishi |
 
 **Nega `partials/`?** Albom kartasi to'rt joyda bir xil ko'rinadi.
 Bitta faylda saqlansa, o'zgartirish ham bitta joyda bo'ladi.
@@ -162,9 +247,9 @@ Bitta faylda saqlansa, o'zgartirish ham bitta joyda bo'ladi.
 
 | Fayl | Qator | Vazifasi |
 |---|---|---|
-| `css/style.css` | 1651 | **Butun dizayn.** 14 ta raqamlangan bo'lim |
+| `css/style.css` | 1953 | **Butun dizayn.** 14 ta raqamlangan bo'lim |
 | `js/app.js` | 436 | **Butun jonli qism.** Kutubxona ishlatilmagan, sof JavaScript |
-| `js/firebase-auth.js` | 116 | Google orqali kirish. `type="module"` bilan yuklanadi, Firebase SDK Google CDN sidan keladi |
+| `js/firebase-auth.js` | 140 | Google orqali kirish. `type="module"` bilan yuklanadi, Firebase SDK Google CDN sidan keladi |
 
 **`style.css` bo'limlari:**
 

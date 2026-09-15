@@ -264,6 +264,69 @@ Deezer'dagi "123" boshqa-boshqa narsa. `external_id` bo'sh bo'lsa cheklov
 ishlamaydi, shuning uchun qo'lda kiritilgan yozuvlarni istagancha qo'shish
 mumkin.
 
+## Kirish talab qilinadi
+
+Sayt **yopiq**: tizimga kirmagan odam faqat kirish va ro'yxatdan o'tish
+sahifalarini ko'radi, qolgan hamma manzil `/kirish/` ga yo'naltiriladi.
+
+Buni Django ning tayyor `LoginRequiredMiddleware` i bajaradi
+(`settings.py` dagi MIDDLEWARE ro'yxatida). Istisnolar
+`@login_not_required` bilan belgilangan:
+
+| Nima | Qayerda | Nega ochiq |
+|---|---|---|
+| `/kirish/` | `music/urls.py` | Aks holda cheksiz aylanma bo'lardi |
+| `/royxatdan-otish/` | `SignupView` | Yangi odam hali kirmagan |
+| `/google-kirish/` | `google_login()` | Kirish jarayonining bir qismi |
+| `/chiqish/` | `logout_view()` | Chiqayotgan odam uchun |
+| `/media/...` | `core/urls.py` | Rasmlar; static fayllar runserver tomonidan middleware dan oldin beriladi |
+
+Kirgandan keyin odam qaysi sahifaga bormoqchi bo'lgan bo'lsa,
+o'sha yerga qaytariladi.
+
+### Nega manzilda `?next=` yo'q
+
+Django ning tayyor `LoginRequiredMiddleware` i manzilga qo'shimcha
+yozadi: `/kirish/?next=/ijrochi/`. Ishlaydi, lekin manzil chiroyli emas.
+
+`music/middleware.py` dagi `KirishTalabMiddleware` xuddi shu ma'lumotni
+manzilga emas, **sessiyaga** yozadi. Natijada manzil toza `/kirish/`
+bo'ladi, xatti-harakat esa o'zgarmaydi.
+
+`KirishView.get_success_url()` uni sessiyadan o'qiydi. Manzilda
+qo'lda `?next=...` yozilsa — e'tiborga olinmaydi, ya'ni begona saytga
+yo'naltirish ("open redirect") imkoni yo'q.
+
+Faqat **GET** so'rovlar eslab qolinadi: POST ni kirgandan keyin qayta
+yuborib bo'lmaydi, shuning uchun bunday holda bosh sahifaga tushiladi.
+
+## Egalik — kim nimani o'zgartira oladi
+
+Har bir albom va ijrochida **egasi** bor (`owner`). Kim qo'shsa —
+o'sha ega bo'ladi.
+
+| Amal | Kim qila oladi |
+|---|---|
+| Ko'rish, tinglash, qidirish | Tizimga kirgan **har kim** |
+| Yangi albom/ijrochi qo'shish | Har kim (o'ziniki bo'ladi) |
+| Tahrirlash, o'chirish | Faqat **egasi** |
+| Albomga qo'shiq qo'shish | Faqat albom egasi |
+| Hammasini boshqarish | **Administrator** (superuser) |
+
+Qo'shiqning alohida egasi yo'q — u turgan albomning egasi hisoblanadi.
+
+Mavjud 65 albom va 37 ijrochi migratsiya orqali birinchi
+administratorga biriktirilgan (`0005_egasiz_yozuvlarni_adminga_berish`).
+
+**Ikki qavat himoya:** shablon begona odamga tugmalarni ko'rsatmaydi,
+lekin asosiy himoya server tomonda — `EgalikTalabi` mixin `dispatch()`
+ichida tekshiradi, ya'ni sahifa chizilmasdan oldin. Tugmani yashirish
+o'zi himoya emas: manzilni qo'lda yozib kirish mumkin.
+
+Import orqali qo'shilgan albom ham import qilgan odamga tegishli
+bo'ladi. Terminaldan (`seed_albums`, `import_album`) qo'shilganda
+birinchi administratorga.
+
 ## Profil oynasi
 
 Tepa o'ngdagi avatar bosilganda akkaunt paneli ochiladi: foydalanuvchi

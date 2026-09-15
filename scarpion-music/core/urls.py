@@ -16,6 +16,7 @@ Including another URLconf
 """
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib.auth.decorators import login_not_required
 from django.contrib import admin
 from django.urls import include, path
 
@@ -29,4 +30,11 @@ urlpatterns = [
 # DIQQAT: bu FAQAT ishlab chiqish paytida (DEBUG=True) ishlaydi.
 # Haqiqiy serverda rasmlarni nginx yoki shunga o'xshash dastur beradi.
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # Rasmlar (muqova, ijrochi surati) login talab qilmasin.
+    # Static fayllar runserver tomonidan middleware dan OLDIN beriladi,
+    # media esa oddiy view orqali keladi — shuning uchun faqat shuni
+    # ochib qo'yish kerak.
+    media_yollari = static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    for yol in media_yollari:
+        yol.callback = login_not_required(yol.callback)
+    urlpatterns += media_yollari

@@ -1,5 +1,6 @@
 # Django'ning baza bilan ishlaydigan asboblar to'plamini chaqiramiz.
 # Shundan keyin "models.CharField", "models.ForeignKey" deb yoza olamiz.
+from django.conf import settings
 from django.db import models
 # reverse() = URL nomidan haqiqiy manzil yasaydi ("music:album_detail" -> "/albom/eminem/...")
 from django.urls import reverse
@@ -123,6 +124,23 @@ class Artist(models.Model):
     cutout = models.ImageField(upload_to='artists/cutouts/', blank=True, null=True)
     banner = models.ImageField(upload_to='artists/banners/', blank=True, null=True)
 
+    # --- Egasi ---
+    # Kim qo'shgan bo'lsa — o'sha. Faqat egasi (va admin) o'zgartira
+    # yoki o'chira oladi; ko'rishni hamma ko'raveradi.
+    #
+    # on_delete=SET_NULL: foydalanuvchi o'chirilsa albom o'chmasin,
+    # shunchaki egasiz qolsin. CASCADE bo'lsa bitta odamni o'chirish
+    # butun katalogni olib ketardi.
+    # null=True: eski yozuvlar va egasiz qolganlar uchun.
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='owned_artists',
+        verbose_name='Egasi',
+    )
+
     # --- Tashqi xizmat ma'lumotlari (Spotify / Deezer) ---
     # source      = qaysi xizmatdan kelgan ('manual' = qo'lda kiritilgan)
     # external_id = o'sha xizmatdagi ID si
@@ -210,6 +228,23 @@ class Album(models.Model):
     # DIQQAT: M2M da on_delete YO'Q (qaysi tomon o'chadi — noaniq),
     #         lekin blank=True bor.
     genres = models.ManyToManyField(Genre, blank=True, related_name='albums')
+
+    # --- Egasi ---
+    # Kim qo'shgan bo'lsa — o'sha. Faqat egasi (va admin) o'zgartira
+    # yoki o'chira oladi; ko'rishni hamma ko'raveradi.
+    #
+    # on_delete=SET_NULL: foydalanuvchi o'chirilsa albom o'chmasin,
+    # shunchaki egasiz qolsin. CASCADE bo'lsa bitta odamni o'chirish
+    # butun katalogni olib ketardi.
+    # null=True: eski yozuvlar va egasiz qolganlar uchun.
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='owned_albums',
+        verbose_name='Egasi',
+    )
 
     # --- Tashqi xizmat ma'lumotlari (Spotify / Deezer) ---
     # source      = qaysi xizmatdan kelgan ('manual' = qo'lda kiritilgan)

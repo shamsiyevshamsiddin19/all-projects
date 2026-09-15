@@ -36,8 +36,10 @@
 
       <div class="album-head__actions">
         <a href="{% url 'music:album_create' %}" class="btn btn--primary">+ Albom qo'shish</a>
-        <a href="{% url 'music:artist_update' artist.slug %}" class="btn btn--ghost">Tahrirlash</a>
-        <a href="{% url 'music:artist_delete' artist.slug %}" class="btn btn--danger-ghost">O'chirish</a>
+        {% if ozgartira_oladi %}
+          <a href="{% url 'music:artist_update' artist.slug %}" class="btn btn--ghost">Tahrirlash</a>
+          <a href="{% url 'music:artist_delete' artist.slug %}" class="btn btn--danger-ghost">O'chirish</a>
+        {% endif %}
       </div>
     </div>
   </div>

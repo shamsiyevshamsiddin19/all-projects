@@ -1,6 +1,8 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
+from django.contrib.auth.validators import UnicodeUsernameValidator
+from django.core.validators import RegexValidator
 
 from .models import Artist, Album, Song
 
@@ -141,9 +143,32 @@ class RoyxatForm(UserCreationForm):
     class Meta:
         model = User
         fields = ('username', 'email')
+        # Bu xabar model darajasida chiqadi (bazadagi unique cheklovi).
+        # Django niki inglizcha: "A user with that username already exists."
+        error_messages = {
+            'username': {
+                'unique': "Bu foydalanuvchi nomi band. Boshqasini tanlang.",
+            },
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # Django ning UnicodeUsernameValidator i inglizcha xabar beradi va
+        # uni error_messages orqali almashtirib bo'lmaydi — tekshiruvchi
+        # o'z xabarini o'zi ko'taradi. Shuning uchun uni ro'yxatdan olib
+        # tashlab, o'rniga bir xil qoidali o'zbekcha variantini qo'yamiz.
+        maydon = self.fields['username']
+        maydon.validators = [
+            v for v in maydon.validators
+            if not isinstance(v, UnicodeUsernameValidator)
+        ] + [
+            RegexValidator(
+                r'^[\w.@+-]+\Z',
+                "Faqat harf, raqam va @ . + - _ belgilari mumkin. "
+                "Bo'sh joy ishlatmang.",
+            )
+        ]
 
         self.fields['username'].label = 'Foydalanuvchi nomi'
         self.fields['username'].widget.attrs.update({

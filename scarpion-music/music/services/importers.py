@@ -151,7 +151,8 @@ def fetch_artist_artwork(artist, force=False):
     return yangilandi
 
 
-def get_or_create_artist(name, external_id=None, source=Source.MANUAL, client=None):
+def get_or_create_artist(name, external_id=None, source=Source.MANUAL,
+                         client=None, owner=None):
     """
     Ijrochini topadi, bo'lmasa yaratadi.
 
@@ -169,7 +170,8 @@ def get_or_create_artist(name, external_id=None, source=Source.MANUAL, client=No
         artist = Artist.objects.filter(name__iexact=name).first()
 
     if artist is None:
-        artist = Artist(name=name, source=source, external_id=external_id)
+        artist = Artist(name=name, source=source, external_id=external_id,
+                        owner=owner)
         if external_id and client:
             try:
                 info = client.get_artist(external_id)
@@ -200,13 +202,18 @@ def get_or_create_artist(name, external_id=None, source=Source.MANUAL, client=No
 
 
 @transaction.atomic
-def import_album(external_id, client=None):
+def import_album(external_id, client=None, owner=None):
     """
     Tashqi ID bo'yicha albomni (ijrochisi va qo'shiqlari bilan) bazaga yozadi.
 
     @transaction.atomic = "yo hammasi, yo hech narsa".
         O'rtada xato chiqsa, yarim yozilgan albom qolib ketmaydi -
         baza xato chiqishidan oldingi holatiga qaytadi.
+
+    owner - kim import qilayotgan bo'lsa o'sha. Albom va (agar yangi
+    yaratilsa) ijrochi shu odamga tegishli bo'ladi. Terminaldan
+    ishlatilganda None bo'ladi — bunda yozuv egasiz qoladi va uni
+    faqat administrator o'zgartira oladi.
 
     Qaytaradi: (album, created) - created=True bo'lsa yangi qo'shildi.
     """
@@ -226,6 +233,7 @@ def import_album(external_id, client=None):
         data['artist_external_id'],
         source=source,
         client=client,
+        owner=owner,
     )
 
     album = Album(
@@ -236,6 +244,7 @@ def import_album(external_id, client=None):
         ),
         source=source,
         external_id=data['external_id'],
+        owner=owner,
     )
 
     cover = download_image(
