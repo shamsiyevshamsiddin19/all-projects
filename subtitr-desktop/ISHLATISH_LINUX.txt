@@ -34,7 +34,22 @@ ISHLATISH
 ---------
 1. Videoni ~/Videos papkasiga tashlang yoki "Tashqi video" tugmasi orqali
    istalgan joydan tanlang.
-2. Rejimni tanlang (tarjima+lug'at, ikki qatorli subtitr, SRT, matn, h.k.).
+2. Rejimni tanlang (tarjima+lug'at, ikki qatorli subtitr, faqat tarjima,
+   SRT, matn, h.k.).
+   "Faqat tarjima" — ekranda asl matn ko'rinmaydi, faqat tarjima qatori
+   qoladi. Qator yolg'iz bo'lgani uchun shrifti kattaroq olinadi va
+   "Rang" sozlamasidagi rangda chiqadi ("Asl matn" sozlamasi bu rejimda
+   ko'rsatilmaydi — unga tegishli matn yo'q).
+   "O'qish uchun matn" — video kuydirilmaydi: nutq o'qiladigan abzatslarga
+   yig'ilib, bitta ishda QUYIDAGI HAMMASI chiqadi (keyin qaysi biri qulay
+   bo'lsa, o'shani olasiz):
+     <nom>_oqish.pdf            faqat original til — eng toza o'qish
+     <nom>_oqish_tarjimali.pdf  har abzatsdan keyin tarjimasi
+     <nom>_oqish_alohida.pdf    avval butun original, keyin tarjima bo'limi
+     <nom>_oqish.md             Yordamchi saytining "O'qish" bo'limi uchun
+     <nom>_oqish.txt            matn
+     <nom>_oqish_tarjima.txt    tarjima
+   Video ko'rish o'rniga o'qib tayyorlanish uchun.
 3. Video tili va tarjima tilini tanlang.
 4. "Boshlash" ni bosing.
 5. Natijalar: ~/Videos/Subtitr natijalar/<video nomi>
@@ -47,6 +62,30 @@ PAPKALAR
   (o'chirsangiz modellar qaytadan yuklanadi, boshqa zarari yo'q)
 Yo'llarni o'zgartirish: SUBTITR_OUT_DIR, SUBTITR_DATA_DIR, SUBTITR_KINO_DIR
 muhit o'zgaruvchilari.
+
+"O'QISH UCHUN MATN" NI SOZLASH
+------------------------------
+Abzatsga bo'lish va PDF ko'rinishi muhit o'zgaruvchilari bilan boshqariladi:
+- SUBTITR_READ_PAUSE=1.8      nutqdagi necha soniyalik jimlik abzatsni bo'ladi
+- SUBTITR_READ_PARA=620       abzatsning eng ko'p belgisi
+- SUBTITR_READ_MIN_PARA=45    jimlik bo'yicha bo'lish uchun eng kam belgi
+- SUBTITR_READ_FONT=12        PDF matn shrifti (pt)
+- SUBTITR_READ_WRAP=88        TXT da qator uzunligi
+PDF uchun kirill harflari bor serif shrift kerak. Dastur avval o'z `fonts/`
+papkasiga, keyin tizimdagi Noto Serif / DejaVu Serif / Liberation Serif ga
+qaraydi. Topilmasa: sudo apt install fonts-noto-serif
+
+`.md` fayl Yordamchi saytiga yuklash uchun: "O'qish" bo'limi -> qalam tugmasi
+-> ".md fayl yuklash". Ichida gap tarjimalari (`:: ...`) bo'ladi — sayt
+tarjimonga murojaat qilmaydi, hammasi faylning ichida.
+
+So'z belgilari (`{so'z|tarjima}`) — qo'shimcha. Bu rejim ular uchun lug'at
+TUZMAYDI (u alohida AI o'tishi bo'lib, vaqt oladi-yu subtitr sifatiga hech
+narsa qo'shmaydi). Lekin o'sha video uchun lug'at allaqachon tuzilgan bo'lsa
+(masalan "Tarjima + lug'at" rejimida ishlatgan bo'lsangiz), `.md` uni keshdan
+TEKINGA oladi va so'zlarni belgilaydi.
+Belgilanganda: har ~4 so'zga bitta (ko'pi bilan 5 ta) — ortiqcha belgi matnni
+o'qib bo'lmas qiladi; ism va atamalar belgilanmaydi.
 
 SIFAT (muhim)
 -------------
@@ -64,6 +103,20 @@ topilmagan so'zlar natijaga tushmaydi.
   whisper-large-v3 ishlatilsa natija ancha yaxshi bo'ladi (Groq bepul).
 - Lokal model o'lchamini almashtirish: WHISPER_MODEL=medium (yoki large-v3).
   Kattaroq model aniqroq, lekin protsessorda ancha sekin.
+
+SUBTITR ORASIDA YO'QOLIB QOLSA
+------------------------------
+Groq ba'zan butun bir parchani (10-20 soniya) umuman qaytarmaydi — subtitr
+ekranda yo'qolib, keyin qayta paydo bo'ladi. Dastur buni o'zi topadi:
+segmentlar orasidagi uzun bo'shliqlarni ko'rib chiqadi, har birida nutq
+bor-yo'qligini lokal VAD bilan tekshiradi (tabiiy pauza, musiqa va titrlarga
+bekorga so'rov ketmasligi uchun) va nutq topilgan joyni qisqa oynalarda
+qayta o'qiydi.
+
+- SUBTITR_NO_RESCAN=1 — qayta o'qishni butunlay o'chiradi (tezroq, arzonroq)
+- Allaqachon ishlangan videoda eski natija keshdan olinadi, ya'ni tuzatish
+  ko'rinmaydi. Shu videoni qaytadan o'qitish uchun keshini o'chiring:
+      rm -rf ~/.cache/SubtitrDesktop/cache/<video nomi>_*
 
 VIDEO RENDER (tezlik)
 ---------------------

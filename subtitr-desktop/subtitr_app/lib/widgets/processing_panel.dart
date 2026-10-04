@@ -248,11 +248,32 @@ class _ResultView extends StatelessWidget {
     return switch (kind) {
       'video' => Icons.movie_rounded,
       'docx' => Icons.article_rounded,
+      'pdf' => Icons.picture_as_pdf_rounded,
+      'md' => Icons.integration_instructions_rounded,
       'txt' => Icons.text_snippet_rounded,
       'srt' => Icons.subtitles_rounded,
       'ass' => Icons.closed_caption_rounded,
       _ => Icons.insert_drive_file_rounded,
     };
+  }
+
+  /// Haqiqatda ketgan AI so'rovlari. Keshdan ishlaganda hech narsa
+  /// ketmaydi — u holda qator umuman ko'rsatilmaydi.
+  static String? _usageLine(Map<String, int> usage) {
+    final whisper = usage['whisper'] ?? 0;
+    final rescan = usage['rescan'] ?? 0;
+    final translate = usage['translate'] ?? 0;
+    if (whisper + translate == 0) return null;
+    final parts = <String>[];
+    if (whisper > 0) {
+      // Qayta o'qish oynalari ham Whisper so'rovi — qavs ichida ajratamiz,
+      // chunki ularning soni videodan videoga o'zgaradi.
+      parts.add(rescan > 0
+          ? 'Whisper: $whisper so\'rov (shundan $rescan yutilgan nutqni qayta o\'qish)'
+          : 'Whisper: $whisper so\'rov');
+    }
+    if (translate > 0) parts.add('Matn AI: $translate so\'rov');
+    return parts.join('  •  ');
   }
 
   /// Ichki dvigatel nomlarini odam o'qiydigan ko'rinishga o'giradi.
@@ -296,6 +317,15 @@ class _ResultView extends StatelessWidget {
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
+        if (_usageLine(result.usage) != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            _usageLine(result.usage)!,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
         // Kalitsiz ishlaganda AI tarjima bo'lmaydi: ichki lug'at faqat qisqa,
         // to'liq mos keladigan iboralarni tarjima qiladi, qolgan qatorlar
         // tarjimasiz qoladi — buni aytib qo'yamiz, aks holda "tarjima yo'q"
