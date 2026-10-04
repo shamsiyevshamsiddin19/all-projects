@@ -66,6 +66,7 @@ class ProcessorResult {
     required this.sourceLang,
     required this.targetLang,
     required this.outDir,
+    this.usage = const {},
   });
 
   final List<ProcessorOutput> outputs;
@@ -74,6 +75,10 @@ class ProcessorResult {
   final String sourceLang;
   final String targetLang;
   final String outDir;
+
+  /// Haqiqatda ketgan AI so'rovlari: `whisper`, `rescan`, `translate`.
+  /// Boshlashdan oldingi baho taxminiy — bu esa aniq son.
+  final Map<String, int> usage;
 
   factory ProcessorResult.fromJson(Map<String, dynamic> json) {
     final rawOutputs = json['outputs'];
@@ -92,6 +97,13 @@ class ProcessorResult {
       sourceLang: json['sourceLang'] as String? ?? '',
       targetLang: json['targetLang'] as String? ?? '',
       outDir: json['outDir'] as String? ?? '',
+      usage: switch (json['usage']) {
+        final Map<dynamic, dynamic> m => {
+            for (final e in m.entries)
+              if (e.value is num) '${e.key}': (e.value as num).toInt(),
+          },
+        _ => const <String, int>{},
+      },
     );
   }
 }

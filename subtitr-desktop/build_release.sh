@@ -49,20 +49,30 @@ if [ ! -s "$ROOT/fonts/Montserrat-Black.ttf" ]; then
     || echo "Shrift yuklanmadi — Noto Sans bilan ishlaydi"
 fi
 
+# "O'qish uchun matn" rejimining PDF'i uchun kirill harflari bor serif shrift
+# kerak. Yuklab olinmaydi: tizimda doim bittasi topiladi (Linux — Noto Serif /
+# DejaVu Serif / Liberation Serif, Windows — Georgia / Times New Roman,
+# macOS — Georgia). Boshqa shrift xohlansa, TTF fayllarini `fonts/` ga
+# qo'yish kifoya — dastur avval o'sha papkaga qaraydi.
+
 say "4/5 dist/ yig'ilmoqda"
 rm -rf "$DIST"
 mkdir -p "$DIST"
 cp -a "$BUNDLE/." "$DIST/"
 cp "$ROOT/desktop_processor.py" "$DIST/"
+# Kodning o'zi `subtitr/` paketida — kirish nuqtasi faqat uni chaqiradi.
+rm -rf "$DIST/subtitr"
+cp -a "$ROOT/subtitr" "$DIST/subtitr"
+find "$DIST/subtitr" -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
 cp "$ROOT/desktop_requirements.txt" "$DIST/"
 cp "$ROOT/.env.example" "$DIST/"
 [ -f "$ROOT/ISHLATISH_LINUX.txt" ] && cp "$ROOT/ISHLATISH_LINUX.txt" "$DIST/"
 cp "$APP_DIR/assets/app_logo.png" "$DIST/"
 mkdir -p "$DIST/tools"
 cp "$ROOT/tools/yt-dlp" "$DIST/tools/"
-if [ -s "$ROOT/fonts/Montserrat-Black.ttf" ]; then
+if compgen -G "$ROOT/fonts/*.ttf" >/dev/null; then
   mkdir -p "$DIST/fonts"
-  cp "$ROOT/fonts/Montserrat-Black.ttf" "$DIST/fonts/"
+  cp "$ROOT"/fonts/*.ttf "$DIST/fonts/"
 fi
 # Virtual muhit ko'chirilganda ham ishlaydi: interpretator yonidagi
 # pyvenv.cfg orqali o'z site-packages'ini topadi (`python -m pip` bilan
