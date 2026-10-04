@@ -475,8 +475,6 @@ def is_url(value: str) -> bool:
     return bool(re.match(r"^https?://", (value or "").strip(), re.IGNORECASE))
 
 
-_JS_RUNTIME_CACHE: str | None = None
-
 
 def model_candidates(primary_env: str, default: str, fallback_env: str, fallbacks: list[str]) -> list[str]:
     # Bo'sh ("") env qiymati ham default sifatida qabul qilinadi — shunda ilova

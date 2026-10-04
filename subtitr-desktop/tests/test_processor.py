@@ -10,6 +10,7 @@ yordamchi so'zlar to'lib ketadi). Shuning uchun har biriga qotirilgan misol.
 """
 from __future__ import annotations
 
+import ast
 import sys
 import tempfile
 import unittest
@@ -438,6 +439,76 @@ class AssOutputTests(unittest.TestCase):
         solo = dp.layout_for(1920, 1080, dual=False)["font"]
         dual = dp.layout_for(1920, 1080, dual=True)["font"]
         self.assertGreater(solo, dual)
+
+
+class PackageStructureTests(unittest.TestCase):
+    """Kod modullarga bo'lingani uchun paydo bo'ladigan xatolar.
+
+    Bular ish vaqtidagina ko'rinadi — pyflakes ham, import ham ushlamaydi."""
+
+    PKG = Path(dp.__file__).parent
+
+    def modules(self):
+        for path in sorted(self.PKG.glob("*.py")):
+            if path.name != "__init__.py":
+                yield path, ast.parse(path.read_text(encoding="utf-8"))
+
+    def test_global_names_live_in_their_own_module(self):
+        """`global X` faqat O'Z modulining global nomiga qaraydi.
+
+        X boshqa modulga ko'chib qolsa, funksiya uni ko'rmaydi va
+        NameError beradi — `_JS_RUNTIME_CACHE` bilan aynan shunday
+        bo'lgan edi."""
+        problems = []
+        for path, tree in self.modules():
+            top = set()
+            for node in tree.body:
+                items = ast.walk(node) if isinstance(node, (ast.If, ast.Try)) else [node]
+                for sub in items:
+                    if isinstance(sub, (ast.Assign, ast.AnnAssign)):
+                        targets = (sub.targets if isinstance(sub, ast.Assign)
+                                   else [sub.target])
+                        top.update(t.id for t in targets if isinstance(t, ast.Name))
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Global):
+                    for name in node.names:
+                        if name not in top:
+                            problems.append(f"{path.name}: global {name}")
+        self.assertEqual(problems, [], "global nomi o'z modulida e'lon qilinmagan")
+
+    def test_no_import_cycles(self):
+        """Modullar faqat yuqoridan pastga bog'lanadi."""
+        edges = {}
+        for path, tree in self.modules():
+            deps = set()
+            for node in ast.walk(tree):
+                if isinstance(node, ast.ImportFrom) and node.level == 1 and node.module:
+                    deps.add(node.module)
+            edges[path.stem] = deps
+        state = {}
+
+        def visit(mod, chain):
+            if state.get(mod) == "done":
+                return
+            if state.get(mod) == "open":
+                self.fail("halqa: " + " -> ".join(chain + [mod]))
+            state[mod] = "open"
+            for dep in sorted(edges.get(mod, ())):
+                visit(dep, chain + [mod])
+            state[mod] = "done"
+
+        for mod in edges:
+            visit(mod, [])
+
+    def test_entry_point_stays_put(self):
+        """Flutter ilovasi aynan shu faylni ishga tushiradi."""
+        entry = self.PKG.parent / "desktop_processor.py"
+        self.assertTrue(entry.is_file())
+        self.assertIn("from subtitr.cli import main", entry.read_text(encoding="utf-8"))
+
+    def test_root_points_at_the_app_folder_not_the_package(self):
+        """`ROOT` — tools/, fonts/, .venv turgan papka; paket emas."""
+        self.assertEqual(dp.ROOT, self.PKG.parent)
 
 
 class TitleTests(unittest.TestCase):

@@ -24,6 +24,14 @@ def quality_height(value: str | None) -> int:
                                if DEFAULT_QUALITY in QUALITY_HEIGHTS else 1080)
 
 
+# yt-dlp uchun JS dvigateli nomi, bir marta aniqlanadi.
+#
+# DIQQAT: bu o'zgaruvchi `js_runtime_args()` bilan BIR XIL modulda turishi
+# shart — `global` e'loni faqat o'z modulining global nomiga qaraydi.
+# Boshqa modulga ko'chirilsa, NameError bo'ladi va pyflakes buni ko'rmaydi.
+_JS_RUNTIME_CACHE: str | None = None
+
+
 def js_runtime_args() -> list[str]:
     """yt-dlp uchun JavaScript runtime argumenti.
 
