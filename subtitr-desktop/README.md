@@ -1,6 +1,32 @@
 # Subtitr Desktop
 
-Video subtitr/tarjima qiluvchi desktop ilova (Flutter GUI + Python backend). Windows va Linux.
+Video subtitr/tarjima qiluvchi desktop ilova (Flutter GUI + Python backend).
+
+## O'rnatish
+
+Platformangizni tanlang — har birida to'liq qo'llanma bor:
+
+| Platforma | Qo'llanma | Holati |
+|---|---|---|
+| **Linux** | [`linux/README.md`](linux/README.md) | sinalgan (Ubuntu 24.04) |
+| **Windows** | [`windows/README.md`](windows/README.md) | sinalgan (Win 10/11) |
+| **macOS** | [`macos/README.md`](macos/README.md) | **sinalmagan** — skriptlar bor, Mac'da tekshirilmagan |
+
+Qisqacha (Linux):
+
+```bash
+git clone https://github.com/shamsiyevshamsiddin19/vibe-coding.git
+cd vibe-coding/subtitr-desktop
+./linux/build.sh && ./dist/SubtitrDesktop/install.sh
+```
+
+Uchala platformada ham ilova **manbadan yig'iladi**: Flutter GUI va Python
+protsessor bir papkaga yig'ilib, keyin o'rnatiladi. Tayyor o'rnatuvchi
+fayllar repoda saqlanmaydi (Linux arxivi ~220 MB, GitHub chegarasi 100 MB) —
+ular bo'lsa [Releases](https://github.com/shamsiyevshamsiddin19/vibe-coding/releases)
+sahifasida bo'ladi.
+
+## Nima qila oladi
 
 - Video/audio transkripsiya (Groq Whisper / faster-whisper)
 - Tarjima (OpenAI / Anthropic Claude / Google Gemini / Groq)
@@ -42,13 +68,28 @@ Video subtitr/tarjima qiluvchi desktop ilova (Flutter GUI + Python backend). Win
     saytining "O'qish" formati (`:: tarjima`, `{so'z|tarjima}`)
 - `tests/` — regressiya testlari (yangi bog'liqliksiz):
   `.venv/bin/python -m unittest discover -s tests`
-- `subtitr_app/` — Flutter desktop GUI (Windows + Linux)
+- `subtitr_app/` — Flutter desktop GUI (Linux, Windows, macOS)
 - `chrome-extension/` — "Subtitr Grabber" Chrome kengaytmasi
-- `build_release.ps1` — Windows release (`.exe` + installer + zip) yig'ish skripti
-- `installer.iss` — Inno Setup skripti (Windows)
-- `build_release.sh` — Linux release (`dist/SubtitrDesktop` + tar.gz) yig'ish skripti
-- `install.sh` — Linux o'rnatuvchi (menyu yorlig'i bilan, sudo shart emas)
-- `ISHLATISH_LINUX.txt` — Linux uchun qo'llanma
+- `linux/`, `windows/`, `macos/` — har bir platforma uchun yig'ish va
+  o'rnatish skriptlari hamda qo'llanma. **Kod umumiy** — platformalar
+  bo'yicha nusxalanmaydi, faqat yig'ish tartibi farq qiladi.
+- `ISHLATISH_LINUX.txt`, `ISHLATISH_DESKTOP.txt` — foydalanuvchi qo'llanmalari
+  (ilova bilan birga yuboriladi)
+
+## Talablar (qisqacha)
+
+| | |
+|---|---|
+| Flutter | 3.27+ |
+| Python | 3.10+ |
+| ffmpeg | Linux/macOS — tizimdan; Windows — `tools/` ga qo'lda |
+
+Testlar (yangi bog'liqliksiz, standart `unittest`):
+
+```bash
+.venv/bin/python -m unittest discover -s tests   # 56 ta
+cd subtitr_app && flutter test                   # 10 ta
+```
 
 ## Eslatma
 

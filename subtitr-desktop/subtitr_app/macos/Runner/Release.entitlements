@@ -2,7 +2,9 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>com.apple.security.app-sandbox</key>
-	<true/>
+	<!-- App Sandbox O'CHIRILGAN. Sabab: ilova yonidagi Python protsessorni
+	     ishga tushiradi, ffmpeg chaqiradi va ~/Videos papkasi bilan ishlaydi —
+	     sandbox ichida bularning hech biri mumkin emas. Mac App Store uchun
+	     emas, to'g'ridan-to'g'ri tarqatish uchun yig'iladi. -->
 </dict>
 </plist>

@@ -6,7 +6,8 @@
 # o'rnatadi. Windows varianti uchun build_release.ps1 ga qarang.
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Skript `linux/` ichida — loyiha ildizi bitta yuqorida.
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_DIR="$ROOT/subtitr_app"
 DIST="$ROOT/dist/SubtitrDesktop"
 BUNDLE="$APP_DIR/build/linux/x64/release/bundle"
@@ -78,7 +79,7 @@ fi
 # pyvenv.cfg orqali o'z site-packages'ini topadi (`python -m pip` bilan
 # chaqiramiz, shuning uchun eski shebang'lar muammo qilmaydi).
 cp -a "$ROOT/.venv" "$DIST/.venv"
-cp "$ROOT/install.sh" "$DIST/install.sh"
+cp "$ROOT/linux/install.sh" "$DIST/install.sh"
 cp "$ROOT/launcher.sh" "$DIST/subtitr-desktop"
 chmod +x "$DIST/install.sh" "$DIST/subtitr-desktop" "$DIST/subtitr_app" "$DIST/tools/yt-dlp"
 
