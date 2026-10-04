@@ -435,6 +435,27 @@ class AssOutputTests(unittest.TestCase):
         self.assertIn("Original", joined)
         self.assertIn("Tarjima", joined)
 
+    def test_no_drop_shadow(self):
+        """ASS soyasi — matnning surilgan qora nusxasi. Kontur bilan birga u
+        harflarni ikkilantirib xiralashtiradi, shuning uchun 0 bo'lishi
+        kerak (Shadow — uslub qatoridagi 17-maydon)."""
+        tmp = Path(tempfile.mkdtemp()) / "out.ass"
+        dp.write_ass(tmp, [seg(0.0, 2.0, "Matn")], None, None, {}, 1920, 1080)
+        styles = [l for l in tmp.read_text().splitlines() if l.startswith("Style: ")]
+        self.assertTrue(styles)
+        for line in styles:
+            shadow = line.split(",")[17]
+            self.assertEqual(shadow.strip(), "0", line[:40])
+
+    def test_outline_stays_thin_enough_to_read(self):
+        """Kontur shrift balandligining ~6% i: fondan ajratadi, lekin
+        harf ichini yopib qo'ymaydi (0.13 da aynan shunday bo'lgan edi)."""
+        for w, h in ((1920, 1080), (1280, 720), (854, 480)):
+            layout = dp.layout_for(w, h, dual=False)
+            ratio = layout["outline"] / layout["font"]
+            self.assertLessEqual(ratio, 0.10, f"{w}x{h}: kontur juda qalin")
+            self.assertGreaterEqual(layout["outline"], 2, f"{w}x{h}: kontur juda ingichka")
+
     def test_solo_line_is_larger(self):
         solo = dp.layout_for(1920, 1080, dual=False)["font"]
         dual = dp.layout_for(1920, 1080, dual=True)["font"]

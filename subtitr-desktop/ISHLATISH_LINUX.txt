@@ -123,6 +123,12 @@ VIDEO RENDER (tezlik)
 Kodlagich avtomatik tanlanadi: NVENC / QSV / AMF topilmasa, Linux'da VAAPI
 (/dev/dri/renderD128) sinaladi, u ham bo'lmasa libx264 (CPU).
 Majburiy tanlash: SUB_ENCODER=vaapi|x264|nvenc|qsv|amf muhit o'zgaruvchisi.
+
+Subtitr konturi: harflar atrofidagi qora chiziq shrift balandligining ~6% i,
+soya esa umuman yo'q. Qalinroq kontur + soya harflarning ichini yopib,
+matnni iflos ko'rsatadi. O'zgartirish kerak bo'lsa:
+- SUB_OUTLINE_RATIO=0.062   kontur qalinligi (shriftga nisbatan)
+- SUB_SHADOW=0              soya (0 = yo'q)
 Boshqa GPU tugunini ko'rsatish: VAAPI_DEVICE=/dev/dri/renderD129
 
 MUAMMOLAR

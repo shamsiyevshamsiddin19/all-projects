@@ -44,9 +44,12 @@ def layout_for(width: int, height: int, dual: bool, font_scale: float = 1.0) -> 
         "margin_lr": margin_lr,
         "margin_v": max(28, round(height * (0.07 if ar >= 1.0 else 0.15))),
         "cpl": cpl,
-        # Qalinroq qora kontur — matn har qanday fonda ajralib turadi. 0.09 da
-        # yorug' sahnada harflar fonga singib, "xira" ko'rinardi.
-        "outline": max(3, round(font_size * 0.13)),
+        # Qora kontur matnni fondan ajratadi, lekin 0.13 da u haddan tashqari
+        # qalin chiqardi: Montserrat Black o'zi og'ir shrift, ustiga keng
+        # halqa qo'shilsa harflarning ichi (o, a, e) yopilib, matn iflos
+        # ko'rinadi. 0.062 — 1080p da ~3 px: yorug' sahnada ham ajralib
+        # turadi, lekin harf shakli buzilmaydi.
+        "outline": max(2, round(font_size * _env_float("SUB_OUTLINE_RATIO", 0.062))),
         # Sariq quti uchun: ichki bo'shliq va harflar orasi (montaj uslubida
         # matn quti ichida biroz keng joylashadi).
         "box_pad": max(4, round(font_size * 0.16)),
@@ -101,7 +104,10 @@ def ass_header(
 ) -> str:
     font = subtitle_font_name()
     outline = layout["outline"]
-    shadow = max(1, outline // 2)
+    # Soya YO'Q. ASS soyasi — matnning o'ngga-pastga surilgan qora nusxasi;
+    # kontur bilan birga u harflarni ikkilantirib, xiralashtirib yuboradi.
+    # Ajratish uchun konturning o'zi yetarli.
+    shadow = int(_env_float("SUB_SHADOW", 0.0))
     fmt = (
         "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, "
         "BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, "
