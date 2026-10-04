@@ -2,7 +2,8 @@
 # stderr'ga yozadi va bu native chiqishni PowerShell xato deb hisoblab qoladi.
 # Buning o'rniga har bir muhim qadamdan keyin exit kodini tekshiramiz.
 $ErrorActionPreference = "Continue"
-$Root = $PSScriptRoot
+# Skript `windows\` ichida — loyiha ildizi bitta yuqorida.
+$Root = Split-Path $PSScriptRoot -Parent
 Set-Location $Root
 
 function Assert-LastExit([string]$step) {
@@ -44,7 +45,7 @@ python -m pip install --quiet --upgrade pyinstaller
 Assert-LastExit "pip install pyinstaller"
 
 Write-Host "2/6  Python protsessorni yig'ish (desktop_processor.exe)..." -ForegroundColor Cyan
-python -m PyInstaller --clean --noconfirm desktop_processor.spec
+python -m PyInstaller --clean --noconfirm windows\desktop_processor.spec
 Assert-LastExit "PyInstaller"
 
 Write-Host "3/6  Flutter Windows release build..." -ForegroundColor Cyan
@@ -93,7 +94,7 @@ $iscc = @(
 ) | Where-Object { Test-Path $_ } | Select-Object -First 1
 
 if ($iscc) {
-    & $iscc "installer.iss"
+    & $iscc "windows\installer.iss"
     Assert-LastExit "Inno Setup (ISCC)"
     Sign-Files @("$Root\installer\SubtitrSetup.exe") | Out-Null
     Write-Host "    -> installer\SubtitrSetup.exe tayyor" -ForegroundColor Green
