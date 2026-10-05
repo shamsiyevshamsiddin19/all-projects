@@ -22,6 +22,7 @@ def holat(img):
         zaxira=zaxira_soni(img),
         hodisalar=hodisalar(img),
         oqilmagan=sum(1 for k in ks if k["karta"] is None),
+        _kartalar=ks,          # juftlikni joylashuvdan aniqlash uchun kerak
     )
 
 

@@ -29,3 +29,11 @@ tasks.register<JavaExec>("demo") {
     mainClass.set("uz.shamsiyev.oyin.durak.DemoKt")
     classpath = sourceSets["main"].runtimeClasspath
 }
+
+/** Ekrandan o'qilgan holatdan maslahat: ./gradlew :games:durak:maslahat --args="..." */
+tasks.register<JavaExec>("maslahat") {
+    group = "application"
+    description = "Ekrandan o'qilgan holatdan maslahat beradi"
+    mainClass.set("uz.shamsiyev.oyin.durak.MaslahatKt")
+    classpath = sourceSets["main"].runtimeClasspath
+}

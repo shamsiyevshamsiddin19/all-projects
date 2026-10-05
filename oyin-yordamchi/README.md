@@ -96,6 +96,54 @@ g'oyib bo'lib qaytmaydi, zaxira esa ko'paymaydi - bunday hodisaning o'zi xato.
 Ikki joyda chiqqan karta "noma'lum" ga chiqariladi: maslahatchiga xato karta
 berishdan ko'ra bilmaslik xavfsizroq.
 
+## Kuzatuvchi
+
+Bitta kadr faqat "hozir nima ko'rinyapti" ni aytadi. O'yin uchun tarix kerak:
+**bitoga ketgan kartalar ekranda umuman ko'rinmaydi**, lekin ularsiz maslahat zaif.
+Shuning uchun ilova o'yinni boshidan kuzatib boradi.
+
+Kuzatuvchi bitta o'yin videosidan shunday jurnal tikladi:
+
+```
+   1.5s  kozir 8C
+  14.0s  chap oldi: 1 karta
+  37.0s  bito: 6D 6S 7C 7D 7H 8H AS QD (jami 8)
+  44.5s  ZIDDIYAT: 6D bitodan qaytdi - xato o'qilgan, bitodan chiqarildi
+  65.0s  bito: 10D 10S 6D 6H 9D 9H 9S (jami 14)
+ 134.0s  men oldim: 9 karta
+ 172.5s  YANGI O'YIN (zaxira 2 -> 36)
+```
+
+Uchta narsa o'zini o'zi tekshiradi:
+
+- **Bitoga ketgan karta qaytib kelmaydi.** Kelsa - biror joyda xato o'qilgan;
+  kuzatuvchi ko'rinayotganiga ishonib, xulosani tuzatadi.
+- **Saqlanish qonuni.** 36 tadan ko'ringanini ayirsak, qolgani raqiblarda.
+  160-kadrda: 5 (qo'l) + 2 (stol) + 13 (bito) + 2 (zaxira) + 14 (raqiblar) = 36.
+- **Zaxira faqat kamayadi.** Ko'tarilsa - yangi o'yin boshlangan.
+
+Stolda qaysi karta qaysini qoplaganini joylashuv aytadi: qoplagan karta
+hujum kartasidan `dx≈0.45h, dy≈0.19h` siljib tushadi va bu juda barqaror.
+
+## Zanjir to'liq ishlaydi
+
+```bash
+ARGS=$(python3 tools/maslahat_ber.py 160 hujum | tail -1)
+./gradlew :games:durak:maslahat --args="$ARGS"
+```
+
+```
+kozir ♣ · zaxira 2 · bitoda 13 · hujum
+qo'lim: 10♣ J♣ J♦ Q♥ K♣
+stol: 6♠/K♠
+
+  >>> BITO BOS
+      qo'shimcha karta berish ziyon | 71% omon
+```
+
+Ya'ni: haqiqiy o'yin kadri -> kartalar va hodisalar -> kuzatilgan holat
+(ko'rinmaydigan bito bilan) -> yurish maslahati.
+
 ## Hali qilinmagan
 
 - Ekranni o'qish (`vision`) — Rstgames profili, karta namunalari
