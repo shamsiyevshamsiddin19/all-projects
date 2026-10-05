@@ -25,14 +25,17 @@ def build_vocabulary(words: list[Word], source_lang: str, target_lang: str) -> l
         # animatsiyada ham foyda bermaydi — tashlab yuboramiz.
         if not tr or normalize_word(tr) == normalize_word(key):
             continue
+        lemma_norm = (lemma or "").strip().lower()
         entries.append(
             {
                 "word": key,
                 "translation": tr,
                 "pos": pos,
-                "lemma": (lemma or "").strip().lower(),
+                "lemma": lemma_norm,
                 "count": freq.get(key, 1),
-                "helper": helper_category(key, source_lang),
+                # Lemma ham qaraladi: "тобой" ro'yxatda yo'q, lemmasi "ты".
+                "helper": (helper_category(key, source_lang)
+                           or helper_category(lemma_norm, source_lang)),
                 "provider": provider,
             }
         )
@@ -60,6 +63,29 @@ def dedupe_by_lemma(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
     out = [groups[k] for k in order]
     out.sort(key=lambda e: -int(e.get("count", 1)))
     return out
+
+
+def is_translit_only(entry: dict[str, Any]) -> bool:
+    """Tarjimasi so'zning transliteratsiyasidan iborat yozuvlar.
+
+    "Чебурашка -> Cheburashka", "радио -> radio" — bular hech narsa
+    o'rgatmaydi: foydalanuvchi so'zni ko'rganda allaqachon tushunadi.
+    Lug'at ro'yxatida ham, ekrandagi kartochkada ham joy egallamasin."""
+    word = normalize_word(str(entry.get("word") or ""))
+    tr = normalize_word(str(entry.get("translation") or ""))
+    return bool(word) and bool(tr) and translit_ru_basic(word) == tr
+
+
+def entry_helper(entry: dict[str, Any], source_lang: str) -> str:
+    """Yozuv yordamchi so'zmi — matndagi shakli, keyin lug'at shakli bo'yicha.
+
+    Lemma ham tekshiriladi, chunki ro'yxatga har bir kelishik shaklini
+    yozib chiqish mumkin emas: "тобой" ro'yxatda yo'q, lekin uning lemmasi
+    "ты" — olmosh. Lemma qaralmasa, u lug'at tepasida qolib ketadi."""
+    label = helper_category(str(entry.get("word") or ""), source_lang)
+    if label:
+        return label
+    return helper_category(str(entry.get("lemma") or ""), source_lang)
 
 
 def helper_category(word: str, source_lang: str) -> str:

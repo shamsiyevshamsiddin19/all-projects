@@ -16,7 +16,7 @@ from .transcribe import get_transcription
 from .cache import _cache_enabled, _load_json, _save_json, cache_dir_for, load_transcription, save_transcription
 from .translate import build_glossary, translate_segments
 from .clean import clean_transcription, enforce_reading_speed, filter_words, polish_segments
-from .vocab import build_vocabulary, helper_category
+from .vocab import build_vocabulary, entry_helper, is_translit_only
 from .subtitles import burn_subtitles, write_ass
 from .documents import build_reading_blocks, build_sentence_pairs, reading_meta, reading_title, reading_vocab_map, write_docx_transcript, write_docx_vocab, write_md_reading, write_pdf_reading, write_txt_reading, write_txt_transcript, write_txt_vocab
 
@@ -124,7 +124,7 @@ def _prepare_data(
         # qayta hisoblaymiz: ro'yxat kengayganda eski lug'atlar ham
         # bepul tuzaladi.
         for entry in entries:
-            entry["helper"] = helper_category(str(entry.get("word") or ""), effective_lang)
+            entry["helper"] = entry_helper(entry, effective_lang)
 
         width, height = probe_resolution(video)
 
@@ -221,7 +221,13 @@ def _render_outputs(
     )
     words = [Word(float(w[0]), float(w[1]), str(w[2])) for w in (job.get("words") or [])]
     entries: list[dict[str, Any]] = list(job.get("vocab") or [])
-    vocab_map = {str(e["word"]): str(e["translation"]) for e in entries}
+    # Ism va o'zlashmalar kartochkaga chiqmaydi ("Чебурашка · Cheburashka"
+    # ekranda joy egallaydi-yu, hech narsa o'rgatmaydi).
+    vocab_map = {
+        str(e["word"]): str(e["translation"])
+        for e in entries
+        if not is_translit_only(e)
+    }
 
     emit("progress", message="Fayllar tayyorlanmoqda", progress=0.60)
 

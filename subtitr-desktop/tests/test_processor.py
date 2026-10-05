@@ -58,6 +58,20 @@ class LanguageCodeTests(unittest.TestCase):
         self.assertEqual(dp.helper_category("я", lang), "pronoun")
         self.assertEqual(dp.helper_category("не", lang), "particle")
 
+    def test_inflected_form_is_caught_through_its_lemma(self):
+        """Har bir kelishik shaklini ro'yxatga yozib bo'lmaydi.
+
+        "тобой" ro'yxatda yo'q, lekin lemmasi "ты" — olmosh. Lemma
+        qaralmasa, u lug'at tepasida qolib ketadi."""
+        from subtitr.vocab import entry_helper
+        entry = {"word": "тобой", "lemma": "ты", "translation": "sen bilan"}
+        self.assertEqual(entry_helper(entry, "ru"), "pronoun")
+
+    def test_content_word_keeps_its_place_despite_lemma(self):
+        from subtitr.vocab import entry_helper
+        entry = {"word": "ёлки", "lemma": "ёлка", "translation": "archa"}
+        self.assertEqual(entry_helper(entry, "ru"), "")
+
     def test_content_words_are_not_helpers(self):
         lang = dp.normalize_lang_code("russian")
         for word in ("зима", "праздник", "украсить", "очень"):

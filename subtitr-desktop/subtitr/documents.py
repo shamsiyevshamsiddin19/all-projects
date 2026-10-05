@@ -11,7 +11,7 @@ from typing import Any, Iterable
 
 from .core import POS_ORDER, ReadingBlock, ReadingPair, Segment, _env_float, normalize_word, pos_label
 from .media import seconds_to_srt_time
-from .vocab import dedupe_by_lemma, translit_ru_basic
+from .vocab import dedupe_by_lemma, is_translit_only
 from .subtitles import FONTS_DIR
 
 
@@ -46,7 +46,9 @@ def write_txt_vocab(path: Path, entries: list[dict[str, Any]]) -> None:
     merged = dedupe_by_lemma(entries)
     lines = ["LUG'AT (1-format: Chastota bo'yicha)", "=================================", ""]
     helpers = [e for e in merged if e.get("helper")]
-    main = [e for e in merged if not e.get("helper")]
+    names = [e for e in merged if not e.get("helper") and is_translit_only(e)]
+    main = [e for e in merged
+            if not e.get("helper") and not is_translit_only(e)]
     lines.append(f"Asosiy so'zlar ({len(main)}) — eng ko'p uchraganlar tepada")
     lines.append("-" * 40)
     for e in main:
@@ -55,6 +57,11 @@ def write_txt_vocab(path: Path, entries: list[dict[str, Any]]) -> None:
         lines += ["", "Yordamchi so'zlar", "-" * 40]
         for e in helpers:
             lines.append(f"{e['word']} - {e['translation']} ({e['helper']}){_vocab_freq_note(e)}")
+    if names:
+        # Tarjimasi o'zi bilan bir xil — ism yoki o'zlashma.
+        lines += ["", "Ismlar va o'zlashmalar", "-" * 40]
+        for e in names:
+            lines.append(f"{e['word']} - {e['translation']}{_vocab_freq_note(e)}")
 
     # Format 2
     lines += ["", "", "LUG'AT (2-format: So'z turkumlariga ajratilgan)", "===============================================", ""]
@@ -415,9 +422,7 @@ def reading_vocab_map(entries: list[dict[str, Any]]) -> dict[str, tuple[str, int
         if len(word) < 2 or not tr or len(tr.split()) > _READ_MD_MAX_TR_WORDS:
             continue
         key = normalize_word(word)
-        # Tarjimasi so'zning transliteratsiyasidan iborat bo'lsa, u hech narsa
-        # o'rgatmaydi: ism (Гена -> Gena) yoki o'zlashma (радио -> radio).
-        if translit_ru_basic(key) == normalize_word(tr):
+        if is_translit_only(e):
             continue
         out.setdefault(key, (tr, int(e.get("count", 1) or 1)))
     return out
