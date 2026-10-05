@@ -11,7 +11,8 @@ core/          o'yindan mustaqil: Frame, Roi, GameAdapter, Advice, GameRegistry
 cards/         karta o'yinlari uchun umumiy: CardCodec (36/52 lik), CardSet
 games/durak/   durak qoidalari + Monte-Carlo miya + maslahatchi
 app/           Android: ekranni o'qish va overlay          (hali yo'q)
-tools/         ishlab chiqish vositalari: kadr ajratish    (hali yo'q)
+tools/         ishlab chiqish vositalari (Python): kadr ajratish,
+               burchak topish, guruhlash, tanish, o'lchov
 ```
 
 Qoida: **pastki qatlam yuqorisini bilmaydi.** `core` durakni bilmaydi, `cards`
@@ -59,6 +60,28 @@ natija haqiqiy o'yinda ham o'rinli.
 ./gradlew :games:durak:benchmark --args="200 3 60"   # Monte-Carlo o'lchovi
 ./gradlew :games:durak:demo                          # maslahat qanday ko'rinadi
 ```
+
+## Ekranni o'qish (ko'z)
+
+Zona-zona sozlash o'rniga **karta burchagi** qidiriladi: toza oq fonda
+raqam, uning tagida mast. Shu naqsh qo'lda ham, stolda ham, kozir kartada ham
+bir xil, shuning uchun bitta mantiq uchalasiga yetadi.
+
+Karta nomlari qo'lda emas, **guruhlash** orqali o'rgatilgan: 2944 ta belgi
+o'xshashligiga qarab guruhlanadi, keyin har guruhga bitta nom beriladi.
+Shu bilan 36 ta kartani belgilash o'rniga ~50 ta guruh nomlanadi.
+
+O'lchovlar (348 kadr, bitta to'liq 3 kishilik o'yin videosi):
+
+| Mezon | Natija |
+|---|---|
+| Tanilgan belgi | 2943 ta, noma'lumi **1.8%** |
+| Kozir karta to'g'riligi | **199/199 = 100%** (videoda kozir doim 8♣ edi) |
+| Bir kadrda takrorlangan karta | **0 ta** |
+| O'tkazib yuborish (qo'l / stol) | **0.99% / 0.60%** |
+
+Oxirgi ikki mezon qo'lda belgilashsiz o'lchanadi: karta o'z-o'zidan ikkilanmaydi
+va g'oyib bo'lib qaytmaydi - shuning uchun bunday hodisa xatoning o'zi.
 
 ## Hali qilinmagan
 

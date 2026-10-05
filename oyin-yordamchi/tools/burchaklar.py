@@ -35,30 +35,101 @@ def komponentlar(mask, min_area, max_area):
     return out
 
 
-def qoshni_birlashtir(parts, max_gap_ratio=0.45):
-    """'10' kabi ikki bo'lakli raqamlarni birlashtiradi."""
+def qoshni_birlashtir(parts):
+    """Faqat '10' ning ikki bo'lagini birlashtiradi.
+
+    Ilgari har qanday yonma-yon bo'lakni birlashtirardi va mast belgilarini
+    bir-biriga yopishtirib yuborardi - shuning uchun shart qattiq:
+    chapdagisi ingichka tayoq ('1'), o'ngdagisi shunga teng balandlikda ('0').
+    """
     parts = sorted(parts, key=lambda p: p["x"])
+    ishlatilgan = set()
     out = []
-    for p in parts:
-        merged = False
-        for q in out:
-            gap = p["x"] - (q["x"] + q["w"])
+    for i, p in enumerate(parts):
+        if i in ishlatilgan:
+            continue
+        birlashdi = False
+        for j in range(i + 1, len(parts)):
+            if j in ishlatilgan:
+                continue
+            q = parts[j]
+            gap = q["x"] - (p["x"] + p["w"])
+            # '10' da ikki raqam deyarli yopishib turadi; qo'shni KARTA belgisi
+            # esa karta cheti bilan ajralgan - shuning uchun oraliq juda kichik bo'lsin.
+            if gap > 0.18 * p["h"]:
+                break
+            ingichka = p["w"] <= 0.45 * p["h"]
+            bir_xil_balandlik = 0.8 * p["h"] <= q["h"] <= 1.25 * p["h"]
             yk = min(p["y"] + p["h"], q["y"] + q["h"]) - max(p["y"], q["y"])
-            hmax = max(p["h"], q["h"])
-            if -5 <= gap <= max_gap_ratio * hmax and yk > 0.55 * hmax:
+            if ingichka and bir_xil_balandlik and gap >= -4 and yk > 0.7 * max(p["h"], q["h"]):
                 x0, y0 = min(p["x"], q["x"]), min(p["y"], q["y"])
                 x1 = max(p["x"] + p["w"], q["x"] + q["w"])
                 y1 = max(p["y"] + p["h"], q["y"] + q["h"])
-                q.update(x=x0, y=y0, w=x1 - x0, h=y1 - y0, area=p["area"] + q["area"])
-                merged = True
+                out.append(dict(x=x0, y=y0, w=x1 - x0, h=y1 - y0, area=p["area"] + q["area"]))
+                ishlatilgan.add(i); ishlatilgan.add(j)
+                birlashdi = True
                 break
-        if not merged:
+        if not birlashdi:
             out.append(dict(p))
     return out
 
 
+def _botiq(profil, min_orin):
+    """Cho'qqidan keyingi birinchi botiqni (local minimum) topadi.
+
+    Belgi va unga yopishgan rasm orasida siyoh soni kamayadi, lekin nolga
+    tushmaydi - ingichka ko'prik qoladi. Shuning uchun nol emas, botiq qidiriladi.
+    """
+    if len(profil) == 0:
+        return None
+    cho_qqi = int(np.argmax(profil))
+    i = cho_qqi
+    while i + 1 < len(profil) and profil[i + 1] <= profil[i]:
+        i += 1
+    # i - pasayish tugagan joy; shu botiq bo'lsa va yetarlicha pastda bo'lsa
+    if i > min_orin and i + 1 < len(profil) and profil[i] < 0.6 * profil[cho_qqi]:
+        return i + 1
+    return None
+
+
+def mast_kes(suit, rank, m):
+    """Mast belgisi kartadagi rasm bilan yopishib ketgan bo'lsa, ortig'ini kesadi.
+
+    Yopishish ko'pincha pastdan bo'ladi (yurak -> qirolning qizil kiyimi).
+    Me'yorda mast raqam balandligining yarmicha bo'ladi; undan oshsa kesiladi.
+    """
+    me_yor_h = 0.72 * rank["h"]
+    me_yor_w = 0.85 * rank["h"]
+    if suit["h"] <= me_yor_h and suit["w"] <= me_yor_w:
+        return suit
+
+    x, y, w, h = suit["x"], suit["y"], suit["w"], suit["h"]
+    kesim = m[y:y + h, x:x + w]
+    if kesim.size == 0:
+        return suit
+
+    yangi = dict(suit)
+    if h > me_yor_h:
+        kes = _botiq(kesim.sum(axis=1).astype(float), int(0.25 * h))
+        if kes:
+            yangi["h"] = kes
+    if w > me_yor_w:
+        ustun = m[y:y + yangi["h"], x:x + w].sum(axis=0).astype(float)
+        kes = _botiq(ustun, int(0.25 * w))
+        if kes:
+            yangi["w"] = kes
+
+    if yangi["h"] < 0.25 * rank["h"] or yangi["w"] < 0.2 * rank["h"]:
+        return suit
+    return yangi
+
+
 def toza_fonmi(oq, box, chet=0.35):
-    """Burchak belgisi atrofi oq bo'lishi kerak - rasm ichidagi qora chiziqlardan farqi shu."""
+    """Burchak belgisi atrofi oq bo'lishi kerak.
+
+    Kartaning o'rtasidagi rasm ichida ham qora chiziqlar bor, lekin ular
+    atrofi rang-barang; burchakdagi raqam esa toza oq fonda turadi.
+    """
     x, y, w, h = box["x"], box["y"], box["w"], box["h"]
     dx, dy = int(w * chet) + 3, int(h * chet) + 3
     x0, y0 = max(0, x - dx), max(0, y - dy)
@@ -69,7 +140,7 @@ def toza_fonmi(oq, box, chet=0.35):
     return float(hudud.mean())
 
 
-def burchaklar(img, min_rank_h=40):
+def burchaklar(img, min_rank_h=40, min_oqlik=0.48, ochish=0):
     h, w = img.shape[:2]
     oq, qora, qizil = maskalar(img)
     oq_keng = ndimage.binary_dilation(oq, iterations=8)
@@ -77,10 +148,14 @@ def burchaklar(img, min_rank_h=40):
     topildi = []
     for rang, m in (("qora", qora), ("qizil", qizil)):
         ink = m & oq_keng
+        # Belgilar ba'zan kartadagi rasm bilan ingichka ko'prik orqali yopishadi
+        # (masalan yurak qirolning qizil kiyimiga). Ochish shu ko'prikni uzadi.
+        if ochish:
+            ink = ndimage.binary_opening(ink, iterations=ochish)
         parts = komponentlar(ink, min_area=100, max_area=12000)
         parts = qoshni_birlashtir(parts)
         # Raqam nomzodlari: baland, juda keng emas
-        ranks = [p for p in parts if p["h"] >= min_rank_h and p["w"] <= 2.2 * p["h"]]
+        ranks = [p for p in parts if p["h"] >= min_rank_h and 0.9 * p["h"] >= p["w"]]
         for rk in ranks:
             # Mast belgisi: aynan tagida, kengligi o'xshash
             cx = rk["x"] + rk["w"] / 2
@@ -90,20 +165,22 @@ def burchaklar(img, min_rank_h=40):
                     continue
                 gap = s["y"] - (rk["y"] + rk["h"])
                 scx = s["x"] + s["w"] / 2
-                if (-0.15 * rk["h"] <= gap <= 0.75 * rk["h"]
-                        and abs(scx - cx) <= 0.75 * rk["w"]
-                        and 0.35 * rk["h"] <= s["h"] <= 1.15 * rk["h"]):
+                if (-0.15 * rk["h"] <= gap <= 0.70 * rk["h"]
+                        and abs(scx - cx) <= 0.70 * rk["w"]
+                        and 0.30 * rk["h"] <= s["h"] <= 0.90 * rk["h"]
+                        and s["w"] <= 0.95 * rk["h"]):
                     if nomzod is None or s["y"] < nomzod["y"]:
                         nomzod = s
             if nomzod is None:
                 continue
+            nomzod = mast_kes(nomzod, rk, m)
             box = dict(
                 x=min(rk["x"], nomzod["x"]), y=rk["y"],
                 w=max(rk["x"] + rk["w"], nomzod["x"] + nomzod["w"]) - min(rk["x"], nomzod["x"]),
                 h=nomzod["y"] + nomzod["h"] - rk["y"],
             )
             oqlik = toza_fonmi(oq, box)
-            if oqlik < 0.55:
+            if oqlik < min_oqlik:
                 continue
             topildi.append(dict(rang=rang, rank=rk, suit=nomzod, box=box, oqlik=oqlik))
 
@@ -116,7 +193,28 @@ def burchaklar(img, min_rank_h=40):
                for n in natija):
             continue
         natija.append(t)
+    natija = olcham_filtri(natija, h)
     return sorted(natija, key=lambda t: (t["box"]["y"], t["box"]["x"]))
+
+
+def olcham_filtri(topildi, kadr_balandligi, chidam=0.18):
+    """Bitta zonadagi kartalar bir xil o'lchamda bo'ladi -
+    o'rtachadan keskin farq qilgani soxta (kartalar orasidagi tirqish va h.k.)."""
+    zonalar = {}
+    for t in topildi:
+        yc = (t["box"]["y"] + t["box"]["h"] / 2) / kadr_balandligi
+        z = "qol" if yc > 0.66 else ("stol" if yc > 0.25 else "yuqori")
+        zonalar.setdefault(z, []).append(t)
+
+    out = []
+    for z, ts in zonalar.items():
+        if len(ts) < 3:
+            out.extend(ts)
+            continue
+        hs = sorted(t["box"]["h"] for t in ts)
+        orta = hs[len(hs) // 2]
+        out.extend(t for t in ts if abs(t["box"]["h"] - orta) <= chidam * orta)
+    return out
 
 
 if __name__ == "__main__":
@@ -133,3 +231,23 @@ if __name__ == "__main__":
         if b["x"] / w < 0.16 and 0.3 < yc < 0.6:
             zona = "kozir"
         print(f"{b['x']:5} {b['y']:5} {b['w']:4} {b['h']:4} {t['rang']:>5} {t['oqlik']:6.2f}  {zona}")
+
+
+def kozir_topish(img, roi=(0.0, 0.33, 0.22, 0.26)):
+    """Kozir kartasi chapda YONBOSHLAB yotadi - belgilari 90 gradus burilgan.
+
+    Shuning uchun o'sha hududni burib, keyin odatdagi burchak qidiruvi
+    ishlatiladi. Qaytaradi: (burchak, burilgan_rasm) yoki (None, None).
+    """
+    h, w = img.shape[:2]
+    x0, y0 = int(roi[0] * w), int(roi[1] * h)
+    x1, y1 = int((roi[0] + roi[2]) * w), int((roi[1] + roi[3]) * h)
+    kesim = img[y0:y1, x0:x1]
+    # Soat strelkasi bo'yicha burish: yonboshlagan karta tik holatga keladi.
+    burilgan = np.rot90(kesim, k=1).copy()
+    # Kozir kartasi kichik va atrofi fon - oqlik talabi pastroq.
+    bs = burchaklar(burilgan, min_rank_h=25, min_oqlik=0.30)
+    if not bs:
+        return None, burilgan
+    # Eng kattasi - kozir kartasining burchagi
+    return max(bs, key=lambda t: t["box"]["h"]), burilgan
