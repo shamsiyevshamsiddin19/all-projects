@@ -71,17 +71,30 @@ Karta nomlari qo'lda emas, **guruhlash** orqali o'rgatilgan: 2944 ta belgi
 o'xshashligiga qarab guruhlanadi, keyin har guruhga bitta nom beriladi.
 Shu bilan 36 ta kartani belgilash o'rniga ~50 ta guruh nomlanadi.
 
+Kartadan tashqari yana uch narsa o'qiladi:
+
+- **Zaxira soni** - chap chetdagi oq raqam. Sonning ko'tarilishi (masalan 36)
+  yangi o'yin boshlanganini bildiradi.
+- **Hodisa pufakchalari** - "I take", "Pass", "Done". Pufakcha joyi KIM ekanini,
+  matni esa NIMA bo'lganini aytadi. Bu kuzatuv uchun eng ishonchli manba:
+  kartalar harakatidan taxmin qilish shart emas.
+- **Kozir masti** - yonboshlab yotgan kozir kartasidan.
+
 O'lchovlar (348 kadr, bitta to'liq 3 kishilik o'yin videosi):
 
 | Mezon | Natija |
 |---|---|
-| Tanilgan belgi | 2943 ta, noma'lumi **1.8%** |
+| Tanilgan belgi | 2809 ta, noma'lumi **2.2%** |
 | Kozir karta to'g'riligi | **199/199 = 100%** (videoda kozir doim 8♣ edi) |
 | Bir kadrda takrorlangan karta | **0 ta** |
 | O'tkazib yuborish (qo'l / stol) | **0.99% / 0.60%** |
+| Zaxira soni | kamayish tartibi buzilmagan, 18 dan 2 gacha |
+| Hodisalar | 10 ta hodisa, ishonch 0.97-1.00 |
 
-Oxirgi ikki mezon qo'lda belgilashsiz o'lchanadi: karta o'z-o'zidan ikkilanmaydi
-va g'oyib bo'lib qaytmaydi - shuning uchun bunday hodisa xatoning o'zi.
+Oxirgi mezonlar qo'lda belgilashsiz o'lchanadi: karta o'z-o'zidan ikkilanmaydi,
+g'oyib bo'lib qaytmaydi, zaxira esa ko'paymaydi - bunday hodisaning o'zi xato.
+Ikki joyda chiqqan karta "noma'lum" ga chiqariladi: maslahatchiga xato karta
+berishdan ko'ra bilmaslik xavfsizroq.
 
 ## Hali qilinmagan
 

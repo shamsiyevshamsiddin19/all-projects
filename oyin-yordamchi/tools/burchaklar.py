@@ -233,7 +233,10 @@ if __name__ == "__main__":
         print(f"{b['x']:5} {b['y']:5} {b['w']:4} {b['h']:4} {t['rang']:>5} {t['oqlik']:6.2f}  {zona}")
 
 
-def kozir_topish(img, roi=(0.0, 0.33, 0.22, 0.26)):
+KOZIR_ROI = (0.0, 0.33, 0.22, 0.26)
+
+
+def kozir_topish(img, roi=KOZIR_ROI):
     """Kozir kartasi chapda YONBOSHLAB yotadi - belgilari 90 gradus burilgan.
 
     Shuning uchun o'sha hududni burib, keyin odatdagi burchak qidiruvi

@@ -4,7 +4,7 @@ import json, sys
 import numpy as np
 from PIL import Image
 sys.path.insert(0, __file__.rsplit("/", 1)[0])
-from burchaklar import burchaklar, kozir_topish
+from burchaklar import burchaklar, kozir_topish, KOZIR_ROI
 from belgi_yig import namuna
 
 def _profil(nom):
@@ -52,7 +52,18 @@ def kartalar(img):
     """Kadrdagi kartalar: [{karta, zona, ishonch}]"""
     natija = []
     h = img.shape[0]
-    uchrashuv = [(t, img, "kadr") for t in burchaklar(img)]
+    # Kozir kartasi yonboshlab yotadi va alohida, burilgan holda o'qiladi.
+    # Asosiy qidiruv o'sha hududga tegmasligi kerak - aks holda bitta karta
+    # ikki marta, ustiga stol kartasi deb yoziladi.
+    kx0, ky0 = KOZIR_ROI[0] * img.shape[1], KOZIR_ROI[1] * img.shape[0]
+    kx1, ky1 = (KOZIR_ROI[0] + KOZIR_ROI[2]) * img.shape[1], (KOZIR_ROI[1] + KOZIR_ROI[3]) * img.shape[0]
+
+    def kozir_hududida(t):
+        cx = t["box"]["x"] + t["box"]["w"] / 2
+        cy = t["box"]["y"] + t["box"]["h"] / 2
+        return kx0 <= cx <= kx1 and ky0 <= cy <= ky1
+
+    uchrashuv = [(t, img, "kadr") for t in burchaklar(img) if not kozir_hududida(t)]
     kz, bur = kozir_topish(img)
     if kz is not None:
         uchrashuv.append((kz, bur, "kozir"))
@@ -68,6 +79,25 @@ def kartalar(img):
         yc = (t["box"]["y"] + t["box"]["h"] / 2) / src.shape[0]
         zona = "kozir" if manba == "kozir" else ("qol" if yc > 0.66 else "stol")
         natija.append(dict(karta=r + s, zona=zona, ishonch=round(ishonch, 3), box=t["box"]))
+    return _takrorni_tozala(natija)
+
+
+def _takrorni_tozala(natija):
+    """Bitta karta ikki joyda bo'la olmaydi.
+
+    Shunday bo'lsa - biri albatta xato. Ishonchi pastrog'i "noma'lum" ga
+    chiqariladi: maslahatchiga xato karta berishdan ko'ra, bilmaslik xavfsiz.
+    """
+    eng_yaxshi = {}
+    for k in natija:
+        if k["karta"] is None:
+            continue
+        oldingi = eng_yaxshi.get(k["karta"])
+        if oldingi is None or k["ishonch"] > oldingi["ishonch"]:
+            eng_yaxshi[k["karta"]] = k
+    for k in natija:
+        if k["karta"] is not None and eng_yaxshi[k["karta"]] is not k:
+            k["karta"] = None
     return natija
 
 
