@@ -1,0 +1,15 @@
+# Katta fayllar: video, kadrlar, karta namunalari - qayta yasash mumkin
+data/
+
+# Gradle
+.gradle/
+build/
+local.properties
+
+# IDE
+.idea/
+*.iml
+
+# Python
+__pycache__/
+*.pyc
