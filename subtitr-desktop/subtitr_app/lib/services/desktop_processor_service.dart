@@ -66,6 +66,7 @@ class ProcessorResult {
     required this.sourceLang,
     required this.targetLang,
     required this.outDir,
+    this.usage = const {},
   });
 
   final List<ProcessorOutput> outputs;
@@ -74,6 +75,10 @@ class ProcessorResult {
   final String sourceLang;
   final String targetLang;
   final String outDir;
+
+  /// Haqiqatda ketgan AI so'rovlari: `whisper`, `rescan`, `translate`.
+  /// Boshlashdan oldingi baho taxminiy — bu esa aniq son.
+  final Map<String, int> usage;
 
   factory ProcessorResult.fromJson(Map<String, dynamic> json) {
     final rawOutputs = json['outputs'];
@@ -92,6 +97,13 @@ class ProcessorResult {
       sourceLang: json['sourceLang'] as String? ?? '',
       targetLang: json['targetLang'] as String? ?? '',
       outDir: json['outDir'] as String? ?? '',
+      usage: switch (json['usage']) {
+        final Map<dynamic, dynamic> m => {
+            for (final e in m.entries)
+              if (e.value is num) '${e.key}': (e.value as num).toInt(),
+          },
+        _ => const <String, int>{},
+      },
     );
   }
 }
@@ -259,6 +271,9 @@ class DesktopProcessorService {
     double fontScale = 1.0,
     String position = 'bottom',
     String subColor = '#FFE680',
+    String origStyle = 'box',
+    String quality = '1080',
+    bool upscale = false,
   }) async {
     final payload = await _streamProcess([
       'process',
@@ -276,6 +291,11 @@ class DesktopProcessorService {
       position,
       '--sub-color',
       subColor,
+      '--orig-style',
+      origStyle,
+      '--quality',
+      quality,
+      if (upscale) '--upscale',
     ], onProgress: onProgress);
     return ProcessorResult.fromJson(payload);
   }
@@ -312,6 +332,9 @@ class DesktopProcessorService {
     double fontScale = 1.0,
     String position = 'bottom',
     String subColor = '#FFE680',
+    String origStyle = 'box',
+    String quality = '1080',
+    bool upscale = false,
   }) async {
     // Write the edited segments next to the session so the processor can pick
     // them up (they fully replace the originals for rendering).
@@ -335,6 +358,11 @@ class DesktopProcessorService {
         position,
         '--sub-color',
         subColor,
+        '--orig-style',
+        origStyle,
+        '--quality',
+        quality,
+        if (upscale) '--upscale',
       ], onProgress: onProgress);
       return ProcessorResult.fromJson(payload);
     } finally {
@@ -350,16 +378,25 @@ class DesktopProcessorService {
   Future<Map<String, dynamic>> downloadUrl({
     required String url,
     required void Function(ProcessorProgress progress) onProgress,
+    String quality = '1080',
   }) async {
-    return _streamProcess(['download', '--url', url], onProgress: onProgress);
+    return _streamProcess(
+      ['download', '--url', url, '--quality', quality],
+      onProgress: onProgress,
+    );
   }
 
   /// Resolves a bundled tool (ffmpeg/ffprobe) next to the app, else PATH.
   String resolveTool(String name) {
-    final bundled = File(
-      '${root.path}${Platform.pathSeparator}$name${Platform.isWindows ? '.exe' : ''}',
-    );
-    return bundled.existsSync() ? bundled.path : name;
+    final sep = Platform.pathSeparator;
+    final fname = '$name${Platform.isWindows ? '.exe' : ''}';
+    for (final base in ['${root.path}$sep', '${root.path}${sep}tools$sep']) {
+      final bundled = File('$base$fname');
+      if (bundled.existsSync()) {
+        return bundled.path;
+      }
+    }
+    return name;
   }
 
   /// Video duration in seconds via ffprobe (0 on any failure).
@@ -401,9 +438,20 @@ class DesktopProcessorService {
   Map<String, String>? get _env =>
       processEnvironment.isEmpty ? null : processEnvironment;
 
+  /// The frozen (PyInstaller) processor shipped next to the app, or null when
+  /// only the `.py` source is present. Windows builds carry the `.exe`
+  /// suffix, Linux/macOS ones do not.
+  File? get _frozenProcessor {
+    final file = File(
+      '${root.path}${Platform.pathSeparator}desktop_processor'
+      '${Platform.isWindows ? '.exe' : ''}',
+    );
+    return file.existsSync() ? file : null;
+  }
+
   Future<ProcessResult> _executeRun(List<String> args) async {
-    final exeFile = File('${root.path}${Platform.pathSeparator}desktop_processor.exe');
-    if (exeFile.existsSync()) {
+    final exeFile = _frozenProcessor;
+    if (exeFile != null) {
       return Process.run(
         exeFile.path,
         args,
@@ -430,8 +478,8 @@ class DesktopProcessorService {
   }
 
   Future<Process> _executeStart(List<String> args) async {
-    final exeFile = File('${root.path}${Platform.pathSeparator}desktop_processor.exe');
-    if (exeFile.existsSync()) {
+    final exeFile = _frozenProcessor;
+    if (exeFile != null) {
       return Process.start(
         exeFile.path,
         args,
@@ -489,6 +537,14 @@ class DesktopProcessorService {
         process.kill(ProcessSignal.sigkill);
       }
     } else {
+      // Linux/macOS: Process.kill() faqat Python'ni o'ldiradi, u ishga
+      // tushirgan ffmpeg/yt-dlp esa "yetim" bo'lib fonda ishlab qolaveradi
+      // va protsessorni band qilib turadi. Avval bolalarini o'ldiramiz.
+      try {
+        await Process.run('pkill', ['-9', '-P', '${process.pid}']);
+      } catch (_) {
+        // pkill yo'q bo'lsa ham asosiy jarayonni to'xtatamiz.
+      }
       process.kill(ProcessSignal.sigkill);
     }
   }
@@ -551,14 +607,36 @@ class DesktopProcessorService {
     return payload;
   }
 
-  static Future<String> _pythonExecutable() async {
-    final python = await Process.run('python', [
-      '--version',
-    ], runInShell: Platform.isWindows);
-    if (python.exitCode == 0) {
-      return 'python';
+  static String? _cachedPython;
+
+  /// Locates a usable Python interpreter. A virtualenv shipped next to the
+  /// processor wins (its site-packages already hold groq/openai/gemini), then
+  /// `python3` (the only name that exists on most Linux distros), then `python`.
+  Future<String> _pythonExecutable() async {
+    final cached = _cachedPython;
+    if (cached != null) {
+      return cached;
     }
-    return 'python';
+    final sep = Platform.pathSeparator;
+    final venv = Platform.isWindows
+        ? '${root.path}$sep.venv${sep}Scripts${sep}python.exe'
+        : '${root.path}$sep.venv${sep}bin${sep}python';
+    if (File(venv).existsSync()) {
+      return _cachedPython = venv;
+    }
+    for (final name in const ['python3', 'python']) {
+      try {
+        final probe = await Process.run(name, [
+          '--version',
+        ], runInShell: Platform.isWindows);
+        if (probe.exitCode == 0) {
+          return _cachedPython = name;
+        }
+      } catch (_) {
+        // Not on PATH — try the next candidate.
+      }
+    }
+    return _cachedPython = 'python3';
   }
 
   static Directory _findRoot() {
@@ -576,7 +654,8 @@ class DesktopProcessorService {
           '${dir.path}${Platform.pathSeparator}desktop_processor.py',
         );
         final exeFile = File(
-          '${dir.path}${Platform.pathSeparator}desktop_processor.exe',
+          '${dir.path}${Platform.pathSeparator}desktop_processor'
+          '${Platform.isWindows ? '.exe' : ''}',
         );
         if (pyFile.existsSync() || exeFile.existsSync()) {
           return dir;

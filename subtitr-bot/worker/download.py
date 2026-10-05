@@ -145,7 +145,7 @@ def probe_url(url: str) -> dict:
     }
 
 
-def download_video(url: str, out_path: str) -> None:
+def download_video(url: str, out_path: str, max_height: int | None = None) -> None:
     """Videoni out_path ga yuklab oladi (mp4, balandligi <= YTDLP_MAX_HEIGHT).
 
     yt-dlp kengaytmani o'zi tanlaydi; yakuniy faylni topib out_path ga
@@ -153,7 +153,7 @@ def download_video(url: str, out_path: str) -> None:
     """
     work_dir = os.path.dirname(os.path.abspath(out_path)) or "."
     base = os.path.splitext(os.path.basename(out_path))[0]
-    max_h = settings.ytdlp_max_height
+    max_h = max_height or settings.ytdlp_max_height
 
     opts = {
         "quiet": True,

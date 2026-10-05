@@ -70,6 +70,18 @@ class _HomeScreenState extends State<HomeScreen> {
       description: 'Faqat original subtitr kuydiriladi',
     ),
     ModeChoice(
+      value: 'translated',
+      icon: Icons.translate_rounded,
+      title: 'Faqat tarjima',
+      description: 'Videoda faqat tarjima subtitri ko\'rinadi',
+    ),
+    ModeChoice(
+      value: 'reading',
+      icon: Icons.auto_stories_rounded,
+      title: 'O\'qish uchun matn',
+      description: 'PDF (3 xil maket), TXT va Yordamchi sayti uchun MD',
+    ),
+    ModeChoice(
       value: 'srt',
       icon: Icons.description_rounded,
       title: 'SRT fayl',
@@ -199,7 +211,11 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) setState(() {});
     });
     try {
-      final res = await _service.downloadUrl(url: url, onProgress: _applyProgress);
+      final res = await _service.downloadUrl(
+        url: url,
+        onProgress: _applyProgress,
+        quality: _appearance.quality,
+      );
       if (!mounted) return;
       final dir = res['dir'] as String? ?? '';
       final name = res['name'] as String? ?? 'video';
@@ -330,6 +346,9 @@ class _HomeScreenState extends State<HomeScreen> {
         fontScale: _appearance.fontScale,
         position: _appearance.position,
         subColor: _appearance.subColor,
+        origStyle: _appearance.origStyle,
+        quality: _appearance.quality,
+        upscale: _appearance.upscale,
       );
       if (!mounted) return;
       setState(() {
@@ -442,6 +461,9 @@ class _HomeScreenState extends State<HomeScreen> {
         fontScale: _appearance.fontScale,
         position: _appearance.position,
         subColor: _appearance.subColor,
+        origStyle: _appearance.origStyle,
+        quality: _appearance.quality,
+        upscale: _appearance.upscale,
       );
       if (!mounted) return;
       setState(() {
@@ -521,6 +543,9 @@ class _HomeScreenState extends State<HomeScreen> {
             fontScale: _appearance.fontScale,
             position: _appearance.position,
             subColor: _appearance.subColor,
+            origStyle: _appearance.origStyle,
+            quality: _appearance.quality,
+            upscale: _appearance.upscale,
           );
           done++;
           if (mounted) setState(() => _result = result);
@@ -623,7 +648,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int get _estimatedSeconds {
     double factor = 0.35;
     if (_mode == 'all') factor = 0.5;
-    if (_mode == 'srt' || _mode == 'transcript') factor = 0.15;
+    if (_mode == 'srt' || _mode == 'transcript' || _mode == 'reading') factor = 0.15;
     return (_videoDuration * factor).round();
   }
 

@@ -4674,9 +4674,20 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
 /* "O'qish" sarlavhasidagi C/V — lug'at bo'limidagi tugma bilan bir xil ko'rinish */
 .rd-voc-btn { font-weight: 800; font-size: 16px; color: var(--accent); width: 34px; height: 34px; line-height: 1; }
 
-.vb-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+/* Beshta ilova telefon ekraniga sig'maydi ("Yodlanmaganlar" va
+   "O'rganilganlar" uzun). Shuning uchun qator YON TOMONGA suriladi va
+   yorliqlar siqilmaydi — siqilsa matn ikki qatorga tushib, tugmalar
+   har xil balandlikda bo'lib qolardi. Keng ekranda esa `flex-grow`
+   ularni avvalgidek teng taqsimlaydi. */
+.vb-tabs {
+  display: flex; gap: 6px; margin-bottom: 12px;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.vb-tabs::-webkit-scrollbar { display: none; }
 .vb-tab {
-  flex: 1; padding: 9px 10px; border-radius: var(--radius-sm);
+  flex: 1 0 auto; white-space: nowrap;
+  padding: 9px 12px; border-radius: var(--radius-sm);
   border: 1px solid var(--border); background: var(--card);
   color: var(--hint); font-size: 13px; font-weight: 700; cursor: pointer;
 }
@@ -4689,6 +4700,906 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   box-shadow: 0 0 0 1px var(--accent) inset, 0 0 12px -2px var(--accent);
 }
 .vb-tab.active { background: var(--accent-soft); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
+
+/* ==================== Lug'at ro'yxati (vocab_dict) ====================
+   Yodlash uchun ro'yxat: raqam, so'z, tarjima va holat belgisi. */
+.vd-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.vd-count { font-size: 12.5px; color: var(--hint); font-weight: 600; }
+/* Menyu tugmasi — tez rejim yoki filtr yoqilgan bo'lsa yonib turadi.
+   Rang inline beriladi (tez rejim rangi), shu sabab bu yerda faqat fon:
+   `color` yozilsa u inline uslubdan kuchsizroq bo'lib, holat rangini
+   bosib qo'ymasligi kerak. */
+.vd-menu-btn.on { background: var(--accent-soft); color: var(--accent); }
+
+/* ==================== 1. Til Almashtirgich (Image 2 Uslubi: RU - UZ) ==================== */
+.vd-lang-toggle {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+  border-radius: 999px;
+  outline: none;
+  display: inline-block;
+  vertical-align: middle;
+}
+.vd-lang-toggle:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.vd-lt-track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 92px;
+  height: 36px;
+  background: #18181a;
+  border: 2px solid #2d2d32;
+  border-radius: 999px;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.75);
+  box-sizing: border-box;
+  overflow: hidden;
+  transition: border-color .2s ease, background .2s ease;
+}
+.vd-lang-toggle:hover .vd-lt-track {
+  border-color: #44444c;
+}
+.vd-lt-knob {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #28282b;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform .28s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+  z-index: 2;
+}
+.vd-lt-ring {
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+.vd-lt-core {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #00e676;
+  box-shadow: 0 0 8px #00e676;
+  transition: background .2s ease, box-shadow .2s ease;
+}
+.vd-lt-txt {
+  position: absolute;
+  right: 14px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14.5px;
+  font-weight: 900;
+  letter-spacing: .05em;
+  color: #00e676;
+  text-shadow: 0 0 10px rgba(0, 230, 118, 0.5);
+  transition: transform .28s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+  user-select: none;
+}
+/* Flipped (UZ) holati: tugma o'ngga suriladi, yozuv chapga o'tadi */
+.vd-lang-toggle.flipped .vd-lt-knob {
+  transform: translateX(54px);
+}
+.vd-lang-toggle.flipped .vd-lt-txt {
+  transform: translateX(-40px);
+}
+
+/* ==================== 2. ON - OFF - ON Xiralashtirish (Image 1 Uslubi) ==================== */
+.vd-mask-switch {
+  margin-left: auto;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 138px;
+  height: 36px;
+  background: #050505;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  box-sizing: border-box;
+  user-select: none;
+  flex-shrink: 0;
+  overflow: hidden;
+  padding: 2px;
+}
+/* 3D Oq siljish tugmasi (Thumb) */
+.vd-ms-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 42px;
+  height: 28px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffffff 0%, #e2e2e6 100%);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.5), inset 0 -1px 2px rgba(0, 0, 0, 0.15);
+  transition: transform .25s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+  z-index: 1;
+  pointer-events: none;
+}
+/* Holatlar bo'yicha siljish (x: 0px, 44px, 88px) */
+.vd-mask-switch[data-val="left"] .vd-ms-thumb {
+  transform: translateX(0px);
+}
+.vd-mask-switch[data-val="off"] .vd-ms-thumb,
+.vd-mask-switch:not([data-val="left"]):not([data-val="right"]) .vd-ms-thumb {
+  transform: translateX(44px);
+}
+.vd-mask-switch[data-val="right"] .vd-ms-thumb {
+  transform: translateX(88px);
+}
+
+/* 3 ta tugma (ON, OFF, ON) */
+.vd-ms-btn {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: #ffffff;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 11.5px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: color .2s ease;
+  line-height: 1;
+}
+.vd-ms-btn:hover {
+  opacity: .9;
+}
+/* Faol tugma oq yumaloq ustida turgani uchun matni QORA bo'ladi (1-rasm uslubi) */
+.vd-ms-btn.active {
+  color: #000000;
+  font-weight: 950;
+}
+
+/* ==================== 3. Juftlash (Faqat raqamlarni o'zi bo'yaladi) ==================== */
+.vd-row.vd-row-pair .vd-n {
+  color: var(--fam-color);
+  font-weight: 800;
+}
+
+/* Kompyuterda qator 1100 pikselgacha cho'zilib ketardi: so'z chap
+   chekkada, tarjimasi o'ng chekkada qolib, ko'z butun ekranni kesib
+   o'tishga majbur bo'lardi.
+
+   Ikki ustun sinab ko'rildi va RAD ETILDI (foydalanuvchi tanlovi).
+   O'rniga ro'yxat bitta ustunda qoladi, lekin o'qishga qulay enda
+   cheklanadi — qolgan bo'sh joy shunchaki bo'sh turadi. */
+.vd-list { display: block; max-width: 680px; }
+.vd-row {
+  position: relative; display: flex; align-items: center; gap: 12px;
+  width: 100%; text-align: left; padding: 10px 4px;
+  border: 0; border-bottom: 1px solid var(--border-soft);
+  background: none; color: var(--text); cursor: pointer;
+  transition: background .15s ease, transform .18s ease;
+}
+.vd-row:last-child { border-bottom: 0; }
+.vd-row:active { background: var(--card-2); }
+.vd-n {
+  flex: 0 0 auto; min-width: 26px; text-align: right;
+  font-family: var(--mono); font-size: 11.5px; font-weight: 700; color: var(--hint);
+}
+.vd-main { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 8px; }
+.vd-a { font-size: 15px; font-weight: 650; }
+/* Tarjima o'ng tomonga qisiladi: ikkala ustun ko'z bilan ajralib tursin. */
+.vd-b {
+  flex: 1; min-width: 0; text-align: right;
+  font-size: 13.5px; color: var(--text-2);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* Holat belgisi. Yodlanganda galichka, qolganida rangli nuqta —
+   SHAKLI ham boshqa, ya'ni rangni ajratolmaydigan ekranda ham bilinadi. */
+.vd-st { flex: 0 0 auto; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; }
+.vd-st-ok { color: #22c55e; }
+.vd-st-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--st, transparent); }
+/* Yodlangan qator biroz so'nadi — e'tibor qolganlariga qaratilsin */
+.vd-row.st-learned .vd-a { opacity: .6; }
+.vd-row.st-learned .vd-b { opacity: .55; }
+
+/* Xira holat (Masking): so'z ko'z bilan o'qilmaydi, lekin shakli turadi */
+.vd-mask-left .vd-a,
+.vd-mask-right .vd-b {
+  filter: blur(5.5px);
+  opacity: 0.22;
+  user-select: none;
+  transition: filter .18s ease, opacity .18s ease;
+}
+/* Kursor borganda (hover), faol bo'lganda (active) yoki bosilganda (.revealed) ochiladi */
+.vd-mask-left .vd-row:hover .vd-a,
+.vd-mask-left .vd-row.revealed .vd-a,
+.vd-mask-right .vd-row:hover .vd-b,
+.vd-mask-right .vd-row.revealed .vd-b,
+.vd-mask-left .vd-a:hover,
+.vd-mask-right .vd-b:hover,
+.vd-mask-left .vd-a:active,
+.vd-mask-right .vd-b:active {
+  filter: none;
+  opacity: 1;
+}
+.vd-mask-left .vd-row.st-learned:hover .vd-a,
+.vd-mask-left .vd-row.st-learned.revealed .vd-a {
+  opacity: .6;
+}
+.vd-mask-right .vd-row.st-learned:hover .vd-b,
+.vd-mask-right .vd-row.st-learned.revealed .vd-b {
+  opacity: .55;
+}
+
+/* Keng ekranda tarjimalar BIR CHIZIQDA tekislanadi. O'ngga qisilsa
+   har qatorda boshqa joydan boshlanardi va ko'z uni har safar qidirib
+   yurardi. `min-width` (qat'iy en emas) — uzun so'z kesilmaydi, shunchaki
+   tarjimani o'ngroqqa suradi. */
+@media (min-width: 620px) {
+  .vd-a { flex: 0 0 auto; min-width: 44%; }
+  .vd-b { text-align: left; }
+}
+
+/* Telefonda so'zlar kengroq ko'rinishi uchun ekranni 2 chetiga surish (bo'sh joylarni to'ldirish) */
+@media (max-width: 640px) {
+  .page.page-vocab-dict,
+  .page:has(#vd-list) {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+  }
+  .page.page-vocab-dict .topbar,
+  .page:has(#vd-list) .topbar {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+  .vd-bar {
+    padding: 0 6px;
+    margin-bottom: 8px;
+  }
+  .vd-list {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .vd-row {
+    padding: 10px 4px !important;
+    gap: 8px !important;
+  }
+  .vd-n {
+    min-width: 22px !important;
+    font-size: 11px !important;
+    text-align: center !important;
+  }
+  .vd-main {
+    gap: 6px !important;
+  }
+  .vd-a {
+    font-size: 15px !important;
+  }
+  .vd-b {
+    font-size: 13.5px !important;
+    text-align: right !important;
+  }
+}
+
+/* ==========================================================================
+   Lug'at menyusi — O'ng tomon tortma paneli (Right-side Drawer Panel)
+   ========================================================================== */
+.sheet.vd-side-panel {
+  position: fixed !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  right: 0 !important;
+  left: auto !important;
+  width: 420px !important;
+  max-width: 92vw !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  border-radius: 20px 0 0 20px !important;
+  background: var(--bg-elev, #18191c) !important;
+  border-left: 1px solid var(--border) !important;
+  box-shadow: -16px 0 40px rgba(0, 0, 0, 0.5) !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  transform: translateX(102%) !important;
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease !important;
+  opacity: 1 !important;
+  z-index: 1001 !important;
+}
+
+@media (min-width: 640px) {
+  .sheet.vd-side-panel {
+    top: 0 !important;
+    bottom: 0 !important;
+    right: 0 !important;
+    left: auto !important;
+    width: 420px !important;
+    max-width: 90vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 20px 0 0 20px !important;
+    transform: translateX(102%) !important;
+    opacity: 1 !important;
+  }
+  .sheet.vd-side-panel.show {
+    transform: translateX(0) !important;
+    opacity: 1 !important;
+  }
+}
+
+.sheet.vd-side-panel.show {
+  transform: translateX(0) !important;
+  opacity: 1 !important;
+}
+
+.sheet.vd-side-panel > .sheet-grip,
+.sheet.vd-side-panel > h3 {
+  display: none !important;
+}
+
+/* Sarlavha qismi */
+.vd-p-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 14px;
+  background: var(--card, rgba(255, 255, 255, 0.02));
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.vd-p-title-wrap {
+  min-width: 0;
+  flex: 1;
+  padding-right: 12px;
+}
+
+.vd-p-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.25px;
+  line-height: 1.25;
+}
+
+.vd-p-cat {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vd-p-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+  color: var(--muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.18s ease;
+  padding: 0;
+}
+
+.vd-p-close:hover {
+  color: var(--text);
+  background: var(--border);
+  transform: scale(1.05);
+}
+
+.vd-p-close:active {
+  transform: scale(0.95);
+}
+
+/* Gamburger ichidagi tezkor vositalar paneli (Til va Xiralashtirish) */
+.vd-p-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.vd-p-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vd-p-tool-lbl {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+/* Bo'limlar tablari (Oraliq | Juftlash va Ko'rsatish | Belgilash) */
+.vd-p-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: stretch;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.vd-p-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 6px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  font-family: inherit;
+  min-width: 0;
+  text-align: center;
+}
+
+.vd-p-tab:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.vd-p-tab.active {
+  color: var(--accent);
+  background: var(--bg-elev);
+  border-color: var(--border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.vd-p-tab-lbl {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vd-lbl-full { display: none; }
+.vd-lbl-mid { display: none; }
+.vd-lbl-short { display: inline; }
+
+@media (min-width: 440px) {
+  .vd-lbl-full { display: inline; }
+  .vd-lbl-mid { display: none; }
+  .vd-lbl-short { display: none; }
+}
+
+@media (min-width: 375px) and (max-width: 439px) {
+  .vd-lbl-full { display: none; }
+  .vd-lbl-mid { display: inline; }
+  .vd-lbl-short { display: none; }
+}
+
+.vd-pt-badge {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Panel tanasi va varaqlari */
+.vd-p-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 18px 24px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.vd-p-body::-webkit-scrollbar {
+  width: 5px;
+}
+
+.vd-p-body::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+.vd-pane {
+  display: none;
+}
+
+.vd-pane.active {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: vdPaneIn 0.22s ease;
+}
+
+@keyframes vdPaneIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.vd-p-desc {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  padding: 0 2px 4px;
+}
+
+.vd-p-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Birlashtirilgan bo'lim ichidagi guruhlar (Juftlash va Ko'rsatish) */
+.vd-pane-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vd-pane-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 4px 2px 2px;
+}
+
+.vd-pane-group-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vd-pane-group-hint {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.vd-pane-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 6px 0;
+  border: 0;
+  opacity: 0.6;
+}
+
+/* Variant kartochkalari */
+.vd-opt-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--card, rgba(255, 255, 255, 0.03));
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  position: relative;
+  font-family: inherit;
+  color: var(--text);
+  box-sizing: border-box;
+}
+
+.vd-opt-card:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  background: var(--card-2, rgba(255, 255, 255, 0.05));
+  transform: translateY(-1px);
+}
+
+.vd-opt-card:active {
+  transform: scale(0.99);
+}
+
+.vd-opt-card.active {
+  border-color: var(--accent);
+  background: rgba(99, 102, 241, 0.09);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.vd-oc-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  transition: all 0.18s ease;
+}
+
+.vd-opt-card.active .vd-oc-icon {
+  background: rgba(99, 102, 241, 0.18);
+  border-color: var(--accent);
+}
+
+.vd-oc-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.vd-oc-title {
+  font-size: 13.5px;
+  font-weight: 650;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.vd-oc-sub {
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.35;
+  margin-top: 2px;
+}
+
+.vd-oc-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.vd-opt-card.active .vd-oc-badge {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(99, 102, 241, 0.12);
+}
+
+.vd-oc-check {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s ease;
+  position: relative;
+}
+
+.vd-opt-card.active .vd-oc-check {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+/* Oraliqni ko'rsatuvchi chip (Asosiy sahifada) */
+.vd-range-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: var(--accent-soft, rgba(99, 102, 241, 0.12));
+  color: var(--accent, #6366f1);
+  border: 1px solid var(--accent);
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.vd-range-chip:hover {
+  background: var(--accent);
+  color: #ffffff;
+  transform: scale(1.03);
+}
+
+.vd-range-chip:active {
+  transform: scale(0.97);
+}
+
+/* Oraliq ixtiyoriy kiritish kartochkasi */
+.vd-range-custom-card {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--card, rgba(255, 255, 255, 0.03));
+  border: 1.5px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+.vd-rc-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.vd-rc-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.vd-rc-hint {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.vd-rc-inputs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.vd-rc-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-elev);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  height: 40px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  transition: border-color 0.18s ease;
+}
+
+.vd-rc-field:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.vd-rc-lbl {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.vd-rc-input {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 14.5px;
+  font-weight: 700;
+  font-family: var(--mono);
+  box-sizing: border-box;
+  padding: 0;
+  outline: none;
+}
+
+.vd-rc-sep {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.vd-rc-apply-btn {
+  width: 100%;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--accent-ink, #000);
+  font-size: 13.5px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-sizing: border-box;
+}
+
+.vd-rc-apply-btn:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.vd-rc-apply-btn:active {
+  transform: scale(0.99);
+}
+
+.vd-rc-clear-btn {
+  background: transparent;
+  border: 0;
+  color: var(--danger, #ef4444);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 0 0;
+  text-align: center;
+  transition: opacity 0.15s;
+}
+
+.vd-rc-clear-btn:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+
+
+/* Qidiruv qatori: chapda tilni almashtirish, o'ngda qidiruv maydoni. */
+.vb-bar { display: flex; align-items: stretch; gap: 8px; margin-bottom: 14px; }
+.vb-bar .vb-search { flex: 1; margin-bottom: 0; }
+
+.vb-flip {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 6px;
+  padding: 0 12px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--card);
+  color: var(--text-2); font-size: 12.5px; font-weight: 800;
+  font-family: var(--mono); letter-spacing: .02em;
+  white-space: nowrap; cursor: pointer;
+  transition: background .18s ease, color .18s ease, border-color .18s ease;
+}
+/* Teskari yo'nalish YAQQOL bilinishi kerak: qaysi tomonda turganingizni
+   bilmasangiz, mashqning ma'nosi yo'qoladi. */
+.vb-flip.flipped {
+  background: var(--accent-soft); color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+}
+.vb-flip:active { transform: scale(.97); }
+.vb-flip-ic { display: flex; transition: transform .3s ease; }
+.vb-flip.flipped .vb-flip-ic { transform: rotate(180deg); }
+
+/* Ro'yxat "ag'darilishi" — yangi tomon o'rniga kelayotgani bilinsin. */
+.vb-turning { opacity: 0; transform: translateY(-4px); }
+#vb-content { transition: opacity .13s ease, transform .13s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .vb-turning { opacity: 1; transform: none; }
+  #vb-content { transition: none; }
+}
 
 .vb-search {
   display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
@@ -5930,6 +6841,23 @@ label.field > span{ display:block; font-size:12.5px; color:var(--hint); font-wei
   background:var(--accent); margin-top:8px;
 }
 .tw-bullet-txt{ flex:1; min-width:0; font-size:14px; line-height:1.55; }
+
+/* Namuna javobdagi gap — bosilsa o'qib beriladi.
+   `.tw-phrase` dan farqi: bu KARTA emas, oqib boradigan matn qatori.
+   Namuna javob ketma-ket gaplardan iborat, har biri alohida kartaga
+   solinsa matn parchalanib ketardi. */
+.tw-say-line{
+  display:flex; align-items:flex-start; gap:10px; width:100%; text-align:left;
+  padding:8px 2px; border:0; border-bottom:1px solid var(--border-soft);
+  background:none; color:var(--text); cursor:pointer;
+  transition:background .15s ease;
+}
+.tw-say-line:last-child{ border-bottom:0; }
+.tw-say-line:active{ background:var(--card-2); }
+.tw-sl-body{ flex:1; min-width:0; }
+.tw-sl-txt{ display:block; font-size:14px; line-height:1.55; }
+.tw-sl-ic{ flex:0 0 auto; color:var(--hint); margin-top:3px; }
+.tw-say-line:active .tw-sl-ic{ color:var(--accent); }
 
 .tw-step{ display:flex; align-items:flex-start; gap:10px; margin-bottom:9px; }
 .tw-step-n{

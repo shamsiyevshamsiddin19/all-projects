@@ -86,7 +86,9 @@
   var HIST_KEY = "subtitr_history";
   var STYLE_KEY = "subtitr_style";
   var STYLE_DEFAULTS = { text_color: "#FFFFFF", outline_color: "#000000",
-    trans_color: "#FFE580", font_size: "medium", position: "bottom", bold: true, box: false };
+    trans_color: "#39FF14", font_size: "medium", position: "bottom", bold: true,
+    box: false, orig_box: true, box_color: "#FFD400", box_text_color: "#000000",
+    quality: "1080" };
   var SIZE_PX = { small: 16, medium: 21, large: 27 };
 
   var el = function (id) { return document.getElementById(id); };
@@ -926,8 +928,11 @@
     sub.style.fontSize = SIZE_PX[s.font_size] + "px";
     sub.style.fontWeight = s.bold ? "700" : "500";
     var sh = outlineShadow(s.outline_color);
+    var origStyle = s.orig_box
+      ? 'color:' + (s.box_text_color || "#000000") + ';background:' + (s.box_color || "#FFD400") + ';padding:1px 6px'
+      : 'color:' + s.text_color + ';text-shadow:' + sh;
     sub.innerHTML =
-      '<span class="pline" style="color:' + s.text_color + ';text-shadow:' + sh + '">Salom, dunyo!</span><br>' +
+      '<span class="pline" style="' + origStyle + '">Salom, dunyo!</span><br>' +
       '<span class="pline" style="color:' + s.trans_color + ';text-shadow:' + sh + '">Hello, world!</span>';
   }
   function setSeg(segId, val) {
@@ -940,6 +945,8 @@
     el("cTrans").value = state.style.trans_color;
     el("tBold").checked = state.style.bold;
     el("tBox").checked = state.style.box;
+    el("tOrigBox").checked = state.style.orig_box !== false;
+    setSeg("qualitySeg", state.style.quality || "1080");
     setSeg("sizeSeg", state.style.font_size);
     setSeg("posSeg", state.style.position);
   }
@@ -964,6 +971,8 @@
     el("cTrans").oninput = function () { state.style.trans_color = this.value; styleChanged(); };
     el("tBold").onchange = function () { state.style.bold = this.checked; styleChanged(); };
     el("tBox").onchange = function () { state.style.box = this.checked; styleChanged(); };
+    el("tOrigBox").onchange = function () { state.style.orig_box = this.checked; styleChanged(); };
+    bindSeg("qualitySeg", "quality");
     bindSeg("sizeSeg", "font_size");
     bindSeg("posSeg", "position");
     el("styleSave").onclick = function () { saveStyle(); haptic("success"); setSection("create"); };

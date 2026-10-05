@@ -140,6 +140,9 @@ def _providers():
     # Claude'dan arzon). Claude ishonchli zaxira (kredit bilan), OpenAI oxirgi chora.
     return [
         ("gemini", aiclient.gemini_available(), _gemini_raw),
+        # Groq bepul va tez — Gemini kunlik kvotasi tugaganda tarjima
+        # butunlay to'xtab qolmasligi uchun ikkinchi o'rinda turadi.
+        ("groq", aiclient.groq_available(), aiclient.groq_generate),
         ("claude", aiclient.claude_available(), aiclient.claude_generate),
         ("openai", aiclient.openai_available(), _openai_raw),
     ]

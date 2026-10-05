@@ -8,6 +8,7 @@ Gemini -> OpenAI fallback. Funksiya sinxron (asyncio.to_thread da chaqiriladi).
 from __future__ import annotations
 
 import logging
+import os
 import re
 
 from config import settings
@@ -106,6 +107,10 @@ def _gemini(words: list[str], target_name: str, src_name: str) -> str:
     )
 
 
+def _groq(words: list[str], target_name: str, src_name: str) -> str:
+    return aiclient.groq_generate(to_payload(words), _prompt(target_name, src_name))
+
+
 def _claude(words: list[str], target_name: str, src_name: str) -> str:
     return aiclient.claude_generate(to_payload(words), _prompt(target_name, src_name))
 
@@ -137,9 +142,18 @@ def _parse(content: str, words: list[str]) -> tuple[list[dict], int]:
     return out, matched
 
 
+# Javob shuncha ulushdan to'liq bo'lishi kerak. Past chegara xavfli: model
+# to'plamning bir qismiga javob bermasa, qolgan so'zlar "tarjimasi = o'zi"
+# bo'lib qoladi va build_vocab_map ularni tashlab yuboradi — natijada video
+# davomida butun daqiqalar bo'yi ekranda hech qanday so'z chiqmaydi.
+_MIN_COVERAGE = float(os.getenv("VOCAB_MIN_COVERAGE", "0.8"))
+_MIN_SPLIT = 8      # bundan kichik to'plamni bo'lishning ma'nosi yo'q
+
+
 def _classify_chunk(words: list[str], target_name: str, src_name: str) -> list[dict]:
     providers = [
         ("gemini", aiclient.gemini_available(), _gemini),
+        ("groq", aiclient.groq_available(), _groq),
         ("claude", aiclient.claude_available(), _claude),
         ("openai", aiclient.openai_available(), _openai),
     ]
@@ -149,13 +163,24 @@ def _classify_chunk(words: list[str], target_name: str, src_name: str) -> list[d
         try:
             content = func(words, target_name, src_name)
             out, matched = _parse(content, words)
-            if matched < max(1, len(words) // 2):
+            if matched < max(1, int(len(words) * _MIN_COVERAGE)):
                 raise ValueError(f"kam tarjima ({matched}/{len(words)})")
             return out
         except Exception as exc:
             logger.warning("Lug'at '%s' xato (%s) — keyingi provayder", name, exc)
             continue
-    raise RuntimeError("Lug'at tuzilmadi (AI provayderlar ishlamadi)")
+
+    # Katta to'plam ishlamasligi ko'pincha vaqtinchalik (limit yoki javob
+    # uzunligi). Ikkiga bo'lib qayta urinamiz — aks holda butun bo'lak so'z
+    # yo'qoladi (ilgari bu yerda xato ko'tarilib, lug'at umuman tuzilmasdi).
+    if len(words) > _MIN_SPLIT:
+        half = len(words) // 2
+        logger.info("Lug'at to'plami ikkiga bo'linib qayta urinilmoqda (%d)", len(words))
+        return (_classify_chunk(words[:half], target_name, src_name)
+                + _classify_chunk(words[half:], target_name, src_name))
+
+    logger.warning("Lug'at: %d so'z tarjima qilinmadi", len(words))
+    return [{"word": w, "translation": w, "pos": "", "helper": ""} for w in words]
 
 
 def build_vocabulary(

@@ -38,6 +38,7 @@ from db.crud import (
     videos_done_today,
 )
 from web.server import base_url, publish_file
+from worker import substyle
 from worker.download import detect_source, download_video, probe_url
 from worker.ffmpeg_utils import probe_duration
 from worker.pipeline import cleanup, cleanup_all, job_paths, process_video_modes
@@ -508,8 +509,28 @@ async def api_process(request: web.Request) -> web.Response:
     return web.json_response({"job_id": job_id})
 
 
+# Mini App vazifalari Celery navbatidan tashqarida, shu veb-jarayonning
+# o'zida bajariladi. Server 945 MB RAM bilan ishlaydi va ikkita parallel
+# FFmpeg filtri uni OOM ga olib boradi — shuning uchun bir vaqtda faqat
+# MINIAPP_CONCURRENCY ta ish ketadi, qolganlari navbatda kutadi.
+_JOB_SLOTS = asyncio.Semaphore(int(os.getenv("MINIAPP_CONCURRENCY", "1")))
+
+
 async def _run_job(job_id, in_path, modes, source_lang, target_lang,
                    video_id, max_minutes, url=None, style=None) -> None:
+    """Navbat bilan bajaradi (bir vaqtda MINIAPP_CONCURRENCY ta ish)."""
+    job = _JOBS.get(job_id)
+    if job is not None and _JOB_SLOTS.locked():
+        job["progress"] = "Navbatda — oldingi video tugashini kutmoqda..."
+    async with _JOB_SLOTS:
+        await _run_job_locked(
+            job_id, in_path, modes, source_lang, target_lang,
+            video_id, max_minutes, url=url, style=style,
+        )
+
+
+async def _run_job_locked(job_id, in_path, modes, source_lang, target_lang,
+                          video_id, max_minutes, url=None, style=None) -> None:
     job = _JOBS[job_id]
 
     async def progress(text: str) -> None:
@@ -518,7 +539,9 @@ async def _run_job(job_id, in_path, modes, source_lang, target_lang,
     try:
         if url:
             job["progress"] = "Video havoladan yuklab olinmoqda..."
-            await asyncio.to_thread(download_video, url, in_path)
+            await asyncio.to_thread(
+                download_video, url, in_path, substyle.quality_height(style)
+            )
         duration = await asyncio.to_thread(probe_duration, in_path)
         if max_minutes and duration > max_minutes * 60:
             raise RuntimeError(

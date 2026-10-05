@@ -71,7 +71,31 @@ def _complete_sign(p: dict) -> str:
     )
 
 
+def _ok(p: dict, confirm_id: int | str = "") -> web.Response:
+    """Click uchun muvaffaqiyat javobi (error=0)."""
+    return web.json_response(
+        {
+            "click_trans_id": p.get("click_trans_id", ""),
+            "merchant_trans_id": p.get("merchant_trans_id", ""),
+            "merchant_confirm_id": confirm_id,
+            "error": 0,
+            "error_note": "Success",
+        }
+    )
+
+
 def _err(p: dict, code: int, note: str, confirm: bool = False) -> web.Response:
+    # Click xatolari ko'rinmas bo'lib qolmasin: myxvest ko'prigi orqali
+    # kelgani uchun tashqi tomondan faqat "amalga oshirilmoqda" ko'rinadi.
+    logger.warning(
+        "Click %s RAD ETILDI: %s (%s) | mtid=%s click_trans_id=%s amount=%s",
+        "complete" if confirm else "prepare",
+        code,
+        note,
+        p.get("merchant_trans_id", ""),
+        p.get("click_trans_id", ""),
+        p.get("amount", ""),
+    )
     body = {
         "click_trans_id": p.get("click_trans_id", ""),
         "merchant_trans_id": p.get("merchant_trans_id", ""),
@@ -102,6 +126,10 @@ async def _handle_prepare(request: web.Request) -> web.Response:
     except ValueError:
         return _err(p, -2, "Incorrect amount")
 
+    logger.info(
+        "Click prepare OK: mtid=%s order=%s amount=%s",
+        p.get("merchant_trans_id", ""), order.id, p.get("amount", ""),
+    )
     return web.json_response(
         {
             "click_trans_id": p.get("click_trans_id", ""),
@@ -135,8 +163,13 @@ def make_complete_handler(bot: Bot):
             return _err(p, -4, "Already paid", confirm=True)
 
         click_trans_id = p.get("click_trans_id")
+        # Atomik belgilash: Click bir vaqtda ikkita `Complete` yuborsa,
+        # ikkinchisi bu yerda False oladi va yon ta'sirlar (kun qo'shish,
+        # videoni navbatga qo'yish) TAKRORLANMAYDI.
         if kind == "donation":
-            await mark_donation_paid(order.id, click_trans_id)
+            if not await mark_donation_paid(order.id, click_trans_id):
+                logger.info("Takroriy Complete (donat %s) — e'tiborsiz", order.id)
+                return _ok(p, order.id)
             user = await get_user_by_id(order.user_id)
             if user:
                 try:
@@ -148,10 +181,12 @@ def make_complete_handler(bot: Bot):
                     )
                 except Exception:
                     logger.warning("Donat xabarini yuborib bo'lmadi: %s", user.telegram_id)
-        elif order.plan == "longvideo":
+        elif order.plan == "longvideo":  # noqa: E501 — pastda atomik tekshiruv bor
             # Uzun video (45+ daqiqa) — bitta martalik to'lov: obuna EMAS,
             # saqlangan meta bilan videoni to'g'ridan-to'g'ri navbatga qo'yamiz.
-            await mark_payment_paid(order.id, click_trans_id)
+            if not await mark_payment_paid(order.id, click_trans_id):
+                logger.info("Takroriy Complete (uzun video %s) — e'tiborsiz", order.id)
+                return _ok(p, order.id)
             try:
                 meta = json.loads(order.meta or "{}")
                 from bot.handlers.video import submit_long_video_job
@@ -171,7 +206,9 @@ def make_complete_handler(bot: Bot):
                         pass
         else:
             # Obuna: to'lovni belgilash + tarifni faollashtirish
-            await mark_payment_paid(order.id, click_trans_id)
+            if not await mark_payment_paid(order.id, click_trans_id):
+                logger.info("Takroriy Complete (obuna %s) — e'tiborsiz", order.id)
+                return _ok(p, order.id)
             user = await get_user_by_id(order.user_id)
             if user:
                 eff = await get_effective_settings()
@@ -188,15 +225,12 @@ def make_complete_handler(bot: Bot):
                 except Exception:
                     logger.warning("Obuna xabarini yuborib bo'lmadi: %s", user.telegram_id)
 
-        return web.json_response(
-            {
-                "click_trans_id": p.get("click_trans_id", ""),
-                "merchant_trans_id": p.get("merchant_trans_id", ""),
-                "merchant_confirm_id": order.id,
-                "error": 0,
-                "error_note": "Success",
-            }
+        logger.info(
+            "Click complete OK: %s mtid=%s order=%s amount=%s click_trans_id=%s",
+            kind, p.get("merchant_trans_id", ""), order.id,
+            p.get("amount", ""), click_trans_id,
         )
+        return _ok(p, order.id)
 
     return _handle_complete
 

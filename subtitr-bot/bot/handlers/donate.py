@@ -7,6 +7,8 @@ donatni "paid" qiladi. Izohlar admin panelда moderatsiyadan o'tadi.
 """
 from __future__ import annotations
 
+import html
+
 from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.types import (
@@ -111,9 +113,12 @@ async def cmd_donors(message: Message) -> None:
     total = await donations_total()
     lines = []
     for d in donors:
-        line = f"❤️ <b>{d['name']}</b> — {d['amount']:,} so'm".replace(",", " ")
+        # Ism/izoh foydalanuvchidan keladi: `<`, `&` bo'lsa Telegram butun
+        # xabarni rad etadi va /donors hech kimga ishlamay qoladi.
+        safe_name = html.escape(str(d.get("name") or "Anonim"))
+        line = f"❤️ <b>{safe_name}</b> — {d['amount']:,} so'm".replace(",", " ")
         if d.get("comment"):
-            line += f"\n   <i>«{d['comment']}»</i>"
+            line += f"\n   <i>«{html.escape(str(d['comment']))}»</i>"
         lines.append(line)
     total_str = f"{total:,}".replace(",", " ")
     await message.answer(

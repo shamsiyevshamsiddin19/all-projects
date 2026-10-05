@@ -127,6 +127,57 @@
       return out;
     },
 
+    /* Ko'p ma'noli tarjimadan BIRINCHISI: "esa, ammo, va" -> "esa".
+       Ro'yxatda joy tor — uch ma'no sig'maydi va o'qib bo'lmaydi;
+       to'liqi bosilganda ko'rinadi.
+
+       Qavs ichidagi izoh AVVAL olib tashlanadi, aks holda
+       "kirmoq (o'qishga) / ish tutmoq" da ajratgich qavs ichida qolib,
+       butun satr bitta ma'no deb hisoblanardi. */
+    firstMeaning: function (t) {
+      var s = String(t == null ? '' : t).trim();
+      if (!s) return '';
+      var body = s.replace(/\s*\([^)]*\)\s*/g, ' ');
+      var first = body.split(/[\/,;|]/)[0].replace(/\s+/g, ' ').trim();
+      return first || s;
+    },
+
+    /* --- HOLAT (status) ---
+       Uchta belgi: yodlangan / takrorlash kerak / qiynalyapman.
+
+       YANGI SAQLASH KALITI OCHILMADI. "Yodlangan" allaqachon
+       `mastered`, sariq va qizil esa allaqachon mavjud rang guruhlari —
+       to'rtinchi ro'yxat ochilsa, ayni bir so'z ikki joyda belgilanib,
+       ular bir-biriga zid bo'lib qolardi (masalan "Guruhlar" bo'limida
+       sariq, lekin holatda belgisiz). Shu sabab holat mavjud ikki
+       manbaning USTIDAGI yupqa qatlam.
+
+       Holatlar O'ZARO ISTISNO: bir so'z bir vaqtda ham yodlangan, ham
+       "qiynalyapman" bo'la olmaydi. */
+    STATUSES: [
+      { id: 'learned', name: 'Yodlangan', hint: 'Bu so\'zni bilaman', color: '#22c55e' },
+      { id: 'review',  name: 'Takrorlash kerak', hint: 'Bilaman, lekin unutib qolyapman', color: '#eab308' },
+      { id: 'hard',    name: 'Qiynalyapman', hint: 'Hech yodda qolmayapti', color: '#ef4444' }
+    ],
+
+    statusOf: function (ru) {
+      if (this.isMastered(ru)) return 'learned';
+      var c = this.colorOf(ru);
+      if (c === '#eab308') return 'review';
+      if (c === '#ef4444') return 'hard';
+      return '';
+    },
+
+    setStatus: function (ru, st) {
+      /* Avval ikkala manbani ham tozalaymiz — aks holda "yodlangan" dan
+         "qizil" ga o'tganda galichka ham, rang ham birga qolib ketardi. */
+      if (this.isMastered(ru)) this.toggleMastered(ru);
+      this.setColor(ru, '');
+      if (st === 'learned') this.toggleMastered(ru);
+      else if (st === 'review') this.setColor(ru, '#eab308');
+      else if (st === 'hard') this.setColor(ru, '#ef4444');
+    },
+
     /* --- Mashqlar uchun asosiy filtr ---
        O'rganib bo'lingan so'zlar mashqqa TUSHMAYDI. Aynan shu narsa
        "galichka" ning ma'nosi: bu so'zni har qanday holatda bilaman. */

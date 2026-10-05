@@ -1,0 +1,138 @@
+Subtitr Desktop — Linux (Ubuntu) uchun o'rnatish va ishlatish
+=============================================================
+
+TALABLAR
+--------
+- Ubuntu 22.04 / 24.04 (yoki shunga o'xshash), 64-bit
+- ffmpeg:  sudo apt install ffmpeg
+  (Boshqa hamma narsa — Python muhiti, yt-dlp — dastur ichida keladi.)
+
+O'RNATISH
+---------
+1. Arxivni yoyib oling:
+       tar xzf SubtitrDesktop-linux-x64.tar.gz
+2. O'rnatuvchini ishga tushiring (administrator huquqi shart emas):
+       ./SubtitrDesktop/install.sh
+3. Menyudan "Subtitr Desktop" ni oching.
+
+Dastur ~/.local/share/SubtitrDesktop ga o'rnatiladi.
+
+API KALIT KIRITISH (bir marta)
+------------------------------
+Dastur AI xizmatlaridan foydalanadi. Har kim O'ZINING kalitini kiritadi:
+1. Yuqori o'ngdagi kalit (🔑) ikonkasini bosing.
+2. Kamida bittasini kiriting:
+   - Groq  — BEPUL, tez. https://console.groq.com/keys
+   - OpenAI — eng sifatli tarjima. https://platform.openai.com/api-keys
+   - Gemini — muqobil. https://aistudio.google.com/apikey
+3. "Saqlash" ni bosing. Kalit faqat shu kompyuterda saqlanadi.
+
+Kalitsiz ham ishlaydi: ichki faster-whisper bilan oflayn transkripsiya va
+oflayn lug'at mavjud (sekinroq).
+
+ISHLATISH
+---------
+1. Videoni ~/Videos papkasiga tashlang yoki "Tashqi video" tugmasi orqali
+   istalgan joydan tanlang.
+2. Rejimni tanlang (tarjima+lug'at, ikki qatorli subtitr, faqat tarjima,
+   SRT, matn, h.k.).
+   "Faqat tarjima" — ekranda asl matn ko'rinmaydi, faqat tarjima qatori
+   qoladi. Qator yolg'iz bo'lgani uchun shrifti kattaroq olinadi va
+   "Rang" sozlamasidagi rangda chiqadi ("Asl matn" sozlamasi bu rejimda
+   ko'rsatilmaydi — unga tegishli matn yo'q).
+   "O'qish uchun matn" — video kuydirilmaydi: nutq o'qiladigan abzatslarga
+   yig'ilib, bitta ishda QUYIDAGI HAMMASI chiqadi (keyin qaysi biri qulay
+   bo'lsa, o'shani olasiz):
+     <nom>_oqish.pdf            faqat original til — eng toza o'qish
+     <nom>_oqish_tarjimali.pdf  har abzatsdan keyin tarjimasi
+     <nom>_oqish_alohida.pdf    avval butun original, keyin tarjima bo'limi
+     <nom>_oqish.md             Yordamchi saytining "O'qish" bo'limi uchun
+     <nom>_oqish.txt            matn
+     <nom>_oqish_tarjima.txt    tarjima
+   Video ko'rish o'rniga o'qib tayyorlanish uchun.
+3. Video tili va tarjima tilini tanlang.
+4. "Boshlash" ni bosing.
+5. Natijalar: ~/Videos/Subtitr natijalar/<video nomi>
+
+PAPKALAR
+--------
+- Dastur:        ~/.local/share/SubtitrDesktop
+- Natijalar:     ~/Videos/Subtitr natijalar
+- Ishchi fayllar va AI modellar: ~/.cache/SubtitrDesktop
+  (o'chirsangiz modellar qaytadan yuklanadi, boshqa zarari yo'q)
+Yo'llarni o'zgartirish: SUBTITR_OUT_DIR, SUBTITR_DATA_DIR, SUBTITR_KINO_DIR
+muhit o'zgaruvchilari.
+
+"O'QISH UCHUN MATN" NI SOZLASH
+------------------------------
+Abzatsga bo'lish va PDF ko'rinishi muhit o'zgaruvchilari bilan boshqariladi:
+- SUBTITR_READ_PAUSE=1.8      nutqdagi necha soniyalik jimlik abzatsni bo'ladi
+- SUBTITR_READ_PARA=620       abzatsning eng ko'p belgisi
+- SUBTITR_READ_MIN_PARA=45    jimlik bo'yicha bo'lish uchun eng kam belgi
+- SUBTITR_READ_FONT=12        PDF matn shrifti (pt)
+- SUBTITR_READ_WRAP=88        TXT da qator uzunligi
+PDF uchun kirill harflari bor serif shrift kerak. Dastur avval o'z `fonts/`
+papkasiga, keyin tizimdagi Noto Serif / DejaVu Serif / Liberation Serif ga
+qaraydi. Topilmasa: sudo apt install fonts-noto-serif
+
+`.md` fayl Yordamchi saytiga yuklash uchun: "O'qish" bo'limi -> qalam tugmasi
+-> ".md fayl yuklash". Ichida gap tarjimalari (`:: ...`) bo'ladi — sayt
+tarjimonga murojaat qilmaydi, hammasi faylning ichida.
+
+So'z belgilari (`{so'z|tarjima}`) — qo'shimcha. Bu rejim ular uchun lug'at
+TUZMAYDI (u alohida AI o'tishi bo'lib, vaqt oladi-yu subtitr sifatiga hech
+narsa qo'shmaydi). Lekin o'sha video uchun lug'at allaqachon tuzilgan bo'lsa
+(masalan "Tarjima + lug'at" rejimida ishlatgan bo'lsangiz), `.md` uni keshdan
+TEKINGA oladi va so'zlarni belgilaydi.
+Belgilanganda: har ~4 so'zga bitta (ko'pi bilan 5 ta) — ortiqcha belgi matnni
+o'qib bo'lmas qiladi; ism va atamalar belgilanmaydi.
+
+SIFAT (muhim)
+-------------
+Dastur faqat eshitilgan so'zlarni yozadi: sukunatda yoki musiqa ustida
+model to'qib chiqargan matn, takrorlanib qolgan qatorlar va tarjima
+topilmagan so'zlar natijaga tushmaydi.
+
+- Til noto'g'ri aniqlansa ("til aniq emas" ogohlantirishi chiqsa) — "Video
+  tili" ro'yxatidan tilni qo'lda tanlang. Avtomatik aniqlash kam
+  qo'llanadigan tillarda adashadi va begona matn beradi.
+- Kalitsiz tarjima bo'lmaydi: ichki lug'at faqat qisqa, to'liq mos
+  keladigan iboralarni tarjima qiladi ("thank you" -> "rahmat"), qolgan
+  qatorlar tarjimasiz qoladi. To'liq tarjima uchun kalit kiriting.
+- O'zbek/qozoq kabi tillar uchun lokal model kuchsiz — Groq kaliti bilan
+  whisper-large-v3 ishlatilsa natija ancha yaxshi bo'ladi (Groq bepul).
+- Lokal model o'lchamini almashtirish: WHISPER_MODEL=medium (yoki large-v3).
+  Kattaroq model aniqroq, lekin protsessorda ancha sekin.
+
+SUBTITR ORASIDA YO'QOLIB QOLSA
+------------------------------
+Groq ba'zan butun bir parchani (10-20 soniya) umuman qaytarmaydi — subtitr
+ekranda yo'qolib, keyin qayta paydo bo'ladi. Dastur buni o'zi topadi:
+segmentlar orasidagi uzun bo'shliqlarni ko'rib chiqadi, har birida nutq
+bor-yo'qligini lokal VAD bilan tekshiradi (tabiiy pauza, musiqa va titrlarga
+bekorga so'rov ketmasligi uchun) va nutq topilgan joyni qisqa oynalarda
+qayta o'qiydi.
+
+- SUBTITR_NO_RESCAN=1 — qayta o'qishni butunlay o'chiradi (tezroq, arzonroq)
+- Allaqachon ishlangan videoda eski natija keshdan olinadi, ya'ni tuzatish
+  ko'rinmaydi. Shu videoni qaytadan o'qitish uchun keshini o'chiring:
+      rm -rf ~/.cache/SubtitrDesktop/cache/<video nomi>_*
+
+VIDEO RENDER (tezlik)
+---------------------
+Kodlagich avtomatik tanlanadi: NVENC / QSV / AMF topilmasa, Linux'da VAAPI
+(/dev/dri/renderD128) sinaladi, u ham bo'lmasa libx264 (CPU).
+Majburiy tanlash: SUB_ENCODER=vaapi|x264|nvenc|qsv|amf muhit o'zgaruvchisi.
+Boshqa GPU tugunini ko'rsatish: VAAPI_DEVICE=/dev/dri/renderD129
+
+MUAMMOLAR
+---------
+- "python topilmadi" — dastur yonidagi .venv/bin/python ishlatiladi; papka
+  to'liq ko'chirilganiga ishonch hosil qiling.
+- Havoladan yuklash ishlamasa: tools/yt-dlp ni yangilang (dastur o'zi ham
+  yangilaydi) yoki internetni tekshiring.
+- ffmpeg yo'q bo'lsa render ishlamaydi: sudo apt install ffmpeg
+
+O'CHIRISH
+---------
+    ~/.local/share/SubtitrDesktop/uninstall.sh

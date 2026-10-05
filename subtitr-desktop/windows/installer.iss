@@ -8,7 +8,7 @@
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "Subtitr"
 #define MyAppExeName "subtitr_app.exe"
-#define SourceDir "Subtitr-Release"
+#define SourceDir "..\Subtitr-Release"
 
 [Setup]
 AppId={{B7A3F0E2-6C4D-4E9A-9F1B-2D8C5A7E3B10}
@@ -21,12 +21,12 @@ DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 ; Per-user install — UAC/admin talab qilmaydi, LocalAppData ga o'rnatiladi.
 PrivilegesRequired=lowest
-OutputDir=installer
+OutputDir=..\installer
 OutputBaseFilename=SubtitrSetup
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
-SetupIconFile=subtitr_app\windows\runner\resources\app_icon.ico
+SetupIconFile=..\subtitr_app\windows\runner\resources\app_icon.ico
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayName={#MyAppName}

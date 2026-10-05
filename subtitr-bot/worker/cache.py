@@ -43,8 +43,14 @@ def audio_hash(path: str) -> str:
     return h.hexdigest()[:32]
 
 
+# Transkripsiya mantig'i o'zgarganda (yangi filtr, yutilgan nutqni qayta
+# o'qish va h.k.) eski kesh 7 kun davomida eski — yomon — natijani qaytarib
+# turmasligi uchun kalitga versiya qo'shiladi.
+_TX_VERSION = 2
+
+
 def _key(ahash: str, source_lang: str | None) -> str:
-    return f"tx:{ahash}:{source_lang or 'auto'}"
+    return f"tx:v{_TX_VERSION}:{ahash}:{source_lang or 'auto'}"
 
 
 def get_transcription(ahash: str, source_lang: str | None):

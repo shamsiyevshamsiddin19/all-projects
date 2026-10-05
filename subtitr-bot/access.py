@@ -8,6 +8,7 @@ from db.crud import (
     videos_in_month_by_mode,
 )
 from db.models import User
+from tariffs import TARIFFS
 
 # Rejim nomlari (limit xabarlari uchun)
 _MODE_TITLES = {
@@ -49,7 +50,10 @@ async def check_can_process(
         if plan == "free":
             return False, (
                 f"⏱ Videongiz <b>{minutes} daqiqa</b> — bepul tarifda {tariff.max_minutes} daqiqagacha.\n\n"
-                "💎 <b>BASIC obuna</b> bilan 45 daqiqalik video ham bo'ladi!\n\n"
+                # Limitni tarifdan olamiz: qattiq yozilgan "45 daqiqa"
+                # tariffs.py dagi haqiqiy qiymat (30) bilan mos emas edi.
+                f"💎 <b>BASIC obuna</b> bilan {TARIFFS['basic'].max_minutes} "
+                "daqiqalik video ham bo'ladi!\n\n"
                 "👉 /subscribe — yoki qisqaroq video yuboring"
             )
         return False, (

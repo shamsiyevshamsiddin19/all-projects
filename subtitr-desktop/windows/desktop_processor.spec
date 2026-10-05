@@ -18,6 +18,12 @@ excludes = [
 hiddenimports = [
     'groq', 'openai', 'google.genai', 'anthropic',
     'docx', 'dotenv',
+    # PDF ("O'qish uchun matn" rejimi) — shriftlarni ish vaqtida yuklaydi,
+    # shuning uchun avtomatik topilmasligi mumkin.
+    'reportlab', 'reportlab.pdfbase._fontdata',
+    # Kod `subtitr/` paketida; kirish nuqtasi faqat `subtitr.cli` ni
+    # import qiladi, qolgan modullar shundan kelib chiqadi.
+    'subtitr', 'subtitr.cli',
 ]
 
 a = Analysis(
