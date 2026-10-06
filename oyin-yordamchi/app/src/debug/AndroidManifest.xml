@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Internet ruxsati FAQAT sinov (debug) versiyasida: ilova ko'rgan kadrni
+  tashxis serveriga yuborish uchun. Asosiy versiyada bu ruxsat yo'q va
+  ilova hech qayerga hech narsa yubora olmaydi.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+</manifest>

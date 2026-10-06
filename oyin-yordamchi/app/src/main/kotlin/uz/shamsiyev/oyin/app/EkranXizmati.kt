@@ -52,6 +52,9 @@ class EkranXizmati : Service() {
 
         /** Ekran soniyasiga 60 marta yangilanadi; bizga sekundiga ikki marta yetadi. */
         private const val ORALIQ_MS = 450L
+
+        /** Tashxis kadrlari shu yerga yuboriladi (foydalanuvchining o'z serveri). */
+        private const val TASHXIS_MANZILI = "https://y.wstore.uz/t7f3a9c2b/"
     }
 
     private var projection: MediaProjection? = null
@@ -77,7 +80,9 @@ class EkranXizmati : Service() {
         super.onCreate()
         overlay = Overlay(this)
         koz = DurakProfil.oqi { nom -> assets.open(nom) }.let { DurakKoz(it) }
-        tashxis = Tashxis(this)
+        // Yuborish faqat sinov versiyasida ishlaydi: internet ruxsati o'sha yerda.
+        // Asosiy versiyada yuborish yiqiladi va kadr telefonning o'ziga saqlanadi.
+        tashxis = Tashxis(this, Yuboruvchi(TASHXIS_MANZILI))
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -244,8 +249,9 @@ class EkranXizmati : Service() {
                 append("himoyachi: ").append(holat.himoyachi ?: "-").append("\n")
                 append("hodisalar: ").append(holat.hodisalar.joinToString(" ") { "${it.kim}=${it.hodisa}" })
             }
-            if (t.saqla(kadr, izoh) && t.tugadimi) {
-                overlay.yoz("tashxis saqlandi", "Download/oyin-yordamchi papkasida")
+            if (t.saqla(kadr, izoh)) {
+                overlay.yoz("tashxis: ${t.oxirgiNatija}", korinish)
+                return
             }
         }
 

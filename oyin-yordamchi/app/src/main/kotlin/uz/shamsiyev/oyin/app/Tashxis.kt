@@ -8,21 +8,25 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
 import uz.shamsiyev.oyin.core.Frame
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.OutputStream
 
 /**
- * Tashxis: ilova ko'rgan xom kadrni va o'qigan natijasini telefonga saqlaydi.
+ * Tashxis: ilova ko'rgan xom kadrni va o'qigan natijasini chiqaradi.
  *
  * Nega kerak: telefonda jurnalga kirish imkoni bo'lmasa, nega ishlamayotganini
- * bilishning yagona yo'li - ilova nimani ko'rganini ko'rish. Xom kadr saqlansa,
- * uni kompyuterda o'sha tanish quvuridan o'tkazib, xatoni aniq topish mumkin.
+ * bilishning yagona ishonchli yo'li - ilova nimani ko'rganini ko'rish. Xom kadr
+ * bo'lsa, uni kompyuterdagi o'sha tanish quvuridan o'tkazib, xato qaysi
+ * bosqichda ekanini aniq topish mumkin.
  *
- * Fayllar `Download/oyin-yordamchi/` ichiga tushadi - u yerdan ulashish oson.
+ * Avval serverga yuboriladi (foydalanuvchidan hech narsa talab qilmaydi).
+ * Yuborib bo'lmasa - `Download/oyin-yordamchi/` ichiga saqlanadi.
  */
 class Tashxis(
     private val context: Context,
-    private val nechta: Int = 4,
+    private val yuboruvchi: Yuboruvchi? = null,
+    private val nechta: Int = 12,
     /** Ilova ishga tushgach o'yin ochilishiga vaqt beriladi. */
     private val kechikishMs: Long = 12000,
 ) {
@@ -31,9 +35,13 @@ class Tashxis(
     private var saqlangan = 0
     private var oxirgiVaqt = 0L
 
+    /** Oxirgi kadr qayerga ketgani - overlay shuni ko'rsatadi. */
+    var oxirgiNatija: String = ""
+        private set
+
     val tugadimi: Boolean get() = saqlangan >= nechta
 
-    /** Kadrni va o'qilgan natijani saqlaydi. Kamida [oraliqMs] oralab. */
+    /** Kadrni va o'qilgan natijani chiqaradi. Kamida [oraliqMs] oralab. */
     fun saqla(kadr: Frame, izoh: String, oraliqMs: Long = 5000): Boolean {
         if (tugadimi) return false
         val hozir = android.os.SystemClock.uptimeMillis()
@@ -43,16 +51,26 @@ class Tashxis(
         saqlangan++
 
         return try {
-            val nom = "kadr-$saqlangan"
-            yoz("$nom.png", "image/png") { oqim ->
-                rasmga(kadr).compress(Bitmap.CompressFormat.PNG, 100, oqim)
+            val nom = "kadr-%02d".format(saqlangan)
+            val rasm = ByteArrayOutputStream().also {
+                rasmga(kadr).compress(Bitmap.CompressFormat.PNG, 100, it)
+            }.toByteArray()
+            val matn = "o'lcham: ${kadr.width}x${kadr.height}\n$izoh\n".toByteArray()
+
+            val yuborildi = yuboruvchi != null &&
+                    yuboruvchi.yubor("$nom.png", rasm, "image/png") &&
+                    yuboruvchi.yubor("$nom.txt", matn, "text/plain")
+
+            if (!yuborildi) {
+                yoz("$nom.png", "image/png") { it.write(rasm) }
+                yoz("$nom.txt", "text/plain") { it.write(matn) }
             }
-            yoz("$nom.txt", "text/plain") { oqim ->
-                oqim.write(("o'lcham: ${kadr.width}x${kadr.height}\n$izoh\n").toByteArray())
-            }
+            oxirgiNatija = if (yuborildi) "yuborildi $saqlangan/$nechta"
+            else "telefonga saqlandi $saqlangan/$nechta"
             true
         } catch (e: Throwable) {
-            Log.e("OyinYordamchi", "tashxis saqlanmadi", e)
+            Log.e("OyinYordamchi", "tashxis chiqmadi", e)
+            oxirgiNatija = "tashxis chiqmadi"
             false
         }
     }
