@@ -15,8 +15,24 @@ import android.widget.TextView
  *
  * Bosishlarni o'tkazib yuboradi (FLAG_NOT_TOUCHABLE) - ya'ni o'yinni bloklamaydi
  * va hech narsani bosmaydi. Faqat qaraydi va aytadi.
+ *
+ * Eng muhimi: oynaga FLAG_SECURE qo'yiladi. Ekranni o'qish (MediaProjection)
+ * xavfsiz oynalarni tushirmaydi, ya'ni ilova O'Z OYNASINI ko'rmaydi. Busiz
+ * overlay ostidagi hamma narsa ilovadan yashirin qoladi: haqiqiy o'yinda u
+ * chap raqibning avatarini yopib, "kim himoyada" belgisini o'ldirgan edi.
+ *
+ * Joyi ham tasodifiy emas: 99 ta haqiqiy kadrda karta qayerda paydo bo'lgani
+ * o'lchanib, o'qiladigan hududlarga tegmaydigan eng bo'sh to'rtburchak
+ * tanlangan. FLAG_SECURE ishlamagan qurilmada zarari shu bilan kamayadi.
  */
 class Overlay(private val context: Context) {
+
+    companion object {
+        /** O'lchangan eng bo'sh joy: o'ng tomonda, raqib avatari ostida. */
+        private const val CHAP = 0.597
+        private const val TEPA = 0.169
+        private const val ENI = 0.40
+    }
 
     private val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     private var qavat: LinearLayout? = null
@@ -31,14 +47,18 @@ class Overlay(private val context: Context) {
                 context.resources.displayMetrics).toInt()
         }
 
+        // Oyna o'lchangan bo'sh to'rtburchakdan chiqib ketmasligi kerak.
+        val engKeng = (context.resources.displayMetrics.widthPixels * ENI).toInt()
         sarlavha = TextView(context).apply {
             setTextColor(Color.WHITE)
             textSize = 17f
+            maxWidth = engKeng
             setTypeface(typeface, android.graphics.Typeface.BOLD)
         }
         izoh = TextView(context).apply {
             setTextColor(Color.parseColor("#C8D4E0"))
             textSize = 12f
+            maxWidth = engKeng
         }
 
         qavat = LinearLayout(context).apply {
@@ -64,12 +84,14 @@ class Overlay(private val context: Context) {
             turi,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                     WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                    WindowManager.LayoutParams.FLAG_SECURE,
             android.graphics.PixelFormat.TRANSLUCENT,
         ).apply {
+            val ekran = context.resources.displayMetrics
             gravity = Gravity.TOP or Gravity.START
-            x = dp(10)
-            y = dp(90)
+            x = (ekran.widthPixels * CHAP).toInt()
+            y = (ekran.heightPixels * TEPA).toInt()
         }
 
         wm.addView(qavat, lp)

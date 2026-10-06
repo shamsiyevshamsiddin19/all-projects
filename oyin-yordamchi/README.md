@@ -97,6 +97,43 @@ g'oyib bo'lib qaytmaydi, zaxira esa ko'paymaydi - bunday hodisaning o'zi xato.
 Ikki joyda chiqqan karta "noma'lum" ga chiqariladi: maslahatchiga xato karta
 berishdan ko'ra bilmaslik xavfsizroq.
 
+## Haqiqiy telefonda sinov (2026-10-06)
+
+Ilova haqiqiy o'yinda ishlatildi va o'zi yuborgan 12 ta kadr tahlil qilindi.
+Uchta kamchilik topildi - uchalasi ham o'z-o'zini tekshirish ko'rmaydigan turdan.
+
+**1. Ilova o'z oynasi bilan o'zini ko'r qilgan.** Overlay chap raqibning
+avatari ustida turardi, MediaProjection esa overlay'ni ham suratga tushiradi.
+Natijada "kim himoyada" belgisi (yashil halqa) 12 kadrning yarmida o'qilmadi.
+Tuzatish: oynaga `FLAG_SECURE` - xavfsiz oynalar ekran o'qishga tushmaydi,
+ya'ni ilova endi o'z oynasini ko'rmaydi. Qo'shimcha himoya sifatida oyna joyi
+ham o'lchov bilan tanlandi: 99 ta kadrda karta qayerda paydo bo'lgani sanab
+chiqilib, o'qiladigan hududlarga tegmaydigan eng bo'sh to'rtburchak olindi
+(`x 0.60, y 0.17`). Butunlay bo'sh joy yo'q - shuning uchun `FLAG_SECURE`
+asosiy yechim, joy esa zaxira.
+
+**2. Bu telefonning 6 va 8 raqamlari almashib ketgan.** Shablonlar boshqa
+qurilmaning chizmasidan o'rgatilgani uchun qora `8` ni `6`, qora `6` ni `8`
+deb o'qigan - har kadrda, izchil. Eski o'lchovlar buni ko'rmasligi tabiiy:
+ular karta ikkilanmasin / yo'qolmasin degan **izchillik** sinovlari, nom
+almashsa esa izchillik buzilmaydi. Shuning uchun nom endi qo'lda beriladi:
+`tools/bank_qosh.py` belgilarni guruhlab rasmga chiqaradi, odam o'qiydi va
+nomni o'zi qo'yadi.
+
+| O'lchov | Oldin | Keyin |
+|---|---|---|
+| Telefon kadrlari (12 ta) da 6/8 xatosi | har kadrda | **yo'q** |
+| Eski to'plam (348 kadr) da o'zgargan o'qish | - | 11 kadr, hammasi **yaxshilanish** (ko'rilmagan 6C tanildi) |
+| Eski to'plamda buzilgan o'qish | - | **0** |
+
+**3. Kozir kartasi ba'zan o'qilmagan** - bu ham 6/8 xatosining oqibati ekan,
+bank tuzatilgach o'zi yo'qoldi.
+
+```bash
+python3 tools/bank_qosh.py data/telefon rank              # guruhlarni ko'rsatadi
+python3 tools/bank_qosh.py data/telefon rank --qosh 0=8 19=6   # bankka qo'shadi
+```
+
 ## Kuzatuvchi
 
 Bitta kadr faqat "hozir nima ko'rinyapti" ni aytadi. O'yin uchun tarix kerak:
