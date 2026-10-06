@@ -12,9 +12,26 @@ class DurakAdvisor(
     private val bot: PimcBot = PimcBot(samples = 80, budgetMillis = 350, rng = Random.Default),
 ) {
     fun advise(view: DurakView): Advice {
+        if (view.toMove != view.me) {
+            val sabab = when {
+                view.defender != view.me && view.attacker != view.me -> "raqiblar bir-biriga o'ynamoqda"
+                view.phase == Phase.DEFEND -> "himoyachi javobi kutilmoqda"
+                else -> "raqib yurishi kutilmoqda"
+            }
+            return Advice("navbat sizda emas", reason = sabab, confidence = 1.0)
+        }
+
+        // Himoyachiman, lekin qoplanmagan karta yo'q: yo hujum kartasi hali
+        // tashlanmagan, yo ko'z uni o'qiy olmagan. Ikkala holda ham mendan
+        // hech narsa talab qilinmaydi - maslahat berilmaydi. Taxmin qilib
+        // "ol" deyish eng qimmat xato: butun stol qo'lga olinadi.
+        if (view.defender == view.me && view.undefendedCount() == 0) {
+            return Advice("maslahat yo'q", reason = "qoplanmagan karta ko'rinmayapti", confidence = 1.0)
+        }
+
         val state = view.sample(Random.Default)
         val moves = state.legalMoves()
-        if (moves.isEmpty()) return Advice("navbat sizda emas", confidence = 1.0)
+        if (moves.isEmpty()) return Advice("navbat sizda emas", reason = "yurish varianti yo'q", confidence = 1.0)
         if (moves.size == 1) {
             return Advice(headline(moves[0], view), reason = "boshqa variant yo'q", confidence = 1.0)
         }
@@ -52,7 +69,7 @@ class DurakAdvisor(
         val isTrump = DECK36.suit(card) == view.trumpSuit
         val trumpsLeft = view.myHand.toList().count { DECK36.suit(it) == view.trumpSuit }
 
-        // Sabab haqiqiy tanlovdan chiqarilади: qo'lda bundan arzonrog'i bormi?
+        // Sabab haqiqiy tanlovdan chiqariladi: qo'lda bundan arzonrog'i bormi?
         val cheaper = view.myHand.toList().count { value(view, it) < value(view, card) }
 
         val core = when {

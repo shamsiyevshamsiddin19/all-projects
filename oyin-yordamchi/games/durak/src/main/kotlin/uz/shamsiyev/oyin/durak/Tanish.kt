@@ -41,6 +41,8 @@ data class EkranHolati(
     val hodisalar: List<Hodisa>,
     val himoyachi: String?,
     val oqilmagan: Int,
+    val beruBormi: Boolean = false,
+    val faolOyinchi: String? = null,
 )
 
 class DurakKoz(private val profil: DurakProfil) {
@@ -128,6 +130,8 @@ class DurakKoz(private val profil: DurakProfil) {
             hodisalar = hodisalar(f),
             himoyachi = Koz.himoyachi(f),
             oqilmagan = ks.count { it.karta == null },
+            beruBormi = Koz.beruTugmasi(f),
+            faolOyinchi = Koz.faolOyinchi(f),
         )
     }
 }

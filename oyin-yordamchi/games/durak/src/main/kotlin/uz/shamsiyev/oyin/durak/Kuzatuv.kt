@@ -33,6 +33,8 @@ class Kuzatuv(private val raqiblarSoni: Int = 2, private val tinchlik: Int = 2) 
     var juftlar = emptyList<Juft>(); private set
     var zaxira: Int? = null; private set
     var himoyachi: String? = null; private set
+    var beruBormi = false; private set
+    var faolOyinchi: String? = null; private set
     private var raqib = IntArray(raqiblarSoni) { 6 }
     private var turHodisalari = ArrayList<Pair<String, String>>()
     private var ekrandagi = emptySet<Pair<String, String>>()
@@ -45,6 +47,8 @@ class Kuzatuv(private val raqiblarSoni: Int = 2, private val tinchlik: Int = 2) 
         juftlar = emptyList()
         zaxira = null
         himoyachi = null
+        beruBormi = false
+        faolOyinchi = null
         raqib = IntArray(raqiblarSoni) { 6 }
         turHodisalari = ArrayList()
         ekrandagi = emptySet()
@@ -79,8 +83,11 @@ class Kuzatuv(private val raqiblarSoni: Int = 2, private val tinchlik: Int = 2) 
             zaxira = h.zaxira
         }
 
-        qol = barqaror { it.qol }
+        beruBormi = h.beruBormi
+        faolOyinchi = h.faolOyinchi
+
         val yangiStol = barqaror { o -> o.stol.mapNotNull { it.karta } }
+        qol = barqaror { it.qol } - yangiStol - bitoga
 
         // Stol bo'shadi - tur tugadi. Kartalar qayerga ketdi?
         if (oldingiStol.isNotEmpty() && yangiStol.isEmpty()) {
@@ -101,7 +108,13 @@ class Kuzatuv(private val raqiblarSoni: Int = 2, private val tinchlik: Int = 2) 
             turHodisalari = ArrayList()
         }
 
-        if (h.himoyachi != null) himoyachi = h.himoyachi
+        if (h.beruBormi) {
+            himoyachi = "men"
+        } else if (h.himoyachi != null) {
+            himoyachi = h.himoyachi
+        } else if (himoyachi == "men" && yangiStol.isEmpty()) {
+            himoyachi = null
+        }
         stol = yangiStol
         juftlar = juftlarniTop(h.stol.filter { it.karta in yangiStol }, yangiStol)
 
@@ -187,7 +200,32 @@ class Kuzatuv(private val raqiblarSoni: Int = 2, private val tinchlik: Int = 2) 
         }
         if (taqsim.isNotEmpty()) taqsim[0] += jami - taqsim.sum()
 
-        val menHimoya = himoyachi == "men"
+        val defIdx = when {
+            beruBormi || himoyachi == "men" -> 0
+            himoyachi == "chap" -> 1
+            himoyachi == "ong" -> 2
+            else -> 1
+        }
+
+        val atkIdx = when (defIdx) {
+            0 -> if (faolOyinchi == "chap") 1 else 2
+            1 -> 0
+            2 -> if (faolOyinchi == "men") 0 else 1
+            else -> 0
+        }
+
+        val ochiqHujum = juftlar.any { it.qoplagan == null }
+        val phase = if (ochiqHujum) Phase.DEFEND else Phase.ATTACK
+
+        val toMove = when {
+            beruBormi -> 0
+            ochiqHujum -> defIdx
+            faolOyinchi == "chap" -> 1
+            faolOyinchi == "ong" -> 2
+            faolOyinchi == "men" -> 0
+            else -> atkIdx
+        }
+
         return DurakView(
             rules = rules,
             me = 0,
@@ -200,10 +238,10 @@ class Kuzatuv(private val raqiblarSoni: Int = 2, private val tinchlik: Int = 2) 
             attacks = attacks,
             defends = defends,
             tableCount = minOf(juftlar.size, rules.maxAttacks),
-            attacker = if (menHimoya) rules.playerCount - 1 else 0,
-            defender = if (menHimoya) 0 else 1,
-            toMove = 0,
-            phase = if (menHimoya) Phase.DEFEND else Phase.ATTACK,
+            attacker = atkIdx,
+            defender = defIdx,
+            toMove = toMove,
+            phase = phase,
             passed = BooleanArray(rules.playerCount),
             out = BooleanArray(rules.playerCount),
             boutLimit = minOf(rules.maxAttacks, taqsim.getOrElse(0) { 6 }.coerceAtLeast(1)),

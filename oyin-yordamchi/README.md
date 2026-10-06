@@ -170,6 +170,23 @@ keltirib o'qiladi (tizim o'zi kichiklashtiradi).
 > Agar `dl.google.com` ga ulanib bo'lmasa, SDK ichidagi vositani ko'rsatish mumkin:
 > `-Pandroid.aapt2FromMavenOverride=$ANDROID_HOME/build-tools/36.0.0/aapt2`
 
+### Tashxis (ixtiyoriy)
+
+Sinov (debug) versiyasi dastlabki 12 kadrni va o'qigan natijasini chiqaradi -
+telefonda jurnalga kirish imkoni bo'lmaganda nega ishlamayotganini bilishning
+yagona ishonchli yo'li shu. Sukut bo'yicha kadr telefonning o'ziga,
+`Download/oyin-yordamchi/` ichiga saqlanadi.
+
+Serverga yuborish kerak bo'lsa, manzil `local.properties` ga qo'yiladi
+(bu fayl git'ga tushmaydi - manzil tasodifiy yo'l ortidagi ochiq yuklash
+nuqtasi, ya'ni kodda turmasligi kerak):
+
+```properties
+tashxis.manzili=https://misol.uz/<tasodifiy-yol>/
+```
+
+Yoki bir martalik: `-Ptashxis.manzili=...`. Manzil berilmasa yuborish o'chadi.
+
 ## Kotlin va Python bir xil ishlaydi
 
 Ko'z qismi avval Python'da yozilib, keyin Kotlin'ga ko'chirildi. Ko'chirish
@@ -181,9 +198,22 @@ Shablon banki bitta sodda ikkilik formatda saqlanadi va ikkala til ham o'shani
 o'qiydi, ya'ni haqiqat bitta joyda. Python vositalari yangi shablon o'rgatish
 va Kotlin tarafini ikkinchi amalga oshirish bilan solishtirish uchun qoladi.
 
-## Hali qilinmagan
+## Maslahat qachon berilmaydi
 
-- **Haqiqiy telefonda sinalmagan** - APK yig'ildi, lekin qurilmada ishlatilmadi
+Haqiqiy o'yinda noto'g'ri maslahat jim turishdan qimmatroq. Shuning uchun
+ikki holatda maslahat umuman chiqmaydi:
+
+- **Navbat raqibda** (`toMove != me`). Raqiblar bir-biriga o'ynayotganda
+  overlay'da "navbat sizda emas" turadi.
+- **Himoyachi menman, lekin qoplanmagan karta ko'rinmayapti.** Bu ko'zning
+  xatosi: karta stolda turadi, ammo o'qilmagan. Shu holatni dvigatelga bersa,
+  u qoplash variantini topmaydi va "ol" deb chiqaradi - butun stol qo'lga
+  olinadi, ya'ni o'yin boy beriladi.
+
+Tekshirish ikki qatlamda: `DurakAdvisor` ham, `EkranXizmati.qayta()` ham.
+Ikkinchisi Monte-Carlo hisobini umuman boshlamaydi.
+
+## Hali qilinmagan
 
 - Ekranni o'qish (`vision`) — Rstgames profili, karta namunalari
 - Android ilovasi: MediaProjection + overlay

@@ -24,6 +24,8 @@ import uz.shamsiyev.oyin.durak.DurakAdvisor
 import uz.shamsiyev.oyin.durak.DurakKoz
 import uz.shamsiyev.oyin.durak.DurakProfil
 import uz.shamsiyev.oyin.durak.Kuzatuv
+import uz.shamsiyev.oyin.durak.Phase
+import uz.shamsiyev.oyin.durak.undefendedCount
 
 /**
  * Ekranni o'qib, maslahatni overlay'ga chiqaradigan xizmat.
@@ -53,8 +55,6 @@ class EkranXizmati : Service() {
         /** Ekran soniyasiga 60 marta yangilanadi; bizga sekundiga ikki marta yetadi. */
         private const val ORALIQ_MS = 450L
 
-        /** Tashxis kadrlari shu yerga yuboriladi (foydalanuvchining o'z serveri). */
-        private const val TASHXIS_MANZILI = "https://y.wstore.uz/t7f3a9c2b/"
     }
 
     private var projection: MediaProjection? = null
@@ -80,9 +80,12 @@ class EkranXizmati : Service() {
         super.onCreate()
         overlay = Overlay(this)
         koz = DurakProfil.oqi { nom -> assets.open(nom) }.let { DurakKoz(it) }
-        // Yuborish faqat sinov versiyasida ishlaydi: internet ruxsati o'sha yerda.
-        // Asosiy versiyada yuborish yiqiladi va kadr telefonning o'ziga saqlanadi.
-        tashxis = Tashxis(this, Yuboruvchi(TASHXIS_MANZILI))
+        // Manzil kodda emas, yig'ish paytida beriladi (local.properties): u
+        // tasodifiy yo'l ortidagi ochiq nuqta, ya'ni maxfiy. Berilmasa kadr
+        // telefonning o'ziga saqlanadi. Yuborish faqat sinov (debug) versiyasida
+        // ishlaydi - internet ruxsati o'sha yerda.
+        val manzil = BuildConfig.TASHXIS_MANZILI
+        tashxis = Tashxis(this, if (manzil.isNotBlank()) Yuboruvchi(manzil) else null)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -264,6 +267,29 @@ class EkranXizmati : Service() {
             overlay.yoz("qo'l ko'rinmayapti", korinish)
             return
         }
+
+        // Himoyachi menman, lekin stolda qoplanmagan karta ko'rinmayapti.
+        // Bu ko'zning xatosi: karta stolda turadi, ammo o'qilmagan. Shu holatni
+        // dvigatelga bersak, u "qoplash imkoni yo'q" deb "ol" chiqaradi va butun
+        // stol qo'lga olinadi - o'yin shu bilan boy beriladi. Jim turish arzonroq.
+        if (view.defender == view.me && view.undefendedCount() == 0) {
+            overlay.yoz("maslahat yo'q",
+                "himoyadasiz, lekin stolda qoplanmagan karta ko'rinmayapti\n" + korinish)
+            return
+        }
+
+        // Navbat kimda ekani tekshiriladi: raqiblar bir-biriga o'ynayotganda ham
+        // "yur" deyish eng ko'p uchragan xato edi.
+        if (view.toMove != view.me) {
+            val sabab = when {
+                view.defender != view.me && view.attacker != view.me -> "raqiblar bir-biriga o'ynamoqda"
+                view.phase == Phase.DEFEND -> "himoyachi javobi kutilmoqda"
+                else -> "raqib yurishi kutilmoqda"
+            }
+            overlay.yoz("navbat sizda emas", sabab + "\n" + korinish)
+            return
+        }
+
         val maslahat = maslahatchi.advise(view)
         val tafsilot = buildString {
             append(maslahat.reason)

@@ -271,17 +271,61 @@ object Koz {
         return out
     }
 
+    // --- beru tugmasi va faol o'yinchi taymeri ---
+
+    val BERU_ROI = Roi(0.02, 0.85, 0.36, 0.11)
+
+    /** Ekranning pastki-chap qismida "I take" (Yo beryu) tugmasi bormi. */
+    fun beruTugmasi(f: Frame): Boolean {
+        val p = BERU_ROI.toPixels(f.width, f.height)
+        var qizil = 0
+        for (y in 0 until p.h) {
+            for (x in 0 until p.w) {
+                val i = (p.y + y) * f.width + p.x + x
+                val r = f.r(i); val g = f.g(i); val b = f.b(i)
+                if (r > 175 && g < 70 && b < 70) qizil++
+            }
+        }
+        return qizil > 300
+    }
+
+    /** Avatari atrofida qizil taymer nurlari yonayotgan (navbatdagi) o'yinchi. */
+    fun faolOyinchi(f: Frame): String? {
+        var eng: String? = null
+        var engSoni = 800
+        for ((kim, roi) in AVATARLAR) {
+            val p = roi.toPixels(f.width, f.height)
+            var qizil = 0
+            for (y in 0 until p.h) {
+                for (x in 0 until p.w) {
+                    val i = (p.y + y) * f.width + p.x + x
+                    val r = f.r(i); val g = f.g(i); val b = f.b(i)
+                    if (r > 180 && g < 100 && b < 120) qizil++
+                }
+            }
+            if (qizil > engSoni) {
+                eng = kim
+                engSoni = qizil
+            }
+        }
+        return eng
+    }
+
     // --- himoyachi (yashil halqa) ---
 
     /**
-     * Har o'yinchi avatarini rangli halqa o'rab turadi. O'lchov shuni ko'rsatdi:
-     * har payt faqat bitta o'yinchi yashil va u tur davomida o'zgarmaydi —
-     * aynan o'sha kartani oladi yoki qoplaydi. Ya'ni yashil halqa = himoyachi.
+     * Himoyachi: "men" uchun eng ishonchli belgi — pastdagi "I take" tugmasi.
+     * Foydalanuvchining o'z avatarida yashil profil ramkasi bo'lishi mumkinligi
+     * sababli, "men" faqat "I take" tugmasi borligida himoyachi deb topiladi.
+     * Raqiblar ("chap", "ong") uchun yashil halqa qidiriladi.
      */
     fun himoyachi(f: Frame, chegara: Double = 0.12): String? {
+        if (beruTugmasi(f)) return "men"
+
         var eng: String? = null
         var engBall = chegara
         for ((kim, roi) in AVATARLAR) {
+            if (kim == "men") continue
             val p = roi.toPixels(f.width, f.height)
             val q = maxOf(3, (0.09 * maxOf(p.w, p.h)).toInt())
             var yashil = 0; var qizilS = 0; var n = 0

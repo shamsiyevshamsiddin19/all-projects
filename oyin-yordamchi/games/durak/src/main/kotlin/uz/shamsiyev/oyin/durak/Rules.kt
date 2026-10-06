@@ -14,9 +14,9 @@ fun DurakState.legalMoves(): IntArray {
 
     when (phase) {
         Phase.DEFEND -> {
-            moves.add(Move.TAKE)
             val idx = undefendedIndex()
             if (idx >= 0) {
+                moves.add(Move.TAKE)
                 val atk = attacks[idx]
                 hands[toMove].forEachCard { c -> if (beats(c, atk)) moves.add(Move.defend(c)) }
             }

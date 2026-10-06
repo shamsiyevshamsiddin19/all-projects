@@ -1,6 +1,22 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     kotlin("android")
+}
+
+/**
+ * Tashxis serverining manzili KODDA TURMAYDI: u tasodifiy yo'l ortidagi
+ * ochiq yuklash nuqtasi, ya'ni maxfiy. Manzil `local.properties` ichida
+ * (u git'ga tushmaydi) yoki `-Ptashxis.manzili=...` bilan beriladi.
+ * Berilmasa tashxis serverga yubormaydi - kadr telefonning o'ziga saqlanadi.
+ */
+val tashxisManzili: String = run {
+    val fayl = rootProject.file("local.properties")
+    val xos = if (fayl.exists()) Properties().apply { fayl.inputStream().use { load(it) } } else null
+    (project.findProperty("tashxis.manzili") as String?)
+        ?: xos?.getProperty("tashxis.manzili")
+        ?: ""
 }
 
 android {
@@ -17,11 +33,15 @@ android {
         versionName = "0.1"
     }
 
+    buildFeatures { buildConfig = true }
+
     buildTypes {
         release {
             isMinifyEnabled = false
         }
     }
+
+    defaultConfig.buildConfigField("String", "TASHXIS_MANZILI", "\"$tashxisManzili\"")
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
