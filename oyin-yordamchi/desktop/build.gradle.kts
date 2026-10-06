@@ -18,3 +18,12 @@ tasks.register<JavaExec>("koz") {
     // Yo'llar loyiha ildizidan hisoblanadi (profil va kadrlar o'sha yerda).
     workingDir = rootProject.projectDir
 }
+
+/** Kadrlarni kuzatib, jurnal va maslahat: ./gradlew :desktop:kuzatuv */
+tasks.register<JavaExec>("kuzatuv") {
+    group = "application"
+    description = "Kadrlar ketma-ketligini kuzatadi"
+    mainClass.set("uz.shamsiyev.oyin.desktop.KuzatuvCliKt")
+    classpath = sourceSets["main"].runtimeClasspath
+    workingDir = rootProject.projectDir
+}
