@@ -1,0 +1,47 @@
+{# ================================================================= #}
+{# Forma maydonlarini QO'LDA chizadi. Uch xil formada ishlatiladi.   #}
+{#                                                                   #}
+{# Nega {{ form.as_p }} emas?                                        #}
+{#   as_p har bir maydonni <p> ichiga o'raydi. Janrlar (checkbox)    #}
+{#   esa <div> lardan iborat — HTML qoidasiga ko'ra <p> ichida <div> #}
+{#   tura olmaydi, shuning uchun brauzer <p> ni o'zi yopib qo'yadi   #}
+{#   va CSS mo'ljallangan joyga tushmaydi.                           #}
+{#   Qo'lda yozganda bunday siryupriz bo'lmaydi.                     #}
+{#                                                                   #}
+{# Talab: kontekstda "form" bo'lishi kerak.                          #}
+{# ================================================================= #}
+
+{% for field in form %}
+  <div class="field">
+
+    {# id_for_label = shu maydonning <input> idsi. label ni unga     #}
+    {# bog'lasak, yozuv bosilganda kursor maydonga tushadi.          #}
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+
+    {% if field.errors %}
+      <ul class="errorlist">
+        {% for xato in field.errors %}<li>{{ xato }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+
+    {# allow_multiple_selected = "bu maydonda bir nechtasini tanlash  #}
+    {# mumkinmi?" Faqat janrlar uchun True. Shunda uni oddiy ro'yxat  #}
+    {# emas, bosiladigan "chip" lar ko'rinishida chizamiz.            #}
+    {% if field.field.widget.allow_multiple_selected %}
+      <div class="chips-field">
+        {% for choice in field %}
+          <label class="chip-check">
+            {{ choice.tag }}<span>{{ choice.choice_label }}</span>
+          </label>
+        {% endfor %}
+      </div>
+    {% else %}
+      {{ field }}
+    {% endif %}
+
+    {% if field.help_text %}
+      <small class="helptext">{{ field.help_text }}</small>
+    {% endif %}
+
+  </div>
+{% endfor %}

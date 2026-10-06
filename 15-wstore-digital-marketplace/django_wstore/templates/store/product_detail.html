@@ -1,0 +1,446 @@
+{% extends 'base.html' %}
+{% load static wstore_extras %}
+{% load i18n %}
+
+{% block title %}{{ product.title }} — wstore.uz{% endblock %}
+{% block description %}{{ product.description|truncatewords:25 }}{% endblock %}
+
+{% block content %}
+<div class="detail-shell pb-28 pt-6 sm:pb-16 sm:pt-8">
+  
+  <!-- Katalogga qaytish linki -->
+  <a
+    href="{% url 'store:catalog' %}"
+    class="inline-flex items-center gap-1.5 text-sm text-muted transition hover:text-accent"
+  >
+    <i data-lucide="arrow-left" style="width: 15px; height: 15px;"></i>
+    <span>{% translate "Katalogga qaytish" %}</span>
+  </a>
+
+  <!-- Asosiy 2 ustunli blok: Galereya + Mahsulot tafsilotlari -->
+  <div class="mt-6 grid gap-8 md:grid-cols-2 md:items-start">
+    
+    <!-- Chap ustun: Galereya -->
+    <div>
+      <div class="overflow-hidden rounded-2xl border border-border bg-surface shadow-xl shadow-black/20">
+        <img
+          id="mainGalleryImg"
+          src="{{ product.cover_url }}"
+          alt="{{ product.title }}"
+          class="aspect-[16/10] w-full object-cover"
+        >
+      </div>
+
+      {% if product.screenshots %}
+        <div class="mt-3 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <button
+            type="button"
+            onclick="switchGallery('{{ product.cover_url }}', this)"
+            class="gallery-thumb-btn active h-14 w-20 shrink-0 overflow-hidden rounded-lg border-2 border-accent transition"
+          >
+            <img src="{{ product.cover_url }}" alt="" class="h-full w-full object-cover">
+          </button>
+          {% for screen in product.screenshots %}
+            <button
+              type="button"
+              onclick="switchGallery('{{ screen }}', this)"
+              class="gallery-thumb-btn h-14 w-20 shrink-0 overflow-hidden rounded-lg border-2 border-transparent opacity-70 transition hover:opacity-100"
+            >
+              <img src="{{ screen }}" alt="" class="h-full w-full object-cover">
+            </button>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- O'ng ustun: Sarlavha, Narx, Tugmalar -->
+    <div>
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold uppercase tracking-wider text-accent">
+          {{ product.category.display_name }}
+        </span>
+        <div class="flex items-center gap-2">
+          {% if product.sales_count > 50 %}
+            <span class="flex items-center gap-1 rounded-full bg-gold/10 px-2.5 py-1 text-[11px] font-medium text-gold" style="background: rgba(230, 180, 80, 0.15); color: var(--gold);">
+              <i data-lucide="flame" style="width: 12px; height: 12px; fill: var(--gold); color: var(--gold);"></i>
+              {% translate "Ommabop" %}
+            </span>
+          {% endif %}
+          {% if user.is_authenticated %}
+            <button
+              type="button"
+              onclick="document.getElementById('reportModal').style.display='flex'"
+              class="flex items-center gap-1 text-xs text-muted transition hover:text-fg"
+              title="{% translate "Shikoyat qilish" %}"
+            >
+              <i data-lucide="flag" style="width: 13px; height: 13px;"></i>
+            </button>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Nom -->
+      <h1 class="mt-2 text-[1.7rem] font-bold leading-tight text-fg sm:text-3xl">
+        {{ product.title }}
+      </h1>
+
+      <!-- Yulduzchalar va sotuv statistikasi -->
+      <div class="mt-2.5 flex flex-wrap items-center gap-2 text-sm text-muted">
+        <div class="flex items-center gap-1">
+          {% for i in "12345" %}
+            {% if forloop.counter <= product.rating %}
+              <i data-lucide="star" class="star-filled" style="width: 14px; height: 14px;"></i>
+            {% else %}
+              <i data-lucide="star" class="star-empty" style="width: 14px; height: 14px;"></i>
+            {% endif %}
+          {% endfor %}
+        </div>
+        <span class="font-medium text-fg">
+          {{ product.rating|floatformat:1 }}
+        </span>
+        <span class="text-border-strong">·</span>
+        <span>{% blocktranslate with n=reviews.count %}{{ n }} izoh{% endblocktranslate %}</span>
+        <span class="text-border-strong">·</span>
+        <span>{% blocktranslate with n=product.sales_count %}{{ n }} sotuv{% endblocktranslate %}</span>
+      </div>
+
+      <!-- Sotuvchi -->
+      <div class="mt-4 flex items-center gap-2 border-y border-border py-3">
+        {% if product.seller.avatar %}
+          <img
+            src="{{ product.seller.avatar }}"
+            alt="{{ product.seller.display_name }}"
+            class="h-8 w-8 rounded-full object-cover"
+          >
+        {% else %}
+          <span class="flex h-8 w-8 items-center justify-center rounded-full bg-surface-2 text-xs font-semibold text-muted">
+            {{ product.seller.initials }}
+          </span>
+        {% endif %}
+        <div class="leading-tight">
+          <div class="text-sm font-medium text-fg/90">
+            {{ product.seller.display_name }}
+          </div>
+          <div class="text-xs text-muted">{% translate "Sotuvchi" %}</div>
+        </div>
+      </div>
+
+      <!-- Texnologiyalar -->
+      <div class="mt-4 flex flex-wrap gap-1.5">
+        {% for tech in product.tech_stack %}
+          <span class="rounded-full border border-border bg-surface-2 px-2.5 py-1 text-xs text-muted">
+            {{ tech }}
+          </span>
+        {% endfor %}
+      </div>
+
+      <!-- Narx & Wishlist -->
+      <div class="mt-6 flex items-end justify-between">
+        <div>
+          <p class="text-xs text-muted">{% translate "Narxi" %}</p>
+          <span class="block text-[2.25rem] font-bold leading-none text-fg" data-usd="{{ product.price|plain }}">
+            {{ product.price|floatformat:0 }} USD
+          </span>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="hidden items-center gap-1.5 text-xs text-muted sm:flex">
+            <i data-lucide="shield-check" style="width: 14px; height: 14px; color: var(--accent);"></i>
+            {% translate "Xavfsiz to'lov" %}
+          </div>
+          <button
+            type="button"
+            onclick="toggleWishlist(event, '{{ product.id }}')"
+            data-product-id="{{ product.id }}"
+            class="wishlist-btn flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border-strong bg-surface text-muted transition hover:text-fg {% if is_wishlisted %}wishlisted text-red-500{% endif %}"
+            aria-label="{% translate "Sevimlilarga qo'shish" %}"
+          >
+            <i data-lucide="heart" style="width: 20px; height: 20px;" class="heart-icon {% if is_wishlisted %}fill-current text-red-500{% endif %}"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tugmalar (Desktop sm+) -->
+      <div class="mt-5 hidden flex-col gap-3 sm:flex">
+        {% if user.is_authenticated %}
+          <form method="POST" action="{% url 'orders:checkout' product_id=product.id %}" class="flex flex-col gap-2">
+            {% csrf_token %}
+            <button
+              type="submit"
+              class="flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3.5 text-sm font-semibold text-white shadow-lg shadow-accent/25 transition hover:bg-accent-hover"
+            >
+              <i data-lucide="credit-card" style="width: 16px; height: 16px;"></i>
+              <span>{% translate "Onlayn to'lov (Click)" %}</span>
+            </button>
+            {% if DEMO_MODE %}
+              <button
+                type="submit"
+                name="simulate"
+                value="1"
+                class="flex w-full items-center justify-center gap-1.5 rounded-lg border border-border-strong bg-surface-2 py-2 text-xs font-medium text-muted transition hover:border-accent hover:text-fg"
+                title="{% translate "Lokal sinov uchun bir zumda to'lov simulyatsiyasi" %}"
+              >
+                <i data-lucide="check" style="width: 13px; height: 13px; color: var(--green);"></i>
+                <span>{% translate "Tezkor demo to'lov (Test)" %}</span>
+              </button>
+            {% endif %}
+          </form>
+        {% else %}
+          <a
+            href="{% url 'core:login' %}?next={{ request.path }}"
+            class="flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3.5 text-sm font-semibold text-white shadow-lg shadow-accent/25 transition hover:bg-accent-hover"
+          >
+            <i data-lucide="log-in" style="width: 16px; height: 16px;"></i>
+            <span>{% translate "Onlayn to'lov (Click) — Kirish" %}</span>
+          </a>
+        {% endif %}
+
+        {% if telegram_link %}
+          <a
+            href="{{ telegram_link }}"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface py-2.5 text-sm font-medium text-muted transition hover:border-border hover:text-fg"
+          >
+            <i data-lucide="message-circle" style="width: 16px; height: 16px;"></i>
+            {% translate "Sotuvchi bilan bog'lanish" %}
+          </a>
+        {% endif %}
+
+        {% if product.demo_url %}
+          <a
+            href="{{ product.demo_url }}"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex items-center justify-center gap-2 rounded-xl border border-border py-2 text-xs font-medium text-muted transition hover:text-fg"
+          >
+            <i data-lucide="external-link" style="width: 14px; height: 14px;"></i>
+            {% translate "Jonli demo ko'rish" %}
+          </a>
+        {% endif %}
+
+        <p class="text-center text-xs text-muted">
+          {% translate "Fayl to'lovdan so'ng avtomatik yuklab olinadi" %}
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Mahsulot tanasi: Tavsif -> Xususiyatlar -> Izohlar -> Tavsiya etamiz -->
+  <div class="mt-10 flex flex-col divide-y divide-border">
+    
+    <!-- 1. Tavsif -->
+    {% if product.description %}
+      <section class="pb-8">
+        <h2 class="mb-3 text-lg font-semibold text-fg">
+          {% translate "Mahsulot haqida" %}
+        </h2>
+        <p class="prose-measure whitespace-pre-line text-sm leading-7 text-muted">
+          {{ product.description }}
+        </p>
+      </section>
+    {% endif %}
+
+    <!-- 2. Xususiyatlar -->
+    {% if product.features %}
+      <section class="py-8 first:pt-0">
+        <h2 class="mb-3 text-lg font-semibold text-fg">
+          {% translate "Xususiyatlar" %}
+        </h2>
+        <ul class="grid gap-2 sm:grid-cols-2">
+          {% for f in product.features %}
+            <li class="flex items-start gap-2.5">
+              <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent" style="background: rgba(109, 94, 246, 0.15); color: var(--accent);">
+                <i data-lucide="check" style="width: 13px; height: 13px;"></i>
+              </span>
+              <span class="text-sm leading-6 text-fg/90">{{ f }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+
+    <!-- 3. Izohlar -->
+    <section class="py-8 first:pt-0">
+      <h2 class="mb-4 text-lg font-semibold text-fg">
+        {% translate "Izohlar" %}
+        {% if reviews %}
+          <span class="ml-2 text-sm font-normal text-muted">
+            ({% blocktranslate with n=reviews.count %}{{ n }}{% endblocktranslate %})
+          </span>
+        {% endif %}
+      </h2>
+
+      <!-- Izoh qoldirish formasi -->
+      <div class="mb-5 rounded-2xl border border-border bg-surface p-4 sm:p-5">
+        {% if user.is_authenticated %}
+          <form method="POST" action="{% url 'store:add_review' slug=product.slug %}">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="mb-1 block text-xs font-semibold uppercase tracking-wider text-muted">
+                {% translate "Bahoyingiz" %}
+              </label>
+              {{ review_form.rating }}
+            </div>
+            <div class="mb-3">
+              <label class="mb-1 block text-xs font-semibold uppercase tracking-wider text-muted">
+                {% translate "Mahsulot haqida fikringiz" %}
+              </label>
+              {{ review_form.comment }}
+            </div>
+            <button
+              type="submit"
+              class="rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-white transition hover:bg-accent-hover"
+            >
+              {% translate "Yuborish" %}
+            </button>
+          </form>
+        {% else %}
+          <div class="text-center py-2 text-sm text-muted">
+            {% url 'core:login' as login_url %}{% blocktranslate with href=login_url nxt=request.path %}Izoh qoldirish uchun <a href="{{ href }}?next={{ nxt }}" class="font-semibold text-accent hover:underline">tizimga kiring</a>.{% endblocktranslate %}
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Izohlar ro'yxati -->
+      {% if reviews %}
+        <div class="flex flex-col divide-y divide-border/60">
+          {% for r in reviews %}
+            <div class="py-4 first:pt-0 last:pb-0">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="flex h-7 w-7 items-center justify-center rounded-full bg-surface-2 text-xs font-semibold text-muted">
+                    {{ r.user.initials }}
+                  </div>
+                  <span class="text-sm font-medium text-fg">{{ r.user.display_name }}</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  {% for i in "12345" %}
+                    {% if forloop.counter <= r.rating %}
+                      <i data-lucide="star" class="star-filled" style="width: 12px; height: 12px;"></i>
+                    {% else %}
+                      <i data-lucide="star" class="star-empty" style="width: 12px; height: 12px;"></i>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              </div>
+              <p class="mt-2 text-sm leading-relaxed text-fg/90 pl-9">
+                {{ r.comment }}
+              </p>
+              <div class="mt-1 pl-9 text-[11px] text-muted">
+                {{ r.created_at|date:"d.m.Y, H:i" }}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="rounded-card border border-dashed border-border p-6 text-center text-sm text-muted">
+          {% translate "Hozircha izoh yo'q. Birinchi bo'ling!" %}
+        </p>
+      {% endif %}
+    </section>
+
+    <!-- 4. Tavsiya etamiz -->
+    {% if recommended %}
+      <section class="pt-8">
+        <h2 class="mb-4 text-lg font-semibold text-fg">
+          {% translate "Tavsiya etamiz" %}
+        </h2>
+        <div class="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4 xl:gap-6">
+          {% for p in recommended %}
+            {% include 'store/_product_card.html' with product=p %}
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+
+  </div>
+
+</div>
+
+<!-- Mobil: to'lov + bog'lanish tugmalari ekran pastida qotib turadi (Next.js kabi) -->
+<div
+  class="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/95 px-4 pt-3 shadow-[0_-8px_24px_rgba(0,0,0,0.35)] backdrop-blur sm:hidden"
+  style="padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));"
+>
+  <div class="flex items-center gap-2.5">
+    {% if telegram_link %}
+      <a
+        href="{{ telegram_link }}"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="{% translate "Sotuvchi bilan bog'lanish" %}"
+        class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border-strong bg-surface text-fg transition hover:border-accent"
+      >
+        <i data-lucide="message-circle" style="width: 20px; height: 20px;"></i>
+      </a>
+    {% endif %}
+    <div class="flex-1">
+      {% if user.is_authenticated %}
+        <form method="POST" action="{% url 'orders:checkout' product_id=product.id %}">
+          {% csrf_token %}
+          <button
+            type="submit"
+            class="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 font-semibold text-white shadow-lg shadow-accent/25 transition hover:bg-accent-hover text-sm"
+          >
+            <span>{% translate "Click orqali to'lash" %}</span>
+          </button>
+        </form>
+      {% else %}
+        <a
+          href="{% url 'core:login' %}?next={{ request.path }}"
+          class="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 font-semibold text-white shadow-lg shadow-accent/25 transition hover:bg-accent-hover text-sm"
+        >
+          <span>{% translate "Kirish & To'lash" %}</span>
+        </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Shikoyat modal oynasi -->
+{% if user.is_authenticated %}
+  <div id="reportModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" style="display: none;">
+    <div class="w-full max-w-md rounded-2xl border border-border bg-surface p-5 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-border pb-3">
+        <h3 class="font-semibold text-fg">{% translate "Loyiha ustidan shikoyat" %}</h3>
+        <button type="button" onclick="document.getElementById('reportModal').style.display='none'" class="rounded-lg p-1 text-muted hover:text-fg">
+          <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+        </button>
+      </div>
+      <form method="POST" action="{% url 'store:report_product' slug=product.slug %}" class="mt-4 flex flex-col gap-3">
+        {% csrf_token %}
+        <div>
+          <label class="mb-1 block text-xs font-semibold uppercase tracking-wider text-muted">{% translate "Sabab" %}</label>
+          {{ report_form.reason }}
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-semibold uppercase tracking-wider text-muted">{% translate "Izoh" %}</label>
+          {{ report_form.comment }}
+        </div>
+        <div class="mt-2 flex justify-end gap-2">
+          <button type="button" onclick="document.getElementById('reportModal').style.display='none'" class="rounded-lg border border-border px-3 py-2 text-xs font-medium text-muted hover:text-fg">
+            {% translate "Bekor qilish" %}
+          </button>
+          <button type="submit" class="rounded-lg bg-red-600 px-4 py-2 text-xs font-medium text-white hover:bg-red-700">
+            {% translate "Shikoyat yuborish" %}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endif %}
+
+<script>
+  function switchGallery(src, btn) {
+    const mainImg = document.getElementById('mainGalleryImg');
+    if (mainImg) mainImg.src = src;
+    document.querySelectorAll('.gallery-thumb-btn').forEach(b => {
+      b.classList.remove('active', 'border-accent');
+      b.classList.add('border-transparent', 'opacity-70');
+    });
+    btn.classList.add('active', 'border-accent');
+    btn.classList.remove('border-transparent', 'opacity-70');
+  }
+</script>
+{% endblock %}

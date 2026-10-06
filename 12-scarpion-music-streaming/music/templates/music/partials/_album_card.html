@@ -1,0 +1,47 @@
+{# ================================================================= #}
+{# Bitta albom kartasi. To'rt joyda ishlatiladi:                      #}
+{#   albomlar ro'yxati, "Top albomlar" qatori,                        #}
+{#   ijrochi sahifasi, albom sahifasi (boshqa albomlari)              #}
+{# Chaqirish: {% include 'music/partials/_album_card.html' %}         #}
+{# Talab: kontekstda "album" bo'lishi kerak.                          #}
+{#                                                                   #}
+{# DIQQAT: karta <a> EMAS, <div>. Sababi — ichida "play" tugmasi bor, #}
+{# havola ichiga tugma joylash HTML qoidasiga zid va bosilganda       #}
+{# ikkalasi ham ishlab ketadi. Buning o'rniga havola card__link ning  #}
+{# ::after si orqali butun kartani qoplaydi, tugma esa uning USTIDA   #}
+{# turadi (z-index).                                                  #}
+{# ================================================================= #}
+<div class="card">
+  <div class="card__cover">
+    {% if album.cover %}
+      <img src="{{ album.cover.url }}" alt="{{ album.title }} muqovasi" loading="lazy">
+    {% else %}
+      {# Muqova yo'q bo'lsa — nomning birinchi harfi #}
+      <div class="card__blank">{{ album.title|first|upper }}</div>
+    {% endif %}
+
+    {% if album.birinchi_preview %}
+      {% comment %}
+        Albomning birinchi qo'shig'idan namuna. data-* atributlarini
+        app.js o'qiydi — qo'shiqlar ro'yxatidagi tugma bilan bir xil
+        ishlaydi, ya'ni ikkovi bitta pleyerni boshqaradi.
+      {% endcomment %}
+      <button class="card__play" type="button"
+              data-preview="{{ album.birinchi_preview }}"
+              data-title="{{ album.birinchi_nom }}"
+              data-artist="{{ album.artist.name }}"
+              {% if album.cover %}data-cover="{{ album.cover.url }}"{% endif %}
+              aria-label="{{ album.title }} — namunani chalish">&#9654;</button>
+    {% endif %}
+  </div>
+
+  <div class="card__body">
+    <h3 class="card__title">
+      <a class="card__link" href="{{ album.get_absolute_url }}">{{ album.title }}</a>
+    </h3>
+    <p class="card__meta">
+      {{ album.artist.name }}
+      {% if album.release_date %} &middot; {{ album.release_date.year }}{% endif %}
+    </p>
+  </div>
+</div>

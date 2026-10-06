@@ -1,0 +1,239 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="{% static 'calc/hisobla.css' %}">
+  <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/2374/2374370.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scientific Calculator - Django</title>
+</head>
+
+<body class="{% if tema == 'light' %}light-theme{% endif %}">
+
+  <div class="app-container">
+    <!-- Asosiy Kalkulyator Kartasi -->
+    <div class="calculator-card {% if rejim == 'Standard' %}rejim-standard{% endif %}">
+      
+      <!-- BUTUN DASTUR UCHUN BIRGINA ASOSIY FORMA -->
+      <form method="POST" style="display: contents;">
+        {% csrf_token %}
+
+        <!-- Django xotirasi uchun yashirin maydonlar -->
+        <input type="hidden" name="birinchi_son" value="{{ birinchi_son }}">
+        <input type="hidden" name="amal" value="{{ amal }}">
+        <input type="hidden" name="ekran" value="{{ ekran }}">
+        <input type="hidden" name="rejim" value="{{ rejim }}">
+        <input type="hidden" name="burchak" value="{{ burchak }}">
+        <input type="hidden" name="xotira" value="{{ xotira }}">
+        <input type="hidden" name="tema" value="{{ tema }}">
+
+        <!-- CHAP TOMON: Kalkulyator bloki -->
+        <section class="calc-section">
+          
+          <!-- Yuqori menyu (Header Navbar) -->
+          <header class="calc-header">
+            <div class="calc-header-left">
+              <button type="button" class="icon-btn" title="Kalkulyator Menyusi">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+              </button>
+
+              <nav class="calc-modes">
+                <button type="submit" name="tugma" value="rejim_Standard" class="mode-tab {% if rejim == 'Standard' %}active{% endif %}">Standard</button>
+                <button type="submit" name="tugma" value="rejim_Scientific" class="mode-tab {% if rejim == 'Scientific' %}active{% endif %}">Scientific</button>
+                <button type="submit" name="tugma" value="rejim_Graph" class="mode-tab {% if rejim == 'Graph' %}active{% endif %}">Graph</button>
+                <button type="submit" name="tugma" value="rejim_Pragrammer" class="mode-tab {% if rejim == 'Programmer' %}active{% endif %}">Programmer</button>
+                <button type="submit" name="tugma" value="rejim_Converter" class="mode-tab {% if rejim == 'Converter' %}active{% endif %}">Converter</button>
+              </nav>
+            </div>
+
+            <div class="calc-header-right">
+              <button type="submit" name="tugma" value="toggle_theme" class="icon-btn theme-toggle" title="Mavzuni almashtirish (Tun/Kun)">
+                {% if tema == 'light' %}
+                  <!-- Quyosh belgisi (Kunduzgi rejimda) -->
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                {% else %}
+                  <!-- Oy belgisi (Tungi rejimda) -->
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                {% endif %}
+              </button>
+              <button type="button" class="icon-btn mobile-history-btn" id="mobile-history-toggle" title="Tarixni ochish">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              </button>
+            </div>
+          </header>
+
+          <!-- Kalkulyator Ekrani (Display) -->
+          <div class="calc-display">
+            <div class="display-expression" id="display-expr">{{ ifoda }}</div>
+            <div class="display-result" id="display-result">{{ ekran }}</div>
+          </div>
+
+          <!-- Agar Programmer rejimi tanlangan bo'lsa -->
+          {% if rejim == 'Programmer' %}
+          <div class="programmer-panel">
+            <div class="prog-row"><span>HEX</span> <span class="prog-val">{{ programmer.hex }}</span></div>
+            <div class="prog-row"><span>DEC</span> <span class="prog-val">{{ programmer.dec }}</span></div>
+            <div class="prog-row"><span>OCT</span> <span class="prog-val">{{ programmer.oct }}</span></div>
+            <div class="prog-row"><span>BIN</span> <span class="prog-val">{{ programmer.bin }}</span></div>
+          </div>
+          {% endif %}
+
+          <!-- Qo'shimcha funksiyalar paneli (Toolbar) -->
+          <div class="calc-toolbar">
+            <div class="toolbar-left">
+              <button type="submit" name="tugma" value="sin" class="tool-dropdown" title="Trigonometriya">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 21V3l18 18"/></svg>
+                <span>Trigonometry</span>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+              <button type="submit" name="tugma" value="x!" class="tool-dropdown" title="Ehtimollik / Faktorial">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19h16M4 15h16M4 11h16M4 7h16"/></svg>
+                <span>Probability</span>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+              <button type="submit" name="tugma" value="ln" class="tool-dropdown" title="Hisob-kitob / Calculus">
+                <span class="fx-icon">ƒ(x)</span>
+                <span>Calculus</span>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+            </div>
+            <button type="button" class="icon-btn tool-code-btn" title="Mode indicator">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+            </button>
+          </div>
+
+          <!-- Tugmalar paneli (8 ustunli Grid) -->
+          <div class="calc-keypad">
+            <!-- 1-qator -->
+            <button type="submit" name="tugma" value="2^nd" class="key btn-fn key-sci">2<sup>nd</sup></button>
+            <button type="submit" name="tugma" value="mr" class="key btn-fn key-sci" title="Xotiradan o'qish (MR)">mr</button>
+            <button type="submit" name="tugma" value="m+" class="key btn-fn key-sci" title="Xotiraga qo'shish (M+)">m+</button>
+            <button type="submit" name="tugma" value="mc" class="key btn-fn key-sci" title="Xotirani tozalash (MC)">mc</button>
+            <button type="submit" name="tugma" value="e" class="key btn-fn" title="Euler soni e">e</button>
+            <button type="submit" name="tugma" value="CE" class="key btn-action-blue" title="Ekranni tozalash">CE</button>
+            <button type="submit" name="tugma" value="C" class="key btn-action-blue" title="Barchasini tozalash">C</button>
+            <button type="submit" name="tugma" value="Backspece" class="key btn-action-red" title="Oxirgi raqamni o'chirish">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0 2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>
+            </button>
+
+            <!-- 2-qator -->
+            <button type="submit" name="tugma" value="sin" class="key btn-fn key-sci">sin</button>
+            <button type="submit" name="tugma" value="cos" class="key btn-fn key-sci">cos</button>
+            <button type="submit" name="tugma" value="tan" class="key btn-fn key-sci">tan</button>
+            <button type="submit" name="tugma" value="cot" class="key btn-fn key-sci">cot</button>
+            <button type="submit" name="tugma" value="(" class="key btn-op">(</button>
+            <button type="submit" name="tugma" value=")" class="key btn-op">)</button>
+            <button type="submit" name="tugma" value="%" class="key btn-op">%</button>
+            <button type="submit" name="tugma" value="÷" class="key btn-op">÷</button>
+
+            <!-- 3-qator -->
+            <button type="submit" name="tugma" value="sec" class="key btn-fn key-sci">sec</button>
+            <button type="submit" name="tugma" value="csc" class="key btn-fn key-sci">csc</button>
+            <button type="submit" name="tugma" value="hyp" class="key btn-fn key-sci">hyp</button>
+            <button type="submit" name="tugma" value="{{ burchak }}" class="key btn-fn key-sci" title="Burchak birligini almashtirish">{{ burchak }}</button>
+            <button type="submit" name="tugma" value="7" class="key btn-num">7</button>
+            <button type="submit" name="tugma" value="8" class="key btn-num">8</button>
+            <button type="submit" name="tugma" value="9" class="key btn-num">9</button>
+            <button type="submit" name="tugma" value="×" class="key btn-op">×</button>
+
+            <!-- 4-qator -->
+            <button type="submit" name="tugma" value="x^2" class="key btn-fn key-sci">x<sup>2</sup></button>
+            <button type="submit" name="tugma" value="x^3" class="key btn-fn key-sci">x<sup>3</sup></button>
+            <button type="submit" name="tugma" value="x^y" class="key btn-fn key-sci">x<sup>y</sup></button>
+            <button type="submit" name="tugma" value="e^x" class="key btn-fn key-sci">e<sup>x</sup></button>
+            <button type="submit" name="tugma" value="4" class="key btn-num">4</button>
+            <button type="submit" name="tugma" value="5" class="key btn-num">5</button>
+            <button type="submit" name="tugma" value="6" class="key btn-num">6</button>
+            <button type="submit" name="tugma" value="-" class="key btn-op">−</button>
+
+            <!-- 5-qator -->
+            <button type="submit" name="tugma" value="10^x" class="key btn-fn key-sci">10<sup>x</sup></button>
+            <button type="submit" name="tugma" value="ln" class="key btn-fn key-sci">ln</button>
+            <button type="submit" name="tugma" value="2^x" class="key btn-fn key-sci">2<sup>x</sup></button>
+            <button type="submit" name="tugma" value="|x|" class="key btn-fn key-sci">|x|</button>
+            <button type="submit" name="tugma" value="1" class="key btn-num">1</button>
+            <button type="submit" name="tugma" value="2" class="key btn-num">2</button>
+            <button type="submit" name="tugma" value="3" class="key btn-num">3</button>
+            <button type="submit" name="tugma" value="+" class="key btn-op">+</button>
+
+            <!-- 6-qator -->
+            <button type="submit" name="tugma" value="{{ burchak }}" class="key btn-fn key-sci">{{ burchak }}</button>
+            <button type="submit" name="tugma" value="log_x" class="key btn-fn key-sci">log<sub>x</sub></button>
+            <button type="submit" name="tugma" value="x^y" class="key btn-fn key-sci">log<sub>y</sub>x</button>
+            <button type="submit" name="tugma" value="x!" class="key btn-fn key-sci">x!</button>
+            <button type="submit" name="tugma" value="±" class="key btn-num">±</button>
+            <button type="submit" name="tugma" value="0" class="key btn-num">0</button>
+            <button type="submit" name="tugma" value="." class="key btn-num">.</button>
+            <button type="submit" name="tugma" value="=" class="key btn-equals">=</button>
+          </div>
+
+        </section>
+
+        <!-- O'NG TOMON: Tarix va Arxiv bloki -->
+        <aside class="history-section">
+          
+          <!-- Tarix header -->
+          <header class="history-header">
+            <div class="history-tabs">
+              <button type="button" class="history-tab active">History</button>
+              <button type="button" class="history-tab">Archive</button>
+            </div>
+            <button type="button" class="icon-btn" title="View Options">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+            </button>
+          </header>
+
+          <!-- Tarix elementlari ro'yxati (Baza ma'lumotlari) -->
+          <div class="history-list" id="history-list">
+            {% for item in tarix %}
+              <button type="submit" name="tugma" value="tarix_{{ item.natija }}" class="history-item-btn" title="Natijani ekranga chiqarish">
+                <div class="hist-expression">{{ item.birinchi_son }} {{ item.amal }} {{ item.ikkinchi_son }} =</div>
+                <div class="hist-result">{{ item.natija }}</div>
+              </button>
+            {% empty %}
+              <div class="empty-history">Hozircha hisob-kitoblar yo'q</div>
+            {% endfor %}
+          </div>
+
+          <!-- Tarix pastki paneli (Footer) -->
+          <footer class="history-footer">
+            <button type="submit" name="tugma" value="save_history" class="save-history-btn" title="Tarixni matnli fayl ko'rinishida yuklab olish">Save History</button>
+            <div class="footer-actions">
+              <button type="button" onclick="window.print()" class="icon-action-btn" title="Chop etish (Print)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+              </button>
+              <button type="submit" name="tugma" value="save_history" class="icon-action-btn" title="Eksport qilish">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
+              </button>
+              <button type="submit" name="tugma" value="clear_history" class="icon-action-btn" title="Tarixni tozalash">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              </button>
+            </div>
+          </footer>
+
+        </aside>
+
+      </form>
+
+    </div>
+  </div>
+
+  <script>
+    // Mobil qurilmalarda tarix panelini ochish/yopish
+    const mobileHistBtn = document.getElementById('mobile-history-toggle');
+    const historyPanel = document.querySelector('.history-section');
+    if (mobileHistBtn && historyPanel) {
+      mobileHistBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        historyPanel.classList.toggle('active');
+      });
+    }
+  </script>
+</body>
+
+</html>

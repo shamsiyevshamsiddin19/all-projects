@@ -1,0 +1,220 @@
+{# ================================================================= #}
+{# Barcha sahifalar shu fayldan meros oladi.                         #}
+{# Bu yerda: header, xabarlar, footer va pleyer — ya'ni HAR sahifada #}
+{# takrorlanadigan qismlar. Sahifalarning o'ziga xos qismi           #}
+{# {% block content %} ichiga tushadi.                               #}
+{# ================================================================= #}
+{% load static %}
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Albomlar{% endblock %} — SCARPION Music</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  {# {% static %} = STATIC_URL ni o'zi qo'shadi: /static/css/style.css #}
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap topbar__inner">
+    <a href="{% url 'music:album_list' %}" class="logo">SCARPION<span> MUSIC</span></a>
+
+    {# resolver_match.url_name = hozir ochiq turgan URL ning nomi.       #}
+    {# Shuning yordamida menyuda qaysi bo'lim faolligini belgilaymiz.    #}
+    {% with bolim=request.resolver_match.url_name %}
+    <nav class="nav">
+      <a href="{% url 'music:album_list' %}"   class="{% if bolim == 'album_list' %}is-active{% endif %}">Albomlar</a>
+      <a href="{% url 'music:artist_list' %}"  class="{% if bolim == 'artist_list' %}is-active{% endif %}">Ijrochilar</a>
+      <a href="{% url 'music:import' %}"       class="{% if bolim == 'import' %}is-active{% endif %}">Katalog</a>
+      <a href="{% url 'music:album_create' %}" class="{% if bolim == 'album_create' %}is-active{% endif %}">+ Albom</a>
+      <a href="{% url 'music:artist_create' %}"class="{% if bolim == 'artist_create' %}is-active{% endif %}">+ Ijrochi</a>
+      {# Mobilda avatar yashirinadi, shuning uchun havola shu yerda ham turadi #}
+      <a href="/admin/" class="nav__admin">Boshqaruv</a>
+    </nav>
+    {% endwith %}
+
+    {% comment %} Umumiy qidiruv — albom nomi ham, ijrochi nomi ham bo'yicha.
+       request.GET.q = manzildagi ?q=... qiymati. Shu yerda ko'rsatsak,
+       qidiruvdan keyin so'z maydonda turadi va o'chib ketmaydi.
+{% endcomment %}
+    <form class="topsearch" method="get" action="{% url 'music:album_list' %}" role="search">
+      <svg class="topsearch__icon" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"></circle>
+        <line x1="16.5" y1="16.5" x2="21" y2="21"></line>
+      </svg>
+      <input type="search" name="q" value="{{ request.GET.q }}" data-suggest
+             autocomplete="off" placeholder="Albom, ijrochi qidirish...">
+    </form>
+
+    {# Profil. Bosilganda pastda akkaunt oynasi ochiladi (JS: app.js). #}
+    <div class="account" data-account>
+      <button class="avatar" type="button"
+              aria-haspopup="true" aria-expanded="false" aria-label="Profil">
+        {% if user.is_authenticated %}
+          <span class="avatar__letter">{{ user.username|first|upper }}</span>
+        {% else %}
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="8.5" r="3.6"></circle>
+            <path d="M4.6 20.5c0-4.1 3.3-6.5 7.4-6.5s7.4 2.4 7.4 6.5"></path>
+          </svg>
+        {% endif %}
+      </button>
+
+      <div class="account__menu">
+        <div class="account__head">
+          <span class="account__ava">
+            {% if user.is_authenticated %}{{ user.username|first|upper }}{% else %}?{% endif %}
+          </span>
+          <div class="account__who">
+            {% if user.is_authenticated %}
+              <b>{{ user.get_full_name|default:user.username }}</b>
+              <small>{{ user.email|default:"E-pochta ko'rsatilmagan" }}</small>
+            {% else %}
+              <b>Mehmon</b>
+              <small>Tizimga kirmagansiz</small>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if user.is_authenticated and user.is_staff %}
+          <span class="account__badge">Administrator</span>
+        {% endif %}
+
+        <div class="account__stats">
+          <div><b>{{ stat_albums }}</b><span>albom</span></div>
+          <div><b>{{ stat_artists }}</b><span>ijrochi</span></div>
+          <div><b>{{ stat_songs }}</b><span>qo'shiq</span></div>
+        </div>
+
+        <div class="account__links">
+          {% if user.is_authenticated %}
+            <a href="{% url 'music:import' %}">Katalogdan qo'shish</a>
+            <a href="{% url 'music:album_create' %}">Albom qo'shish</a>
+            <a href="{% url 'music:artist_create' %}">Ijrochi qo'shish</a>
+            {% if user.is_staff %}<a href="/admin/">Boshqaruv paneli</a>{% endif %}
+          {% else %}
+            <a href="{% url 'music:login' %}?next={{ request.path }}">Tizimga kirish</a>
+            <a href="{% url 'music:signup' %}">Ro'yxatdan o'tish</a>
+          {% endif %}
+        </div>
+
+        {% if user.is_authenticated %}
+          {% comment %}
+            Chiqish POST bilan yuboriladi — oddiy havola bo'lsa brauzerning
+            oldindan yuklash funksiyasi foydalanuvchini o'zi bilmagan holda
+            tizimdan chiqarib yuborishi mumkin.
+          {% endcomment %}
+          <form method="post" action="{% url 'music:logout' %}" class="account__out">
+            {% csrf_token %}
+            <button type="submit">Chiqish</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <button class="burger" type="button" aria-label="Menyu">&#9776;</button>
+  </div>
+</header>
+
+{# Hero — faqat ba'zi sahifalarda bo'ladi, shuning uchun alohida blok #}
+{% block hero %}{% endblock %}
+
+{% if messages %}
+  <div class="wrap">
+    <ul class="messages">
+      {% for message in messages %}
+        <li class="{{ message.tags }}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+{% block content %}{% endblock %}
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer__cols">
+
+      <div>
+        <div class="logo" style="margin-bottom:14px">SCARPION<span> MUSIC</span></div>
+        <p>
+          Albomlar, ijrochilar va qo'shiqlar to'plami. Sevimli musiqangizni
+          toping, tinglang va o'z to'plamingizni yig'ing.
+        </p>
+
+        <div class="social">
+          <a href="https://t.me/" target="_blank" rel="noopener" aria-label="Telegram" title="Telegram">
+            <svg viewBox="0 0 24 24"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
+          </a>
+          <a href="https://instagram.com/" target="_blank" rel="noopener" aria-label="Instagram" title="Instagram">
+            <svg viewBox="0 0 24 24"><path d="M12 2.2c3.2 0 3.6 0 4.9.1 1.2.1 1.8.2 2.2.4.6.2 1 .5 1.4.9.4.4.7.8.9 1.4.2.4.4 1 .4 2.2.1 1.3.1 1.7.1 4.9s0 3.6-.1 4.9c-.1 1.2-.2 1.8-.4 2.2-.2.6-.5 1-.9 1.4-.4.4-.8.7-1.4.9-.4.2-1 .4-2.2.4-1.3.1-1.7.1-4.9.1s-3.6 0-4.9-.1c-1.2-.1-1.8-.2-2.2-.4-.6-.2-1-.5-1.4-.9-.4-.4-.7-.8-.9-1.4-.2-.4-.4-1-.4-2.2-.1-1.3-.1-1.7-.1-4.9s0-3.6.1-4.9c.1-1.2.2-1.8.4-2.2.2-.6.5-1 .9-1.4.4-.4.8-.7 1.4-.9.4-.2 1-.4 2.2-.4 1.3-.1 1.7-.1 4.9-.1zm0 1.8c-3.1 0-3.5 0-4.7.1-1.1.1-1.7.2-2.1.3-.5.2-.9.4-1.3.8-.4.4-.6.8-.8 1.3-.1.4-.3 1-.3 2.1-.1 1.2-.1 1.6-.1 4.7s0 3.5.1 4.7c.1 1.1.2 1.7.3 2.1.2.5.4.9.8 1.3.4.4.8.6 1.3.8.4.1 1 .3 2.1.3 1.2.1 1.6.1 4.7.1s3.5 0 4.7-.1c1.1-.1 1.7-.2 2.1-.3.5-.2.9-.4 1.3-.8.4-.4.6-.8.8-1.3.1-.4.3-1 .3-2.1.1-1.2.1-1.6.1-4.7s0-3.5-.1-4.7c-.1-1.1-.2-1.7-.3-2.1-.2-.5-.4-.9-.8-1.3-.4-.4-.8-.6-1.3-.8-.4-.1-1-.3-2.1-.3-1.2-.1-1.6-.1-4.7-.1zm0 3.1a4.9 4.9 0 110 9.8 4.9 4.9 0 010-9.8zm0 8a3.1 3.1 0 100-6.2 3.1 3.1 0 000 6.2zm6.3-8.2a1.15 1.15 0 11-2.3 0 1.15 1.15 0 012.3 0z"/></svg>
+          </a>
+          <a href="https://youtube.com/" target="_blank" rel="noopener" aria-label="YouTube" title="YouTube">
+            <svg viewBox="0 0 24 24"><path d="M23 12s0-3.2-.4-4.7c-.2-.9-.9-1.5-1.7-1.7C19.4 5.2 12 5.2 12 5.2s-7.4 0-8.9.4c-.8.2-1.5.8-1.7 1.7C1 8.8 1 12 1 12s0 3.2.4 4.7c.2.9.9 1.5 1.7 1.7 1.5.4 8.9.4 8.9.4s7.4 0 8.9-.4c.8-.2 1.5-.8 1.7-1.7.4-1.5.4-4.7.4-4.7zM9.8 15.3V8.7l6 3.3-6 3.3z"/></svg>
+          </a>
+          <a href="https://facebook.com/" target="_blank" rel="noopener" aria-label="Facebook" title="Facebook">
+            <svg viewBox="0 0 24 24"><path d="M22 12a10 10 0 10-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.4h-1.2c-1.2 0-1.6.8-1.6 1.6V12h2.7l-.4 2.9h-2.3v7A10 10 0 0022 12z"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <div>
+        <h4>Sahifalar</h4>
+        <ul>
+          <li><a href="{% url 'music:album_list' %}">Albomlar</a></li>
+          <li><a href="{% url 'music:artist_list' %}">Ijrochilar</a></li>
+          <li><a href="{% url 'music:album_create' %}">Albom qo'shish</a></li>
+          <li><a href="{% url 'music:artist_create' %}">Ijrochi qo'shish</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4>Janrlar</h4>
+        <ul>
+          {% for janr in footer_genres %}
+            <li><a href="{% url 'music:album_list' %}?genre={{ janr.slug }}">{{ janr.name }}</a></li>
+          {% empty %}
+            <li>Hali janr yo'q</li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div>
+        <h4>Aloqa</h4>
+        <ul>
+          <li>Toshkent sh., Amir Temur shoh ko'chasi 108</li>
+          <li><a href="mailto:info@scarpionmusic.uz">info@scarpionmusic.uz</a></li>
+          <li><a href="tel:+998712007007">+998 71 200 70 07</a></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="footer__bottom">
+      <span>&copy; {% now "Y" %} SCARPION Music. Barcha huquqlar himoyalangan.</span>
+      <span>Toshkent, O'zbekiston</span>
+    </div>
+  </div>
+</footer>
+
+{# ---- Pastdagi pleyer. Boshida yashirin turadi (CSS: translateY). ---- #}
+{# JS uni qo'shiq bosilganda "is-open" klassi bilan ko'taradi.         ---- #}
+<div class="player" aria-live="polite">
+  <img class="player__cover" alt="">
+  <div class="player__info">
+    <b class="player__title"></b>
+    <span class="player__artist"></span>
+  </div>
+  <div class="player__bar"><div class="player__fill"></div></div>
+  <button class="player__close" type="button" aria-label="Yopish">&times;</button>
+</div>
+
+<script src="{% static 'js/app.js' %}"></script>
+</body>
+</html>

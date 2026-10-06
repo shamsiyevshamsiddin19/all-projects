@@ -1,0 +1,73 @@
+{# KONTEKST: artists (sahifalangan), q, page_obj                      #}
+{# artist: .name .photo .albums_total                                 #}
+{% extends 'music/base.html' %}
+
+{% block title %}Ijrochilar{% endblock %}
+
+{% block hero %}
+<section class="hero hero--plain">
+  <div class="wrap hero__inner">
+    <div class="hero__content">
+      <span class="hero__tag">Katalog</span>
+      <h1 class="hero__title">Ijrochilar</h1>
+      <p class="hero__sub">Bazadagi barcha ijrochilar &mdash; {{ page_obj.paginator.count }} ta</p>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="wrap">
+
+  <section class="section section--tight">
+    <form class="search" method="get" action="{% url 'music:artist_list' %}">
+      <input type="search" name="q" value="{{ q }}" data-suggest
+             autocomplete="off" placeholder="Ijrochi nomi...">
+      <button class="btn btn--primary" type="submit">Qidirish</button>
+    </form>
+  </section>
+
+  <section class="section section--tight">
+    {% if artists %}
+      <div class="grid grid--artists">
+        {% for artist in artists %}
+          <a href="{{ artist.get_absolute_url }}" class="card artist-card">
+            <div class="artist-card__photo">
+              {% if artist.photo %}
+                <img src="{{ artist.photo.url }}" alt="{{ artist.name }}" loading="lazy">
+              {% else %}
+                <div class="card__blank">{{ artist.name|first|upper }}</div>
+              {% endif %}
+            </div>
+            <h3>{{ artist.name }}</h3>
+            <p>{{ artist.albums_total }} ta albom</p>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty">
+        <div class="empty__icon">&#9836;</div>
+        <h3>Ijrochi topilmadi</h3>
+        <p>
+          {% if q %}"{{ q }}" bo'yicha natija yo'q.
+          {% else %}Hali birorta ijrochi qo'shilmagan.{% endif %}
+        </p>
+        <a href="{% url 'music:artist_create' %}" class="btn btn--primary">+ Ijrochi qo'shish</a>
+      </div>
+    {% endif %}
+
+    {% if page_obj.has_other_pages %}
+      <nav class="pager">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}">&laquo; Oldingi</a>
+        {% endif %}
+        <span class="current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}">Keyingi &raquo;</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+  </section>
+
+</div>
+{% endblock %}

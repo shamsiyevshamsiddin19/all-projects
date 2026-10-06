@@ -1,0 +1,17 @@
+# Asosiy kutubxona (payme_payment) faqat standart Python bilan ishlaydi —
+# hech qanday tashqi paket shart emas.
+
+# .env faylini avtomatik o'qish uchun (tavsiya etiladi)
+python-dotenv>=1.0.0
+
+# --- Web-server uchun (qaysi birini ishlatsangiz, o'shani qoldiring) ---
+
+# FastAPI variantida:
+fastapi>=0.110.0
+uvicorn>=0.29.0
+
+# Flask variantida:
+# flask>=3.0.0
+
+# --- Testlar uchun ---
+# pytest>=8.0.0

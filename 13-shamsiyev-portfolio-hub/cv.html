@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV | Shamsiddin Shamsiyev</title>
+    <meta name="description" content="Shamsiddin Shamsiyev — Backend Developer CV. Python, FastAPI, Django, aiogram, PostgreSQL, Docker. EN / RU / UZ.">
+    <link rel="canonical" href="https://shamsiyev.uz/cv.html">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23111'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-family='Arial, sans-serif' font-size='50' font-weight='bold' fill='%23fff'>SH</text></svg>">
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/cv.css">
+    <!-- Preconnect to speed up render-blocking external resources -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Onest:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+</head>
+<body>
+    <div class="cursor-ring" aria-hidden="true"></div>
+    <header class="header" style="padding: 30px 60px; display: flex; justify-content: space-between; align-items: center;">
+        <a href="index.html" class="back-btn"><i class="ri-arrow-left-line"></i> <span class="lang-en">BACK</span><span class="lang-ru" style="display: none;">НАЗАД</span><span class="lang-uz" style="display: none;">ORQAGA</span></a>
+        <div style="display: flex; align-items: center; gap: 18px;">
+            <button class="print-btn" type="button" onclick="window.print()" aria-label="Download as PDF"><i class="ri-download-line" aria-hidden="true"></i> <span class="lang-en">PDF</span><span class="lang-ru" style="display: none;">PDF</span><span class="lang-uz" style="display: none;">PDF</span></button>
+            <div class="lang-switcher" id="langSwitcher" data-active="en">
+            <button class="lang-btn active" data-lang="en">EN</button>
+            <span style="color: #444;">/</span>
+            <button class="lang-btn" data-lang="ru">RU</button>
+            <span style="color: #444;">/</span>
+            <button class="lang-btn" data-lang="uz">UZ</button>
+        </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="doc-container">
+            <p class="doc-text" style="font-size: 28px; font-weight: 600; text-align: center; margin-bottom: 30px;"><span class="lang-en">Curriculum Vitae</span><span class="lang-ru" style="display: none;">Резюме (CV)</span><span class="lang-uz" style="display: none;">Tarjimai hol (CV)</span></p>
+
+            <p class="doc-text" style="margin-bottom: 20px; line-height: 1.8;">
+                <span class="lang-en">Hi, I'm Shamsiddin — a backend developer based in Tashkent. I started programming in August 2024 and have been learning intensively ever since, mostly under the mentorship of Nurulloh Muhammadov. What started as curiosity quickly turned into a real focus on server-side development with Python.</span>
+                <span class="lang-ru" style="display: none;">Привет, я Шамсиддин — backend-разработчик из Ташкента. Программировать я начал в августе 2024 года и с тех пор учусь очень интенсивно, в основном под руководством Нуруллоха Мухаммадова. То, что началось с простого любопытства, довольно быстро превратилось в серьёзное увлечение серверной разработкой на Python.</span>
+                <span class="lang-uz" style="display: none;">Salom, men Shamsiddin — Toshkentda yashovchi backend dasturchiman. Dasturlashni 2024-yil avgustida boshladim va o'shandan beri, asosan Nurulloh Muhammadov rahbarligida, jadal o'rganib kelyapman. Oddiy qiziqish sifatida boshlangan narsa tez orada Python bilan server tomonini ishlab chiqishga jiddiy qiziqishga aylandi.</span>
+            </p>
+
+            <p class="doc-text" style="margin-bottom: 20px; line-height: 1.8;">
+                <span class="lang-en">Most of my hands-on experience comes from building Telegram bots with Python and aiogram. My main project is Subtitr Bot — it generates dual-layer subtitles with a floating-vocabulary mode for videos and YouTube links, and has a tariff and payment flow, a background worker queue and a small web mini-app. I've also built Talaba Xizmatlari Bot to help students prepare their independent-study work, Quiz Bot with a PostgreSQL question bank and an admin panel, a desktop version of the subtitle tool together with a Chrome extension, and a small set of bots that connect to my university's LMS. The source code for these lives on my GitHub.</span>
+                <span class="lang-ru" style="display: none;">Большая часть моего практического опыта — это Telegram-боты на Python и aiogram. Мой основной проект — Subtitr Bot: он создаёт двухслойные субтитры с режимом «плавающего словаря» для видео и ссылок YouTube, имеет тарифы и оплату, фоновую очередь задач и небольшое веб-mini-app. Я также сделал Talaba Xizmatlari Bot, который помогает студентам готовить самостоятельные работы, Quiz Bot с базой вопросов на PostgreSQL и админ-панелью, десктопную версию инструмента субтитров вместе с расширением для Chrome и небольшой набор ботов, подключённых к LMS моего университета. Исходный код всего этого — на моём GitHub.</span>
+                <span class="lang-uz" style="display: none;">Amaliy tajribamning katta qismi — Python va aiogram yordamida yozilgan Telegram botlar. Asosiy loyiham — Subtitr Bot: u video va YouTube havolalari uchun ikki qatlamli subtitr (suzuvchi lug'at rejimi bilan) yaratadi, tarif va to'lov tizimiga, fon vazifalar navbati va kichik veb mini-app'ga ega. Shuningdek, talabalarga mustaqil ishlarini tayyorlashda yordam beradigan Talaba Xizmatlari Bot, PostgreSQL savol bazasi va admin panelli Quiz Bot, subtitr vositasining desktop versiyasi hamda Chrome kengaytmasi, va universitetim LMS'iga ulanadigan botlar to'plamini yaratdim. Bularning barcha manba kodi GitHub'imda.</span>
+            </p>
+
+            <p class="doc-text" style="margin-bottom: 20px; line-height: 1.8;">
+                <span class="lang-en">On the backend I mostly work with Python — Django and FastAPI for web APIs, aiogram for bots — together with PostgreSQL for data, Redis and Celery for background tasks, and Docker for deployment. I'm comfortable setting up a Linux server with Nginx from scratch, and I use Git every day. I try to keep my code clean and readable, and I still spend a big part of my time simply learning and building things.</span>
+                <span class="lang-ru" style="display: none;">На бэкенде я в основном работаю с Python — Django и FastAPI для веб-API, aiogram для ботов — вместе с PostgreSQL для данных, Redis и Celery для фоновых задач и Docker для развёртывания. Мне комфортно настраивать Linux-сервер с Nginx с нуля, и я каждый день пользуюсь Git. Стараюсь писать чистый и читаемый код и по-прежнему большую часть времени просто учусь и что-то создаю.</span>
+                <span class="lang-uz" style="display: none;">Backend tomonda asosan Python bilan ishlayman — veb API'lar uchun Django va FastAPI, botlar uchun aiogram — hamda ma'lumot uchun PostgreSQL, fon vazifalar uchun Redis va Celery, joylashtirish uchun Docker. Linux serverni Nginx bilan noldan sozlashga qiynalmayman va har kuni Git'dan foydalanaman. Kodni toza va o'qiladigan qilib yozishga harakat qilaman, va vaqtimning katta qismini hali ham o'rganish va biror narsa yaratishga sarflayman.</span>
+            </p>
+
+            <p class="doc-text" style="margin-bottom: 20px; line-height: 1.8;">
+                <span class="lang-en">I'm a Software Engineering student at Tashkent University of Information Technologies (TUIT). I was admitted on a state grant with a university-entrance score of 147.60 after finishing an academic lyceum. My background in mathematics helps me a lot with algorithms and problem-solving.</span>
+                <span class="lang-ru" style="display: none;">Я студент направления «Программная инженерия» Ташкентского университета информационных технологий (ТУИТ). Поступил на государственный грант с вступительным баллом 147.60 после академического лицея. Математическая база сильно помогает мне с алгоритмами и решением задач.</span>
+                <span class="lang-uz" style="display: none;">Men Toshkent axborot texnologiyalari universiteti (TATU) Dasturiy injiniring yo'nalishi talabasiman. Akademik litseyni tugatgach, kirish imtihonida 147.60 ball bilan davlat granti asosida o'qishga qabul qilindim. Matematik asosim algoritmlar va masalalarni yechishda menga katta yordam beradi.</span>
+            </p>
+
+            <p class="doc-text" style="margin-bottom: 40px; line-height: 1.8;">
+                <span class="lang-en">Uzbek is my native language, and I can work comfortably in English and Russian, so I read documentation and learn from resources in all three. Right now I'm looking for an internship or a junior backend position where I can keep growing while contributing to real products.</span>
+                <span class="lang-ru" style="display: none;">Узбекский — мой родной язык, также свободно работаю на английском и русском, поэтому читаю документацию и учусь на всех трёх языках. Сейчас я ищу стажировку или junior-позицию backend-разработчика, где смогу расти и приносить пользу реальным продуктам.</span>
+                <span class="lang-uz" style="display: none;">O'zbek tili — ona tilim, ingliz va rus tillarida ham bemalol ishlayman, shuning uchun har uchala tilda hujjat o'qib, resurslardan o'rganaman. Hozir o'sishda davom eta turib, real mahsulotlarga hissa qo'sha oladigan amaliyot yoki junior backend lavozimini qidiryapman.</span>
+            </p>
+
+            <hr style="border: none; border-top: 1px solid #333; margin-bottom: 20px;">
+            <div class="doc-section" style="margin-bottom: 10px;">
+                <p class="doc-text" style="font-size: 18px; font-weight: 600; margin-bottom: 16px;">
+                    <span class="lang-en">Education &amp; Achievements</span>
+                    <span class="lang-ru" style="display: none;">Образование и достижения</span>
+                    <span class="lang-uz" style="display: none;">Ta'lim va yutuqlar</span>
+                </p>
+                <p class="doc-text" style="line-height: 2.4;">
+                    <i class="ri-award-line" style="margin-right: 10px; color: #a78bfa;"></i>
+                    <a href="assets/docs/tatu-titul-varaqasi.jpg" target="_blank" rel="noopener" style="color: #fff; text-decoration: none; border-bottom: 1px solid #444;">
+                        <span class="lang-en">TUIT — Software Engineering, admitted on a state grant (entrance score 147.60)</span>
+                        <span class="lang-ru" style="display: none;">ТУИТ — Программная инженерия, государственный грант (балл 147.60)</span>
+                        <span class="lang-uz" style="display: none;">TATU — Dasturiy injiniring, davlat granti (kirish bali 147.60)</span>
+                        <i class="ri-external-link-line" style="font-size: 13px; margin-left: 4px;"></i>
+                    </a><br>
+                    <i class="ri-medal-line" style="margin-right: 10px; color: #fbbf24;"></i>
+                    <a href="assets/docs/litsey-imtihon-natijalari.pdf" target="_blank" rel="noopener" style="color: #fff; text-decoration: none; border-bottom: 1px solid #444;">
+                        <span class="lang-en">Academic Lyceum (Qorako'l) — ranked 56th in the entrance exam</span>
+                        <span class="lang-ru" style="display: none;">Академический лицей (Каракуль) — 56-е место на вступительном экзамене</span>
+                        <span class="lang-uz" style="display: none;">Akademik litsey (Qorako'l) — kirish imtihonida 56-o'rin</span>
+                        <i class="ri-external-link-line" style="font-size: 13px; margin-left: 4px;"></i>
+                    </a>
+                </p>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid #333; margin-bottom: 20px;">
+            <div class="doc-section">
+                <p class="doc-text" style="line-height: 2.5;">
+                    <i class="ri-map-pin-line" style="margin-right: 10px;"></i> <a href="https://maps.google.com/?q=Tashkent,+Uzbekistan" target="_blank" style="color: #fff; text-decoration: none;">Tashkent, Uzbekistan</a><br>
+                    <i class="ri-phone-line" style="margin-right: 10px;"></i> <a href="tel:+998977013619" style="color: #fff; text-decoration: none;">+998 97 701 36 19</a><br>
+                    <i class="ri-mail-line" style="margin-right: 10px;"></i> <a href="mailto:shamsiyevshamsiddin19@gmail.com" style="color: #fff; text-decoration: none;">shamsiyevshamsiddin19@gmail.com</a><br>
+                    <i class="ri-global-line" style="margin-right: 10px;"></i> <a href="https://shamsiyev.uz" target="_blank" style="color: #fff; text-decoration: none;">shamsiyev.uz</a><br>
+                    <i class="ri-github-line" style="margin-right: 10px;"></i> <a href="https://github.com/shamsiyevshamsiddin19" target="_blank" style="color: #fff; text-decoration: none;">github.com/shamsiyevshamsiddin19</a><br>
+                    <i class="ri-linkedin-box-line" style="margin-right: 10px;"></i> <a href="https://www.linkedin.com/in/shamsiddin-shamsiyev-395516341" target="_blank" style="color: #fff; text-decoration: none;">linkedin.com/in/shamsiddin-shamsiyev-395516341</a>
+                </p>
+            </div>
+        </div>
+    </main>
+    <script src="assets/js/cv.js"></script>
+    <script src="assets/js/cursor.min.js?v=1" defer></script>
+    <script src="assets/js/track.js?v=1" defer></script>
+</body>
+</html>

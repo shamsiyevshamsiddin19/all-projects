@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% load static wstore_extras %}
+{% load i18n %}
+
+{% block title %}{% translate "Yangi loyiha qo'shish — wstore.uz" %}{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; padding-top: 2rem; padding-bottom: 5rem;">
+  <a href="{% url 'orders:seller_dashboard' %}" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; color: var(--muted); margin-bottom: 1.5rem;">
+    <i data-lucide="arrow-left" style="width: 15px; height: 15px;"></i>
+    {% translate "Sotuvchi paneliga qaytish" %}
+  </a>
+
+  <div class="card">
+    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
+      <div style="width: 44px; height: 44px; border-radius: var(--radius-sm); background: rgba(109, 94, 246, 0.15); display: flex; align-items: center; justify-content: center; color: var(--accent);">
+        <i data-lucide="package-plus" style="width: 24px; height: 24px;"></i>
+      </div>
+      <div>
+        <h1 style="font-size: 1.4rem; font-weight: 800; color: var(--fg);">{% translate "Yangi loyiha qo'shish" %}</h1>
+        <p style="font-size: 0.85rem; color: var(--muted);">{% translate "Tayyor bot, sayt yoki kod blokini sotuvga qo'ying." %}</p>
+      </div>
+    </div>
+
+    <!-- Listing fee alert -->
+    <div style="background: rgba(230, 180, 80, 0.1); border: 1px solid rgba(230, 180, 80, 0.3); border-radius: var(--radius-sm); padding: 0.9rem 1.15rem; margin-bottom: 1.75rem; display: flex; align-items: flex-start; gap: 0.75rem;">
+      <i data-lucide="info" style="width: 18px; height: 18px; color: var(--gold); flex-shrink: 0; margin-top: 2px;"></i>
+      <div style="font-size: 0.86rem; color: #fde68a;">
+        {% blocktranslate with fee=LISTING_FEE_SOM|som %}Har bir yangi loyihani joylashtirish uchun bir martalik <strong>{{ fee }} so'm</strong> e'lon to'lovi mavjud. To'lovdan so'ng loyihangiz moderatorlar tomonidan ko'rib chiqiladi.{% endblocktranslate %}
+      </div>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label class="form-label">{% translate "Loyiha sarlavhasi *" %}</label>
+        {{ form.title }}
+        {% if form.title.errors %}<div class="form-error">{{ form.title.errors }}</div>{% endif %}
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label">{% translate "Kategoriya *" %}</label>
+          {{ form.category }}
+          {% if form.category.errors %}<div class="form-error">{{ form.category.errors }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label class="form-label">{% translate "Ichki toifa (saytlar uchun)" %}</label>
+          {{ form.subcategory }}
+          {% if form.subcategory.errors %}<div class="form-error">{{ form.subcategory.errors }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{% translate "Narxi (USD) *" %}</label>
+        {{ form.price }}
+        <span style="font-size: 0.78rem; color: var(--muted); margin-top: 4px; display: block;">
+          {% blocktranslate with rate=UZS_RATE %}Click to'lovida avtomatik ravishda so'mga o'giriladi (1 USD = {{ rate }} so'm).{% endblocktranslate %}
+        </span>
+        {% if form.price.errors %}<div class="form-error">{{ form.price.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{% translate "Loyiha tavsifi *" %}</label>
+        {{ form.description }}
+        {% if form.description.errors %}<div class="form-error">{{ form.description.errors }}</div>{% endif %}
+      </div>
+
+      <!-- Tech Stack -->
+      <div class="form-group">
+        <label class="form-label">{% translate "Ishlatilgan texnologiyalar" %}</label>
+        <div style="max-height: 160px; overflow-y: auto; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.4rem; font-size: 0.85rem;">
+            {% for choice in form.tech_stack_selection %}
+              <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+                {{ choice.tag }}
+                <span>{{ choice.choice_label }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Features -->
+      <div class="form-group">
+        <label class="form-label">{{ form.features_raw.label }}</label>
+        {{ form.features_raw }}
+      </div>
+
+      <!-- Files and Images -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+        <div class="form-group">
+          <label class="form-label">{% translate "Muqova rasmi (Fayl yuklash)" %}</label>
+          {{ form.cover_image_file }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">{% translate "Yoki Muqova rasm havolasi (URL)" %}</label>
+          {{ form.cover_image_url }}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{% translate "Skrinshotlar (URL havolalar har qatorda)" %}</label>
+        {{ form.screenshots_raw }}
+      </div>
+
+      <div class="form-group" style="background: var(--surface-2); padding: 1rem; border-radius: var(--radius-sm); border: 1px dashed var(--border-strong);">
+        <label class="form-label" style="display: flex; align-items: center; gap: 0.4rem;">
+          <i data-lucide="file-archive" style="width: 17px; height: 17px; color: var(--accent);"></i>
+          {% translate "Loyiha manba kodi (ZIP fayl yuklash)" %}
+        </label>
+        {{ form.file_archive }}
+        <p style="font-size: 0.78rem; color: var(--muted); margin-top: 0.4rem;">
+          {% translate "Mijoz to'lov qilgandan so'ng xavfsiz token orqali ushbu ZIP faylni yuklab oladi." %}
+        </p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label">{% translate "Jonli demo havola (ixtiyoriy)" %}</label>
+          {{ form.demo_url }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">{% translate "Telegram username (ixtiyoriy)" %}</label>
+          {{ form.telegram_username }}
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 2rem;">
+        <a href="{% url 'orders:seller_dashboard' %}" class="btn btn-secondary">{% translate "Bekor qilish" %}</a>
+        <button type="submit" class="btn btn-primary btn-lg">
+          <i data-lucide="check" style="width: 18px; height: 18px;"></i>
+          <span>{% translate "Loyihani saqlash" %}</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

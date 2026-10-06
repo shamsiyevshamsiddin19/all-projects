@@ -1,0 +1,68 @@
+{% load static %}
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="uz" data-uzs-rate="{{ UZS_RATE|stringformat:'d' }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{% translate "wstore.uz — Tayyor kod, botlar, saytlar va ilovalar" %}{% endblock %}</title>
+  <meta name="description" content="{% block description %}{% translate "Tayyor kod loyihalari, botlar, saytlar, ilovalar va kod bloklarini sotish platformasi." %}{% endblock %}">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="{% static 'img/logo-icon.png' %}">
+  
+  <!-- Inter Google Font (Identical to Next.js font) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Instant Theme Execution (prevents flash of white/dark) -->
+  <script>
+    (function() {
+      try {
+        const match = document.cookie.match(/(?:^|; )theme=([^;]*)/);
+        const cookieTheme = match ? decodeURIComponent(match[1]) : null;
+        const theme = cookieTheme || localStorage.getItem('theme') || 'dark';
+        if (theme === 'light') {
+          document.documentElement.setAttribute('data-theme', 'light');
+        } else {
+          document.documentElement.removeAttribute('data-theme');
+        }
+      } catch (e) {}
+    })();
+  </script>
+
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="{% static 'css/wstore.css' %}?v={{ STATIC_VERSION }}">
+  
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen flex flex-col bg-bg text-fg">
+  {% csrf_token %}
+  {% include 'navbar.html' %}
+
+  {% if messages %}
+  <div class="messages-container">
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}">
+        <span>{{ message }}</span>
+        <button type="button" onclick="this.parentElement.remove()" style="background:none; border:none; color:inherit; cursor:pointer; font-size:1.1rem;">&times;</button>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <main style="flex: 1;">
+    {% block content %}{% endblock %}
+  </main>
+
+  {% include 'footer.html' %}
+
+  <!-- JavaScript -->
+  <script src="{% static 'js/wstore.js' %}?v={{ STATIC_VERSION }}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

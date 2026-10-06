@@ -1,0 +1,239 @@
+{# KONTEKST: albums (sahifalangan), q, selected_genre, genres,        #}
+{#           featured, top_albums, page_obj, paginator                #}
+{% extends 'music/base.html' %}
+
+{% block title %}Albomlar{% endblock %}
+
+{# ---------- TEPADAGI KATTA RASM --------------------------------- #}
+{# featured faqat birinchi sahifada va qidiruvsiz holatda keladi.    #}
+{% block hero %}
+  {% if featured_albums %}
+    {% comment %}
+      Slayder. Har bir albom uchun ikkita bo'lak bor:
+        .hero__slide   — rasm (qora pardaning TAGIDA turadi)
+        .hero__content — matn (qora pardaning USTIDA turadi)
+      Ikkovi bir-biridan uzoqda joylashgan, shuning uchun JS ularni
+      RAQAM bo'yicha bog'laydi: data-slide="0" <-> data-panel="0".
+    {% endcomment %}
+    <section class="hero" data-hero>
+
+      {% for album in featured_albums %}
+        <div class="hero__slide{% if forloop.first %} is-active{% endif %}"
+             data-slide="{{ forloop.counter0 }}">
+          <div class="hero__bg" style="background-image:url('{{ album.hero_bg_url }}')"></div>
+          <img class="hero__art {% if album.hero_figure_is_cutout %}hero__art--cutout{% endif %}"
+               src="{{ album.hero_figure_url }}"
+               alt="{{ album.artist.name }}"
+               {% if not forloop.first %}loading="lazy"{% endif %}>
+        </div>
+      {% endfor %}
+
+      <div class="wrap hero__inner">
+        <div class="hero__panels">
+          {% for album in featured_albums %}
+            <div class="hero__content{% if forloop.first %} is-active{% endif %}"
+                 data-panel="{{ forloop.counter0 }}">
+              <p class="hero__kicker">
+                {% if forloop.first %}Eng so'nggi albom{% else %}Tavsiya etamiz{% endif %}
+              </p>
+              {% comment %}
+                Sarlavha o'lchami nom UZUNLIGIGA qarab tanlanadi.
+                CSS ni faqat ekran kengligiga bog'lasak, "21" ham,
+                "(What's The Story) Morning Glory?" ham bir xil ulkan
+                bo'lib, uzuni to'rt qatorga bo'linib hero dan oshib
+                ketardi.
+              {% endcomment %}
+              <h1 class="hero__title
+                         {% if album.title|length > 34 %}hero__title--xs
+                         {% elif album.title|length > 18 %}hero__title--sm{% endif %}">{{ album.title }}</h1>
+              <p class="hero__sub">
+                {{ album.artist.name }}{% if album.release_date %} &middot; {{ album.release_date.year }}{% endif %}
+              </p>
+              <div class="hero__actions">
+                <a href="{{ album.get_absolute_url }}" class="btn btn--pink">&#9654; Tinglash</a>
+                <a href="{% url 'music:import' %}" class="btn btn--outline">Katalogdan qo'shish</a>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+
+        {% if featured_albums|length > 1 %}
+          <div class="hero__dots">
+            {% for album in featured_albums %}
+              <button type="button"
+                      class="hero__dot{% if forloop.first %} is-active{% endif %}"
+                      data-dot="{{ forloop.counter0 }}"
+                      aria-label="{{ album.title }}"></button>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    </section>
+
+  {% else %}
+    <section class="hero hero--plain">
+      <div class="wrap hero__inner">
+        <div class="hero__content">
+          <h1 class="hero__title">
+            {% if q %}"{{ q }}" bo'yicha natija{% else %}Albomlar{% endif %}
+          </h1>
+          <p class="hero__sub">Albom yoki ijrochi nomi bo'yicha qidiring</p>
+        </div>
+      </div>
+    </section>
+  {% endif %}
+{% endblock %}
+
+
+{% block content %}
+<div class="wrap">
+
+  {# ---------- TOP ALBOMLAR — gorizontal qator ---------------- #}
+  {% comment %} Qidiruv endi tepadagi menyuda (base.html), shuning uchun bu yerda
+     birinchi bo'lib aynan shu qator turadi — namunadagidek.
+{% endcomment %}
+  {% if rail_albums %}
+    <section class="section section--tight">
+      <h2 class="section-title">
+        Top <b>albomlar</b>
+        <a class="more" href="#barcha-albomlar">Barchasi &rarr;</a>
+      </h2>
+      <div class="rail">
+        {% for album in rail_albums %}
+          {% include 'music/partials/_album_card.html' %}
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  {# ---------- JANR CHIPLARI ---------------------------------- #}
+  {% if genres %}
+    <div class="chips">
+      <a href="{% url 'music:album_list' %}{% if q %}?q={{ q }}{% endif %}"
+         class="{% if not selected_genre %}is-active{% endif %}">Hammasi</a>
+      {% for janr in genres %}
+        <a href="?genre={{ janr.slug }}{% if q %}&q={{ q }}{% endif %}"
+           class="{% if selected_genre == janr.slug %}is-active{% endif %}">
+          {{ janr.name }} <span style="opacity:.6">{{ janr.albums_total }}</span>
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {# ---------- ALBOMLAR ---------------------------------------- #}
+  <section class="section section--tight" id="barcha-albomlar">
+    <h2 class="section-title">
+      {% if q or selected_genre %}Topilgan <b>albomlar</b>{% else %}Barcha <b>albomlar</b>{% endif %}
+      <span class="more">{{ page_obj.paginator.count }} ta</span>
+    </h2>
+
+    {% if albums %}
+      <div class="grid">
+        {% for album in albums %}
+          {% include 'music/partials/_album_card.html' %}
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty">
+        <div class="empty__icon">&#9834;</div>
+        <h3>Albom topilmadi</h3>
+        <p>
+          {% if q %}"{{ q }}" bo'yicha hech narsa yo'q. Boshqacha yozib ko'ring.
+          {% else %}Hozircha albom qo'shilmagan. Katalogdan qidiring yoki qo'lda kiriting.{% endif %}
+        </p>
+        <a href="{% url 'music:import' %}" class="btn btn--primary">Katalogdan qo'shish</a>
+      </div>
+    {% endif %}
+
+    {# ---------- SAHIFALASH ------------------------------------ #}
+    {# DIQQAT: q va genre ni har bir havolaga qo'shib yuborish SHART, #}
+    {# aks holda 2-sahifaga o'tganda qidiruv shartlari yo'qoladi.     #}
+    {% if page_obj.has_other_pages %}
+      <nav class="pager">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}">&laquo; Oldingi</a>
+        {% endif %}
+        <span class="current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}">Keyingi &raquo;</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+  </section>
+
+  {# ---------- JADVAL + TEZKOR HAVOLALAR ----------------------- #}
+  {% if top_albums %}
+    <section class="section">
+      <div class="cols">
+
+        <div>
+          <h2 class="section-title">Eng ko'p <b>qo'shiqli albomlar</b></h2>
+          <table class="chart">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Albom / Ijrochi</th>
+                <th class="chart__hide-sm">Janr</th>
+                <th style="text-align:right">Qo'shiq</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for album in top_albums %}
+                <tr>
+                  <td class="chart__rank">{{ forloop.counter|stringformat:"02d" }}</td>
+                  <td>
+                    <div class="chart__name">
+                      {% if album.cover %}
+                        <img class="chart__thumb" src="{{ album.cover.url }}" alt="" loading="lazy">
+                      {% else %}
+                        <span class="chart__thumb"></span>
+                      {% endif %}
+                      <a href="{{ album.get_absolute_url }}">
+                        <b>{{ album.title|truncatechars:34 }}</b>
+                        <span>{{ album.artist.name }}</span>
+                      </a>
+                    </div>
+                  </td>
+                  <td class="chart__hide-sm">
+                    {% for janr in album.genres.all %}
+                      <span class="pill pill--accent">{{ janr.name }}</span>
+                    {% empty %}
+                      <span style="color:var(--muted)">&mdash;</span>
+                    {% endfor %}
+                  </td>
+                  <td class="chart__num">{{ album.songs_total }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div>
+          <h2 class="section-title">Nima <b>qilish mumkin</b></h2>
+          <div class="panel" style="margin-bottom:16px">
+            <h3>Katalogdan qo'shish</h3>
+            <p style="color:var(--muted);margin:0 0 16px;font-size:13.5px">
+              Albom nomini yozasiz — muqovasi, chiqqan sanasi, janri va
+              barcha qo'shiqlari o'zi qo'shiladi.
+            </p>
+            <a href="{% url 'music:import' %}" class="btn btn--primary">Katalogni ochish</a>
+          </div>
+          <div class="panel">
+            <h3>Qo'lda kiritish</h3>
+            <p style="color:var(--muted);margin:0 0 16px;font-size:13.5px">
+              Katalogda topilmagan albomni o'zingiz qo'shasiz: avval ijrochi,
+              keyin albom, so'ng qo'shiqlarni biriktirasiz.
+            </p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <a href="{% url 'music:artist_create' %}" class="btn btn--ghost">+ Ijrochi</a>
+              <a href="{% url 'music:album_create' %}" class="btn btn--ghost">+ Albom</a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  {% endif %}
+
+</div>
+{% endblock %}

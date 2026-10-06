@@ -1,0 +1,21 @@
+# Maxfiy sozlamalar — hech qachon git'ga tushmasin
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Build
+dist/
+build/
+.next/
+*.tsbuildinfo
+
+# Muharrir
+.idea/
+.vscode/
+.DS_Store

@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% blocktranslate with title=product.title %}Loyihani tahrirlash: {{ title }} — wstore.uz{% endblocktranslate %}{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; padding-top: 2rem; padding-bottom: 5rem;">
+  <a href="{% url 'orders:seller_dashboard' %}" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; color: var(--muted); margin-bottom: 1.5rem;">
+    <i data-lucide="arrow-left" style="width: 15px; height: 15px;"></i>
+    {% translate "Sotuvchi paneliga qaytish" %}
+  </a>
+
+  <div class="card">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
+      <div>
+        <h1 style="font-size: 1.4rem; font-weight: 800; color: var(--fg);">{% translate "Loyihani tahrirlash" %}</h1>
+        <p style="font-size: 0.85rem; color: var(--muted);">{{ product.title }}</p>
+      </div>
+      <span class="badge-tech" style="font-size: 0.85rem; padding: 4px 10px;">{{ product.get_status_display }}</span>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label class="form-label">{% translate "Loyiha sarlavhasi *" %}</label>
+        {{ form.title }}
+        {% if form.title.errors %}<div class="form-error">{{ form.title.errors }}</div>{% endif %}
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label">{% translate "Kategoriya *" %}</label>
+          {{ form.category }}
+          {% if form.category.errors %}<div class="form-error">{{ form.category.errors }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label class="form-label">{% translate "Ichki toifa" %}</label>
+          {{ form.subcategory }}
+          {% if form.subcategory.errors %}<div class="form-error">{{ form.subcategory.errors }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{% translate "Narxi (USD) *" %}</label>
+        {{ form.price }}
+        {% if form.price.errors %}<div class="form-error">{{ form.price.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{% translate "Loyiha tavsifi *" %}</label>
+        {{ form.description }}
+        {% if form.description.errors %}<div class="form-error">{{ form.description.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{% translate "Ishlatilgan texnologiyalar" %}</label>
+        <div style="max-height: 160px; overflow-y: auto; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.4rem; font-size: 0.85rem;">
+            {% for choice in form.tech_stack_selection %}
+              <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+                {{ choice.tag }}
+                <span>{{ choice.choice_label }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{{ form.features_raw.label }}</label>
+        {{ form.features_raw }}
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+        <div class="form-group">
+          <label class="form-label">{% translate "Muqova rasmi (Fayl)" %}</label>
+          {{ form.cover_image_file }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">{% translate "Muqova rasmi (URL)" %}</label>
+          {{ form.cover_image_url }}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{% translate "Skrinshotlar (URL)" %}</label>
+        {{ form.screenshots_raw }}
+      </div>
+
+      <div class="form-group" style="background: var(--surface-2); padding: 1rem; border-radius: var(--radius-sm); border: 1px dashed var(--border-strong);">
+        <label class="form-label">{% translate "Yangi ZIP fayl yuklash (ixtiyoriy)" %}</label>
+        {{ form.file_archive }}
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label">{% translate "Jonli demo havola" %}</label>
+          {{ form.demo_url }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">{% translate "Telegram username" %}</label>
+          {{ form.telegram_username }}
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 2rem;">
+        <a href="{% url 'orders:seller_dashboard' %}" class="btn btn-secondary">{% translate "Bekor qilish" %}</a>
+        <button type="submit" class="btn btn-primary">
+          <i data-lucide="save" style="width: 17px; height: 17px;"></i>
+          <span>{% translate "O'zgarishlarni saqlash" %}</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,228 @@
+{% load static wstore_extras %}
+{% load i18n %}
+<header class="navbar-header sticky top-0 z-30 border-b border-border bg-bg/80 backdrop-blur">
+  <div class="page-shell flex h-16 items-center justify-between">
+    
+    <!-- Chap tomon: mobil menyu (chapda) + logo -->
+    <div class="flex items-center gap-2">
+      <!-- Mobil menyu tugmasi -->
+      <button 
+        type="button" 
+        id="mobileMenuToggle" 
+        class="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted transition hover:border-border-strong hover:text-fg md:hidden"
+        aria-label="{% translate "Menyu" %}"
+      >
+        <i data-lucide="menu" style="width: 20px; height: 20px;"></i>
+      </button>
+
+      <!-- Logo -->
+      <a href="{% url 'store:catalog' %}" class="flex items-center gap-2">
+        <img 
+          src="{% static 'img/logo-icon.png' %}" 
+          alt="wstore.uz" 
+          width="36" 
+          height="36" 
+          class="h-9 w-9 object-contain"
+          onerror="this.style.display='none'"
+        >
+        <span class="text-lg font-semibold tracking-tight text-fg">
+          wstore<span class="text-muted">.uz</span>
+        </span>
+      </a>
+    </div>
+
+    <!-- Markaziy menyu (desktop) -->
+    <nav class="hidden items-center gap-6 text-sm text-muted md:flex">
+      <a href="{% url 'store:catalog' %}" class="transition hover:text-fg {% if request.resolver_match.url_name == 'catalog' and not 'seller' in request.path and not 'dashboard' in request.path %}text-fg font-medium{% endif %}">
+        {% translate "Katalog" %}
+      </a>
+      <a href="{% url 'orders:seller_dashboard' %}" class="transition hover:text-fg {% if 'seller' in request.path %}text-fg font-medium{% endif %}">
+        {% translate "Sotuvchi paneli" %}
+      </a>
+      <a href="{% url 'orders:dashboard' %}" class="transition hover:text-fg {% if 'dashboard' in request.path %}text-fg font-medium{% endif %}">
+        {% translate "Kabinet" %}
+      </a>
+    </nav>
+
+    <!-- O'ng: tema + til + akkaunt -->
+    <div class="flex items-center gap-2.5 sm:gap-4">
+      
+      <!-- Theme Toggle (Light / Dark) -->
+      <button
+        type="button"
+        id="themeToggleBtn"
+        aria-label="{% translate "Temani almashtirish" %}"
+        class="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted transition hover:border-border-strong hover:text-fg"
+      >
+        <i data-lucide="sun" id="themeSunIcon" style="width: 16px; height: 16px;"></i>
+        <i data-lucide="moon" id="themeMoonIcon" style="width: 16px; height: 16px; display: none;"></i>
+      </button>
+
+      <!-- Til tanlash (LangSelect) -->
+      <!-- Til almashtirish — Django'ning set_language view'iga POST yuboradi.
+           Ilgari bu faqat localStorage'ga yozib, yorliqni o'zgartirardi;
+           sahifadagi hech bir matn tarjima qilinmasdi. -->
+      <div class="relative" id="langSelectWrap">
+        <button
+          type="button"
+          id="langSelectBtn"
+          class="flex items-center gap-1.5 text-sm text-muted transition hover:text-fg"
+          aria-haspopup="true"
+          aria-expanded="false"
+          aria-label="{% translate 'Tilni almashtirish' %}"
+        >
+          <i data-lucide="globe" style="width: 15px; height: 15px;"></i>
+          <span id="currentLangLabel">{{ LANGUAGE_CODE|upper }}</span>
+        </button>
+        <form id="langDropdown" class="lang-dropdown" method="POST" action="{% url 'set_language' %}">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          {% get_available_languages as LANGS %}
+          {% for code, name in LANGS %}
+            <button
+              type="submit"
+              name="language"
+              value="{{ code }}"
+              class="lang-opt{% if code == LANGUAGE_CODE %} active{% endif %}"
+            >
+              <span class="lang-code">{{ code|upper }}</span>
+              <span class="lang-name">{{ name }}</span>
+            </button>
+          {% endfor %}
+        </form>
+      </div>
+
+      <!-- Akkaunt / Kirish -->
+      {% if user.is_authenticated %}
+        <!-- AccountMenu Dropdown -->
+        <div class="relative" id="accountMenuWrap">
+          <button
+            type="button"
+            id="accountMenuBtn"
+            class="flex items-center gap-2 rounded-lg border border-border px-2 py-1.5 transition hover:border-border-strong"
+          >
+            {% if user.avatar %}
+              <img src="{{ user.avatar }}" alt="" class="h-7 w-7 rounded-full border border-border-strong object-cover">
+            {% else %}
+              <div class="avatar-circle-sm">{{ user.initials }}</div>
+            {% endif %}
+            <span class="hidden max-w-[130px] truncate text-sm text-fg sm:inline">
+              {{ user.display_name }}
+            </span>
+            <i data-lucide="chevron-down" style="width: 14px; height: 14px; color: var(--muted);" id="userChevron"></i>
+          </button>
+
+          <!-- Dropdown menu -->
+          <div id="accountDropdownMenu" class="account-dropdown-panel">
+            <div class="border-b border-border px-3 py-2 text-xs text-muted">
+              <div>{{ user.display_name }}</div>
+              <div class="mt-1 font-semibold text-gold">
+                {% blocktranslate with amount=user.balance|som %}{{ amount }} so'm{% endblocktranslate %}
+              </div>
+            </div>
+            
+            <a href="{% url 'orders:dashboard' %}" class="account-menu-item">
+              <i data-lucide="layout-dashboard" style="width: 15px; height: 15px;"></i>
+              <span>{% translate "Kabinet" %}</span>
+            </a>
+            
+            <a href="{% url 'store:wishlist' %}" class="account-menu-item">
+              <i data-lucide="heart" style="width: 15px; height: 15px;"></i>
+              <span>{% translate "Sevimlilar" %}</span>
+            </a>
+
+            <a href="{% url 'orders:seller_dashboard' %}" class="account-menu-item">
+              <i data-lucide="store" style="width: 15px; height: 15px;"></i>
+              <span>{% translate "Sotuvchi paneli" %}</span>
+            </a>
+
+            <a href="{% url 'orders:seller_balance' %}" class="account-menu-item">
+              <i data-lucide="wallet" style="width: 15px; height: 15px;"></i>
+              <span>{% translate "Balans & Yechib olish" %}</span>
+            </a>
+
+            {% if user.is_staff %}
+              <a href="{% url 'admin:index' %}" class="account-menu-item text-accent" target="_blank">
+                <i data-lucide="shield" style="width: 15px; height: 15px;"></i>
+                <span>{% translate "Admin panel" %}</span>
+              </a>
+            {% endif %}
+
+            <div class="dropdown-divider"></div>
+
+            <a href="{% url 'core:logout' %}" class="account-menu-item text-red-400">
+              <i data-lucide="log-out" style="width: 15px; height: 15px;"></i>
+              <span>{% translate "Chiqish" %}</span>
+            </a>
+          </div>
+        </div>
+      {% else %}
+        <!-- AuthButton (Kirish) -->
+        <a 
+          href="{% url 'core:login' %}" 
+          class="flex items-center gap-2 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white transition hover:bg-accent-hover sm:px-4"
+        >
+          <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true" style="flex-shrink: 0;">
+            <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.3-.4-3.5z"/>
+            <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+            <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.1-11.3-7.6l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
+            <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.5l6.2 5.2C41.9 35.6 44 30.2 44 24c0-1.3-.1-2.3-.4-3.5z"/>
+          </svg>
+          <span class="hidden sm:inline">{% translate "Kirish" %}</span>
+          <span class="sm:hidden">{% translate "Kirish" %}</span>
+        </a>
+      {% endif %}
+
+    </div>
+  </div>
+</header>
+
+<!-- Mobil Drawer Menyu (MobileNav slide-over) -->
+<div id="mobileDrawerWrap" class="fixed inset-0 z-50 md:hidden" style="display: none;">
+  <div id="mobileDrawerBackdrop" class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 opacity-0"></div>
+  <div id="mobileDrawerPanel" class="absolute right-0 top-0 flex h-full w-[78%] max-w-xs flex-col border-l border-border bg-bg shadow-2xl transition-transform duration-300 ease-out translate-x-full">
+    <div class="flex items-center justify-between border-b border-border px-4 py-4">
+      <a href="{% url 'store:catalog' %}" class="flex items-center gap-2">
+        <img src="{% static 'img/logo-icon.png' %}" alt="wstore.uz" width="26" height="26" class="h-[26px] w-[26px] object-contain">
+        <span class="font-semibold text-fg">
+          wstore<span class="text-muted">.uz</span>
+        </span>
+      </a>
+      <button type="button" id="mobileDrawerClose" class="rounded-lg p-1.5 text-muted transition hover:bg-surface-2 hover:text-fg" aria-label="{% translate "Yopish" %}">
+        <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+      </button>
+    </div>
+
+    <nav class="flex flex-col gap-1 p-3">
+      <a href="{% url 'store:catalog' %}" class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition text-muted hover:bg-surface-2 hover:text-fg">
+        <i data-lucide="layout-grid" style="width: 18px; height: 18px;"></i>
+        <span class="flex-1">{% translate "Katalog" %}</span>
+        <i data-lucide="chevron-right" style="width: 15px; height: 15px;" class="text-border-strong"></i>
+      </a>
+
+      <a href="{% url 'orders:seller_dashboard' %}" class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition text-muted hover:bg-surface-2 hover:text-fg">
+        <i data-lucide="store" style="width: 18px; height: 18px;"></i>
+        <span class="flex-1">{% translate "Sotuvchi paneli" %}</span>
+        <i data-lucide="chevron-right" style="width: 15px; height: 15px;" class="text-border-strong"></i>
+      </a>
+
+      <a href="{% url 'orders:dashboard' %}" class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition text-muted hover:bg-surface-2 hover:text-fg">
+        <i data-lucide="user" style="width: 18px; height: 18px;"></i>
+        <span class="flex-1">{% translate "Kabinet" %}</span>
+        <i data-lucide="chevron-right" style="width: 15px; height: 15px;" class="text-border-strong"></i>
+      </a>
+
+      <a href="{% url 'store:wishlist' %}" class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition text-muted hover:bg-surface-2 hover:text-fg">
+        <i data-lucide="heart" style="width: 18px; height: 18px;"></i>
+        <span class="flex-1">{% translate "Sevimlilar" %}</span>
+        <i data-lucide="chevron-right" style="width: 15px; height: 15px;" class="text-border-strong"></i>
+      </a>
+    </nav>
+
+    <div class="mt-auto border-t border-border px-4 py-4">
+      <p class="text-xs text-muted">
+        wstore<span class="text-fg/70">.uz</span> {% translate "— tayyor kod, botlar, saytlar va ilovalar bozori" %}
+      </p>
+    </div>
+  </div>
+</div>
