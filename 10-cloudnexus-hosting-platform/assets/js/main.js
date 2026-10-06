@@ -28,15 +28,51 @@ function initNavbarScroll() {
   });
 }
 
-// 2. Mobile Menu Toggle
+// 2. Mobile Menu Drawer & Toggle
 function initMobileMenu() {
-  const toggleBtn = document.querySelector('.mobile-menu-toggle');
-  const navMenu = document.querySelector('.nav-menu');
-  if (!toggleBtn || !navMenu) return;
+  const toggleBtn = document.getElementById('mobileMenuBtn');
+  const drawer = document.getElementById('mobileNavDrawer');
+  const backdrop = document.getElementById('mobileDrawerBackdrop');
+  const closeBtn = document.getElementById('mobileDrawerCloseBtn');
+  const drawerLinks = document.querySelectorAll('.mobile-nav-link, .btn-drawer-signin, .btn-drawer-cta');
+
+  if (!toggleBtn || !drawer) return;
+
+  function openDrawer() {
+    drawer.classList.add('active');
+    if (backdrop) backdrop.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    toggleBtn.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeDrawer() {
+    drawer.classList.remove('active');
+    if (backdrop) backdrop.classList.remove('active');
+    document.body.style.overflow = '';
+    toggleBtn.setAttribute('aria-expanded', 'false');
+  }
 
   toggleBtn.addEventListener('click', () => {
-    const isOpen = navMenu.classList.toggle('mobile-open');
-    toggleBtn.setAttribute('aria-expanded', isOpen);
+    if (drawer.classList.contains('active')) {
+      closeDrawer();
+    } else {
+      openDrawer();
+    }
+  });
+
+  if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+  if (backdrop) backdrop.addEventListener('click', closeDrawer);
+
+  drawerLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      closeDrawer();
+    });
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && drawer.classList.contains('active')) {
+      closeDrawer();
+    }
   });
 }
 

@@ -21,7 +21,7 @@
       <span>For modern website design, contact us!</span>
     </div>
 
-    <div style="display: flex; align-items: center; gap: 24px;">
+    <div class="top-bar-right">
       <a href="#contact" class="cta-btn-mint" id="topContactBtn" data-open-modal="contactModal">
         Contact Us Now
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -95,6 +95,47 @@
       </div>
     </div>
   </header>
+
+  <!-- Mobile Navigation Drawer & Backdrop -->
+  <div class="mobile-drawer-backdrop" id="mobileDrawerBackdrop"></div>
+  <aside class="mobile-nav-drawer" id="mobileNavDrawer" aria-label="Mobile Navigation">
+    <div class="mobile-drawer-header">
+      <div class="brand-logo">
+        <svg class="brand-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M25.5 15.2C24.8 11.2 21.3 8 17 8C13.5 8 10.4 10.1 9 13.2C5.6 13.6 3 16.5 3 20C3 23.9 6.1 27 10 27H25C28.3 27 31 24.3 31 21C31 17.8 28.5 15.3 25.5 15.2Z" stroke="#0f172a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M13 21L17 17L21 21" stroke="#16a34a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="brand-text-block">
+          <span class="brand-name">NexCloud</span>
+          <span class="brand-tagline">Scalable Solutions</span>
+        </div>
+      </div>
+      <button class="mobile-drawer-close" id="mobileDrawerCloseBtn" aria-label="Close menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <ul class="mobile-drawer-nav">
+      <li><a href="#home" class="mobile-nav-link active">Home</a></li>
+      <li><a href="#services" class="mobile-nav-link">Solutions</a></li>
+      <li><a href="#pricing" class="mobile-nav-link" data-open-modal="pricingModal">Pricing Plans</a></li>
+      <li><a href="#about" class="mobile-nav-link">Industries</a></li>
+      <li><a href="#resources" class="mobile-nav-link">Resources</a></li>
+      <li><a href="#about" class="mobile-nav-link">About NexCloud</a></li>
+    </ul>
+    <div class="mobile-drawer-actions">
+      <a href="#signin" class="btn-drawer-signin" data-open-modal="contactModal">Sign In to Console</a>
+      <a href="#get-started" class="btn-drawer-cta" data-open-modal="contactModal">
+        Get Started Today
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </a>
+    </div>
+  </aside>
 
   <!-- =====================================================================
        2. HERO SECTION (Coordinate Y: 82 to 335)
@@ -752,7 +793,7 @@
       <h3 style="font-size: 1.4rem; font-weight: 800; color: #0f172a; margin-bottom: 6px;">Transparent Pricing</h3>
       <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 20px;">Zero-cost for static applications. Pay only for compute when backend runs.</p>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+      <div class="pricing-modal-cards-grid" style="display: grid; gap: 16px; margin-bottom: 20px;">
         <div style="border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 18px;">
           <div style="font-size: 0.8rem; font-weight: 800; color: #16a34a; text-transform: uppercase;">Static Free</div>
           <div style="font-size: 1.6rem; font-weight: 800; color: #0f172a; margin: 4px 0;">0 UZS <span style="font-size: 0.75rem; color: #64748b;">/ forever</span></div>
