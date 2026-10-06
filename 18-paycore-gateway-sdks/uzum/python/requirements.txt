@@ -1,0 +1,17 @@
+# uzum_payment/ paketi faqat standart Python bilan ishlaydi —
+# uni loyihangizga ko'chirsangiz hech qanday paket o'rnatish shart emas.
+#
+# Quyidagilar faqat examples/ dagi namunalar va testlar uchun.
+
+# .env faylini o'qish uchun
+python-dotenv>=1.0.0
+
+# examples/quickstart_fastapi.py uchun
+fastapi>=0.110.0
+uvicorn>=0.29.0
+
+# examples/flask_app.py uchun
+# flask>=3.0.0
+
+# Testlar uchun
+# pytest>=8.0.0

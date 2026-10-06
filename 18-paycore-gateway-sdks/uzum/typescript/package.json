@@ -1,0 +1,19 @@
+{
+  "name": "uzum-payment",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Uzum Bank Merchant API integratsiyasi — check/create/confirm/reverse/status",
+  "scripts": {
+    "test": "node --import tsx --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "example:express": "tsx examples/express-app.ts"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.0",
+    "express": "^5.1.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

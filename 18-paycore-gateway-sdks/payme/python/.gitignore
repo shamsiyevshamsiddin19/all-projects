@@ -1,0 +1,23 @@
+# Maxfiy sozlamalar — hech qachon git'ga tushmasin
+.env
+.env.*
+!.env.example
+
+# SQLite bazasi
+*.db
+*.db-wal
+*.db-shm
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Loglar
+*.log

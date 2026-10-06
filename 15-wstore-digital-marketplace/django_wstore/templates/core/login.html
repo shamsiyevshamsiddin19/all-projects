@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% translate "Kirish — wstore.uz" %}{% endblock %}
+{% block description %}{% translate "wstore.uz raqamli bozoriga Google hisobingiz orqali kiring." %}{% endblock %}
+
+{% block content %}
+<div class="container" style="min-height: calc(100vh - 180px); display: flex; align-items: center; justify-content: center; padding: 3rem 1.25rem;">
+  <div style="width: 100%; max-width: 420px;">
+
+    <!-- Auth Card -->
+    <div class="card" style="box-shadow: 0 20px 50px rgba(0,0,0,0.5); border-color: var(--border-strong);">
+      <div style="text-align: center; margin-bottom: 1.75rem;">
+        <a href="{% url 'store:catalog' %}" class="nav-brand" style="justify-content: center; margin-bottom: 1.25rem;">
+          <span style="font-size: 1.7rem;">wstore</span>
+          <span class="brand-badge" style="font-size: 0.8rem;">uz</span>
+        </a>
+        <h1 style="font-size: 1.45rem; font-weight: 800; color: var(--fg); margin-bottom: 0.4rem;">{% translate "Akkauntga kirish" %}</h1>
+        <p style="font-size: 0.88rem; color: var(--muted); line-height: 1.55;">
+          {% translate "Platformaga Google hisobingiz orqali kiring." %}<br>
+          {% translate "Birinchi kirishda hisobingiz avtomatik yaratiladi." %}
+        </p>
+      </div>
+
+      {% if GOOGLE_AUTH_ENABLED %}
+        <a href="{% url 'core:google_login' %}?next={{ next|urlencode }}" class="btn btn-google btn-lg" style="width: 100%;">
+          <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
+            <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/>
+            <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/>
+            <path fill="#FBBC05" d="M3.97 10.72a5.4 5.4 0 0 1 0-3.44V4.95H.96a9 9 0 0 0 0 8.1l3.01-2.33z"/>
+            <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.9 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/>
+          </svg>
+          <span>{% translate "Google bilan kirish" %}</span>
+        </a>
+
+        <p style="margin-top: 1rem; text-align: center; font-size: 0.78rem; color: var(--muted); line-height: 1.5;">
+          {% translate "Ismingiz, emailingiz va rasmingiz Google hisobingizdan olinadi. Parolingiz bizga ko'rinmaydi." %}
+        </p>
+      {% else %}
+        <!-- Kalitlar sozlanmagan: tugmani ko'rsatish o'rniga sababni aytamiz,
+             aks holda foydalanuvchi bo'sh sahifaga qarab qolardi. -->
+        <div class="alert alert-warning" style="display: block; line-height: 1.55;">
+          <strong>{% translate "Google orqali kirish hozircha sozlanmagan." %}</strong><br>
+          <span style="font-size: 0.82rem;">
+            {% blocktranslate %}<code>.env</code> faylida <code>GOOGLE_OAUTH_CLIENT_ID</code> va <code>GOOGLE_OAUTH_CLIENT_SECRET</code> qiymatlarini kiriting.{% endblocktranslate %}
+          </span>
+        </div>
+      {% endif %}
+
+      <!-- 1-Click Fast Demo Logins (faqat DEMO_MODE da — aks holda bu
+           har kimga admin hisobiga kirish tugmasi bo'lib qolardi) -->
+      {% if DEMO_MODE %}
+      <div style="margin-top: 1.75rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+        <div style="font-size: 0.78rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; text-align: center; margin-bottom: 0.85rem;">
+          {% translate "Tezkor 1-Click Demo Kirish" %}
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem;">
+          <a href="{% url 'core:demo_login' %}?role=buyer" class="btn btn-secondary btn-sm" style="font-size: 0.78rem; text-align: center; padding: 0.5rem 0.2rem;" title="{% translate "Xaridor sifatida kirish" %}">
+            <i data-lucide="shopping-bag" style="width: 13px; height: 13px; color: var(--green);"></i>
+            <span>{% translate "Xaridor" %}</span>
+          </a>
+          <a href="{% url 'core:demo_login' %}?role=seller" class="btn btn-secondary btn-sm" style="font-size: 0.78rem; text-align: center; padding: 0.5rem 0.2rem;" title="{% translate "Sotuvchi sifatida kirish" %}">
+            <i data-lucide="store" style="width: 13px; height: 13px; color: var(--accent);"></i>
+            <span>{% translate "Sotuvchi" %}</span>
+          </a>
+          <a href="{% url 'core:demo_login' %}?role=admin" class="btn btn-secondary btn-sm" style="font-size: 0.78rem; text-align: center; padding: 0.5rem 0.2rem;" title="{% translate "Admin sifatida kirish" %}">
+            <i data-lucide="shield" style="width: 13px; height: 13px; color: var(--gold);"></i>
+            <span>{% translate "Admin" %}</span>
+          </a>
+        </div>
+        <p style="margin-top: 0.75rem; text-align: center; font-size: 0.72rem; color: var(--muted);">
+          {% translate "Faqat lokal ishlab chiqish uchun (DEMO_MODE)" %}
+        </p>
+      </div>
+      {% endif %}
+    </div>
+
+    <p style="margin-top: 1.25rem; text-align: center; font-size: 0.82rem; color: var(--muted);">
+      <a href="{% url 'store:catalog' %}" style="color: var(--muted);">&larr; {% translate "Katalogga qaytish" %}</a>
+    </p>
+
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,615 @@
+/* ===== UMUMIY SOZLAMALAR ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+    background-color: #07080b;
+    color: #ffffff;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    display: flex;
+    transition: background-color 0.25s, color 0.25s;
+}
+
+/* ===== ASOSIY KONTEYNER ===== */
+.app-container {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+}
+
+.calculator-card {
+    width: 100%;
+    height: 100vh;
+    background-color: #07080b;
+    display: flex;
+    overflow: hidden;
+    transition: background-color 0.25s;
+}
+
+/* ===== CHAP TOMON: KALKULYATOR QISMI ===== */
+.calc-section {
+    flex: 1;
+    height: 100vh;
+    padding: 24px 40px 24px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border-right: 1px solid #161922;
+    overflow: hidden;
+    transition: background-color 0.25s, border-color 0.25s;
+}
+
+/* 1. Yuqori Navigatsiya */
+.calc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+
+.calc-header-left {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.calc-modes {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+}
+
+.mode-tab {
+    background: none;
+    border: none;
+    color: #71788a;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 6px 2px;
+    position: relative;
+    transition: color 0.2s ease;
+}
+
+.mode-tab:hover {
+    color: #c4c9d4;
+}
+
+.mode-tab.active {
+    color: #ffffff;
+}
+
+.mode-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: #2b6bf3;
+    border-radius: 2px;
+}
+
+.icon-btn {
+    background: transparent;
+    border: none;
+    color: #8c94a6;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border-radius: 6px;
+    transition: color 0.2s, background-color 0.2s;
+}
+
+.icon-btn:hover {
+    color: #ffffff;
+    background-color: #141720;
+}
+
+.mobile-history-btn {
+    display: none;
+}
+
+/* 2. Kalkulyator Ekrani */
+.calc-display {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-end;
+    padding: 20px 8px;
+    min-height: 120px;
+}
+
+.display-expression {
+    color: #71788a;
+    font-size: 18px;
+    font-weight: 400;
+    min-height: 26px;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+    word-break: break-all;
+}
+
+.display-result {
+    color: #ffffff;
+    font-size: clamp(48px, 5.5vw, 76px);
+    font-weight: 500;
+    letter-spacing: -1px;
+    line-height: 1;
+    word-break: break-all;
+}
+
+/* Dasturchi (Programmer) paneli */
+.programmer-panel {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+    background-color: #0d0f17;
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: 1px solid #1a1e2b;
+}
+
+.prog-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    font-size: 13px;
+    color: #71788a;
+    font-family: monospace;
+}
+
+.prog-val {
+    color: #3b82f6;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 3. Mini Toolbar */
+.calc-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding: 0 4px;
+    flex-shrink: 0;
+}
+
+.toolbar-left {
+    display: flex;
+    gap: 24px;
+}
+
+.tool-dropdown {
+    background: transparent;
+    border: none;
+    color: #7b8396;
+    font-size: 13.5px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.tool-dropdown:hover {
+    color: #ffffff;
+}
+
+.fx-icon {
+    font-style: italic;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.tool-code-btn {
+    color: #7b8396;
+}
+
+/* 4. Tugmalar Paneli */
+.calc-keypad {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(6, 56px);
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+/* Standard rejimda 4 ta ilmiy ustunni yashirish */
+.rejim-standard .key-sci {
+    display: none;
+}
+
+.rejim-standard .calc-keypad {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.key {
+    width: 100%;
+    height: 56px;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    transition: background-color 0.15s ease, transform 0.05s ease;
+}
+
+.key:active {
+    transform: scale(0.96);
+}
+
+/* Ilmiy funksiya tugmalari */
+.btn-fn {
+    background-color: #101219;
+    color: #b0b7c6;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.btn-fn:hover {
+    background-color: #171a24;
+    color: #ffffff;
+}
+
+.btn-fn sup, .btn-fn sub {
+    font-size: 10px;
+    margin-left: 2px;
+}
+
+/* Standart amallar */
+.btn-op {
+    background-color: #141720;
+    color: #ccd2e0;
+    font-size: 21px;
+    font-weight: 400;
+}
+
+.btn-op:hover {
+    background-color: #1d212c;
+    color: #ffffff;
+}
+
+/* Raqamlar */
+.btn-num {
+    background-color: #242836;
+    color: #ffffff;
+    font-size: 21px;
+    font-weight: 500;
+}
+
+.btn-num:hover {
+    background-color: #2e3344;
+}
+
+/* CE va C */
+.btn-action-blue {
+    background-color: #101e33;
+    color: #3b82f6;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.btn-action-blue:hover {
+    background-color: #162a48;
+}
+
+/* Backspace */
+.btn-action-red {
+    background-color: #2a1116;
+    color: #ef4444;
+}
+
+.btn-action-red:hover {
+    background-color: #38161d;
+}
+
+/* Tenglik (=) */
+.btn-equals {
+    background-color: #1f64ec;
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.btn-equals:hover {
+    background-color: #2b70f7;
+}
+
+/* ===== O'NG TOMON: TARIX QISMI ===== */
+.history-section {
+    flex: 0 0 340px;
+    width: 340px;
+    height: 100vh;
+    padding: 24px 24px 20px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background-color: #07080b;
+    overflow: hidden;
+    transition: background-color 0.25s;
+}
+
+/* Tarix Header */
+.history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+}
+
+.history-tabs {
+    display: flex;
+    gap: 22px;
+}
+
+.history-tab {
+    background: none;
+    border: none;
+    color: #71788a;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 4px 2px;
+    position: relative;
+    transition: color 0.2s;
+}
+
+.history-tab:hover {
+    color: #c4c9d4;
+}
+
+.history-tab.active {
+    color: #ffffff;
+}
+
+.history-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: #2b6bf3;
+    border-radius: 2px;
+}
+
+/* Tarix ro'yxati */
+.history-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.empty-history {
+    text-align: center;
+    color: #4b5563;
+    font-size: 13.5px;
+    margin-top: 60px;
+}
+
+.history-item-btn {
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: right;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+    color: inherit;
+    font-family: inherit;
+}
+
+.history-item-btn:hover {
+    background-color: #11141d;
+}
+
+.hist-expression {
+    color: #71788a;
+    font-size: 13.5px;
+    margin-bottom: 4px;
+    font-weight: 400;
+}
+
+.hist-result {
+    color: #ffffff;
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.3px;
+}
+
+/* Tarix Footer */
+.history-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 16px;
+    border-top: 1px solid #141720;
+    flex-shrink: 0;
+}
+
+.save-history-btn {
+    background: none;
+    border: none;
+    color: #7b8396;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.save-history-btn:hover {
+    color: #ffffff;
+}
+
+.footer-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.icon-action-btn {
+    background: transparent;
+    border: none;
+    color: #7b8396;
+    cursor: pointer;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: color 0.2s, background-color 0.2s;
+}
+
+.icon-action-btn:hover {
+    color: #ffffff;
+    background-color: #141720;
+}
+
+/* Scrollbar */
+.history-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.history-list::-webkit-scrollbar-thumb {
+    background: #1c202d;
+    border-radius: 4px;
+}
+
+/* ===== YORUG' MAVZU (LIGHT THEME) SOZLAMALARI ===== */
+.light-theme {
+    background-color: #f3f5fa;
+    color: #0f172a;
+}
+
+.light-theme .calculator-card {
+    background-color: #ffffff;
+}
+
+.light-theme .calc-section {
+    background-color: #ffffff;
+    border-right-color: #e2e8f0;
+}
+
+.light-theme .mode-tab.active {
+    color: #0f172a;
+}
+
+.light-theme .display-result {
+    color: #0f172a;
+}
+
+.light-theme .display-expression {
+    color: #64748b;
+}
+
+.light-theme .btn-fn {
+    background-color: #f1f5f9;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+}
+
+.light-theme .btn-fn:hover {
+    background-color: #e2e8f0;
+}
+
+.light-theme .btn-op {
+    background-color: #f8fafc;
+    color: #0f172a;
+    border: 1px solid #e2e8f0;
+}
+
+.light-theme .btn-op:hover {
+    background-color: #e2e8f0;
+}
+
+.light-theme .btn-num {
+    background-color: #ffffff;
+    color: #0f172a;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.light-theme .btn-num:hover {
+    background-color: #f1f5f9;
+}
+
+.light-theme .btn-action-blue {
+    background-color: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+}
+
+.light-theme .btn-action-red {
+    background-color: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+.light-theme .history-section {
+    background-color: #f8fafc;
+    border-left: 1px solid #e2e8f0;
+}
+
+.light-theme .hist-result {
+    color: #0f172a;
+}
+
+.light-theme .history-item-btn:hover {
+    background-color: #e2e8f0;
+}
+
+.light-theme .history-footer {
+    border-top-color: #e2e8f0;
+}
+
+.light-theme .programmer-panel {
+    background-color: #f1f5f9;
+    border-color: #e2e8f0;
+}
+
+/* ===== KICHIK EKRANLAR UCHUN MOSLASHUV ===== */
+@media (max-width: 900px) {
+    .history-section {
+        position: absolute;
+        top: 0;
+        right: -100%;
+        width: 320px;
+        height: 100vh;
+        z-index: 100;
+        background-color: #0a0c12;
+        box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8);
+        transition: right 0.3s ease;
+    }
+
+    .history-section.active {
+        right: 0;
+    }
+
+    .mobile-history-btn {
+        display: flex;
+    }
+
+    .calc-section {
+        padding: 20px 20px;
+    }
+}

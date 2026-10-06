@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% translate "Sevimlilar — wstore.uz" %}{% endblock %}
+{% block description %}{% translate "Saqlab qo'yilgan sevimli raqamli loyihalar va manba kodlari." %}{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-[1400px] px-4 py-8 sm:px-6">
+  
+  <!-- Sarlavha -->
+  <div class="mb-6 flex items-center justify-between">
+    <div>
+      <h1 class="flex items-center gap-2 text-2xl font-bold tracking-tight text-fg sm:text-3xl">
+        <i data-lucide="heart" style="width: 28px; height: 28px; fill: #ef4444; color: #ef4444;"></i>
+        <span>{% translate "Sevimlilar" %}</span>
+      </h1>
+      <p class="mt-1 text-sm text-muted">
+        {% translate "Keyinroq ko'rish yoki sotib olish uchun saqlab qo'ygan loyihalaringiz." %}
+      </p>
+    </div>
+    {% if products %}
+      <span class="rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-muted">
+        {% blocktranslate with n=products|length %}{{ n }} ta saqlangan{% endblocktranslate %}
+      </span>
+    {% endif %}
+  </div>
+
+  {% if products %}
+    <div class="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+      {% for product in products %}
+        {% include 'store/_product_card.html' with product=product wishlist_ids=wishlist_ids %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="rounded-card border border-dashed border-border p-12 text-center text-muted">
+      <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface-2 text-red-400">
+        <i data-lucide="heart" style="width: 24px; height: 24px;"></i>
+      </div>
+      <h3 class="text-base font-semibold text-fg">{% translate "Hozircha sevimlilar ro'yxati bo'sh" %}</h3>
+      <p class="mt-1 text-xs text-muted">
+        {% translate "Katalogdan yoqqan loyihalaringizni yurakcha tugmasini bosib saqlab qo'yishingiz mumkin." %}
+      </p>
+      <a href="{% url 'store:catalog' %}" class="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-white transition hover:bg-accent-hover">
+        <i data-lucide="compass" style="width: 14px; height: 14px;"></i>
+        <span>{% translate "Katalogga o'tish" %}</span>
+      </a>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

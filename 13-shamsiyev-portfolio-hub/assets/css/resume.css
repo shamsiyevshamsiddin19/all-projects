@@ -1,0 +1,287 @@
+/* Document Pages (Resume) */
+.back-btn {
+    color: #888;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    transition: color 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.back-btn:hover {
+    color: #fff;
+}
+
+.doc-container {
+    max-width: 900px;
+    margin: 80px auto;
+    padding: 0 20px;
+}
+.doc-header {
+    text-align: center;
+    margin-bottom: 50px;
+}
+.doc-header h1 {
+    font-size: 40px;
+    margin-bottom: 10px;
+    letter-spacing: 2px;
+}
+.doc-header p {
+    color: #888;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-size: 14px;
+}
+.doc-section {
+    margin-bottom: 40px;
+}
+.doc-section h2 {
+    font-size: 20px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    color: #fff;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+.doc-item {
+    margin-bottom: 25px;
+}
+.doc-item h3 {
+    font-size: 18px;
+    color: #e0e0e0;
+    margin-bottom: 5px;
+}
+.doc-item .date {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 10px;
+    display: inline-block;
+}
+.doc-text {
+    color: #999;
+    line-height: 1.6;
+}
+.skills-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.skill-badge {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    padding: 8px 15px;
+    border-radius: 20px;
+    color: #ccc;
+    font-size: 14px;
+}
+
+/* Contact row */
+.contact-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+    margin-bottom: 10px;
+}
+.contact-item {
+    color: #888;
+    text-decoration: none;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.3s ease;
+}
+.contact-item:hover { color: #fff; }
+
+/* Doc item header */
+.doc-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 10px;
+}
+.doc-item-role {
+    font-size: 13px;
+    color: #666;
+    margin-top: 4px;
+    font-weight: 300;
+}
+
+/* Bullet list */
+.doc-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.doc-list li {
+    color: #888;
+    font-size: 13px;
+    line-height: 1.7;
+    padding-left: 16px;
+    position: relative;
+    margin-bottom: 4px;
+}
+.doc-list li::before {
+    content: '—';
+    position: absolute;
+    left: 0;
+    color: #444;
+}
+
+/* Language grid */
+.lang-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.lang-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #151515;
+    border: 1px solid #222;
+    padding: 10px 20px;
+    border-radius: 30px;
+}
+.lang-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #ddd;
+}
+.lang-level {
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 20px;
+}
+.lang-level.native {
+    background: #1a2a1a;
+    color: #5dba5d;
+}
+.lang-level.professional {
+    background: #1a1a2a;
+    color: #5d8aba;
+}
+
+@media (max-width: 768px) {
+    .doc-container {
+        margin: 80px 20px;
+        padding: 30px 20px;
+    }
+    .header {
+        flex-direction: column;
+        gap: 20px;
+    }
+}
+
+/* Language Switcher */
+.lang-switcher {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.lang-btn {
+    background: none;
+    border: none;
+    color: #555;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.3s ease;
+}
+.lang-btn:hover {
+    color: #ccc;
+}
+.lang-btn.active {
+    color: #fff;
+}
+
+/* ============================================================
+   PREMIUM LAYER — tokenised polish for the document page.
+   Design tokens are inherited from main.css (loaded first).
+   Print resets keep the "Download as PDF" output clean.
+   ============================================================ */
+.doc-container {
+    max-width: 860px;
+    margin: 120px auto 90px;
+    padding: 56px 60px;
+    background: linear-gradient(180deg, var(--surface), var(--bg-2));
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), var(--shadow);
+}
+.doc-text { color: var(--text-2); }
+.doc-container > .doc-text:first-child,
+.doc-header h1 {
+    background: var(--grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.5px;
+}
+.doc-section h2 {
+    border-bottom: none;
+    position: relative;
+    padding-bottom: 12px;
+    color: var(--text);
+}
+.doc-section h2::after {
+    content: '';
+    position: absolute;
+    left: 0; bottom: 0;
+    width: 46px; height: 3px;
+    border-radius: 3px;
+    background: var(--grad);
+}
+.doc-item h3 { color: var(--text); }
+.doc-item .date { color: var(--accent); opacity: 0.9; }
+.doc-list li::before { color: var(--accent); }
+.skill-badge {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    border-radius: var(--r-pill);
+    color: var(--text-2);
+    transition: border-color 0.3s var(--ease), color 0.3s var(--ease), transform 0.3s var(--ease);
+}
+.skill-badge:hover { border-color: var(--accent); color: var(--text); transform: translateY(-2px); }
+.lang-item {
+    background: linear-gradient(180deg, var(--surface-2), var(--surface));
+    border: 1px solid var(--border);
+    border-radius: var(--r-pill);
+}
+.back-btn:hover, .contact-item:hover { color: var(--accent); }
+.lang-btn:hover { color: var(--text); }
+.lang-btn.active { color: var(--accent); }
+
+@media (max-width: 768px) {
+    .doc-container { margin: 100px 16px 60px; padding: 32px 22px; border-radius: 18px; }
+}
+
+@media print {
+    .doc-container {
+        background: #fff !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: none !important;
+    }
+    .doc-container > .doc-text:first-child,
+    .doc-header h1 {
+        -webkit-text-fill-color: #000 !important;
+        color: #000 !important;
+        background: none !important;
+    }
+    .doc-section h2 { color: #000 !important; }
+    .doc-section h2::after { background: #000 !important; }
+    .skill-badge, .lang-item { background: #fff !important; border-color: #bbb !important; color: #000 !important; }
+    .doc-item .date, .doc-list li::before { color: #000 !important; }
+}

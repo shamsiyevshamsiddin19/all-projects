@@ -1,0 +1,7 @@
+# Qator oxirlarini bir xil (LF) saqlaymiz — Windows/Linux/mac da bir xil ko'rinsin
+* text=auto eol=lf
+
+# Ikkilik fayllar
+*.png binary
+*.jpg binary
+*.pdf binary

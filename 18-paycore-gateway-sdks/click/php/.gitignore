@@ -1,0 +1,22 @@
+# Maxfiy sozlamalar — hech qachon git'ga tushmasin
+.env
+.env.*
+!.env.example
+
+# Namuna SQLite bazasi
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.db
+
+# Composer (agar ishlatsangiz)
+/vendor/
+composer.lock
+
+# Loglar
+*.log
+logs/
+
+# Muharrir
+.idea/
+.vscode/

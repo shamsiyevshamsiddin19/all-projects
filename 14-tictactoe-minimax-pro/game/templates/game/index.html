@@ -1,0 +1,112 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe — Django Pro</title>
+    <meta name="description" content="Django va Minimax AI algoritmi asosida yaratilgan interaktiv Tic-Tac-Toe (X va O) o'yini.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'game/css/style.css' %}">
+</head>
+<body>
+    <div class="background-glow">
+        <div class="glow-circle glow-1"></div>
+        <div class="glow-circle glow-2"></div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="game-header">
+            <div class="badge">DJANGO 6 • AI MINIMAX</div>
+            <h1 class="title">TIC <span>TAC</span> TOE</h1>
+            <p class="subtitle">Do'stingiz bilan yoki aqlli AI botga qarshi o'ynang</p>
+        </header>
+
+        <!-- Controls / Mode Selector -->
+        <div class="control-panel">
+            <div class="mode-selector">
+                <button class="mode-btn active" data-mode="pve_hard" id="mode-hard">
+                    <span class="icon">🤖</span> Yengilmas AI
+                </button>
+                <button class="mode-btn" data-mode="pve_medium" id="mode-medium">
+                    <span class="icon">⚡</span> O'rtacha
+                </button>
+                <button class="mode-btn" data-mode="pve_easy" id="mode-easy">
+                    <span class="icon">🌱</span> Oson
+                </button>
+                <button class="mode-btn" data-mode="pvp" id="mode-pvp">
+                    <span class="icon">👥</span> 2 O'yinchi
+                </button>
+            </div>
+        </div>
+
+        <!-- Score Board -->
+        <div class="scoreboard">
+            <div class="score-card player-x active-turn" id="card-x">
+                <div class="player-icon">✕</div>
+                <div class="player-meta">
+                    <span class="player-name" id="name-x">O'yinchi (X)</span>
+                    <span class="score-val" id="score-x">0</span>
+                </div>
+            </div>
+
+            <div class="score-card ties" id="card-ties">
+                <div class="player-icon">━</div>
+                <div class="player-meta">
+                    <span class="player-name">Durang</span>
+                    <span class="score-val" id="score-ties">0</span>
+                </div>
+            </div>
+
+            <div class="score-card player-o" id="card-o">
+                <div class="player-icon">○</div>
+                <div class="player-meta">
+                    <span class="player-name" id="name-o">Bot (O)</span>
+                    <span class="score-val" id="score-o">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status message -->
+        <div class="status-banner" id="status-banner">
+            <span class="turn-indicator" id="turn-text">Sizning navbatingiz (X)</span>
+        </div>
+
+        <!-- Game Board -->
+        <main class="board-wrapper">
+            <div class="board" id="board">
+                <div class="cell" data-index="0" id="cell-0"></div>
+                <div class="cell" data-index="1" id="cell-1"></div>
+                <div class="cell" data-index="2" id="cell-2"></div>
+                <div class="cell" data-index="3" id="cell-3"></div>
+                <div class="cell" data-index="4" id="cell-4"></div>
+                <div class="cell" data-index="5" id="cell-5"></div>
+                <div class="cell" data-index="6" id="cell-6"></div>
+                <div class="cell" data-index="7" id="cell-7"></div>
+                <div class="cell" data-index="8" id="cell-8"></div>
+            </div>
+        </main>
+
+        <!-- Action bar -->
+        <footer class="action-bar">
+            <button class="btn btn-secondary" id="sound-btn" title="Ovozni yoqish/o'chirish">
+                <span id="sound-icon">🔊</span>
+            </button>
+            <button class="btn btn-primary" id="restart-btn">
+                <span>🔄</span> Yangi O'yin
+            </button>
+            <button class="btn btn-secondary" id="reset-score-btn" title="Hisobni tozalash">
+                <span>🗑️</span> Tozalash
+            </button>
+        </footer>
+    </div>
+
+    <!-- CSRF Token helper -->
+    {% csrf_token %}
+
+    <script src="{% static 'game/js/game.js' %}"></script>
+</body>
+</html>

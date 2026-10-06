@@ -1,0 +1,36 @@
+{% load static %}
+{% comment %}
+Google bilan kirish tugmasi. Kirish va ro'yxat sahifalarida ishlatiladi.
+firebase_yoqilgan — context_processors.py dan keladi: .env da kalit
+bo'lmasa tugma umuman chizilmaydi (bosilsa ham ishlamasdi).
+{% endcomment %}
+{% if firebase_yoqilgan %}
+  <div class="auth__divider"><span>yoki</span></div>
+
+  <button class="auth__google" type="button"
+          data-google-login
+          data-google-login-url="{% url 'music:google_login' %}"
+          data-csrf="{{ csrf_token }}">
+    {# Google'ning rasmiy to'rt rangli belgisi #}
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-2.7-.4-3.9H24v7.1h12.1c-.2 1.8-1.6 4.6-4.5 6.4l6.9 5.3c4.1-3.8 6.6-9.3 6.6-15z"/>
+      <path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.3l-6.9-5.3c-1.8 1.3-4.3 2.2-7.6 2.2-5.8 0-10.8-3.8-12.5-9.1l-7.1 5.5C8 42 15.4 46 24 46z"/>
+      <path fill="#FBBC05" d="M11.5 28.5c-.5-1.4-.7-2.9-.7-4.5s.3-3.1.7-4.5l-7.1-5.5C2.9 17 2 20.4 2 24s.9 7 2.4 10z"/>
+      <path fill="#EA4335" d="M24 10.6c4.1 0 6.9 1.8 8.5 3.3l6.2-6C34.9 4.5 29.9 2 24 2 15.4 2 8 6 4.4 14l7.1 5.5c1.7-5.3 6.7-8.9 12.5-8.9z"/>
+    </svg>
+    <span>Google bilan kirish</span>
+  </button>
+
+  <small class="auth__hint auth__hint--error" data-google-error hidden></small>
+
+  {% comment %}
+    Sozlamalar JSON sifatida. json_script filtri ishlatilmadi —
+    qiymat allaqachon json.dumps() dan o'tgan (context_processors.py).
+
+    DIQQAT: {# ... #} izohi FAQAT BITTA QATOR bo'lishi mumkin.
+    Ko'p qatorli bo'lsa Django uni izoh deb bilmaydi va matnni
+    sahifada chizib qo'yadi. Ko'p qator uchun {% comment %} kerak.
+  {% endcomment %}
+  <script id="firebase-config" type="application/json">{{ firebase_config|safe }}</script>
+  <script type="module" src="{% static 'js/firebase-auth.js' %}"></script>
+{% endif %}

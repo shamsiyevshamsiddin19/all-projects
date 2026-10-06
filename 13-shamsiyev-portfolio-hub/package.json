@@ -1,0 +1,27 @@
+{
+  "name": "shamsiyev.uz",
+  "version": "1.0.0",
+  "description": "Personal portfolio website of Shamsiddin Shamsiyev — Backend Developer. Static site (HTML/CSS/JS) deployed on Cloudflare Pages.",
+  "private": true,
+  "scripts": {
+    "start": "npx serve .",
+    "build:css": "esbuild assets/css/main.css --minify --charset=utf8 --outfile=assets/css/main.min.css",
+    "build:js": "esbuild assets/js/script.js assets/js/showcase.js assets/js/i18n.js assets/js/cursor.js --minify --charset=utf8 --outdir=assets/js --out-extension:.js=.min.js",
+    "build": "npm run build:css && npm run build:js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shamsiyevshamsiddin19/shamsiyev.uz.git"
+  },
+  "keywords": ["portfolio", "backend-developer", "static-site"],
+  "author": "Shamsiddin Shamsiyev",
+  "license": "MIT",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/shamsiyevshamsiddin19/shamsiyev.uz/issues"
+  },
+  "homepage": "https://shamsiyev.uz"
+}

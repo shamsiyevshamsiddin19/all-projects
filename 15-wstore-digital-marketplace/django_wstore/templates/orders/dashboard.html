@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% load static wstore_extras %}
+{% load i18n %}
+
+{% block title %}{% translate "Mening xaridlarim — wstore.uz" %}{% endblock %}
+{% block description %}{% translate "Xarid qilingan raqamli loyihalar va manba kodlari kabineti." %}{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1040px; padding-top: 2.5rem; padding-bottom: 5rem;">
+  
+  <!-- Header -->
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
+    <div>
+      <h1 style="font-size: 1.85rem; font-weight: 800; color: var(--fg); letter-spacing: -0.02em;">{% translate "Mening kabinetim" %}</h1>
+      <p style="font-size: 0.92rem; color: var(--muted); margin-top: 0.25rem;">
+        {% blocktranslate with name=user.display_name %}Xush kelibsiz, <strong style="color: var(--fg);">{{ name }}</strong>. Barcha xaridlaringiz va yuklab olish havolalari shu yerda.{% endblocktranslate %}
+      </p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+      <a href="{% url 'store:catalog' %}" class="btn btn-outline btn-sm">
+        <i data-lucide="compass" style="width: 15px; height: 15px;"></i>
+        <span>{% translate "Katalog" %}</span>
+      </a>
+      {% if user.is_seller %}
+        <a href="{% url 'orders:seller_dashboard' %}" class="btn btn-secondary btn-sm">
+          <i data-lucide="layout-grid" style="width: 15px; height: 15px;"></i>
+          <span>{% translate "Sotuvchi paneli" %}</span>
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Referral Program Card -->
+  <div class="card" style="margin-bottom: 2.5rem; border: 1px solid rgba(109, 94, 246, 0.4); background: linear-gradient(135deg, rgba(21, 21, 28, 0.9) 0%, rgba(30, 30, 42, 0.8) 100%); position: relative; overflow: hidden;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem;">
+      <div style="max-width: 580px;">
+        <div style="display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(109, 94, 246, 0.15); border: 1px solid rgba(109, 94, 246, 0.3); padding: 3px 10px; border-radius: 20px; font-size: 0.76rem; font-weight: 700; color: #c7d2fe; text-transform: uppercase; margin-bottom: 0.75rem;">
+          <i data-lucide="gift" style="width: 13px; height: 13px; color: var(--gold);"></i>
+          {% translate "Referal Dasturi" %}
+        </div>
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--fg); margin-bottom: 0.4rem;">
+          {% blocktranslate with bonus=REFERRAL_BONUS_SOM|som %}Do'stlaringizni taklif qiling va har bir xarid uchun {{ bonus }} so'm oling!{% endblocktranslate %}
+        </h3>
+        <p style="font-size: 0.88rem; color: var(--muted); margin-bottom: 1.25rem;">
+          {% blocktranslate with bonus=REFERRAL_BONUS_SOM|som %}Quyidagi shaxsiy havolangiz orqali ro'yxatdan o'tgan foydalanuvchi birinchi xaridni amalga oshirganda hisobingizga avtomatik tarzda {{ bonus }} so'm qo'shiladi.{% endblocktranslate %}
+        </p>
+
+        <!-- Referral Link Input -->
+        <div style="display: flex; gap: 0.5rem; align-items: center; max-width: 480px;">
+          <input 
+            type="text" 
+            readonly 
+            value="{{ referral_link }}" 
+            class="form-control" 
+            style="font-family: monospace; font-size: 0.85rem; background: var(--bg); cursor: text;"
+            id="referralInput"
+          >
+          <button 
+            type="button" 
+            class="btn btn-primary btn-sm" 
+            data-copy="{{ referral_link }}"
+            style="white-space: nowrap; flex-shrink: 0;"
+          >
+            <i data-lucide="copy" style="width: 14px; height: 14px;"></i>
+            <span>{% translate "Nusxa olish" %}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Referral Stats -->
+      <div style="display: flex; gap: 1rem; align-self: center;">
+        <div class="stat-card" style="padding: 1rem 1.25rem; min-width: 140px; background: var(--surface-2);">
+          <div style="display: flex; flex-direction: column;">
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--fg);">{{ referrals_count }}</div>
+            <div style="font-size: 0.78rem; color: var(--muted);">{% translate "Taklif qilinganlar" %}</div>
+          </div>
+        </div>
+        <div class="stat-card" style="padding: 1rem 1.25rem; min-width: 150px; background: var(--surface-2);">
+          <div style="display: flex; flex-direction: column;">
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--gold);">{{ bonus_earned|som }}</div>
+            <div style="font-size: 0.78rem; color: var(--muted);">{% translate "Ishlangan bonus (so'm)" %}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Orders Section -->
+  <div style="margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between;">
+    <h2 style="font-size: 1.2rem; font-weight: 700; color: var(--fg); display: flex; align-items: center; gap: 0.5rem;">
+      <i data-lucide="package-check" style="width: 20px; height: 20px; color: var(--accent);"></i>
+      {% blocktranslate with n=orders.count %}Xarid qilingan loyihalar ({{ n }}){% endblocktranslate %}
+    </h2>
+  </div>
+
+  {% if orders %}
+    <div style="display: flex; flex-direction: column; gap: 1rem;">
+      {% for order in orders %}
+        <div class="card card-hover" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.25rem; padding: 1.25rem 1.5rem;">
+          
+          <!-- Product Info -->
+          <div style="display: flex; align-items: center; gap: 1.25rem; min-width: 280px;">
+            <img 
+              src="{{ order.product.cover_url }}" 
+              alt="{{ order.product.title }}" 
+              style="width: 72px; height: 50px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border);"
+            >
+            <div>
+              <a href="{% url 'store:product_detail' slug=order.product.slug %}" style="font-weight: 700; font-size: 1.02rem; color: var(--fg); display: block; margin-bottom: 0.25rem;">
+                {{ order.product.title }}
+              </a>
+              <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.82rem; color: var(--muted);">
+                <span style="color: var(--accent); font-weight: 600;">${{ order.product.price|floatformat:0 }}</span>
+                <span>•</span>
+                <span>{% blocktranslate with amount=order.amount|som %}{{ amount }} so'm{% endblocktranslate %}</span>
+                <span>•</span>
+                <span>{{ order.created_at|date:"d.m.Y, H:i" }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Status & Actions -->
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            {% if order.status == 'PAID' %}
+              <span class="badge-tech" style="background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); font-size: 0.82rem; padding: 5px 10px; display: inline-flex; align-items: center; gap: 0.35rem;">
+                <i data-lucide="check-circle" style="width: 14px; height: 14px;"></i>
+                {% translate "To'langan" %}
+              </span>
+
+              {% if order.download_token %}
+                <a href="{% url 'orders:download_file' token=order.download_token %}" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                  <i data-lucide="download" style="width: 15px; height: 15px;"></i>
+                  <span>{% translate "ZIP yuklab olish" %}</span>
+                </a>
+              {% endif %}
+
+            {% elif order.status == 'PENDING' %}
+              <span class="badge-tech" style="background: rgba(230, 180, 80, 0.15); color: #fde047; border: 1px solid rgba(230, 180, 80, 0.3); font-size: 0.82rem; padding: 5px 10px; display: inline-flex; align-items: center; gap: 0.35rem;">
+                <i data-lucide="clock" style="width: 14px; height: 14px;"></i>
+                {% translate "To'lov kutilmoqda" %}
+              </span>
+
+              <a href="{% url 'orders:order_status' order_id=order.id %}" class="btn btn-secondary btn-sm">
+                <span>{% translate "Holatni ko'rish" %}</span>
+              </a>
+
+            {% else %}
+              <span class="badge-tech" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); font-size: 0.82rem; padding: 5px 10px;">
+                {{ order.get_status_display }}
+              </span>
+            {% endif %}
+          </div>
+
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div style="text-align: center; padding: 4.5rem 1rem; background: var(--surface); border: 1px dashed var(--border); border-radius: var(--radius-card);">
+      <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--surface-2); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; color: var(--muted);">
+        <i data-lucide="shopping-cart" style="width: 28px; height: 28px;"></i>
+      </div>
+      <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--fg); margin-bottom: 0.5rem;">{% translate "Hozircha xaridlar mavjud emas" %}</h3>
+      <p style="color: var(--muted); font-size: 0.9rem; max-width: 440px; margin: 0 auto 1.5rem;">
+        {% translate "Katalogdagi tayyor loyihalar, botlar va shablonlar bilan tanishib, o'zingizga kerakli kodni xarid qiling." %}
+      </p>
+      <a href="{% url 'store:catalog' %}" class="btn btn-primary btn-sm">
+        <i data-lucide="compass" style="width: 15px; height: 15px;"></i>
+        <span>{% translate "Katalogni ko'rish" %}</span>
+      </a>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}
