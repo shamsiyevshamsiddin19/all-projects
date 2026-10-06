@@ -161,18 +161,20 @@ class EkranXizmati : Service() {
             val qadam = plane.rowStride
             val piksel = plane.pixelStride
             val buf = plane.buffer
-            val qator = ByteArray(qadam)
+            // Har qatorning oxirida to'ldirish bo'lishi mumkin (rowStride > w*pixelStride),
+            // shuning uchun qator-qator o'qiladi. Oxirgi qatorda to'ldirish yozilmagan
+            // bo'lishi mumkin - faqat kerakli qismi olinadi.
+            val kerak = w * piksel
+            val qator = ByteArray(kerak)
             val px = IntArray(w * h)
             for (y in 0 until h) {
                 buf.position(y * qadam)
-                buf.get(qator, 0, minOf(qadam, buf.remaining() + 0))
-                var i = 0
+                buf.get(qator, 0, minOf(kerak, buf.remaining()))
                 for (x in 0 until w) {
                     val o = x * piksel
                     px[y * w + x] = ((qator[o].toInt() and 0xFF) shl 16) or
                             ((qator[o + 1].toInt() and 0xFF) shl 8) or
                             (qator[o + 2].toInt() and 0xFF)
-                    i++
                 }
             }
             return Frame(w, h, px)
