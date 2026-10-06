@@ -10,7 +10,8 @@ qo'shishga moslangan.
 core/          o'yindan mustaqil: Frame, Roi, GameAdapter, Advice, GameRegistry
 cards/         karta o'yinlari uchun umumiy: CardCodec (36/52 lik), CardSet
 games/durak/   durak qoidalari + Monte-Carlo miya + maslahatchi
-app/           Android: ekranni o'qish va overlay          (hali yo'q)
+app/           Android: ekranni o'qish va overlay
+desktop/       kompyuterda sinash: PNG kadrlarni o'qish va kuzatish
 tools/         ishlab chiqish vositalari (Python): kadr ajratish,
                burchak topish, guruhlash, tanish, o'lchov
 ```
@@ -144,7 +145,45 @@ stol: 6♠/K♠
 Ya'ni: haqiqiy o'yin kadri -> kartalar va hodisalar -> kuzatilgan holat
 (ko'rinmaydigan bito bilan) -> yurish maslahati.
 
+## Android ilovasi
+
+```bash
+./gradlew :app:assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+APK **1.5 MB**, boshqa kutubxonaga tayanmaydi - faqat Android SDK va loyihaning
+o'z qatlamlari. **Internet ruxsati yo'q**: ilova hech qayerga hech narsa
+yubora olmaydi, hammasi telefon ichida hisoblanadi.
+
+Ikki ruxsat so'raydi: ekran ustida oyna ochish va ekranni o'qish. Ikkalasini
+ham foydalanuvchi o'zi tasdiqlaydi. Overlay bosishlarni o'tkazib yuboradi -
+o'yinni bloklamaydi va hech narsani bosmaydi.
+
+Ekran sekundiga ikki marta o'qiladi, lekin tahlil faqat ekran **tinchlanganda**
+bajariladi: karta uchib kelayotgan paytda o'qilsa holat chalkashadi. Ekran
+o'zgarmagan bo'lsa umuman ishlamaydi - batareya uchun.
+
+Tanish 864 piksel kenglikda o'rgatilgan, shuning uchun ekran o'sha kenglikka
+keltirib o'qiladi (tizim o'zi kichiklashtiradi).
+
+> Agar `dl.google.com` ga ulanib bo'lmasa, SDK ichidagi vositani ko'rsatish mumkin:
+> `-Pandroid.aapt2FromMavenOverride=$ANDROID_HOME/build-tools/36.0.0/aapt2`
+
+## Kotlin va Python bir xil ishlaydi
+
+Ko'z qismi avval Python'da yozilib, keyin Kotlin'ga ko'chirildi. Ko'chirish
+taxmin bilan emas, **o'lchov bilan** tasdiqlandi: ikkala versiya o'sha 348 kadrni
+o'qib, har birida **bir xil natija** beradi (348/348). Kuzatuvchi ham shunday -
+o'yin jurnali qatorma-qator bir xil.
+
+Shablon banki bitta sodda ikkilik formatda saqlanadi va ikkala til ham o'shani
+o'qiydi, ya'ni haqiqat bitta joyda. Python vositalari yangi shablon o'rgatish
+va Kotlin tarafini ikkinchi amalga oshirish bilan solishtirish uchun qoladi.
+
 ## Hali qilinmagan
+
+- **Haqiqiy telefonda sinalmagan** - APK yig'ildi, lekin qurilmada ishlatilmadi
 
 - Ekranni o'qish (`vision`) — Rstgames profili, karta namunalari
 - Android ilovasi: MediaProjection + overlay

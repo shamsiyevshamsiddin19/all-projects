@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Shablon banklarini yangi kichiklashtirish usulida qayta quradi.
+"""Shablon banklarini yangi material bilan qayta quradi.
 
-Nom qo'lda qayta berilmaydi: har namunaga ESKI bank eski usulda nom qo'yadi,
-keyin YANGI usuldagi vektorlar shu nomlar bo'yicha guruhlanadi. Shu bilan
-Kotlin va Python bir xil shablonlarda ishlaydi.
+Nom qo'lda berilmaydi: har namunaga hozirgi bank nom qo'yadi, keyin shu
+nomlar bo'yicha qayta guruhlanadi. O'yin dizayni o'zgarganda yangi video
+qo'shib shu buyruqni chopish kifoya - bank o'zi kengayadi.
 """
 import glob, json, sys, struct
 import numpy as np
 from PIL import Image
 
 sys.path.insert(0, "tools")
-from belgi_yig import namuna, namuna_lanczos, guruhla
+from belgi_yig import namuna, guruhla
 from burchaklar import burchaklar, kozir_topish
 from zaxira import raqam_bolaklari
 from pufakcha import nomzodlar
@@ -18,10 +18,10 @@ from pufakcha import nomzodlar
 YON = "games/durak/profil"
 
 
-def eski_bank(npz, kalit, nomfayl, nomkalit):
-    v = np.load(f"{YON}/{npz}")[kalit].astype(np.float32)
-    n = json.load(open(f"{YON}/{nomfayl}"))
-    return v, (n[nomkalit] if nomkalit else n)
+def eski_bank(nom):
+    """Hozirgi bank - yangi namunalarga nom qo'yish uchun."""
+    from bank import oqi
+    return oqi(nom)
 
 
 def nomla(vektor, v, nomlar, ruxsat=None):
@@ -37,12 +37,8 @@ def nomla(vektor, v, nomlar, ruxsat=None):
 
 def yig():
     """Har namuna uchun: (yangi vektor, eski vektor, tur, ruxsat)"""
-    banklar = {
-        "rank": eski_bank("shablonlar.npz", "rank", "shablon_nomlar.json", "rank"),
-        "suit": eski_bank("shablonlar.npz", "suit", "shablon_nomlar.json", "suit"),
-        "raqam": eski_bank("raqamlar.npz", "v", "raqam_nomlar.json", None),
-        "pufak": eski_bank("pufakcha.npz", "v", "pufakcha_nomlar.json", None),
-    }
+    banklar = {k: eski_bank(f) for k, f in
+               (("rank", "rank"), ("suit", "suit"), ("raqam", "raqam"), ("pufak", "pufakcha"))}
     yigindi = {k: [] for k in banklar}
 
     for i, f in enumerate(sorted(glob.glob("data/frames/durak-3kishi-01/*.png"))):
@@ -54,27 +50,27 @@ def yig():
         for t, src in manbalar:
             ruxsat = {"D", "H"} if t["rang"] == "qizil" else {"S", "C"}
             for tur, quti, rx in (("rank", t["rank"], None), ("suit", t["suit"], ruxsat)):
-                yangi, eski = namuna(src, quti), namuna_lanczos(src, quti)
-                if yangi is None or eski is None:
+                yangi = namuna(src, quti)
+                if yangi is None:
                     continue
                 v, nomlar = banklar[tur]
-                nom, ball = nomla(eski, v, nomlar, rx)
+                nom, ball = nomla(yangi, v, nomlar, rx)
                 if nom and ball >= 0.72:
                     yigindi[tur].append((yangi, nom))
         for b in raqam_bolaklari(img)[0]:
-            yangi, eski = namuna(img, b), namuna_lanczos(img, b)
-            if yangi is None or eski is None:
+            yangi = namuna(img, b)
+            if yangi is None:
                 continue
             v, nomlar = banklar["raqam"]
-            nom, ball = nomla(eski, v, nomlar)
+            nom, ball = nomla(yangi, v, nomlar)
             if nom and ball >= 0.80:
                 yigindi["raqam"].append((yangi, nom))
         for c in nomzodlar(img):
-            yangi, eski = namuna(img, c["matn"]), namuna_lanczos(img, c["matn"])
-            if yangi is None or eski is None:
+            yangi = namuna(img, c["matn"])
+            if yangi is None:
                 continue
             v, nomlar = banklar["pufak"]
-            nom, ball = nomla(eski, v, nomlar)
+            nom, ball = nomla(yangi, v, nomlar)
             if nom and ball >= 0.80:
                 yigindi["pufak"].append((yangi, nom))
         if (i + 1) % 100 == 0:
