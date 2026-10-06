@@ -49,6 +49,9 @@ class EkranXizmati : Service() {
 
         /** Shundan kam farq bo'lsa - yangi narsa yo'q, tahlil qilinmaydi. */
         private const val YANGILIK_CHEGARASI = 0.002
+
+        /** Ekran soniyasiga 60 marta yangilanadi; bizga sekundiga ikki marta yetadi. */
+        private const val ORALIQ_MS = 450L
     }
 
     private var projection: MediaProjection? = null
@@ -63,6 +66,9 @@ class EkranXizmati : Service() {
 
     private var oldingiKadr: Frame? = null
     private var tahlilQilingan: Frame? = null
+    private var oxirgiOqish = 0L
+    private var pikselBuferi: IntArray? = null
+    private var qatorBuferi: ByteArray? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -142,6 +148,15 @@ class EkranXizmati : Service() {
         )
 
         reader?.setOnImageAvailableListener({ r ->
+            // Ekran displey tezligida yangilanadi. Har kadrni to'liq o'qish -
+            // sekundiga o'nlab marta 6 MB massiv ajratish degani; telefon qiziydi.
+            // Shuning uchun oraliqdan tezrog'i shunchaki tashlab yuboriladi.
+            val hozir = android.os.SystemClock.uptimeMillis()
+            if (hozir - oxirgiOqish < ORALIQ_MS) {
+                r.acquireLatestImage()?.close()
+                return@setOnImageAvailableListener
+            }
+            oxirgiOqish = hozir
             val kadr = kadrniOl(r) ?: return@setOnImageAvailableListener
             try {
                 qayta(kadr)
@@ -165,8 +180,10 @@ class EkranXizmati : Service() {
             // shuning uchun qator-qator o'qiladi. Oxirgi qatorda to'ldirish yozilmagan
             // bo'lishi mumkin - faqat kerakli qismi olinadi.
             val kerak = w * piksel
-            val qator = ByteArray(kerak)
-            val px = IntArray(w * h)
+            // Buferlar qayta ishlatiladi: har kadrda yangi massiv ajratish
+            // axlat yig'uvchini bekorga yuklaydi.
+            val qator = qatorBuferi?.takeIf { it.size == kerak } ?: ByteArray(kerak).also { qatorBuferi = it }
+            val px = pikselBuferi?.takeIf { it.size == w * h } ?: IntArray(w * h).also { pikselBuferi = it }
             for (y in 0 until h) {
                 buf.position(y * qadam)
                 buf.get(qator, 0, minOf(kerak, buf.remaining()))
@@ -177,7 +194,8 @@ class EkranXizmati : Service() {
                             (qator[o + 2].toInt() and 0xFF)
                 }
             }
-            return Frame(w, h, px)
+            // Taqqoslash uchun oldingi kadr saqlanadi, shuning uchun nusxa olinadi.
+            return Frame(w, h, px.copyOf())
         } finally {
             img.close()
         }
