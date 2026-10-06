@@ -10,3 +10,11 @@ next-env.d.ts
 /prisma/migrations/dev.db*
 /uploads
 *.tar.gz
+
+# Python & Backend
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.db
