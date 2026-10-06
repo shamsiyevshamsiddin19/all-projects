@@ -37,7 +37,7 @@ foydalanuvchilarga xizmat ko'rsatadigan tayyor mahsulotlar.
 | 🎵 **[12-scarpion-music-streaming](./12-scarpion-music-streaming)** | Django asosidagi musiqa streaming va audio pleer platformasi. | `Python` `Django` `JavaScript` |
 | 🌐 **[13-shamsiyev-portfolio-hub](./13-shamsiyev-portfolio-hub)** | Shaxsiy portfolio veb-sayti va server sozlamalari. | `HTML` `CSS` `JavaScript` `Nginx` |
 | 🎮 **[14-tictactoe-minimax-pro](./14-tictactoe-minimax-pro)** | Django asosidagi Tic-Tac-Toe (X va O) o'yini veb-ilovasi. | `Python` `Django` |
-| 🛒 **[15-wstore-digital-marketplace](./15-wstore-digital-marketplace)** | Raqamli mahsulotlar (kod loyihalari, botlar, saytlar) sotish marketpleysi — wstore.uz. | `Next.js 15` `TypeScript` `Prisma` `PostgreSQL` |
+| 🛒 **[15-wstore-digital-marketplace](./15-wstore-digital-marketplace)** | Raqamli mahsulotlar sotish marketpleysi (Django 5 & Next.js 15 variantlari). | `Django 5` `Next.js 15` `TypeScript` `PostgreSQL` |
 | 📚 **[16-yordamchi-productivity-suite](./16-yordamchi-productivity-suite)** | Shaxsiy o'quv platformasi — sayt, desktop app va mobil ilova. | `FastAPI` `PostgreSQL` `Vanilla JS` |
 | 🎨 **[17-craftsite-web-templates](./17-craftsite-web-templates)** | Turli sohalar uchun tayyor statik sayt shablonlari (7 ta namuna). | `HTML` `CSS` `JavaScript` |
 
