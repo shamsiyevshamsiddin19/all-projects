@@ -67,6 +67,7 @@ class EkranXizmati : Service() {
     private var oldingiKadr: Frame? = null
     private var tahlilQilingan: Frame? = null
     private var oxirgiOqish = 0L
+    private var tashxis: Tashxis? = null
     private var pikselBuferi: IntArray? = null
     private var qatorBuferi: ByteArray? = null
 
@@ -76,6 +77,7 @@ class EkranXizmati : Service() {
         super.onCreate()
         overlay = Overlay(this)
         koz = DurakProfil.oqi { nom -> assets.open(nom) }.let { DurakKoz(it) }
+        tashxis = Tashxis(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -213,24 +215,69 @@ class EkranXizmati : Service() {
         tahlilQilingan = kadr
 
         val k = koz ?: return
+
+        // Ekran butunlay qora bo'lsa - o'yin ekranni o'qishni bloklagan.
+        // Buni darhol aytish kerak, aks holda sabab noma'lum qoladi.
+        if (qoramiKadr(kadr)) {
+            overlay.yoz("ekran qora", "o'yin ekranni o'qishni bloklagan (FLAG_SECURE)")
+            return
+        }
+
         val holat = k.holat(kadr)
         kuzatuv.qadam(holat, System.currentTimeMillis() / 1000.0)
 
+        // Nima ko'rinayotgani doim yozib turiladi: xato bo'lsa sabab shu qatordan bilinadi.
+        val korinish = "qo'l ${holat.qol.size} · stol ${holat.stol.size} · " +
+                "kozir ${holat.kozir ?: "-"} · zaxira ${holat.zaxira ?: "-"}" +
+                (if (holat.oqilmagan > 0) " · noma'lum ${holat.oqilmagan}" else "") +
+                " · ${kadr.width}x${kadr.height}"
+
+        // Dastlabki bir necha kadr telefonga saqlanadi: ilova nimani ko'rganini
+        // kompyuterda tekshirish uchun. Jurnalga kirish imkoni bo'lmaganda
+        // sababni bilishning yagona ishonchli yo'li shu.
+        val t = tashxis
+        if (t != null && !t.tugadimi) {
+            val izoh = buildString {
+                append(korinish).append("\n")
+                append("qo'l: ").append(holat.qol.joinToString(" ")).append("\n")
+                append("stol: ").append(holat.stol.mapNotNull { it.karta }.joinToString(" ")).append("\n")
+                append("himoyachi: ").append(holat.himoyachi ?: "-").append("\n")
+                append("hodisalar: ").append(holat.hodisalar.joinToString(" ") { "${it.kim}=${it.hodisa}" })
+            }
+            if (t.saqla(kadr, izoh) && t.tugadimi) {
+                overlay.yoz("tashxis saqlandi", "Download/oyin-yordamchi papkasida")
+            }
+        }
+
         val view = kuzatuv.dvigatelUchun()
         if (view == null) {
-            overlay.yoz("kozir kutilyapti", "o'yin boshidan kuzatilsa aniqroq bo'ladi")
+            overlay.yoz("kozir kutilyapti", korinish)
             return
         }
         if (holat.qol.isEmpty()) {
-            overlay.yoz("qo'l ko'rinmayapti", "")
+            overlay.yoz("qo'l ko'rinmayapti", korinish)
             return
         }
         val maslahat = maslahatchi.advise(view)
         val tafsilot = buildString {
             append(maslahat.reason)
             maslahat.caveat?.let { append(" · ").append(it) }
+            append("\n").append(korinish)
         }
         overlay.yoz(maslahat.headline, tafsilot)
+    }
+
+    /** Ekran o'qishi bloklangan bo'lsa kadr butunlay qora keladi. */
+    private fun qoramiKadr(kadr: Frame): Boolean {
+        var sum = 0L
+        var n = 0
+        var i = 0
+        while (i < kadr.pixels.size) {
+            sum += kadr.r(i) + kadr.g(i) + kadr.b(i)
+            n++
+            i += 997       // tarqoq namunalar yetarli
+        }
+        return n > 0 && sum.toDouble() / n / 3.0 < 6.0
     }
 
     override fun onDestroy() {
