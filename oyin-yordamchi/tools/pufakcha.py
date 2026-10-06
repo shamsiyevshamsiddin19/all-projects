@@ -69,9 +69,8 @@ _BANK = None
 def _bank():
     global _BANK
     if _BANK is None:
-        yon = os.path.join(os.path.dirname(__file__), "..", "games", "durak", "profil")
-        _BANK = (np.load(os.path.join(yon, "pufakcha.npz"))["v"],
-                 json.load(open(os.path.join(yon, "pufakcha_nomlar.json"))))
+        from bank import oqi
+        _BANK = oqi("pufakcha")
     return _BANK
 
 

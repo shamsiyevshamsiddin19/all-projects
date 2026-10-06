@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from tanish import kartalar
 from zaxira import zaxira_soni
 from pufakcha import hodisalar
+from navbat import himoyachi
 
 
 def holat(img):
@@ -21,6 +22,7 @@ def holat(img):
         kozir=next((k["karta"] for k in ks if k["zona"] == "kozir" and k["karta"]), None),
         zaxira=zaxira_soni(img),
         hodisalar=hodisalar(img),
+        himoyachi=himoyachi(img),
         oqilmagan=sum(1 for k in ks if k["karta"] is None),
         _kartalar=ks,          # juftlikni joylashuvdan aniqlash uchun kerak
     )
@@ -31,6 +33,8 @@ def chiz(h):
             f"stol: {' '.join(h['stol']) or '-'}",
             f"kozir: {h['kozir'] or '-'}",
             f"zaxira: {h['zaxira'] if h['zaxira'] is not None else '-'}"]
+    if h.get("himoyachi"):
+        qism.append(f"himoyachi: {h['himoyachi']}")
     if h["hodisalar"]:
         qism.append("hodisa: " + ", ".join(f"{e['kim']}={e['hodisa']}" for e in h["hodisalar"]))
     if h["oqilmagan"]:

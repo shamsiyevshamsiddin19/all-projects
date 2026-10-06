@@ -33,8 +33,10 @@ def buyruq(d, rol):
 
 if __name__ == "__main__":
     kadr = int(sys.argv[1]) if len(sys.argv) > 1 else 160
-    rol = sys.argv[2] if len(sys.argv) > 2 else "hujum"
     k = holatgacha(kadr)
     d = k.dvigatel_uchun()
-    print(f"# {kadr}-kadrgacha kuzatildi, bitoga ketgan: {len(d['bitoga'])} karta")
+    # Rol endi ekrandan o'qiladi; qo'lda berish faqat zarur bo'lganda.
+    rol = sys.argv[2] if len(sys.argv) > 2 else d["rol"]
+    print(f"# {kadr}-kadrgacha kuzatildi, bitoga ketgan: {len(d['bitoga'])} karta, "
+          f"himoyachi: {d['himoyachi']}, rol: {rol}")
     print(buyruq(d, rol))

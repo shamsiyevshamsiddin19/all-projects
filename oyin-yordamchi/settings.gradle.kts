@@ -4,3 +4,4 @@ rootProject.name = "oyin-yordamchi"
 include("core")
 include("cards")
 include("games:durak")
+include("desktop")

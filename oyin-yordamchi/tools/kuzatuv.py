@@ -63,6 +63,7 @@ class Kuzatuv:
         self.raqib = [6] * self.raqiblar
         self.tur_hodisalari = []     # shu tur ichida ko'rilgan hodisalar
         self.ekrandagi = set()       # hozir ekranda turgan pufakchalar
+        self.himoyachi = None        # yashil halqa kimda
 
     # --- yordamchilar -------------------------------------------------
     def _barqaror(self, kalit):
@@ -116,6 +117,8 @@ class Kuzatuv:
                                    f"(jami {len(self.bitoga)})")
             self.tur_hodisalari = []
 
+        if h.get("himoyachi"):
+            self.himoyachi = h["himoyachi"]
         self.stol = yangi_stol
         # Juftlik joriy kadrdagi joylashuvdan aniqlanadi; silliqlangan to'plamda
         # bor-u, shu kadrda ko'rinmagan karta "qoplanmagan" deb qo'shiladi.
@@ -168,6 +171,8 @@ class Kuzatuv:
         if taqsim:
             taqsim[0] += farq
         return dict(
+            rol="himoya" if self.himoyachi == "men" else "hujum",
+            himoyachi=self.himoyachi,
             kozir=self.kozir,
             qol=sorted(self.qol),
             hujumlar=[a for a, _ in self.juftlar],

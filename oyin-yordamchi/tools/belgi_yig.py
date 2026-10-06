@@ -11,6 +11,46 @@ sys.path.insert(0, __file__.rsplit("/", 1)[0])
 from burchaklar import burchaklar, kozir_topish
 
 O = 40  # namuna o'lchami
+_USUL = "maydon"
+
+
+def _namuna(img, box, usul):
+    global _USUL
+    eski, _USUL = _USUL, usul
+    try:
+        return namuna(img, box)
+    finally:
+        _USUL = eski
+
+
+def maydon_kichiklashtir(kvadrat, yangi=40):
+    """Maydon bo'yicha o'rtachalash - Kotlin tarafdagi bilan aynan bir xil.
+
+    Ilgari LANCZOS ishlatilgandi; Kotlin'da uni takrorlash qiyin va chegaradagi
+    belgilar ikki tarafda har xil chiqardi. Shuning uchun ikkala taraf ham
+    shu oddiy va aniq takrorlanadigan usulga o'tdi.
+    """
+    tomon = kvadrat.shape[0]
+    nisbat = tomon / yangi
+    out = np.empty((yangi, yangi), np.float64)
+    for y in range(yangi):
+        sy0, sy1 = y * nisbat, (y + 1) * nisbat
+        y0, y1 = int(np.floor(sy0)), min(tomon, int(np.ceil(sy1)))
+        wy = np.minimum(sy1, np.arange(y0, y1) + 1) - np.maximum(sy0, np.arange(y0, y1))
+        for x in range(yangi):
+            sx0, sx1 = x * nisbat, (x + 1) * nisbat
+            x0, x1 = int(np.floor(sx0)), min(tomon, int(np.ceil(sx1)))
+            wx = np.minimum(sx1, np.arange(x0, x1) + 1) - np.maximum(sx0, np.arange(x0, x1))
+            blok = kvadrat[y0:y1, x0:x1]
+            ogirlik = np.outer(wy, wx)
+            jami = ogirlik.sum()
+            out[y, x] = (blok * ogirlik).sum() / jami if jami > 0 else 255.0
+    return out
+
+
+def namuna_lanczos(img, box):
+    """Eski usul - faqat bankni qayta qurishda nom berish uchun kerak."""
+    return _namuna(img, box, "lanczos")
 
 
 def namuna(img, box):
@@ -28,7 +68,8 @@ def namuna(img, box):
     side = max(hh, ww)
     kvadrat = np.full((side, side), 255.0, np.float32)
     kvadrat[(side - hh) // 2:(side - hh) // 2 + hh, (side - ww) // 2:(side - ww) // 2 + ww] = g
-    kichik = np.array(Image.fromarray(kvadrat).resize((O, O), Image.LANCZOS), dtype=np.float32)
+    kichik = (np.array(Image.fromarray(kvadrat).resize((O, O), Image.LANCZOS), dtype=np.float64)
+              if _USUL == "lanczos" else maydon_kichiklashtir(kvadrat, O)).astype(np.float32)
     kichik -= kichik.mean()
     n = np.linalg.norm(kichik)
     return kichik / n if n > 1e-6 else None

@@ -7,15 +7,12 @@ sys.path.insert(0, __file__.rsplit("/", 1)[0])
 from burchaklar import burchaklar, kozir_topish, KOZIR_ROI
 from belgi_yig import namuna
 
-def _profil(nom):
-    """Shablon banki loyiha ichida saqlanadi - video bo'lmasa ham ishlasin."""
-    import os
-    yon = os.path.join(os.path.dirname(__file__), "..", "games", "durak", "profil", nom)
-    return yon if os.path.exists(yon) else os.path.join("data", nom)
+from bank import oqi as _bank_oqi
 
-
-_sh = np.load(_profil("shablonlar.npz"))
-_nom = json.load(open(_profil("shablon_nomlar.json")))
+_rank_v, _rank_n = _bank_oqi("rank")
+_suit_v, _suit_n = _bank_oqi("suit")
+_sh = {"rank": _rank_v, "suit": _suit_v}
+_nom = {"rank": _rank_n, "suit": _suit_n}
 QIZIL_MASTLAR = {"D", "H"}
 
 

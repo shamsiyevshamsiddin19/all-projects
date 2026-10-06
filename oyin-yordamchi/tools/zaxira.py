@@ -43,9 +43,8 @@ _BANK = None
 def _bank():
     global _BANK
     if _BANK is None:
-        yon = os.path.join(os.path.dirname(__file__), "..", "games", "durak", "profil")
-        _BANK = (np.load(os.path.join(yon, "raqamlar.npz"))["v"],
-                 json.load(open(os.path.join(yon, "raqam_nomlar.json"))))
+        from bank import oqi
+        _BANK = oqi("raqam")
     return _BANK
 
 
