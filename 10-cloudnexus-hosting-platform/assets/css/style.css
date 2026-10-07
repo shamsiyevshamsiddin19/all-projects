@@ -67,14 +67,22 @@ body {
 .top-announcement-bar {
   background: linear-gradient(90deg, #051611 0%, #08221b 50%, #061914 100%);
   color: #ffffff;
-  padding: 8px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   border-bottom: 1px solid rgba(110, 231, 183, 0.15);
   position: relative;
   z-index: 100;
   font-size: 0.85rem;
+}
+
+/* Keeps every section's content edge-aligned with the same 1280px column,
+   instead of each bar stretching its own content to the raw viewport edge. */
+.top-announcement-bar .container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 8px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
 }
 
 .top-announcement-bar .left-content {
@@ -298,13 +306,12 @@ body {
    ========================================================================== */
 .hero-section {
   position: relative;
+  /* Plain surface for the text column. The visual (cloud/server artwork)
+     lives only in .hero-visual-wrapper below, scoped to the right grid
+     column — it used to be this section's full-width background image,
+     which stretched a mostly-blank left half of that asset underneath
+     the text, leaving a large empty gap before the artwork began. */
   background-color: #f8fafc;
-  background-image: 
-    linear-gradient(to bottom, rgba(255, 255, 255, 0) 75%, #ffffff 100%),
-    url('../images/hero_bg_original_perfect.jpg');
-  background-size: cover;
-  background-position: right center;
-  background-repeat: no-repeat;
   padding: 52px 0 64px 0;
   border-bottom: 1px solid var(--color-border-light);
   overflow: hidden;
@@ -468,6 +475,12 @@ body {
   position: relative;
   height: 420px;
   width: 100%;
+  border-radius: 20px;
+  overflow: hidden;
+  background-image: url('../images/hero_visual_crop.jpg');
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
 }
 
 .hero-handwritten-badge {
@@ -1592,14 +1605,6 @@ body {
    RESPONSIVE MEDIA QUERIES (Multi-Breakpoint Architecture)
    ========================================================================== */
 
-/* 1. Ultra-Wide & 4K Displays (>= 1920px) */
-@media (min-width: 1920px) {
-  .hero-section {
-    background-size: cover;
-    background-position: right center;
-  }
-}
-
 /* 2. Standard Laptops / Small Desktops (<= 1280px) */
 @media (max-width: 1280px) {
   .nav-menu {
@@ -1607,13 +1612,6 @@ body {
   }
   .nav-link {
     font-size: 0.88rem;
-  }
-  .hero-section {
-    background-image: 
-      linear-gradient(to right, rgba(248, 250, 252, 0.98) 0%, rgba(248, 250, 252, 0.94) 48%, rgba(248, 250, 252, 0.25) 75%, transparent 100%),
-      url('../images/hero_bg_original_perfect.jpg');
-    background-position: right center;
-    background-size: cover;
   }
   .hero-content {
     max-width: 540px;
@@ -1643,10 +1641,6 @@ body {
     gap: 16px;
   }
   .hero-section {
-    background-image: 
-      linear-gradient(to right, rgba(248, 250, 252, 0.98) 0%, rgba(248, 250, 252, 0.92) 55%, rgba(248, 250, 252, 0.35) 80%, transparent 100%),
-      url('../images/hero_bg_original_perfect.jpg');
-    background-position: 80% center;
     padding: 48px 0 56px 0;
   }
   .hero-title {
@@ -1700,14 +1694,17 @@ body {
     gap: 28px;
   }
   .hero-section {
-    background-image: 
-      linear-gradient(180deg, rgba(248, 250, 252, 0.98) 0%, rgba(248, 250, 252, 0.88) 50%, rgba(248, 250, 252, 0.98) 100%),
-      url('../images/hero_bg_original_perfect.jpg');
-    background-position: 70% center;
     padding: 44px 0 50px 0;
+    min-height: 0;
   }
   .hero-content {
     max-width: 100%;
+  }
+  /* The visual becomes a second row under the text on narrow screens.
+     Its own background-image is a properly cropped photo now (no more
+     blank canvas), so it's fine to keep showing — just shorter. */
+  .hero-visual-wrapper {
+    height: 280px;
   }
   .hero-title {
     font-size: 2.5rem;
@@ -1743,8 +1740,10 @@ body {
 /* 5. Phablets & Large Phones (<= 640px) */
 @media (max-width: 640px) {
   .top-announcement-bar {
-    padding: 7px 16px;
     font-size: 0.76rem;
+  }
+  .top-announcement-bar .container {
+    padding: 7px 16px;
   }
   .top-announcement-bar .left-content {
     font-size: 0.74rem;
@@ -1762,6 +1761,10 @@ body {
   }
   .hero-section {
     padding: 36px 0 42px 0;
+  }
+  .hero-visual-wrapper {
+    height: 220px;
+    border-radius: 16px;
   }
   .hero-title {
     font-size: clamp(1.9rem, 7.5vw, 2.35rem);
@@ -1881,7 +1884,7 @@ body {
 
 /* 6. Standard & Small Mobile Devices (<= 420px) */
 @media (max-width: 420px) {
-  .top-announcement-bar {
+  .top-announcement-bar .container {
     padding: 6px 12px;
   }
   .top-announcement-bar .left-content {
