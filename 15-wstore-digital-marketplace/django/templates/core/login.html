@@ -38,14 +38,20 @@
           {% translate "Ismingiz, emailingiz va rasmingiz Google hisobingizdan olinadi. Parolingiz bizga ko'rinmaydi." %}
         </p>
       {% else %}
-        <!-- Kalitlar sozlanmagan: tugmani ko'rsatish o'rniga sababni aytamiz,
-             aks holda foydalanuvchi bo'sh sahifaga qarab qolardi. -->
+        <!-- Kalitlar sozlanmagan. Texnik tafsilot (.env o'zgaruvchilari nomi)
+             faqat ishlab chiqish rejimida ko'rsatiladi — ommaviy saytda u
+             ortiqcha va havaskorona ko'rinadi. -->
         <div class="alert alert-warning" style="display: block; line-height: 1.55;">
-          <strong>{% translate "Google orqali kirish hozircha sozlanmagan." %}</strong><br>
+          <strong>{% translate "Google orqali kirish vaqtincha mavjud emas." %}</strong><br>
           <span style="font-size: 0.82rem;">
-            {% blocktranslate %}<code>.env</code> faylida <code>GOOGLE_OAUTH_CLIENT_ID</code> va <code>GOOGLE_OAUTH_CLIENT_SECRET</code> qiymatlarini kiriting.{% endblocktranslate %}
+            {% translate "Saytni quyidagi demo hisoblar orqali ko'rib chiqishingiz mumkin." %}
           </span>
         </div>
+        {% if debug %}
+          <p style="margin-top:0.5rem; font-size:0.75rem; color:var(--muted); text-align:center;">
+            <code>GOOGLE_OAUTH_CLIENT_ID</code> / <code>GOOGLE_OAUTH_CLIENT_SECRET</code> — <code>.env</code>
+          </p>
+        {% endif %}
       {% endif %}
 
       <!-- 1-Click Fast Demo Logins (faqat DEMO_MODE da — aks holda bu
@@ -55,7 +61,7 @@
         <div style="font-size: 0.78rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; text-align: center; margin-bottom: 0.85rem;">
           {% translate "Tezkor 1-Click Demo Kirish" %}
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
           <a href="{% url 'core:demo_login' %}?role=buyer" class="btn btn-secondary btn-sm" style="font-size: 0.78rem; text-align: center; padding: 0.5rem 0.2rem;" title="{% translate "Xaridor sifatida kirish" %}">
             <i data-lucide="shopping-bag" style="width: 13px; height: 13px; color: var(--green);"></i>
             <span>{% translate "Xaridor" %}</span>
@@ -64,13 +70,9 @@
             <i data-lucide="store" style="width: 13px; height: 13px; color: var(--accent);"></i>
             <span>{% translate "Sotuvchi" %}</span>
           </a>
-          <a href="{% url 'core:demo_login' %}?role=admin" class="btn btn-secondary btn-sm" style="font-size: 0.78rem; text-align: center; padding: 0.5rem 0.2rem;" title="{% translate "Admin sifatida kirish" %}">
-            <i data-lucide="shield" style="width: 13px; height: 13px; color: var(--gold);"></i>
-            <span>{% translate "Admin" %}</span>
-          </a>
         </div>
         <p style="margin-top: 0.75rem; text-align: center; font-size: 0.72rem; color: var(--muted);">
-          {% translate "Faqat lokal ishlab chiqish uchun (DEMO_MODE)" %}
+          {% translate "Saytni sinab ko'rish uchun demo hisoblar" %}
         </p>
       </div>
       {% endif %}

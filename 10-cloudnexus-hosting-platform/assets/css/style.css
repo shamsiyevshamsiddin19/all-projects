@@ -38,6 +38,10 @@
   --shadow-card: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
   --shadow-card-hover: 0 20px 30px -10px rgba(15, 23, 42, 0.1), 0 10px 15px -5px rgba(22, 163, 74, 0.08);
   --shadow-glow-mint: 0 0 25px rgba(74, 222, 128, 0.4);
+
+  /* Container System */
+  --container-max-width: 1760px;
+  --container-padding: clamp(20px, 3.5vw, 48px);
 }
 
 /* Base Reset & Box Sizing */
@@ -61,6 +65,14 @@ body {
   line-height: 1.5;
 }
 
+.container {
+  max-width: var(--container-max-width);
+  width: 100%;
+  margin: 0 auto;
+  padding-left: var(--container-padding);
+  padding-right: var(--container-padding);
+}
+
 /* ==========================================================================
    0. TOP ANNOUNCEMENT BAR (Y: 0 to 42)
    ========================================================================== */
@@ -76,7 +88,7 @@ body {
 /* Keeps every section's content edge-aligned with the same 1280px column,
    instead of each bar stretching its own content to the raw viewport edge. */
 .top-announcement-bar .container {
-  max-width: 1280px;
+  max-width: var(--container-max-width);
   margin: 0 auto;
   padding: 8px 24px;
   display: flex;
@@ -151,7 +163,7 @@ body {
 }
 
 .main-navbar .container {
-  max-width: 1280px;
+  max-width: var(--container-max-width);
   margin: 0 auto;
   padding: 0 24px;
   width: 100%;
@@ -302,30 +314,38 @@ body {
 }
 
 /* ==========================================================================
-   2. HERO SECTION (Y: 82 to 335)
+   2. HERO SECTION (Full Viewport Height with Docked Bottom Logo Bar)
    ========================================================================== */
 .hero-section {
   position: relative;
-  /* Plain surface for the text column. The visual (cloud/server artwork)
-     lives only in .hero-visual-wrapper below, scoped to the right grid
-     column — it used to be this section's full-width background image,
-     which stretched a mostly-blank left half of that asset underneath
-     the text, leaving a large empty gap before the artwork began. */
+  min-height: calc(100vh - 106px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   background-color: #f8fafc;
-  padding: 52px 0 64px 0;
-  border-bottom: 1px solid var(--color-border-light);
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.78) 32%, rgba(255, 255, 255, 0.20) 52%, rgba(255, 255, 255, 0) 68%),
+    url('../images/hero_bg_original_perfect.jpg');
+  background-size: cover;
+  background-position: right center;
+  background-repeat: no-repeat;
   overflow: hidden;
-  min-height: 500px;
+  border-bottom: 1px solid var(--color-border-light);
 }
 
-.hero-section .container {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 24px;
-  display: grid;
-  grid-template-columns: 1.05fr 1fr;
+.hero-body-wrapper {
+  flex: 1;
+  display: flex;
   align-items: center;
-  gap: 24px;
+  width: 100%;
+  padding: 36px 0 20px 0;
+}
+
+.hero-body-wrapper .container {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  align-items: center;
+  gap: 40px;
   position: relative;
   z-index: 2;
 }
@@ -335,7 +355,7 @@ body {
   display: flex;
   flex-direction: column;
   z-index: 5;
-  max-width: 540px;
+  max-width: 650px;
 }
 
 .hero-eyebrow {
@@ -470,43 +490,194 @@ body {
   font-size: 0.72rem;
 }
 
-/* Hero Visual Right */
+/* Hero Visual Right — anchors the floating stats card over the artwork */
 .hero-visual-wrapper {
   position: relative;
-  height: 420px;
-  width: 100%;
-  border-radius: 20px;
-  overflow: hidden;
-  background-image: url('../images/hero_visual_crop.jpg');
-  background-size: cover;
-  background-position: center center;
-  background-repeat: no-repeat;
+  height: 100%;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-end;
+  padding-bottom: 24px;
+  padding-right: 16px;
+  z-index: 5;
+}
+
+/* Floating Glassmorphic Stats Card ("Reliable Cloud for a Smarter Tomorrow") */
+.hero-floating-card {
+  background: rgba(10, 22, 28, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.55),
+    0 0 26px rgba(34, 197, 94, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 16px 20px;
+  width: 310px;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease, border-color 0.4s ease;
+  animation: card-float-subtle 6s ease-in-out infinite;
+  cursor: default;
+  user-select: none;
+}
+
+.hero-floating-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(74, 222, 128, 0.45);
+  box-shadow: 
+    0 28px 50px rgba(0, 0, 0, 0.65),
+    0 0 34px rgba(34, 197, 94, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.card-header-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.card-subtitle {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #94a3b8;
+  letter-spacing: 0.01em;
+}
+
+.card-body-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.card-avatars-group {
+  display: flex;
+  align-items: center;
+}
+
+.card-avatar-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  object-fit: cover;
+  margin-left: -9px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  transition: transform 0.25s ease, z-index 0.25s ease;
+  position: relative;
+}
+
+.card-avatar-img:first-child {
+  margin-left: 0;
+  z-index: 3;
+}
+.card-avatar-img:nth-child(2) {
+  z-index: 2;
+}
+.card-avatar-img:nth-child(3) {
+  z-index: 1;
+}
+
+.card-avatar-img:hover {
+  transform: scale(1.18) translateY(-2px);
+  z-index: 10;
+}
+
+.card-uptime-metric {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.uptime-badge-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 0 8px rgba(74, 222, 128, 0.75));
+  flex-shrink: 0;
+}
+
+.uptime-badge-svg {
+  width: 30px;
+  height: 30px;
+  display: block;
+}
+
+.uptime-text-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.uptime-percentage {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.uptime-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #94a3b8;
+  line-height: 1.2;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+@keyframes card-float-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
 }
 
 .hero-handwritten-badge {
   position: absolute;
-  top: 15px;
-  right: 25px;
+  top: 14px;
+  right: 20px;
   font-family: var(--font-handwriting);
   font-size: 2.2rem;
   font-weight: 700;
   color: #ffffff;
-  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.85);
-  transform: rotate(3deg);
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
+  transform: rotate(-6deg);
   z-index: 10;
-  line-height: 1.1;
+  line-height: 1.05;
   text-align: right;
   pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
 }
 
-.hero-handwritten-badge .swirl {
+.hero-handwritten-badge span {
   display: block;
-  width: 90px;
-  height: 6px;
-  border-bottom: 3.5px solid var(--color-mint-accent);
-  border-radius: 50%;
-  margin-top: -4px;
-  margin-left: auto;
+}
+
+.hero-handwritten-badge .handwritten-swirl-svg {
+  width: 88px;
+  height: 16px;
+  margin-top: -2px;
+  filter: drop-shadow(0 0 6px rgba(74, 222, 128, 0.7));
 }
 
 .hero-floating-glass-card {
@@ -599,28 +770,33 @@ body {
 }
 
 /* ==========================================================================
-   3. SOCIAL PROOF / LOGO BAR (Y: 335 to 375)
+   Hero Bottom Bar: TRUSTED BY INNOVATIVE COMPANIES (Image 2)
+   Docked at the very bottom of the Hero Section (Viewport 1)
    ========================================================================== */
-.trusted-companies-section {
-  background-color: #ffffff;
-  padding: 30px 0;
-  border-bottom: 1px solid var(--color-border-light);
+.hero-trusted-bottom-bar {
+  width: 100%;
+  background: #ffffff;
+  border-top: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.03);
+  padding: 14px 0 16px 0;
+  z-index: 10;
+  position: relative;
 }
 
-.trusted-companies-section .container {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 24px;
-  text-align: center;
+.hero-trusted-bottom-bar .container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .trusted-eyebrow {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #94a3b8;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
+  text-align: center;
 }
 
 .logos-grid {
@@ -660,12 +836,14 @@ body {
    ========================================================================== */
 .services-section {
   background-color: #ffffff;
-  padding: 56px 0 60px 0;
+  padding: 80px 0 90px 0;
   border-bottom: 1px solid var(--color-border-light);
+  position: relative;
+  z-index: 5;
 }
 
 .services-section .container {
-  max-width: 1280px;
+  max-width: var(--container-max-width);
   margin: 0 auto;
   padding: 0 24px;
 }
@@ -815,7 +993,7 @@ body {
 }
 
 .about-story-section .container {
-  max-width: 1280px;
+  max-width: var(--container-max-width);
   margin: 0 auto;
   padding: 0 24px;
   display: grid;
@@ -974,7 +1152,7 @@ body {
 }
 
 .testimonials-section .container {
-  max-width: 1280px;
+  max-width: var(--container-max-width);
   margin: 0 auto;
   padding: 0 24px;
 }
@@ -1081,7 +1259,7 @@ body {
 }
 
 .cta-banner-section .container {
-  max-width: 1280px;
+  max-width: var(--container-max-width);
   margin: 0 auto;
   padding: 0 24px;
   display: flex;
@@ -1166,7 +1344,7 @@ body {
 }
 
 .site-footer .container {
-  max-width: 1280px;
+  max-width: var(--container-max-width);
   margin: 0 auto;
   padding: 0 24px;
 }
@@ -1614,8 +1792,11 @@ body {
     font-size: 0.88rem;
   }
   .hero-content {
-    max-width: 540px;
-  }
+  display: flex;
+  flex-direction: column;
+  z-index: 5;
+  max-width: 650px;
+}
   .services-cards-grid {
     grid-template-columns: repeat(3, 1fr);
     gap: 16px;
@@ -1641,7 +1822,11 @@ body {
     gap: 16px;
   }
   .hero-section {
-    padding: 48px 0 56px 0;
+    min-height: auto;
+    padding: 0;
+  }
+  .hero-body-wrapper {
+    padding: 40px 0 24px 0;
   }
   .hero-title {
     font-size: clamp(2.3rem, 4.2vw, 3rem);
@@ -1689,22 +1874,52 @@ body {
     align-items: center;
     justify-content: center;
   }
-  .hero-section .container {
+  .hero-section {
+    background: #f8fafc;
+    min-height: auto;
+    padding: 0;
+    display: block;
+  }
+  .hero-body-wrapper {
+    padding: 30px 0 20px 0;
+  }
+  .hero-body-wrapper .container {
     grid-template-columns: 1fr;
     gap: 28px;
+    padding: 0 20px;
+    max-width: 100%;
   }
-  .hero-section {
-    padding: 44px 0 50px 0;
-    min-height: 0;
+  .hero-trusted-bottom-bar {
+    margin-top: 32px;
+    background: #ffffff;
   }
   .hero-content {
     max-width: 100%;
   }
-  /* The visual becomes a second row under the text on narrow screens.
-     Its own background-image is a properly cropped photo now (no more
-     blank canvas), so it's fine to keep showing — just shorter. */
   .hero-visual-wrapper {
-    height: 280px;
+    background-image: url('../images/hero_visual_crop.jpg?v=4');
+    background-size: cover;
+    /* Narrow card: bias to the right of the artwork so the server towers
+       and the handwritten note stay in frame instead of the empty sky. */
+    background-position: right center;
+    border-radius: 20px;
+    height: 380px;
+    min-height: 380px;
+    width: 100%;
+    position: relative;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.16);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    padding: 20px;
+    margin-top: 24px;
+    overflow: hidden;
+  }
+  .hero-floating-card {
+    width: 100%;
+    max-width: 320px;
+    animation: none;
   }
   .hero-title {
     font-size: 2.5rem;
@@ -1760,11 +1975,16 @@ body {
     gap: 10px;
   }
   .hero-section {
-    padding: 36px 0 42px 0;
+    padding: 0;
+  }
+  .hero-body-wrapper {
+    padding: 24px 0 16px 0;
   }
   .hero-visual-wrapper {
-    height: 220px;
-    border-radius: 16px;
+    height: 350px;
+    min-height: 350px;
+    margin-top: 20px;
+    padding: 14px;
   }
   .hero-title {
     font-size: clamp(1.9rem, 7.5vw, 2.35rem);
@@ -1884,6 +2104,33 @@ body {
 
 /* 6. Standard & Small Mobile Devices (<= 420px) */
 @media (max-width: 420px) {
+  .hero-visual-wrapper {
+    height: 320px;
+    min-height: 320px;
+    padding: 12px;
+  }
+  .hero-floating-card {
+    padding: 12px 14px;
+    width: 100%;
+    max-width: 290px;
+  }
+  .card-title {
+    font-size: 0.95rem;
+  }
+  .card-subtitle {
+    font-size: 0.72rem;
+  }
+  .card-avatar-img {
+    width: 30px;
+    height: 30px;
+    margin-left: -7px;
+  }
+  .uptime-percentage {
+    font-size: 1.1rem;
+  }
+  .uptime-label {
+    font-size: 0.6rem;
+  }
   .top-announcement-bar .container {
     padding: 6px 12px;
   }

@@ -1318,3 +1318,12 @@ msgstr "Полный исходный код проекта «<strong style=\"co
 #: templates/navbar.html
 msgid "— tayyor kod, botlar, saytlar va ilovalar bozori"
 msgstr "— маркет готового кода, ботов, сайтов и приложений"
+
+msgid "Google orqali kirish vaqtincha mavjud emas."
+msgstr "Вход через Google временно недоступен."
+
+msgid "Saytni quyidagi demo hisoblar orqali ko'rib chiqishingiz mumkin."
+msgstr "Вы можете осмотреть сайт через демо-аккаунты ниже."
+
+msgid "Saytni sinab ko'rish uchun demo hisoblar"
+msgstr "Демо-аккаунты для знакомства с сайтом"

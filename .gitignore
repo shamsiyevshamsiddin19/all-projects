@@ -8,3 +8,8 @@ node_modules/
 venv/
 .venv/
 env/
+.env
+.env.*
+*.pem
+*.key
+*.log

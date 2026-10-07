@@ -1318,3 +1318,12 @@ msgstr "The full source code of «<strong style=\"color: var(--fg);\">%(title)s<
 #: templates/navbar.html
 msgid "— tayyor kod, botlar, saytlar va ilovalar bozori"
 msgstr "— a marketplace for ready-made code, bots, websites and apps"
+
+msgid "Google orqali kirish vaqtincha mavjud emas."
+msgstr "Google sign-in is temporarily unavailable."
+
+msgid "Saytni quyidagi demo hisoblar orqali ko'rib chiqishingiz mumkin."
+msgstr "You can explore the site using the demo accounts below."
+
+msgid "Saytni sinab ko'rish uchun demo hisoblar"
+msgstr "Demo accounts for exploring the site"

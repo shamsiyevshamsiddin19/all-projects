@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NexCloud — Scalable Solutions for Tomorrow | Modern Cloud & IT Services</title>
   <meta name="description" content="NexCloud delivers high-performance cloud hosting, autonomous AI deployment, secure storage, and managed cloud infrastructure for high-growth modern businesses.">
-  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/style.css?v=7.0">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2316a34a'><path d='M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z'/></svg>">
 </head>
 <body>
@@ -141,9 +141,12 @@
 
   <!-- =====================================================================
        2. HERO SECTION (Coordinate Y: 82 to 335)
+  <!-- =====================================================================
+       2. HERO SECTION (Complete Viewport with Bottom Trusted Companies Bar)
        ===================================================================== -->
   <section class="hero-section" id="home">
-    <div class="container">
+    <div class="hero-body-wrapper">
+      <div class="container">
       <!-- Left Column: Content -->
       <div class="hero-content">
         <div class="hero-eyebrow">Cloud Solutions for a Brighter Tomorrow</div>
@@ -199,14 +202,41 @@
         </div>
       </div>
       <!-- Right Column: Visual area showcasing authentic cloud scenery -->
-      <div class="hero-visual-wrapper"></div>
+      <div class="hero-visual-wrapper"><!-- Floating Glassmorphic Stats Card ("Reliable Cloud for a Smarter Tomorrow") -->
+        <div class="hero-floating-card" id="heroReliableCard">
+          <div class="card-header-block">
+            <div class="card-title">Reliable Cloud</div>
+            <div class="card-subtitle">for a Smarter Tomorrow</div>
+          </div>
+          <div class="card-body-row">
+            <!-- Overlapping User Avatars -->
+            <div class="card-avatars-group">
+              <img src="assets/images/avatar_sarah.jpg" alt="Sarah Mitchell" class="card-avatar-img">
+              <img src="assets/images/avatar_james.jpg" alt="James Carter" class="card-avatar-img">
+              <img src="assets/images/avatar_emily.jpg" alt="Emily Roberts" class="card-avatar-img">
+            </div>
+            <!-- Uptime Guarantee Metric -->
+            <div class="card-uptime-metric">
+              <div class="uptime-badge-icon" title="99.9% Certified Uptime">
+                <svg viewBox="0 0 24 24" class="uptime-badge-svg" width="24" height="24">
+                  <path d="M12 1.5l1.9 2.4 3-.5 1 2.9 2.9 1-.5 3 2.4 1.9-1.7 2.5 1.7 2.5-2.4 1.9.5 3-2.9 1-1 2.9-3-.5L12 22.5l-1.9-2.4-3 .5-1-2.9-2.9-1 .5-3-2.4-1.9 1.7-2.5-1.7-2.5 2.4-1.9-.5-3 2.9-1 1-2.9 3 .5L12 1.5z" fill="#4ade80"/>
+                  <circle cx="12" cy="12" r="4.5" fill="#042f1a"/>
+                  <circle cx="12" cy="12" r="2" fill="#4ade80"/>
+                </svg>
+              </div>
+              <div class="uptime-text-block">
+                <span class="uptime-percentage">99.9%</span>
+                <span class="uptime-label">Uptime Guarantee</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
     </div>
-  </section>
 
-  <!-- =====================================================================
-       3. SOCIAL PROOF / TRUSTED COMPANIES (Coordinate Y: 335 to 375)
-       ===================================================================== -->
-  <section class="trusted-companies-section">
+    <!-- Hero Bottom Bar: TRUSTED BY INNOVATIVE COMPANIES (Image 2) -->
+    <div class="hero-trusted-bottom-bar" id="trustedCompanies">
     <div class="container">
       <div class="trusted-eyebrow">Trusted by Innovative Companies</div>
       <div class="logos-grid">
@@ -264,8 +294,8 @@
         </div>
       </div>
     </div>
+  </div>
   </section>
-
   <!-- =====================================================================
        4. SERVICES SECTION (Coordinate Y: 375 to 525)
        ===================================================================== -->
@@ -531,7 +561,7 @@
           </p>
           <div class="testimonial-author-block">
             <div class="author-info">
-              <img src="assets/images/avatar_sarah.svg" alt="Sarah Mitchell" class="author-avatar">
+              <img src="assets/images/avatar_sarah.jpg" alt="Sarah Mitchell" class="author-avatar">
               <div>
                 <div class="author-name">Sarah Mitchell</div>
                 <div class="author-role">CTO, BrightTech</div>
@@ -549,7 +579,7 @@
           </p>
           <div class="testimonial-author-block">
             <div class="author-info">
-              <img src="assets/images/avatar_james.svg" alt="James Carter" class="author-avatar">
+              <img src="assets/images/avatar_james.jpg" alt="James Carter" class="author-avatar">
               <div>
                 <div class="author-name">James Carter</div>
                 <div class="author-role">Founder, ScaleUp</div>
@@ -567,7 +597,7 @@
           </p>
           <div class="testimonial-author-block">
             <div class="author-info">
-              <img src="assets/images/avatar_emily.svg" alt="Emily Roberts" class="author-avatar">
+              <img src="assets/images/avatar_emily.jpg" alt="Emily Roberts" class="author-avatar">
               <div>
                 <div class="author-name">Emily Roberts</div>
                 <div class="author-role">IT Director, CloudMax</div>

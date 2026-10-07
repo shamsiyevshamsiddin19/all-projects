@@ -78,54 +78,52 @@ def logout_view(request):
 
 def demo_login_view(request):
     """
-    1-click fast demo authentication (useful for testing buyer/seller/admin roles).
+    Portfolio ko'rsatish uchun tezkor demo kirish: Xaridor yoki Sotuvchi.
 
-    FAQAT DEMO_MODE yoniq bo'lganda ishlaydi. Bunsiz bu endpoint har kimga
-    `?role=admin` orqali superuser hisobiga kirish imkonini berardi — ya'ni
-    to'liq autentifikatsiya chetlab o'tilardi.
+    ADMIN ROLI ATAYLAB OLIB TASHLANDI. Ilgari `?role=admin` istalgan odamni
+    superuser hisobiga kiritardi — sayt ommaviy domenda turgani uchun bu
+    to'liq autentifikatsiyani chetlab o'tish demak edi. Admin panelga endi
+    faqat /admin/ orqali, haqiqiy parol bilan kiriladi.
+
+    Demo hisoblarga parol ham o'rnatilmaydi (`set_unusable_password`):
+    ular faqat shu tugma orqali ishlaydi, /admin/ dan emas.
     """
     if not getattr(settings, "DEMO_MODE", False):
         raise Http404("Demo kirish o'chirilgan.")
 
     role = request.GET.get("role", "buyer").lower()
+    if role not in ("buyer", "seller"):
+        raise Http404("Bunday demo rol yo'q.")
 
     if role == "seller":
-        user = User.objects.filter(role=User.Role.SELLER).first() or User.objects.filter(username="seller").first() or User.objects.filter(email="seller@wstore.uz").first()
-        if not user:
-            user = User.objects.create(
-                username="seller",
-                email="seller@wstore.uz",
-                first_name="Sotuvchi Demo",
-                role=User.Role.SELLER,
-                balance=150000,
-            )
-            user.set_password("seller123")
-            user.save()
-    elif role == "admin":
-        user = User.objects.filter(is_superuser=True).first() or User.objects.filter(username="admin").first() or User.objects.filter(email="admin@wstore.uz").first()
-        if not user:
-            user = User.objects.create(
-                username="admin",
-                email="admin@wstore.uz",
-                first_name="Admin Demo",
-                role=User.Role.ADMIN,
-                is_staff=True,
-                is_superuser=True,
-            )
-            user.set_password("admin123")
-            user.save()
+        defaults = {
+            "email": "seller@wstore.uz",
+            "first_name": "Sotuvchi Demo",
+            "role": User.Role.SELLER,
+            "balance": 150000,
+        }
+        username = "seller"
     else:
-        user = User.objects.filter(role=User.Role.BUYER).first() or User.objects.filter(username="buyer").first() or User.objects.filter(email="buyer@wstore.uz").first()
-        if not user:
-            user = User.objects.create(
-                username="buyer",
-                email="buyer@wstore.uz",
-                first_name="Xaridor Demo",
-                role=User.Role.BUYER,
-                balance=50000,
-            )
-            user.set_password("buyer123")
-            user.save()
+        defaults = {
+            "email": "buyer@wstore.uz",
+            "first_name": "Xaridor Demo",
+            "role": User.Role.BUYER,
+            "balance": 50000,
+        }
+        username = "buyer"
+
+    user = User.objects.filter(username=username).first()
+    if not user:
+        user = User(username=username, **defaults)
+        user.set_unusable_password()
+        user.save()
+
+    # Demo hisob hech qachon admin bo'lmasligi kerak — bazada allaqachon
+    # huquq berilgan bo'lsa ham qaytarib olamiz.
+    if user.is_staff or user.is_superuser:
+        user.is_staff = False
+        user.is_superuser = False
+        user.save(update_fields=["is_staff", "is_superuser"])
 
     login(request, user)
     messages.success(request, _("%(role)s sifatida tezkor kirdingiz: %(name)s") % {
