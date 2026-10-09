@@ -1,4 +1,3 @@
-import json
 import os
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
@@ -17,10 +16,12 @@ from core.logging_utils import log_error
 from store.models import Product
 from .models import Order, ClickTransaction, Withdrawal
 from .forms import WithdrawalForm
+from core.telegram import send_telegram_notification
 from .utils import (
     build_click_payment_url,
     parse_click_transaction_id,
-    check_bridge_secret,
+    check_click_auth,
+    extract_click_payload,
     amounts_match,
     amount_after_commission,
     generate_secure_download_token,
@@ -170,8 +171,27 @@ def order_status_view(request, order_id):
     if order.buyer != request.user and not request.user.is_staff:
         return HttpResponseForbidden("Ruxsat berilmagan.")
 
+    click_url = None
+    if order.status == Order.PayStatus.PENDING:
+        ct = order.click_transactions.filter(status=Order.PayStatus.PENDING).order_by("-id").first()
+        if not ct and order.product:
+            ct = ClickTransaction.objects.create(
+                kind=ClickTransaction.ClickKind.PURCHASE,
+                order=order,
+                product=order.product,
+                amount=order.amount,
+                status=Order.PayStatus.PENDING,
+            )
+            ct.merchant_trans_id = f"{CLICK_PREFIX_PURCHASE}{ct.id}"
+            ct.save(update_fields=["merchant_trans_id"])
+
+        if ct:
+            return_url = f"{getattr(settings, 'APP_URL', 'http://localhost:8000')}/orders/{order.id}/"
+            click_url = build_click_payment_url(ct.merchant_trans_id, ct.amount, return_url)
+
     return render(request, "orders/order_status.html", {
         "order": order,
+        "click_url": click_url,
     })
 
 
@@ -180,11 +200,6 @@ def order_status_view(request, order_id):
 def order_simulate_pay_view(request, order_id):
     """
     Kutilayotgan buyurtmani demo rejimida to'langan deb belgilaydi.
-
-    Ilgari «To'lovni simulyatsiya qilish» tugmasi checkout_view'ga yuborardi,
-    u esa HAR SAFAR YANGI buyurtma yaratardi — natijada joriy buyurtma abadiy
-    PENDING holatda qolar, sahifadagi avtomatik tekshiruv hech qachon
-    yangilanmas, bazada esa keraksiz buyurtmalar to'planib borardi.
     """
     order = get_object_or_404(Order.objects.select_related("product"), id=order_id, buyer=request.user)
 
@@ -207,12 +222,13 @@ def order_simulate_pay_view(request, order_id):
         order.save(update_fields=["status", "download_token"])
 
         product = order.product
-        product.sales_count += 1
-        product.save(update_fields=["sales_count"])
+        if product:
+            product.sales_count += 1
+            product.save(update_fields=["sales_count"])
 
-        User.objects.filter(pk=product.seller_id).update(
-            balance=F("balance") + amount_after_commission(order.amount)
-        )
+            User.objects.filter(pk=product.seller_id).update(
+                balance=F("balance") + amount_after_commission(order.amount)
+            )
 
         buyer = order.buyer
         if buyer.referred_by and not buyer.referral_bonus_paid:
@@ -222,7 +238,15 @@ def order_simulate_pay_view(request, order_id):
                 balance=F("balance") + getattr(settings, "REFERRAL_BONUS_SOM", 10000)
             )
 
-    messages.success(request, _("«%(title)s» to'lovi qabul qilindi (Demo to'lov)!") % {"title": order.product.title})
+    title = order.product_title or (order.product.title if order.product else "")
+    send_telegram_notification(
+        f"🧪 <b>Demo xarid!</b>\n\n"
+        f"📦 Mahsulot: {title}\n"
+        f"💰 Summa: {order.amount:,.0f} so'm\n"
+        f"👤 Xaridor: {order.buyer.username}"
+    )
+
+    messages.success(request, _("«%(title)s» to'lovi qabul qilindi (Demo to'lov)!") % {"title": title})
     return redirect("orders:order_status", order_id=order.id)
 
 
@@ -236,9 +260,18 @@ def order_status_poll_api(request, order_id):
     })
 
 
+@login_required
 def download_file_view(request, token):
     order = get_object_or_404(Order.objects.select_related("product"), download_token=token, status=Order.PayStatus.PAID)
+    if order.buyer != request.user and not request.user.is_staff:
+        return HttpResponseForbidden("Faqat xarid qilgan foydalanuvchi yuklab olishi mumkin.")
+
+    # Increment download stats
+    Order.objects.filter(pk=order.pk).update(download_count=F("download_count") + 1)
+
     product = order.product
+    if not product:
+        raise Http404("Ushbu mahsulot arxivdan olib tashlangan.")
 
     # Check if a file_archive exists
     if product.file_archive and os.path.exists(product.file_archive.path):
@@ -291,7 +324,7 @@ def seller_dashboard_view(request):
     """
     Seller panel: products list, statistics, balance overview.
     """
-    products = Product.objects.filter(seller=request.user).order_by("-created_at")
+    products = Product.objects.filter(seller=request.user, is_deleted=False).order_by("-created_at")
     total_sales = sum(p.sales_count for p in products)
     revenue = sum(float(p.price) * p.sales_count for p in products)
 
@@ -325,6 +358,13 @@ def seller_balance_view(request):
                 )
                 request.user.refresh_from_db(fields=["balance"])
 
+            send_telegram_notification(
+                f"💸 <b>Yangi pul yechish so'rovi!</b>\n\n"
+                f"👤 Sotuvchi: {request.user.username} ({request.user.email})\n"
+                f"💰 Summa: {withdrawal.amount:,.0f} so'm\n"
+                f"💳 Karta: {withdrawal.card_number} ({withdrawal.card_holder})"
+            )
+
             messages.success(request, _("%(amount)s so'm yechib olish uchun so'rov qabul qilindi. Tez orada ko'rib chiqiladi.") % {
                 "amount": f"{withdrawal.amount:,.0f}".replace(",", " ")})
             return redirect("orders:seller_balance")
@@ -343,79 +383,92 @@ def seller_balance_view(request):
 @csrf_exempt
 def click_prepare_webhook(request):
     """
-    Exact implementation of handleClickPrepare matching Next.js bridge.
+    Direct Click Merchant API (action=0) and Bridge webhook endpoint.
     """
     if request.method != "POST":
-        return JsonResponse({"error": -1, "prepare_id": 0})
+        return JsonResponse({"error": -1, "prepare_id": 0, "error_note": "Faqat POST so'rov qabul qilinadi"})
 
-    try:
-        body = json.loads(request.body.decode("utf-8"))
-    except Exception:
-        return JsonResponse({"error": -1, "prepare_id": 0})
+    body = extract_click_payload(request)
+    if not body:
+        return JsonResponse({"error": -1, "prepare_id": 0, "error_note": "Bo'sh so'rov"})
 
-    if not check_bridge_secret(body.get("secret")):
-        return JsonResponse({"error": -1, "prepare_id": 0})
+    if not check_click_auth(body, action=0):
+        return JsonResponse({"error": -1, "prepare_id": 0, "error_note": "Autentifikatsiya (imzo) xatosi"})
 
     merchant_trans_id = body.get("merchant_trans_id")
     tx_id = parse_click_transaction_id(merchant_trans_id)
     if not tx_id:
-        return JsonResponse({"error": -5, "prepare_id": 0})
+        return JsonResponse({"error": -5, "prepare_id": 0, "error_note": "Tranzaksiya topilmadi"})
 
     ct = ClickTransaction.objects.filter(id=tx_id).first()
     if not ct or ct.merchant_trans_id != merchant_trans_id:
-        return JsonResponse({"error": -5, "prepare_id": 0})
+        return JsonResponse({"error": -5, "prepare_id": 0, "error_note": "Tranzaksiya topilmadi"})
 
     if not amounts_match(body.get("amount"), ct.amount):
-        return JsonResponse({"error": -2, "prepare_id": ct.id})
+        return JsonResponse({"error": -2, "prepare_id": ct.id, "error_note": "Noto'g'ri summa"})
 
     if ct.status == Order.PayStatus.PAID:
-        return JsonResponse({"error": -4, "prepare_id": ct.id})
+        return JsonResponse({"error": -4, "prepare_id": ct.id, "error_note": "Allaqachon to'langan"})
     if ct.status in [Order.PayStatus.FAILED, Order.PayStatus.REFUNDED]:
-        return JsonResponse({"error": -9, "prepare_id": ct.id})
+        return JsonResponse({"error": -9, "prepare_id": ct.id, "error_note": "Tranzaksiya bekor qilingan"})
 
-    return JsonResponse({"error": 0, "prepare_id": ct.id})
+    return JsonResponse({
+        "error": 0,
+        "error_note": "Success",
+        "click_trans_id": body.get("click_trans_id"),
+        "merchant_trans_id": merchant_trans_id,
+        "merchant_prepare_id": ct.id,
+        "prepare_id": ct.id,
+    })
 
 
 @csrf_exempt
 def click_complete_webhook(request):
     """
-    Exact implementation of handleClickComplete matching Next.js bridge.
+    Direct Click Merchant API (action=1) and Bridge webhook endpoint.
     """
     if request.method != "POST":
-        return JsonResponse({"error": -1, "prepare_id": 0})
+        return JsonResponse({"error": -1, "prepare_id": 0, "error_note": "Faqat POST so'rov qabul qilinadi"})
 
-    try:
-        body = json.loads(request.body.decode("utf-8"))
-    except Exception:
-        return JsonResponse({"error": -1, "prepare_id": 0})
+    body = extract_click_payload(request)
+    if not body:
+        return JsonResponse({"error": -1, "prepare_id": 0, "error_note": "Bo'sh so'rov"})
 
-    if not check_bridge_secret(body.get("secret")):
-        return JsonResponse({"error": -1, "prepare_id": 0})
+    if not check_click_auth(body, action=1):
+        return JsonResponse({"error": -1, "prepare_id": 0, "error_note": "Autentifikatsiya (imzo) xatosi"})
 
     merchant_trans_id = body.get("merchant_trans_id")
     tx_id = parse_click_transaction_id(merchant_trans_id)
     if not tx_id:
-        return JsonResponse({"error": -5, "prepare_id": 0})
+        return JsonResponse({"error": -5, "prepare_id": 0, "error_note": "Tranzaksiya topilmadi"})
 
     ct = ClickTransaction.objects.filter(id=tx_id).first()
     if not ct or ct.merchant_trans_id != merchant_trans_id:
-        return JsonResponse({"error": -5, "prepare_id": 0})
+        return JsonResponse({"error": -5, "prepare_id": 0, "error_note": "Tranzaksiya topilmadi"})
 
     if not amounts_match(body.get("amount"), ct.amount):
-        return JsonResponse({"error": -2, "prepare_id": ct.id})
+        return JsonResponse({"error": -2, "prepare_id": ct.id, "error_note": "Noto'g'ri summa"})
 
     # Idempotent response for repeat calls
     if ct.status == Order.PayStatus.PAID:
-        return JsonResponse({"error": 0, "prepare_id": ct.id})
-    if ct.status in [Order.PayStatus.FAILED, Order.PayStatus.REFUNDED]:
-        return JsonResponse({"error": -9, "prepare_id": ct.id})
+        return JsonResponse({
+            "error": 0,
+            "error_note": "Success",
+            "click_trans_id": body.get("click_trans_id"),
+            "merchant_trans_id": merchant_trans_id,
+            "merchant_confirm_id": ct.id,
+            "prepare_id": ct.id,
+        })
 
-    click_error = int(body.get("click_error") or 0)
-    if click_error != 0:
+    if ct.status in [Order.PayStatus.FAILED, Order.PayStatus.REFUNDED]:
+        return JsonResponse({"error": -9, "prepare_id": ct.id, "error_note": "Tranzaksiya bekor qilingan"})
+
+    click_error = int(body.get("click_error") or body.get("error") or 0)
+    if click_error != 0 and click_error != ct.id:
         ct.status = Order.PayStatus.FAILED
         ct.click_trans_id = str(body.get("click_trans_id") or "")
         ct.save(update_fields=["status", "click_trans_id"])
-        return JsonResponse({"error": -9, "prepare_id": ct.id})
+        return JsonResponse({"error": -9, "prepare_id": ct.id, "error_note": "Click to'lov xatosi"})
 
     try:
         with transaction.atomic():
@@ -432,24 +485,34 @@ def click_complete_webhook(request):
                 order.save()
 
                 product = order.product
-                product.sales_count += 1
-                product.save(update_fields=["sales_count"])
+                if product:
+                    product.sales_count += 1
+                    product.save(update_fields=["sales_count"])
 
-                # Credit seller balance
-                credit = amount_after_commission(ct.amount)
-                User.objects.filter(pk=product.seller_id).update(
-                    balance=F("balance") + credit
-                )
+                    # Credit seller balance
+                    credit = amount_after_commission(ct.amount)
+                    User.objects.filter(pk=product.seller_id).update(
+                        balance=F("balance") + credit
+                    )
 
                 # Check referral bonus
                 buyer = order.buyer
                 if buyer.referred_by and not buyer.referral_bonus_paid:
                     buyer.referral_bonus_paid = True
                     buyer.save(update_fields=["referral_bonus_paid"])
-                    
                     User.objects.filter(pk=buyer.referred_by_id).update(
                         balance=F("balance") + getattr(settings, "REFERRAL_BONUS_SOM", 10000)
                     )
+
+                title = order.product_title or (product.title if product else "")
+                seller_name = product.seller.username if product else "Nomalum"
+                send_telegram_notification(
+                    f"🎉 <b>Yangi xarid (Click)!</b>\n\n"
+                    f"📦 Mahsulot: {title}\n"
+                    f"💰 Summa: {ct.amount:,.0f} so'm\n"
+                    f"👤 Xaridor: {buyer.username} ({buyer.email})\n"
+                    f"🏪 Sotuvchi: {seller_name}"
+                )
 
             elif ct.kind == ClickTransaction.ClickKind.LISTING and ct.product:
                 product = ct.product
@@ -457,10 +520,22 @@ def click_complete_webhook(request):
                     product.status = Product.Status.PENDING
                     product.save(update_fields=["status"])
 
-    except Exception as exc:
-        # Ilgari xatolik jimgina yutilardi (`e` hatto ishlatilmasdi ham) —
-        # Click "error -1" olardi, lekin sababi hech qayerda qolmasdi.
-        log_error(exc, context=f"click_complete merchant_trans_id={merchant_trans_id}")
-        return JsonResponse({"error": -1, "prepare_id": 0})
+                send_telegram_notification(
+                    f"📦 <b>E'lon to'lovi qabul qilindi (Click)!</b>\n\n"
+                    f"🏷 Mahsulot: {product.title}\n"
+                    f"💰 Summa: {ct.amount:,.0f} so'm\n"
+                    f"👤 Sotuvchi: {product.seller.username}"
+                )
 
-    return JsonResponse({"error": 0, "prepare_id": ct.id})
+    except Exception as exc:
+        log_error(exc, context=f"click_complete merchant_trans_id={merchant_trans_id}")
+        return JsonResponse({"error": -1, "prepare_id": 0, "error_note": "Ichki xatolik yuz berdi"})
+
+    return JsonResponse({
+        "error": 0,
+        "error_note": "Success",
+        "click_trans_id": body.get("click_trans_id"),
+        "merchant_trans_id": merchant_trans_id,
+        "merchant_confirm_id": ct.id,
+        "prepare_id": ct.id,
+    })

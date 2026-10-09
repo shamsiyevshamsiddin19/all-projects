@@ -19,9 +19,17 @@ class Order(models.Model):
     )
     product = models.ForeignKey(
         "store.Product",
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="orders",
         verbose_name=_("Mahsulot")
+    )
+    product_title = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        verbose_name=_("Mahsulot nomi (snapshot)")
     )
     amount = models.DecimalField(
         max_digits=12,
@@ -47,6 +55,10 @@ class Order(models.Model):
         unique=True,
         verbose_name=_("Yuklab olish xavfsiz tokeni")
     )
+    download_count = models.PositiveIntegerField(
+        default=0,
+        verbose_name=_("Yuklab olishlar soni")
+    )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Yaratilgan vaqti"))
 
     class Meta:
@@ -55,7 +67,13 @@ class Order(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"Order #{str(self.id)[:8]} — {self.product.title} ({self.get_status_display()})"
+        title = self.product.title if self.product else (self.product_title or "Mahsulot")
+        return f"Order #{str(self.id)[:8]} — {title} ({self.get_status_display()})"
+
+    def save(self, *args, **kwargs):
+        if self.product and not self.product_title:
+            self.product_title = self.product.title
+        super().save(*args, **kwargs)
 
 
 class ClickTransaction(models.Model):

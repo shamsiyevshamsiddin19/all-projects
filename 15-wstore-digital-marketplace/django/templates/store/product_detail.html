@@ -274,27 +274,34 @@
       <!-- Izoh qoldirish formasi -->
       <div class="mb-5 rounded-2xl border border-border bg-surface p-4 sm:p-5">
         {% if user.is_authenticated %}
-          <form method="POST" action="{% url 'store:add_review' slug=product.slug %}">
-            {% csrf_token %}
-            <div class="mb-3">
-              <label class="mb-1 block text-xs font-semibold uppercase tracking-wider text-muted">
-                {% translate "Bahoyingiz" %}
-              </label>
-              {{ review_form.rating }}
+          {% if has_purchased %}
+            <form method="POST" action="{% url 'store:add_review' slug=product.slug %}">
+              {% csrf_token %}
+              <div class="mb-3">
+                <label class="mb-1 block text-xs font-semibold uppercase tracking-wider text-muted">
+                  {% translate "Bahoyingiz" %}
+                </label>
+                {{ review_form.rating }}
+              </div>
+              <div class="mb-3">
+                <label class="mb-1 block text-xs font-semibold uppercase tracking-wider text-muted">
+                  {% translate "Mahsulot haqida fikringiz" %}
+                </label>
+                {{ review_form.comment }}
+              </div>
+              <button
+                type="submit"
+                class="rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-white transition hover:bg-accent-hover"
+              >
+                {% translate "Yuborish" %}
+              </button>
+            </form>
+          {% else %}
+            <div class="text-center py-2 text-sm text-muted">
+              <i data-lucide="shield-alert" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; color: var(--gold);" class="mr-1"></i>
+              {% translate "Faqat ushbu loyihani xarid qilgan tasdiqlangan xaridorlar sharh qoldirishi mumkin." %}
             </div>
-            <div class="mb-3">
-              <label class="mb-1 block text-xs font-semibold uppercase tracking-wider text-muted">
-                {% translate "Mahsulot haqida fikringiz" %}
-              </label>
-              {{ review_form.comment }}
-            </div>
-            <button
-              type="submit"
-              class="rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-white transition hover:bg-accent-hover"
-            >
-              {% translate "Yuborish" %}
-            </button>
-          </form>
+          {% endif %}
         {% else %}
           <div class="text-center py-2 text-sm text-muted">
             {% url 'core:login' as login_url %}{% blocktranslate with href=login_url nxt=request.path %}Izoh qoldirish uchun <a href="{{ href }}?next={{ nxt }}" class="font-semibold text-accent hover:underline">tizimga kiring</a>.{% endblocktranslate %}

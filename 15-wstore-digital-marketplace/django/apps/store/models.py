@@ -136,6 +136,10 @@ class Product(models.Model):
         default=Status.DRAFT,
         verbose_name=_("Holati")
     )
+    is_deleted = models.BooleanField(
+        default=False,
+        verbose_name=_("O'chirilgan (arxiv)")
+    )
 
     created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Yaratilgan vaqti"))
     updated_at = models.DateTimeField(auto_now=True, verbose_name=_("Yangilangan vaqti"))

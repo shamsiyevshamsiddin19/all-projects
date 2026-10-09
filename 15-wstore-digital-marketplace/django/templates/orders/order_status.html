@@ -7,10 +7,17 @@
 {% block content %}
 <div class="container" style="max-width: 640px; padding-top: 3.5rem; padding-bottom: 5rem;">
   
+  {% if order.product %}
   <a href="{% url 'store:product_detail' slug=order.product.slug %}" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; color: var(--muted); margin-bottom: 1.5rem;">
     <i data-lucide="arrow-left" style="width: 15px; height: 15px;"></i>
     {% translate "Loyiha sahifasiga qaytish" %}
   </a>
+  {% else %}
+  <a href="{% url 'store:catalog' %}" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; color: var(--muted); margin-bottom: 1.5rem;">
+    <i data-lucide="arrow-left" style="width: 15px; height: 15px;"></i>
+    {% translate "Katalogga qaytish" %}
+  </a>
+  {% endif %}
 
   <div class="card" style="text-align: center; padding: 2.5rem 2rem; box-shadow: 0 16px 40px rgba(0,0,0,0.45); border-color: var(--border-strong);">
     
@@ -24,7 +31,7 @@
         {% translate "To'lov muvaffaqiyatli qabul qilindi!" %}
       </h1>
       <p style="font-size: 0.92rem; color: var(--muted); margin-bottom: 1.5rem;">
-        {% blocktranslate with title=order.product.title %}«<strong style="color: var(--fg);">{{ title }}</strong>» loyihasining to'liq manba kodi siz uchun tayyor.{% endblocktranslate %}
+        {% blocktranslate with title=order.product_title|default:order.product.title %}«<strong style="color: var(--fg);">{{ title }}</strong>» loyihasining to'liq manba kodi siz uchun tayyor.{% endblocktranslate %}
       </p>
 
       <div style="background: var(--surface-2); border-radius: var(--radius-sm); border: 1px solid var(--border); padding: 1.25rem; margin-bottom: 1.75rem; display: flex; justify-content: space-between; align-items: center;">
@@ -71,7 +78,7 @@
       <div style="background: var(--surface-2); border-radius: var(--radius-sm); border: 1px solid var(--border); padding: 1.25rem; margin-bottom: 1.75rem; text-align: left;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
           <span style="font-size: 0.85rem; color: var(--muted);">{% translate "Loyiha:" %}</span>
-          <span style="font-weight: 600; color: var(--fg);">{{ order.product.title }}</span>
+          <span style="font-weight: 600; color: var(--fg);">{{ order.product_title|default:order.product.title }}</span>
         </div>
         <div style="display: flex; justify-content: space-between;">
           <span style="font-size: 0.85rem; color: var(--muted);">{% translate "To'lov summasi:" %}</span>
@@ -79,12 +86,19 @@
         </div>
       </div>
 
+      {% if click_url %}
+        <a href="{{ click_url }}" class="btn btn-primary btn-lg" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 1rem; text-decoration: none;">
+          <i data-lucide="credit-card" style="width: 18px; height: 18px;"></i>
+          <span>{% translate "Click orqali to'lashni davom ettirish" %}</span>
+        </a>
+      {% endif %}
+
       <!-- Quick Demo Simulation Button for local tests (faqat DEMO_MODE da) -->
       {% if DEMO_MODE %}
         <form method="POST" action="{% url 'orders:order_simulate_pay' order_id=order.id %}" style="margin-bottom: 1rem;">
           {% csrf_token %}
           <input type="hidden" name="simulate" value="1">
-          <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;">
+          <button type="submit" class="btn btn-secondary btn-lg" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;">
             <i data-lucide="zap" style="width: 18px; height: 18px;"></i>
             <span>{% translate "To'lovni simulyatsiya qilish (Demo to'lov)" %}</span>
           </button>

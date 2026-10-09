@@ -1,11 +1,12 @@
 from django.conf import settings
 from django.http import Http404
 from django.shortcuts import render, redirect, resolve_url
-from django.contrib.auth import login, logout, get_user_model
+from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.contrib import messages
 from django.utils.translation import gettext as _
 from django.utils.http import url_has_allowed_host_and_scheme
-from django.views.decorators.http import require_GET
+
+from .forms import LoginForm, RegisterForm
 
 User = get_user_model()
 
@@ -13,9 +14,7 @@ User = get_user_model()
 def _safe_redirect_target(request, raw, fallback="store:catalog"):
     """
     `?next=` qiymatini tekshiradi. Tekshiruvsiz uni to'g'ridan-to'g'ri
-    redirect'ga berish ochiq redirect (open redirect) bo'ladi: hujumchi
-    `?next=https://soxta-sayt.uz` yuborib, foydalanuvchini kirishdan keyin
-    o'z saytiga olib ketishi mumkin edi.
+    redirect'ga berish ochiq redirect (open redirect) bo'ladi.
     """
     if raw and url_has_allowed_host_and_scheme(
         url=raw,
@@ -25,18 +24,10 @@ def _safe_redirect_target(request, raw, fallback="store:catalog"):
         return raw
     return resolve_url(fallback)
 
-@require_GET
+
 def login_view(request):
     """
-    Kirish sahifasi — faqat "Google bilan kirish" tugmasi.
-
-    Parol bilan kirish butunlay olib tashlandi. Shakllarni shablondan
-    olib tashlashning o'zi yetarli emas edi: bu view POST qabul qilishda
-    davom etsa, kimdir to'g'ridan-to'g'ri so'rov yuborib baribir parol
-    bilan kira olardi. Shuning uchun view GET bilan cheklandi.
-
-    Superuser'lar Django admin paneliga (/admin/) o'z parollari bilan
-    alohida kirishadi — bu oqim o'zgarmadi.
+    Kirish sahifasi — Google OAuth va Email/Parol orqali kirish.
     """
     if request.user.is_authenticated:
         return redirect("store:catalog")
@@ -46,19 +37,38 @@ def login_view(request):
     if ref:
         request.session["referral_code"] = ref
 
+    next_url = _safe_redirect_target(request, request.GET.get("next") or request.POST.get("next"))
+    form = LoginForm(request.POST or None)
+
+    if request.method == "POST":
+        if form.is_valid():
+            login_input = form.cleaned_data["login"].strip()
+            password = form.cleaned_data["password"]
+
+            user = None
+            if "@" in login_input:
+                user_obj = User.objects.filter(email__iexact=login_input).first()
+                if user_obj:
+                    user = authenticate(request, username=user_obj.username, password=password)
+            else:
+                user = authenticate(request, username=login_input, password=password)
+
+            if user:
+                login(request, user)
+                messages.success(request, _("Xush kelibsiz, %(name)s!") % {"name": user.display_name})
+                return redirect(next_url)
+            else:
+                messages.error(request, _("Login yoki parol noto'g'ri kiritildi."))
+
     return render(request, "core/login.html", {
-        "next": _safe_redirect_target(request, request.GET.get("next")),
+        "form": form,
+        "next": next_url,
     })
 
 
-@require_GET
 def register_view(request):
     """
-    Alohida ro'yxatdan o'tish sahifasi endi yo'q: hisob Google orqali
-    birinchi kirishda avtomatik yaratiladi (`oauth._get_or_create_user`).
-
-    Manzilning o'zi saqlab qolindi — eski havolalar va xatcho'plar 404
-    bermasligi uchun; ular kirish sahifasiga yo'naltiriladi.
+    Ro'yxatdan o'tish sahifasi — yangi foydalanuvchi yaratish yoki Google orqali kirish.
     """
     if request.user.is_authenticated:
         return redirect("store:catalog")
@@ -67,7 +77,29 @@ def register_view(request):
     if ref:
         request.session["referral_code"] = ref
 
-    return redirect("core:login")
+    next_url = _safe_redirect_target(request, request.GET.get("next") or request.POST.get("next"))
+    form = RegisterForm(request.POST or None)
+
+    if request.method == "POST":
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.set_password(form.cleaned_data["password"])
+
+            ref_code = request.session.get("referral_code")
+            if ref_code:
+                referrer = User.objects.filter(referral_code=ref_code).first()
+                if referrer:
+                    user.referred_by = referrer
+
+            user.save()
+            login(request, user)
+            messages.success(request, _("Ro'yxatdan muvaffaqiyatli o'tdingiz! Xush kelibsiz!"))
+            return redirect(next_url)
+
+    return render(request, "core/register.html", {
+        "form": form,
+        "next": next_url,
+    })
 
 
 def logout_view(request):

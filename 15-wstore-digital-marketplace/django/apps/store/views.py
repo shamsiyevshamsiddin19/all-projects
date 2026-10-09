@@ -11,6 +11,7 @@ from django.core.paginator import Paginator
 
 from .models import Category, Product, Review, Wishlist, Report
 from .forms import ProductForm, ReviewForm, ReportForm, TECH_CHOICES, SUBCAT_CHOICES
+from core.telegram import send_telegram_notification
 
 PRICE_RANGES = [
     {"label": "$0 – $10", "min": 0, "max": 10},
@@ -27,7 +28,7 @@ def catalog_view(request):
         request.session["referral_code"] = ref
 
     categories = Category.objects.all().order_by("name")
-    products = Product.objects.filter(status=Product.Status.ACTIVE).select_related("category", "seller")
+    products = Product.objects.filter(status=Product.Status.ACTIVE, is_deleted=False).select_related("category", "seller")
 
     # Search query
     q = request.GET.get("q", "").strip()
@@ -93,11 +94,11 @@ def catalog_view(request):
     has_filters = bool(q or category_slug or subcat or selected_tech or price_min or price_max)
 
     # Highlights (shown when no filter is active, identical to Next.js)
-    top_selling = Product.objects.filter(status=Product.Status.ACTIVE).select_related("category", "seller").order_by("-sales_count")[:10]
-    new_arrivals = Product.objects.filter(status=Product.Status.ACTIVE).select_related("category", "seller").order_by("-created_at")[:10]
+    top_selling = Product.objects.filter(status=Product.Status.ACTIVE, is_deleted=False).select_related("category", "seller").order_by("-sales_count")[:10]
+    new_arrivals = Product.objects.filter(status=Product.Status.ACTIVE, is_deleted=False).select_related("category", "seller").order_by("-created_at")[:10]
 
     # Minimal products list for real-time client-side search autocomplete
-    all_active = Product.objects.filter(status=Product.Status.ACTIVE).select_related("category", "seller")
+    all_active = Product.objects.filter(status=Product.Status.ACTIVE, is_deleted=False).select_related("category", "seller")
     search_index = [
         {
             "id": str(p.id),
@@ -173,12 +174,14 @@ def product_detail_view(request, slug):
 
     # Wishlist status
     is_wishlisted = False
-    if request.user.is_authenticated:
-        is_wishlisted = Wishlist.objects.filter(user=request.user, product=product).exists()
-
-    # User's existing review if any
+    has_purchased = False
     user_review = None
     if request.user.is_authenticated:
+        is_wishlisted = Wishlist.objects.filter(user=request.user, product=product).exists()
+        from orders.models import Order
+        has_purchased = Order.objects.filter(
+            buyer=request.user, product=product, status=Order.PayStatus.PAID
+        ).exists() or request.user.is_staff
         user_review = reviews.filter(user=request.user).first()
 
     review_form = ReviewForm(instance=user_review)
@@ -197,6 +200,7 @@ def product_detail_view(request, slug):
         "reviews": reviews,
         "recommended": recommended,
         "is_wishlisted": is_wishlisted,
+        "has_purchased": has_purchased,
         "review_form": review_form,
         "user_review": user_review,
         "report_form": report_form,
@@ -219,6 +223,14 @@ def product_create_view(request):
             # Status is DRAFT until listing fee is paid or approved
             product.status = Product.Status.DRAFT
             product.save()
+
+            send_telegram_notification(
+                f"📦 <b>Yangi loyiha qo'shildi!</b>\n\n"
+                f"🏷 Nomi: {product.title}\n"
+                f"💰 Narxi: {product.price:,.0f} so'm\n"
+                f"👤 Sotuvchi: {request.user.username} ({request.user.email})"
+            )
+
             messages.success(request, _("«%(title)s» muvaffaqiyatli yaratildi! E'lon to'lovini amalga oshiring.") % {"title": product.title})
             return redirect("orders:seller_dashboard")
     else:
@@ -275,8 +287,18 @@ def product_delete_view(request, slug):
         return HttpResponseForbidden("Ruxsat berilmagan.")
 
     title = product.title
-    product.delete()
-    messages.warning(request, _("«%(title)s» o'chirildi.") % {"title": title})
+    has_paid_orders = product.orders.filter(status="PAID").exists()
+    if has_paid_orders:
+        product.is_deleted = True
+        product.status = Product.Status.PAUSED
+        product.save(update_fields=["is_deleted", "status"])
+        messages.warning(
+            request,
+            _("«%(title)s» do'kondan olib tashlandi (arxivlandi). Oldin sotib olgan xaridorlar o'z kabinetida yuklab olishda davom etishadi.") % {"title": title}
+        )
+    else:
+        product.delete()
+        messages.warning(request, _("«%(title)s» butunlay o'chirildi.") % {"title": title})
     return redirect("orders:seller_dashboard")
 
 
@@ -328,6 +350,17 @@ def wishlist_list_view(request):
 @require_POST
 def add_review_view(request, slug):
     product = get_object_or_404(Product, slug=slug)
+    from orders.models import Order
+    has_purchased = Order.objects.filter(
+        buyer=request.user,
+        product=product,
+        status=Order.PayStatus.PAID
+    ).exists()
+
+    if not has_purchased and not request.user.is_staff:
+        messages.error(request, _("Faqat ushbu mahsulotni xarid qilgan foydalanuvchilar sharh qoldirishi mumkin."))
+        return redirect("store:product_detail", slug=slug)
+
     form = ReviewForm(request.POST)
     if form.is_valid():
         Review.objects.update_or_create(
