@@ -41,7 +41,7 @@
 
   /* Container System */
   --container-max-width: 1760px;
-  --container-padding: clamp(20px, 3.5vw, 48px);
+  --container-padding: clamp(20px, 4.2vw, 56px);
 }
 
 /* Base Reset & Box Sizing */
@@ -82,19 +82,21 @@ body {
   border-bottom: 1px solid rgba(110, 231, 183, 0.15);
   position: relative;
   z-index: 100;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
+  height: 42px;
+  display: flex;
+  align-items: center;
 }
 
-/* Keeps every section's content edge-aligned with the same 1280px column,
-   instead of each bar stretching its own content to the raw viewport edge. */
 .top-announcement-bar .container {
   max-width: var(--container-max-width);
   margin: 0 auto;
-  padding: 8px 24px;
+  padding: 0 var(--container-padding);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: 20px;
+  width: 100%;
 }
 
 .top-announcement-bar .left-content {
@@ -117,9 +119,9 @@ body {
   background-color: var(--color-mint-bg);
   color: var(--color-mint-dark-text);
   font-weight: 800;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   letter-spacing: 0.04em;
-  padding: 6px 16px;
+  padding: 4px 12px;
   border-radius: 6px;
   text-decoration: none;
   display: inline-flex;
@@ -135,14 +137,35 @@ body {
   box-shadow: 0 4px 14px rgba(110, 231, 183, 0.5);
 }
 
+.top-announcement-bar .highlight-mint {
+  color: #4ade80;
+  font-weight: 800;
+  text-shadow: 0 0 10px rgba(74, 222, 128, 0.4);
+}
+
 .top-announcement-bar .handwritten-quote {
   font-family: var(--font-handwriting);
-  font-size: 1.35rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  color: #d1fae5;
-  transform: rotate(-2deg);
+  color: #ffffff;
   display: flex;
   align-items: center;
+  gap: 6px;
+  line-height: 0.95;
+}
+
+.quote-sparkle {
+  color: #86efac;
+  display: flex;
+  align-items: center;
+  opacity: 0.9;
+}
+
+.quote-text-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
 /* ==========================================================================
@@ -165,7 +188,7 @@ body {
 .main-navbar .container {
   max-width: var(--container-max-width);
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 var(--container-padding);
   width: 100%;
   display: flex;
   align-items: center;
@@ -318,7 +341,8 @@ body {
    ========================================================================== */
 .hero-section {
   position: relative;
-  min-height: calc(100vh - 106px);
+  height: calc(100vh - 106px);
+  min-height: 600px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -338,7 +362,7 @@ body {
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 36px 0 20px 0;
+  padding: 10px 0;
 }
 
 .hero-body-wrapper .container {
@@ -359,23 +383,13 @@ body {
 }
 
 .hero-eyebrow {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #64748b;
   margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.hero-eyebrow::before {
-  content: '';
-  display: inline-block;
-  width: 16px;
-  height: 2px;
-  background-color: #1f6443;
+  display: block;
 }
 
 .hero-title {
@@ -458,9 +472,8 @@ body {
 .trust-badges-row {
   display: flex;
   align-items: center;
-  gap: 22px;
-  padding-top: 18px;
-  border-top: 1px solid rgba(203, 213, 225, 0.6);
+  gap: 28px;
+  margin-top: 28px;
   flex-wrap: wrap;
 }
 
@@ -778,25 +791,26 @@ body {
   background: #ffffff;
   border-top: 1px solid rgba(226, 232, 240, 0.9);
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.03);
-  padding: 14px 0 16px 0;
+  padding: 10px 0 14px 0;
   z-index: 10;
   position: relative;
+  flex-shrink: 0;
 }
 
 .hero-trusted-bottom-bar .container {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .trusted-eyebrow {
-  font-size: 0.72rem;
+  font-size: 0.70rem;
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #94a3b8;
-  margin-bottom: 10px;
-  text-align: center;
+  margin-bottom: 8px;
+  text-align: left;
 }
 
 .logos-grid {
