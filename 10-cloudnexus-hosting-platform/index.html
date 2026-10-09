@@ -6,6 +6,8 @@
   <title>NexCloud — Scalable Solutions for Tomorrow | Modern Cloud & IT Services</title>
   <meta name="description" content="NexCloud delivers high-performance cloud hosting, autonomous AI deployment, secure storage, and managed cloud infrastructure for high-growth modern businesses.">
   <link rel="stylesheet" href="assets/css/style.css?v=10.0">
+  <!-- Google Identity Services (Sign in with Google) -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2316a34a'><path d='M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z'/></svg>">
 </head>
 <body>
@@ -94,15 +96,48 @@
           </svg>
         </button>
 
-        <a href="#signin" class="btn-sign-in" id="signInBtn" data-open-modal="contactModal">Sign In</a>
+        <a href="#signin" class="btn-sign-in" id="signInBtn" data-open-modal="authModal" data-auth-tab="signin">Sign In</a>
 
-        <a href="#get-started" class="btn-get-started" id="navGetStartedBtn" data-open-modal="contactModal">
+        <a href="#get-started" class="btn-get-started" id="navGetStartedBtn" data-open-modal="authModal" data-auth-tab="signup">
           Get Started
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <line x1="5" y1="12" x2="19" y2="12"></line>
             <polyline points="12 5 19 12 12 19"></polyline>
           </svg>
         </a>
+
+        <!-- Logged-in User Profile Menu -->
+        <div class="user-profile-menu hidden" id="userProfileNav">
+          <button class="user-profile-btn" id="userProfileBtn" type="button" aria-label="Foydalanuvchi menyusi">
+            <div class="user-nav-avatar" id="userNavAvatar">SS</div>
+            <span class="user-nav-name" id="userNavName">Shamsiddin</span>
+            <svg class="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="user-dropdown-menu" id="userDropdownMenu">
+            <div class="user-dropdown-header">
+              <div class="user-dropdown-name" id="userDropdownName">Shamsiddin Shamsiyev</div>
+              <div class="user-dropdown-email" id="userDropdownEmail">shamsiyevshamsiddin19@gmail.com</div>
+              <span class="user-badge-pro">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="#16a34a"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                Google Verified
+              </span>
+            </div>
+            <div class="user-dropdown-divider"></div>
+            <a href="#console" class="user-dropdown-item" id="goToConsoleBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+              Cloud Console
+            </a>
+            <a href="#pricing" class="user-dropdown-item" data-open-modal="pricingModal">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+              Tariflar & Balans
+            </a>
+            <div class="user-dropdown-divider"></div>
+            <button type="button" class="user-dropdown-item logout-action" id="authLogoutBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+              Chiqish (Logout)
+            </button>
+          </div>
+        </div>
 
         <!-- Mobile Menu Toggle -->
         <button class="mobile-menu-toggle" id="mobileMenuBtn" aria-label="Toggle menu">
@@ -145,15 +180,25 @@
       <li><a href="#resources" class="mobile-nav-link">Resources</a></li>
       <li><a href="#about" class="mobile-nav-link">About NexCloud</a></li>
     </ul>
-    <div class="mobile-drawer-actions">
-      <a href="#signin" class="btn-drawer-signin" data-open-modal="contactModal">Sign In to Console</a>
-      <a href="#get-started" class="btn-drawer-cta" data-open-modal="contactModal">
+    <div class="mobile-drawer-actions" id="drawerActionsGuest">
+      <a href="#signin" class="btn-drawer-signin" data-open-modal="authModal" data-auth-tab="signin">Sign In to Console</a>
+      <a href="#get-started" class="btn-drawer-cta" data-open-modal="authModal" data-auth-tab="signup">
         Get Started Today
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="5" y1="12" x2="19" y2="12"></line>
           <polyline points="12 5 19 12 12 19"></polyline>
         </svg>
       </a>
+    </div>
+    <div class="mobile-drawer-user hidden" id="drawerActionsUser">
+      <div class="drawer-user-info">
+        <div class="user-nav-avatar" id="drawerUserAvatar">SS</div>
+        <div>
+          <div class="drawer-user-name" id="drawerUserName">Shamsiddin</div>
+          <div class="drawer-user-email" id="drawerUserEmail">shamsiyevshamsiddin19@gmail.com</div>
+        </div>
+      </div>
+      <button type="button" class="btn-drawer-signin" id="drawerLogoutBtn" style="color: #ef4444; border-color: #fee2e2;">Chiqish (Logout)</button>
     </div>
   </aside>
 
@@ -178,7 +223,7 @@
         </p>
 
         <div class="hero-cta-group">
-          <a href="#get-started" class="btn-primary-green" id="heroGetStartedBtn" data-open-modal="contactModal">
+          <a href="#get-started" class="btn-primary-green" id="heroGetStartedBtn" data-open-modal="authModal" data-auth-tab="signup">
             Get Started Today
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -903,6 +948,156 @@
       <button class="btn-primary-green" style="width: 100%; justify-content: center;" data-open-modal="contactModal">
         Get Started Now
       </button>
+    </div>
+  </div>
+
+
+  <!-- =====================================================================
+       5. AUTHENTICATION (GOOGLE SIGN IN / SIGN UP) MODAL
+       ===================================================================== -->
+  <div class="modal-backdrop" id="authModal">
+    <div class="modal-container auth-modal-card">
+      <button class="modal-close-btn" aria-label="Close modal">&times;</button>
+      
+      <!-- Modal Header -->
+      <div class="auth-modal-header">
+        <div class="auth-brand-badge">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+          </svg>
+          <span>NexCloud Auth</span>
+        </div>
+        <h3 class="auth-title" id="authModalTitle">Hisobingizga kiring</h3>
+        <p class="auth-subtitle" id="authModalSubtitle">NexCloud bulut infratuzilmasi va xizmatlaridan foydalanish uchun kiring</p>
+      </div>
+
+      <!-- Auth Tabs Switcher -->
+      <div class="auth-tabs-nav">
+        <button type="button" class="auth-tab-btn active" id="tabSignInBtn" data-tab="signin">
+          Kirish
+        </button>
+        <button type="button" class="auth-tab-btn" id="tabSignUpBtn" data-tab="signup">
+          Ro'yxatdan o'tish
+        </button>
+      </div>
+
+      <!-- Google Auth Button Section -->
+      <div class="google-auth-section">
+        <button type="button" class="btn-google-auth" id="googleCustomBtn">
+          <svg class="google-svg-icon" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+            <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+          </svg>
+          <span id="googleBtnLabel">Google orqali davom etish</span>
+        </button>
+
+        <!-- Official Google GIS rendered container -->
+        <div id="g_id_signin_container" style="display: none; justify-content: center;"></div>
+      </div>
+
+      <!-- Divider -->
+      <div class="auth-divider">
+        <span>yoki elektron pochta orqali</span>
+      </div>
+
+      <!-- Auth Form -->
+      <form id="authMainForm" class="auth-form-body">
+        <!-- Full Name (Only on Sign Up) -->
+        <div class="auth-form-group hidden" id="authNameGroup">
+          <label for="authFullName">To'liq ismingiz</label>
+          <div class="auth-input-wrapper">
+            <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <input type="text" id="authFullName" placeholder="Shamsiddin Shamsiyev" autocomplete="name">
+          </div>
+        </div>
+
+        <!-- Email -->
+        <div class="auth-form-group">
+          <label for="authEmail">Elektron pochta (Email)</label>
+          <div class="auth-input-wrapper">
+            <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+            <input type="email" id="authEmail" placeholder="siz@kompaniya.uz" required autocomplete="email">
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div class="auth-form-group">
+          <div class="auth-label-row">
+            <label for="authPassword">Parol</label>
+            <a href="#forgot" class="forgot-link" id="authForgotLink">Parolni unutdingizmi?</a>
+          </div>
+          <div class="auth-input-wrapper">
+            <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            <input type="password" id="authPassword" placeholder="••••••••" required autocomplete="current-password">
+            <button type="button" class="btn-toggle-pwd" id="togglePwdBtn" aria-label="Parolni ko'rsatish">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Remember / Terms Checkbox -->
+        <div class="auth-extra-row">
+          <label class="auth-checkbox-label">
+            <input type="checkbox" id="authRememberMe" checked>
+            <span id="authCheckboxText">Meni eslab qolish</span>
+          </label>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="btn-primary-green auth-submit-btn" id="authSubmitBtn">
+          <span id="authSubmitText">Tizimga kirish</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </button>
+      </form>
+
+      <!-- Footer switch link -->
+      <div class="auth-modal-footer">
+        <span id="authFooterPrompt">Hisobingiz yo'qmi?</span>
+        <button type="button" class="auth-switch-link" id="authSwitchLink">Ro'yxatdan o'tish</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Google Account Chooser Demo/Simulation Modal -->
+  <div class="modal-backdrop" id="googleChooserModal" style="z-index: 1050;">
+    <div class="modal-container" style="max-width: 440px; padding: 28px;">
+      <button class="modal-close-btn" aria-label="Close modal">&times;</button>
+      <div style="text-align: center; margin-bottom: 20px;">
+        <svg viewBox="0 0 24 24" width="36" height="36" style="margin-bottom: 8px;">
+          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+          <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+        </svg>
+        <h4 style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin: 0 0 4px;">Google orqali kirish</h4>
+        <p style="font-size: 0.85rem; color: #64748b; margin: 0;">NexCloud-ga ulanish uchun hisobingizni tanlang</p>
+      </div>
+
+      <div class="google-accounts-list" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">
+        <button type="button" class="google-acc-item" data-email="shamsiyevshamsiddin19@gmail.com" data-name="Shamsiddin Shamsiyev">
+          <div class="google-acc-avatar" style="background: #16a34a; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700;">SS</div>
+          <div style="text-align: left; flex: 1;">
+            <div style="font-weight: 600; font-size: 0.92rem; color: #0f172a;">Shamsiddin Shamsiyev</div>
+            <div style="font-size: 0.78rem; color: #64748b;">shamsiyevshamsiddin19@gmail.com</div>
+          </div>
+        </button>
+
+        <button type="button" class="google-acc-item" id="googleCustomEmailBtn">
+          <div class="google-acc-avatar" style="background: #f1f5f9; color: #475569; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          </div>
+          <div style="text-align: left; flex: 1;">
+            <div style="font-weight: 600; font-size: 0.92rem; color: #0f172a;">Boshqa hisobdan foydalanish</div>
+            <div style="font-size: 0.78rem; color: #64748b;">Yangi Google hisobini kiriting</div>
+          </div>
+        </button>
+      </div>
+
+      <div style="font-size: 0.75rem; color: #94a3b8; text-align: center; line-height: 1.4;">
+        Davom etish orqali Google sizning ismingiz, elektron pochtangiz va profilingizni NexCloud bilan baham ko'radi.
+      </div>
     </div>
   </div>
 
