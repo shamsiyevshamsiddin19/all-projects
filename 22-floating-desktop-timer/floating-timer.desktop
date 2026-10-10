@@ -1,0 +1,15 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Suzuvchi Taymer
+Name[uz]=Suzuvchi Taymer
+GenericName=Floating Timer
+GenericName[uz]=Suzuvchi Taymer
+Comment=Ekranda barcha oynalar ustida suzib turuvchi ixcham taymer vidjeti
+Comment[uz]=Ekranda barcha oynalar ustida suzib turuvchi ixcham taymer vidjeti
+Exec=python3 /home/shamsiddin/Documents/project/loyihalar/22-floating-desktop-timer/main.py
+Icon=/home/shamsiddin/Documents/project/loyihalar/22-floating-desktop-timer/assets/icon.svg
+Terminal=false
+Categories=Utility;Clock;GTK;
+Keywords=timer;pomodoro;clock;floating;taymer;soat;
+StartupNotify=true

@@ -54,6 +54,7 @@ foydalanuvchilarga xizmat ko'rsatadigan tayyor mahsulotlar.
 | 💻 **[19-captionflow-desktop-studio](./19-captionflow-desktop-studio)** | Video subtitr/tarjima qiluvchi Windows desktop ilova (GUI + backend). | `Flutter` `Python` |
 | 📱 **[20-momentum-habit-tracker](./20-momentum-habit-tracker)** | Odatlar va faoliyat kuzatuvchi mobil hamda backend ilovasi. | `Flutter` `Backend` |
 | 🃏 **[21-gamecraft-kotlin-app](./21-gamecraft-kotlin-app)** | Kotlin/Compose o'yin va yordamchi ilovasi. | `Kotlin` `Gradle` |
+| ⏱ **[22-floating-desktop-timer](./22-floating-desktop-timer)** | Linux (Ubuntu/GNOME) uchun suzuvchi, ixcham va always-on-top desktop taymer vidjeti. | `Python 3` `GTK+ 3` `Cairo` |
 
 ---
 
