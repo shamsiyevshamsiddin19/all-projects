@@ -8,18 +8,18 @@
 
   // State Management
   const state = {
-    mode: 'target', // 'target' | 'duration' | 'pomodoro' | 'stopwatch' | 'clock'
+    mode: 'duration', // 'duration' | 'pomodoro' | 'stopwatch' | 'clock'
     isRunning: false,
     timerId: null,
     isPinned: false,
     
-    // Target Date Mode
+    // Target Date Mode (deprecated)
     targetDateTime: null,
     eventTitle: '',
 
     // Duration Mode
-    durationTotal: 1500, // 25 min default
-    durationRemaining: 1500,
+    durationTotal: 0,
+    durationRemaining: 0,
 
     // Pomodoro Mode
     pomoPhase: 'work', // 'work' (25m) | 'shortBreak' (5m) | 'longBreak' (15m)
@@ -135,10 +135,12 @@
     loadSettings();
     setupEventListeners();
     
-    // User requirement: "saytga kirganda hammasi 0 tursin"
+    // User requirement: "saytga kirganda hammasi 0 tursin" and primary mode is Duration
+    state.mode = 'duration';
     state.isRunning = false;
-    state.targetDateTime = null;
-    if (els.targetDateTimeInput) els.targetDateTimeInput.value = '';
+    state.durationRemaining = 0;
+    state.durationTotal = 0;
+    updateDurationInputs(0);
 
     applyModeUI();
     renderDigits(0, 0, 0, 0);
@@ -177,7 +179,7 @@
             els.eventTitleInput.value = state.eventTitle;
           }
           if (data.settings.mode) {
-            state.mode = data.settings.mode;
+            state.mode = data.settings.mode === 'target' ? 'duration' : data.settings.mode;
           }
         } else {
           // Legacy format fallback
@@ -591,9 +593,9 @@
 
     // 2. Play / Pause & Reset
     els.toggleRunBtn.addEventListener('click', () => {
-      if (state.mode === 'target' && !state.targetDateTime && !state.isRunning) {
+      if (state.mode === 'duration' && state.durationRemaining <= 0 && !state.isRunning) {
         openDrawer();
-        if (els.targetDateTimeInput) els.targetDateTimeInput.focus();
+        if (els.inputMinutes) els.inputMinutes.focus();
         return;
       }
       state.isRunning = !state.isRunning;
@@ -628,16 +630,18 @@
       });
     });
 
-    // 5. Target Date Input
-    els.targetDateTimeInput.addEventListener('change', () => {
-      const selected = new Date(els.targetDateTimeInput.value);
-      if (!isNaN(selected.getTime())) {
-        state.targetDateTime = selected;
-        state.isRunning = true;
-        tickTarget();
-        saveSettings();
-      }
-    });
+    // 5. Target Date Input (if present)
+    if (els.targetDateTimeInput) {
+      els.targetDateTimeInput.addEventListener('change', () => {
+        const selected = new Date(els.targetDateTimeInput.value);
+        if (!isNaN(selected.getTime())) {
+          state.targetDateTime = selected;
+          state.isRunning = true;
+          tickTarget();
+          saveSettings();
+        }
+      });
+    }
 
     // Target Presets
     document.querySelectorAll('#panelTarget .preset-btn').forEach(btn => {
@@ -781,9 +785,9 @@
       switch (e.code) {
         case 'Space':
           e.preventDefault();
-          if (state.mode === 'target' && !state.targetDateTime && !state.isRunning) {
+          if (state.mode === 'duration' && state.durationRemaining <= 0 && !state.isRunning) {
             openDrawer();
-            if (els.targetDateTimeInput) els.targetDateTimeInput.focus();
+            if (els.inputMinutes) els.inputMinutes.focus();
             return;
           }
           state.isRunning = !state.isRunning;
@@ -820,21 +824,22 @@
      ========================================================================== */
 
   function setMode(mode) {
-    state.mode = mode;
-    els.modeTabs.forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
+    state.mode = mode === 'target' ? 'duration' : mode;
+    els.modeTabs.forEach(t => t.classList.toggle('active', t.dataset.mode === state.mode));
 
     // Hide all mode panels
-    els.panelTarget.classList.remove('active');
-    els.panelDuration.classList.remove('active');
-    els.panelPomodoro.classList.remove('active');
+    if (els.panelTarget) els.panelTarget.classList.remove('active');
+    if (els.panelDuration) els.panelDuration.classList.remove('active');
+    if (els.panelPomodoro) els.panelPomodoro.classList.remove('active');
 
     // Show appropriate panel
-    if (mode === 'target') els.panelTarget.classList.add('active');
-    else if (mode === 'duration') els.panelDuration.classList.add('active');
-    else if (mode === 'pomodoro') els.panelPomodoro.classList.add('active');
+    if (state.mode === 'duration' && els.panelDuration) els.panelDuration.classList.add('active');
+    else if (state.mode === 'pomodoro' && els.panelPomodoro) els.panelPomodoro.classList.add('active');
 
     // Quick adjust chips visibility
-    els.quickAdjustRow.style.display = (mode === 'duration' || mode === 'pomodoro') ? 'flex' : 'none';
+    if (els.quickAdjustRow) {
+      els.quickAdjustRow.style.display = (state.mode === 'duration' || state.mode === 'pomodoro') ? 'flex' : 'none';
+    }
 
     // Reset and initialize mode state
     resetCurrentMode();

@@ -57,13 +57,7 @@
       <div class="section-group">
         <label class="group-title">ISH REJIMI</label>
         <div class="mode-tabs" role="tablist">
-          <button type="button" class="mode-tab active" data-mode="target" id="tabTarget">
-            <svg class="tab-icon" viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="1.8" fill="none">
-              <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
-            </svg>
-            Sana
-          </button>
-          <button type="button" class="mode-tab" data-mode="duration" id="tabDuration">
+          <button type="button" class="mode-tab active" data-mode="duration" id="tabDuration">
             <svg class="tab-icon" viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="1.8" fill="none">
               <path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>
             </svg>
@@ -125,27 +119,8 @@
         </div>
       </div>
 
-      <!-- Mode Specific Settings: Target Date -->
-      <div class="mode-panel active" id="panelTarget">
-        <div class="section-group">
-          <label class="group-title" for="targetDateTimeInput">MAQSAD VAQT VA SANA</label>
-          <div class="input-wrap">
-            <input type="datetime-local" id="targetDateTimeInput">
-          </div>
-          <div class="presets-grid">
-            <button type="button" class="preset-btn" data-target="tomorrow">Ertaga 00:00</button>
-            <button type="button" class="preset-btn" data-target="weekend">Hafta oxiri</button>
-            <button type="button" class="preset-btn" data-target="month_end">Oy oxiri</button>
-            <button type="button" class="preset-btn" data-target="days_7">+7 Kun</button>
-            <button type="button" class="preset-btn" data-target="days_30">+30 Kun</button>
-            <button type="button" class="preset-btn" data-target="new_year">Yangi Yil 2027</button>
-            <button type="button" class="preset-btn preset-accent" data-target="demo_photo">Asl Rasm (05d 22h 05m 01s)</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Mode Specific Settings: Duration -->
-      <div class="mode-panel" id="panelDuration">
+      <!-- Mode Specific Settings: Duration (Active Primary Mode) -->
+      <div class="mode-panel active" id="panelDuration">
         <div class="section-group">
           <label class="group-title">VAQTNI SOZLASH</label>
           <div class="duration-inputs">
@@ -159,7 +134,7 @@
             </div>
             <div class="duration-col">
               <label>Daqiqa</label>
-              <input type="number" id="inputMinutes" min="0" max="59" value="25">
+              <input type="number" id="inputMinutes" min="0" max="59" value="0">
             </div>
             <div class="duration-col">
               <label>Soniya</label>
@@ -173,6 +148,7 @@
             <button type="button" class="preset-btn" data-duration="2700">45 daqiqa (Dars)</button>
             <button type="button" class="preset-btn" data-duration="3600">1 soat</button>
             <button type="button" class="preset-btn" data-duration="7200">2 soat</button>
+            <button type="button" class="preset-btn preset-accent" data-duration="86400">1 kun (24 soat)</button>
           </div>
         </div>
       </div>
