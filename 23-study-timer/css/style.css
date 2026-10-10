@@ -191,6 +191,18 @@ body.user-idle .hover-peek-bar {
   gap: clamp(1.8rem, 5.5vw, 6.5rem);
   width: 100%;
   max-width: 1400px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+}
+
+.digits-container:hover {
+  opacity: 0.94;
+}
+
+.digits-container:active {
+  transform: scale(0.995);
 }
 
 /* Each Column (Digit + Label) — Fixed rock-solid width */

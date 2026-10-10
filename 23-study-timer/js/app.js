@@ -57,6 +57,9 @@
     wakeLockSentinel: null
   };
 
+  // Audio Singleton Shortcut
+  const getAudio = () => window.zenithAudio;
+
   // DOM Elements Cache
   const els = {
     body: document.getElementById('appBody'),
@@ -78,6 +81,7 @@
     minutesValue: document.getElementById('minutesValue'),
     secondsValue: document.getElementById('secondsValue'),
     colDays: document.getElementById('colDays'),
+    digitsContainer: document.getElementById('digitsContainer'),
     
     // Progress & Title & Reminders
     progressBarFill: document.getElementById('progressBarFill'),
@@ -387,6 +391,7 @@
   let reminderToastTimeout = null;
 
   function triggerReminder(title, text) {
+    const audio = getAudio();
     if (audio && typeof audio.playReminderChime === 'function') {
       audio.playReminderChime();
     }
@@ -729,13 +734,14 @@
       } 
       // If cursor moves well beyond the drawer width + margin, close it
       else if (!state.isPinned && els.drawer.classList.contains('open')) {
-        const threshold = els.drawer.offsetWidth + 25;
-        if (e.clientX > threshold) {
+        const threshold = els.drawer.offsetWidth + 60;
+        if (e.clientX > threshold && document.activeElement?.tagName !== 'SELECT' && document.activeElement?.tagName !== 'INPUT') {
           closeDrawer();
         }
       }
     });
 
+    if (els.hoverZone) els.hoverZone.addEventListener('click', openDrawer);
     if (els.hoverPeekBar) els.hoverPeekBar.addEventListener('click', openDrawer);
     if (els.closeDrawerBtn) {
       els.closeDrawerBtn.addEventListener('click', () => {
@@ -747,34 +753,56 @@
     if (els.pinDrawerBtn) els.pinDrawerBtn.addEventListener('click', togglePin);
 
     // 2. Play / Pause & Reset
-    els.toggleRunBtn.addEventListener('click', () => {
+    function togglePlayPause() {
       if (state.mode === 'duration' && state.durationRemaining <= 0 && !state.isRunning) {
-        openDrawer();
-        if (els.inputMinutes) els.inputMinutes.focus();
+        const d = parseInt(els.inputDays ? els.inputDays.value : 0, 10) || 0;
+        const h = parseInt(els.inputHours ? els.inputHours.value : 0, 10) || 0;
+        const m = parseInt(els.inputMinutes ? els.inputMinutes.value : 0, 10) || 0;
+        const s = parseInt(els.inputSeconds ? els.inputSeconds.value : 0, 10) || 0;
+        const fromInputs = d * 86400 + h * 3600 + m * 60 + s;
+        if (fromInputs > 0) {
+          state.durationTotal = fromInputs;
+          state.durationRemaining = fromInputs;
+        } else {
+          // Default: 25 minutes
+          state.durationTotal = 1500;
+          state.durationRemaining = 1500;
+          updateDurationInputs(1500);
+        }
+        state.isRunning = true;
+        renderSecondsAsDigits(state.durationRemaining);
+        updateStatus('FOKUS VAQTI', true);
         return;
       }
       state.isRunning = !state.isRunning;
       updateStatus(state.isRunning ? 'SANALMOQDA' : 'PAUZA', state.isRunning);
-    });
+    }
 
-    els.resetBtn.addEventListener('click', resetCurrentMode);
+    if (els.toggleRunBtn) els.toggleRunBtn.addEventListener('click', togglePlayPause);
+    if (els.digitsContainer) els.digitsContainer.addEventListener('click', togglePlayPause);
+    if (els.resetBtn) els.resetBtn.addEventListener('click', resetCurrentMode);
 
     // 3. Quick Adjust Duration Chips (+1m, +5m, etc.)
-    els.quickAdjustRow.querySelectorAll('.chip-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const addSecs = parseInt(btn.dataset.add, 10);
-        if (state.mode === 'duration') {
-          state.durationRemaining = Math.max(0, state.durationRemaining + addSecs);
-          state.durationTotal = Math.max(state.durationRemaining, state.durationTotal);
-          tickDuration();
-          saveSettings();
-        } else if (state.mode === 'pomodoro') {
-          state.pomoRemaining = Math.max(0, state.pomoRemaining + addSecs);
-          tickPomodoro();
-          saveSettings();
-        }
+    if (els.quickAdjustRow) {
+      els.quickAdjustRow.querySelectorAll('.chip-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const addSecs = parseInt(btn.dataset.add, 10);
+          if (state.mode === 'duration') {
+            state.durationRemaining = Math.max(0, state.durationRemaining + addSecs);
+            state.durationTotal = Math.max(state.durationRemaining, state.durationTotal);
+            updateDurationInputs(state.durationRemaining);
+            renderSecondsAsDigits(state.durationRemaining);
+            updateProgressBar(state.durationRemaining, state.durationTotal);
+            saveSettings();
+          } else if (state.mode === 'pomodoro') {
+            state.pomoRemaining = Math.max(0, state.pomoRemaining + addSecs);
+            renderSecondsAsDigits(state.pomoRemaining);
+            updateProgressBar(state.pomoRemaining, state.pomoDurations[state.pomoPhase]);
+            saveSettings();
+          }
+        });
       });
-    });
+    }
 
     // 4. Mode Tabs
     els.modeTabs.forEach(tab => {
@@ -949,7 +977,10 @@
     if (els.testSoundBtn) {
       els.testSoundBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        audio.playAlarm(state.alarmSound);
+        const audio = getAudio();
+        if (audio) {
+          audio.playAlarm(state.alarmSound);
+        }
       });
     }
 
@@ -993,13 +1024,7 @@
       switch (e.code) {
         case 'Space':
           e.preventDefault();
-          if (state.mode === 'duration' && state.durationRemaining <= 0 && !state.isRunning) {
-            openDrawer();
-            if (els.inputMinutes) els.inputMinutes.focus();
-            return;
-          }
-          state.isRunning = !state.isRunning;
-          updateStatus(state.isRunning ? 'SANALMOQDA' : 'PAUZA', state.isRunning);
+          togglePlayPause();
           break;
         case 'KeyS':
           e.preventDefault();
