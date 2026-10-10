@@ -55,6 +55,7 @@ foydalanuvchilarga xizmat ko'rsatadigan tayyor mahsulotlar.
 | 📱 **[20-momentum-habit-tracker](./20-momentum-habit-tracker)** | Odatlar va faoliyat kuzatuvchi mobil hamda backend ilovasi. | `Flutter` `Backend` |
 | 🃏 **[21-gamecraft-kotlin-app](./21-gamecraft-kotlin-app)** | Kotlin/Compose o'yin va yordamchi ilovasi. | `Kotlin` `Gradle` |
 | ⏱ **[22-floating-desktop-timer](./22-floating-desktop-timer)** | Linux (Ubuntu/GNOME) uchun suzuvchi, ixcham va always-on-top desktop taymer vidjeti. | `Python 3` `GTK+ 3` `Cairo` |
+| ⏳ **[23-study-timer](./23-study-timer)** | Zenith Study Timer — Ultra minimalist OLED countdown va diqqatni jamlash (focus studio) platformasi. | `Python` `HTML5` `CSS3` `JavaScript` |
 
 ---
 
