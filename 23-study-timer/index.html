@@ -38,6 +38,12 @@
         </div>
       </div>
       <div class="drawer-header-actions">
+        <button type="button" class="icon-btn" id="openSettingsHeaderBtn" title="Sozlamalar (S)">
+          <svg class="icon-svg" viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="1.8" fill="none">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
         <button type="button" class="icon-btn" id="pinDrawerBtn" title="Panelni qadash (P)">
           <svg class="icon-svg" id="pinIconSvg" viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="1.8" fill="none">
             <path d="M16 3l1 7-5 5v6l-1 1-1-1v-6L5 10l1-7h10z"/>
@@ -58,28 +64,28 @@
         <label class="group-title">ISH REJIMI</label>
         <div class="mode-tabs" role="tablist">
           <button type="button" class="mode-tab active" data-mode="duration" id="tabDuration">
-            <svg class="tab-icon" viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="1.8" fill="none">
+            <svg class="tab-icon" viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="1.8" fill="none">
               <path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>
             </svg>
-            Davomiylik
+            <span>Davomiylik</span>
           </button>
           <button type="button" class="mode-tab" data-mode="pomodoro" id="tabPomodoro">
-            <svg class="tab-icon" viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="1.8" fill="none">
+            <svg class="tab-icon" viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="1.8" fill="none">
               <circle cx="12" cy="13" r="8"/><path d="M12 5V2M9 3h6"/>
             </svg>
-            Pomodoro
+            <span>Pomodoro</span>
           </button>
           <button type="button" class="mode-tab" data-mode="stopwatch" id="tabStopwatch">
-            <svg class="tab-icon" viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="1.8" fill="none">
+            <svg class="tab-icon" viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="1.8" fill="none">
               <circle cx="12" cy="13" r="8"/><polyline points="12 9 12 13 14 15"/><path d="M12 2v3M9 2h6"/>
             </svg>
-            Sekundomer
+            <span>Sekundomer</span>
           </button>
           <button type="button" class="mode-tab" data-mode="clock" id="tabClock">
-            <svg class="tab-icon" viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="1.8" fill="none">
+            <svg class="tab-icon" viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="1.8" fill="none">
               <circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 12"/>
             </svg>
-            Soat
+            <span>Soat</span>
           </button>
         </div>
       </div>
@@ -168,95 +174,18 @@
         </div>
       </div>
 
-      <!-- Design & Appearance -->
+      <!-- Settings & Tools Trigger -->
       <div class="section-group">
-        <label class="group-title" for="themeSelect">FON MAVZUSI</label>
-        <select id="themeSelect" class="styled-select">
-          <option value="theme-obsidian">Pitch Black (Asl Rasm)</option>
-          <option value="theme-midnight">Deep Navy (Tungi ko'k)</option>
-          <option value="theme-emerald">Matrix Emerald (Zumrad)</option>
-          <option value="theme-amber">Amber Luxury (Tilla nur)</option>
-          <option value="theme-violet">Cyber Violet (Binafsharang)</option>
-          <option value="theme-aurora">Aurora Gradient (Kosmik)</option>
-        </select>
-      </div>
+        <label class="group-title">SOZLAMALAR</label>
+        <button type="button" class="settings-btn-highlight" id="openSettingsDrawerBtn">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="1.8" fill="none">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          <span>Sozlamalar (Fon, Shrift, Ovoz, Fokus)</span>
+        </button>
 
-      <!-- Typography Choice -->
-      <div class="section-group">
-        <label class="group-title" for="fontSelect">SHRIFT USLUBI</label>
-        <select id="fontSelect" class="styled-select">
-          <option value="font-urbanist">Urbanist UltraLight (Asl Rasm)</option>
-          <option value="font-inter">Inter Thin (Ultra yupqa)</option>
-          <option value="font-montserrat">Montserrat Light</option>
-          <option value="font-mono">JetBrains Mono (Dasturchi)</option>
-          <option value="font-serif">Cormorant Garamond (Klassik)</option>
-        </select>
-      </div>
-
-      <!-- Sound & Ambient Audio (Web Audio API) -->
-      <div class="section-group">
-        <label class="group-title">OVOZ VA DIQQAT AMBIENTI</label>
-        
-        <div class="toggle-row">
-          <div class="select-label-wrap">
-            <svg class="row-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="1.8" fill="none">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-            </svg>
-            <span>Tugash signali</span>
-          </div>
-          <select id="alarmSoundSelect" class="styled-select">
-            <option value="zen_bowl">Zen Singing Bowl (Meditatsiya)</option>
-            <option value="soft_bell">Mayin Billur Qo'ng'iroq</option>
-            <option value="digital_chime">Digital Chime (Zamonaviy)</option>
-            <option value="crystal">Billur Gong</option>
-            <option value="mute">Ovoz o'chirilgan</option>
-          </select>
-        </div>
-
-        <div class="toggle-row mt-2">
-          <div class="select-label-wrap">
-            <svg class="row-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="1.8" fill="none">
-              <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/><line x1="16" y1="13" x2="16" y2="21"/><line x1="8" y1="13" x2="8" y2="21"/><line x1="12" y1="15" x2="12" y2="23"/>
-            </svg>
-            <span>Fokus orqa fon tovushi</span>
-          </div>
-          <select id="ambientSoundSelect" class="styled-select">
-            <option value="none">O'chiq</option>
-            <option value="rain">Mayin Yomg'ir (Tinchlantiruvchi)</option>
-            <option value="binaural">Binaural Focus (432Hz Alfa/Teta)</option>
-            <option value="space">Chuqur Kosmik Drone</option>
-          </select>
-        </div>
-
-        <div class="slider-row mt-2">
-          <div class="slider-label">
-            <span>Ovoz balandligi</span>
-            <span id="volumePercent">80%</span>
-          </div>
-          <input type="range" id="volumeSlider" min="0" max="100" value="80">
-        </div>
-      </div>
-
-      <!-- Display Options -->
-      <div class="section-group">
-        <label class="group-title">KO'RINISHLARNI BOSHQARISH</label>
-        <label class="checkbox-row">
-          <input type="checkbox" id="checkShowDays" checked>
-          <span>Kunlar ("DAYS") ustunini ko'rsatish</span>
-        </label>
-        <label class="checkbox-row">
-          <input type="checkbox" id="checkShowProgress" checked>
-          <span>Yupqa progress chizig'ini ko'rsatish</span>
-        </label>
-        <label class="checkbox-row">
-          <input type="checkbox" id="checkWakeLock" checked>
-          <span>Ekran o'chib qolmasligi (WakeLock)</span>
-        </label>
-      </div>
-
-      <!-- Utility & Actions -->
-      <div class="section-group">
-        <div class="action-buttons-grid">
+        <div class="action-buttons-grid mt-2">
           <button type="button" class="btn btn-secondary" id="fullscreenBtn">
             <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="1.8" fill="none">
               <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
@@ -272,47 +201,16 @@
         </div>
       </div>
 
-      <!-- Data Persistence & Statistics (JSON) -->
-      <div class="section-group">
-        <label class="group-title">MA'LUMOTLAR VA STATISTIKA (JSON)</label>
-        
-        <div class="stats-overview-card">
-          <div class="stat-item">
-            <span class="stat-label">Jami diqqat vaqti</span>
-            <span class="stat-value" id="totalFocusTimeDisplay">0 daq</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Bajarilgan seanslar</span>
-            <span class="stat-value" id="completedSessionsDisplay">0</span>
-          </div>
-        </div>
-
-        <div class="action-buttons-grid mt-2">
-          <button type="button" class="btn btn-secondary" id="exportJsonBtn" title="Barcha sozlamalar va statistikani JSON faylga yuklab olish">
-            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="1.8" fill="none">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            JSON Saqlash
-          </button>
-          <button type="button" class="btn btn-secondary" id="importJsonBtn" title="JSON fayldan sozlamalarni tiklash">
-            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="1.8" fill="none">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-            </svg>
-            JSON Yuklash
-          </button>
-        </div>
-        <input type="file" id="jsonFileInput" accept=".json" style="display: none;">
-      </div>
-
       <!-- Keyboard Shortcuts Info -->
       <div class="drawer-footer">
         <p class="shortcuts-title">KLAVIATURA TEZKOR TUGMALARI</p>
         <div class="shortcuts-list">
           <div><kbd>Space</kbd> Start / Pauza</div>
+          <div><kbd>S</kbd> Sozlamalar</div>
           <div><kbd>F</kbd> To'liq ekran</div>
           <div><kbd>P</kbd> Panelni qadash</div>
           <div><kbd>R</kbd> Qayta o'rnatish</div>
-          <div><kbd>Esc</kbd> Panelni yopish</div>
+          <div><kbd>Esc</kbd> Yopish</div>
         </div>
       </div>
     </div>
@@ -369,6 +267,131 @@
     </div>
 
   </main>
+
+  <!-- Floating Quick Settings Button on Main Screen -->
+  <button type="button" class="floating-settings-btn" id="openSettingsFloatingBtn" title="Sozlamalar paneli (S)">
+    <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="1.8" fill="none">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+    <span>Sozlamalar</span>
+  </button>
+
+  <!-- Settings Modal (Fon, Shrift, Ovoz, Fokus) -->
+  <div class="settings-modal-overlay" id="settingsModalOverlay" aria-hidden="true">
+    <div class="settings-modal" role="dialog" aria-labelledby="settingsModalTitle">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="1.8" fill="none">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          <h3 id="settingsModalTitle">TIZIM SOZLAMALARI</h3>
+        </div>
+        <button type="button" class="icon-btn" id="closeSettingsModalBtn" title="Yopish (Esc)">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- 1. FON MAVZUSI -->
+        <div class="modal-section">
+          <label class="group-title" for="themeSelect">FON MAVZUSI</label>
+          <select id="themeSelect" class="styled-select">
+            <option value="theme-obsidian">Pitch Black (Asl Rasm)</option>
+            <option value="theme-midnight">Deep Navy (Tungi ko'k)</option>
+            <option value="theme-emerald">Matrix Emerald (Zumrad)</option>
+            <option value="theme-amber">Amber Luxury (Tilla nur)</option>
+            <option value="theme-violet">Cyber Violet (Binafsharang)</option>
+            <option value="theme-aurora">Aurora Gradient (Kosmik)</option>
+          </select>
+        </div>
+
+        <!-- 2. SHRIFT USLUBI -->
+        <div class="modal-section">
+          <label class="group-title" for="fontSelect">SHRIFT USLUBI</label>
+          <select id="fontSelect" class="styled-select">
+            <option value="font-urbanist">Urbanist UltraLight (Asl Rasm)</option>
+            <option value="font-inter">Inter Thin (Ultra yupqa)</option>
+            <option value="font-montserrat">Montserrat Light</option>
+            <option value="font-mono">JetBrains Mono (Dasturchi)</option>
+            <option value="font-serif">Cormorant Garamond (Klassik)</option>
+          </select>
+        </div>
+
+        <!-- 3. OVOZ & SIGNAL -->
+        <div class="modal-section">
+          <label class="group-title">OVOZ VA SIGNAL</label>
+          <div class="toggle-row">
+            <div class="select-label-wrap">
+              <svg class="row-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="1.8" fill="none">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+              <span>Tugash signali</span>
+            </div>
+            <select id="alarmSoundSelect" class="styled-select">
+              <option value="zen_bowl">Zen Singing Bowl (Meditatsiya)</option>
+              <option value="soft_bell">Mayin Billur Qo'ng'iroq</option>
+              <option value="digital_chime">Digital Chime (Zamonaviy)</option>
+              <option value="crystal">Billur Gong</option>
+              <option value="mute">Ovoz o'chirilgan</option>
+            </select>
+          </div>
+
+          <div class="slider-row mt-2">
+            <div class="slider-label">
+              <span>Ovoz balandligi</span>
+              <span id="volumePercent">80%</span>
+            </div>
+            <input type="range" id="volumeSlider" min="0" max="100" value="80">
+          </div>
+        </div>
+
+        <!-- 4. FOKUS / DIQQAT AMBIENTI -->
+        <div class="modal-section">
+          <label class="group-title">FOKUS / DIQQAT AMBIENTI</label>
+          <div class="toggle-row">
+            <div class="select-label-wrap">
+              <svg class="row-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="1.8" fill="none">
+                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/><line x1="16" y1="13" x2="16" y2="21"/><line x1="8" y1="13" x2="8" y2="21"/><line x1="12" y1="15" x2="12" y2="23"/>
+              </svg>
+              <span>Fokus orqa fon tovushi</span>
+            </div>
+            <select id="ambientSoundSelect" class="styled-select">
+              <option value="none">O'chiq</option>
+              <option value="rain">Mayin Yomg'ir (Tinchlantiruvchi)</option>
+              <option value="binaural">Binaural Focus (432Hz Alfa/Teta)</option>
+              <option value="space">Chuqur Kosmik Drone</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 5. KO'RINISHLARNI BOSHQARISH -->
+        <div class="modal-section">
+          <label class="group-title">KO'RINISHLARNI BOSHQARISH</label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="checkShowDays" checked>
+            <span>Kunlar ("DAYS") ustunini ko'rsatish</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="checkShowProgress" checked>
+            <span>Yupqa progress chizig'ini ko'rsatish</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="checkWakeLock" checked>
+            <span>Ekran o'chib qolmasligi (WakeLock)</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="saveCloseSettingsBtn">Tayyor / Yopish</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Audio Synthesis Engine and Main Controller Scripts -->
   <script src="js/audio.js"></script>

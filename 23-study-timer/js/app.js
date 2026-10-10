@@ -121,7 +121,15 @@
     checkShowProgress: document.getElementById('checkShowProgress'),
     checkWakeLock: document.getElementById('checkWakeLock'),
     fullscreenBtn: document.getElementById('fullscreenBtn'),
-    zenModeBtn: document.getElementById('zenModeBtn')
+    zenModeBtn: document.getElementById('zenModeBtn'),
+
+    // Settings Modal Elements
+    openSettingsHeaderBtn: document.getElementById('openSettingsHeaderBtn'),
+    openSettingsDrawerBtn: document.getElementById('openSettingsDrawerBtn'),
+    openSettingsFloatingBtn: document.getElementById('openSettingsFloatingBtn'),
+    settingsModalOverlay: document.getElementById('settingsModalOverlay'),
+    closeSettingsModalBtn: document.getElementById('closeSettingsModalBtn'),
+    saveCloseSettingsBtn: document.getElementById('saveCloseSettingsBtn')
   };
 
   // Helper: Format with leading zeros
@@ -344,6 +352,32 @@
       }
     };
     reader.readAsText(file);
+  }
+
+  /* ==========================================================================
+     SETTINGS MODAL CONTROLLER
+     ========================================================================== */
+
+  function openSettingsModal() {
+    if (els.settingsModalOverlay) {
+      els.settingsModalOverlay.classList.add('active');
+      els.settingsModalOverlay.setAttribute('aria-hidden', 'false');
+    }
+  }
+
+  function closeSettingsModal() {
+    if (els.settingsModalOverlay) {
+      els.settingsModalOverlay.classList.remove('active');
+      els.settingsModalOverlay.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  function toggleSettingsModal() {
+    if (els.settingsModalOverlay && els.settingsModalOverlay.classList.contains('active')) {
+      closeSettingsModal();
+    } else {
+      openSettingsModal();
+    }
   }
 
   /* ==========================================================================
@@ -768,17 +802,35 @@
       });
     }
 
-    // 14. Fullscreen & Zen Mode
+    // 14. Fullscreen & Zen Mode & Settings Triggers
     els.fullscreenBtn.addEventListener('click', toggleFullscreen);
     els.zenModeBtn.addEventListener('click', () => {
       closeDrawer();
       triggerIdleNow();
     });
 
+    if (els.openSettingsHeaderBtn) els.openSettingsHeaderBtn.addEventListener('click', openSettingsModal);
+    if (els.openSettingsDrawerBtn) els.openSettingsDrawerBtn.addEventListener('click', openSettingsModal);
+    if (els.openSettingsFloatingBtn) els.openSettingsFloatingBtn.addEventListener('click', openSettingsModal);
+    if (els.closeSettingsModalBtn) els.closeSettingsModalBtn.addEventListener('click', closeSettingsModal);
+    if (els.saveCloseSettingsBtn) els.saveCloseSettingsBtn.addEventListener('click', closeSettingsModal);
+
+    if (els.settingsModalOverlay) {
+      els.settingsModalOverlay.addEventListener('click', (e) => {
+        if (e.target === els.settingsModalOverlay) closeSettingsModal();
+      });
+    }
+
     // 15. Keyboard Shortcuts
     document.addEventListener('keydown', (e) => {
       if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) {
-        if (e.key === 'Escape') els.drawer.blur();
+        if (e.key === 'Escape') {
+          if (els.settingsModalOverlay && els.settingsModalOverlay.classList.contains('active')) {
+            closeSettingsModal();
+          } else {
+            els.drawer.blur();
+          }
+        }
         return;
       }
 
@@ -793,6 +845,10 @@
           state.isRunning = !state.isRunning;
           updateStatus(state.isRunning ? 'SANALMOQDA' : 'PAUZA', state.isRunning);
           break;
+        case 'KeyS':
+          e.preventDefault();
+          toggleSettingsModal();
+          break;
         case 'KeyF':
           e.preventDefault();
           toggleFullscreen();
@@ -806,7 +862,11 @@
           resetCurrentMode();
           break;
         case 'Escape':
-          closeDrawer();
+          if (els.settingsModalOverlay && els.settingsModalOverlay.classList.contains('active')) {
+            closeSettingsModal();
+          } else {
+            closeDrawer();
+          }
           break;
       }
     });
