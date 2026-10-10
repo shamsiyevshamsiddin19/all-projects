@@ -52,6 +52,7 @@ Agar `sync-git.sh` biror sabab bilan ishlamasa, AI qo'lda tegishli repolarga pus
 | `16-yordamchi-productivity-suite` | `https://github.com/shamsiyevshamsiddin19/yordamchi.git` |
 | `18-paycore-gateway-sdks` | `https://github.com/shamsiyevshamsiddin19/payment-integrations.git` |
 | `19-captionflow-desktop-studio` | `https://github.com/shamsiyevshamsiddin19/captionflow-desktop-.git` |
+| `23-study-timer` | `https://github.com/shamsiyevshamsiddin19/study-timer.git` |
 
 ---
 
