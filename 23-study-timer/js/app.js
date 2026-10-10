@@ -54,10 +54,15 @@
   const els = {
     body: document.getElementById('appBody'),
     hoverZone: document.getElementById('hoverZone'),
-    hoverPeekBar: document.getElementById('hoverPeekBar'),
     drawer: document.getElementById('settingsDrawer'),
+    drawerBrandTitle: document.getElementById('drawerBrandTitle'),
+    drawerBrandBadge: document.getElementById('drawerBrandBadge'),
     pinDrawerBtn: document.getElementById('pinDrawerBtn'),
     closeDrawerBtn: document.getElementById('closeDrawerBtn'),
+    timerSubView: document.getElementById('timerSubView'),
+    settingsSubView: document.getElementById('settingsSubView'),
+    backToTimerBtn: document.getElementById('backToTimerBtn'),
+    openSettingsHeaderBtn: document.getElementById('openSettingsHeaderBtn'),
     
     // Digits
     daysValue: document.getElementById('daysValue'),
@@ -121,15 +126,7 @@
     checkShowProgress: document.getElementById('checkShowProgress'),
     checkWakeLock: document.getElementById('checkWakeLock'),
     fullscreenBtn: document.getElementById('fullscreenBtn'),
-    zenModeBtn: document.getElementById('zenModeBtn'),
-
-    // Settings Modal Elements
-    openSettingsHeaderBtn: document.getElementById('openSettingsHeaderBtn'),
-    openSettingsDrawerBtn: document.getElementById('openSettingsDrawerBtn'),
-    openSettingsFloatingBtn: document.getElementById('openSettingsFloatingBtn'),
-    settingsModalOverlay: document.getElementById('settingsModalOverlay'),
-    closeSettingsModalBtn: document.getElementById('closeSettingsModalBtn'),
-    saveCloseSettingsBtn: document.getElementById('saveCloseSettingsBtn')
+    zenModeBtn: document.getElementById('zenModeBtn')
   };
 
   // Helper: Format with leading zeros
@@ -355,28 +352,39 @@
   }
 
   /* ==========================================================================
-     SETTINGS MODAL CONTROLLER
+     DRAWER SUB-VIEWS CONTROLLER (TIMER CONTROLS <-> SETTINGS CONFIG)
      ========================================================================== */
 
-  function openSettingsModal() {
-    if (els.settingsModalOverlay) {
-      els.settingsModalOverlay.classList.add('active');
-      els.settingsModalOverlay.setAttribute('aria-hidden', 'false');
+  function showSettingsView() {
+    if (els.timerSubView && els.settingsSubView) {
+      els.timerSubView.style.display = 'none';
+      els.timerSubView.classList.remove('active');
+      els.settingsSubView.style.display = 'flex';
+      els.settingsSubView.classList.add('active');
+      if (els.openSettingsHeaderBtn) els.openSettingsHeaderBtn.classList.add('active');
+      if (els.drawerBrandTitle) els.drawerBrandTitle.textContent = 'SOZLAMALAR';
+      if (els.drawerBrandBadge) els.drawerBrandBadge.textContent = 'CONFIG';
+      openDrawer();
     }
   }
 
-  function closeSettingsModal() {
-    if (els.settingsModalOverlay) {
-      els.settingsModalOverlay.classList.remove('active');
-      els.settingsModalOverlay.setAttribute('aria-hidden', 'true');
+  function showTimerView() {
+    if (els.timerSubView && els.settingsSubView) {
+      els.settingsSubView.style.display = 'none';
+      els.settingsSubView.classList.remove('active');
+      els.timerSubView.style.display = 'flex';
+      els.timerSubView.classList.add('active');
+      if (els.openSettingsHeaderBtn) els.openSettingsHeaderBtn.classList.remove('active');
+      if (els.drawerBrandTitle) els.drawerBrandTitle.textContent = 'ZENITH CHRONO';
+      if (els.drawerBrandBadge) els.drawerBrandBadge.textContent = 'STUDIO';
     }
   }
 
-  function toggleSettingsModal() {
-    if (els.settingsModalOverlay && els.settingsModalOverlay.classList.contains('active')) {
-      closeSettingsModal();
+  function toggleSettingsView() {
+    if (els.settingsSubView && els.settingsSubView.style.display === 'flex') {
+      showTimerView();
     } else {
-      openSettingsModal();
+      showSettingsView();
     }
   }
 
@@ -807,24 +815,15 @@
       triggerIdleNow();
     });
 
-    if (els.openSettingsHeaderBtn) els.openSettingsHeaderBtn.addEventListener('click', openSettingsModal);
-    if (els.openSettingsDrawerBtn) els.openSettingsDrawerBtn.addEventListener('click', openSettingsModal);
-    if (els.openSettingsFloatingBtn) els.openSettingsFloatingBtn.addEventListener('click', openSettingsModal);
-    if (els.closeSettingsModalBtn) els.closeSettingsModalBtn.addEventListener('click', closeSettingsModal);
-    if (els.saveCloseSettingsBtn) els.saveCloseSettingsBtn.addEventListener('click', closeSettingsModal);
-
-    if (els.settingsModalOverlay) {
-      els.settingsModalOverlay.addEventListener('click', (e) => {
-        if (e.target === els.settingsModalOverlay) closeSettingsModal();
-      });
-    }
+    if (els.openSettingsHeaderBtn) els.openSettingsHeaderBtn.addEventListener('click', toggleSettingsView);
+    if (els.backToTimerBtn) els.backToTimerBtn.addEventListener('click', showTimerView);
 
     // 15. Keyboard Shortcuts
     document.addEventListener('keydown', (e) => {
       if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) {
         if (e.key === 'Escape') {
-          if (els.settingsModalOverlay && els.settingsModalOverlay.classList.contains('active')) {
-            closeSettingsModal();
+          if (els.settingsSubView && els.settingsSubView.style.display === 'flex') {
+            showTimerView();
           } else {
             els.drawer.blur();
           }
@@ -845,7 +844,7 @@
           break;
         case 'KeyS':
           e.preventDefault();
-          toggleSettingsModal();
+          toggleSettingsView();
           break;
         case 'KeyF':
           e.preventDefault();
@@ -860,8 +859,8 @@
           resetCurrentMode();
           break;
         case 'Escape':
-          if (els.settingsModalOverlay && els.settingsModalOverlay.classList.contains('active')) {
-            closeSettingsModal();
+          if (els.settingsSubView && els.settingsSubView.style.display === 'flex') {
+            showTimerView();
           } else {
             closeDrawer();
           }
