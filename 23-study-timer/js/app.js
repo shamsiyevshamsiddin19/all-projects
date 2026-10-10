@@ -73,13 +73,17 @@
     eventTitleDisplay: document.getElementById('eventTitleDisplay'),
     eventTitleInput: document.getElementById('eventTitleInput'),
 
-    // Status
+    // Status & Controls
     statusPulse: document.getElementById('statusPulse'),
     statusText: document.getElementById('statusText'),
     playPauseIcon: document.getElementById('playPauseIcon'),
     playPauseText: document.getElementById('playPauseText'),
     toggleRunBtn: document.getElementById('toggleRunBtn'),
     resetBtn: document.getElementById('resetBtn'),
+
+    // Theme & Font Selects
+    themeSelect: document.getElementById('themeSelect'),
+    fontSelect: document.getElementById('fontSelect'),
 
     // Mode Panels & Tabs
     modeTabs: document.querySelectorAll('.mode-tab'),
@@ -130,27 +134,19 @@
   function init() {
     loadSettings();
     setupEventListeners();
-    setupTargetDefault();
+    
+    // User requirement: "saytga kirganda hammasi 0 tursin"
+    state.isRunning = false;
+    state.targetDateTime = null;
+    if (els.targetDateTimeInput) els.targetDateTimeInput.value = '';
+
     applyModeUI();
+    renderDigits(0, 0, 0, 0);
+    updateStatus('TAYYOR', false);
     updateDisplay();
     startTimerLoop();
     resetIdleTimer();
     requestScreenWakeLock();
-  }
-
-  function setupTargetDefault() {
-    // If no target date, default to demo photo look (+5 days 22 hours 5 mins 1 sec)
-    if (!state.targetDateTime) {
-      const now = new Date();
-      const demoTarget = new Date(now.getTime() + (5 * 86400 + 22 * 3600 + 5 * 60 + 1) * 1000);
-      state.targetDateTime = demoTarget;
-      state.isRunning = true;
-    }
-    
-    // Set input value in local ISO string format
-    const tzOffset = (new Date()).getTimezoneOffset() * 60000;
-    const localISOTime = (new Date(state.targetDateTime.getTime() - tzOffset)).toISOString().slice(0, 16);
-    els.targetDateTimeInput.value = localISOTime;
   }
 
   function loadSettings() {
@@ -402,6 +398,11 @@
   }
 
   function tickTarget() {
+    if (!state.targetDateTime) {
+      renderDigits(0, 0, 0, 0);
+      return;
+    }
+
     const now = new Date().getTime();
     const target = state.targetDateTime.getTime();
     const diff = Math.max(0, target - now);
@@ -517,15 +518,17 @@
   }
 
   function updateStatus(text, running) {
-    els.statusText.textContent = text;
-    els.statusPulse.classList.toggle('paused', !running);
-    els.playPauseText.textContent = running ? 'To\'xtatish' : 'Boshlash';
+    if (els.statusText) els.statusText.textContent = text;
+    if (els.statusPulse) els.statusPulse.classList.toggle('paused', !running);
+    if (els.playPauseText) els.playPauseText.textContent = running ? 'To\'xtatish' : 'Boshlash';
 
     // Update play/pause vector icon
-    if (running) {
-      els.playPauseIcon.innerHTML = `<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
-    } else {
-      els.playPauseIcon.innerHTML = `<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>`;
+    if (els.playPauseIcon) {
+      if (running) {
+        els.playPauseIcon.innerHTML = `<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
+      } else {
+        els.playPauseIcon.innerHTML = `<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>`;
+      }
     }
   }
 
@@ -588,6 +591,11 @@
 
     // 2. Play / Pause & Reset
     els.toggleRunBtn.addEventListener('click', () => {
+      if (state.mode === 'target' && !state.targetDateTime && !state.isRunning) {
+        openDrawer();
+        if (els.targetDateTimeInput) els.targetDateTimeInput.focus();
+        return;
+      }
       state.isRunning = !state.isRunning;
       updateStatus(state.isRunning ? 'SANALMOQDA' : 'PAUZA', state.isRunning);
     });
@@ -675,7 +683,13 @@
       saveSettings();
     });
 
-    // 9. Themes Selection
+    // 9. Themes Selection (Dropdown & Chips)
+    if (els.themeSelect) {
+      els.themeSelect.addEventListener('change', () => {
+        setTheme(els.themeSelect.value);
+        saveSettings();
+      });
+    }
     document.querySelectorAll('.theme-chip').forEach(chip => {
       chip.addEventListener('click', () => {
         setTheme(chip.dataset.theme);
@@ -683,7 +697,13 @@
       });
     });
 
-    // 10. Fonts Selection
+    // 10. Fonts Selection (Dropdown & Chips)
+    if (els.fontSelect) {
+      els.fontSelect.addEventListener('change', () => {
+        setFont(els.fontSelect.value);
+        saveSettings();
+      });
+    }
     document.querySelectorAll('.font-chip').forEach(chip => {
       chip.addEventListener('click', () => {
         setFont(chip.dataset.font);
@@ -761,6 +781,11 @@
       switch (e.code) {
         case 'Space':
           e.preventDefault();
+          if (state.mode === 'target' && !state.targetDateTime && !state.isRunning) {
+            openDrawer();
+            if (els.targetDateTimeInput) els.targetDateTimeInput.focus();
+            return;
+          }
           state.isRunning = !state.isRunning;
           updateStatus(state.isRunning ? 'SANALMOQDA' : 'PAUZA', state.isRunning);
           break;
@@ -825,8 +850,14 @@
 
     switch (state.mode) {
       case 'target':
-        state.isRunning = true;
-        tickTarget();
+        if (state.targetDateTime) {
+          state.isRunning = true;
+          tickTarget();
+        } else {
+          state.isRunning = false;
+          renderDigits(0, 0, 0, 0);
+          updateStatus('TAYYOR', false);
+        }
         break;
       case 'duration':
         state.durationRemaining = state.durationTotal;
@@ -942,6 +973,10 @@
     });
     els.body.classList.add(theme);
 
+    if (els.themeSelect) {
+      els.themeSelect.value = theme;
+    }
+
     document.querySelectorAll('.theme-chip').forEach(c => {
       c.classList.toggle('active', c.dataset.theme === theme);
     });
@@ -953,6 +988,10 @@
       els.body.classList.remove(f);
     });
     els.body.classList.add(font);
+
+    if (els.fontSelect) {
+      els.fontSelect.value = font;
+    }
 
     document.querySelectorAll('.font-chip').forEach(c => {
       c.classList.toggle('active', c.dataset.font === font);

@@ -194,39 +194,27 @@
 
       <!-- Design & Appearance -->
       <div class="section-group">
-        <label class="group-title">FON MAVZUSI</label>
-        <div class="theme-options">
-          <button type="button" class="theme-chip active" data-theme="theme-obsidian" title="Pitch Black (Asl Rasm)">
-            <span class="color-dot dot-obsidian"></span> Pitch Black
-          </button>
-          <button type="button" class="theme-chip" data-theme="theme-midnight" title="Midnight Navy">
-            <span class="color-dot dot-midnight"></span> Deep Navy
-          </button>
-          <button type="button" class="theme-chip" data-theme="theme-emerald" title="Matrix Emerald">
-            <span class="color-dot dot-emerald"></span> Emerald
-          </button>
-          <button type="button" class="theme-chip" data-theme="theme-amber" title="Amber Luxury">
-            <span class="color-dot dot-amber"></span> Amber
-          </button>
-          <button type="button" class="theme-chip" data-theme="theme-violet" title="Cyber Violet">
-            <span class="color-dot dot-violet"></span> Violet
-          </button>
-          <button type="button" class="theme-chip" data-theme="theme-aurora" title="Aurora Gradient">
-            <span class="color-dot dot-aurora"></span> Aurora
-          </button>
-        </div>
+        <label class="group-title" for="themeSelect">FON MAVZUSI</label>
+        <select id="themeSelect" class="styled-select">
+          <option value="theme-obsidian">Pitch Black (Asl Rasm)</option>
+          <option value="theme-midnight">Deep Navy (Tungi ko'k)</option>
+          <option value="theme-emerald">Matrix Emerald (Zumrad)</option>
+          <option value="theme-amber">Amber Luxury (Tilla nur)</option>
+          <option value="theme-violet">Cyber Violet (Binafsharang)</option>
+          <option value="theme-aurora">Aurora Gradient (Kosmik)</option>
+        </select>
       </div>
 
       <!-- Typography Choice -->
       <div class="section-group">
-        <label class="group-title">SHRIFT USLUBI</label>
-        <div class="font-options">
-          <button type="button" class="font-chip active" data-font="font-urbanist">Urbanist (Asl Rasm)</button>
-          <button type="button" class="font-chip" data-font="font-inter">Inter Thin</button>
-          <button type="button" class="font-chip" data-font="font-montserrat">Montserrat Light</button>
-          <button type="button" class="font-chip" data-font="font-mono">JetBrains Mono</button>
-          <button type="button" class="font-chip" data-font="font-serif">Cormorant Garamond</button>
-        </div>
+        <label class="group-title" for="fontSelect">SHRIFT USLUBI</label>
+        <select id="fontSelect" class="styled-select">
+          <option value="font-urbanist">Urbanist UltraLight (Asl Rasm)</option>
+          <option value="font-inter">Inter Thin (Ultra yupqa)</option>
+          <option value="font-montserrat">Montserrat Light</option>
+          <option value="font-mono">JetBrains Mono (Dasturchi)</option>
+          <option value="font-serif">Cormorant Garamond (Klassik)</option>
+        </select>
       </div>
 
       <!-- Sound & Ambient Audio (Web Audio API) -->
@@ -373,7 +361,7 @@
       <!-- DAYS Column -->
       <div class="digit-column" id="colDays">
         <div class="digit-value-wrap">
-          <span class="digit-value" id="daysValue">05</span>
+          <span class="digit-value" id="daysValue">00</span>
         </div>
         <span class="digit-label">DAYS</span>
       </div>
@@ -381,7 +369,7 @@
       <!-- HOURS Column -->
       <div class="digit-column" id="colHours">
         <div class="digit-value-wrap">
-          <span class="digit-value" id="hoursValue">22</span>
+          <span class="digit-value" id="hoursValue">00</span>
         </div>
         <span class="digit-label">HOURS</span>
       </div>
@@ -389,7 +377,7 @@
       <!-- MINUTES Column -->
       <div class="digit-column" id="colMinutes">
         <div class="digit-value-wrap">
-          <span class="digit-value" id="minutesValue">05</span>
+          <span class="digit-value" id="minutesValue">00</span>
         </div>
         <span class="digit-label">MINUTES</span>
       </div>
@@ -397,22 +385,11 @@
       <!-- SECONDS Column -->
       <div class="digit-column" id="colSeconds">
         <div class="digit-value-wrap">
-          <span class="digit-value" id="secondsValue">01</span>
+          <span class="digit-value" id="secondsValue">00</span>
         </div>
         <span class="digit-label">SECONDS</span>
       </div>
 
-    </div>
-
-    <!-- Subtle Status Tag / Mode indicator at bottom (fades out in zen mode) -->
-    <div class="bottom-status-bar" id="bottomStatusBar">
-      <div class="status-pill" id="statusPill">
-        <span class="status-pulse" id="statusPulse"></span>
-        <span class="status-text" id="statusText">TAYYOR</span>
-      </div>
-      <div class="hint-text" id="hintText">
-        Kursor chap chekkaga borganda sozlamalar paneli ochiladi • <kbd>Space</kbd> Start
-      </div>
     </div>
 
   </main>
