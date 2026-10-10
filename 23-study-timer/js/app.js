@@ -1,6 +1,6 @@
 /**
  * Zenith Chrono — Main Application Controller
- * Handles timer states, modes, UI animations, mouse edge-detection, and keyboard shortcuts
+ * Handles timer states, modes, UI animations, mouse edge-detection, and JSON data persistence
  */
 
 (function () {
@@ -29,6 +29,11 @@
 
     // Stopwatch Mode
     stopwatchElapsed: 0,
+
+    // Statistics & History
+    totalFocusMinutes: 0,
+    completedSessionsCount: 0,
+    history: [],
 
     // Settings & Appearance
     theme: 'theme-obsidian',
@@ -94,6 +99,13 @@
     pomoCycleCount: document.getElementById('pomoCycleCount'),
     pomPhaseBtns: document.querySelectorAll('.phase-btn'),
 
+    // Statistics Displays
+    totalFocusTimeDisplay: document.getElementById('totalFocusTimeDisplay'),
+    completedSessionsDisplay: document.getElementById('completedSessionsDisplay'),
+    exportJsonBtn: document.getElementById('exportJsonBtn'),
+    importJsonBtn: document.getElementById('importJsonBtn'),
+    jsonFileInput: document.getElementById('jsonFileInput'),
+
     // Audio & Settings
     alarmSoundSelect: document.getElementById('alarmSoundSelect'),
     ambientSoundSelect: document.getElementById('ambientSoundSelect'),
@@ -112,7 +124,7 @@
   const pad = (n) => String(Math.max(0, Math.floor(n))).padStart(2, '0');
 
   /* ==========================================================================
-     INITIALIZATION & LOCAL STORAGE
+     INITIALIZATION & JSON LOCAL STORAGE PERSISTENCE
      ========================================================================== */
 
   function init() {
@@ -143,46 +155,197 @@
 
   function loadSettings() {
     try {
-      const saved = localStorage.getItem('zenith_timer_config');
+      const saved = localStorage.getItem('zenith_timer_data') || localStorage.getItem('zenith_timer_config');
       if (saved) {
         const data = JSON.parse(saved);
-        if (data.theme) setTheme(data.theme);
-        if (data.font) setFont(data.font);
-        if (data.volume !== undefined) {
-          state.volume = data.volume;
-          els.volumeSlider.value = state.volume;
-          els.volumePercent.textContent = `${state.volume}%`;
-          if (window.zenithAudio) window.zenithAudio.setVolume(state.volume);
+
+        // Settings
+        if (data.settings) {
+          if (data.settings.theme) setTheme(data.settings.theme);
+          if (data.settings.font) setFont(data.settings.font);
+          if (data.settings.volume !== undefined) setVolume(data.settings.volume);
+          if (data.settings.alarmSound) {
+            state.alarmSound = data.settings.alarmSound;
+            els.alarmSoundSelect.value = state.alarmSound;
+          }
+          if (data.settings.showDays !== undefined) {
+            state.showDays = data.settings.showDays;
+            els.checkShowDays.checked = state.showDays;
+          }
+          if (data.settings.showProgress !== undefined) {
+            state.showProgress = data.settings.showProgress;
+            els.checkShowProgress.checked = state.showProgress;
+          }
+          if (data.settings.eventTitle) {
+            state.eventTitle = data.settings.eventTitle;
+            els.eventTitleInput.value = state.eventTitle;
+          }
+          if (data.settings.mode) {
+            state.mode = data.settings.mode;
+          }
+        } else {
+          // Legacy format fallback
+          if (data.theme) setTheme(data.theme);
+          if (data.font) setFont(data.font);
+          if (data.volume !== undefined) setVolume(data.volume);
+          if (data.alarmSound) {
+            state.alarmSound = data.alarmSound;
+            els.alarmSoundSelect.value = state.alarmSound;
+          }
+          if (data.eventTitle) {
+            state.eventTitle = data.eventTitle;
+            els.eventTitleInput.value = state.eventTitle;
+          }
         }
-        if (data.alarmSound) {
-          state.alarmSound = data.alarmSound;
-          els.alarmSoundSelect.value = state.alarmSound;
+
+        // Timer States
+        if (data.timerState) {
+          if (data.timerState.targetDateTime) {
+            state.targetDateTime = new Date(data.timerState.targetDateTime);
+          }
+          if (data.timerState.durationTotal) {
+            state.durationTotal = data.timerState.durationTotal;
+            state.durationRemaining = data.timerState.durationRemaining || data.timerState.durationTotal;
+            updateDurationInputs(state.durationTotal);
+          }
+          if (data.timerState.pomoCompletedCycles !== undefined) {
+            state.pomoCompletedCycles = data.timerState.pomoCompletedCycles;
+            els.pomoCycleCount.textContent = state.pomoCompletedCycles;
+          }
         }
-        if (data.showDays !== undefined) {
-          state.showDays = data.showDays;
-          els.checkShowDays.checked = state.showDays;
-        }
-        if (data.eventTitle) {
-          state.eventTitle = data.eventTitle;
-          els.eventTitleInput.value = state.eventTitle;
-          updateTitleDisplay();
+
+        // Statistics
+        if (data.statistics) {
+          state.totalFocusMinutes = data.statistics.totalFocusMinutes || 0;
+          state.completedSessionsCount = data.statistics.completedSessionsCount || 0;
+          state.history = data.statistics.history || [];
         }
       }
-    } catch (_) {}
+    } catch (err) {
+      console.warn('Config load error:', err);
+    }
+
+    updateStatsDisplays();
   }
 
   function saveSettings() {
     try {
       const data = {
-        theme: state.theme,
-        font: state.font,
-        volume: state.volume,
-        alarmSound: state.alarmSound,
-        showDays: state.showDays,
-        eventTitle: state.eventTitle
+        version: "1.0",
+        savedAt: new Date().toISOString(),
+        settings: {
+          mode: state.mode,
+          theme: state.theme,
+          font: state.font,
+          volume: state.volume,
+          alarmSound: state.alarmSound,
+          ambientSound: state.ambientSound,
+          showDays: state.showDays,
+          showProgress: state.showProgress,
+          wakeLockEnabled: state.wakeLockEnabled,
+          eventTitle: state.eventTitle
+        },
+        timerState: {
+          targetDateTime: state.targetDateTime ? state.targetDateTime.toISOString() : null,
+          durationTotal: state.durationTotal,
+          durationRemaining: state.durationRemaining,
+          pomoPhase: state.pomoPhase,
+          pomoCompletedCycles: state.pomoCompletedCycles
+        },
+        statistics: {
+          totalFocusMinutes: state.totalFocusMinutes,
+          completedSessionsCount: state.completedSessionsCount,
+          history: state.history.slice(-100) // Keep last 100 history entries
+        }
       };
-      localStorage.setItem('zenith_timer_config', JSON.stringify(data));
-    } catch (_) {}
+
+      // Save directly as JSON string to browser localStorage
+      localStorage.setItem('zenith_timer_data', JSON.stringify(data));
+      // Legacy backup
+      localStorage.setItem('zenith_timer_config', JSON.stringify(data.settings));
+
+      // Optional backend API sync if running via app.py
+      if (window.location.protocol.startsWith('http')) {
+        fetch('/api/data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        }).catch(() => {}); // silent fail if static web
+      }
+    } catch (err) {
+      console.warn('Config save error:', err);
+    }
+  }
+
+  function setVolume(val) {
+    state.volume = parseInt(val, 10);
+    els.volumeSlider.value = state.volume;
+    els.volumePercent.textContent = `${state.volume}%`;
+    if (window.zenithAudio) window.zenithAudio.setVolume(state.volume);
+  }
+
+  function updateStatsDisplays() {
+    if (els.totalFocusTimeDisplay) {
+      if (state.totalFocusMinutes >= 60) {
+        const hrs = (state.totalFocusMinutes / 60).toFixed(1);
+        els.totalFocusTimeDisplay.textContent = `${hrs} soat`;
+      } else {
+        els.totalFocusTimeDisplay.textContent = `${state.totalFocusMinutes} daq`;
+      }
+    }
+    if (els.completedSessionsDisplay) {
+      els.completedSessionsDisplay.textContent = state.completedSessionsCount;
+    }
+  }
+
+  /* ==========================================================================
+     JSON EXPORT & IMPORT
+     ========================================================================== */
+
+  function exportToJson() {
+    saveSettings();
+    const rawData = localStorage.getItem('zenith_timer_data') || '{}';
+    const parsed = JSON.parse(rawData);
+
+    const jsonString = JSON.stringify(parsed, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `study-timer-backup-${dateStr}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function importFromJson(file) {
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const importedData = JSON.parse(e.target.result);
+        if (typeof importedData !== 'object' || importedData === null) {
+          throw new Error('Noto\'g\'ri JSON formati');
+        }
+
+        // Store to localStorage
+        localStorage.setItem('zenith_timer_data', JSON.stringify(importedData));
+        
+        // Re-read settings
+        loadSettings();
+        applyModeUI();
+        updateDisplay();
+
+        alert('✅ Ma\'lumotlar va sozlamalar JSON fayldan muvaffaqiyatli tiklandi!');
+      } catch (err) {
+        alert('❌ JSON faylni o\'qishda xatolik yuz berdi: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
   }
 
   /* ==========================================================================
@@ -245,7 +408,7 @@
 
     if (diff <= 0) {
       state.isRunning = false;
-      onTimerFinished();
+      onTimerFinished('target', 'Maqsad vaqti yakunlandi');
       renderDigits(0, 0, 0, 0);
       updateStatus('YAKUNLANDI', false);
       return;
@@ -269,7 +432,8 @@
       updateStatus('FOKUS VAQTI', true);
     } else {
       state.isRunning = false;
-      onTimerFinished();
+      const mins = Math.max(1, Math.round(state.durationTotal / 60));
+      onTimerFinished('duration', `${mins} daqiqalik taymer yakunlandi`, mins);
       renderDigits(0, 0, 0, 0);
       updateStatus('VAQT TUGADI', false);
     }
@@ -283,16 +447,18 @@
       updateProgressBar(state.pomoRemaining, total);
       updateStatus(state.pomoPhase === 'work' ? 'DARS FOKUSI' : 'TANAFFUS', true);
     } else {
-      onTimerFinished();
       if (state.pomoPhase === 'work') {
         state.pomoCompletedCycles++;
         els.pomoCycleCount.textContent = state.pomoCompletedCycles;
+        onTimerFinished('pomodoro', `25 daqiqa fokus seansi (#${state.pomoCompletedCycles})`, 25);
+
         if (state.pomoCompletedCycles % 4 === 0) {
           switchPomoPhase('longBreak');
         } else {
           switchPomoPhase('shortBreak');
         }
       } else {
+        onTimerFinished('break', 'Tanaffus tugadi, keyingi darsga tayyorlaning', 0);
         switchPomoPhase('work');
       }
     }
@@ -363,13 +529,31 @@
     }
   }
 
-  function onTimerFinished() {
+  function onTimerFinished(type, title, focusMins = 0) {
     if (window.zenithAudio) {
       window.zenithAudio.playAlarm(state.alarmSound);
     }
-    // Browser notification if permitted
+
+    // Record session statistics
+    if (focusMins > 0) {
+      state.totalFocusMinutes += focusMins;
+      state.completedSessionsCount++;
+      state.history.push({
+        id: Date.now(),
+        timestamp: new Date().toISOString(),
+        type: type,
+        title: title || state.eventTitle || 'Fokus seansi',
+        durationMinutes: focusMins
+      });
+      updateStatsDisplays();
+      saveSettings(); // Auto-save updated stats to JSON
+    }
+
+    // Browser notification
     if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification('Zenith Timer', { body: 'Belgilangan vaqt yakunlandi!' });
+      new Notification('Zenith Study Timer', { 
+        body: title || 'Belgilangan vaqt yakunlandi!' 
+      });
     }
   }
 
@@ -418,9 +602,11 @@
           state.durationRemaining = Math.max(0, state.durationRemaining + addSecs);
           state.durationTotal = Math.max(state.durationRemaining, state.durationTotal);
           tickDuration();
+          saveSettings();
         } else if (state.mode === 'pomodoro') {
           state.pomoRemaining = Math.max(0, state.pomoRemaining + addSecs);
           tickPomodoro();
+          saveSettings();
         }
       });
     });
@@ -430,6 +616,7 @@
       tab.addEventListener('click', () => {
         const mode = tab.dataset.mode;
         setMode(mode);
+        saveSettings();
       });
     });
 
@@ -440,6 +627,7 @@
         state.targetDateTime = selected;
         state.isRunning = true;
         tickTarget();
+        saveSettings();
       }
     });
 
@@ -447,12 +635,16 @@
     document.querySelectorAll('#panelTarget .preset-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         applyTargetPreset(btn.dataset.target);
+        saveSettings();
       });
     });
 
     // 6. Duration Inputs
     [els.inputDays, els.inputHours, els.inputMinutes, els.inputSeconds].forEach(inp => {
-      inp.addEventListener('input', updateDurationFromInputs);
+      inp.addEventListener('input', () => {
+        updateDurationFromInputs();
+        saveSettings();
+      });
     });
 
     // Duration Presets
@@ -464,6 +656,7 @@
         state.isRunning = true;
         updateDurationInputs(secs);
         tickDuration();
+        saveSettings();
       });
     });
 
@@ -471,6 +664,7 @@
     els.pomPhaseBtns.forEach(btn => {
       btn.addEventListener('click', () => {
         switchPomoPhase(btn.dataset.phase);
+        saveSettings();
       });
     });
 
@@ -507,12 +701,11 @@
     els.ambientSoundSelect.addEventListener('change', () => {
       state.ambientSound = els.ambientSoundSelect.value;
       if (window.zenithAudio) window.zenithAudio.setAmbient(state.ambientSound);
+      saveSettings();
     });
 
     els.volumeSlider.addEventListener('input', () => {
-      state.volume = parseInt(els.volumeSlider.value, 10);
-      els.volumePercent.textContent = `${state.volume}%`;
-      if (window.zenithAudio) window.zenithAudio.setVolume(state.volume);
+      setVolume(els.volumeSlider.value);
       saveSettings();
     });
 
@@ -526,24 +719,40 @@
     els.checkShowProgress.addEventListener('change', () => {
       state.showProgress = els.checkShowProgress.checked;
       els.progressBarContainer.style.display = state.showProgress ? 'block' : 'none';
+      saveSettings();
     });
 
     els.checkWakeLock.addEventListener('change', () => {
       state.wakeLockEnabled = els.checkWakeLock.checked;
       if (state.wakeLockEnabled) requestScreenWakeLock();
       else releaseScreenWakeLock();
+      saveSettings();
     });
 
-    // 13. Fullscreen & Zen Mode
+    // 13. JSON Export & Import Buttons
+    if (els.exportJsonBtn) {
+      els.exportJsonBtn.addEventListener('click', exportToJson);
+    }
+    if (els.importJsonBtn && els.jsonFileInput) {
+      els.importJsonBtn.addEventListener('click', () => {
+        els.jsonFileInput.click();
+      });
+      els.jsonFileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          importFromJson(e.target.files[0]);
+        }
+      });
+    }
+
+    // 14. Fullscreen & Zen Mode
     els.fullscreenBtn.addEventListener('click', toggleFullscreen);
     els.zenModeBtn.addEventListener('click', () => {
       closeDrawer();
       triggerIdleNow();
     });
 
-    // 14. Keyboard Shortcuts
+    // 15. Keyboard Shortcuts
     document.addEventListener('keydown', (e) => {
-      // Ignore if user is typing in input
       if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) {
         if (e.key === 'Escape') els.drawer.blur();
         return;
@@ -781,7 +990,6 @@
     els.body.classList.remove('user-idle');
     if (state.idleTimer) clearTimeout(state.idleTimer);
     state.idleTimer = setTimeout(() => {
-      // Only go idle if drawer is not pinned open
       if (!state.isPinned && !els.drawer.classList.contains('open')) {
         els.body.classList.add('user-idle');
       }
@@ -794,6 +1002,7 @@
 
   function updateDisplay() {
     updateTitleDisplay();
+    updateStatsDisplays();
     els.colDays.classList.toggle('hidden-col', !state.showDays);
   }
 

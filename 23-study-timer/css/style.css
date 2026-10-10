@@ -878,6 +878,37 @@ input[type="range"] {
   gap: 0.5rem;
 }
 
+/* Statistics Overview Card */
+.stats-overview-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 0.75rem 0.6rem;
+  text-align: center;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.62rem;
+  color: var(--panel-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.stat-value {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
 /* Drawer Footer & Shortcuts */
 .drawer-footer {
   margin-top: auto;
