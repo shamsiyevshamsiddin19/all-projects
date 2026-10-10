@@ -178,6 +178,29 @@ class ZenithAudioEngine {
     osc2.stop(now + 3.0);
   }
 
+  /**
+   * Gentle Reminder Chime (Dual harmonic bell)
+   */
+  playReminderChime() {
+    this.init();
+    if (this.volume <= 0) return;
+    const now = this.ctx.currentTime;
+    [659.25, 880.0].forEach((freq, idx) => {
+      const t = now + idx * 0.16;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.22, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc.start(t);
+      osc.stop(t + 0.9);
+    });
+  }
+
   // --- AMBIENT FOCUS BACKGROUND GENERATOR ---
 
   setAmbient(type) {

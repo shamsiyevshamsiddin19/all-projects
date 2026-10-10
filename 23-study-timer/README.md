@@ -36,9 +36,12 @@ Zamonaviy, o'ta nafis va chalg'itmaydigan (distraction-free) minimalist taymer v
   - *Aurora Gradient* — Yumshoq kosmik gradient.
 - **Shriftlar:** Urbanist UltraLight, Inter Thin, Montserrat Light, JetBrains Mono, Cormorant Garamond.
 
-### 4. 🔔 Ovoz va Ambient Fokus Tizimi (Web Audio API)
+### 4. 🔔 Ovoz, Eslatmalar va Ambient Fokus Tizimi (Web Audio API)
 Tashqi audio fayllarsiz, to'liq toza Web Audio sintezatori:
 - **Tugash signallari:** Zen Singing Bowl (meditatsiya qo'ng'irog'i), Mayin billur qo'ng'iroq, Zamonaviy Digital Chime, Billur Gong.
+- **Ovozni testlash:** Sozlamalar menyusida tanlangan signalni darhol oldindan eshitib ko'rish tugmasi.
+- **Oraliq eslatmalar:** Har 10, 15, 20, 30 yoki 45 daqiqada diqqatni saqlash uchun mayin oraliq eslatma chalinadi.
+- **Tugashdan 1 daqiqa oldin ogohlantirish:** Yakuniy xulosa uchun maxsus signal.
 - **Orqa fon shovqinlari (White Noise):** Mayin yomg'ir, 432Hz Binaural Focus (alfa/teta to'lqinlari), Chuqur kosmik drone.
 
 ### 5. 👁 Zen Rejimi va Tejamkorlik

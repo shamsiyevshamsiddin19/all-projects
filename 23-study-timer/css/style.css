@@ -548,9 +548,32 @@ body.user-idle .hover-peek-bar {
 
 /* Main Control Buttons */
 .main-controls {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
+  display: flex;
+  align-items: center;
   gap: 0.6rem;
+}
+
+.main-controls .btn-primary {
+  flex: 1;
+}
+
+.btn-icon-only {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.btn-sm {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.74rem;
+  border-radius: 8px;
+  gap: 0.4rem;
 }
 
 .btn {
@@ -1058,5 +1081,45 @@ input[type="range"] {
   color: #ffffff;
   transform: translateX(-2px);
 }
+
+/* ==========================================================================
+   REMINDER TOAST NOTIFICATIONS (Subtle, elegant HUD alert)
+   ========================================================================== */
+
+.reminder-toast {
+  position: fixed;
+  top: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(-16px);
+  background: rgba(18, 18, 22, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  color: #ffffff;
+  padding: 0.65rem 1.3rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.7), 0 0 20px rgba(255, 255, 255, 0.04);
+  z-index: 2000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reminder-toast.active {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.reminder-toast-icon {
+  color: #60a5fa;
+  flex-shrink: 0;
+}
+
 
 

@@ -45,6 +45,13 @@
     ambientSound: 'none',
     volume: 80,
 
+    // Reminders & Alerts (Eslatmalar)
+    intervalReminderMinutes: 0, // 0 = off, 10, 15, 20, 30, 45 mins
+    preEndWarning: true,        // 1 minute before end
+    browserNotify: true,        // Native desktop notifications
+    elapsedSecondsInSession: 0,
+    warnedPreEnd: false,
+
     // Idle Detection
     idleTimer: null,
     wakeLockSentinel: null
@@ -54,6 +61,7 @@
   const els = {
     body: document.getElementById('appBody'),
     hoverZone: document.getElementById('hoverZone'),
+    hoverPeekBar: document.getElementById('hoverPeekBar'),
     drawer: document.getElementById('settingsDrawer'),
     drawerBrandTitle: document.getElementById('drawerBrandTitle'),
     drawerBrandBadge: document.getElementById('drawerBrandBadge'),
@@ -71,12 +79,14 @@
     secondsValue: document.getElementById('secondsValue'),
     colDays: document.getElementById('colDays'),
     
-    // Progress & Title
+    // Progress & Title & Reminders
     progressBarFill: document.getElementById('progressBarFill'),
     progressBarContainer: document.getElementById('progressBarContainer'),
     eventTitleBanner: document.getElementById('eventTitleBanner'),
     eventTitleDisplay: document.getElementById('eventTitleDisplay'),
     eventTitleInput: document.getElementById('eventTitleInput'),
+    reminderToast: document.getElementById('reminderToast'),
+    reminderToastText: document.getElementById('reminderToastText'),
 
     // Status & Controls
     statusPulse: document.getElementById('statusPulse'),
@@ -120,8 +130,12 @@
     ambientSoundSelect: document.getElementById('ambientSoundSelect'),
     volumeSlider: document.getElementById('volumeSlider'),
     volumePercent: document.getElementById('volumePercent'),
+    testSoundBtn: document.getElementById('testSoundBtn'),
 
-    // Checks & Actions
+    // Reminders & Checks
+    intervalReminderSelect: document.getElementById('intervalReminderSelect'),
+    checkPreEndWarning: document.getElementById('checkPreEndWarning'),
+    checkBrowserNotify: document.getElementById('checkBrowserNotify'),
     checkShowDays: document.getElementById('checkShowDays'),
     checkShowProgress: document.getElementById('checkShowProgress'),
     checkWakeLock: document.getElementById('checkWakeLock'),
@@ -169,19 +183,31 @@
           if (data.settings.volume !== undefined) setVolume(data.settings.volume);
           if (data.settings.alarmSound) {
             state.alarmSound = data.settings.alarmSound;
-            els.alarmSoundSelect.value = state.alarmSound;
+            if (els.alarmSoundSelect) els.alarmSoundSelect.value = state.alarmSound;
           }
           if (data.settings.showDays !== undefined) {
             state.showDays = data.settings.showDays;
-            els.checkShowDays.checked = state.showDays;
+            if (els.checkShowDays) els.checkShowDays.checked = state.showDays;
           }
           if (data.settings.showProgress !== undefined) {
             state.showProgress = data.settings.showProgress;
-            els.checkShowProgress.checked = state.showProgress;
+            if (els.checkShowProgress) els.checkShowProgress.checked = state.showProgress;
           }
           if (data.settings.eventTitle) {
             state.eventTitle = data.settings.eventTitle;
-            els.eventTitleInput.value = state.eventTitle;
+            if (els.eventTitleInput) els.eventTitleInput.value = state.eventTitle;
+          }
+          if (data.settings.intervalReminderMinutes !== undefined) {
+            state.intervalReminderMinutes = data.settings.intervalReminderMinutes;
+            if (els.intervalReminderSelect) els.intervalReminderSelect.value = String(state.intervalReminderMinutes);
+          }
+          if (data.settings.preEndWarning !== undefined) {
+            state.preEndWarning = data.settings.preEndWarning;
+            if (els.checkPreEndWarning) els.checkPreEndWarning.checked = state.preEndWarning;
+          }
+          if (data.settings.browserNotify !== undefined) {
+            state.browserNotify = data.settings.browserNotify;
+            if (els.checkBrowserNotify) els.checkBrowserNotify.checked = state.browserNotify;
           }
           if (data.settings.mode) {
             state.mode = data.settings.mode === 'target' ? 'duration' : data.settings.mode;
@@ -193,11 +219,11 @@
           if (data.volume !== undefined) setVolume(data.volume);
           if (data.alarmSound) {
             state.alarmSound = data.alarmSound;
-            els.alarmSoundSelect.value = state.alarmSound;
+            if (els.alarmSoundSelect) els.alarmSoundSelect.value = state.alarmSound;
           }
           if (data.eventTitle) {
             state.eventTitle = data.eventTitle;
-            els.eventTitleInput.value = state.eventTitle;
+            if (els.eventTitleInput) els.eventTitleInput.value = state.eventTitle;
           }
         }
 
@@ -213,7 +239,7 @@
           }
           if (data.timerState.pomoCompletedCycles !== undefined) {
             state.pomoCompletedCycles = data.timerState.pomoCompletedCycles;
-            els.pomoCycleCount.textContent = state.pomoCompletedCycles;
+            if (els.pomoCycleCount) els.pomoCycleCount.textContent = state.pomoCompletedCycles;
           }
         }
 
@@ -246,7 +272,10 @@
           showDays: state.showDays,
           showProgress: state.showProgress,
           wakeLockEnabled: state.wakeLockEnabled,
-          eventTitle: state.eventTitle
+          eventTitle: state.eventTitle,
+          intervalReminderMinutes: state.intervalReminderMinutes,
+          preEndWarning: state.preEndWarning,
+          browserNotify: state.browserNotify
         },
         timerState: {
           targetDateTime: state.targetDateTime ? state.targetDateTime.toISOString() : null,
@@ -352,36 +381,84 @@
   }
 
   /* ==========================================================================
+     REMINDERS & TOAST ALERTS (Eslatmalar tizimi)
+     ========================================================================== */
+
+  let reminderToastTimeout = null;
+
+  function triggerReminder(title, text) {
+    if (audio && typeof audio.playReminderChime === 'function') {
+      audio.playReminderChime();
+    }
+    if (els.reminderToast && els.reminderToastText) {
+      els.reminderToastText.textContent = text || title;
+      els.reminderToast.style.display = 'flex';
+      void els.reminderToast.offsetWidth; // Force reflow for CSS transition
+      els.reminderToast.classList.add('active');
+      if (reminderToastTimeout) clearTimeout(reminderToastTimeout);
+      reminderToastTimeout = setTimeout(() => {
+        els.reminderToast.classList.remove('active');
+        setTimeout(() => {
+          if (!els.reminderToast.classList.contains('active')) {
+            els.reminderToast.style.display = 'none';
+          }
+        }, 300);
+      }, 3500);
+    }
+    if (state.browserNotify && 'Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, { body: text });
+    }
+  }
+
+  /* ==========================================================================
      DRAWER SUB-VIEWS CONTROLLER (TIMER CONTROLS <-> SETTINGS CONFIG)
      ========================================================================== */
 
   function showSettingsView() {
-    if (els.timerSubView && els.settingsSubView) {
+    if (els.timerSubView) {
       els.timerSubView.style.display = 'none';
       els.timerSubView.classList.remove('active');
+    }
+    if (els.settingsSubView) {
       els.settingsSubView.style.display = 'flex';
       els.settingsSubView.classList.add('active');
-      if (els.openSettingsHeaderBtn) els.openSettingsHeaderBtn.classList.add('active');
-      if (els.drawerBrandTitle) els.drawerBrandTitle.textContent = 'SOZLAMALAR';
-      if (els.drawerBrandBadge) els.drawerBrandBadge.textContent = 'CONFIG';
-      openDrawer();
     }
+    if (els.openSettingsHeaderBtn) {
+      els.openSettingsHeaderBtn.classList.add('active');
+    }
+    if (els.drawerBrandTitle) {
+      els.drawerBrandTitle.textContent = 'SOZLAMALAR';
+    }
+    if (els.drawerBrandBadge) {
+      els.drawerBrandBadge.textContent = 'CONFIG';
+    }
+    openDrawer();
   }
 
   function showTimerView() {
-    if (els.timerSubView && els.settingsSubView) {
+    if (els.settingsSubView) {
       els.settingsSubView.style.display = 'none';
       els.settingsSubView.classList.remove('active');
+    }
+    if (els.timerSubView) {
       els.timerSubView.style.display = 'flex';
       els.timerSubView.classList.add('active');
-      if (els.openSettingsHeaderBtn) els.openSettingsHeaderBtn.classList.remove('active');
-      if (els.drawerBrandTitle) els.drawerBrandTitle.textContent = 'ZENITH CHRONO';
-      if (els.drawerBrandBadge) els.drawerBrandBadge.textContent = 'STUDIO';
+    }
+    if (els.openSettingsHeaderBtn) {
+      els.openSettingsHeaderBtn.classList.remove('active');
+    }
+    if (els.drawerBrandTitle) {
+      els.drawerBrandTitle.textContent = 'ZENITH CHRONO';
+    }
+    if (els.drawerBrandBadge) {
+      els.drawerBrandBadge.textContent = 'STUDIO';
     }
   }
 
   function toggleSettingsView() {
-    if (els.settingsSubView && els.settingsSubView.style.display === 'flex') {
+    const isSettings = els.settingsSubView && 
+      (els.settingsSubView.style.display === 'flex' || els.settingsSubView.classList.contains('active'));
+    if (isSettings) {
       showTimerView();
     } else {
       showSettingsView();
@@ -472,6 +549,22 @@
   function tickDuration() {
     if (state.durationRemaining > 0) {
       state.durationRemaining--;
+      state.elapsedSecondsInSession++;
+
+      // Oraliq eslatma (Interval reminder)
+      if (state.intervalReminderMinutes > 0) {
+        const intervalSec = state.intervalReminderMinutes * 60;
+        if (state.elapsedSecondsInSession > 0 && state.elapsedSecondsInSession % intervalSec === 0) {
+          triggerReminder('Oraliq eslatma', `${state.intervalReminderMinutes} daqiqa o'tdi — fokusni davom ettiring!`);
+        }
+      }
+
+      // 1 daqiqa qolganda ogohlantiruvchi eslatma
+      if (state.preEndWarning && !state.warnedPreEnd && state.durationRemaining === 60) {
+        state.warnedPreEnd = true;
+        triggerReminder('1 daqiqa qoldi!', 'Mashg\'ulot yakunlanishiga 1 daqiqa qoldi.');
+      }
+
       renderSecondsAsDigits(state.durationRemaining);
       updateProgressBar(state.durationRemaining, state.durationTotal);
       updateStatus('FOKUS VAQTI', true);
@@ -487,14 +580,23 @@
   function tickPomodoro() {
     if (state.pomoRemaining > 0) {
       state.pomoRemaining--;
+      state.elapsedSecondsInSession++;
+
+      // 1 daqiqa qolganda ogohlantirish
+      if (state.preEndWarning && !state.warnedPreEnd && state.pomoRemaining === 60) {
+        state.warnedPreEnd = true;
+        triggerReminder('1 daqiqa qoldi!', state.pomoPhase === 'work' ? 'Dars seansi tugashiga 1 daqiqa qoldi.' : 'Tanaffus tugashiga 1 daqiqa qoldi.');
+      }
+
       renderSecondsAsDigits(state.pomoRemaining);
       const total = state.pomoDurations[state.pomoPhase];
       updateProgressBar(state.pomoRemaining, total);
       updateStatus(state.pomoPhase === 'work' ? 'DARS FOKUSI' : 'TANAFFUS', true);
     } else {
+      state.warnedPreEnd = false;
       if (state.pomoPhase === 'work') {
         state.pomoCompletedCycles++;
-        els.pomoCycleCount.textContent = state.pomoCompletedCycles;
+        if (els.pomoCycleCount) els.pomoCycleCount.textContent = state.pomoCompletedCycles;
         onTimerFinished('pomodoro', `25 daqiqa fokus seansi (#${state.pomoCompletedCycles})`, 25);
 
         if (state.pomoCompletedCycles % 4 === 0) {
@@ -511,6 +613,17 @@
 
   function tickStopwatch() {
     state.stopwatchElapsed++;
+    state.elapsedSecondsInSession++;
+
+    // Oraliq eslatma
+    if (state.intervalReminderMinutes > 0) {
+      const intervalSec = state.intervalReminderMinutes * 60;
+      if (state.stopwatchElapsed > 0 && state.stopwatchElapsed % intervalSec === 0) {
+        const mins = Math.round(state.stopwatchElapsed / 60);
+        triggerReminder('Oraliq eslatma', `Sekundomer: ${mins} daqiqa vaqt o'tdi.`);
+      }
+    }
+
     renderSecondsAsDigits(state.stopwatchElapsed);
     updateStatus('SEKUNDOMER', true);
   }
@@ -623,13 +736,15 @@
       }
     });
 
-    els.hoverPeekBar.addEventListener('click', openDrawer);
-    els.closeDrawerBtn.addEventListener('click', () => {
-      state.isPinned = false;
-      els.pinDrawerBtn.classList.remove('active');
-      closeDrawer();
-    });
-    els.pinDrawerBtn.addEventListener('click', togglePin);
+    if (els.hoverPeekBar) els.hoverPeekBar.addEventListener('click', openDrawer);
+    if (els.closeDrawerBtn) {
+      els.closeDrawerBtn.addEventListener('click', () => {
+        state.isPinned = false;
+        if (els.pinDrawerBtn) els.pinDrawerBtn.classList.remove('active');
+        closeDrawer();
+      });
+    }
+    if (els.pinDrawerBtn) els.pinDrawerBtn.addEventListener('click', togglePin);
 
     // 2. Play / Pause & Reset
     els.toggleRunBtn.addEventListener('click', () => {
@@ -809,14 +924,58 @@
     }
 
     // 14. Fullscreen & Zen Mode & Settings Triggers
-    els.fullscreenBtn.addEventListener('click', toggleFullscreen);
-    els.zenModeBtn.addEventListener('click', () => {
-      closeDrawer();
-      triggerIdleNow();
-    });
+    if (els.fullscreenBtn) els.fullscreenBtn.addEventListener('click', toggleFullscreen);
+    if (els.zenModeBtn) {
+      els.zenModeBtn.addEventListener('click', () => {
+        closeDrawer();
+        triggerIdleNow();
+      });
+    }
 
-    if (els.openSettingsHeaderBtn) els.openSettingsHeaderBtn.addEventListener('click', toggleSettingsView);
-    if (els.backToTimerBtn) els.backToTimerBtn.addEventListener('click', showTimerView);
+    if (els.openSettingsHeaderBtn) {
+      els.openSettingsHeaderBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleSettingsView();
+      });
+    }
+    if (els.backToTimerBtn) {
+      els.backToTimerBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showTimerView();
+      });
+    }
+
+    // 15. Sound Test & Reminders Listeners
+    if (els.testSoundBtn) {
+      els.testSoundBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        audio.playAlarm(state.alarmSound);
+      });
+    }
+
+    if (els.intervalReminderSelect) {
+      els.intervalReminderSelect.addEventListener('change', () => {
+        state.intervalReminderMinutes = parseInt(els.intervalReminderSelect.value, 10) || 0;
+        saveSettings();
+      });
+    }
+
+    if (els.checkPreEndWarning) {
+      els.checkPreEndWarning.addEventListener('change', () => {
+        state.preEndWarning = els.checkPreEndWarning.checked;
+        saveSettings();
+      });
+    }
+
+    if (els.checkBrowserNotify) {
+      els.checkBrowserNotify.addEventListener('change', () => {
+        state.browserNotify = els.checkBrowserNotify.checked;
+        if (state.browserNotify && 'Notification' in window && Notification.permission === 'default') {
+          Notification.requestPermission();
+        }
+        saveSettings();
+      });
+    }
 
     // 15. Keyboard Shortcuts
     document.addEventListener('keydown', (e) => {
@@ -908,7 +1067,9 @@
 
   function resetCurrentMode() {
     state.isRunning = false;
-    els.progressBarFill.style.width = '100%';
+    state.elapsedSecondsInSession = 0;
+    state.warnedPreEnd = false;
+    if (els.progressBarFill) els.progressBarFill.style.width = '100%';
 
     switch (state.mode) {
       case 'target':
