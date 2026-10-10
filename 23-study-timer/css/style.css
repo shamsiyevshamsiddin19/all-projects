@@ -193,15 +193,14 @@ body.user-idle .hover-peek-bar {
   max-width: 1400px;
 }
 
-/* Each Column (Digit + Label) */
+/* Each Column (Digit + Label) — Fixed rock-solid width */
 .digit-column {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-width: clamp(70px, 14vw, 220px);
+  width: clamp(75px, 15vw, 240px);
   text-align: center;
-  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .digit-column.hidden-col {
@@ -213,6 +212,7 @@ body.user-idle .hover-peek-bar {
   justify-content: center;
   align-items: center;
   line-height: 1;
+  width: 100%;
 }
 
 .digit-value {
@@ -222,12 +222,11 @@ body.user-idle .hover-peek-bar {
   letter-spacing: -0.02em;
   color: var(--digit-color);
   display: inline-block;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+  text-align: center;
   font-variant-numeric: tabular-nums lining-nums;
-}
-
-.digit-value.tick-pulse {
-  transform: translateY(-2px);
+  -webkit-font-feature-settings: "tnum" 1;
+  -moz-font-feature-settings: "tnum" 1;
+  font-feature-settings: "tnum" 1;
 }
 
 .digit-label {

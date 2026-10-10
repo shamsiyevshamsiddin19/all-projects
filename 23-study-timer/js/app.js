@@ -540,8 +540,6 @@
 
   function pulseDigit(el, newText) {
     el.textContent = newText;
-    el.classList.add('tick-pulse');
-    setTimeout(() => el.classList.remove('tick-pulse'), 150);
   }
 
   function updateProgressBar(current, total) {
