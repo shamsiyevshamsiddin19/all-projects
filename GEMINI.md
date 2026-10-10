@@ -5,6 +5,12 @@ Ushbu loyihalar papkasida (`/home/shamsiddin/Documents/project/loyihalar`) ishla
 
 ---
 
+### 0. SHAXSIY BILIMLAR VA QOIDALAR BAZASI (MY_SCILL)
+Har qanday vazifaga kirishishdan oldin AI agent `/home/shamsiddin/Documents/MY_SCILL/` dagi qoidalarni (saytlar uchun `preferences/websites.md`, botlar uchun `preferences/bots.md`, hujjatlar uchun `preferences/academic_docs.md`, umumiy qoidalar uchun `preferences/general.md`) o'qishi SHART!
+Foydalanuvchi biror narsani o'zgartirishni yoki yoqmaganini aytsa, `MY_SCILL/feedback/` ga yozib, `python3 /home/shamsiddin/Documents/MY_SCILL/sync.py` orqali sinxronlang.
+
+---
+
 ### 1. ASOSIY TALAB (CORE REQUIREMENT)
 Har qanday loyihada:
 - Kod o'zgartirilganda (bug fix, refactor, yangi funksiya, dizayn yangilanishi va h.k.)
