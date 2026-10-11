@@ -150,6 +150,12 @@
   // Helper: Format with leading zeros
   const pad = (n) => String(Math.max(0, Math.floor(n))).padStart(2, '0');
 
+  function applyProgressVisibility() {
+    if (els.progressBarContainer) {
+      els.progressBarContainer.style.display = state.showProgress ? 'block' : 'none';
+    }
+  }
+
   /* ==========================================================================
      INITIALIZATION & JSON LOCAL STORAGE PERSISTENCE
      ========================================================================== */
@@ -189,13 +195,23 @@
             state.alarmSound = data.settings.alarmSound;
             if (els.alarmSoundSelect) els.alarmSoundSelect.value = state.alarmSound;
           }
+          if (data.settings.ambientSound) {
+            state.ambientSound = data.settings.ambientSound;
+            if (els.ambientSoundSelect) els.ambientSoundSelect.value = state.ambientSound;
+          }
           if (data.settings.showDays !== undefined) {
-            state.showDays = data.settings.showDays;
+            state.showDays = Boolean(data.settings.showDays);
             if (els.checkShowDays) els.checkShowDays.checked = state.showDays;
+            if (els.colDays) els.colDays.classList.toggle('hidden-col', !state.showDays);
           }
           if (data.settings.showProgress !== undefined) {
-            state.showProgress = data.settings.showProgress;
+            state.showProgress = Boolean(data.settings.showProgress);
             if (els.checkShowProgress) els.checkShowProgress.checked = state.showProgress;
+            applyProgressVisibility();
+          }
+          if (data.settings.wakeLockEnabled !== undefined) {
+            state.wakeLockEnabled = Boolean(data.settings.wakeLockEnabled);
+            if (els.checkWakeLock) els.checkWakeLock.checked = state.wakeLockEnabled;
           }
           if (data.settings.eventTitle) {
             state.eventTitle = data.settings.eventTitle;
@@ -224,6 +240,11 @@
           if (data.alarmSound) {
             state.alarmSound = data.alarmSound;
             if (els.alarmSoundSelect) els.alarmSoundSelect.value = state.alarmSound;
+          }
+          if (data.showProgress !== undefined) {
+            state.showProgress = Boolean(data.showProgress);
+            if (els.checkShowProgress) els.checkShowProgress.checked = state.showProgress;
+            applyProgressVisibility();
           }
           if (data.eventTitle) {
             state.eventTitle = data.eventTitle;
@@ -683,12 +704,13 @@
   }
 
   function updateProgressBar(current, total) {
+    applyProgressVisibility();
     if (!state.showProgress || total <= 0) {
-      els.progressBarFill.style.width = '100%';
+      if (els.progressBarFill) els.progressBarFill.style.width = '100%';
       return;
     }
     const percent = Math.max(0, Math.min(100, (current / total) * 100));
-    els.progressBarFill.style.width = `${percent}%`;
+    if (els.progressBarFill) els.progressBarFill.style.width = `${percent}%`;
   }
 
   function updateStatus(text, running) {
@@ -939,7 +961,7 @@
 
     els.checkShowProgress.addEventListener('change', () => {
       state.showProgress = els.checkShowProgress.checked;
-      els.progressBarContainer.style.display = state.showProgress ? 'block' : 'none';
+      applyProgressVisibility();
       saveSettings();
     });
 
@@ -1108,6 +1130,7 @@
     state.isRunning = false;
     state.elapsedSecondsInSession = 0;
     state.warnedPreEnd = false;
+    applyProgressVisibility();
     if (els.progressBarFill) els.progressBarFill.style.width = '100%';
 
     switch (state.mode) {
@@ -1308,7 +1331,8 @@
   function updateDisplay() {
     updateTitleDisplay();
     updateStatsDisplays();
-    els.colDays.classList.toggle('hidden-col', !state.showDays);
+    if (els.colDays) els.colDays.classList.toggle('hidden-col', !state.showDays);
+    applyProgressVisibility();
   }
 
   // Run on DOM ready
