@@ -146,13 +146,7 @@
     checkAutoRotatePortrait: document.getElementById('checkAutoRotatePortrait'),
     fullscreenBtn: document.getElementById('fullscreenBtn'),
     rotateTimerBtn: document.getElementById('rotateTimerBtn'),
-    zenModeBtn: document.getElementById('zenModeBtn'),
-
-    // Mobile Action HUD
-    mobileHud: document.getElementById('mobileHud'),
-    mobileRotateBtn: document.getElementById('mobileRotateBtn'),
-    mobileFullscreenBtn: document.getElementById('mobileFullscreenBtn'),
-    mobileMenuBtn: document.getElementById('mobileMenuBtn')
+    zenModeBtn: document.getElementById('zenModeBtn')
   };
 
   // Helper: Format with leading zeros
@@ -967,12 +961,9 @@
       });
     }
 
-    // 14. Fullscreen & Rotation & Mobile Action HUD
+    // 14. Fullscreen & Rotation
     if (els.fullscreenBtn) els.fullscreenBtn.addEventListener('click', toggleFullscreen);
-    if (els.mobileFullscreenBtn) els.mobileFullscreenBtn.addEventListener('click', toggleFullscreen);
     if (els.rotateTimerBtn) els.rotateTimerBtn.addEventListener('click', toggleRotated);
-    if (els.mobileRotateBtn) els.mobileRotateBtn.addEventListener('click', toggleRotated);
-    if (els.mobileMenuBtn) els.mobileMenuBtn.addEventListener('click', openDrawer);
 
     if (els.checkAutoRotatePortrait) {
       els.checkAutoRotatePortrait.addEventListener('change', () => {
@@ -1006,7 +997,6 @@
           document.body.classList.remove('mobile-pseudo-fullscreen');
         }
         if (els.fullscreenBtn) els.fullscreenBtn.classList.toggle('active', isFs);
-        if (els.mobileFullscreenBtn) els.mobileFullscreenBtn.classList.toggle('active', isFs);
       });
     });
 
@@ -1351,7 +1341,6 @@
       }
 
       if (els.fullscreenBtn) els.fullscreenBtn.classList.add('active');
-      if (els.mobileFullscreenBtn) els.mobileFullscreenBtn.classList.add('active');
     } else {
       doc.body.classList.remove('mobile-pseudo-fullscreen');
       try {
@@ -1369,7 +1358,6 @@
       }
 
       if (els.fullscreenBtn) els.fullscreenBtn.classList.remove('active');
-      if (els.mobileFullscreenBtn) els.mobileFullscreenBtn.classList.remove('active');
     }
   }
 
@@ -1403,9 +1391,6 @@
   function applyRotationUI() {
     if (els.body) {
       els.body.classList.toggle('is-rotated-90', state.isRotated90);
-    }
-    if (els.mobileRotateBtn) {
-      els.mobileRotateBtn.classList.toggle('active', state.isRotated90);
     }
     if (els.rotateTimerBtn) {
       els.rotateTimerBtn.classList.toggle('active', state.isRotated90);

@@ -186,16 +186,16 @@ def run_tests():
         ("Seconds Value Span", "#secondsValue"),
         ("Reminder Toast Alert", "#reminderToast"),
         ("Rotate Timer Btn", "#rotateTimerBtn"),
-        ("Check Auto Rotate Portrait", "#checkAutoRotatePortrait"),
-        ("Mobile HUD Container", "#mobileHud"),
-        ("Mobile Rotate Btn", "#mobileRotateBtn"),
-        ("Mobile Fullscreen Btn", "#mobileFullscreenBtn"),
-        ("Mobile Menu Btn", "#mobileMenuBtn")
+        ("Check Auto Rotate Portrait", "#checkAutoRotatePortrait")
     ]
 
     for label, selector in required_elements:
         elem = soup.select_one(selector)
         record_test(f"Element mavjudligi: {label} ({selector})", elem is not None)
+
+    # Ekran toza va minimal bo'lishi: Suzuvchi Mobile HUD butunlay yo'qligi tasdiqlanishi
+    floating_hud = soup.select_one("#mobileHud")
+    record_test("Ekran tozaligi: Suzuvchi burchak HUD yo'qligi (#mobileHud yo'q)", floating_hud is None)
 
     # Verify Preset Buttons Count
     presets = soup.select("#panelDuration .preset-btn")
@@ -303,7 +303,7 @@ def run_tests():
       'alarmSoundSelect', 'ambientSoundSelect', 'volumeSlider', 'volumePercent',
       'testSoundBtn', 'intervalReminderSelect', 'checkPreEndWarning', 'checkBrowserNotify',
       'checkShowDays', 'checkWakeLock', 'checkAutoRotatePortrait', 'fullscreenBtn',
-      'rotateTimerBtn', 'zenModeBtn', 'mobileHud', 'mobileRotateBtn', 'mobileFullscreenBtn', 'mobileMenuBtn'
+      'rotateTimerBtn', 'zenModeBtn'
     ];
     elementIds.forEach(id => documentMock.getElementById(id));
 
@@ -385,19 +385,15 @@ def run_tests():
     soundBtn.click();
     console.log('✅ JS: Sound preview test button tested.');
 
-    // Test Rotate Buttons
-    const mobileRotateBtn = documentMock.getElementById('mobileRotateBtn');
-    mobileRotateBtn.click();
-    console.log('✅ JS: Mobile rotate button click tested.');
-
+    // Test Rotate Button in Drawer
     const rotateTimerBtn = documentMock.getElementById('rotateTimerBtn');
     rotateTimerBtn.click();
     console.log('✅ JS: Drawer rotate button click tested.');
 
-    // Test Mobile Fullscreen Button
-    const mobileFullscreenBtn = documentMock.getElementById('mobileFullscreenBtn');
-    mobileFullscreenBtn.click();
-    console.log('✅ JS: Mobile fullscreen button click tested.');
+    // Test Fullscreen Button in Drawer
+    const fullscreenBtn = documentMock.getElementById('fullscreenBtn');
+    fullscreenBtn.click();
+    console.log('✅ JS: Fullscreen button click tested.');
 
     // Test Audio Methods directly
     global.window.zenithAudio.playAlarm('zen_bowl');
