@@ -177,7 +177,6 @@ def run_tests():
         ("Pre-End Warning Checkbox", "#checkPreEndWarning"),
         ("Browser Notification Checkbox", "#checkBrowserNotify"),
         ("Show Days Checkbox", "#checkShowDays"),
-        ("Show Progress Checkbox", "#checkShowProgress"),
         ("Screen WakeLock Checkbox", "#checkWakeLock"),
         ("Digits Container", "#digitsContainer"),
         ("Days Column", "#colDays"),
@@ -185,7 +184,6 @@ def run_tests():
         ("Hours Value Span", "#hoursValue"),
         ("Minutes Value Span", "#minutesValue"),
         ("Seconds Value Span", "#secondsValue"),
-        ("Progress Bar Fill", "#progressBarFill"),
         ("Reminder Toast Alert", "#reminderToast")
     ]
 
@@ -292,13 +290,13 @@ def run_tests():
       'drawerBrandBadge', 'pinDrawerBtn', 'closeDrawerBtn', 'timerSubView',
       'settingsSubView', 'backToTimerBtn', 'openSettingsHeaderBtn', 'daysValue',
       'hoursValue', 'minutesValue', 'secondsValue', 'colDays', 'digitsContainer',
-      'progressBarFill', 'progressBarContainer', 'eventTitleBanner', 'eventTitleDisplay',
+      'eventTitleBanner', 'eventTitleDisplay',
       'eventTitleInput', 'reminderToast', 'reminderToastText', 'toggleRunBtn', 'resetBtn',
       'themeSelect', 'fontSelect', 'panelDuration', 'panelPomodoro', 'inputDays',
       'inputHours', 'inputMinutes', 'inputSeconds', 'quickAdjustRow', 'pomoCycleCount',
       'alarmSoundSelect', 'ambientSoundSelect', 'volumeSlider', 'volumePercent',
       'testSoundBtn', 'intervalReminderSelect', 'checkPreEndWarning', 'checkBrowserNotify',
-      'checkShowDays', 'checkShowProgress', 'checkWakeLock', 'fullscreenBtn', 'zenModeBtn'
+      'checkShowDays', 'checkWakeLock', 'fullscreenBtn', 'zenModeBtn'
     ];
     elementIds.forEach(id => documentMock.getElementById(id));
 

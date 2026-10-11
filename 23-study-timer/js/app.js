@@ -39,7 +39,6 @@
     theme: 'theme-obsidian',
     font: 'font-urbanist',
     showDays: true,
-    showProgress: true,
     wakeLockEnabled: true,
     alarmSound: 'zen_bowl',
     ambientSound: 'none',
@@ -83,9 +82,7 @@
     colDays: document.getElementById('colDays'),
     digitsContainer: document.getElementById('digitsContainer'),
     
-    // Progress & Title & Reminders
-    progressBarFill: document.getElementById('progressBarFill'),
-    progressBarContainer: document.getElementById('progressBarContainer'),
+    // Title & Reminders
     eventTitleBanner: document.getElementById('eventTitleBanner'),
     eventTitleDisplay: document.getElementById('eventTitleDisplay'),
     eventTitleInput: document.getElementById('eventTitleInput'),
@@ -141,7 +138,6 @@
     checkPreEndWarning: document.getElementById('checkPreEndWarning'),
     checkBrowserNotify: document.getElementById('checkBrowserNotify'),
     checkShowDays: document.getElementById('checkShowDays'),
-    checkShowProgress: document.getElementById('checkShowProgress'),
     checkWakeLock: document.getElementById('checkWakeLock'),
     fullscreenBtn: document.getElementById('fullscreenBtn'),
     zenModeBtn: document.getElementById('zenModeBtn')
@@ -149,12 +145,6 @@
 
   // Helper: Format with leading zeros
   const pad = (n) => String(Math.max(0, Math.floor(n))).padStart(2, '0');
-
-  function applyProgressVisibility() {
-    if (els.progressBarContainer) {
-      els.progressBarContainer.style.display = state.showProgress ? 'block' : 'none';
-    }
-  }
 
   /* ==========================================================================
      INITIALIZATION & JSON LOCAL STORAGE PERSISTENCE
@@ -204,11 +194,6 @@
             if (els.checkShowDays) els.checkShowDays.checked = state.showDays;
             if (els.colDays) els.colDays.classList.toggle('hidden-col', !state.showDays);
           }
-          if (data.settings.showProgress !== undefined) {
-            state.showProgress = Boolean(data.settings.showProgress);
-            if (els.checkShowProgress) els.checkShowProgress.checked = state.showProgress;
-            applyProgressVisibility();
-          }
           if (data.settings.wakeLockEnabled !== undefined) {
             state.wakeLockEnabled = Boolean(data.settings.wakeLockEnabled);
             if (els.checkWakeLock) els.checkWakeLock.checked = state.wakeLockEnabled;
@@ -240,11 +225,6 @@
           if (data.alarmSound) {
             state.alarmSound = data.alarmSound;
             if (els.alarmSoundSelect) els.alarmSoundSelect.value = state.alarmSound;
-          }
-          if (data.showProgress !== undefined) {
-            state.showProgress = Boolean(data.showProgress);
-            if (els.checkShowProgress) els.checkShowProgress.checked = state.showProgress;
-            applyProgressVisibility();
           }
           if (data.eventTitle) {
             state.eventTitle = data.eventTitle;
@@ -295,7 +275,6 @@
           alarmSound: state.alarmSound,
           ambientSound: state.ambientSound,
           showDays: state.showDays,
-          showProgress: state.showProgress,
           wakeLockEnabled: state.wakeLockEnabled,
           eventTitle: state.eventTitle,
           intervalReminderMinutes: state.intervalReminderMinutes,
@@ -592,7 +571,6 @@
       }
 
       renderSecondsAsDigits(state.durationRemaining);
-      updateProgressBar(state.durationRemaining, state.durationTotal);
       updateStatus('FOKUS VAQTI', true);
     } else {
       state.isRunning = false;
@@ -615,8 +593,6 @@
       }
 
       renderSecondsAsDigits(state.pomoRemaining);
-      const total = state.pomoDurations[state.pomoPhase];
-      updateProgressBar(state.pomoRemaining, total);
       updateStatus(state.pomoPhase === 'work' ? 'DARS FOKUSI' : 'TANAFFUS', true);
     } else {
       state.warnedPreEnd = false;
@@ -701,16 +677,6 @@
 
   function pulseDigit(el, newText) {
     el.textContent = newText;
-  }
-
-  function updateProgressBar(current, total) {
-    applyProgressVisibility();
-    if (!state.showProgress || total <= 0) {
-      if (els.progressBarFill) els.progressBarFill.style.width = '100%';
-      return;
-    }
-    const percent = Math.max(0, Math.min(100, (current / total) * 100));
-    if (els.progressBarFill) els.progressBarFill.style.width = `${percent}%`;
   }
 
   function updateStatus(text, running) {
@@ -828,12 +794,10 @@
             state.durationTotal = Math.max(state.durationRemaining, state.durationTotal);
             updateDurationInputs(state.durationRemaining);
             renderSecondsAsDigits(state.durationRemaining);
-            updateProgressBar(state.durationRemaining, state.durationTotal);
             saveSettings();
           } else if (state.mode === 'pomodoro') {
             state.pomoRemaining = Math.max(0, state.pomoRemaining + addSecs);
             renderSecondsAsDigits(state.pomoRemaining);
-            updateProgressBar(state.pomoRemaining, state.pomoDurations[state.pomoPhase]);
             saveSettings();
           }
         });
@@ -956,12 +920,6 @@
     els.checkShowDays.addEventListener('change', () => {
       state.showDays = els.checkShowDays.checked;
       els.colDays.classList.toggle('hidden-col', !state.showDays);
-      saveSettings();
-    });
-
-    els.checkShowProgress.addEventListener('change', () => {
-      state.showProgress = els.checkShowProgress.checked;
-      applyProgressVisibility();
       saveSettings();
     });
 
@@ -1130,8 +1088,6 @@
     state.isRunning = false;
     state.elapsedSecondsInSession = 0;
     state.warnedPreEnd = false;
-    applyProgressVisibility();
-    if (els.progressBarFill) els.progressBarFill.style.width = '100%';
 
     switch (state.mode) {
       case 'target':
@@ -1332,7 +1288,6 @@
     updateTitleDisplay();
     updateStatsDisplays();
     if (els.colDays) els.colDays.classList.toggle('hidden-col', !state.showDays);
-    applyProgressVisibility();
   }
 
   // Run on DOM ready
