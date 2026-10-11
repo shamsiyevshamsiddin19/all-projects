@@ -51,6 +51,10 @@
     elapsedSecondsInSession: 0,
     warnedPreEnd: false,
 
+    // Rotation & Responsive Phone Display
+    isRotated90: false,
+    autoRotatePortrait: true,
+
     // Idle Detection
     idleTimer: null,
     wakeLockSentinel: null
@@ -139,8 +143,16 @@
     checkBrowserNotify: document.getElementById('checkBrowserNotify'),
     checkShowDays: document.getElementById('checkShowDays'),
     checkWakeLock: document.getElementById('checkWakeLock'),
+    checkAutoRotatePortrait: document.getElementById('checkAutoRotatePortrait'),
     fullscreenBtn: document.getElementById('fullscreenBtn'),
-    zenModeBtn: document.getElementById('zenModeBtn')
+    rotateTimerBtn: document.getElementById('rotateTimerBtn'),
+    zenModeBtn: document.getElementById('zenModeBtn'),
+
+    // Mobile Action HUD
+    mobileHud: document.getElementById('mobileHud'),
+    mobileRotateBtn: document.getElementById('mobileRotateBtn'),
+    mobileFullscreenBtn: document.getElementById('mobileFullscreenBtn'),
+    mobileMenuBtn: document.getElementById('mobileMenuBtn')
   };
 
   // Helper: Format with leading zeros
@@ -165,6 +177,7 @@
     renderDigits(0, 0, 0, 0);
     updateStatus('TAYYOR', false);
     updateDisplay();
+    checkDeviceOrientation();
     startTimerLoop();
     resetIdleTimer();
     requestScreenWakeLock();
@@ -197,6 +210,13 @@
           if (data.settings.wakeLockEnabled !== undefined) {
             state.wakeLockEnabled = Boolean(data.settings.wakeLockEnabled);
             if (els.checkWakeLock) els.checkWakeLock.checked = state.wakeLockEnabled;
+          }
+          if (data.settings.autoRotatePortrait !== undefined) {
+            state.autoRotatePortrait = Boolean(data.settings.autoRotatePortrait);
+            if (els.checkAutoRotatePortrait) els.checkAutoRotatePortrait.checked = state.autoRotatePortrait;
+          }
+          if (data.settings.isRotated90 !== undefined) {
+            state.isRotated90 = Boolean(data.settings.isRotated90);
           }
           if (data.settings.eventTitle) {
             state.eventTitle = data.settings.eventTitle;
@@ -276,6 +296,8 @@
           ambientSound: state.ambientSound,
           showDays: state.showDays,
           wakeLockEnabled: state.wakeLockEnabled,
+          autoRotatePortrait: state.autoRotatePortrait,
+          isRotated90: state.isRotated90,
           eventTitle: state.eventTitle,
           intervalReminderMinutes: state.intervalReminderMinutes,
           preEndWarning: state.preEndWarning,
@@ -945,8 +967,49 @@
       });
     }
 
-    // 14. Fullscreen & Zen Mode & Settings Triggers
+    // 14. Fullscreen & Rotation & Mobile Action HUD
     if (els.fullscreenBtn) els.fullscreenBtn.addEventListener('click', toggleFullscreen);
+    if (els.mobileFullscreenBtn) els.mobileFullscreenBtn.addEventListener('click', toggleFullscreen);
+    if (els.rotateTimerBtn) els.rotateTimerBtn.addEventListener('click', toggleRotated);
+    if (els.mobileRotateBtn) els.mobileRotateBtn.addEventListener('click', toggleRotated);
+    if (els.mobileMenuBtn) els.mobileMenuBtn.addEventListener('click', openDrawer);
+
+    if (els.checkAutoRotatePortrait) {
+      els.checkAutoRotatePortrait.addEventListener('change', () => {
+        state.autoRotatePortrait = els.checkAutoRotatePortrait.checked;
+        saveSettings();
+        checkDeviceOrientation();
+      });
+    }
+
+    // Window resize & orientation change listeners
+    window.addEventListener('resize', checkDeviceOrientation);
+    window.addEventListener('orientationchange', () => {
+      setTimeout(checkDeviceOrientation, 150);
+    });
+    if (window.matchMedia) {
+      try {
+        window.matchMedia('(orientation: portrait)').addEventListener('change', checkDeviceOrientation);
+      } catch (_) {}
+    }
+
+    // Native fullscreenchange sync
+    ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(evt => {
+      document.addEventListener(evt, () => {
+        const isFs = Boolean(
+          document.fullscreenElement || 
+          document.webkitFullscreenElement || 
+          document.mozFullScreenElement || 
+          document.msFullscreenElement
+        );
+        if (!isFs && document.body.classList.contains('mobile-pseudo-fullscreen')) {
+          document.body.classList.remove('mobile-pseudo-fullscreen');
+        }
+        if (els.fullscreenBtn) els.fullscreenBtn.classList.toggle('active', isFs);
+        if (els.mobileFullscreenBtn) els.mobileFullscreenBtn.classList.toggle('active', isFs);
+      });
+    });
+
     if (els.zenModeBtn) {
       els.zenModeBtn.addEventListener('click', () => {
         closeDrawer();
@@ -1244,14 +1307,108 @@
   }
 
   /* ==========================================================================
-     FULLSCREEN & WAKELOCK & ZEN MODE
+     FULLSCREEN & WAKELOCK & ORIENTATION & ZEN MODE
      ========================================================================== */
 
-  function toggleFullscreen() {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
+  async function toggleFullscreen() {
+    closeDrawer(); // Close drawer so the timer is immediately visible in full glory
+
+    const doc = document;
+    const docEl = document.documentElement;
+
+    const isFullscreen = Boolean(
+      doc.fullscreenElement || 
+      doc.webkitFullscreenElement || 
+      doc.mozFullScreenElement || 
+      doc.msFullscreenElement ||
+      doc.body.classList.contains('mobile-pseudo-fullscreen')
+    );
+
+    if (!isFullscreen) {
+      let nativeOk = false;
+      try {
+        if (docEl.requestFullscreen) {
+          await docEl.requestFullscreen();
+          nativeOk = true;
+        } else if (docEl.webkitRequestFullscreen) {
+          await docEl.webkitRequestFullscreen();
+          nativeOk = true;
+        } else if (docEl.mozRequestFullScreen) {
+          await docEl.mozRequestFullScreen();
+          nativeOk = true;
+        } else if (docEl.msRequestFullscreen) {
+          await docEl.msRequestFullscreen();
+          nativeOk = true;
+        }
+      } catch (err) {
+        console.warn('Native fullscreen request blocked:', err);
+      }
+
+      // If native fullscreen was blocked (like on iOS Safari) or unsupported:
+      if (!nativeOk) {
+        doc.body.classList.add('mobile-pseudo-fullscreen');
+        window.scrollTo(0, 1);
+      }
+
+      if (els.fullscreenBtn) els.fullscreenBtn.classList.add('active');
+      if (els.mobileFullscreenBtn) els.mobileFullscreenBtn.classList.add('active');
     } else {
-      if (document.exitFullscreen) document.exitFullscreen();
+      doc.body.classList.remove('mobile-pseudo-fullscreen');
+      try {
+        if (doc.exitFullscreen) {
+          await doc.exitFullscreen();
+        } else if (doc.webkitExitFullscreen) {
+          await doc.webkitExitFullscreen();
+        } else if (doc.mozCancelFullScreen) {
+          await doc.mozCancelFullScreen();
+        } else if (doc.msExitFullscreen) {
+          await doc.msExitFullscreen();
+        }
+      } catch (err) {
+        console.warn('Exit fullscreen error:', err);
+      }
+
+      if (els.fullscreenBtn) els.fullscreenBtn.classList.remove('active');
+      if (els.mobileFullscreenBtn) els.mobileFullscreenBtn.classList.remove('active');
+    }
+  }
+
+  /* ==========================================================================
+     ORIENTATION & PHONE ROTATION (90°)
+     ========================================================================== */
+
+  function checkDeviceOrientation() {
+    const isPortrait = window.innerHeight > window.innerWidth;
+    const isMobile = window.innerWidth <= 900 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+    if (isMobile && state.autoRotatePortrait) {
+      // When phone is vertical (portrait), auto-rotate timer 90 degrees
+      // When phone is horizontal (landscape), keep timer horizontal (not rotated)
+      setRotated(isPortrait, false);
+    } else {
+      applyRotationUI();
+    }
+  }
+
+  function setRotated(val, save = true) {
+    state.isRotated90 = Boolean(val);
+    applyRotationUI();
+    if (save) saveSettings();
+  }
+
+  function toggleRotated() {
+    setRotated(!state.isRotated90, true);
+  }
+
+  function applyRotationUI() {
+    if (els.body) {
+      els.body.classList.toggle('is-rotated-90', state.isRotated90);
+    }
+    if (els.mobileRotateBtn) {
+      els.mobileRotateBtn.classList.toggle('active', state.isRotated90);
+    }
+    if (els.rotateTimerBtn) {
+      els.rotateTimerBtn.classList.toggle('active', state.isRotated90);
     }
   }
 
@@ -1288,6 +1445,7 @@
     updateTitleDisplay();
     updateStatsDisplays();
     if (els.colDays) els.colDays.classList.toggle('hidden-col', !state.showDays);
+    applyRotationUI();
   }
 
   // Run on DOM ready

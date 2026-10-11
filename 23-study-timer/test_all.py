@@ -184,7 +184,13 @@ def run_tests():
         ("Hours Value Span", "#hoursValue"),
         ("Minutes Value Span", "#minutesValue"),
         ("Seconds Value Span", "#secondsValue"),
-        ("Reminder Toast Alert", "#reminderToast")
+        ("Reminder Toast Alert", "#reminderToast"),
+        ("Rotate Timer Btn", "#rotateTimerBtn"),
+        ("Check Auto Rotate Portrait", "#checkAutoRotatePortrait"),
+        ("Mobile HUD Container", "#mobileHud"),
+        ("Mobile Rotate Btn", "#mobileRotateBtn"),
+        ("Mobile Fullscreen Btn", "#mobileFullscreenBtn"),
+        ("Mobile Menu Btn", "#mobileMenuBtn")
     ]
 
     for label, selector in required_elements:
@@ -296,13 +302,27 @@ def run_tests():
       'inputHours', 'inputMinutes', 'inputSeconds', 'quickAdjustRow', 'pomoCycleCount',
       'alarmSoundSelect', 'ambientSoundSelect', 'volumeSlider', 'volumePercent',
       'testSoundBtn', 'intervalReminderSelect', 'checkPreEndWarning', 'checkBrowserNotify',
-      'checkShowDays', 'checkWakeLock', 'fullscreenBtn', 'zenModeBtn'
+      'checkShowDays', 'checkWakeLock', 'checkAutoRotatePortrait', 'fullscreenBtn',
+      'rotateTimerBtn', 'zenModeBtn', 'mobileHud', 'mobileRotateBtn', 'mobileFullscreenBtn', 'mobileMenuBtn'
     ];
     elementIds.forEach(id => documentMock.getElementById(id));
 
     // Global Window Mock
+    const mockStorage = {
+      _data: {},
+      getItem: (k) => mockStorage._data[k] || null,
+      setItem: (k, v) => { mockStorage._data[k] = v; },
+      removeItem: (k) => { delete mockStorage._data[k]; }
+    };
+
+    global.localStorage = mockStorage;
     global.window = {
       location: { protocol: 'http:' },
+      innerWidth: 390,
+      innerHeight: 844,
+      addEventListener: () => {},
+      scrollTo: () => {},
+      matchMedia: () => ({ addEventListener: () => {} }),
       AudioContext: function() {
         return {
           state: 'running',
@@ -317,15 +337,10 @@ def run_tests():
           resume: () => {}
         };
       },
-      localStorage: {
-        _data: {},
-        getItem: (k) => global.window.localStorage._data[k] || null,
-        setItem: (k, v) => { global.window.localStorage._data[k] = v; },
-        removeItem: (k) => { delete global.window.localStorage._data[k]; }
-      }
+      localStorage: mockStorage
     };
     global.document = documentMock;
-    global.navigator = { wakeLock: { request: async () => ({ release: async () => {} }) } };
+    global.navigator = { wakeLock: { request: async () => ({ release: async () => {} }) }, maxTouchPoints: 5 };
     global.Notification = { permission: 'default', requestPermission: async () => 'granted' };
     global.fetch = async () => ({ ok: true, json: async () => ({}) });
 
@@ -369,6 +384,20 @@ def run_tests():
     const soundBtn = documentMock.getElementById('testSoundBtn');
     soundBtn.click();
     console.log('✅ JS: Sound preview test button tested.');
+
+    // Test Rotate Buttons
+    const mobileRotateBtn = documentMock.getElementById('mobileRotateBtn');
+    mobileRotateBtn.click();
+    console.log('✅ JS: Mobile rotate button click tested.');
+
+    const rotateTimerBtn = documentMock.getElementById('rotateTimerBtn');
+    rotateTimerBtn.click();
+    console.log('✅ JS: Drawer rotate button click tested.');
+
+    // Test Mobile Fullscreen Button
+    const mobileFullscreenBtn = documentMock.getElementById('mobileFullscreenBtn');
+    mobileFullscreenBtn.click();
+    console.log('✅ JS: Mobile fullscreen button click tested.');
 
     // Test Audio Methods directly
     global.window.zenithAudio.playAlarm('zen_bowl');
