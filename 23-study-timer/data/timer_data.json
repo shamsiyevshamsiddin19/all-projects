@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "test": true,
+  "settings": {
+    "mode": "duration",
+    "theme": "theme-obsidian",
+    "font": "font-urbanist",
+    "volume": 85,
+    "alarmSound": "zen_bowl"
+  },
+  "timerState": {
+    "durationTotal": 1500,
+    "durationRemaining": 1500
+  }
+}

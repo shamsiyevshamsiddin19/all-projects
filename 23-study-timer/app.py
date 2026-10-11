@@ -18,6 +18,17 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=DIRECTORY, **kwargs)
 
+    def do_OPTIONS(self):
+        if self.path == "/api/data":
+            self.send_response(204)
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type")
+            self.end_headers()
+            return
+        self.send_response(200)
+        self.end_headers()
+
     def do_GET(self):
         if self.path == "/api/data":
             self.send_response(200)
@@ -60,6 +71,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 def main():
     os.chdir(DIRECTORY)
     os.makedirs(DATA_DIR, exist_ok=True)
+    socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(("", PORT), Handler) as httpd:
         url = f"http://localhost:{PORT}"
         print("=" * 60)

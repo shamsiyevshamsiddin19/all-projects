@@ -315,8 +315,8 @@
 
   function setVolume(val) {
     state.volume = parseInt(val, 10);
-    els.volumeSlider.value = state.volume;
-    els.volumePercent.textContent = `${state.volume}%`;
+    if (els.volumeSlider) els.volumeSlider.value = state.volume;
+    if (els.volumePercent) els.volumePercent.textContent = `${state.volume}%`;
     if (window.zenithAudio) window.zenithAudio.setVolume(state.volume);
   }
 
@@ -652,16 +652,30 @@
     renderDigits(days, hours, minutes, seconds);
   }
 
+  function updateDocumentTitle(d, h, m, s) {
+    if (!state.isRunning && state.mode !== 'clock') {
+      document.title = 'Zenith Study Timer — Ultra Minimalist Countdown';
+      return;
+    }
+    const dStr = d > 0 ? `${d}d ` : '';
+    const hStr = h > 0 || d > 0 ? `${pad(h)}:` : '';
+    const timeStr = `${dStr}${hStr}${pad(m)}:${pad(s)}`;
+    const prefix = state.isRunning ? '⏱ ' : '⏸ ';
+    document.title = `${prefix}${timeStr} — Zenith Study Timer`;
+  }
+
   function renderDigits(d, h, m, s) {
     const dStr = pad(d);
     const hStr = pad(h);
     const mStr = pad(m);
     const sStr = pad(s);
 
-    if (els.daysValue.textContent !== dStr) pulseDigit(els.daysValue, dStr);
-    if (els.hoursValue.textContent !== hStr) pulseDigit(els.hoursValue, hStr);
-    if (els.minutesValue.textContent !== mStr) pulseDigit(els.minutesValue, mStr);
-    if (els.secondsValue.textContent !== sStr) pulseDigit(els.secondsValue, sStr);
+    if (els.daysValue && els.daysValue.textContent !== dStr) pulseDigit(els.daysValue, dStr);
+    if (els.hoursValue && els.hoursValue.textContent !== hStr) pulseDigit(els.hoursValue, hStr);
+    if (els.minutesValue && els.minutesValue.textContent !== mStr) pulseDigit(els.minutesValue, mStr);
+    if (els.secondsValue && els.secondsValue.textContent !== sStr) pulseDigit(els.secondsValue, sStr);
+
+    updateDocumentTitle(d, h, m, s);
   }
 
   function pulseDigit(el, newText) {
@@ -1163,17 +1177,20 @@
     }
 
     state.targetDateTime = target;
-    const tzOffset = (new Date()).getTimezoneOffset() * 60000;
-    els.targetDateTimeInput.value = (new Date(target.getTime() - tzOffset)).toISOString().slice(0, 16);
+    if (els.targetDateTimeInput) {
+      const tzOffset = (new Date()).getTimezoneOffset() * 60000;
+      els.targetDateTimeInput.value = (new Date(target.getTime() - tzOffset)).toISOString().slice(0, 16);
+    }
     state.isRunning = true;
     tickTarget();
   }
 
   function updateDurationFromInputs() {
-    const d = parseInt(els.inputDays.value, 10) || 0;
-    const h = parseInt(els.inputHours.value, 10) || 0;
-    const m = parseInt(els.inputMinutes.value, 10) || 0;
-    const s = parseInt(els.inputSeconds.value, 10) || 0;
+    if (!els.inputDays || !els.inputHours || !els.inputMinutes || !els.inputSeconds) return;
+    const d = Math.max(0, parseInt(els.inputDays.value, 10) || 0);
+    const h = Math.max(0, parseInt(els.inputHours.value, 10) || 0);
+    const m = Math.max(0, parseInt(els.inputMinutes.value, 10) || 0);
+    const s = Math.max(0, parseInt(els.inputSeconds.value, 10) || 0);
 
     const total = d * 86400 + h * 3600 + m * 60 + s;
     state.durationTotal = total;
@@ -1182,6 +1199,7 @@
   }
 
   function updateDurationInputs(secs) {
+    if (!els.inputDays || !els.inputHours || !els.inputMinutes || !els.inputSeconds) return;
     const d = Math.floor(secs / 86400);
     const h = Math.floor((secs % 86400) / 3600);
     const m = Math.floor((secs % 3600) / 60);
