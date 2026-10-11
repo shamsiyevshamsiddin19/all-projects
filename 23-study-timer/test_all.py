@@ -195,7 +195,7 @@ def run_tests():
 
     # Verify Preset Buttons Count
     presets = soup.select("#panelDuration .preset-btn")
-    record_test("Preset tugmalari (5m, 15m, 25m, 45m, 1h, 2h, 24h)", len(presets) == 7, f"(topildi={len(presets)})")
+    record_test("Preset tugmalari (5m, 15m, 25m, 30m, 45m, 1h, 2h, 24h)", len(presets) == 8, f"(topildi={len(presets)})")
 
     # Verify Quick Adjust Chips Count
     chips = soup.select("#quickAdjustRow .chip-btn")
