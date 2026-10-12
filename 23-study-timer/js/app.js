@@ -14,7 +14,7 @@ import {
 import { UI, queryElements, statusKeyFor } from './ui.js';
 import { zenithAudio } from './audio.js';
 import { setLang, t } from './i18n.js';
-import { toLocalInputValue } from './format.js';
+import { toLocalInputValue, formatDurationHuman } from './format.js';
 import {
   toggleFullscreen, isFullscreen, onFullscreenChange, WakeLockManager,
   isMobileViewport, isPortrait, notifications, debounce, registerServiceWorker
@@ -127,7 +127,7 @@ function boot() {
     } else if (ev.mode === MODES.TARGET) {
       body = t('notify.targetDone');
     } else {
-      body = t('notify.durationDone', { min: Math.round(ev.nominalMs / (MINUTE * MS)) });
+      body = t('notify.durationDone', { duration: formatDurationHuman(ev.nominalMs, t) });
     }
 
     if (ev.focusMs > 0) {

@@ -67,3 +67,35 @@ test('o\'rin egalari to\'ldiriladi', () => {
 test('noma\'lum kalit kalitning o\'zini qaytaradi', () => {
   assert.equal(t('yo.q.kalit'), 'yo.q.kalit');
 });
+
+test('orqaga sanash ko\'rinishi yuqoriga yaxlitlanadi', async () => {
+  const { splitRemaining } = await import('../js/format.js');
+  // 1500.000 s — ekranda 25:00 bo'lishi kerak, 24:59 emas
+  const a = splitRemaining(1500 * 1000);
+  assert.deepEqual({ m: a.minutes, s: a.seconds }, { m: 25, s: 0 });
+  // 1 ms o'tgan bo'lsa ham hali 25:00
+  const b = splitRemaining(1500 * 1000 - 1);
+  assert.deepEqual({ m: 25, s: 0 }, { m: b.minutes, s: b.seconds });
+  // Haqiqatan bir soniya o'tgach 24:59
+  const c = splitRemaining(1499 * 1000);
+  assert.deepEqual({ m: c.minutes, s: c.seconds }, { m: 24, s: 59 });
+  // Nol — nol
+  assert.equal(splitRemaining(0).totalSec, 0);
+  assert.equal(splitRemaining(-5).totalSec, 0);
+});
+
+test('formatCompact orqaga sanashda ceil bilan ishlaydi', async () => {
+  const { formatCompact } = await import('../js/format.js');
+  assert.equal(formatCompact(1500 * 1000 - 1, { ceil: true }), '25:00');
+  assert.equal(formatCompact(1500 * 1000 - 1), '24:59');
+});
+
+test('bildirishnoma davomiyligi hech qachon "0 daqiqa" bo\'lmaydi', async () => {
+  const { formatDurationHuman } = await import('../js/format.js');
+  setLang('uz');
+  assert.equal(formatDurationHuman(3000, t), '3 soniya');
+  assert.equal(formatDurationHuman(25 * 60 * 1000, t), '25 daqiqa');
+  assert.equal(formatDurationHuman(90 * 60 * 1000, t), '1 soat 30 daqiqa');
+  assert.equal(formatDurationHuman(2 * 3600 * 1000, t), '2 soat');
+  assert.equal(formatDurationHuman(26 * 3600 * 1000, t), '26 soat');
+});

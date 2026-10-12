@@ -9,9 +9,11 @@ document.addEventListener('DOMContentLoaded', () => {
   'use strict';
 
   // 1. API Configuration & State
-  const API_BASE = (window.location.port === '8000' || window.location.pathname.startsWith('/static')) 
-    ? '' 
-    : 'http://127.0.0.1:8000';
+  const isLocalFile = window.location.protocol === 'file:';
+  const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const API_BASE = isLocalFile 
+    ? 'http://127.0.0.1:8000' 
+    : (window.location.port === '8000' ? '' : (isLocalHost && window.location.port !== '80' && window.location.port !== '' ? 'http://127.0.0.1:8000' : ''));
 
   let currentUser = null;
   let authToken = localStorage.getItem('blog_access_token') || null;

@@ -75,6 +75,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     server_version = "ZenithTimer/2.0"
     quiet = False
+    _cache_header_sent = False
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=DIRECTORY, **kwargs)
@@ -87,6 +88,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
+        self._cache_header_sent = True
         self.end_headers()
         if self.command != "HEAD":
             self.wfile.write(body)
@@ -206,8 +208,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         path = self.path.split("?", 1)[0]
         if path in NO_STORE_PATHS:
             self.send_header("Cache-Control", "no-store")
+        elif not self._cache_header_sent:
+            # Ishlab chiqish serveri: fayl tahrirlangach brauzer eski nusxani ko'rsatmasligi uchun
+            # har safar qayta tekshiriladi (304 bilan tez javob beradi).
+            self.send_header("Cache-Control", "no-cache")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "no-referrer")
+        self._cache_header_sent = False
         super().end_headers()
 
     # --------------------------------------------------------------------- log

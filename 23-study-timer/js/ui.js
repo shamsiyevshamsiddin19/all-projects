@@ -7,7 +7,9 @@ import {
   AMBIENT_SOUNDS, IDLE_HIDE_MS, TOAST_VISIBLE_MS, TOAST_FADE_MS, MINUTE, MS,
   INPUT_LIMITS
 } from './constants.js';
-import { pad2, splitDuration, splitSeconds, formatCompact, formatFocusMinutes, dayKey } from './format.js';
+import {
+  pad2, splitDuration, splitRemaining, splitSeconds, formatCompact, formatFocusMinutes, dayKey
+} from './format.js';
 import { t, applyTranslations } from './i18n.js';
 import { prefersReducedMotion } from './platform.js';
 
@@ -270,7 +272,8 @@ export class UI {
         { label: t('label.centis'), value: pad2(p.centis) }
       ];
     } else {
-      const p = splitDuration(sample.remainingMs);
+      // Orqaga sanashda yuqoriga yaxlitlanadi: 25:00 darhol 24:59 ga tushib ketmaydi
+      const p = splitRemaining(sample.remainingMs);
       columns = [
         { label: t('label.days'), value: pad2(p.days), hidden: !showDays },
         { label: t('label.hours'), value: pad2(p.hours) },
@@ -319,19 +322,21 @@ export class UI {
       document.title = t('app.title');
       return;
     }
-    const ms = sample.mode === MODES.STOPWATCH ? sample.elapsedMs : sample.remainingMs;
-    document.title = `${sample.running ? '⏱' : '⏸'} ${formatCompact(ms)} — Zenith`;
+    const countdown = sample.mode !== MODES.STOPWATCH;
+    const ms = countdown ? sample.remainingMs : sample.elapsedMs;
+    document.title = `${sample.running ? '⏱' : '⏸'} ${formatCompact(ms, { ceil: countdown })} — Zenith`;
   }
 
   /** Ekran o'quvchiga har daqiqada bir marta e'lon qiladi (har soniyada emas) */
   _announce(sample) {
     if (sample.mode === MODES.CLOCK) return;
-    const ms = sample.mode === MODES.STOPWATCH ? sample.elapsedMs : sample.remainingMs;
+    const countdown = sample.mode !== MODES.STOPWATCH;
+    const ms = countdown ? sample.remainingMs : sample.elapsedMs;
     const minute = Math.floor(ms / (MINUTE * MS));
     if (minute === this.lastAnnouncedMinute) return;
     this.lastAnnouncedMinute = minute;
-    const key = sample.mode === MODES.STOPWATCH ? 'a11y.elapsed' : 'a11y.timeLeft';
-    this.els.srAnnounce.textContent = t(key, { time: formatCompact(ms) });
+    const key = countdown ? 'a11y.timeLeft' : 'a11y.elapsed';
+    this.els.srAnnounce.textContent = t(key, { time: formatCompact(ms, { ceil: countdown }) });
   }
 
   /* -------------------------------------------------------------------- status */
