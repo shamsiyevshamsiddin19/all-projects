@@ -22,6 +22,7 @@ REPOS = {
     "18-paycore-gateway-sdks": "https://github.com/shamsiyevshamsiddin19/payment-integrations.git",
     "19-captionflow-desktop-studio": "https://github.com/shamsiyevshamsiddin19/captionflow-desktop-.git",
     "23-study-timer": "https://github.com/shamsiyevshamsiddin19/study-timer.git",
+    "24-blog": "https://github.com/shamsiyevshamsiddin19/blog.git",
 }
 
 ROOT_DIR = Path(__file__).resolve().parent

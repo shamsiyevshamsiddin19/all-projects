@@ -1,425 +1,370 @@
 #!/usr/bin/env python3
 """
-Comprehensive End-to-End Test Suite for Zenith Study Timer
-Tests Python backend, API endpoints, static assets, HTML structure,
-and JavaScript UI logic.
+Zenith Study Timer — to'liq test to'plami.
+
+Bo'limlar:
+  1. Backend: xavfsizlik, API, atomar yozish (izolyatsiyalangan vaqtinchalik papkada).
+  2. Statik tuzilma: HTML ↔ JS ↔ CSS ↔ i18n mosligi, a11y, PWA fayllari.
+  3. Node mantiq testlari (node --test) — haqiqiy assertion'lar.
+  4. jsdom / Playwright holati haqida ma'lumot.
+
+Muhim: bu skript loyihaning haqiqiy data/ papkasiga tegmaydi.
 """
+from __future__ import annotations
+
 import http.client
+import importlib.util
 import json
 import os
-import socketserver
+import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import threading
-import time
+
 from bs4 import BeautifulSoup
 
-# Add current directory to path
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, DIRECTORY)
-
-import app
-
 TEST_PORT = 5058
 
-class ServerThread(threading.Thread):
-    def __init__(self):
-        super().__init__()
-        self.daemon = True
-        socketserver.TCPServer.allow_reuse_address = True
-        self.httpd = socketserver.TCPServer(("", TEST_PORT), app.Handler)
+# Testlar haqiqiy ma'lumotni buzmasligi uchun — vaqtinchalik papka
+TEST_DATA_DIR = tempfile.mkdtemp(prefix="zenith-test-")
+os.environ["ZENITH_DATA_DIR"] = TEST_DATA_DIR
 
-    def run(self):
-        self.httpd.serve_forever()
+_spec = importlib.util.spec_from_file_location("zenith_app", os.path.join(DIRECTORY, "app.py"))
+app = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(app)
 
-    def shutdown(self):
-        self.httpd.shutdown()
-        self.httpd.server_close()
 
-def run_tests():
-    print("=" * 65)
-    print("🚀 ZENITH STUDY TIMER — TO'LIQ TEST DASTURI BOSHLANDI")
-    print("=" * 65)
+class Results:
+    def __init__(self) -> None:
+        self.passed = 0
+        self.failed = 0
+        self.failures: list[str] = []
 
-    passed_count = 0
-    total_count = 0
-
-    def record_test(name, success, details=""):
-        nonlocal passed_count, total_count
-        total_count += 1
-        if success:
-            passed_count += 1
-            print(f"  ✅ [PASS] {name} {details}")
+    def check(self, name: str, ok: bool, details: str = "") -> bool:
+        if ok:
+            self.passed += 1
+            print(f"  ✅ {name} {details}".rstrip())
         else:
-            print(f"  ❌ [FAIL] {name} {details}")
-            raise AssertionError(f"Test failed: {name} - {details}")
+            self.failed += 1
+            self.failures.append(f"{name} {details}".strip())
+            print(f"  ❌ {name} {details}".rstrip())
+        return ok
 
-    # =========================================================================
-    # PART 1: Python HTTP Server & API Tests
-    # =========================================================================
-    print("\n[1/3] PYTHON BACKEND SERVER & API ENDPOINTS...")
-    server = ServerThread()
-    server.start()
-    time.sleep(0.3) # Wait for server to bind
 
-    conn = http.client.HTTPConnection("localhost", TEST_PORT)
+R = Results()
+
+
+# =============================================================================
+# 1. BACKEND
+# =============================================================================
+
+def backend_tests() -> None:
+    print("\n[1/4] BACKEND: xavfsizlik, API va atomar yozish")
+    app.Handler.quiet = True
+    server = app.bind_server("127.0.0.1", TEST_PORT)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+
+    def request(method: str, path: str, body=None, headers=None):
+        conn = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
+        conn.request(method, path, body, headers or {})
+        res = conn.getresponse()
+        payload = res.read()
+        info = (res.status, {k.lower(): v for k, v in res.getheaders()}, payload)
+        conn.close()
+        return info
 
     try:
-        # Test 1: GET / (index.html)
-        conn.request("GET", "/")
-        res = conn.getresponse()
-        body = res.read().decode("utf-8")
-        record_test("GET / (index.html)", res.status == 200 and "ZENITH CHRONO" in body, f"(status={res.status})")
+        R.check("Standart bog'lanish manzili 127.0.0.1",
+                app.parse_args([]).host == "127.0.0.1",
+                "(tarmoqqa ochilmaydi)")
 
-        # Test 2: GET /css/style.css
-        conn.request("GET", "/css/style.css")
-        res = conn.getresponse()
-        css_body = res.read().decode("utf-8")
-        record_test("GET /css/style.css", res.status == 200 and "theme-obsidian" in css_body, f"(status={res.status})")
+        status, _, body = request("GET", "/")
+        R.check("GET / asosiy sahifani beradi", status == 200 and b"ZENITH CHRONO" in body)
 
-        # Test 3: GET /js/app.js
-        conn.request("GET", "/js/app.js")
-        res = conn.getresponse()
-        js_body = res.read().decode("utf-8")
-        record_test("GET /js/app.js", res.status == 200 and "Zenith Chrono" in js_body, f"(status={res.status})")
+        status, headers, _ = request("GET", "/js/app.js")
+        R.check("ES modul fayli beriladi", status == 200 and "javascript" in
+                headers.get("content-type", ""), f"({headers.get('content-type')})")
 
-        # Test 4: GET /js/audio.js
-        conn.request("GET", "/js/audio.js")
-        res = conn.getresponse()
-        audio_body = res.read().decode("utf-8")
-        record_test("GET /js/audio.js", res.status == 200 and "ZenithAudioEngine" in audio_body, f"(status={res.status})")
+        status, _, body = request("GET", "/api/data")
+        R.check("Bo'sh ombor {} qaytaradi", status == 200 and json.loads(body) == {})
 
-        # Test 5: OPTIONS /api/data (CORS Preflight)
-        conn.request("OPTIONS", "/api/data")
-        res = conn.getresponse()
-        res.read()
-        cors_origin = res.getheader("Access-Control-Allow-Origin")
-        cors_methods = res.getheader("Access-Control-Allow-Methods")
-        record_test("OPTIONS /api/data CORS Preflight", 
-                    res.status == 204 and cors_origin == "*" and "POST" in cors_methods,
-                    f"(status={res.status}, methods={cors_methods})")
+        payload = json.dumps({"settings": {"volume": 42}, "savedAt": "2026-01-01T00:00:00.000Z"})
+        status, headers, _ = request("POST", "/api/data", payload,
+                                     {"Content-Type": "application/json"})
+        R.check("POST /api/data saqlaydi", status == 200)
+        R.check("CORS wildcard yo'q", "access-control-allow-origin" not in headers)
 
-        # Test 6: POST /api/data (Save timer state)
-        sample_payload = {
-            "version": "1.0",
-            "test": True,
-            "settings": {
-                "mode": "duration",
-                "theme": "theme-obsidian",
-                "font": "font-urbanist",
-                "volume": 85,
-                "alarmSound": "zen_bowl"
-            },
-            "timerState": {
-                "durationTotal": 1500,
-                "durationRemaining": 1500
-            }
-        }
-        body_bytes = json.dumps(sample_payload).encode("utf-8")
-        conn.request("POST", "/api/data", body_bytes, {"Content-Type": "application/json"})
-        res = conn.getresponse()
-        post_resp = json.loads(res.read().decode("utf-8"))
-        record_test("POST /api/data Save JSON", res.status == 200 and post_resp.get("status") == "saved", f"(status={res.status})")
+        status, _, body = request("GET", "/api/data")
+        R.check("GET saqlangan ma'lumotni qaytaradi (ombor o'qiladi ham)",
+                status == 200 and json.loads(body)["settings"]["volume"] == 42)
 
-        # Test 7: GET /api/data (Read persisted timer state)
-        conn.request("GET", "/api/data")
-        res = conn.getresponse()
-        get_resp = json.loads(res.read().decode("utf-8"))
-        record_test("GET /api/data Verify Saved Data", res.status == 200 and get_resp.get("settings", {}).get("volume") == 85)
+        status, _, _ = request("POST", "/api/data", "{}", {
+            "Origin": "https://evil.example", "Sec-Fetch-Site": "cross-site"})
+        R.check("Cross-site POST rad etiladi", status == 403)
 
-        # Test 8: POST /api/data with invalid JSON -> 400 Bad Request
-        conn.request("POST", "/api/data", b"invalid-json{{{", {"Content-Type": "application/json"})
-        res = conn.getresponse()
-        res.read()
-        record_test("POST /api/data Error Handling (Invalid JSON)", res.status == 400, f"(status={res.status})")
+        status, _, _ = request("POST", "/api/data", "{}", {"Content-Length": "not-a-number"})
+        R.check("Buzilgan Content-Length 400 beradi", status == 400)
 
+        big = json.dumps({"x": "y" * (app.MAX_BODY_BYTES + 100)})
+        status, _, _ = request("POST", "/api/data", big, {"Content-Type": "application/json"})
+        R.check("Haddan katta body 413 bilan rad etiladi", status == 413)
+
+        status, _, _ = request("POST", "/api/data", "[1,2,3]", {"Content-Type": "application/json"})
+        R.check("Massiv emas, obyekt talab qilinadi", status == 400)
+
+        status, _, _ = request("POST", "/api/data", "{buzuq", {"Content-Type": "application/json"})
+        R.check("Buzilgan JSON 400 beradi", status == 400)
+
+        status, _, _ = request("POST", "/api/boshqa", "{}")
+        R.check("Noma'lum API yo'li 404", status == 404)
+
+        for blocked in ("/app.py", "/data/timer_data.json", "/test_all.py", "/.gitignore", "/README.md"):
+            status, _, _ = request("GET", blocked)
+            R.check(f"Maxfiy yo'l berilmaydi: {blocked}", status == 404, f"(status={status})")
+
+        # Atomar yozish: ikkinchi yozuvdan keyin .bak paydo bo'ladi
+        request("POST", "/api/data", json.dumps({"settings": {"volume": 7}}),
+                {"Content-Type": "application/json"})
+        data_file = os.path.join(TEST_DATA_DIR, "timer_data.json")
+        R.check("Zaxira nusxa (.bak) yaratiladi", os.path.exists(data_file + ".bak"))
+        R.check("Vaqtinchalik .tmp fayllar qolmaydi",
+                not [f for f in os.listdir(TEST_DATA_DIR) if f.endswith(".tmp")])
+
+        status, headers, _ = request("GET", "/sw.js")
+        R.check("sw.js keshlanmaydi", status == 200 and
+                headers.get("cache-control") == "no-store", f"({headers.get('cache-control')})")
+
+        status, _, body = request("GET", "/manifest.webmanifest")
+        R.check("PWA manifesti beriladi", status == 200 and b'"icons"' in body)
+
+        R.check("Testlar haqiqiy data/ papkasini buzmaydi",
+                TEST_DATA_DIR != os.path.join(DIRECTORY, "data"))
     finally:
-        conn.close()
         server.shutdown()
-        print("  ℹ️  Python test server muvaffaqiyatli to'xtatildi.")
+        server.server_close()
 
-    # =========================================================================
-    # PART 2: HTML & Element Parity Verification
-    # =========================================================================
-    print("\n[2/3] HTML STRUKTURASI VA BARCHA ELEMENTLAR TEKSHIRUVI...")
-    with open(os.path.join(DIRECTORY, "index.html"), "r", encoding="utf-8") as f:
-        html_content = f.read()
-    soup = BeautifulSoup(html_content, "html.parser")
 
-    required_elements = [
-        ("Settings Drawer", "#settingsDrawer"),
-        ("Hover Trigger Zone", "#hoverZone"),
-        ("Hover Peek Bar", "#hoverPeekBar"),
-        ("Header Settings Gear Btn", "#openSettingsHeaderBtn"),
-        ("Header Pin Drawer Btn", "#pinDrawerBtn"),
-        ("Header Close Drawer Btn", "#closeDrawerBtn"),
-        ("Duration Mode Tab", "#tabDuration"),
-        ("Pomodoro Mode Tab", "#tabPomodoro"),
-        ("Stopwatch Mode Tab", "#tabStopwatch"),
-        ("Clock Mode Tab", "#tabClock"),
-        ("Input Days", "#inputDays"),
-        ("Input Hours", "#inputHours"),
-        ("Input Minutes", "#inputMinutes"),
-        ("Input Seconds", "#inputSeconds"),
-        ("Main Start/Pause Btn", "#toggleRunBtn"),
-        ("Reset Btn", "#resetBtn"),
-        ("Fullscreen Btn", "#fullscreenBtn"),
-        ("Zen Mode Btn", "#zenModeBtn"),
-        ("Back to Timer Btn", "#backToTimerBtn"),
-        ("Theme Select Dropdown", "#themeSelect"),
-        ("Font Select Dropdown", "#fontSelect"),
-        ("Alarm Sound Select Dropdown", "#alarmSoundSelect"),
-        ("Ambient Sound Select Dropdown", "#ambientSoundSelect"),
-        ("Volume Slider", "#volumeSlider"),
-        ("Volume Percentage Text", "#volumePercent"),
-        ("Test Sound Btn", "#testSoundBtn"),
-        ("Interval Reminder Select", "#intervalReminderSelect"),
-        ("Pre-End Warning Checkbox", "#checkPreEndWarning"),
-        ("Browser Notification Checkbox", "#checkBrowserNotify"),
-        ("Show Days Checkbox", "#checkShowDays"),
-        ("Screen WakeLock Checkbox", "#checkWakeLock"),
-        ("Digits Container", "#digitsContainer"),
-        ("Days Column", "#colDays"),
-        ("Days Value Span", "#daysValue"),
-        ("Hours Value Span", "#hoursValue"),
-        ("Minutes Value Span", "#minutesValue"),
-        ("Seconds Value Span", "#secondsValue"),
-        ("Reminder Toast Alert", "#reminderToast"),
-        ("Rotate Timer Btn", "#rotateTimerBtn"),
-        ("Check Auto Rotate Portrait", "#checkAutoRotatePortrait")
+# =============================================================================
+# 2. STATIK TUZILMA
+# =============================================================================
+
+def read(path: str) -> str:
+    with open(os.path.join(DIRECTORY, path), encoding="utf-8") as handle:
+        return handle.read()
+
+
+def js_sources() -> dict[str, str]:
+    out = {}
+    for root, _dirs, files in os.walk(os.path.join(DIRECTORY, "js")):
+        for name in files:
+            if name.endswith(".js"):
+                full = os.path.join(root, name)
+                out[os.path.relpath(full, DIRECTORY)] = open(full, encoding="utf-8").read()
+    return out
+
+
+def node_json(expression: str):
+    """Node orqali modul eksportidan qiymat oladi."""
+    code = f"process.stdout.write(JSON.stringify({expression}))"
+    proc = subprocess.run(["node", "--input-type=module", "-e", code],
+                          cwd=DIRECTORY, capture_output=True, text=True, timeout=30)
+    if proc.returncode != 0:
+        raise RuntimeError(proc.stderr.strip())
+    return json.loads(proc.stdout)
+
+
+# JS tomonidan dinamik qo'shiladigan yoki brauzer holatiga tegishli klasslar
+DYNAMIC_CSS_ALLOWLIST = {
+    "active", "open", "paused", "hidden-col", "user-idle", "drawer-open",
+    "is-rotated-90", "mobile-pseudo-fullscreen", "digit-pulse", "preset-accent"
+}
+
+
+def structure_tests() -> None:
+    print("\n[2/4] STATIK TUZILMA: HTML ↔ JS ↔ CSS ↔ i18n mosligi")
+    html = read("index.html")
+    css = read("css/style.css")
+    soup = BeautifulSoup(html, "html.parser")
+    html_ids = {el["id"] for el in soup.select("[id]")}
+    sources = js_sources()
+    all_js = "\n".join(sources.values())
+
+    # --- 2.1 JS kutgan har bir element HTML'da bormi? (eski "null element" xatosi) ---
+    required = set(node_json("(await import('./js/ui.js')).REQUIRED_IDS"))
+    missing_required = sorted(required - html_ids)
+    R.check("ui.js dagi REQUIRED_IDS to'liq HTML'da bor",
+            not missing_required, f"yetishmayapti: {missing_required}" if missing_required else "")
+
+    referenced = set(re.findall(r"getElementById\(['\"]([\w-]+)['\"]\)", all_js))
+    referenced |= set(re.findall(r"querySelector(?:All)?\(['\"]#([\w-]+)", all_js))
+    ghost_ids = sorted(referenced - html_ids)
+    R.check("JS faqat mavjud elementlarga murojaat qiladi",
+            not ghost_ids, f"mavjud emas: {ghost_ids}" if ghost_ids else "")
+
+    # --- 2.2 O'lik CSS detektori ---
+    css_clean = re.sub(r"/\*.*?\*/", "", css, flags=re.S)       # izohlar
+    css_clean = re.sub(r"url\([^)]*\)", "", css_clean)            # url(...) ichidagi nuqtalar
+    css_clean = re.sub(r'"[^"]*"|\'[^\']*\'', "", css_clean)       # qolgan matn literallari
+    css_classes = set(re.findall(r"\.([a-zA-Z][\w-]*)", css_clean))
+    used_text = html + all_js
+    dead = sorted(
+        cls for cls in css_classes
+        if cls not in DYNAMIC_CSS_ALLOWLIST
+        and re.search(rf"\b{re.escape(cls)}\b", used_text) is None
+    )
+    R.check("CSS'da o'lik klass qolmagan", not dead, f"ishlatilmaydi: {dead}" if dead else "")
+
+    # --- 2.3 i18n kalitlari ---
+    i18n_keys = set(node_json("(await import('./js/i18n.js')).keysOf('uz')"))
+    html_keys = set()
+    for attr in ("data-i18n", "data-i18n-title", "data-i18n-aria", "data-i18n-placeholder"):
+        html_keys |= {el[attr] for el in soup.select(f"[{attr}]")}
+    js_keys = set(re.findall(r"\bt\('([\w.]+)'", all_js))
+    unknown = sorted((html_keys | js_keys) - i18n_keys)
+    R.check("Barcha i18n kalitlari lug'atda bor",
+            not unknown, f"noma'lum: {unknown}" if unknown else "")
+    R.check("HTML'dagi matnlar tarjima qilinadi", len(html_keys) > 80, f"({len(html_keys)} ta kalit)")
+
+    # --- 2.4 Rejimlar ---
+    tabs = soup.select(".mode-tab")
+    modes = {tab.get("data-mode") for tab in tabs}
+    R.check("Beshta ish rejimi mavjud (README bilan mos)",
+            modes == {"target", "duration", "pomodoro", "stopwatch", "clock"}, f"({sorted(modes)})")
+    for tab in tabs:
+        panel_id = tab.get("aria-controls")
+        if not R.check(f"'{tab.get('data-mode')}' rejimi uchun panel bor",
+                       panel_id in html_ids, f"(aria-controls={panel_id})"):
+            break
+
+    # --- 2.5 A11y ---
+    R.check("Tab tugmalarida role='tab' bor", all(t.get("role") == "tab" for t in tabs))
+    R.check("Tab tugmalarida aria-selected bor", all(t.has_attr("aria-selected") for t in tabs))
+    R.check("Panellarda role='tabpanel' bor",
+            all(soup.find(id=t.get("aria-controls")).get("role") == "tabpanel" for t in tabs))
+    R.check("Panel role='dialog' bilan belgilangan",
+            soup.find(id="settingsDrawer").get("role") == "dialog")
+    R.check("Raqamlar uchun aria-live hudud bor",
+            soup.find(id="srAnnounce").get("aria-live") == "polite")
+    R.check("Taymer klaviatura bilan fokuslanadi",
+            soup.find(id="digitsContainer").get("tabindex") == "0")
+
+    orphan_labels = [
+        str(lbl)[:60] for lbl in soup.find_all("label")
+        if not lbl.get("for") and not lbl.find(["input", "select", "textarea"])
     ]
+    R.check("Har bir <label> boshqaruvga bog'langan",
+            not orphan_labels, f"bog'lanmagan: {len(orphan_labels)}" if orphan_labels else "")
 
-    for label, selector in required_elements:
-        elem = soup.select_one(selector)
-        record_test(f"Element mavjudligi: {label} ({selector})", elem is not None)
+    inline_hidden = re.findall(r'style="[^"]*display:\s*none', html)
+    R.check("Inline 'display:none' ishlatilmagan (hidden atributi)", not inline_hidden)
 
-    # Ekran toza va minimal bo'lishi: Suzuvchi Mobile HUD butunlay yo'qligi tasdiqlanishi
-    floating_hud = soup.select_one("#mobileHud")
-    record_test("Ekran tozaligi: Suzuvchi burchak HUD yo'qligi (#mobileHud yo'q)", floating_hud is None)
+    # --- 2.6 CSS sifat tekshiruvlari ---
+    R.check("prefers-reduced-motion qo'llanilgan", "prefers-reduced-motion" in css)
+    R.check("Mobil balandlik uchun dvh fallback bor", css.count("100dvh") >= 4)
+    R.check("Fokus ko'rinadigan (:focus-visible)", ":focus-visible" in css)
 
-    # Verify Preset Buttons Count
-    presets = soup.select("#panelDuration .preset-btn")
-    record_test("Preset tugmalari (5m, 15m, 25m, 30m, 45m, 1h, 2h, 24h)", len(presets) == 8, f"(topildi={len(presets)})")
+    # --- 2.7 PWA ---
+    manifest = json.loads(read("manifest.webmanifest"))
+    R.check("Manifest nomi va start_url to'g'ri",
+            manifest["name"] and manifest["start_url"].endswith("index.html"))
+    icons_ok = all(os.path.exists(os.path.join(DIRECTORY, icon["src"])) for icon in manifest["icons"])
+    R.check("Manifestdagi barcha ikonalar mavjud", icons_ok)
+    R.check("Maskable ikona bor", any(i.get("purpose") == "maskable" for i in manifest["icons"]))
+    R.check("Service worker app shell'ni keshlaydi", "SHELL_ASSETS" in read("sw.js"))
 
-    # Verify Quick Adjust Chips Count
-    chips = soup.select("#quickAdjustRow .chip-btn")
-    record_test("Tezkor qo'shish tugmalari (+1, +5, +15, +1h, -5)", len(chips) == 5, f"(topildi={len(chips)})")
+    sw = read("sw.js")
+    shell = set(re.findall(r"'\./([^']+)'", sw.split("SHELL_ASSETS")[1].split("]")[0]))
+    missing_shell = sorted(p for p in shell if p and not os.path.exists(os.path.join(DIRECTORY, p)))
+    R.check("Keshlanadigan fayllar mavjud",
+            not missing_shell, f"yo'q: {missing_shell}" if missing_shell else "")
 
-    # Verify Pomodoro Phase Buttons
-    pomo_phases = soup.select(".phase-btn")
-    record_test("Pomodoro bosqich tugmalari (Dars, Tanaffus, Uzun)", len(pomo_phases) == 3, f"(topildi={len(pomo_phases)})")
+    # --- 2.8 Repo gigiyenasi ---
+    gitignore = read(".gitignore")
+    R.check("data/ papkasi git'ga tushmaydi", "data/" in gitignore)
+    R.check("node_modules e'tiborsiz qoldiriladi", "node_modules" in gitignore)
+    R.check("requirements.txt mavjud", os.path.exists(os.path.join(DIRECTORY, "requirements.txt")))
+    R.check("package.json mavjud", os.path.exists(os.path.join(DIRECTORY, "package.json")))
+    R.check("LICENSE mavjud", os.path.exists(os.path.join(DIRECTORY, "LICENSE")))
 
-    # =========================================================================
-    # PART 3: JavaScript DOM & State Logic Simulation via Node.js
-    # =========================================================================
-    print("\n[3/3] JAVASCRIPT & BROWSER LOGIC INTEGRATION TEST (Node.js runner)...")
-    
-    node_test_script = """
-    const fs = require('fs');
-    const path = require('path');
+    # --- 2.9 README haqiqatga mos ---
+    readme = read("README.md")
+    R.check("README'da maxsus Target preset afsonasi yo'q", "demo_photo" not in readme)
+    R.check("README'da test buyrug'i bor", "test_all.py" in readme)
+    R.check("README klaviatura jadvalida S bor", re.search(r"`S`", readme) is not None)
 
-    // Load HTML and JS files
-    const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf-8');
-    const appJs = fs.readFileSync(path.join(__dirname, 'js/app.js'), 'utf-8');
-    const audioJs = fs.readFileSync(path.join(__dirname, 'js/audio.js'), 'utf-8');
 
-    // Lightweight DOM Mock for Node testing
-    class ElementMock {
-      constructor(tagName, id = '', className = '') {
-        this.tagName = tagName.toUpperCase();
-        this.id = id;
-        this.className = className;
-        this.classList = {
-          _set: new Set(className.split(' ').filter(Boolean)),
-          add: (...c) => c.forEach(x => this.classList._set.add(x)),
-          remove: (...c) => c.forEach(x => this.classList._set.delete(x)),
-          contains: (c) => this.classList._set.has(c),
-          toggle: (c, force) => {
-            if (force === true) this.classList._set.add(c);
-            else if (force === false) this.classList._set.delete(c);
-            else {
-              if (this.classList._set.has(c)) this.classList._set.delete(c);
-              else this.classList._set.add(c);
-            }
-          }
-        };
-        this.style = {};
-        this.value = '0';
-        this.textContent = '';
-        this.checked = true;
-        this.offsetWidth = 340;
-        this.listeners = {};
-        this.dataset = {};
-        this.children = [];
-      }
-      addEventListener(type, cb) {
-        if (!this.listeners[type]) this.listeners[type] = [];
-        this.listeners[type].push(cb);
-      }
-      dispatchEvent(event) {
-        const type = typeof event === 'string' ? event : event.type;
-        if (this.listeners[type]) {
-          this.listeners[type].forEach(cb => cb(event));
-        }
-      }
-      click() {
-        this.dispatchEvent({ type: 'click', stopPropagation: () => {} });
-      }
-      querySelector(sel) { return null; }
-      querySelectorAll(sel) { return []; }
-    }
+# =============================================================================
+# 3. NODE MANTIQ TESTLARI
+# =============================================================================
 
-    const documentMock = {
-      readyState: 'complete',
-      title: '',
-      elements: {},
-      listeners: {},
-      addEventListener: (type, cb) => {
-        if (!documentMock.listeners[type]) documentMock.listeners[type] = [];
-        documentMock.listeners[type].push(cb);
-      },
-      getElementById: (id) => {
-        if (!documentMock.elements[id]) {
-          documentMock.elements[id] = new ElementMock('div', id);
-        }
-        return documentMock.elements[id];
-      },
-      querySelectorAll: (sel) => [],
-      documentElement: {
-        requestFullscreen: async () => {}
-      }
-    };
+def node_tests() -> None:
+    print("\n[3/4] NODE MANTIQ TESTLARI (node --test)")
+    if shutil.which("node") is None:
+        R.check("Node.js mavjud", False, "(o'rnatilmagan — mantiq testlari o'tkazilmadi)")
+        return
+    proc = subprocess.run(["node", "--test", "tests/*.test.mjs"],
+                          cwd=DIRECTORY, capture_output=True, text=True, timeout=180)
+    out = proc.stdout
+    passed = re.search(r"^# pass (\d+)$", out, re.M)
+    failed = re.search(r"^# fail (\d+)$", out, re.M)
+    skipped = re.search(r"^# skip(?:ped)? (\d+)$", out, re.M)
+    n_pass = int(passed.group(1)) if passed else 0
+    n_fail = int(failed.group(1)) if failed else 1
+    n_skip = int(skipped.group(1)) if skipped else 0
 
-    // Populate required elements in mock
-    const elementIds = [
-      'appBody', 'hoverZone', 'hoverPeekBar', 'settingsDrawer', 'drawerBrandTitle',
-      'drawerBrandBadge', 'pinDrawerBtn', 'closeDrawerBtn', 'timerSubView',
-      'settingsSubView', 'backToTimerBtn', 'openSettingsHeaderBtn', 'daysValue',
-      'hoursValue', 'minutesValue', 'secondsValue', 'colDays', 'digitsContainer',
-      'eventTitleBanner', 'eventTitleDisplay',
-      'eventTitleInput', 'reminderToast', 'reminderToastText', 'toggleRunBtn', 'resetBtn',
-      'themeSelect', 'fontSelect', 'panelDuration', 'panelPomodoro', 'inputDays',
-      'inputHours', 'inputMinutes', 'inputSeconds', 'quickAdjustRow', 'pomoCycleCount',
-      'alarmSoundSelect', 'ambientSoundSelect', 'volumeSlider', 'volumePercent',
-      'testSoundBtn', 'intervalReminderSelect', 'checkPreEndWarning', 'checkBrowserNotify',
-      'checkShowDays', 'checkWakeLock', 'checkAutoRotatePortrait', 'fullscreenBtn',
-      'rotateTimerBtn', 'zenModeBtn'
-    ];
-    elementIds.forEach(id => documentMock.getElementById(id));
+    if n_fail:
+        for line in out.splitlines():
+            if line.startswith("not ok") or "error:" in line:
+                print(f"     {line.strip()}")
+    R.check("Node mantiq testlari o'tdi", n_fail == 0,
+            f"({n_pass} ta o'tdi, {n_fail} ta yiqildi, {n_skip} ta o'tkazib yuborildi)")
+    R.check("Mantiq testlari yetarlicha keng", n_pass >= 35, f"({n_pass} ta tekshiruv)")
 
-    // Global Window Mock
-    const mockStorage = {
-      _data: {},
-      getItem: (k) => mockStorage._data[k] || null,
-      setItem: (k, v) => { mockStorage._data[k] = v; },
-      removeItem: (k) => { delete mockStorage._data[k]; }
-    };
 
-    global.localStorage = mockStorage;
-    global.window = {
-      location: { protocol: 'http:' },
-      innerWidth: 390,
-      innerHeight: 844,
-      addEventListener: () => {},
-      scrollTo: () => {},
-      matchMedia: () => ({ addEventListener: () => {} }),
-      AudioContext: function() {
-        return {
-          state: 'running',
-          currentTime: 0,
-          sampleRate: 44100,
-          createGain: () => ({ gain: { setValueAtTime: () => {}, exponentialRampToValueAtTime: () => {}, setTargetAtTime: () => {} }, connect: () => {} }),
-          createOscillator: () => ({ frequency: { setValueAtTime: () => {} }, connect: () => {}, start: () => {}, stop: () => {} }),
-          createBuffer: () => ({ getChannelData: () => new Float32Array(100) }),
-          createBufferSource: () => ({ connect: () => {}, start: () => {}, stop: () => {} }),
-          createBiquadFilter: () => ({ frequency: { setValueAtTime: () => {} }, Q: { setValueAtTime: () => {} }, connect: () => {} }),
-          createChannelMerger: () => ({ connect: () => {} }),
-          resume: () => {}
-        };
-      },
-      localStorage: mockStorage
-    };
-    global.document = documentMock;
-    global.navigator = { wakeLock: { request: async () => ({ release: async () => {} }) }, maxTouchPoints: 5 };
-    global.Notification = { permission: 'default', requestPermission: async () => 'granted' };
-    global.fetch = async () => ({ ok: true, json: async () => ({}) });
+# =============================================================================
+# 4. IXTIYORIY TEST QATLAMLARI
+# =============================================================================
 
-    // Execute audio.js
-    eval(audioJs);
-    if (!global.window.zenithAudio) {
-      throw new Error('window.zenithAudio not initialized');
-    }
-    console.log('✅ JS: ZenithAudioEngine successfully loaded.');
+def optional_layers() -> None:
+    print("\n[4/4] IXTIYORIY QATLAMLAR")
+    has_jsdom = subprocess.run(["node", "-e", "require.resolve('jsdom')"],
+                               cwd=DIRECTORY, capture_output=True).returncode == 0
+    print(f"  {'✅' if has_jsdom else 'ℹ️ '} jsdom DOM testlari: "
+          f"{'yoqilgan' if has_jsdom else 'o`tkazib yuborildi — `npm install` bilan yoqiladi'}")
+    has_pw = os.path.isdir(os.path.join(DIRECTORY, "node_modules", "@playwright"))
+    print(f"  {'✅' if has_pw else 'ℹ️ '} Playwright E2E: "
+          f"{'tayyor (npm run test:e2e)' if has_pw else 'o`rnatilmagan — `npm run setup:e2e`'}")
+    R.check("E2E stsenariy fayli mavjud",
+            os.path.exists(os.path.join(DIRECTORY, "tests", "e2e.spec.mjs")))
 
-    // Execute app.js
-    eval(appJs);
-    console.log('✅ JS: app.js initialized successfully.');
 
-    // Test Play/Pause toggle
-    const toggleBtn = documentMock.getElementById('toggleRunBtn');
-    toggleBtn.click();
-    console.log('✅ JS: Play/Pause button click tested.');
+def main() -> int:
+    print("=" * 66)
+    print("🚀 ZENITH STUDY TIMER — TEST TO'PLAMI")
+    print("=" * 66)
+    try:
+        backend_tests()
+        structure_tests()
+        node_tests()
+        optional_layers()
+    finally:
+        shutil.rmtree(TEST_DATA_DIR, ignore_errors=True)
 
-    // Test Digits Container click (toggles play)
-    const digitsContainer = documentMock.getElementById('digitsContainer');
-    digitsContainer.click();
-    console.log('✅ JS: Screen digits container click tested.');
-
-    // Test Reset Button click
-    const resetBtn = documentMock.getElementById('resetBtn');
-    resetBtn.click();
-    console.log('✅ JS: Reset button click tested.');
-
-    // Test Settings Toggle Button
-    const settingsBtn = documentMock.getElementById('openSettingsHeaderBtn');
-    settingsBtn.click();
-    console.log('✅ JS: Settings view toggle click tested.');
-
-    // Test Back to Timer Button
-    const backBtn = documentMock.getElementById('backToTimerBtn');
-    backBtn.click();
-    console.log('✅ JS: Back to timer view click tested.');
-
-    // Test Test Sound Button
-    const soundBtn = documentMock.getElementById('testSoundBtn');
-    soundBtn.click();
-    console.log('✅ JS: Sound preview test button tested.');
-
-    // Test Rotate Button in Drawer
-    const rotateTimerBtn = documentMock.getElementById('rotateTimerBtn');
-    rotateTimerBtn.click();
-    console.log('✅ JS: Drawer rotate button click tested.');
-
-    // Test Fullscreen Button in Drawer
-    const fullscreenBtn = documentMock.getElementById('fullscreenBtn');
-    fullscreenBtn.click();
-    console.log('✅ JS: Fullscreen button click tested.');
-
-    // Test Audio Methods directly
-    global.window.zenithAudio.playAlarm('zen_bowl');
-    global.window.zenithAudio.playAlarm('soft_bell');
-    global.window.zenithAudio.playAlarm('digital_chime');
-    global.window.zenithAudio.playAlarm('crystal');
-    global.window.zenithAudio.playReminderChime();
-    global.window.zenithAudio.setAmbient('rain');
-    global.window.zenithAudio.setAmbient('binaural');
-    global.window.zenithAudio.setAmbient('none');
-    console.log('✅ JS: All synthesized audio alarms and ambients tested.');
-    process.exit(0);
-    """;
-
-    res = subprocess.run(["node", "-e", node_test_script], capture_output=True, text=True, cwd=DIRECTORY, check=False)
-    if res.returncode == 0:
-        for line in res.stdout.strip().split("\n"):
-            print(f"  {line}")
-        record_test("Node.js JS & Web Audio Logic Test", True)
+    total = R.passed + R.failed
+    print("\n" + "=" * 66)
+    if R.failed == 0:
+        print(f"🎉 BARCHA TESTLAR O'TDI: {R.passed}/{total}")
     else:
-        print("STDERR:\n", res.stderr)
-        record_test("Node.js JS & Web Audio Logic Test", False, res.stderr)
+        print(f"❌ YIQILGAN TESTLAR: {R.failed}/{total}")
+        for item in R.failures:
+            print(f"   • {item}")
+    print("=" * 66)
+    return 1 if R.failed else 0
 
-    print("\n" + "=" * 65)
-    print(f"🎉 BARCHA TESTLAR MUVAFFAQIYATLI YAKUNLANDI: {passed_count}/{total_count} (100%)")
-    print("=" * 65)
 
 if __name__ == "__main__":
-    run_tests()
+    sys.exit(main())

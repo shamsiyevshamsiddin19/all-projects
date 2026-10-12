@@ -1,4 +1,21 @@
+# Python
 __pycache__/
 *.pyc
+
+# Ishlash vaqti ma'lumotlari — shaxsiy statistika va sozlamalar repoga tushmasligi kerak
+data/
+*.bak
+*.tmp
 *.log
+
+# Node / testlar
+node_modules/
+test-results/
+playwright-report/
+.playwright/
+
+# Ixtiyoriy mahalliy shriftlar (tools/vendor-fonts.sh yasaydi)
+fonts/
+
+# OS
 .DS_Store

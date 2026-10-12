@@ -1,0 +1,232 @@
+/* ========================================================
+   HAGUE — EDITORIAL MAGAZINE & NEWS BLOG
+   Bootstrap 5.3 Custom Styling & Typography
+======================================================== */
+
+/* 1. Global & Typography */
+:root {
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --primary-blue: #0066FF;
+  --primary-blue-hover: #0052CC;
+  --text-main: #111111;
+  --text-muted: #6C757D;
+  --border-light: #EBEBEB;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--text-main);
+  background-color: #FFFFFF;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+.font-sans {
+  font-family: var(--font-sans);
+}
+
+/* 2. Top Header & Brand */
+.brand-logo {
+  font-size: clamp(2rem, 3.8vw, 2.9rem);
+  letter-spacing: 2px;
+  line-height: 1;
+  color: #000000;
+  display: inline-block;
+}
+
+.top-header {
+  border-bottom: 1px solid var(--border-light);
+}
+
+/* 3. Navigation Bar */
+.main-navbar {
+  border-top: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.nav-link-custom {
+  font-size: 0.78rem;
+  letter-spacing: 0.8px;
+  color: #2D3136 !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+  position: relative;
+  transition: color 0.2s ease;
+}
+
+.nav-link-custom:hover {
+  color: #000000 !important;
+}
+
+.nav-link-custom.active {
+  color: #000000 !important;
+}
+
+.nav-link-custom.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background-color: #000000;
+}
+
+/* 4. Category Badges */
+.category-badge {
+  font-size: 0.68rem;
+  letter-spacing: 1px;
+  color: var(--primary-blue) !important;
+  font-weight: 700;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+/* 5. Article Cards & Images */
+.article-card {
+  cursor: pointer;
+}
+
+.article-title a {
+  color: var(--text-main);
+  transition: color 0.2s ease;
+  line-height: 1.3;
+}
+
+.article-card:hover .article-title a,
+.article-card:hover .article-link {
+  color: var(--primary-blue) !important;
+}
+
+.article-thumb-wrapper {
+  background-color: #F4F4F4;
+  overflow: hidden;
+}
+
+.article-thumb {
+  width: 100%;
+  height: 155px;
+  object-fit: cover;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.featured-thumb {
+  width: 100%;
+  height: auto;
+  max-height: 380px;
+  object-fit: cover;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.article-thumb-square {
+  width: 58px;
+  height: 58px;
+  object-fit: cover;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.article-card:hover .article-thumb,
+.article-card:hover .featured-thumb,
+.article-card:hover .article-thumb-square {
+  transform: scale(1.05);
+}
+
+/* 6. Text Clamping & Sizes */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tracking-wider {
+  letter-spacing: 1px;
+}
+
+.smaller {
+  font-size: 0.72rem;
+}
+
+.fs-xs {
+  font-size: 0.75rem;
+}
+
+/* 7. Latest Sidebar & Borders */
+.latest-sidebar {
+  border-left: 1px solid transparent;
+}
+
+@media (min-width: 992px) {
+  .latest-sidebar {
+    padding-left: 8px;
+  }
+}
+
+/* 8. Button Styles */
+.btn-primary {
+  background-color: var(--primary-blue);
+  border-color: var(--primary-blue);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+  background-color: var(--primary-blue-hover);
+  border-color: var(--primary-blue-hover);
+}
+
+.view-all-link {
+  transition: transform 0.2s ease;
+  display: inline-block;
+}
+
+.view-all-link:hover {
+  transform: translateX(3px);
+  text-decoration: underline !important;
+}
+
+/* 9. Newsletter Box */
+.newsletter-box {
+  background-color: #F8F9FA !important;
+  border-color: var(--border-light) !important;
+}
+
+/* 10. Footer Social Links */
+.social-link {
+  transition: color 0.2s ease, transform 0.2s ease;
+  display: inline-block;
+}
+
+.social-link:hover {
+  color: #FFFFFF !important;
+  transform: translateY(-2px);
+}
+
+.hover-white:hover {
+  color: #FFFFFF !important;
+}
+
+/* 11. Modal Reading Content */
+.article-full-body p {
+  margin-bottom: 1.5rem;
+  line-height: 1.8;
+}
+
+.article-full-body blockquote {
+  border-left: 3px solid var(--primary-blue);
+  padding-left: 1.25rem;
+  font-style: italic;
+  color: #222;
+  margin: 1.5rem 0;
+}

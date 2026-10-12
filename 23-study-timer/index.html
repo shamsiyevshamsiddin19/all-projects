@@ -2,55 +2,73 @@
 <html lang="uz">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Zenith Study Timer — minimalist orqaga sanash, pomodoro va fokus studiyasi.">
+  <meta name="theme-color" content="#000000">
   <title>Zenith Study Timer — Ultra Minimalist Countdown</title>
-  
-  <!-- Modern Clean Typography -->
+
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+  <!-- Tipografiya: oflayn ishlashi uchun service worker keshlaydi, tushib qolsa fallback stack ishlaydi -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500&family=Montserrat:wght@100;200;300;400&family=Urbanist:wght@100;200;300;400;500&family=JetBrains+Mono:wght@100;200;300;400&family=Cormorant+Garamond:wght@300;400&display=swap" rel="stylesheet">
-  
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500&family=Montserrat:wght@100;200;300;400&family=Urbanist:wght@100;200;300;400;500&family=JetBrains+Mono:wght@100;200;300;400&family=Cormorant+Garamond:wght@300;400&display=swap"
+        rel="stylesheet">
+
   <link rel="stylesheet" href="css/style.css">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.5'><circle cx='12' cy='12' r='9'/><polyline points='12 7 12 12 15 15'/></svg>">
 </head>
 <body class="theme-obsidian font-urbanist" id="appBody">
 
-  <!-- Left Edge Hover Activation Zone -->
-  <div class="left-hover-zone" id="hoverZone" aria-label="Sozlamalar panelini ochish">
-    <div class="hover-peek-bar" id="hoverPeekBar" title="Sozlamalar panelini ochish uchun kursorni bu yerga olib keling">
+  <!-- Chap chetdagi ochish zonasi (klaviatura bilan ham ishlaydi) -->
+  <div class="left-hover-zone" id="hoverZone" role="button" tabindex="0"
+       data-i18n-aria="drawer.open" data-i18n-title="drawer.open" aria-controls="settingsDrawer">
+    <div class="hover-peek-bar" id="hoverPeekBar" aria-hidden="true">
       <div class="peek-line"></div>
       <div class="peek-dot"></div>
       <div class="peek-line"></div>
     </div>
   </div>
 
-  <!-- Slide-Out Configuration Drawer -->
-  <aside class="settings-drawer" id="settingsDrawer" aria-label="Taymer sozlamalari">
+  <!-- Panel ochiq bo'lganda tashqariga bosish uni yopadi (taymerni pauza qilmaydi) -->
+  <div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
+
+  <!-- Sozlamalar paneli -->
+  <aside class="settings-drawer" id="settingsDrawer" role="dialog" aria-modal="false"
+         aria-labelledby="drawerBrandTitle" data-i18n-aria="drawer.label">
     <div class="drawer-header">
       <div class="brand-box">
-        <svg class="icon-svg brand-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="1.6" fill="none">
+        <svg class="icon-svg brand-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor"
+             stroke-width="1.6" fill="none" aria-hidden="true" focusable="false">
           <circle cx="12" cy="12" r="9"/>
           <polyline points="12 7 12 12 15 15"/>
         </svg>
         <div>
-          <h2 class="brand-title" id="drawerBrandTitle">ZENITH CHRONO</h2>
-          <span class="brand-badge" id="drawerBrandBadge">STUDIO</span>
+          <h2 class="brand-title" id="drawerBrandTitle" data-i18n="brand.title">ZENITH CHRONO</h2>
+          <span class="brand-badge" id="drawerBrandBadge" data-i18n="brand.badge">STUDIO</span>
         </div>
       </div>
       <div class="drawer-header-actions">
-        <button type="button" class="icon-btn" id="openSettingsHeaderBtn" title="Sozlamalar (S)">
-          <svg class="icon-svg" viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="1.8" fill="none">
+        <button type="button" class="icon-btn" id="openSettingsHeaderBtn"
+                data-i18n-title="drawer.settings" data-i18n-aria="drawer.settings" aria-pressed="false">
+          <svg class="icon-svg" viewBox="0 0 24 24" width="15" height="15" stroke="currentColor"
+               stroke-width="1.8" fill="none" aria-hidden="true" focusable="false">
             <circle cx="12" cy="12" r="3"/>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
           </svg>
         </button>
-        <button type="button" class="icon-btn" id="pinDrawerBtn" title="Panelni qadash (P)">
-          <svg class="icon-svg" id="pinIconSvg" viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="1.8" fill="none">
+        <button type="button" class="icon-btn" id="pinDrawerBtn"
+                data-i18n-title="drawer.pin" data-i18n-aria="drawer.pin" aria-pressed="false">
+          <svg class="icon-svg" viewBox="0 0 24 24" width="15" height="15" stroke="currentColor"
+               stroke-width="1.8" fill="none" aria-hidden="true" focusable="false">
             <path d="M16 3l1 7-5 5v6l-1 1-1-1v-6L5 10l1-7h10z"/>
           </svg>
         </button>
-        <button type="button" class="icon-btn" id="closeDrawerBtn" title="Panelni yopish (Esc)">
-          <svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
+        <button type="button" class="icon-btn" id="closeDrawerBtn"
+                data-i18n-title="drawer.close" data-i18n-aria="drawer.close">
+          <svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor"
+               stroke-width="2" fill="none" aria-hidden="true" focusable="false">
             <line x1="18" y1="6" x2="6" y2="18"/>
             <line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
@@ -59,360 +77,481 @@
     </div>
 
     <div class="drawer-content">
-      <!-- 1. Timer Controls Sub-View -->
+      <!-- ============================ 1. TAYMER BOSHQARUVI ============================ -->
       <div class="drawer-subview active" id="timerSubView">
-        <!-- Mode Tabs -->
+
         <div class="section-group">
-        <label class="group-title">ISH REJIMI</label>
-        <div class="mode-tabs" role="tablist">
-          <button type="button" class="mode-tab active" data-mode="duration" id="tabDuration">
-            <svg class="tab-icon" viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="1.8" fill="none">
-              <path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>
-            </svg>
-            <span>Davomiylik</span>
-          </button>
-          <button type="button" class="mode-tab" data-mode="pomodoro" id="tabPomodoro">
-            <svg class="tab-icon" viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="1.8" fill="none">
-              <circle cx="12" cy="13" r="8"/><path d="M12 5V2M9 3h6"/>
-            </svg>
-            <span>Pomodoro</span>
-          </button>
-          <button type="button" class="mode-tab" data-mode="stopwatch" id="tabStopwatch">
-            <svg class="tab-icon" viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="1.8" fill="none">
-              <circle cx="12" cy="13" r="8"/><polyline points="12 9 12 13 14 15"/><path d="M12 2v3M9 2h6"/>
-            </svg>
-            <span>Sekundomer</span>
-          </button>
-          <button type="button" class="mode-tab" data-mode="clock" id="tabClock">
-            <svg class="tab-icon" viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="1.8" fill="none">
-              <circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 12"/>
-            </svg>
-            <span>Soat</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- 2. Mode Specific Settings: Duration (Active Primary Mode) -->
-      <div class="mode-panel active" id="panelDuration">
-        <div class="section-group">
-          <label class="group-title">VAQTNI SOZLASH</label>
-          <div class="duration-inputs">
-            <div class="duration-col">
-              <label>Kun</label>
-              <input type="number" id="inputDays" min="0" max="999" value="0">
-            </div>
-            <div class="duration-col">
-              <label>Soat</label>
-              <input type="number" id="inputHours" min="0" max="23" value="0">
-            </div>
-            <div class="duration-col">
-              <label>Daqiqa</label>
-              <input type="number" id="inputMinutes" min="0" max="59" value="0">
-            </div>
-            <div class="duration-col">
-              <label>Soniya</label>
-              <input type="number" id="inputSeconds" min="0" max="59" value="0">
-            </div>
-          </div>
-          <div class="presets-grid mt-2">
-            <button type="button" class="preset-btn" data-duration="300">5 daqiqa</button>
-            <button type="button" class="preset-btn" data-duration="900">15 daqiqa</button>
-            <button type="button" class="preset-btn" data-duration="1500">25 daqiqa (Pomodoro)</button>
-            <button type="button" class="preset-btn" data-duration="1800">30 daqiqa</button>
-            <button type="button" class="preset-btn" data-duration="2700">45 daqiqa (Dars)</button>
-            <button type="button" class="preset-btn" data-duration="3600">1 soat</button>
-            <button type="button" class="preset-btn" data-duration="7200">2 soat</button>
-            <button type="button" class="preset-btn preset-accent" data-duration="86400">1 kun (24 soat)</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 3. Mode Specific Settings: Pomodoro -->
-      <div class="mode-panel" id="panelPomodoro">
-        <div class="section-group">
-          <label class="group-title">POMODORO BOSQICHI</label>
-          <div class="pomodoro-phase-buttons">
-            <button type="button" class="phase-btn active" data-phase="work">Dars / Fokus (25m)</button>
-            <button type="button" class="phase-btn" data-phase="shortBreak">Tanaffus (5m)</button>
-            <button type="button" class="phase-btn" data-phase="longBreak">Uzun (15m)</button>
-          </div>
-          <div class="pomodoro-counter">
-            Bajarilgan dars seanslari: <span id="pomoCycleCount" class="highlight-num">0</span> / 4
-          </div>
-        </div>
-      </div>
-
-      <!-- 4. Event Title Input -->
-      <div class="section-group">
-        <label class="group-title" for="eventTitleInput">SARLAVHA / MAQSAD (IXTIYORIY)</label>
-        <div class="input-wrap">
-          <input type="text" id="eventTitleInput" placeholder="Masalan: FINAL EXAM, PROJECT LAUNCH..." maxlength="60">
-        </div>
-      </div>
-
-      <!-- 5. Eslatmalar (Reminders & Notifications) -->
-      <div class="section-group">
-        <label class="group-title">ESLATMALAR</label>
-        <div class="toggle-row">
-          <div class="select-label-wrap">
-            <svg class="row-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="1.8" fill="none">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-            </svg>
-            <span>Oraliq eslatish</span>
-          </div>
-          <select id="intervalReminderSelect" class="styled-select">
-            <option value="0">O'chirilgan</option>
-            <option value="10">Har 10 daqiqada</option>
-            <option value="15">Har 15 daqiqada</option>
-            <option value="20">Har 20 daqiqada</option>
-            <option value="30">Har 30 daqiqada</option>
-            <option value="45">Har 45 daqiqada</option>
-          </select>
-        </div>
-        <label class="checkbox-row mt-1">
-          <input type="checkbox" id="checkPreEndWarning" checked>
-          <span>Tugashidan 1 daqiqa oldin eslatish</span>
-        </label>
-      </div>
-
-      <!-- 6. Quick Action Controls (BOSHQARUV: VAQT SOZLASH VA ESLATMADAN KEYIN, TO'LIQ EKRANDAN TEPADA) -->
-      <div class="section-group">
-        <label class="group-title">BOSHQARUV</label>
-        <div class="main-controls">
-          <button type="button" class="btn btn-primary" id="toggleRunBtn">
-            <span class="btn-icon" id="playPauseIcon">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
-            </span>
-            <span id="playPauseText">Boshlash</span>
-          </button>
-          <button type="button" class="btn btn-secondary btn-icon-only" id="resetBtn" title="Qaytarish (R)" aria-label="Qaytarish">
-            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none">
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><polyline points="3 3 3 8 8 8"/>
-            </svg>
-          </button>
-        </div>
-        <!-- Quick Adjust for Duration -->
-        <div class="quick-adjust-row" id="quickAdjustRow">
-          <button type="button" class="chip-btn" data-add="60">+1 daq</button>
-          <button type="button" class="chip-btn" data-add="300">+5 daq</button>
-          <button type="button" class="chip-btn" data-add="900">+15 daq</button>
-          <button type="button" class="chip-btn" data-add="3600">+1 soat</button>
-          <button type="button" class="chip-btn" data-add="-300">-5 daq</button>
-        </div>
-      </div>
-
-      <!-- 7. Display Utilities & Actions (TO'LIQ EKRAN VA ZEN REJIM) -->
-      <div class="section-group">
-        <div class="action-buttons-grid">
-          <button type="button" class="btn btn-secondary" id="fullscreenBtn" title="To'liq ekran (F)">
-            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="1.8" fill="none">
-              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
-            </svg>
-            To'liq Ekran
-          </button>
-          <button type="button" class="btn btn-secondary" id="rotateTimerBtn" title="Taymerni 90° ga burish">
-            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="1.8" fill="none">
-              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
-            </svg>
-            Taymerni Burish (90°)
-          </button>
-          <button type="button" class="btn btn-secondary" id="zenModeBtn" title="Zen rejim">
-            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="1.8" fill="none">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-            </svg>
-            Zen Rejim
-          </button>
-        </div>
-      </div>
-
-      <!-- 8. Keyboard Shortcuts Info -->
-      <div class="drawer-footer">
-        <p class="shortcuts-title">KLAVIATURA TEZKOR TUGMALARI</p>
-        <div class="shortcuts-list">
-          <div><kbd>Space</kbd> Start / Pauza</div>
-          <div><kbd>S</kbd> Sozlamalar</div>
-          <div><kbd>F</kbd> To'liq ekran</div>
-          <div><kbd>P</kbd> Panelni qadash</div>
-          <div><kbd>R</kbd> Qayta o'rnatish</div>
-          <div><kbd>Esc</kbd> Yopish</div>
-        </div>
-      </div>
-    </div>
-
-      <!-- 2. Settings Sub-View (Changes right inside THIS panel!) -->
-      <div class="drawer-subview" id="settingsSubView" style="display: none;">
-        <div class="settings-nav-header">
-          <button type="button" class="back-to-timer-btn" id="backToTimerBtn">
-            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
-              <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
-            </svg>
-            <span>Taymerga qaytish</span>
-          </button>
-        </div>
-
-        <!-- FON MAVZUSI -->
-        <div class="section-group">
-          <label class="group-title" for="themeSelect">FON MAVZUSI</label>
-          <select id="themeSelect" class="styled-select">
-            <option value="theme-obsidian">Pitch Black (Asl Rasm)</option>
-            <option value="theme-midnight">Deep Navy (Tungi ko'k)</option>
-            <option value="theme-emerald">Matrix Emerald (Zumrad)</option>
-            <option value="theme-amber">Amber Luxury (Tilla nur)</option>
-            <option value="theme-violet">Cyber Violet (Binafsharang)</option>
-            <option value="theme-aurora">Aurora Gradient (Kosmik)</option>
-          </select>
-        </div>
-
-        <!-- SHRIFT USLUBI -->
-        <div class="section-group">
-          <label class="group-title" for="fontSelect">SHRIFT USLUBI</label>
-          <select id="fontSelect" class="styled-select">
-            <option value="font-urbanist">Urbanist UltraLight (Asl Rasm)</option>
-            <option value="font-inter">Inter Thin (Ultra yupqa)</option>
-            <option value="font-montserrat">Montserrat Light</option>
-            <option value="font-mono">JetBrains Mono (Dasturchi)</option>
-            <option value="font-serif">Cormorant Garamond (Klassik)</option>
-          </select>
-        </div>
-
-        <!-- OVOZ VA SIGNAL -->
-        <div class="section-group">
-          <label class="group-title">OVOZ VA SIGNAL</label>
-          <div class="toggle-row">
-            <div class="select-label-wrap">
-              <svg class="row-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="1.8" fill="none">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          <span class="group-title" id="modeGroupTitle" data-i18n="group.mode">ISH REJIMI</span>
+          <div class="mode-tabs" role="tablist" aria-labelledby="modeGroupTitle">
+            <button type="button" class="mode-tab" data-mode="target" id="tabTarget"
+                    role="tab" aria-selected="false" aria-controls="panelTarget">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="15" height="15" stroke="currentColor"
+                   stroke-width="1.8" fill="none" aria-hidden="true" focusable="false">
+                <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/>
               </svg>
-              <span>Tugash signali</span>
-            </div>
-            <select id="alarmSoundSelect" class="styled-select">
-              <option value="zen_bowl">Zen Singing Bowl (Meditatsiya)</option>
-              <option value="soft_bell">Mayin Billur Qo'ng'iroq</option>
-              <option value="digital_chime">Digital Chime (Zamonaviy)</option>
-              <option value="crystal">Billur Gong</option>
-              <option value="mute">Ovoz o'chirilgan</option>
-            </select>
-          </div>
-
-          <div class="slider-row mt-2">
-            <div class="slider-label">
-              <span>Ovoz balandligi</span>
-              <span id="volumePercent">80%</span>
-            </div>
-            <input type="range" id="volumeSlider" min="0" max="100" value="80">
-          </div>
-
-          <div class="mt-2" style="display: flex; justify-content: flex-end;">
-            <button type="button" class="btn btn-secondary btn-sm" id="testSoundBtn" title="Tanlangan ovozni testlash">
-              <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-                <polygon points="6 4 20 12 6 20 6 4"/>
+              <span data-i18n="mode.target">Maqsadli sana</span>
+            </button>
+            <button type="button" class="mode-tab active" data-mode="duration" id="tabDuration"
+                    role="tab" aria-selected="true" aria-controls="panelDuration">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="15" height="15" stroke="currentColor"
+                   stroke-width="1.8" fill="none" aria-hidden="true" focusable="false">
+                <path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>
               </svg>
-              <span>Ovozni testlash</span>
+              <span data-i18n="mode.duration">Davomiylik</span>
+            </button>
+            <button type="button" class="mode-tab" data-mode="pomodoro" id="tabPomodoro"
+                    role="tab" aria-selected="false" aria-controls="panelPomodoro">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="15" height="15" stroke="currentColor"
+                   stroke-width="1.8" fill="none" aria-hidden="true" focusable="false">
+                <circle cx="12" cy="13" r="8"/><path d="M12 5V2M9 3h6"/>
+              </svg>
+              <span data-i18n="mode.pomodoro">Pomodoro</span>
+            </button>
+            <button type="button" class="mode-tab" data-mode="stopwatch" id="tabStopwatch"
+                    role="tab" aria-selected="false" aria-controls="panelStopwatch">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="15" height="15" stroke="currentColor"
+                   stroke-width="1.8" fill="none" aria-hidden="true" focusable="false">
+                <circle cx="12" cy="13" r="8"/><polyline points="12 9 12 13 14 15"/><path d="M12 2v3M9 2h6"/>
+              </svg>
+              <span data-i18n="mode.stopwatch">Sekundomer</span>
+            </button>
+            <button type="button" class="mode-tab" data-mode="clock" id="tabClock"
+                    role="tab" aria-selected="false" aria-controls="panelClock">
+              <svg class="tab-icon" viewBox="0 0 24 24" width="15" height="15" stroke="currentColor"
+                   stroke-width="1.8" fill="none" aria-hidden="true" focusable="false">
+                <circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 12"/>
+              </svg>
+              <span data-i18n="mode.clock">Soat</span>
             </button>
           </div>
         </div>
 
-        <!-- FOKUS / DIQQAT AMBIENTI -->
-        <div class="section-group">
-          <label class="group-title">FOKUS / DIQQAT AMBIENTI</label>
-          <div class="toggle-row">
-            <div class="select-label-wrap">
-              <svg class="row-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="1.8" fill="none">
-                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/><line x1="16" y1="13" x2="16" y2="21"/><line x1="8" y1="13" x2="8" y2="21"/><line x1="12" y1="15" x2="12" y2="23"/>
-              </svg>
-              <span>Fokus orqa fon tovushi</span>
+        <!-- Maqsadli sana -->
+        <div class="mode-panel" id="panelTarget" role="tabpanel" aria-labelledby="tabTarget">
+          <div class="section-group">
+            <label class="group-title" for="targetDateTimeInput" data-i18n="group.target">MAQSADLI SANA</label>
+            <div class="input-wrap">
+              <input type="datetime-local" id="targetDateTimeInput" data-i18n-aria="input.targetLabel">
             </div>
-            <select id="ambientSoundSelect" class="styled-select">
-              <option value="none">O'chiq</option>
-              <option value="rain">Mayin Yomg'ir (Tinchlantiruvchi)</option>
-              <option value="binaural">Binaural Focus (432Hz Alfa/Teta)</option>
-              <option value="space">Chuqur Kosmik Drone</option>
-            </select>
+            <div class="presets-grid mt-2">
+              <button type="button" class="preset-btn" data-target="tomorrow" data-i18n="preset.tomorrow">Ertaga 00:00</button>
+              <button type="button" class="preset-btn" data-target="weekend" data-i18n="preset.weekend">Hafta oxiri</button>
+              <button type="button" class="preset-btn" data-target="month_end" data-i18n="preset.monthEnd">Oy oxiri</button>
+              <button type="button" class="preset-btn" data-target="days_7" data-i18n="preset.days7">+7 kun</button>
+              <button type="button" class="preset-btn" data-target="days_30" data-i18n="preset.days30">+30 kun</button>
+              <button type="button" class="preset-btn preset-accent" data-target="new_year" data-i18n="preset.newYear">Yangi yil</button>
+            </div>
           </div>
         </div>
 
-        <!-- KO'RINISHLARNI BOSHQARISH -->
+        <!-- Davomiylik -->
+        <div class="mode-panel active" id="panelDuration" role="tabpanel" aria-labelledby="tabDuration">
+          <div class="section-group">
+            <span class="group-title" data-i18n="group.duration">VAQTNI SOZLASH</span>
+            <div class="duration-inputs">
+              <div class="duration-col">
+                <label for="inputDays" data-i18n="input.days">Kun</label>
+                <input type="number" id="inputDays" min="0" max="999" step="1" value="0" inputmode="numeric">
+              </div>
+              <div class="duration-col">
+                <label for="inputHours" data-i18n="input.hours">Soat</label>
+                <input type="number" id="inputHours" min="0" max="23" step="1" value="0" inputmode="numeric">
+              </div>
+              <div class="duration-col">
+                <label for="inputMinutes" data-i18n="input.minutes">Daqiqa</label>
+                <input type="number" id="inputMinutes" min="0" max="59" step="1" value="0" inputmode="numeric">
+              </div>
+              <div class="duration-col">
+                <label for="inputSeconds" data-i18n="input.seconds">Soniya</label>
+                <input type="number" id="inputSeconds" min="0" max="59" step="1" value="0" inputmode="numeric">
+              </div>
+            </div>
+            <div class="presets-grid mt-2">
+              <button type="button" class="preset-btn" data-duration="300" data-i18n="preset.5m">5 daqiqa</button>
+              <button type="button" class="preset-btn" data-duration="900" data-i18n="preset.15m">15 daqiqa</button>
+              <button type="button" class="preset-btn" data-duration="1500" data-i18n="preset.25m">25 daqiqa</button>
+              <button type="button" class="preset-btn" data-duration="1800" data-i18n="preset.30m">30 daqiqa</button>
+              <button type="button" class="preset-btn" data-duration="2700" data-i18n="preset.45m">45 daqiqa</button>
+              <button type="button" class="preset-btn" data-duration="3600" data-i18n="preset.1h">1 soat</button>
+              <button type="button" class="preset-btn" data-duration="7200" data-i18n="preset.2h">2 soat</button>
+              <button type="button" class="preset-btn preset-accent" data-duration="86400" data-i18n="preset.24h">1 kun</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pomodoro -->
+        <div class="mode-panel" id="panelPomodoro" role="tabpanel" aria-labelledby="tabPomodoro">
+          <div class="section-group">
+            <span class="group-title" data-i18n="group.pomodoro">POMODORO BOSQICHI</span>
+            <div class="pomodoro-phase-buttons">
+              <button type="button" class="phase-btn active" data-phase="work" aria-pressed="true">
+                <span data-i18n="pomo.work">Dars / Fokus</span>
+                <small class="phase-min" id="phaseMinWork">25</small>
+              </button>
+              <button type="button" class="phase-btn" data-phase="shortBreak" aria-pressed="false">
+                <span data-i18n="pomo.shortBreak">Qisqa tanaffus</span>
+                <small class="phase-min" id="phaseMinShort">5</small>
+              </button>
+              <button type="button" class="phase-btn" data-phase="longBreak" aria-pressed="false">
+                <span data-i18n="pomo.longBreak">Uzun tanaffus</span>
+                <small class="phase-min" id="phaseMinLong">15</small>
+              </button>
+            </div>
+            <div class="pomodoro-counter">
+              <span data-i18n="pomo.cycles">Bajarilgan dars seanslari</span>:
+              <span id="pomoCycleCount" class="highlight-num">0</span> /
+              <span id="pomoCycleTarget" class="highlight-num">4</span>
+              <button type="button" class="btn btn-secondary btn-sm" id="resetCyclesBtn"
+                      data-i18n="pomo.resetCycles" data-i18n-title="pomo.resetCycles">Sikllarni nolga qaytarish</button>
+            </div>
+          </div>
+          <div class="section-group">
+            <span class="group-title" data-i18n="group.pomodoroConfig">POMODORO SOZLAMALARI</span>
+            <div class="pomo-config-grid">
+              <div class="duration-col">
+                <label for="inputPomoWork" data-i18n="pomo.workMin">Dars (daq)</label>
+                <input type="number" id="inputPomoWork" min="1" max="180" step="1" value="25" inputmode="numeric">
+              </div>
+              <div class="duration-col">
+                <label for="inputPomoShort" data-i18n="pomo.shortMin">Qisqa (daq)</label>
+                <input type="number" id="inputPomoShort" min="1" max="180" step="1" value="5" inputmode="numeric">
+              </div>
+              <div class="duration-col">
+                <label for="inputPomoLong" data-i18n="pomo.longMin">Uzun (daq)</label>
+                <input type="number" id="inputPomoLong" min="1" max="180" step="1" value="15" inputmode="numeric">
+              </div>
+              <div class="duration-col">
+                <label for="inputPomoCycles" data-i18n="pomo.cycleCount">Uzun tanaffusgacha</label>
+                <input type="number" id="inputPomoCycles" min="2" max="12" step="1" value="4" inputmode="numeric">
+              </div>
+            </div>
+            <label class="checkbox-row mt-1">
+              <input type="checkbox" id="checkPomoAutoStart" checked>
+              <span data-i18n="pomo.autoStart">Keyingi bosqichni avtomatik boshlash</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Sekundomer -->
+        <div class="mode-panel" id="panelStopwatch" role="tabpanel" aria-labelledby="tabStopwatch">
+          <div class="section-group">
+            <span class="group-title" data-i18n="group.stopwatch">SEKUNDOMER</span>
+            <div class="action-buttons-grid">
+              <button type="button" class="btn btn-secondary" id="lapBtn" data-i18n="sw.lap">Bosqich (Lap)</button>
+              <button type="button" class="btn btn-secondary" id="clearLapsBtn" data-i18n="sw.clearLaps">Bosqichlarni tozalash</button>
+            </div>
+            <ol class="laps-list" id="lapsList" aria-live="polite"></ol>
+          </div>
+        </div>
+
+        <!-- Soat -->
+        <div class="mode-panel" id="panelClock" role="tabpanel" aria-labelledby="tabClock">
+          <div class="section-group">
+            <span class="group-title" data-i18n="group.clock">SOAT</span>
+            <label class="checkbox-row">
+              <input type="checkbox" id="checkClockShowDate" checked>
+              <span data-i18n="label.date">SANA</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Sarlavha -->
         <div class="section-group">
-          <label class="group-title">KO'RINISHLARNI BOSHQARISH</label>
+          <label class="group-title" for="eventTitleInput" data-i18n="group.title">SARLAVHA / MAQSAD</label>
+          <div class="input-wrap">
+            <input type="text" id="eventTitleInput" maxlength="60" data-i18n-placeholder="input.titlePlaceholder">
+          </div>
+        </div>
+
+        <!-- Eslatmalar -->
+        <div class="section-group">
+          <span class="group-title" data-i18n="group.reminders">ESLATMALAR</span>
+          <div class="toggle-row">
+            <label class="select-label-wrap" for="intervalReminderSelect">
+              <svg class="row-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor"
+                   stroke-width="1.8" fill="none" aria-hidden="true" focusable="false">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+              <span data-i18n="reminder.interval">Oraliq eslatish</span>
+            </label>
+            <select id="intervalReminderSelect" class="styled-select"></select>
+          </div>
+          <label class="checkbox-row mt-1">
+            <input type="checkbox" id="checkPreEndWarning" checked>
+            <span data-i18n="reminder.preEnd">Tugashidan 1 daqiqa oldin eslatish</span>
+          </label>
+        </div>
+
+        <!-- Boshqaruv -->
+        <div class="section-group">
+          <span class="group-title" data-i18n="group.controls">BOSHQARUV</span>
+          <div class="main-controls">
+            <button type="button" class="btn btn-primary" id="toggleRunBtn">
+              <span class="btn-icon" id="playPauseIcon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+              </span>
+              <span id="playPauseText" data-i18n="ctrl.start">Boshlash</span>
+            </button>
+            <button type="button" class="btn btn-secondary btn-icon-only" id="resetBtn"
+                    data-i18n-title="ctrl.reset" data-i18n-aria="ctrl.reset">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2"
+                   fill="none" aria-hidden="true" focusable="false">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><polyline points="3 3 3 8 8 8"/>
+              </svg>
+            </button>
+          </div>
+          <div class="quick-adjust-row" id="quickAdjustRow">
+            <button type="button" class="chip-btn" data-add="60" data-i18n="ctrl.add1m">+1 daq</button>
+            <button type="button" class="chip-btn" data-add="300" data-i18n="ctrl.add5m">+5 daq</button>
+            <button type="button" class="chip-btn" data-add="900" data-i18n="ctrl.add15m">+15 daq</button>
+            <button type="button" class="chip-btn" data-add="3600" data-i18n="ctrl.add1h">+1 soat</button>
+            <button type="button" class="chip-btn" data-add="-300" data-i18n="ctrl.sub5m">−5 daq</button>
+          </div>
+        </div>
+
+        <!-- Ekran -->
+        <div class="section-group">
+          <div class="action-buttons-grid">
+            <button type="button" class="btn btn-secondary" id="fullscreenBtn" aria-pressed="false">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="1.8"
+                   fill="none" aria-hidden="true" focusable="false">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+              </svg>
+              <span data-i18n="ctrl.fullscreen">To'liq ekran</span>
+            </button>
+            <button type="button" class="btn btn-secondary" id="rotateTimerBtn" aria-pressed="false">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="1.8"
+                   fill="none" aria-hidden="true" focusable="false">
+                <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/>
+              </svg>
+              <span data-i18n="ctrl.rotate">Taymerni burish</span>
+            </button>
+            <button type="button" class="btn btn-secondary" id="zenModeBtn">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="1.8"
+                   fill="none" aria-hidden="true" focusable="false">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+              <span data-i18n="ctrl.zen">Zen rejim</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Statistika -->
+        <div class="section-group">
+          <span class="group-title" data-i18n="group.stats">STATISTIKA</span>
+          <div class="stats-overview-card">
+            <div class="stat-item">
+              <span class="stat-label" data-i18n="stats.totalFocus">Umumiy fokus</span>
+              <span class="stat-value" id="totalFocusTimeDisplay">0 daq</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label" data-i18n="stats.sessions">Seanslar</span>
+              <span class="stat-value" id="completedSessionsDisplay">0</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label" data-i18n="stats.today">Bugun</span>
+              <span class="stat-value" id="todayFocusDisplay">0 daq</span>
+            </div>
+            <div class="stat-item">
+              <button type="button" class="btn btn-secondary btn-sm btn-danger" id="clearStatsBtn"
+                      data-i18n="stats.clear">Statistikani tozalash</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ma'lumotlar -->
+        <div class="section-group">
+          <span class="group-title" data-i18n="group.data">MA'LUMOTLAR</span>
+          <div class="action-buttons-grid">
+            <button type="button" class="btn btn-secondary" id="exportJsonBtn" data-i18n="data.export">JSON eksport</button>
+            <button type="button" class="btn btn-secondary" id="importJsonBtn" data-i18n="data.import">JSON import</button>
+          </div>
+          <input type="file" id="jsonFileInput" accept="application/json,.json" class="visually-hidden">
+        </div>
+
+        <div class="drawer-footer">
+          <p class="shortcuts-title" data-i18n="shortcuts.title">KLAVIATURA TEZKOR TUGMALARI</p>
+          <div class="shortcuts-list">
+            <div><kbd>Space</kbd> <span data-i18n="shortcuts.space">Start / Pauza</span></div>
+            <div><kbd>S</kbd> <span data-i18n="shortcuts.s">Sozlamalar</span></div>
+            <div><kbd>F</kbd> <span data-i18n="shortcuts.f">To'liq ekran</span></div>
+            <div><kbd>P</kbd> <span data-i18n="shortcuts.p">Panelni qadash</span></div>
+            <div><kbd>R</kbd> <span data-i18n="shortcuts.r">Qayta o'rnatish</span></div>
+            <div><kbd>L</kbd> <span data-i18n="shortcuts.l">Bosqich (lap)</span></div>
+            <div><kbd>Esc</kbd> <span data-i18n="shortcuts.esc">Yopish</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================ 2. SOZLAMALAR ============================ -->
+      <div class="drawer-subview" id="settingsSubView" hidden>
+        <div class="settings-nav-header">
+          <button type="button" class="back-to-timer-btn" id="backToTimerBtn">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2"
+                 fill="none" aria-hidden="true" focusable="false">
+              <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+            </svg>
+            <span data-i18n="drawer.backToTimer">Taymerga qaytish</span>
+          </button>
+        </div>
+
+        <div class="section-group">
+          <label class="group-title" for="langSelect" data-i18n="group.lang">TIL / LANGUAGE</label>
+          <select id="langSelect" class="styled-select">
+            <option value="uz">O'zbekcha</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+
+        <div class="section-group">
+          <label class="group-title" for="themeSelect" data-i18n="group.theme">FON MAVZUSI</label>
+          <select id="themeSelect" class="styled-select">
+            <option value="theme-obsidian">Pitch Black</option>
+            <option value="theme-midnight">Deep Navy</option>
+            <option value="theme-emerald">Matrix Emerald</option>
+            <option value="theme-amber">Amber Luxury</option>
+            <option value="theme-violet">Cyber Violet</option>
+            <option value="theme-aurora">Aurora Gradient</option>
+          </select>
+        </div>
+
+        <div class="section-group">
+          <label class="group-title" for="fontSelect" data-i18n="group.font">SHRIFT USLUBI</label>
+          <select id="fontSelect" class="styled-select">
+            <option value="font-urbanist">Urbanist UltraLight</option>
+            <option value="font-inter">Inter Thin</option>
+            <option value="font-montserrat">Montserrat Light</option>
+            <option value="font-mono">JetBrains Mono</option>
+            <option value="font-serif">Cormorant Garamond</option>
+          </select>
+        </div>
+
+        <div class="section-group">
+          <span class="group-title" data-i18n="group.sound">OVOZ VA SIGNAL</span>
+          <div class="toggle-row">
+            <label class="select-label-wrap" for="alarmSoundSelect">
+              <svg class="row-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor"
+                   stroke-width="1.8" fill="none" aria-hidden="true" focusable="false">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+              <span data-i18n="sound.alarm">Tugash signali</span>
+            </label>
+            <select id="alarmSoundSelect" class="styled-select"></select>
+          </div>
+
+          <div class="slider-row mt-2">
+            <label class="slider-label" for="volumeSlider">
+              <span data-i18n="sound.volume">Ovoz balandligi</span>
+              <span id="volumePercent">80%</span>
+            </label>
+            <input type="range" id="volumeSlider" min="0" max="100" step="1" value="80">
+          </div>
+
+          <div class="mt-2 row-end">
+            <button type="button" class="btn btn-secondary btn-sm" id="testSoundBtn">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true" focusable="false">
+                <polygon points="6 4 20 12 6 20 6 4"/>
+              </svg>
+              <span data-i18n="sound.test">Ovozni testlash</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="section-group">
+          <span class="group-title" data-i18n="group.ambient">FOKUS AMBIENTI</span>
+          <div class="toggle-row">
+            <label class="select-label-wrap" for="ambientSoundSelect">
+              <svg class="row-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor"
+                   stroke-width="1.8" fill="none" aria-hidden="true" focusable="false">
+                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+              </svg>
+              <span data-i18n="ambient.label">Orqa fon tovushi</span>
+            </label>
+            <select id="ambientSoundSelect" class="styled-select"></select>
+          </div>
+          <p class="ambient-note" id="ambientNote" data-i18n="ambient.note"></p>
+        </div>
+
+        <div class="section-group">
+          <span class="group-title" data-i18n="group.display">KO'RINISHLARNI BOSHQARISH</span>
           <label class="checkbox-row">
             <input type="checkbox" id="checkShowDays" checked>
-            <span>Kunlar ("DAYS") ustunini ko'rsatish</span>
+            <span data-i18n="display.showDays">Birinchi ustunni ko'rsatish</span>
           </label>
           <label class="checkbox-row">
             <input type="checkbox" id="checkAutoRotatePortrait" checked>
-            <span>Vertikal telefonda avtomatik 90° ga burish</span>
+            <span data-i18n="display.autoRotate">Vertikal telefonda avtomatik burish</span>
           </label>
           <label class="checkbox-row">
             <input type="checkbox" id="checkWakeLock" checked>
-            <span>Ekran o'chib qolmasligi (WakeLock)</span>
+            <span data-i18n="display.wakeLock">Ekran o'chib qolmasligi</span>
           </label>
           <label class="checkbox-row">
-            <input type="checkbox" id="checkBrowserNotify" checked>
-            <span>Tizim eslatmalari (Desktop Notification)</span>
+            <input type="checkbox" id="checkBrowserNotify">
+            <span data-i18n="display.notify">Tizim eslatmalari</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="checkEdgeHover" checked>
+            <span data-i18n="display.edgeHover">Chap chetga kursor tekkanda ochish</span>
           </label>
         </div>
       </div>
     </div>
   </aside>
 
-
-  <!-- Main Canvas / Fullscreen Display -->
+  <!-- ============================ ASOSIY EKRAN ============================ -->
   <main class="timer-viewport" id="mainViewport">
 
-    <!-- Reminder Toast Notification -->
-    <div class="reminder-toast" id="reminderToast" style="display: none;">
-      <svg class="reminder-toast-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="1.8" fill="none">
+    <div class="reminder-toast" id="reminderToast" role="status" hidden>
+      <svg class="reminder-toast-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor"
+           stroke-width="1.8" fill="none" aria-hidden="true" focusable="false">
         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
       </svg>
-      <span class="reminder-toast-text" id="reminderToastText">Eslatma</span>
+      <span class="reminder-toast-text" id="reminderToastText"></span>
     </div>
 
-    <!-- Optional Event Title / Focus Label -->
-    <div class="event-title-banner" id="eventTitleBanner" style="display: none;">
-      <span class="event-title-text" id="eventTitleDisplay">EVENT TITLE</span>
+    <div class="event-title-banner" id="eventTitleBanner" hidden>
+      <span class="event-title-text" id="eventTitleDisplay"></span>
     </div>
 
-    <!-- Main Digits Display (Exactly matching the photo) -->
-    <div class="digits-container" id="digitsContainer" title="Boshlash / Pauza (Space)">
-      
-      <!-- DAYS Column -->
+    <div class="digits-container" id="digitsContainer" role="button" tabindex="0"
+         data-i18n-aria="a11y.digits" data-i18n-title="a11y.digits">
       <div class="digit-column" id="colDays">
-        <div class="digit-value-wrap">
-          <span class="digit-value" id="daysValue">00</span>
-        </div>
-        <span class="digit-label">DAYS</span>
+        <div class="digit-value-wrap"><span class="digit-value" id="daysValue">00</span></div>
+        <span class="digit-label" id="labelDays">KUN</span>
       </div>
-
-      <!-- HOURS Column -->
       <div class="digit-column" id="colHours">
-        <div class="digit-value-wrap">
-          <span class="digit-value" id="hoursValue">00</span>
-        </div>
-        <span class="digit-label">HOURS</span>
+        <div class="digit-value-wrap"><span class="digit-value" id="hoursValue">00</span></div>
+        <span class="digit-label" id="labelHours">SOAT</span>
       </div>
-
-      <!-- MINUTES Column -->
       <div class="digit-column" id="colMinutes">
-        <div class="digit-value-wrap">
-          <span class="digit-value" id="minutesValue">00</span>
-        </div>
-        <span class="digit-label">MINUTES</span>
+        <div class="digit-value-wrap"><span class="digit-value" id="minutesValue">00</span></div>
+        <span class="digit-label" id="labelMinutes">DAQIQA</span>
       </div>
-
-      <!-- SECONDS Column -->
       <div class="digit-column" id="colSeconds">
-        <div class="digit-value-wrap">
-          <span class="digit-value" id="secondsValue">00</span>
-        </div>
-        <span class="digit-label">SECONDS</span>
+        <div class="digit-value-wrap"><span class="digit-value" id="secondsValue">00</span></div>
+        <span class="digit-label" id="labelSeconds">SONIYA</span>
       </div>
+    </div>
 
+    <!-- Ekran o'quvchilar uchun: vaqt har daqiqada e'lon qilinadi -->
+    <p class="visually-hidden" id="srAnnounce" aria-live="polite" aria-atomic="true"></p>
+
+    <div class="bottom-status-bar" id="statusBar">
+      <div class="status-pill">
+        <span class="status-pulse paused" id="statusPulse" aria-hidden="true"></span>
+        <span id="statusText" data-i18n="status.ready">TAYYOR</span>
+      </div>
+      <p class="hint-text" id="hintText"><kbd>Space</kbd> <span data-i18n="hint.space">boshlash uchun</span></p>
     </div>
 
   </main>
 
-  <!-- Audio Synthesis Engine and Main Controller Scripts -->
-  <script src="js/audio.js"></script>
-  <script src="js/app.js"></script>
+  <script type="module" src="js/app.js"></script>
+  <noscript>
+    <p style="color:#fff;text-align:center;padding:2rem">
+      Bu ilova ishlashi uchun JavaScript yoqilgan bo'lishi kerak.
+    </p>
+  </noscript>
 </body>
 </html>

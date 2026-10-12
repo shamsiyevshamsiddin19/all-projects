@@ -1,0 +1,2 @@
+# Test to'plami uchun (ilovaning o'zi tashqi Python paketlarini talab qilmaydi)
+beautifulsoup4>=4.12

@@ -1,0 +1,22 @@
+{
+  "name": "zenith-study-timer",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Minimalist orqaga sanash, pomodoro va fokus studiyasi.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "start": "python3 app.py",
+    "test": "python3 test_all.py",
+    "test:unit": "node --test \"tests/*.test.mjs\"",
+    "test:watch": "node --test --watch \"tests/*.test.mjs\"",
+    "test:e2e": "playwright test tests/e2e.spec.mjs",
+    "setup:e2e": "npm install --save-dev @playwright/test jsdom && npx playwright install chromium",
+    "lint": "eslint js tests sw.js",
+    "icons": "python3 tools/make_icons.py"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=20"
+  }
+}

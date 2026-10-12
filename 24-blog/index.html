@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HAGUE — Modern Editorial & News Magazine | Bootstrap 5 Blog</title>
+
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="HAGUE is a modern, responsive editorial blog and news magazine built with Bootstrap 5.3. Explore curated stories in Business, Travel, Politics, Books, and Opinions.">
+  <meta name="keywords" content="HAGUE, blog, magazine, news, bootstrap 5, editorial, responsive web">
+  <meta name="author" content="Shamsiyev Sh.">
+
+  <!-- Google Fonts: Playfair Display (Serif) & Inter (Sans-serif) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;0,800;0,900;1,400;1,700&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5.3.3 CSS CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+  <!-- Bootstrap Icons CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- Custom CSS Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-body-tertiary">
+
+  <!-- ==============================================
+       1. TOP UTILITY HEADER (Menu, Brand & Subscribe)
+  =============================================== -->
+  <header class="bg-white border-bottom sticky-top top-header shadow-2xs">
+    <div class="container-xl">
+      <div class="d-flex align-items-center justify-content-between py-2 py-md-3">
+        
+        <!-- Left: Hamburger icon & Search icon -->
+        <div class="d-flex align-items-center gap-2">
+          <!-- Offcanvas trigger button (Hamburger) -->
+          <button class="btn btn-outline-secondary border-0 p-1 p-md-2 d-flex align-items-center justify-content-center" 
+                  type="button" 
+                  data-bs-toggle="offcanvas" 
+                  data-bs-target="#offcanvasNav" 
+                  aria-controls="offcanvasNav" 
+                  aria-label="Toggle navigation menu">
+            <i class="bi bi-list fs-4 text-dark"></i>
+          </button>
+
+          <!-- Search Modal trigger button -->
+          <button class="btn btn-outline-secondary border-0 p-1 p-md-2 d-flex align-items-center justify-content-center" 
+                  type="button" 
+                  data-bs-toggle="modal" 
+                  data-bs-target="#searchModal" 
+                  aria-label="Search articles">
+            <i class="bi bi-search fs-5 text-dark"></i>
+          </button>
+        </div>
+
+        <!-- Center: HAGUE Brand Logo -->
+        <div class="text-center">
+          <a href="#" class="brand-logo text-dark text-decoration-none font-serif fw-bold text-uppercase">
+            HAGUE
+          </a>
+        </div>
+
+        <!-- Right: Subscribe Button & Theme Switcher -->
+        <div class="d-flex align-items-center gap-2">
+          <button class="btn btn-primary btn-sm px-3 py-1 rounded-1 fw-semibold text-white shadow-sm d-flex align-items-center gap-1" 
+                  type="button" 
+                  data-bs-toggle="modal" 
+                  data-bs-target="#subscribeModal">
+            <span class="d-none d-sm-inline">Subscribe</span>
+            <i class="bi bi-bell-fill d-sm-none"></i>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ==============================================
+         2. MAIN NAVIGATION BAR (Editorial Categories)
+    =============================================== -->
+    <nav class="navbar navbar-expand-lg bg-white border-top py-0 py-lg-1 main-navbar d-none d-lg-block" aria-label="Editorial Categories Navigation">
+      <div class="container-xl">
+        <div class="collapse navbar-collapse justify-content-center" id="navbarMain">
+          <ul class="navbar-nav align-items-center gap-lg-3 gap-xl-4 py-1 text-uppercase fw-semibold">
+            
+            <li class="nav-item">
+              <a class="nav-link active nav-link-custom px-2" aria-current="page" href="#">Home</a>
+            </li>
+
+            <!-- Posts Dropdown -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle nav-link-custom px-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Posts
+              </a>
+              <ul class="dropdown-menu shadow-sm border-0 rounded-1">
+                <li><a class="dropdown-item" href="#hero-section">Featured Articles</a></li>
+                <li><a class="dropdown-item" href="#latest-column">Latest Stories</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#business-section">Editor's Picks</a></li>
+              </ul>
+            </li>
+
+            <!-- Business Dropdown -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle nav-link-custom px-2" href="#business-section" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Business
+              </a>
+              <ul class="dropdown-menu shadow-sm border-0 rounded-1">
+                <li><a class="dropdown-item" href="#business-section">Markets & Finance</a></li>
+                <li><a class="dropdown-item" href="#business-section">Startups & Tech</a></li>
+                <li><a class="dropdown-item" href="#business-section">Global Economy</a></li>
+              </ul>
+            </li>
+
+            <!-- Interview Dropdown -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle nav-link-custom px-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Interview
+              </a>
+              <ul class="dropdown-menu shadow-sm border-0 rounded-1">
+                <li><a class="dropdown-item" href="#">Leader Perspectives</a></li>
+                <li><a class="dropdown-item" href="#">Innovators</a></li>
+              </ul>
+            </li>
+
+            <!-- Politics Dropdown -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle nav-link-custom px-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Politics
+              </a>
+              <ul class="dropdown-menu shadow-sm border-0 rounded-1">
+                <li><a class="dropdown-item" href="#">Policy & Law</a></li>
+                <li><a class="dropdown-item" href="#">Elections 2025</a></li>
+              </ul>
+            </li>
+
+            <!-- Travel Dropdown -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle nav-link-custom px-2" href="#travel-section" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Travel
+              </a>
+              <ul class="dropdown-menu shadow-sm border-0 rounded-1">
+                <li><a class="dropdown-item" href="#travel-section">Destinations</a></li>
+                <li><a class="dropdown-item" href="#travel-section">Cultural Heritage</a></li>
+                <li><a class="dropdown-item" href="#travel-section">Photo Gallery</a></li>
+              </ul>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link nav-link-custom px-2" href="#authors-section">Author list</a>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link nav-link-custom px-2" href="#" data-bs-toggle="modal" data-bs-target="#pricingModal">Pricing</a>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link nav-link-custom px-2" href="#latest-column">Latest</a>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link nav-link-custom px-2" href="#" data-bs-toggle="modal" data-bs-target="#subscribeModal">Newsletter</a>
+            </li>
+
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ==============================================
+       MAIN CONTENT CONTAINER
+  =============================================== -->
+  <main class="bg-white">
+
+    <!-- ==============================================
+         3. HERO EDITORIAL GRID (3-Column Layout)
+    =============================================== -->
+    <section class="container-xl pt-4 pb-3" id="hero-section">
+      <div class="row g-4 align-items-start">
+        
+        <!-- LEFT COLUMN: 2 Stacked Posts (col-lg-3 col-md-6) -->
+        <div class="col-lg-3 col-md-6 order-2 order-lg-1">
+          <div class="d-flex flex-column gap-4">
+            
+            <!-- Left Post 1 -->
+            <article class="article-card card border-0 bg-transparent" 
+                     data-id="hero-left-1"
+                     data-category="BOOKS"
+                     data-title="Hero-Half Post Example"
+                     data-date="January 8, 2025"
+                     data-author="Sophia Jenkins"
+                     data-img="assets/images/hero-left-1.jpg"
+                     data-content="Literature opens doors to worlds unseen. This in-depth analysis unpacks contemporary fiction trends and how modern authors are reimagining character development for digital-native readers. Exploring new horizons in narrative structure and personal storytelling.">
+              <div class="article-thumb-wrapper overflow-hidden mb-2 rounded-1">
+                <img src="assets/images/hero-left-1.jpg" alt="Woman in green coat reading a book" class="img-fluid w-100 article-thumb">
+              </div>
+              <span class="category-badge text-primary fw-bold text-uppercase">BOOKS</span>
+              <h2 class="article-title font-serif fw-bold h5 mb-1 mt-1">
+                <a href="#" class="text-dark text-decoration-none article-link">Hero-Half Post Example</a>
+              </h2>
+              <time class="article-date text-secondary small" datetime="2025-01-08">January 8, 2025</time>
+            </article>
+
+            <!-- Left Post 2 -->
+            <article class="article-card card border-0 bg-transparent" 
+                     data-id="hero-left-2"
+                     data-category="BOOKS • POLITICS"
+                     data-title="I decided to move out of the house"
+                     data-date="January 8, 2025"
+                     data-author="David Miller"
+                     data-img="assets/images/hero-left-2.jpg"
+                     data-content="Independence comes with difficult decisions and unexpected freedoms. A reflective memoir on personal autonomy, political consciousness, and the realities of starting fresh in an unpredictable socioeconomic landscape.">
+              <div class="article-thumb-wrapper overflow-hidden mb-2 rounded-1">
+                <img src="assets/images/hero-left-2.jpg" alt="Man with dog smiling outdoors" class="img-fluid w-100 article-thumb">
+              </div>
+              <div class="d-flex gap-2">
+                <span class="category-badge text-primary fw-bold text-uppercase">BOOKS</span>
+                <span class="category-badge text-primary fw-bold text-uppercase">POLITICS</span>
+              </div>
+              <h2 class="article-title font-serif fw-bold h5 mb-1 mt-1">
+                <a href="#" class="text-dark text-decoration-none article-link">I decided to move out of the house</a>
+              </h2>
+              <time class="article-date text-secondary small" datetime="2025-01-08">January 8, 2025</time>
+            </article>
+
+          </div>
+        </div>
+
+        <!-- CENTER COLUMN: Featured Main Story (col-lg-6) -->
+        <div class="col-lg-6 order-1 order-lg-2">
+          <article class="article-card card border-0 bg-transparent text-center featured-story"
+                   data-id="hero-center"
+                   data-category="OPINION"
+                   data-title="When you tell them the truth"
+                   data-date="January 8, 2025"
+                   data-author="Isabella and Lucas"
+                   data-img="assets/images/hero-center.jpg"
+                   data-content="Ei mei scripta intellegat. Verear voluptaria eam at, consul putent eu vel. Pro saepe maluisset ne, audire maiorum forensibus eos et. Diceret detraxit vis at. Eum et idque tollit assentior, ullum soleat usu id. Truth in modern discourse is rarely simple, but radical honesty builds long-term trust that no marketing campaign can replicate. In this joint op-ed, Isabella and Lucas explore the social cost of deception and the courage required for institutional transparency.">
+            
+            <!-- Large Featured Image -->
+            <div class="article-thumb-wrapper overflow-hidden mb-3 rounded-1">
+              <img src="assets/images/hero-center.jpg" alt="Young man standing in sunny city street wearing overalls" class="img-fluid w-100 featured-thumb">
+            </div>
+
+            <!-- Category Tag -->
+            <span class="category-badge text-primary fw-bold text-uppercase d-inline-block mb-1">OPINION</span>
+
+            <!-- Main Title -->
+            <h1 class="font-serif fw-bold display-6 mb-2 mt-1">
+              <a href="#" class="text-dark text-decoration-none article-link">When you tell them the truth</a>
+            </h1>
+
+            <!-- Lead Excerpt -->
+            <p class="text-secondary small mb-2 px-md-3 excerpt-text">
+              Ei mei scripta intellegat. Verear voluptaria eam at, consul putent eu vel. Pro saepe maluisset ne, audire maiorum forensibus eos et. Diceret detraxit vis at. Eum et idque tollit assentior, ullum soleat usu id.
+            </p>
+
+            <!-- Meta: Date & Authors -->
+            <div class="text-secondary small">
+              <time datetime="2025-01-08">January 8, 2025</time>
+              <span class="mx-1">·</span>
+              <span class="fw-semibold text-dark">Isabella and Lucas</span>
+            </div>
+
+          </article>
+        </div>
+
+        <!-- RIGHT COLUMN: LATEST Sidebar (col-lg-3 col-md-6) -->
+        <div class="col-lg-3 col-md-6 order-3" id="latest-column">
+          <div class="latest-sidebar">
+            <h3 class="font-sans fw-bold text-uppercase fs-6 border-bottom pb-2 mb-3 tracking-wider">
+              LATEST
+            </h3>
+
+            <div class="d-flex flex-column gap-3">
+              
+              <!-- Latest Item 1 -->
+              <article class="article-card d-flex align-items-center justify-content-between gap-2 border-0 bg-transparent"
+                       data-id="latest-1"
+                       data-category="CULTURE"
+                       data-title="This is my 2024 unwrapped"
+                       data-date="January 8, 2025"
+                       data-author="Elena Rostova"
+                       data-img="assets/images/latest-1.jpg"
+                       data-content="A retrospective look at cultural milestones, personal breakthroughs, and the unexpected lessons of the past twelve months. Reflecting on growth and resilience.">
+                <div class="pe-2">
+                  <h4 class="article-title font-serif fw-bold h6 mb-1">
+                    <a href="#" class="text-dark text-decoration-none article-link line-clamp-2">This is my 2024 unwrapped</a>
+                  </h4>
+                  <time class="article-date text-secondary smaller" datetime="2025-01-08">January 8, 2025</time>
+                </div>
+                <div class="article-thumb-wrapper flex-shrink-0 rounded-1 overflow-hidden">
+                  <img src="assets/images/latest-1.jpg" alt="Portrait thumbnail" class="article-thumb-square" width="54" height="54">
+                </div>
+              </article>
+
+              <!-- Latest Item 2 -->
+              <article class="article-card d-flex align-items-center justify-content-between gap-2 border-0 bg-transparent"
+                       data-id="latest-2"
+                       data-category="ENTERTAINMENT"
+                       data-title="Rebel Wilson weds Ramona Agruma in Sydney - and this time it's for real"
+                       data-date="January 8, 2025"
+                       data-author="Oliver Stone"
+                       data-img="assets/images/latest-2.jpg"
+                       data-content="Celebrity weddings often grab headlines, but this heartfelt ceremony in Sydney captured authentic romance and heartfelt family celebrations against stunning Australian backdrops.">
+                <div class="pe-2">
+                  <h4 class="article-title font-serif fw-bold h6 mb-1">
+                    <a href="#" class="text-dark text-decoration-none article-link line-clamp-2">Rebel Wilson weds Ramona Agruma in Sydney - and this time it's for real</a>
+                  </h4>
+                  <time class="article-date text-secondary smaller" datetime="2025-01-08">January 8, 2025</time>
+                </div>
+                <div class="article-thumb-wrapper flex-shrink-0 rounded-1 overflow-hidden">
+                  <img src="assets/images/latest-2.jpg" alt="Airplane thumbnail" class="article-thumb-square" width="54" height="54">
+                </div>
+              </article>
+
+              <!-- Latest Item 3 -->
+              <article class="article-card d-flex align-items-center justify-content-between gap-2 border-0 bg-transparent"
+                       data-id="latest-3"
+                       data-category="OPINION"
+                       data-title="When you tell them the truth"
+                       data-date="January 8, 2025"
+                       data-author="Lucas Vance"
+                       data-img="assets/images/latest-3.jpg"
+                       data-content="Why speaking truth to power remains the most revolutionary act of civic journalism in the 21st century. An investigative deep dive.">
+                <div class="pe-2">
+                  <h4 class="article-title font-serif fw-bold h6 mb-1">
+                    <a href="#" class="text-dark text-decoration-none article-link line-clamp-2">When you tell them the truth</a>
+                  </h4>
+                  <time class="article-date text-secondary smaller" datetime="2025-01-08">January 8, 2025</time>
+                </div>
+                <div class="article-thumb-wrapper flex-shrink-0 rounded-1 overflow-hidden">
+                  <img src="assets/images/latest-3.jpg" alt="Urban street thumbnail" class="article-thumb-square" width="54" height="54">
+                </div>
+              </article>
+
+              <!-- Latest Item 4 -->
+              <article class="article-card d-flex align-items-center justify-content-between gap-2 border-0 bg-transparent"
+                       data-id="latest-4"
+                       data-category="BOOKS"
+                       data-title="Hero-Half Post Example"
+                       data-date="January 8, 2025"
+                       data-author="Sophia Jenkins"
+                       data-img="assets/images/latest-4.jpg"
+                       data-content="Revisiting the canonical works that influenced generations of independent essayists and modern investigative reporting.">
+                <div class="pe-2">
+                  <h4 class="article-title font-serif fw-bold h6 mb-1">
+                    <a href="#" class="text-dark text-decoration-none article-link line-clamp-2">Hero-Half Post Example</a>
+                  </h4>
+                  <time class="article-date text-secondary smaller" datetime="2025-01-08">January 8, 2025</time>
+                </div>
+                <div class="article-thumb-wrapper flex-shrink-0 rounded-1 overflow-hidden">
+                  <img src="assets/images/latest-4.jpg" alt="Woman thumbnail" class="article-thumb-square" width="54" height="54">
+                </div>
+              </article>
+
+              <!-- Latest Item 5 -->
+              <article class="article-card d-flex align-items-center justify-content-between gap-2 border-0 bg-transparent"
+                       data-id="latest-5"
+                       data-category="DESIGN"
+                       data-title="Welcome To The Finest WordPress Theme For Writers"
+                       data-date="January 8, 2025"
+                       data-author="Alex Morgan"
+                       data-img="assets/images/latest-5.jpg"
+                       data-content="Typography-driven digital design that respects readers' attention spans. How minimalism and refined spacing create an unforgettable reading experience.">
+                <div class="pe-2">
+                  <h4 class="article-title font-serif fw-bold h6 mb-1">
+                    <a href="#" class="text-dark text-decoration-none article-link line-clamp-2">Welcome To The Finest WordPress Theme For Writers</a>
+                  </h4>
+                  <time class="article-date text-secondary smaller" datetime="2025-01-08">January 8, 2025</time>
+                </div>
+                <div class="article-thumb-wrapper flex-shrink-0 rounded-1 overflow-hidden">
+                  <img src="assets/images/latest-5.jpg" alt="Summer beach thumbnail" class="article-thumb-square" width="54" height="54">
+                </div>
+              </article>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==============================================
+         4. BUSINESS SECTION (4-Column Grid)
+    =============================================== -->
+    <section class="container-xl py-4 border-top" id="business-section">
+      
+      <!-- Section Header -->
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="font-sans fw-bold text-uppercase fs-6 tracking-wider mb-0 text-dark">
+          BUSINESS
+        </h2>
+        <a href="#business-section" class="text-primary text-decoration-none small fw-semibold view-all-link">
+          View all &raquo;
+        </a>
+      </div>
+
+      <!-- 4 Cards Row -->
+      <div class="row g-4">
+        
+        <!-- Business Card 1 -->
+        <div class="col-lg-3 col-md-6 col-12">
+          <article class="article-card card border-0 bg-transparent h-100"
+                   data-id="biz-1"
+                   data-category="BUSINESS"
+                   data-title="I'm a high school graduate"
+                   data-date="January 8, 2025"
+                   data-author="Marcus Aurel"
+                   data-img="assets/images/business-1.jpg"
+                   data-content="Quo natum nemore putant in, his te case habemus. Nulla detraxit explicari in vim. Id eam magna omnesque. Education pathways in the modern economy are expanding far beyond conventional university degrees. Vocational mastery and entrepreneurial initiative are creating self-made leaders across emerging markets.">
+            <div class="article-thumb-wrapper overflow-hidden mb-2 rounded-1">
+              <img src="assets/images/business-1.jpg" alt="Woman working in colorful textile workshop" class="img-fluid w-100 article-thumb">
+            </div>
+            <span class="category-badge text-primary fw-bold text-uppercase">BUSINESS</span>
+            <h3 class="article-title font-serif fw-bold h5 mb-1 mt-1">
+              <a href="#" class="text-dark text-decoration-none article-link">I'm a high school graduate</a>
+            </h3>
+            <time class="article-date text-secondary small d-block mb-1" datetime="2025-01-08">January 8, 2025</time>
+            <p class="text-secondary small mb-0 article-excerpt line-clamp-3">
+              Quo natum nemore putant in, his te case habemus. Nulla detraxit explicari in vim. Id eam magna omnesque.
+            </p>
+          </article>
+        </div>
+
+        <!-- Business Card 2 -->
+        <div class="col-lg-3 col-md-6 col-12">
+          <article class="article-card card border-0 bg-transparent h-100"
+                   data-id="biz-2"
+                   data-category="BUSINESS"
+                   data-title="My entrance exam was on a book of matches"
+                   data-date="January 8, 2025"
+                   data-author="Farhan Malik"
+                   data-img="assets/images/business-2.jpg"
+                   data-content="Ei mei scripta intellegat. Verear voluptaria eam at, consul putent eu vel. Pro saepe maluisset ne, audire maiorum. An extraordinary memoir on unconventional recruitment and finding architectural talent in unexpected places. Crafting structures that honor centuries of cultural resonance.">
+            <div class="article-thumb-wrapper overflow-hidden mb-2 rounded-1">
+              <img src="assets/images/business-2.jpg" alt="Stunning sunlight through grand architectural archway" class="img-fluid w-100 article-thumb">
+            </div>
+            <span class="category-badge text-primary fw-bold text-uppercase">BUSINESS</span>
+            <h3 class="article-title font-serif fw-bold h5 mb-1 mt-1">
+              <a href="#" class="text-dark text-decoration-none article-link">My entrance exam was on a book of matches</a>
+            </h3>
+            <time class="article-date text-secondary small d-block mb-1" datetime="2025-01-08">January 8, 2025</time>
+            <p class="text-secondary small mb-0 article-excerpt line-clamp-3">
+              Ei mei scripta intellegat. Verear voluptaria eam at, consul putent eu vel. Pro saepe maluisset ne, audire maiorum.
+            </p>
+          </article>
+        </div>
+
+        <!-- Business Card 3 -->
+        <div class="col-lg-3 col-md-6 col-12">
+          <article class="article-card card border-0 bg-transparent h-100"
+                   data-id="biz-3"
+                   data-category="BUSINESS • INTERVIEW"
+                   data-title="My name is Rhoda Morgenstern"
+                   data-date="January 8, 2025"
+                   data-author="Rhoda Morgenstern"
+                   data-img="assets/images/business-3.jpg"
+                   data-content="Lorem ipsum dolor sit amet, ei officiis assueverit pri, duo volumus commune molestiae ad, cum at clita latine. Navigating energy transitions and industrial innovation requires balancing geopolitical demands with renewable infrastructure investments. Insights from fifty years in resource management.">
+            <div class="article-thumb-wrapper overflow-hidden mb-2 rounded-1">
+              <img src="assets/images/business-3.jpg" alt="Oil pump jacks silhouetted against dramatic sky" class="img-fluid w-100 article-thumb">
+            </div>
+            <div class="d-flex gap-2">
+              <span class="category-badge text-primary fw-bold text-uppercase">BUSINESS</span>
+              <span class="category-badge text-primary fw-bold text-uppercase">INTERVIEW</span>
+            </div>
+            <h3 class="article-title font-serif fw-bold h5 mb-1 mt-1">
+              <a href="#" class="text-dark text-decoration-none article-link">My name is Rhoda Morgenstern</a>
+            </h3>
+            <time class="article-date text-secondary small d-block mb-1" datetime="2025-01-08">January 8, 2025</time>
+            <p class="text-secondary small mb-0 article-excerpt line-clamp-3">
+              Lorem ipsum dolor sit amet, ei officiis assueverit pri, duo volumus commune molestiae ad, cum at clita latine.
+            </p>
+          </article>
+        </div>
+
+        <!-- Business Card 4 -->
+        <div class="col-lg-3 col-md-6 col-12">
+          <article class="article-card card border-0 bg-transparent h-100"
+                   data-id="biz-4"
+                   data-category="BUSINESS"
+                   data-title="Tonight what heights we'll hit, on with the show this is it"
+                   data-date="January 8, 2025"
+                   data-author="Chloe Bennett"
+                   data-img="assets/images/business-4.jpg"
+                   data-content="Labores incorrupte vim an. Id augue populo alienum usu, has harum consectetuer ne, ne clita fuisset dignissim quo. Deep-sea exploration technologies and maritime commerce are experiencing a silent revolution as unmanned submersibles chart previously unreachable oceanic trenches.">
+            <div class="article-thumb-wrapper overflow-hidden mb-2 rounded-1">
+              <img src="assets/images/business-4.jpg" alt="Underwater blue ocean with submerged structures" class="img-fluid w-100 article-thumb">
+            </div>
+            <span class="category-badge text-primary fw-bold text-uppercase">BUSINESS</span>
+            <h3 class="article-title font-serif fw-bold h5 mb-1 mt-1">
+              <a href="#" class="text-dark text-decoration-none article-link">Tonight what heights we'll hit, on with the show this is it</a>
+            </h3>
+            <time class="article-date text-secondary small d-block mb-1" datetime="2025-01-08">January 8, 2025</time>
+            <p class="text-secondary small mb-0 article-excerpt line-clamp-3">
+              Labores incorrupte vim an. Id augue populo alienum usu, has harum consectetuer ne, ne clita fuisset dignissim quo.
+            </p>
+          </article>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==============================================
+         5. TRAVEL SECTION (4-Column Grid)
+    =============================================== -->
+    <section class="container-xl py-4 border-top" id="travel-section">
+      
+      <!-- Section Header -->
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="font-sans fw-bold text-uppercase fs-6 tracking-wider mb-0 text-dark">
+          TRAVEL
+        </h2>
+        <a href="#travel-section" class="text-primary text-decoration-none small fw-semibold view-all-link">
+          View all &raquo;
+        </a>
+      </div>
+
+      <!-- 4 Cards Row -->
+      <div class="row g-4">
+        
+        <!-- Travel Card 1 -->
+        <div class="col-lg-3 col-md-6 col-12">
+          <article class="article-card card border-0 bg-transparent h-100"
+                   data-id="travel-1"
+                   data-category="TRAVEL"
+                   data-title="The first thing I remember liking that liked me back was food"
+                   data-date="January 8, 2025"
+                   data-author="Liam Henderson"
+                   data-img="assets/images/travel-1.jpg"
+                   data-content="Ius ea rebum nostrum offendit. Per in recusabo facilisis, est ei choro veritus gloriatur. Has ut dicant fuisset. Culinary journeys through local artisan workshops reveal authentic traditions that tourist guides never capture. A deep dive into craftsmanship and heritage cuisine.">
+            <div class="article-thumb-wrapper overflow-hidden mb-2 rounded-1">
+              <img src="assets/images/travel-1.jpg" alt="Artisan carpenter working in wooden workshop" class="img-fluid w-100 article-thumb">
+            </div>
+            <span class="category-badge text-primary fw-bold text-uppercase">TRAVEL</span>
+            <h3 class="article-title font-serif fw-bold h5 mb-1 mt-1">
+              <a href="#" class="text-dark text-decoration-none article-link">The first thing I remember liking that liked me back was food</a>
+            </h3>
+            <time class="article-date text-secondary small d-block mb-1" datetime="2025-01-08">January 8, 2025</time>
+            <p class="text-secondary small mb-0 article-excerpt line-clamp-3">
+              Ius ea rebum nostrum offendit. Per in recusabo facilisis, est ei choro veritus gloriatur. Has ut dicant fuisset.
+            </p>
+          </article>
+        </div>
+
+        <!-- Travel Card 2 -->
+        <div class="col-lg-3 col-md-6 col-12">
+          <article class="article-card card border-0 bg-transparent h-100"
+                   data-id="travel-2"
+                   data-category="TRAVEL"
+                   data-title="Last Trip to Pakistan"
+                   data-date="January 8, 2025"
+                   data-author="Zara Khan"
+                   data-img="assets/images/travel-2.jpg"
+                   data-content="Justo fabulas singulis at pri, saepe luptatum mei an. Duo idque solet scribentur eu, natum iudico labore te. From the bustling alleys of Lahore to the snow-capped Karakoram peaks, a personal travelogue through one of South Asia's most culturally rich landscapes.">
+            <div class="article-thumb-wrapper overflow-hidden mb-2 rounded-1">
+              <img src="assets/images/travel-2.jpg" alt="Ancient carved stone fortress in Pakistan" class="img-fluid w-100 article-thumb">
+            </div>
+            <span class="category-badge text-primary fw-bold text-uppercase">TRAVEL</span>
+            <h3 class="article-title font-serif fw-bold h5 mb-1 mt-1">
+              <a href="#" class="text-dark text-decoration-none article-link">Last Trip to Pakistan</a>
+            </h3>
+            <time class="article-date text-secondary small d-block mb-1" datetime="2025-01-08">January 8, 2025</time>
+            <p class="text-secondary small mb-0 article-excerpt line-clamp-3">
+              Justo fabulas singulis at pri, saepe luptatum mei an. Duo idque solet scribentur eu, natum iudico labore te.
+            </p>
+          </article>
+        </div>
+
+        <!-- Travel Card 3 -->
+        <div class="col-lg-3 col-md-6 col-12">
+          <article class="article-card card border-0 bg-transparent h-100"
+                   data-id="travel-3"
+                   data-category="TRAVEL"
+                   data-title="Post Gallery – Slider"
+                   data-date="January 8, 2025"
+                   data-author="Gabriel Torres"
+                   data-img="assets/images/travel-3.jpg"
+                   data-content="Patrioque assentior ea vim. Volutpat salutandi ex his, cu sea soluta melius gubergren, has latine reprehendunt ea. Has. Photo essay capturing high-altitude expeditions, wilderness survival, and the unspoken camaraderie formed during grueling backcountry expeditions.">
+            <div class="article-thumb-wrapper overflow-hidden mb-2 rounded-1">
+              <img src="assets/images/travel-3.jpg" alt="Military style outdoor hikers in forest" class="img-fluid w-100 article-thumb">
+            </div>
+            <span class="category-badge text-primary fw-bold text-uppercase">TRAVEL</span>
+            <h3 class="article-title font-serif fw-bold h5 mb-1 mt-1">
+              <a href="#" class="text-dark text-decoration-none article-link">Post Gallery – Slider</a>
+            </h3>
+            <time class="article-date text-secondary small d-block mb-1" datetime="2025-01-08">January 8, 2025</time>
+            <p class="text-secondary small mb-0 article-excerpt line-clamp-3">
+              Patrioque assentior ea vim. Volutpat salutandi ex his, cu sea soluta melius gubergren, has latine reprehendunt ea. Has.
+            </p>
+          </article>
+        </div>
+
+        <!-- Travel Card 4 -->
+        <div class="col-lg-3 col-md-6 col-12">
+          <article class="article-card card border-0 bg-transparent h-100"
+                   data-id="travel-4"
+                   data-category="TRAVEL"
+                   data-title="We vote for our rights"
+                   data-date="January 8, 2025"
+                   data-author="Maya Patel"
+                   data-img="assets/images/travel-4.jpg"
+                   data-content="Civic participation as a transformative journey. Why understanding global democratic movements requires listening to grassroots organizers and everyday voters standing up for equitable representation.">
+            <div class="article-thumb-wrapper overflow-hidden mb-2 rounded-1">
+              <img src="assets/images/travel-4.jpg" alt="Woman casting her ballot with American flag" class="img-fluid w-100 article-thumb">
+            </div>
+            <span class="category-badge text-primary fw-bold text-uppercase">TRAVEL</span>
+            <h3 class="article-title font-serif fw-bold h5 mb-1 mt-1">
+              <a href="#" class="text-dark text-decoration-none article-link">We vote for our rights</a>
+            </h3>
+            <time class="article-date text-secondary small d-block mb-1" datetime="2025-01-08">January 8, 2025</time>
+            <p class="text-secondary small mb-0 article-excerpt line-clamp-3">
+              Hey there. This is an excerpt.
+            </p>
+          </article>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==============================================
+         6. EDITORIAL NEWSLETTER CALLOUT
+    =============================================== -->
+    <section class="container-xl py-5 border-top" id="newsletter-callout">
+      <div class="bg-light p-4 p-md-5 rounded-2 border text-center newsletter-box">
+        <span class="category-badge text-primary fw-bold text-uppercase d-inline-block mb-2">NEWSLETTER</span>
+        <h2 class="font-serif fw-bold display-6 mb-2">Stay Ahead With Quality Journalism</h2>
+        <p class="text-secondary mx-auto mb-4" style="max-width: 580px;">
+          Get our top stories, exclusive interviews, and curated deep dives delivered directly to your inbox every morning. Free of noise, focused on clarity.
+        </p>
+        
+        <form class="row g-2 justify-content-center newsletter-form" id="newsletterCalloutForm">
+          <div class="col-12 col-sm-7 col-md-5">
+            <input type="email" class="form-control py-2 px-3 rounded-1" id="newsletterEmailInput" placeholder="Enter your email address" required>
+          </div>
+          <div class="col-12 col-sm-auto">
+            <button type="submit" class="btn btn-primary px-4 py-2 rounded-1 fw-semibold w-100">
+              Subscribe Now
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==============================================
+       7. EDITORIAL FOOTER
+  =============================================== -->
+  <footer class="bg-dark text-light pt-5 pb-4 border-top">
+    <div class="container-xl">
+      <div class="row g-4 pb-4 border-bottom border-secondary">
+        
+        <!-- Brand Column -->
+        <div class="col-lg-4 col-md-6">
+          <a href="#" class="font-serif fw-bold fs-3 text-white text-decoration-none d-inline-block mb-3">
+            HAGUE
+          </a>
+          <p class="text-secondary small mb-3">
+            HAGUE is a trusted international journal dedicated to rigorous journalism, thoughtful cultural critiques, and incisive political and business analyses.
+          </p>
+          <div class="d-flex gap-3">
+            <a href="#" class="text-secondary fs-5 social-link" aria-label="Twitter"><i class="bi bi-twitter-x"></i></a>
+            <a href="#" class="text-secondary fs-5 social-link" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
+            <a href="#" class="text-secondary fs-5 social-link" aria-label="LinkedIn"><i class="bi bi-linkedin"></i></a>
+            <a href="#" class="text-secondary fs-5 social-link" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+          </div>
+        </div>
+
+        <!-- Categories Column -->
+        <div class="col-lg-2 col-md-3 col-6">
+          <h4 class="font-sans fw-bold text-uppercase fs-6 tracking-wider text-white mb-3">Categories</h4>
+          <ul class="list-unstyled d-flex flex-column gap-2 small text-secondary">
+            <li><a href="#hero-section" class="text-secondary text-decoration-none hover-white">Books & Culture</a></li>
+            <li><a href="#business-section" class="text-secondary text-decoration-none hover-white">Business & Tech</a></li>
+            <li><a href="#travel-section" class="text-secondary text-decoration-none hover-white">Global Travel</a></li>
+            <li><a href="#hero-section" class="text-secondary text-decoration-none hover-white">Opinion Essays</a></li>
+            <li><a href="#" class="text-secondary text-decoration-none hover-white">Interviews</a></li>
+          </ul>
+        </div>
+
+        <!-- Quick Links Column -->
+        <div class="col-lg-2 col-md-3 col-6">
+          <h4 class="font-sans fw-bold text-uppercase fs-6 tracking-wider text-white mb-3">Company</h4>
+          <ul class="list-unstyled d-flex flex-column gap-2 small text-secondary">
+            <li><a href="#" class="text-secondary text-decoration-none hover-white">About Us</a></li>
+            <li><a href="#" class="text-secondary text-decoration-none hover-white">Editorial Board</a></li>
+            <li><a href="#" class="text-secondary text-decoration-none hover-white">Careers</a></li>
+            <li><a href="#" class="text-secondary text-decoration-none hover-white">Press Room</a></li>
+            <li><a href="#" class="text-secondary text-decoration-none hover-white">Contact</a></li>
+          </ul>
+        </div>
+
+        <!-- Privacy & Legal Column -->
+        <div class="col-lg-4 col-md-12">
+          <h4 class="font-sans fw-bold text-uppercase fs-6 tracking-wider text-white mb-3">Ethics & Standards</h4>
+          <p class="text-secondary small mb-3">
+            We adhere to strict standards of editorial independence and factual accuracy. Read our Corrections Policy and Code of Conduct.
+          </p>
+          <div class="d-flex gap-3 small">
+            <a href="#" class="text-secondary text-decoration-none hover-white">Privacy Policy</a>
+            <span>•</span>
+            <a href="#" class="text-secondary text-decoration-none hover-white">Terms of Use</a>
+            <span>•</span>
+            <a href="#" class="text-secondary text-decoration-none hover-white">Cookie Settings</a>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- ==============================================
+       8. OFFCANVAS MOBILE NAVIGATION
+  =============================================== -->
+  <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasNav" aria-labelledby="offcanvasNavLabel">
+    <div class="offcanvas-header border-bottom">
+      <h5 class="offcanvas-title font-serif fw-bold text-uppercase fs-4" id="offcanvasNavLabel">HAGUE</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body d-flex flex-column justify-content-between">
+      <div>
+        <h6 class="text-uppercase text-secondary fs-xs fw-bold tracking-wider mb-3">Menu</h6>
+        <ul class="nav flex-column gap-2 fw-semibold mb-4">
+          <li class="nav-item"><a class="nav-link text-dark px-0" href="#">Home</a></li>
+          <li class="nav-item"><a class="nav-link text-dark px-0" href="#business-section">Business</a></li>
+          <li class="nav-item"><a class="nav-link text-dark px-0" href="#travel-section">Travel</a></li>
+          <li class="nav-item"><a class="nav-link text-dark px-0" href="#hero-section">Opinion</a></li>
+          <li class="nav-item"><a class="nav-link text-dark px-0" href="#latest-column">Latest Stories</a></li>
+        </ul>
+
+        <h6 class="text-uppercase text-secondary fs-xs fw-bold tracking-wider mb-3">Subscription</h6>
+        <p class="small text-secondary mb-3">Support independent journalism. Subscribe for full digital access.</p>
+        <button class="btn btn-primary w-100 rounded-1" data-bs-toggle="modal" data-bs-target="#subscribeModal">
+          Subscribe — $4.99/mo
+        </button>
+      </div>
+
+      <div class="pt-4 border-top">
+        <span class="small text-secondary d-block mb-2">Connect with us</span>
+        <div class="d-flex gap-3">
+          <a href="#" class="text-dark fs-5"><i class="bi bi-twitter-x"></i></a>
+          <a href="#" class="text-dark fs-5"><i class="bi bi-facebook"></i></a>
+          <a href="#" class="text-dark fs-5"><i class="bi bi-instagram"></i></a>
+          <a href="#" class="text-dark fs-5"><i class="bi bi-linkedin"></i></a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================================
+       9. MODAL: READ FULL ARTICLE (Interactive Reader)
+  =============================================== -->
+  <div class="modal fade" id="articleModal" tabindex="-1" aria-labelledby="articleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header border-bottom py-3">
+          <div>
+            <span class="badge bg-primary-subtle text-primary fw-bold text-uppercase" id="modalArticleCategory">Category</span>
+            <span class="text-secondary small ms-2" id="modalArticleDate">Date</span>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4 p-md-5">
+          <h2 class="font-serif fw-bold display-6 mb-3" id="modalArticleTitle">Article Title</h2>
+          <div class="d-flex align-items-center gap-2 mb-4 text-secondary small">
+            <i class="bi bi-person-circle fs-5 text-dark"></i>
+            <span>Written by <strong class="text-dark" id="modalArticleAuthor">Author</strong></span>
+            <span>•</span>
+            <span id="modalReadingTime">3 min read</span>
+          </div>
+
+          <div class="mb-4 rounded-1 overflow-hidden">
+            <img src="" alt="" id="modalArticleImg" class="img-fluid w-100">
+          </div>
+
+          <div class="article-full-body text-secondary lh-lg fs-5" id="modalArticleContent">
+            <!-- Full article content populated via JS -->
+          </div>
+
+          <!-- Article Actions -->
+          <div class="d-flex justify-content-between align-items-center pt-4 mt-4 border-top">
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" id="likeBtn">
+                <i class="bi bi-heart me-1"></i> <span id="likeCount">42</span> Likes
+              </button>
+              <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" id="bookmarkBtn">
+                <i class="bi bi-bookmark me-1"></i> Bookmark
+              </button>
+            </div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-primary btn-sm rounded-pill px-3" id="shareBtn">
+                <i class="bi bi-share me-1"></i> Share
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================================
+       10. MODAL: SUBSCRIBE TO NEWSLETTER
+  =============================================== -->
+  <div class="modal fade" id="subscribeModal" tabindex="-1" aria-labelledby="subscribeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header border-bottom py-3">
+          <h5 class="modal-title font-serif fw-bold text-uppercase" id="subscribeModalLabel">HAGUE Membership</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4 text-center">
+          <div class="text-primary fs-1 mb-2">
+            <i class="bi bi-newspaper"></i>
+          </div>
+          <h3 class="font-serif fw-bold h4 mb-2">Subscribe to HAGUE Digital</h3>
+          <p class="text-secondary small mb-4">
+            Join over 250,000 readers discovering thoughtful analysis on business, culture, and world affairs.
+          </p>
+          <form id="subscribeForm">
+            <div class="mb-3 text-start">
+              <label for="subscriberEmail" class="form-label small fw-semibold">Email address</label>
+              <input type="email" class="form-control" id="subscriberEmail" placeholder="you@domain.com" required value="shamsiddin@gmail.com">
+            </div>
+            <div class="mb-3 text-start">
+              <label class="form-label small fw-semibold">Preferred topics</label>
+              <div class="d-flex flex-wrap gap-2">
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="checkbox" id="topicBiz" checked>
+                  <label class="form-check-label small" for="topicBiz">Business</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="checkbox" id="topicTravel" checked>
+                  <label class="form-check-label small" for="topicTravel">Travel</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="checkbox" id="topicOpinion" checked>
+                  <label class="form-check-label small" for="topicOpinion">Opinion</label>
+                </div>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 rounded-1 py-2 fw-semibold">
+              Get Started for Free
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================================
+       11. MODAL: SEARCH ARTICLES (Live Filter)
+  =============================================== -->
+  <div class="modal fade" id="searchModal" tabindex="-1" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header border-bottom py-3">
+          <h5 class="modal-title font-sans fw-bold text-uppercase fs-6 tracking-wider" id="searchModalLabel">Search HAGUE</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="input-group mb-3">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-secondary"></i></span>
+            <input type="text" class="form-control border-start-0" id="liveSearchInput" placeholder="Type keywords (e.g. truth, travel, business, food)..." autocomplete="off">
+          </div>
+          <div id="searchResults" class="search-results-list d-flex flex-column gap-2">
+            <span class="text-secondary small">Start typing to search through all published stories...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap 5.3.3 JS Bundle CDN (Includes Popper) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+  <!-- Custom JavaScript -->
+  <script src="js/script.js"></script>
+</body>
+</html>
