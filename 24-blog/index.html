@@ -62,15 +62,28 @@
           </a>
         </div>
 
-        <!-- Right: Subscribe Button & Theme Switcher -->
+        <!-- Right: API Status, Write Post, Subscribe, and Auth -->
         <div class="d-flex align-items-center gap-2">
-          <button class="btn btn-primary btn-sm px-3 py-1 rounded-1 fw-semibold text-white shadow-sm d-flex align-items-center gap-1" 
-                  type="button" 
-                  data-bs-toggle="modal" 
-                  data-bs-target="#subscribeModal">
-            <span class="d-none d-sm-inline">Subscribe</span>
-            <i class="bi bi-bell-fill d-sm-none"></i>
+          <span class="badge bg-success-subtle text-success border border-success-subtle d-none d-md-inline-flex align-items-center gap-1 py-2 px-2" id="backendStatusBadge">
+            <i class="bi bi-circle-fill text-success" style="font-size: 0.45rem;"></i>
+            <span class="small fw-semibold">FastAPI & PostgreSQL</span>
+          </span>
+
+          <button class="btn btn-outline-dark btn-sm px-2 px-md-3 py-1 rounded-1 fw-semibold d-flex align-items-center gap-1" 
+                  id="headerWritePostBtn"
+                  type="button">
+            <i class="bi bi-pencil-square"></i>
+            <span class="d-none d-sm-inline">Post Yozish</span>
           </button>
+
+          <div id="authHeaderContainer" class="d-flex align-items-center">
+            <button class="btn btn-primary btn-sm px-3 py-1 rounded-1 fw-semibold text-white shadow-sm d-flex align-items-center gap-1" 
+                    id="loginTriggerBtn"
+                    type="button">
+              <i class="bi bi-person-fill"></i>
+              <span>Kirish</span>
+            </button>
+          </div>
         </div>
 
       </div>
@@ -797,6 +810,37 @@
               </button>
             </div>
           </div>
+
+          <!-- Interactive Comments Section (FastAPI & PostgreSQL) -->
+          <div class="mt-4 pt-4 border-top" id="articleCommentsSection">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <h4 class="font-serif fw-bold h5 mb-0">
+                <i class="bi bi-chat-left-text me-2 text-primary"></i>Izohlar (<span id="modalCommentsCount">0</span>)
+              </h4>
+              <span class="badge bg-light text-secondary border small">PostgreSQL</span>
+            </div>
+
+            <!-- List of Comments -->
+            <div id="modalCommentsList" class="d-flex flex-column gap-3 mb-4">
+              <!-- Rendered via JS -->
+            </div>
+
+            <!-- Add Comment Form -->
+            <div id="addCommentContainer" class="p-3 bg-light rounded border">
+              <h6 class="fw-bold mb-2 small text-uppercase tracking-wider">Izoh qoldirish</h6>
+              <form id="addCommentForm">
+                <div class="mb-2">
+                  <textarea class="form-control" id="commentInput" rows="3" placeholder="Fikringizni bildiring..." required></textarea>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                  <small class="text-secondary" id="commentUserHint">Izoh qoldirish uchun tizimga kiring</small>
+                  <button type="submit" class="btn btn-primary btn-sm px-4 fw-semibold" id="submitCommentBtn">
+                    Yuborish
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -870,6 +914,137 @@
             <span class="text-secondary small">Start typing to search through all published stories...</span>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================================
+       12. MODAL: AUTHENTICATION (Login & Register)
+  =============================================== -->
+  <div class="modal fade" id="authModal" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header border-bottom py-3">
+          <ul class="nav nav-pills card-header-pills" id="authTab" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active fw-bold small text-uppercase" id="login-tab" data-bs-toggle="tab" data-bs-target="#loginTabPane" type="button" role="tab">Kirish (Login)</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link fw-bold small text-uppercase" id="register-tab" data-bs-toggle="tab" data-bs-target="#registerTabPane" type="button" role="tab">Ro'yxatdan o'tish</button>
+            </li>
+          </ul>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="tab-content" id="authTabContent">
+            
+            <!-- Login Form -->
+            <div class="tab-pane fade show active" id="loginTabPane" role="tabpanel">
+              <form id="loginForm">
+                <div class="mb-3">
+                  <label for="loginEmail" class="form-label small fw-semibold">Email yoki Username</label>
+                  <input type="text" class="form-control" id="loginEmail" placeholder="shamsiddin@example.com" required>
+                </div>
+                <div class="mb-3">
+                  <label for="loginPassword" class="form-label small fw-semibold">Parol</label>
+                  <input type="password" class="form-control" id="loginPassword" placeholder="••••••••" required>
+                </div>
+                <div class="alert alert-danger py-2 small d-none" id="loginAlert"></div>
+                <button type="submit" class="btn btn-primary w-100 rounded-1 py-2 fw-semibold" id="loginSubmitBtn">
+                  Kirish
+                </button>
+              </form>
+            </div>
+
+            <!-- Register Form -->
+            <div class="tab-pane fade" id="registerTabPane" role="tabpanel">
+              <form id="registerForm">
+                <div class="mb-3">
+                  <label for="regUsername" class="form-label small fw-semibold">Foydalanuvchi nomi (Username)</label>
+                  <input type="text" class="form-control" id="regUsername" placeholder="shamsiddin" required minlength="2">
+                </div>
+                <div class="mb-3">
+                  <label for="regEmail" class="form-label small fw-semibold">Email manzili</label>
+                  <input type="email" class="form-control" id="regEmail" placeholder="siz@example.com" required>
+                </div>
+                <div class="mb-3">
+                  <label for="regPassword" class="form-label small fw-semibold">Parol (kamida 6 ta belgi)</label>
+                  <input type="password" class="form-control" id="regPassword" placeholder="••••••••" required minlength="6">
+                </div>
+                <div class="alert alert-danger py-2 small d-none" id="registerAlert"></div>
+                <button type="submit" class="btn btn-success w-100 rounded-1 py-2 fw-semibold" id="registerSubmitBtn">
+                  Ro'yxatdan o'tish
+                </button>
+              </form>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================================
+       13. MODAL: CREATE NEW POST (Maqola Yaratish)
+  =============================================== -->
+  <div class="modal fade" id="createPostModal" tabindex="-1" aria-labelledby="createPostModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header border-bottom py-3">
+          <h5 class="modal-title font-serif fw-bold text-uppercase fs-6 tracking-wider" id="createPostModalLabel">
+            <i class="bi bi-pencil-fill me-2 text-primary"></i>Yangi Maqola Chop Qilish
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <form id="createPostForm">
+            <div class="mb-3">
+              <label for="postTitleInput" class="form-label small fw-semibold">Maqola Sarlavhasi</label>
+              <input type="text" class="form-control" id="postTitleInput" placeholder="Masalan: Sun'iy intellekt va kelajak iqtisodiyoti" required minlength="3">
+            </div>
+            
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="postCategorySelect" class="form-label small fw-semibold">Kategoriya</label>
+                <select class="form-select" id="postCategorySelect">
+                  <option value="">Kategoriyani tanlang...</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label for="postRatingInput" class="form-label small fw-semibold">Reyting (1 - 5 yulduz)</label>
+                <select class="form-select" id="postRatingInput">
+                  <option value="5" selected>⭐⭐⭐⭐⭐ (5 yulduz)</option>
+                  <option value="4">⭐⭐⭐⭐ (4 yulduz)</option>
+                  <option value="3">⭐⭐⭐ (3 yulduz)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="postContentInput" class="form-label small fw-semibold">Maqola Matni</label>
+              <textarea class="form-control" id="postContentInput" rows="7" placeholder="Maqolangiz matnini to'liq yozing..." required minlength="10"></textarea>
+            </div>
+
+            <div class="alert alert-danger py-2 small d-none" id="createPostAlert"></div>
+
+            <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+              <button type="submit" class="btn btn-primary px-4 fw-semibold" id="createPostSubmitBtn">
+                Chop etish (Publish)
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1090;">
+    <div id="appToast" class="toast align-items-center text-white bg-dark border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body" id="toastMessage">Xabarnoma</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
       </div>
     </div>
   </div>
