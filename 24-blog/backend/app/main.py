@@ -10,18 +10,7 @@ from .routers import auth, categories, posts, comments, users
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="Blog Platform API",
-    description="""
-    ## HAGUE / Zamonaviy Blog Backend API (FastAPI & PostgreSQL)
-    
-    Ushbu API orqali quyidagi imkoniyatlar taqdim etiladi:
-    * 🔐 **Autentifikatsiya**: Ro'yxatdan o'tish (Register), Login qilish (JWT), Shaxsiy profil
-    * 📝 **Maqolalar (Posts)**: Yaratish, ko'rish, batafsil sahifa, tahrirlash va o'chirish
-    * 💬 **Izohlar (Comments)**: Maqolalarga izoh qoldirish va ularni ko'rish
-    * 🏷️ **Kategoriyalar (Categories)**: Yangi toifalar yaratish va toifalar bo'yicha saralash
-    * 🔍 **Qidiruv & Filter**: Sarlavha, matn va kategoriya bo'yicha tezkor qidiruv
-    * 👤 **Foydalanuvchi maqolalari**: Muayyan muallifning maqolalarini ko'rish
-    """,
+    title="Blog API",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
