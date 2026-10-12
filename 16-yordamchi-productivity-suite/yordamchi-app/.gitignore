@@ -18,3 +18,7 @@ deploy.tar.gz
 _eskirgan/
 dist-desktop/
 node_modules/
+
+# Yig'ilgan mahsulotlar (APK, DEB)
+assets/downloads/*.apk
+assets/downloads/*.deb

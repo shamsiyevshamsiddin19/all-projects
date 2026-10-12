@@ -18,6 +18,10 @@
        URL query-ga yoziladi (chuqur link + sahifa yangilash uchun). */
     go: function (name, params, opts) {
       opts = opts || {};
+      if (window.Auth && typeof Auth.isAllowed === 'function' && !Auth.isAllowed(name)) {
+        App.toast("Bu bo'limga ruxsat berilmagan");
+        name = 'home';
+      }
       if (!views[name]) name = 'home';
       var v = views[name];
 
@@ -62,10 +66,30 @@
       return parts.join('&');
     },
 
+    /* Pastki panel YASHIRILADIGAN ko'rinishlar.
+       Mezon: sahifa BITTA ishga to'liq beriladi va undan chiqish yo'li —
+       tepadagi "orqaga" tugmasi (o'quvchi, pleyer, mashq). Bunday sahifada
+       pastki panel ikki marta zarar qiladi: pastdagi pleyer/tugmalar bilan
+       ustma-ust tushadi (matn ostida qolib ketadi) va e'tiborni boshqa
+       bo'limlarga tortadi. Telegramdagi chat oynasi ham xuddi shunday.
+       Ro'yxat/markaz sahifalarda (library, vocab_practice, listening_hub)
+       panel QOLADI — u yerda foydalanuvchi bo'limlar orasida yuradi. */
+    _FULL: [
+      'reading_doc', 'listening_doc', 'library_doc', 'speaking_doc', 'writing_doc',
+      'vocab_md_read', 'vocab_flash', 'vocab_quiz', 'vocab_pair', 'vocab_memo',
+      'vocab_speaker', 'vocab_speech', 'vocab_reels', 'vocab_mistakes',
+      'quiz_play', 'arxiv_doc', 'qoida_doc'
+    ],
+
     _renderChrome: function (name, v) {
       document.querySelectorAll('[data-nav]').forEach(function (a) {
         a.classList.toggle('active', a.getAttribute('data-nav') === (v.nav || name));
       });
+      /* `nav-off` bir vaqtning o'zida panelni yashiradi VA `--nav-h` ni
+         nolga tushiradi — aks holda pastdagi pleyer va sahifa to'ldirmasi
+         yo'q panel uchun joy bo'sh qoldirardi. */
+      var full = v.fullscreen === true || App._FULL.indexOf(name) >= 0;
+      document.body.classList.toggle('nav-off', full);
     },
 
     reload: function () { App.go(current, App.state._lastParams || {}, { silent: true }); },
@@ -85,11 +109,38 @@
       opts = opts || {};
       var url = App.api + '?action=' + encodeURIComponent(action) + (opts.query ? '&' + opts.query : '');
       var init = { method: opts.method || (payload ? 'POST' : 'GET'), cache: 'no-store' };
+      init.headers = {};
       if (payload !== undefined && payload !== null) {
         init.body = JSON.stringify(payload);
-        init.headers = { 'Content-Type': 'application/json' };
+        init.headers['Content-Type'] = 'application/json';
       }
+      /* Idempotency kaliti — server bir amalni ikki marta bajarmasin.
+         Bu yerda HAR CHAQIRUVGA yangi kalit beriladi; oflayn navbatdagi
+         qayta yuborish esa element bilan saqlangan O'SHA kalitni qaytaradi. */
+      var _isReadAction = (window.READ_ACTIONS || []).indexOf(action) >= 0;
+      var _idemKey = '';
+      if (init.method === 'POST' && !_isReadAction) {
+        _idemKey = App._uuid();
+        init.headers['X-Idempotency-Key'] = _idemKey;
+      }
+
+      /* TIMEOUT. Ilgari yo'q edi — tarmoq osilib qolsa `fetch` cheksiz
+         kutardi va foydalanuvchi hech qanday javob ko'rmasdi. Yuklash
+         uzoqroq davom etadi, shuning uchun `opts.timeout` bilan uzaytiriladi. */
+      var ctrl = null, timer = null;
+      var timedOut = false;
+      if (typeof AbortController !== 'undefined') {
+        ctrl = new AbortController();
+        init.signal = ctrl.signal;
+        timer = setTimeout(function () {
+          timedOut = true;
+          try { ctrl.abort(); } catch (e) {}
+        }, opts.timeout || 20000);
+      }
+      var clear = function () { if (timer) { clearTimeout(timer); timer = null; } };
+
       return fetch(url, init).then(function (r) {
+        clear();
         return r.json().catch(function () { return {}; }).then(function (j) {
           if (!r.ok || (j && j.success === false)) {
             // SW oflayn bo'lganda 503 qaytaradi
@@ -101,6 +152,21 @@
           return j;
         });
       }).catch(function(e) {
+        clear();
+        /* Timeout — so'rov serverga YETGAN bo'lishi mumkin, javob kelmadi.
+           2026-09-08 dan beri buni navbatga QO'YSAK BO'LADI: server
+           `X-Idempotency-Key` ni taniydi, shuning uchun amal ikki marta
+           bajarilmaydi — birinchi urinish o'tgan bo'lsa, navbatdagi takror
+           SAQLANGAN javobni oladi. Ilgari server bu kalitni bilmasdi va
+           bu yerda dublikat yozuv xavfi bor edi. */
+        if (timedOut || (e && e.name === 'AbortError')) {
+          if (init.method === 'POST' && !_isReadAction &&
+              App._enqueueOffline(action, payload, opts, _idemKey)) {
+            App.toast('Server javob bermadi — keyin qayta yuboriladi');
+            return { success: true, offlineSaved: true };
+          }
+          throw new Error('Server javob bermadi (' + Math.round((opts.timeout || 20000) / 1000) + 's). Qaytadan urinib ko\'ring.');
+        }
         var offline = e.message === 'OFFLINE_503' ||
                       e.message.indexOf('Failed to fetch') >= 0 || !navigator.onLine;
         /* O'QISH amallari navbatga QO'YILMAYDI. Ilgari shart faqat
@@ -110,11 +176,16 @@
            chaqiruvchiga ma'lumot o'rniga soxta `{success:true}` qaytardi —
            natijada bosh sahifadagi kunlik statistika jimgina bo'sh
            ko'rinardi. Endi o'qish xatosi chaqiruvchiga yetib boradi. */
-        var isRead = (window.READ_ACTIONS || []).indexOf(action) >= 0;
+        var isRead = _isReadAction;
         if (init.method === 'POST' && offline && !isRead) {
-          App._enqueueOffline(action, payload, opts);
-          App.toast('Oflayn: ma\'lumot saqlandi, keyin yuboriladi');
-          return { success: true, offlineSaved: true };
+          /* Navbatga qo'yish MUVAFFAQIYATINI tekshiramiz. Ilgari natija
+             e'tiborga olinmasdi: kvota to'lganda ham "saqlandi" deyilardi
+             va o'zgarish jimgina yo'qolardi. */
+          if (App._enqueueOffline(action, payload, opts, _idemKey)) {
+            App.toast('Oflayn: ma\'lumot saqlandi, keyin yuboriladi');
+            return { success: true, offlineSaved: true };
+          }
+          throw new Error('Xotira to\'ldi — o\'zgarish saqlanmadi. Joy bo\'shatib qayta urining.');
         }
         throw e;
       });
@@ -139,6 +210,12 @@
        bo'lmaganda: ochiq oyna (sheet) yoki matn kiritish jarayonini
        uzib yuborish yaramaydi. */
     _onDataUpdated: function () {
+      /* Boshqa qurilmadan yangi ma'lumot keldi. `WordState` ro'yxatlarni
+         XOTIRADA keshlaydi, `App.reload()` esa faqat ko'rinishni qayta
+         chizadi — modul keshiga tegmaydi. Shuning uchun keshni ATAYLAB
+         bekor qilamiz, aks holda telefonda belgilangan so'z kompyuterda
+         eski holatda ko'rinaverardi. */
+      if (window.WordState && WordState.refresh) WordState.refresh();
       if (App._sheet) return;
       var a = document.activeElement;
       if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
@@ -148,47 +225,363 @@
       }, 60);
     },
 
-    _enqueueOffline: function(action, payload, opts) {
+    /* ---- OFLAYN NAVBAT ----
+       Kalit ATAYLAB `__remote_storage_` prefiksi bilan: `remote-storage.js`
+       localStorage'ni yamaydi va oddiy kalitlarni SERVERGA sinxronlaydi.
+       Navbat oddiy kalitda turganda ikkita yomon narsa bo'lardi:
+       (1) navbatning o'zi serverga yozilishga urinardi — u ma'lumot emas,
+       (2) boshqa qurilmaga tarqalib, u yerda BEGONA yozuvlar bajarilardi.
+       `localGet/localSet` — shu maqsad uchun qo'yilgan qurilma-lokal API. */
+    _QKEY: '__remote_storage_offline_q',
+    _QKEY_OLD: 'app_offline_q',
+    _QMAX: 200,        // navbat cheksiz o'smasin — localStorage kvotasi bor
+    _QMAX_TRIES: 5,    // doimiy xato beradigan element abadiy aylanmasin
+
+    _uuid: function () {
       try {
-        var q = JSON.parse(localStorage.getItem('app_offline_q') || '[]');
-        q.push({ action: action, payload: payload, opts: opts, ts: Date.now() });
-        localStorage.setItem('app_offline_q', JSON.stringify(q));
-      } catch(e) {}
+        if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+      } catch (e) {}
+      return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+    },
+
+    _qRead: function () {
+      try {
+        var B = window.RemoteStorageBridge;
+        var raw = (B && B.localGet) ? B.localGet(App._QKEY) : localStorage.getItem(App._QKEY);
+        var q = JSON.parse(raw || '[]');
+        return Array.isArray(q) ? q : [];
+      } catch (e) { return []; }
+    },
+
+    /* Yozuv MUVAFFAQIYATINI qaytaradi. Ilgari xato `catch(e){}` da yutilardi
+       va chaqiruvchiga baribir "saqlandi" deb aytilardi — kvota to'lganda
+       o'zgarish jimgina yo'qolardi. */
+    _qWrite: function (q) {
+      var raw = JSON.stringify(q);
+      try {
+        var B = window.RemoteStorageBridge;
+        if (B && B.localSet) B.localSet(App._QKEY, raw);
+        else localStorage.setItem(App._QKEY, raw);
+        return true;
+      } catch (e) { return false; }
+    },
+
+    /* Eski kalitdagi navbatni bir marta ko'chirib, o'zini tozalaymiz. */
+    _qMigrate: function () {
+      try {
+        var old = localStorage.getItem(App._QKEY_OLD);
+        if (!old) return;
+        var oldQ = JSON.parse(old || '[]');
+        if (Array.isArray(oldQ) && oldQ.length) {
+          var q = App._qRead();
+          oldQ.forEach(function (it) {
+            if (!it.id) it.id = App._uuid();
+            if (typeof it.tries !== 'number') it.tries = 0;
+            q.push(it);
+          });
+          App._qWrite(q.slice(-App._QMAX));
+        }
+        localStorage.removeItem(App._QKEY_OLD);
+      } catch (e) {}
+    },
+
+    _enqueueOffline: function(action, payload, opts, idemKey) {
+      var q = App._qRead();
+      if (q.length >= App._QMAX) {
+        q.splice(0, q.length - App._QMAX + 1);
+        App.toast('⚠️ Oflayn navbat to\'ldi — eng eski o\'zgarishlar tashlandi');
+      }
+      q.push({
+        /* `id` — idempotency kaliti. Qayta yuborishda O'ZGARMAYDI, shuning
+           uchun server bir amalni ikki marta bajarmaydi (javob yo'qolib,
+           element navbatda qolgan holat). */
+        id: idemKey || App._uuid(),   /* timeout'da App.call O'Z kalitini uzatadi */
+        action: action, payload: payload, opts: opts,
+        ts: Date.now(), tries: 0
+      });
+      return App._qWrite(q);
     },
 
     syncOffline: function() {
-      try {
-        var q = JSON.parse(localStorage.getItem('app_offline_q') || '[]');
-        if (!q.length) return;
-        var q2 = [];
-        var p = Promise.resolve();
-        q.forEach(function(item) {
-          p = p.then(function() {
-            return fetch(App.api + '?action=' + encodeURIComponent(item.action) + (item.opts && item.opts.query ? '&' + item.opts.query : ''), {
-              method: 'POST', cache: 'no-store',
-              body: item.payload ? JSON.stringify(item.payload) : undefined,
-              headers: item.payload ? { 'Content-Type': 'application/json' } : undefined
-            }).then(function(r) { if (!r.ok) throw new Error('fail'); }).catch(function() { q2.push(item); });
+      if (App._syncing) return Promise.resolve();   // poyga: startup + 'online' bir vaqtda
+      App._qMigrate();
+      var q = App._qRead();
+      if (!q.length) return Promise.resolve();
+      App._syncing = true;
+
+      var keep = [], sent = 0, failed = 0;
+      var p = Promise.resolve();
+
+      q.forEach(function(item) {
+        p = p.then(function() {
+          var url = App.api + '?action=' + encodeURIComponent(item.action) +
+                    (item.opts && item.opts.query ? '&' + item.opts.query : '');
+          var h = { 'X-Idempotency-Key': item.id || '' };
+          if (item.payload) h['Content-Type'] = 'application/json';
+          return fetch(url, {
+            method: 'POST', cache: 'no-store',
+            body: item.payload ? JSON.stringify(item.payload) : undefined,
+            headers: h
+          }).then(function(r) {
+            if (r.ok) { sent++; return; }
+            /* 4xx — validatsiya/ruxsat xatosi. Qayta urinish HECH QACHON
+               yordam bermaydi (masalan admin qorovuli 403 beradi), shuning
+               uchun navbatdan olib tashlaymiz. 408/429 esa vaqtinchalik. */
+            if (r.status >= 400 && r.status < 500 && r.status !== 408 && r.status !== 429) {
+              failed++; return;
+            }
+            throw new Error('HTTP ' + r.status);
+          }).catch(function() {
+            item.tries = (item.tries || 0) + 1;
+            if (item.tries >= App._QMAX_TRIES) { failed++; return; }
+            keep.push(item);
           });
         });
-        p.then(function() {
-          localStorage.setItem('app_offline_q', JSON.stringify(q2));
-          if (q.length > q2.length) App.toast((q.length - q2.length) + ' ta oflayn o\'zgarish serverga yuborildi!');
-        });
-      } catch(e) {}
+      });
+
+      return p.then(function() {
+        App._qWrite(keep);
+        App._syncing = false;
+        if (sent) {
+          App.toast(sent + ' ta oflayn o\'zgarish serverga yuborildi');
+          App._invalidateData('');   // yozuvlar o'tdi — o'qish keshi eskirdi
+        }
+        if (failed) App.toast('⚠️ ' + failed + ' ta o\'zgarish yuborilmadi (xato yoki urinishlar tugadi)');
+      }).catch(function() { App._syncing = false; });
     },
 
-    /* multipart/form-data so'rov (fayl yuklash uchun) — ba'zi action'lar (masalan sport_save_exercise) buni maxsus qabul qiladi */
-    callForm: function (action, formData) {
-      var url = App.api + '?action=' + encodeURIComponent(action);
-      return fetch(url, { method: 'POST', body: formData, cache: 'no-store' }).then(function (r) {
-        return r.json().catch(function () { return {}; }).then(function (j) {
-          if (!r.ok || (j && j.success === false)) {
-            throw new Error((j && (j.error || j.message)) || ('HTTP ' + r.status));
-          }
-          return j;
+    /* ---- RASMNI YUKLASHDAN OLDIN SIQISH ----
+       Telefon surati odatda 3-8 MB. Sekin tarmoqda bu yuklashni bir necha
+       marta uzaytiradi, holbuki ekranda 1600px dan kattasi baribir
+       ko'rinmaydi.
+
+       NIMA SIQILMAYDI va NEGA:
+       - video   — brauzerda ishonchli qayta kodlash yo'q;
+       - GIF     — canvas faqat BIRINCHI kadrni oladi, animatsiya o'ladi;
+       - SVG     — vektor, piksellashtirish sifatni buzadi;
+       - kichik  — allaqachon chegaradan kichik fayl.
+       Natija aslidan KATTA chiqsa ham asl fayl qoladi (siqish ba'zan
+       PNG'ni kattalashtiradi). */
+    compressImage: function (file, opts) {
+      opts = opts || {};
+      var maxSide = opts.maxSide || 1600;
+      var quality = opts.quality || 0.82;
+      var minBytes = opts.minBytes || 300 * 1024;   // bundan kichigiga tegmaymiz
+
+      var type = (file && file.type) || '';
+      var skip = type.indexOf('image/') !== 0 ||
+                 type === 'image/gif' ||
+                 type === 'image/svg+xml' ||
+                 file.size <= minBytes;
+      if (skip || typeof document === 'undefined') return Promise.resolve(file);
+
+      function draw(bmp, w, h) {
+        var sc = Math.min(1, maxSide / Math.max(w, h));
+        var cw = Math.max(1, Math.round(w * sc));
+        var ch = Math.max(1, Math.round(h * sc));
+        var c = document.createElement('canvas');
+        c.width = cw; c.height = ch;
+        c.getContext('2d').drawImage(bmp, 0, 0, cw, ch);
+        return new Promise(function (resolve) {
+          if (!c.toBlob) { resolve(null); return; }
+          c.toBlob(function (blob) { resolve(blob); }, 'image/jpeg', quality);
+        });
+      }
+
+      function finish(blob) {
+        /* Kattalashib ketgan bo'lsa — aslini qoldiramiz. */
+        if (!blob || blob.size >= file.size) return file;
+        var name = String(file.name || 'rasm').replace(/\.[^.]+$/, '') + '.jpg';
+        try {
+          return new File([blob], name, { type: 'image/jpeg', lastModified: Date.now() });
+        } catch (e) {
+          blob.name = name;   // File konstruktori yo'q eski brauzerlar
+          return blob;
+        }
+      }
+
+      /* `createImageBitmap` afzal: dekodlash asosiy oqimni bloklamaydi va
+         `imageOrientation` EXIF burilishini o'zi to'g'rilaydi (aks holda
+         telefonda olingan portret surat yonboshlab ketardi). */
+      if (typeof createImageBitmap === 'function') {
+        return createImageBitmap(file, { imageOrientation: 'from-image' })
+          .then(function (bmp) {
+            return draw(bmp, bmp.width, bmp.height).then(function (b) {
+              try { bmp.close(); } catch (e) {}
+              return finish(b);
+            });
+          })
+          .catch(function () { return file; });
+      }
+
+      return new Promise(function (resolve) {
+        var url = URL.createObjectURL(file);
+        var img = new Image();
+        img.onload = function () {
+          draw(img, img.naturalWidth, img.naturalHeight).then(function (b) {
+            URL.revokeObjectURL(url);
+            resolve(finish(b));
+          });
+        };
+        img.onerror = function () { URL.revokeObjectURL(url); resolve(file); };
+        img.src = url;
+      });
+    },
+
+    /* Ro'yxatdagi rasmlarni ketma-ket siqadi (bir vaqtda emas — telefonda
+       bir nechta katta canvas xotirani tugatishi mumkin). */
+    compressAll: function (files, opts) {
+      var out = [];
+      var p = Promise.resolve();
+      Array.prototype.forEach.call(files, function (f) {
+        p = p.then(function () {
+          return App.compressImage(f, opts).then(function (r) { out.push(r); });
         });
       });
+      return p.then(function () { return out; });
+    },
+
+    /* ---- YUKLASH PROGRESSI ----
+       Bir vaqtda bir nechta yuklash bo'lishi mumkin, shuning uchun ro'yxat
+       yuritamiz va umumiy foizni ko'rsatamiz. */
+    _ups: {},
+
+    _upRender: function () {
+      var el = document.getElementById('upprog');
+      var ids = Object.keys(App._ups);
+      if (!ids.length) { if (el) el.classList.remove('show', 'err', 'indet'); return; }
+
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'upprog';
+        el.innerHTML = '<div class="up-row"><span class="up-name"></span><span class="up-pct"></span></div>' +
+                       '<div class="up-track"><div class="up-fill"></div></div>' +
+                       '<div class="up-note" hidden></div>';
+        document.body.appendChild(el);
+      }
+
+      var loaded = 0, total = 0, known = true, err = null, name = '';
+      ids.forEach(function (id) {
+        var u = App._ups[id];
+        if (u.error) err = u.error;
+        if (u.total > 0) { loaded += u.loaded; total += u.total; } else { known = false; }
+        name = u.label;
+      });
+
+      var title = ids.length > 1 ? (ids.length + ' ta fayl yuklanmoqda') : (name || 'Yuklanmoqda');
+      el.querySelector('.up-name').textContent = title;
+
+      var note = el.querySelector('.up-note');
+      el.classList.toggle('err', !!err);
+      if (err) { note.hidden = false; note.textContent = err; }
+      else { note.hidden = true; note.textContent = ''; }
+
+      if (known && total > 0) {
+        var pct = Math.min(100, Math.round(loaded / total * 100));
+        el.classList.remove('indet');
+        el.querySelector('.up-pct').textContent = pct + '%';
+        el.querySelector('.up-fill').style.width = pct + '%';
+      } else {
+        el.classList.add('indet');
+        el.querySelector('.up-pct').textContent = '';
+      }
+      el.classList.add('show');
+    },
+
+    _upSet: function (id, data) {
+      App._ups[id] = App._ups[id] || { loaded: 0, total: 0, label: '', error: null };
+      for (var k in data) if (Object.prototype.hasOwnProperty.call(data, k)) App._ups[id][k] = data[k];
+      App._upRender();
+    },
+
+    _upDone: function (id, errMsg) {
+      if (errMsg) {
+        App._upSet(id, { error: errMsg });
+        /* Xatoni darrov yo'qotmaymiz — foydalanuvchi o'qib ulgursin. */
+        setTimeout(function () { delete App._ups[id]; App._upRender(); }, 4000);
+        return;
+      }
+      delete App._ups[id];
+      App._upRender();
+    },
+
+    /* multipart/form-data so'rov (fayl yuklash uchun).
+       `fetch` ATAYLAB ishlatilmaydi — u upload progressini bera olmaydi
+       (`ReadableStream` request body hali keng qo'llanilmaydi). XHR esa
+       `upload.onprogress` beradi, shu sabab foiz ko'rsata olamiz.
+
+       opts: { label, timeout, retries, onProgress } — hammasi majburiy emas.
+       Qaytadi: promise + `.abort()` metodi bilan. */
+    callForm: function (action, formData, opts) {
+      opts = opts || {};
+      var url = App.api + '?action=' + encodeURIComponent(action);
+      var maxTries = (opts.retries == null ? 3 : opts.retries);
+      var label = opts.label || 'Yuklanmoqda';
+      var upId = App._uuid();
+      /* Idempotency kaliti qayta urinishlarda O'ZGARMAYDI — server bir
+         faylni ikki marta saqlamasin (javob yo'qolib, biz qayta yuborgan holat). */
+      var idem = App._uuid();
+      var curXhr = null, aborted = false;
+
+      App._upSet(upId, { label: label, loaded: 0, total: 0 });
+
+      function attempt(tryNo) {
+        return new Promise(function (resolve, reject) {
+          if (aborted) { reject(new Error('Bekor qilindi')); return; }
+          var xhr = new XMLHttpRequest();
+          curXhr = xhr;
+          xhr.open('POST', url, true);
+          xhr.timeout = opts.timeout || 120000;   // 2 daqiqa — katta video uchun
+          try { xhr.setRequestHeader('X-Idempotency-Key', idem); } catch (e) {}
+
+          xhr.upload.onprogress = function (e) {
+            if (!e.lengthComputable) return;
+            App._upSet(upId, { loaded: e.loaded, total: e.total });
+            if (opts.onProgress) { try { opts.onProgress(e.loaded, e.total); } catch (er) {} }
+          };
+
+          xhr.onload = function () {
+            var j = {};
+            try { j = JSON.parse(xhr.responseText || '{}'); } catch (e) {}
+            if (xhr.status >= 200 && xhr.status < 300 && !(j && j.success === false)) {
+              resolve(j); return;
+            }
+            var msg = (j && (j.error || j.message)) || ('HTTP ' + xhr.status);
+            var e2 = new Error(msg);
+            /* 4xx — doimiy xato (hajm, format, ruxsat). Qayta urinish
+               foydasiz va faqat serverni bezovta qiladi. */
+            e2.permanent = (xhr.status >= 400 && xhr.status < 500 &&
+                            xhr.status !== 408 && xhr.status !== 429);
+            reject(e2);
+          };
+          xhr.onerror = function () { reject(new Error('Tarmoq xatosi')); };
+          xhr.ontimeout = function () { reject(new Error('Vaqt tugadi')); };
+          xhr.onabort = function () { var e3 = new Error('Bekor qilindi'); e3.permanent = true; reject(e3); };
+
+          xhr.send(formData);
+        }).catch(function (e) {
+          if (e.permanent || tryNo >= maxTries || aborted) throw e;
+          /* Eksponensial backoff: 1s, 2s, 4s. Cheksiz emas. */
+          var wait = Math.pow(2, tryNo - 1) * 1000;
+          App._upSet(upId, { error: 'Qayta urinilmoqda (' + tryNo + '/' + maxTries + ')…', loaded: 0, total: 0 });
+          return new Promise(function (res) { setTimeout(res, wait); }).then(function () {
+            App._upSet(upId, { error: null });
+            return attempt(tryNo + 1);
+          });
+        });
+      }
+
+      var pr = attempt(1).then(function (j) {
+        App._upDone(upId);
+        App._invalidateData(action);
+        return j;
+      }).catch(function (e) {
+        App._upDone(upId, e.message || 'Yuklab bo\'lmadi');
+        throw e;
+      });
+
+      pr.abort = function () { aborted = true; try { if (curXhr) curXhr.abort(); } catch (e) {} };
+      return pr;
     },
 
     /* ---- UI: toast ---- */
@@ -483,10 +876,11 @@
      ro'yxatlar (ichma-ich va belgilash), kod bloklari, iqtiboslar,
      rasm, havola, qalin/qiya/o'chirilgan matn, ajratuvchi chiziq. */
 
-  /* Havola/rasm manzili xavfsizmi? (javascript: kabi yozuvlarni to'sadi) */
+  /* Havola/rasm manzili xavfsizmi? (javascript: kabi yozuvlarni to'sadi, nisbiy rasm yo'llariga ruxsat beradi) */
   function safeUrl(u) {
     var s = String(u || '').trim();
-    if (/^(https?:|mailto:|tel:|\/|#|data:image\/)/i.test(s)) return s;
+    if (/^\s*javascript:/i.test(s)) return '';
+    if (/^(https?:|mailto:|tel:|\/|\.\/|#|data:image\/|[a-zA-Z0-9_\-\.\/]+\.(png|jpe?g|gif|svg|webp|ico))/i.test(s)) return s;
     return '';
   }
 
@@ -531,11 +925,40 @@
   }
 
   function mdToHtml(md) {
-    var lines = String(md || '').replace(/\r/g, '').split('\n');
+    /* KO'RINMAS BELGILAR.
+       Notion / Google Docs / Word dan nusxa olib qo'yilgan matnda bo'sh
+       qatorlar aslida BO'SH EMAS: ular ichida nol kenglikdagi bo'shliq
+       (U+200B) turadi. `\s` bunday belgini bo'shliq deb bilmaydi, shuning
+       uchun bunday qator xatboshini yopmasdi va butun hujjat BITTA
+       uzun xatboshiga aylanib ketardi (2026-09-09: Notion'dan qo'yilgan
+       "Django 1-2 kun" darsligida 397 qatordan 39 tasi aynan shunday edi).
+       Uzilmas bo'shliq (U+00A0) ham oddiy bo'shliqqa keltiriladi — aks
+       holda `  - ` bilan boshlangan ro'yxat qatori tanilmasdi. */
+    var src = String(md == null ? '' : md)
+      .replace(/\r\n?/g, '\n')
+      .replace(/[\u200b\u200c\u200d\u2060\ufeff]/g, '')
+      .replace(/\u00a0/g, ' ');
+    var lines = src.split('\n');
     var html = '', i = 0, para = [];
+    var detailsOpen = 0;
 
+    /* QATOR TASHLASH.
+       Klassik markdown bitta yangi qatorni "bo'shliq" deb hisoblaydi va
+       ketma-ket qatorlarni bitta xatboshiga yopishtiradi. Bu qoida matn
+       80 belgida qo'lda o'ralgan davrdan qolgan; bu yerdagi hujjatlarda
+       esa har qator — ALOHIDA fikr:
+
+           **Xato 1:** ...
+           ❌ ...
+           ✅ ...
+
+       Uchalasi bitta qatorga yopishib qolardi. Bazadagi 592 hujjatning
+       326 tasida shunday joy bor edi, shuning uchun endi bitta yangi
+       qator = bitta `<br>` (Notion, Obsidian va Telegram ham shunday). */
     function flushPara() {
-      if (para.length) { html += '<p>' + mdInline(para.join(' ')) + '</p>'; para = []; }
+      if (!para.length) return;
+      html += '<p>' + mdInline(para.join('\n')).replace(/\n/g, '<br>') + '</p>';
+      para = [];
     }
 
     /* Ro'yxatni ichma-ich (indent bo'yicha) yig'adi */
@@ -581,8 +1004,13 @@
         var code = [];
         i++;
         while (i < lines.length && !/^\s*```/.test(lines[i])) { code.push(lines[i]); i++; }
+        /* Bo'yash XOM matn ustida bajariladi va har bo'lak alohida
+           qochiriladi. Avval qochirib keyin bo'yash MUMKIN EMAS:
+           `&quot;` kabi ketma-ketliklar satr deb noto'g'ri tanilardi.
+           Modul yuklanmagan bo'lsa — oddiy qochirish. */
+        var raw = code.join('\n');
         html += '<pre' + (lang ? ' data-lang="' + App.esc(lang) + '"' : '') + '><code>' +
-          App.esc(code.join('\n')) + '</code></pre>';
+          (window.Hilite ? Hilite.code(lang, raw) : App.esc(raw)) + '</code></pre>';
         i++; continue;
       }
 
@@ -613,6 +1041,33 @@
         continue;
       }
 
+      /* YIG'ILADIGAN JAVOB BLOKI — `<details>` / `<summary>`.
+         Darsliklarning yarmidan ko'pi (592 hujjatdan 314 tasi) mashq
+         javoblarini shu teglar ichiga yashiradi. Chizuvchi butun HTML ni
+         qochirgani uchun ular ekranda `<details>` deb YOZUV bo'lib
+         ko'rinardi va javoblar hech qachon yashirilmasdi.
+
+         Ataylab FAQAT shu ikkita teg taniladi — umumiy HTML o'tkazish
+         emas. Ichkaridagi hamma narsa odatdagidek markdown sifatida
+         chiziladi va qochiriladi. */
+      if (/^\s*<details\s*>\s*$/i.test(line)) {
+        flushPara(); html += '<details class="md-details">'; detailsOpen++; i++; continue;
+      }
+      if (/^\s*<\/details\s*>\s*$/i.test(line)) {
+        flushPara();
+        if (detailsOpen > 0) { html += '</details>'; detailsOpen--; }
+        i++; continue;
+      }
+      var sm = line.match(/^\s*<summary\s*>([\s\S]*?)<\/summary\s*>\s*$/i);
+      if (sm) {
+        flushPara();
+        /* Sarlavha ichidagi `<b>` — markdown qalinligiga aylantiriladi
+           (6 ta hujjatda shunday yozilgan). */
+        var st = sm[1].replace(/<\/?(?:b|strong)\s*>/gi, '**');
+        html += '<summary>' + mdInline(st) + '</summary>';
+        i++; continue;
+      }
+
       var h = line.match(/^(#{1,6})\s+(.*)$/);
       if (h) {
         flushPara();
@@ -625,7 +1080,7 @@
         flushPara();
         var quote = [];
         while (i < lines.length && /^\s*>\s?/.test(lines[i])) { quote.push(lines[i].replace(/^\s*>\s?/, '')); i++; }
-        html += '<blockquote>' + mdInline(quote.join(' ')) + '</blockquote>';
+        html += '<blockquote>' + mdInline(quote.join('\n')).replace(/\n/g, '<br>') + '</blockquote>';
         continue;
       }
 
@@ -637,6 +1092,8 @@
       para.push(line); i++;
     }
     flushPara();
+    /* Yopilmagan blok qolsa HTML buziladi — o'zimiz yopamiz. */
+    while (detailsOpen > 0) { html += '</details>'; detailsOpen--; }
     return html;
   }
 

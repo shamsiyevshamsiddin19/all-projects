@@ -24,14 +24,15 @@
      o'qiydi, lekin so'z/gap tarjimasi va tinglash bilan (reading.js). */
   var SECTIONS = {
     en_reading:   { n: 'Reading',   parent: 'english', parentName: 'Ingliz tili', ic: 'book', doc: 'reading_doc' },
-    en_listening: { n: 'Listening', parent: 'english', parentName: 'Ingliz tili', ic: 'headphones' },
-    en_writing:   { n: 'Writing',   parent: 'english', parentName: 'Ingliz tili', ic: 'edit' },
-    en_speaking:  { n: 'Speaking',  parent: 'english', parentName: 'Ingliz tili', ic: 'mic' },
+    en_listening: { n: 'Listening', parent: 'english', parentName: 'Ingliz tili', ic: 'headphones', doc: 'listening_doc' },
+    en_writing:   { n: 'Writing',   parent: 'english', parentName: 'Ingliz tili', ic: 'edit', doc: 'writing_doc' },
+    en_speaking:  { n: 'Speaking',  parent: 'english', parentName: 'Ingliz tili', ic: 'mic', doc: 'speaking_doc' },
+    en_shadowing: { n: 'Shadowing', parent: 'english', parentName: 'Ingliz tili', ic: 'refresh', doc: 'reading_doc' },
     ru_reading:   { n: 'Чтение',      parent: 'russian', parentName: 'Русский язык', ic: 'book', doc: 'reading_doc' },
-    ru_listening: { n: 'Аудирование', parent: 'russian', parentName: 'Русский язык', ic: 'headphones' },
-    ru_speaking:  { n: 'Говорение',   parent: 'russian', parentName: 'Русский язык', ic: 'mic' },
-    ru_writing:   { n: 'Письмо',      parent: 'russian', parentName: 'Русский язык', ic: 'edit' },
-    ru_shadowing: { n: 'Шэдоуинг',    parent: 'russian', parentName: 'Русский язык', ic: 'refresh' }
+    ru_listening: { n: 'Аудирование', parent: 'russian', parentName: 'Русский язык', ic: 'headphones', doc: 'listening_doc' },
+    ru_speaking:  { n: 'Говорение',   parent: 'russian', parentName: 'Русский язык', ic: 'mic', doc: 'speaking_doc' },
+    ru_writing:   { n: 'Письмо',      parent: 'russian', parentName: 'Русский язык', ic: 'edit', doc: 'writing_doc' },
+    ru_shadowing: { n: 'Шэдоуинг',    parent: 'russian', parentName: 'Русский язык', ic: 'refresh', doc: 'reading_doc' }
   };
   function secInfo(k) { return SECTIONS[k] || { n: 'Materiallar', parent: 'languages', parentName: '', ic: 'book' }; }
 
@@ -93,10 +94,13 @@
       var si = secInfo(sec);
       var back = path ? 'library' : si.parent;
       var backP = path ? { sec: sec, path: parentPath(path) } : {};
+      var isReadOnly = window.Auth && Auth.isReadOnly && Auth.isReadOnly();
 
-      page.innerHTML = topbar(path ? lastSeg(path) : si.n, back, backP,
-        '<button class="icon-btn ghost" data-act="libNew" data-arg=\'' + App.arg({ sec: sec, path: path }) +
-        '\' style="margin-left:auto" aria-label="Qo\'shish"><span data-icon="plus" data-icon-size="20"></span></button>') +
+      var rightBtn = isReadOnly ? '' :
+        ('<button class="icon-btn ghost" data-act="libNew" data-arg=\'' + App.arg({ sec: sec, path: path }) +
+        '\' style="margin-left:auto" aria-label="Qo\'shish"><span data-icon="plus" data-icon-size="20"></span></button>');
+
+      page.innerHTML = topbar(path ? lastSeg(path) : si.n, back, backP, rightBtn) +
         (path ? '<div class="lib-crumb">' + crumbHtml(sec, path) + '</div>' : '') +
         '<div id="lib-list"><div class="load-wrap"><div class="spinner"></div></div></div>' +
         '<input type="file" id="lib-files" hidden multiple accept=".md,.markdown,.txt,text/markdown,text/plain">' +
@@ -121,6 +125,74 @@
     return out.join('');
   }
 
+  function splitNum(name, fallback) {
+    var s = String(name || '').trim();
+    var mLetter = s.match(/^([A-Za-zА-Яа-я])\s*[.)\-]\s*(.+)$/);
+    if (mLetter) return { num: mLetter[1].toUpperCase(), title: mLetter[2].trim() };
+    var m = s.match(/^(\d{1,3})\s*[.)\-]?\s+(.+)$/);
+    if (m && m[2].trim()) return { num: String(parseInt(m[1], 10)), title: m[2].trim() };
+    if (/^maxsus\b/i.test(s)) return { num: 'M', title: s };
+    // Nomda tartib raqami yo'q — ro'yxat indeksi ma'nosiz. Chaqiruvchi
+    // xohlasa buni monogrammaga almashtiradi (qarang: monoOf).
+    return { num: String(fallback), title: s, noNum: true };
+  }
+
+  /* Nomdan monogramma: "Атомные привычки" → "АП", "Dostoevskiy" → "DO" */
+  function monoOf(name) {
+    var words = String(name || '').replace(/[._\-]+/g, ' ').trim()
+      .split(/\s+/).filter(function (w) { return /[0-9A-Za-zА-Яа-яЁё]/.test(w); });
+    // "Война и мир" → ВМ: bir harfli bog'lovchilarni tashlab yuboramiz,
+    // lekin ulardan boshqa hech narsa qolmasa — o'zini ishlatamiz.
+    var toliq = words.filter(function (w) { return w.length > 1; });
+    if (toliq.length) words = toliq;
+    if (!words.length) return '?';
+    if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+    return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
+  }
+
+  /* Monogramma ranglari QO'LDA tanlangan, hue'dan hisoblanmaydi.
+     Sabab: hsl(h,58%,54%) da yorqinlik doim bir xil qolar, lekin ko'z
+     uchun sariq va yashil o'sha yorqinlikda ancha OCH ko'rinadi —
+     oq harf ustida kontrast 1.7:1 gacha tushib, o'qilmay qolardi.
+     Quyidagilarning hammasi oq matnga nisbatan ≥5:1 (WCAG AA). */
+  var MONO_RANG = [
+    '#c2334d', '#b4451f', '#8a6206', '#4a7c17', '#12795c',
+    '#0e7490', '#1d4ed8', '#4c35c9', '#8b2bbd', '#b31f66'
+  ];
+
+  /* Rangni bir oz qoraytirish — gradientning ikkinchi nuqtasi uchun */
+  function qoraytir(hex, nisbat) {
+    var r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16),
+        b = parseInt(hex.slice(5, 7), 16);
+    return 'rgb(' + Math.round(r * nisbat) + ',' + Math.round(g * nisbat) + ',' +
+      Math.round(b * nisbat) + ')';
+  }
+
+  /* Nomdan barqaror rang — bir xil kitob har doim bir xil rangda */
+  function avStyle(name) {
+    var h = 0, s = String(name || '');
+    for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 100000;
+    var c = MONO_RANG[h % MONO_RANG.length];
+    return 'background:linear-gradient(135deg,' + c + ',' + qoraytir(c, 0.78) + ')';
+  }
+
+  /* Avatar: raqami bor bo'lsa raqam, bo'lmasa rangli monogramma */
+  function avHtml(p, name, mono) {
+    if (mono && p.noNum) {
+      // title — monogramma qisqartma bo'lgani uchun to'liq nom kerak bo'ladi
+      return '<span class="chat-av chat-av-mono" title="' + App.esc(name) +
+        '" style="' + avStyle(name) + '">' + App.esc(monoOf(name)) + '</span>';
+    }
+    return '<span class="chat-av chat-av-num" style="background:var(--card,#fff);' +
+      'color:var(--accent,#007aff);font-size:18px;font-weight:800">' + App.esc(p.num) + '</span>';
+  }
+
+  function tickHtml() {
+    return '<span class="rm-tick"><svg viewBox="0 0 24 24" width="11" height="11" fill="none">' +
+      '<path d="M5 12l5 5L20 6" stroke="currentColor" stroke-width="3.4" ' +
+      'stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
+  }
+
   function load(sec, path) {
     App.call('get_topics', null, { query: 'lang=' + encodeURIComponent(sec) }).then(function (j) {
       var box = App.el('lib-list'); if (!box) return;
@@ -132,32 +204,48 @@
         });
         App.icons(box); return;
       }
-      var html = v.folders.map(function (f) {
+      var isReadOnly = window.Auth && Auth.isReadOnly && Auth.isReadOnly();
+      var html = v.folders.map(function (f, i) {
         var sub = [];
         if (f.files) sub.push(f.files + ' ta fayl');
         if (f.subs) sub.push(f.subs + ' ta ichkarida');
-        return '<div class="list-row">' +
-          '<span class="li-ic" style="background:var(--accent-soft);color:var(--accent)" data-icon="archive" data-icon-size="15"></span>' +
-          '<button class="li-main li-btn" data-act="go" data-arg=\'' +
+        var p = splitNum(f.n, i + 1);
+        var editBtn = isReadOnly ? '' :
+          '<button class="icon-btn ghost" style="width:34px;height:34px;flex-shrink:0" data-act="libFolderMenu" data-arg=\'' +
+          App.arg({ sec: sec, path: path, n: f.n }) + '\'><span data-icon="edit" data-icon-size="15"></span></button>';
+        return '<div class="chat-item">' +
+          '<button class="chat-row" data-act="go" data-arg=\'' +
           App.arg({ v: 'library', p: { sec: sec, path: joinPath(path, f.n) } }) + '\'>' +
-          '<div class="li-title">' + App.esc(f.n) + '</div>' +
-          '<div class="li-sub">' + (sub.join(' · ') || 'bo\'sh') + '</div></button>' +
-          '<button class="icon-btn ghost" style="width:30px;height:30px" data-act="libFolderMenu" data-arg=\'' +
-          App.arg({ sec: sec, path: path, n: f.n }) + '\'><span data-icon="edit" data-icon-size="14"></span></button></div>';
+          '<span class="rm-av-wrap">' + avHtml(p, f.n, true) + '</span>' +
+          '<span class="chat-main">' +
+            '<span class="chat-title">' + App.esc(p.title) + '</span>' +
+            '<span class="chat-sub">' + (sub.join(' · ') || 'bo\'sh papka') + '</span>' +
+          '</span></button>' +
+          editBtn + '</div>';
       }).join('');
 
       if (v.files.length) {
-        if (v.folders.length) html += '<div class="list-label">Fayllar</div>';
+        if (v.folders.length) html += '<div class="list-label" style="margin:16px 6px 8px;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted)">Fayllar</div>';
         var docView = secInfo(sec).doc || 'library_doc';
-        html += v.files.map(function (t) {
-          return '<div class="list-row">' +
-            '<span class="li-ic" data-icon="book" data-icon-size="15"></span>' +
-            '<button class="li-main li-btn" data-act="go" data-arg=\'' +
+        html += v.files.map(function (t, i) {
+          var p = splitNum(t.name, i + 1);
+          var done = (window.ReadMark && ReadMark.isRead && ReadMark.isRead(sec, 'topic', t.id)) ||
+                     (window.LearnMarks && LearnMarks.isTopicRead && LearnMarks.isTopicRead(t.id));
+          var editBtn = isReadOnly ? '' :
+            '<button class="icon-btn ghost" style="width:34px;height:34px;flex-shrink:0" data-act="libFileMenu" data-arg=\'' +
+            App.arg({ sec: sec, path: path, id: t.id, n: t.name }) + '\'><span data-icon="edit" data-icon-size="15"></span></button>';
+          return '<div class="chat-item' + (done ? ' rm-done' : '') + '">' +
+            '<button class="chat-row" data-hold="topic" data-hold-key="' + App.esc(String(t.id)) +
+            '" data-hold-name="' + App.esc(p.title) + '" data-act="go" data-arg=\'' +
             App.arg({ v: docView, p: { sec: sec, id: t.id } }) + '\'>' +
-            '<div class="li-title">' + App.esc(t.name) + '</div>' +
-            (t.has_content ? '' : '<div class="li-sub">matn hali yo\'q</div>') + '</button>' +
-            '<button class="icon-btn ghost" style="width:30px;height:30px" data-act="libFileMenu" data-arg=\'' +
-            App.arg({ sec: sec, path: path, id: t.id, n: t.name }) + '\'><span data-icon="edit" data-icon-size="14"></span></button></div>';
+            '<span class="rm-av-wrap">' + avHtml(p, t.name, false) +
+              (done ? tickHtml() : '') +
+            '</span>' +
+            '<span class="chat-main">' +
+              '<span class="chat-title">' + App.esc(p.title) + '</span>' +
+              '<span class="chat-sub">' + (done ? 'O\'qildi' : (t.has_content ? 'Matnni o\'qish' : 'matn hali yo\'q')) + '</span>' +
+            '</span></button>' +
+            editBtn + '</div>';
         }).join('');
       }
       box.innerHTML = html;
@@ -170,6 +258,7 @@
 
   /* ---------- Qo'shish menyusi ---------- */
   App.actions.libNew = function (a) {
+    if (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) { App.toast("Faqat administrator uchun"); return; }
     var html =
       '<button class="list-row" data-act="libAddFolder" data-arg=\'' + App.arg(a) + '\'>' +
       '<span class="li-ic" style="background:var(--accent-soft);color:var(--accent)" data-icon="archive" data-icon-size="15"></span>' +
@@ -193,7 +282,34 @@
         ? '<button class="list-row" data-act="rdSample" data-arg=\'' + App.arg({ sec: a.sec }) + '\'>' +
           '<span class="li-ic" data-icon="download" data-icon-size="15"></span>' +
           '<div class="li-main"><div class="li-title">Namuna fayl</div>' +
-          '<div class="li-sub">So\'z va gap tarjimasi qanday yozilishi</div></div></button>'
+          '<div class="li-sub">So\'z va gap tarjimasi qanday yozilishi</div></div></button>' +
+          '<button class="list-row" data-act="rdGuide" data-arg=\'' + App.arg({ sec: a.sec }) + '\'>' +
+          '<span class="li-ic" data-icon="file" data-icon-size="15"></span>' +
+          '<div class="li-main"><div class="li-title">AI uchun qo\'llanma</div>' +
+          '<div class="li-sub">Kitob/maqolani AI ga berish uchun qoida</div></div></button>'
+        : '') +
+      /* Говорение / Письмо ham o'z formatiga ega — namuna va AI qo'llanmasi
+         shu yerdan olinadi (talkwrite.js). */
+      ((window.TalkWrite && TalkWrite.isSec(a.sec))
+        ? '<button class="list-row" data-act="twSample" data-arg=\'' + App.arg({ sec: a.sec }) + '\'>' +
+          '<span class="li-ic" data-icon="download" data-icon-size="15"></span>' +
+          '<div class="li-main"><div class="li-title">Namuna fayl</div>' +
+          '<div class="li-sub">Savol/mavzu qanday yoziladi</div></div></button>' +
+          '<button class="list-row" data-act="twGuide" data-arg=\'' + App.arg({ sec: a.sec }) + '\'>' +
+          '<span class="li-ic" data-icon="file" data-icon-size="15"></span>' +
+          '<div class="li-main"><div class="li-title">AI uchun qo\'llanma</div>' +
+          '<div class="li-sub">PDF bilan birga AI ga beriladi</div></div></button>'
+        : '') +
+      /* Tinglash (Listening) ham o'z formatiga ega — namuna va AI qo'llanmasi */
+      ((a.sec === 'en_listening' || a.sec === 'ru_listening')
+        ? '<button class="list-row" data-act="auSample" data-arg=\'' + App.arg({ sec: a.sec }) + '\'>' +
+          '<span class="li-ic" data-icon="download" data-icon-size="15"></span>' +
+          '<div class="li-main"><div class="li-title">Namuna fayl</div>' +
+          '<div class="li-sub">Dialog, tarjima va savollar namunasi</div></div></button>' +
+          '<button class="list-row" data-act="auGuide" data-arg=\'' + App.arg({ sec: a.sec }) + '\'>' +
+          '<span class="li-ic" data-icon="file" data-icon-size="15"></span>' +
+          '<div class="li-main"><div class="li-title">AI uchun qo\'llanma</div>' +
+          '<div class="li-sub">Audio/matnni AI ga berish uchun qoida</div></div></button>'
         : '');
     var sh = App.sheet(html, { title: 'Qo\'shish' });
     App.icons(sh);
@@ -305,6 +421,7 @@
 
   /* ---------- Papka / fayl menyusi ---------- */
   App.actions.libFolderMenu = function (a) {
+    if (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) { App.toast("Faqat administrator uchun"); return; }
     var full = joinPath(a.path, a.n);
     var html =
       '<button class="list-row" data-act="libFolderRename" data-arg=\'' + App.arg(a) + '\'>' +
@@ -331,6 +448,7 @@
   }
 
   App.actions.libFolderRename = function (a) {
+    if (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) { App.toast("Faqat administrator uchun"); return; }
     App.closeSheet();
     var full = joinPath(a.path, a.n);
     App.prompt({ title: 'Papka nomi', label: 'Yangi nom', value: a.n, ok: 'Saqlash' }, function (name) {
@@ -350,6 +468,7 @@
   };
 
   App.actions.libFolderDelete = function (a) {
+    if (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) { App.toast("Faqat administrator uchun"); return; }
     var full = joinPath(a.path, a.n);
     App.confirm('"' + a.n + '" papkasi va ichidagi BARCHA materiallar o\'chiriladi.', function () {
       App.call('get_topics', null, { query: 'lang=' + encodeURIComponent(a.sec) }).then(function (j) {
@@ -364,6 +483,7 @@
   };
 
   App.actions.libFileMenu = function (a) {
+    if (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) { App.toast("Faqat administrator uchun"); return; }
     var html =
       '<button class="list-row" data-act="libFileRename" data-arg=\'' + App.arg(a) + '\'>' +
       '<span class="li-ic" data-icon="edit" data-icon-size="15"></span>' +
@@ -378,6 +498,7 @@
     App.sheet(html, { title: a.n });
   };
   App.actions.libFileRename = function (a) {
+    if (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) { App.toast("Faqat administrator uchun"); return; }
     App.closeSheet();
     App.prompt({ title: 'Nomini o\'zgartirish', label: 'Yangi nom', value: a.n, ok: 'Saqlash' }, function (name) {
       name = (name || '').trim(); if (!name) return;
@@ -387,6 +508,7 @@
     });
   };
   App.actions.libFileDelete = function (a) {
+    if (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) { App.toast("Faqat administrator uchun"); return; }
     App.confirm('"' + a.n + '" o\'chiriladi.', function () {
       App.call('delete_topic', { id: a.id }).then(function () {
         App.closeSheet(); App.go('library', { sec: a.sec, path: a.path });
@@ -401,8 +523,10 @@
     nav: 'languages',
     render: function (page, params) {
       var sec = params.sec || 'en_reading', id = params.id;
-      page.innerHTML = topbar('Material', 'library', { sec: sec },
-        '<button class="icon-btn ghost" id="lib-doc-menu" style="margin-left:auto"><span data-icon="edit" data-icon-size="18"></span></button>') +
+      var isReadOnly = window.Auth && Auth.isReadOnly && Auth.isReadOnly();
+      var menuBtn = isReadOnly ? '' :
+        '<button class="icon-btn ghost" id="lib-doc-menu" style="margin-left:auto"><span data-icon="edit" data-icon-size="18"></span></button>';
+      page.innerHTML = topbar('Material', 'library', { sec: sec }, menuBtn) +
         '<div id="lib-doc"><div class="load-wrap"><div class="spinner"></div></div></div>' +
         '<input type="file" id="lib-doc-file" hidden accept=".md,.markdown,.txt,text/markdown,text/plain">';
       App.icons(page);
@@ -426,7 +550,8 @@
       App.icons(box);
       if (App.typeset) App.typeset(box);
 
-      App.el('lib-doc-menu').onclick = function () {
+      var docMenu = App.el('lib-doc-menu');
+      if (docMenu) docMenu.onclick = function () {
         var html =
           '<button class="list-row" id="ld-up"><span class="li-ic" data-icon="upload" data-icon-size="15"></span>' +
           '<div class="li-main"><div class="li-title">' + (t.content ? '.md faylni almashtirish' : '.md fayl yuklash') + '</div></div></button>' +

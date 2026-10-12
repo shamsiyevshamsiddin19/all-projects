@@ -315,8 +315,9 @@
   App.view('fanlar', {
     nav: 'fanlar',
     render: function (page) {
+      var isRO = window.Auth && Auth.isReadOnly && Auth.isReadOnly();
       page.innerHTML = '<div class="topbar" style="margin:-16px -15px 12px"><h1>Testlar</h1>' +
-        '<button class="icon-btn ghost" data-act="fanAdd" aria-label="Fan qo\'shish"><span data-icon="plus" data-icon-size="20"></span></button></div>' +
+        (isRO ? '' : '<button class="icon-btn ghost" data-act="fanAdd" aria-label="Fan qo\'shish"><span data-icon="plus" data-icon-size="20"></span></button>') + '</div>' +
         '<div id="fan-list"><div class="load-wrap"><div class="spinner"></div></div></div>';
       App.icons(page);
       loadStructure().then(function (structure) {
@@ -340,6 +341,7 @@
     }
   });
   App.actions.fanAdd = function () {
+    if (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) { App.toast("Faqat administrator uchun"); return; }
     App.prompt({ title: 'Yangi fan', label: 'Fan nomi (masalan: Matematika)' }, function (name) {
       App.go('fanlar_subject', { subject: name.replace(/\s+/g, '_') });
     });
@@ -413,6 +415,7 @@
   }
 
   App.actions.dbAdd = function (a) {
+    if (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) { App.toast("Faqat administrator uchun"); return; }
     var html =
       '<label class="field"><span>Baza nomi</span><input class="input" id="db-name" placeholder="Masalan: 1-variant"></label>' +
       txtPickerHtml('db-file', 'db-file-info') +
@@ -441,6 +444,7 @@
   };
 
   App.actions.dbManage = function (a) {
+    if (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) { App.toast("Faqat administrator uchun"); return; }
     var html =
       '<button class="list-row" data-act="dbRename" data-arg=\'' + App.arg(a) + '\'><span class="li-ic" data-icon="edit" data-icon-size="15"></span><div class="li-main"><div class="li-title">Nomini o\'zgartirish</div></div></button>' +
       '<button class="list-row" data-act="dbReplace" data-arg=\'' + App.arg(a) + '\'><span class="li-ic" data-icon="upload" data-icon-size="15"></span><div class="li-main"><div class="li-title">Savollarni yangilash</div></div></button>' +
@@ -448,6 +452,7 @@
     App.sheet(html, { title: a.name });
   };
   App.actions.dbRename = function (a) {
+    if (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) { App.toast("Faqat administrator uchun"); return; }
     App.closeSheet();
     App.prompt({ title: 'Nomini o\'zgartirish', label: 'Yangi nom', value: a.name }, function (name) {
       var subject = subjectOf(a.full);
@@ -457,6 +462,7 @@
     });
   };
   App.actions.dbReplace = function (a) {
+    if (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) { App.toast("Faqat administrator uchun"); return; }
     App.closeSheet();
     var html = txtPickerHtml('db-file2', 'db-file2-info') +
       '<label class="field"><span>Yangi savollar matni (eskisi almashadi)</span><textarea class="textarea" id="db-text2" rows="9"></textarea></label>' +
@@ -474,18 +480,21 @@
     };
   };
   App.actions.dbDelete = function (a) {
+    if (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) { App.toast("Faqat administrator uchun"); return; }
     App.confirm('"' + a.name + '" bazasi butunlay o\'chiriladi.', function () {
       App.call('delete_db', { name: a.full }).then(function () { loadStructure(true).then(App.reload); });
     }, { danger: true, yes: 'O\'chirish' });
   };
 
   App.actions.fanManage = function (a) {
+    if (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) { App.toast("Faqat administrator uchun"); return; }
     var html =
       '<button class="list-row" data-act="fanRename" data-arg=\'' + App.arg(a) + '\'><span class="li-ic" data-icon="edit" data-icon-size="15"></span><div class="li-main"><div class="li-title">Nomini o\'zgartirish</div></div></button>' +
       '<button class="list-row" data-act="fanDelete" data-arg=\'' + App.arg(a) + '\'><span class="li-ic" style="background:var(--danger-soft);color:var(--danger)" data-icon="trash" data-icon-size="15"></span><div class="li-main"><div class="li-title" style="color:var(--danger)">Fanni (barcha bazalari bilan) o\'chirish</div></div></button>';
     App.sheet(html, { title: a.subject });
   };
   App.actions.fanRename = function (a) {
+    if (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) { App.toast("Faqat administrator uchun"); return; }
     App.closeSheet();
     App.prompt({ title: 'Fan nomini o\'zgartirish', label: 'Yangi nom', value: a.subject }, function (name) {
       App.call('rename_fan', { old: a.subject, new: name.replace(/\s+/g, '_') })
@@ -494,6 +503,7 @@
     });
   };
   App.actions.fanDelete = function (a) {
+    if (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) { App.toast("Faqat administrator uchun"); return; }
     App.confirm('"' + a.subject + '" fani va undagi BARCHA bazalar o\'chiriladi.', function () {
       App.call('delete_fan', { fan: a.subject }).then(function () { loadStructure(true); App.go('fanlar'); });
     }, { danger: true, yes: 'O\'chirish' });

@@ -251,10 +251,19 @@
           else { stopKeepAlive(); fire(null); }
         };
         u.onerror = function (e) {
-          /* `interrupted`/`canceled` — bu BIZ to'xtatganmiz, xato emas. */
           var err = e && e.error;
           stopKeepAlive();
-          if (myGen !== state.gen || err === 'interrupted' || err === 'canceled') return;
+          /* BIZ to'xtatgan bo'lsak — `cancel()` `state.gen` ni oshirgan,
+             ya'ni bu javob eskirgan. Kutayotgan chaqiruvchi ham allaqachon
+             boshqasiga o'tgan: jimgina chiqamiz. */
+          if (myGen !== state.gen) return;
+          /* Gen O'ZGARMAGAN holdagi `interrupted`/`canceled` — bu BIZ
+             emas, TASHQI uzilish (qo'ng'iroq keldi, bildirishnoma ovozi,
+             brauzer audio fokusni oldi). Ilgari bu yerda ham jimgina
+             `return` qilinardi va `done` HECH QACHON chaqirilmasdi —
+             o'qish zanjiri "o'qilmoqda" holatida abadiy qotib qolardi.
+             Endi kutayotganni bo'shatamiz: xato emas, shunchaki tugadi. */
+          if (err === 'interrupted' || err === 'canceled') { fire(null); return; }
           fire(new Error(err || 'tts-error'));
         };
 

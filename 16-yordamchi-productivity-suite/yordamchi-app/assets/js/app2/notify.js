@@ -16,49 +16,80 @@
   'use strict';
 
   var KEY = 'notify_v1';
+  /* Tanishtiruv xabarlari BIR MARTA qo'yilganini eslab qolamiz.
+
+     Ilgari bunday belgi yo'q edi va ular "ro'yxat BO'SH bo'lsa" shartiga
+     bog'langan edi. Natijada ularni o'chirib bo'lmasdi: uchtasini ham
+     o'chirgan zahoti ro'yxat bo'sh qolar, keyingi o'qishda esa shart
+     qayta ishlab, uchalasini qaytadan yozib qo'yardi. Foydalanuvchi
+     uchun bu "xabar ketmayapti" bo'lib ko'rinardi.
+
+     Belgi oddiy kalit — remote-storage uni serverga sinxronlaydi, ya'ni
+     bir joyda o'chirilgani boshqa qurilmada ham qaytib kelmaydi. */
+  var SEEDED_KEY = 'notify_seeded_v1';
 
   function todayStr() {
     var d = new Date();
     return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
   }
 
+  function seeded() {
+    try { return localStorage.getItem(SEEDED_KEY) === '1'; } catch (e) { return false; }
+  }
+  function markSeeded() {
+    try { localStorage.setItem(SEEDED_KEY, '1'); } catch (e) {}
+  }
+
   function load() {
     try {
       var v = JSON.parse(localStorage.getItem(KEY) || '[]');
-      if (!Array.isArray(v) || !v.length) {
-        v = [
-          {
-            id: 'n_welcome_1',
-            text: "Yangi 229 ta rus tili fe'llari to'liq yuklandi! Bosh sahifadagi story va reels orqali o'rganing.",
-            note: "229 ta hozirgi zamon fe'li",
-            date: todayStr(),
-            sec: 'languages',
-            read: 0,
-            created: todayStr()
-          },
-          {
-            id: 'n_welcome_2',
-            text: "Kunlik rejalar va odatlarni bajarishni unutmang.",
-            note: "Kunlik maqsadlar",
-            date: todayStr(),
-            sec: 'goals',
-            read: 0,
-            created: todayStr()
-          },
-          {
-            id: 'n_welcome_3',
-            text: "Barcha qo'shimcha bo'limlar uchun o'ng tomondagi yangi tortmadan foydalaning.",
-            note: "Yordamchi menyusi",
-            date: todayStr(),
-            sec: 'boost',
-            read: 0,
-            created: todayStr()
-          }
-        ];
-        try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (x) {}
+      if (!Array.isArray(v)) v = [];
+
+      /* Faqat ILK MARTA. Belgi qo'yilgach bo'sh ro'yxat bo'sh qoladi.
+         Belgisi yo'q, lekin xabari bor foydalanuvchi (yangilanishdan
+         oldingi holat) ham "qo'yilgan" hisoblanadi — aks holda u
+         hammasini o'chirganda ular qaytib kelardi. */
+      if (!seeded()) {
+        if (!v.length) {
+          v = defaults();
+          try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (x) {}
+        }
+        markSeeded();
       }
-      return Array.isArray(v) ? v : [];
+      return v;
     } catch (e) { return []; }
+  }
+
+  function defaults() {
+    return [
+      {
+        id: 'n_welcome_1',
+        text: "Yangi 229 ta rus tili fe'llari to'liq yuklandi! Bosh sahifadagi story va reels orqali o'rganing.",
+        note: "229 ta hozirgi zamon fe'li",
+        date: todayStr(),
+        sec: 'languages',
+        read: 0,
+        created: todayStr()
+      },
+      {
+        id: 'n_welcome_2',
+        text: "Kunlik rejalar va odatlarni bajarishni unutmang.",
+        note: "Kunlik maqsadlar",
+        date: todayStr(),
+        sec: 'goals',
+        read: 0,
+        created: todayStr()
+      },
+      {
+        id: 'n_welcome_3',
+        text: "Barcha qo'shimcha bo'limlar uchun o'ng tomondagi yangi tortmadan foydalaning.",
+        note: "Yordamchi menyusi",
+        date: todayStr(),
+        sec: 'boost',
+        read: 0,
+        created: todayStr()
+      }
+    ];
   }
   function save(list) {
     try { localStorage.setItem(KEY, JSON.stringify(list.slice(-300))); } catch (e) {}
@@ -99,6 +130,59 @@
       '</button>';
   }
 
+  /* ---------- Bugungi odatlar ----------
+     Qo'ng'iroq — "bugun nima qilishim kerak" degan savolning javobi.
+     Odatlar aynan shunday ish: har kuni takrorlanadi va odam ularni
+     unutadi. Ilgari ular faqat alohida bo'limda turardi.
+
+     Ro'yxat ASINXRON keladi (bot bazasidan), varaq esa sinxron
+     chiziladi — shuning uchun avval bo'sh joy qo'yiladi, keyin
+     to'ldiriladi. */
+  function habitsPlaceholder() {
+    return '<div id="nt-habits"></div>';
+  }
+
+  function habitsHtml(list) {
+    var today = (window.Habits && window.Habits.today) ? window.Habits.today(list) : [];
+    if (!today.length) return '';
+    var done = today.filter(function (h) { return h.done; }).length;
+
+    return '<div class="list-label nt-hb-head">' +
+        '<span>Bugungi odatlar · ' + done + '/' + today.length + '</span>' +
+        '<button class="nt-hb-all" data-act="goClose" data-arg=\'' +
+          App.arg({ v: 'habits' }) + '\'>Hammasi &rarr;</button>' +
+      '</div>' +
+      today.map(function (h) {
+        return '<div class="list-row nt-hb-row' + (h.done ? ' done' : '') + '">' +
+          '<button class="hb-check" data-act="ntHabitToggle" data-arg=\'' +
+            App.arg({ id: h.id }) + '\' aria-label="Belgilash">' +
+            (h.done ? '<span data-icon="check" data-icon-size="14"></span>' : '') + '</button>' +
+          '<div class="li-main">' +
+            '<div class="li-title">' + App.esc(h.name) + '</div>' +
+            '<div class="li-sub">' + App.esc(h.time || '') + '</div>' +
+          '</div></div>';
+      }).join('');
+  }
+
+  /* Varaq ochilgach ro'yxatni tortib, o'sha joyni to'ldiradi. */
+  function fillHabits() {
+    if (!window.Habits || !window.Habits.ensureLoaded) return;
+    Habits.ensureLoaded().then(function (list) {
+      var box = App.el('nt-habits');
+      if (!box) return;                       // varaq yopilgan
+      box.innerHTML = habitsHtml(list);
+      App.icons(box);
+    }).catch(function () {});
+  }
+
+  App.actions.ntHabitToggle = function (a) {
+    if (!a || !window.Habits || !window.Habits.toggle) return;
+    Habits.toggle(a.id).then(function (list) {
+      var box = App.el('nt-habits');
+      if (box) { box.innerHTML = habitsHtml(list); App.icons(box); }
+    }).catch(function (e) { App.toast('⚠️ ' + e.message); });
+  };
+
   /* ---------- Ro'yxat ---------- */
   function rowHtml(n) {
     var si = secInfo(n.sec);
@@ -124,6 +208,7 @@
     var u = upcoming(list).sort(function (a, b) { return (a.date || '') < (b.date || '') ? -1 : 1; });
 
     var html =
+      habitsPlaceholder() +
       '<button class="btn" data-act="ntAdd" style="margin-bottom:14px">' +
       '<span data-icon="plus" data-icon-size="16"></span>Yangi eslatma</button>';
 
@@ -158,6 +243,7 @@
   App.actions.ntOpen = function () {
     var sh = App.sheet('<div id="nt-body">' + sheetHtml() + '</div>', { title: 'Bildirishnomalar' });
     App.icons(sh);
+    fillHabits();
   };
 
   App.actions.ntGoSec = function (a) {

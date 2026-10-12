@@ -876,10 +876,11 @@
      ro'yxatlar (ichma-ich va belgilash), kod bloklari, iqtiboslar,
      rasm, havola, qalin/qiya/o'chirilgan matn, ajratuvchi chiziq. */
 
-  /* Havola/rasm manzili xavfsizmi? (javascript: kabi yozuvlarni to'sadi) */
+  /* Havola/rasm manzili xavfsizmi? (javascript: kabi yozuvlarni to'sadi, nisbiy rasm yo'llariga ruxsat beradi) */
   function safeUrl(u) {
     var s = String(u || '').trim();
-    if (/^(https?:|mailto:|tel:|\/|#|data:image\/)/i.test(s)) return s;
+    if (/^\s*javascript:/i.test(s)) return '';
+    if (/^(https?:|mailto:|tel:|\/|\.\/|#|data:image\/|[a-zA-Z0-9_\-\.\/]+\.(png|jpe?g|gif|svg|webp|ico))/i.test(s)) return s;
     return '';
   }
 

@@ -317,7 +317,14 @@ body.lm-noscroll .lm-pull{ display:none; }
 .lm-pull svg{ width:44px; height:44px; transform:rotate(-90deg); display:block; }
 .lm-pull circle{ fill:none; stroke-width:3; }
 .lm-pull .bg{ stroke:var(--border); }
-.lm-pull .fg{ stroke:var(--accent); stroke-linecap:round; transition:stroke-dashoffset .06s linear; }
+/* Halqa ATAYLAB sekinroq va yumshoqroq to'ladi (.06s -> .28s).
+   Oldingi qiymat deyarli bir zumda edi: halqa "sakrab" to'lardi va
+   foydalanuvchi qancha qolganini ko'rib ulgurmasdi. Endi u barmoq
+   ortidan biroz kechikib boradi — qancha tortish kerakligi ko'rinadi. */
+.lm-pull .fg{
+  stroke:var(--accent); stroke-linecap:round;
+  transition:stroke-dashoffset .28s cubic-bezier(.22,.61,.36,1);
+}
 .lm-pull-ic{
   position:absolute; top:12px; left:50%; transform:translateX(-50%);
   color:var(--hint); pointer-events:none;
@@ -630,6 +637,42 @@ body.lm-noscroll .lm-pull{ display:none; }
   letter-spacing:0.02em;
   vertical-align:middle;
   box-shadow:0 2px 8px rgba(236, 72, 153, 0.4);
+}
+
+/* Тематический 9000 kartasi — 1-8000 ning yonidagi ikkinchi to'plam.
+   Tuzilishi `chat-item-magic` bilan bir xil, FAQAT rangi boshqa: u
+   binafsha-pushti, bu ko'kish-yashil. Ikkalasi yonma-yon turadi va bir
+   qarashda farqlanishi kerak. */
+.chat-item-tema{
+  position:relative;
+  margin-bottom:12px;
+  border-radius:18px;
+  background:linear-gradient(135deg, rgba(13, 148, 136, 0.14) 0%, rgba(16, 185, 129, 0.14) 50%, rgba(132, 204, 22, 0.14) 100%);
+  border:1.5px solid rgba(16, 185, 129, 0.4);
+  box-shadow:0 6px 24px rgba(16, 185, 129, 0.18);
+  overflow:hidden;
+  transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+
+.chat-item-tema:hover{
+  transform:translateY(-1px);
+  border-color:rgba(16, 185, 129, 0.7);
+  box-shadow:0 8px 32px rgba(16, 185, 129, 0.28);
+}
+
+.tag-tema{
+  display:inline-flex;
+  align-items:center;
+  font-size:11px;
+  font-weight:800;
+  padding:2.5px 8.5px;
+  border-radius:99px;
+  background:linear-gradient(135deg, #0d9488, #84cc16);
+  color:#ffffff;
+  margin-left:6px;
+  letter-spacing:0.02em;
+  vertical-align:middle;
+  box-shadow:0 2px 8px rgba(16, 185, 129, 0.4);
 }
 
 /* Instagram Reels Button in practice */
@@ -981,3 +1024,190 @@ body.lm-noscroll .lm-pull{ display:none; }
   color:var(--accent, #6366f1);
   line-height:1.4;
 }
+
+/* Qulflangan bo'lim: KO'RINADI, lekin ochiq emas.
+   Butunlay yashirish emas — nima kutayotgani bilinib tursin, shu turtki
+   beradi. Shuning uchun so'ndirilgan, lekin o'qilarli. */
+.chat-item-locked .chat-row{
+  opacity:.5;
+  cursor:default;
+}
+.chat-item-locked .chat-row:hover{
+  opacity:.62;
+}
+.chat-lock{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+  opacity:.75;
+}
+
+/* "Hammasi" tugmasi — lug'at sahifasi sarlavhasida.
+   Holat FAQAT rang bilan emas, matn (ON/OFF) va tugmachaning joyi bilan
+   ham ko'rsatiladi: rangni ajratolmaydigan foydalanuvchi ham, quyoshda
+   ekran o'chgan holatda ham farqi bilinsin. */
+.all-sw{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  width:56px;
+  height:28px;
+  flex-shrink:0;
+  padding:0;
+  margin-right:2px;
+  border:none;
+  border-radius:99px;
+  background:#9ca3af;              /* o'chiq — betaraf kulrang */
+  cursor:pointer;
+  transition:background .18s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.all-sw.on{ background:#22c55e; }
+
+.all-sw-txt{
+  position:absolute;
+  top:0;
+  bottom:0;
+  display:flex;
+  align-items:center;
+  font-size:9.5px;
+  font-weight:900;
+  letter-spacing:.04em;
+  color:#ffffff;
+  pointer-events:none;
+}
+/* Yozuv tugmachaning QARSHI tomonida turadi — shunda u berkitilmaydi. */
+.all-sw       .all-sw-txt{ right:7px; }
+.all-sw.on    .all-sw-txt{ left:7px; }
+
+.all-sw-knob{
+  position:absolute;
+  top:3px;
+  left:3px;
+  width:22px;
+  height:22px;
+  border-radius:50%;
+  background:#ffffff;
+  box-shadow:0 1px 3px rgba(0,0,0,.35);
+  transition:transform .18s ease;
+}
+.all-sw.on .all-sw-knob{ transform:translateX(28px); }
+
+/* ==================== O'qildi belgisi ==================== */
+
+/* Doira + uning burchagidagi galichka birga turishi uchun o'ram.
+   `chat-av` ning o'zi flex bolasi, ustiga belgi qo'yish uchun
+   position kerak edi. */
+.rm-av-wrap{
+  position:relative;
+  display:inline-flex;
+  flex-shrink:0;
+}
+
+/* Telegram uslubi: O'NG PAST burchak. Doira ichiga qo'yilsa raqamni
+   berkitardi, yon tomonga qo'yilsa qator kengligini surib yuborardi. */
+.rm-tick{
+  position:absolute;
+  right:-2px;
+  bottom:-2px;
+  width:17px;
+  height:17px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  background:#22c55e;
+  color:#ffffff;
+  /* Fon rangidagi halqa — galichka doiradan ajralib tursin */
+  box-shadow:0 0 0 2px var(--bg), 0 1px 4px rgba(34,197,94,.5);
+}
+
+/* O'qilgan qator biroz so'nadi: e'tibor o'qilmaganlarga qaratilsin.
+   Butunlay xiralashtirilmaydi — qaytib kirish kerak bo'lishi mumkin. */
+.rm-done .chat-title{ opacity:.62; }
+.rm-done .chat-av{ opacity:.75; }
+
+/* ---- Navbatdagi bo'lim ---- */
+.rm-next{
+  position:relative;
+  border-radius:14px;
+  background:linear-gradient(90deg, rgba(34,197,94,.10), rgba(34,197,94,0));
+  box-shadow:inset 0 0 0 1.5px rgba(34,197,94,.55);
+}
+.rm-next .chat-title{ font-weight:800; }
+.rm-next .chat-sub{ color:#22c55e; font-weight:600; }
+/* Doira atrofidagi yorqin halqa — ko'z birinchi shu yerga tushadi */
+.rm-next .chat-av{
+  box-shadow:0 0 0 2px #22c55e, 0 3px 12px rgba(34,197,94,.35);
+}
+
+/* ---- Bosib turish ko'rsatkichi ----
+   Qator 7 soniya bosib turilishi kerak. Chiziq to'lib borishi shuni
+   ko'rsatadi; bo'lmasa odam nima bo'layotganini bilmay qo'yib yuborardi. */
+.rm-hold-bar{
+  position:absolute;
+  left:0;
+  bottom:0;
+  height:2.5px;
+  width:0;
+  border-radius:2px;
+  background:linear-gradient(90deg,#22c55e,#84cc16);
+  pointer-events:none;
+  opacity:0;
+}
+.chat-row{ position:relative; }
+.rm-holding .rm-hold-bar{
+  opacity:1;
+  /* Davomiylik `readmark.js` dagi HOLD_MS dan keladi (yagona manba).
+     Zaxira qiymat — JS yuklanmagan holat uchun. */
+  animation:rmHold var(--rm-hold, 3000ms) linear forwards;
+}
+@keyframes rmHold{ from{ width:0; } to{ width:100%; } }
+
+/* Bosib turilganda qator sal ichkariga bosiladi — teginish sezilsin */
+.rm-holding{ transform:scale(.985); transition:transform .18s ease; }
+
+@media (prefers-reduced-motion: reduce){
+  .rm-holding{ transform:none; }
+}
+
+/* ---------- Mashq rejimlari: har biriga o'z rangi ----------
+   Ro'yxatdagi tugmalar ilgari bir xil kulrang edi va ularni faqat yozuvi
+   ajratib turardi. Endi har biri Reels kabi to'liq gradient — rejim
+   ko'rinishidan tanib olinadi, o'qishdan oldin ham.
+
+   Matn oq bo'lgani uchun gradientning yorug' uchida kontrast pasayadi;
+   shuning uchun yengil soya qo'shamiz (Reels tugmasi ham shu darajada). */
+.btn.m-flash   { --g1:#6d28d9; --g2:#a855f7; --m:139, 92,246; }  /* binafsha */
+.btn.m-dict    { --g1:#1d4ed8; --g2:#38bdf8; --m: 56,139,253; }  /* ko'k */
+.btn.m-pair    { --g1:#0f766e; --g2:#2dd4bf; --m: 45,212,191; }  /* feruza */
+.btn.m-memo    { --g1:#047857; --g2:#34d399; --m: 52,199,123; }  /* yashil */
+.btn.m-speaker { --g1:#b45309; --g2:#fbbf24; --m:245,165, 36; }  /* sariq */
+.btn.m-speech  { --g1:#be185d; --g2:#f472b6; --m:244,114,182; }  /* pushti */
+.btn.m-quiz    { --g1:#be123c; --g2:#fb7185; --m:244, 99, 91; }  /* qizil */
+.btn.m-list    { --g1:#475569; --g2:#94a3b8; --m:148,163,184; }  /* kulrang */
+
+.btn.m-flash, .btn.m-dict, .btn.m-pair, .btn.m-memo,
+.btn.m-speaker, .btn.m-speech, .btn.m-quiz, .btn.m-list{
+  background:linear-gradient(135deg, var(--g1), var(--g2)) !important;
+  color:#ffffff !important;
+  border:none !important;
+  font-weight:700;
+  text-shadow:0 1px 2px rgba(0, 0, 0, .22);
+  box-shadow:0 3px 12px rgba(var(--m), .26);
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+.btn.m-flash .app-icon, .btn.m-dict .app-icon, .btn.m-pair .app-icon,
+.btn.m-memo .app-icon, .btn.m-speaker .app-icon, .btn.m-speech .app-icon,
+.btn.m-quiz .app-icon, .btn.m-list .app-icon{
+  color:#ffffff;
+}
+.btn.m-flash:active, .btn.m-dict:active, .btn.m-pair:active,
+.btn.m-memo:active, .btn.m-speaker:active, .btn.m-speech:active,
+.btn.m-quiz:active, .btn.m-list:active{
+  transform:scale(.975);
+  box-shadow:0 1px 6px rgba(var(--m), .22);
+}
+/* Gradientlar to'yingan — yorug' mavzuda ham o'qiladi, alohida qoida
+   kerak emas. */

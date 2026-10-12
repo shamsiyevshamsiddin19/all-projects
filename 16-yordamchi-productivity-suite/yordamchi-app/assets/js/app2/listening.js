@@ -102,9 +102,13 @@
       var c = CFG[L.lang];
       var savedTopic = ls('listening_topic_' + L.lang, c.topics[0].v);
 
+      var backArg = params.from === 'listening_hub'
+        ? App.arg({ v: 'listening_hub', p: { sec: L.lang === 'russian' ? 'ru_listening' : 'en_listening' } })
+        : App.arg({ v: 'practice', p: { lang: L.lang } });
+
       page.innerHTML =
         '<div class="topbar" style="margin:-16px -15px 12px">' +
-        '<button class="icon-btn ghost" data-act="go" data-arg=\'' + App.arg({ v: 'practice', p: { lang: L.lang } }) + '\'><span data-icon="arrowLeft" data-icon-size="20"></span></button>' +
+        '<button class="icon-btn ghost" data-act="go" data-arg=\'' + backArg + '\'><span data-icon="arrowLeft" data-icon-size="20"></span></button>' +
         '<h1>' + c.title + '</h1>' +
         '<button class="icon-btn ghost" data-act="lsSettings"><span data-icon="settings" data-icon-size="18"></span></button></div>' +
 

@@ -8,7 +8,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-SITE="${YORDAMCHI_SITE:-$HOME/Documents/project/vibe-coding/yordamchi/yordamchi-sayt}"
+SITE="${YORDAMCHI_SITE:-$(cd "$(dirname "$0")/../yordamchi-sayt" && pwd)}"
 [ -d "$SITE" ] || { echo "Sayt topilmadi: $SITE"; exit 1; }
 
 rm -rf assets/www

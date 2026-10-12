@@ -271,16 +271,48 @@
 
       page.innerHTML =
         '<div class="topbar" style="margin:-16px -15px 12px"><h1>Learn</h1>' +
-        '<button class="icon-btn ghost" data-act="langAdd" style="margin-left:auto"><span data-icon="plus" data-icon-size="20"></span></button></div>' +
+        /* O'ng yuqorida: darsliklarni o'qish uslubi. Aynan shu yerda,
+           chunki bu bo'lim darsliklarga kiradigan eshik — uslubni
+           ichkariga kirishdan OLDIN tanlash mantiqiy. */
+        mdThemeSwitchHtml() +
+        (window.Auth && Auth.isReadOnly && Auth.isReadOnly() ? '' : '<button class="icon-btn ghost" data-act="langAdd"><span data-icon="plus" data-icon-size="20"></span></button>') + '</div>' +
         '<div class="chat-list">' +
         langCard('english', 'assets/icons/tech/flag-gb.png', 'Ingliz tili', 'Listening, Reading, Grammar, Vocabulary') +
         langCard('russian', 'assets/icons/tech/flag-ru.png', 'Русский язык', 'Грамматика, Словарь, Чтение, Аудирование') +
-        langCard('grammar', 'assets/icons/tech/vscode-original.svg', 'Dasturlash', 'Mavzular, testlar va o\'yinlar', { lang: 'coding' }) +
-        customLangs +
+        /* Ingliz va rus tili — HAMMAGA. Dasturlash va qo'shimcha tillar
+           esa faqat adminga: boshqa foydalanuvchilar bu ilovaga aynan shu
+           ikki tilni o'rganish uchun taklif qilinadi, qolgani ularni
+           chalkashtiradi. (`custom_langs` baribir har foydalanuvchining
+           o'z xotirasida, ya'ni ularda bo'sh — bu qo'shimcha himoya.) */
+        (window.Auth && Auth.isReadOnly && Auth.isReadOnly() ? '' :
+          langCard('grammar', 'assets/icons/tech/vscode-original.svg', 'Dasturlash', 'Mavzular, testlar va o\'yinlar', { lang: 'coding' }) +
+          customLangs) +
         '</div>';
       App.icons(page);
     }
   });
+
+  /* O'qish uslubi tugmasi. Holat matn (ON/OFF) va tugmachaning joyi
+     bilan ham ko'rsatiladi — faqat rangga tayanilsa, rangni ajratolmaydigan
+     foydalanuvchi qaysi holatda ekanini bilmasdi. */
+  function mdThemeSwitchHtml() {
+    var on = !!(window.MdTheme && MdTheme.isOn());
+    return '<button class="sw2' + (on ? ' on' : '') + '" data-act="mdThemeToggle" ' +
+      'role="switch" aria-checked="' + (on ? 'true' : 'false') + '" ' +
+      'style="margin-left:auto" ' +
+      'aria-label="Darsliklarni o\'qish uslubi" ' +
+      'title="' + (on ? 'Kengaytirilgan o\'qish uslubi yoqilgan'
+                      : 'Yoqilsa darsliklar keng, yirik va oraliqli ko\'rinadi') + '">' +
+      '<span class="sw2-track"><span class="sw2-txt">' + (on ? 'ON' : 'OFF') + '</span></span>' +
+      '<span class="sw2-knob"></span></button>';
+  }
+
+  App.actions.mdThemeToggle = function () {
+    if (!window.MdTheme) return;
+    var on = MdTheme.toggle();
+    App.toast(on ? 'O\'qish uslubi yoqildi' : 'Odatiy uslub');
+    App.reload();
+  };
 
   /* Built-in tillar uchun karta (data-icon yoki URL rasm bilan) */
   /* Learn hub kartalari ham ko'nikma ro'yxati bilan BIR XIL Telegram-chat
@@ -319,6 +351,7 @@
   /* ---------- CRUD ---------- */
   /* CREATE */
   App.actions.langAdd = function () {
+    if (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) { App.toast("Faqat administrator uchun"); return; }
     App.prompt({ title: 'Yangi til', label: 'Til nomi (Masalan: Python, C++, HTML)', ok: 'Qo\'shish' }, function (name) {
       if (!name || !name.trim()) return;
       name = name.trim();
@@ -337,6 +370,7 @@
 
   /* MANAGE (sheet: Rename + Delete) */
   App.actions.langManage = function (a) {
+    if (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) { App.toast("Faqat administrator uchun"); return; }
     var html =
       '<button class="list-row" data-act="langRename" data-arg=\'' + App.arg(a) + '\'>' +
       '<span class="li-ic" data-icon="edit" data-icon-size="15"></span>' +
@@ -349,6 +383,7 @@
 
   /* UPDATE (Rename) */
   App.actions.langRename = function (a) {
+    if (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) { App.toast("Faqat administrator uchun"); return; }
     App.closeSheet();
     App.prompt({ title: 'Nomini o\'zgartirish', label: 'Yangi nom', value: a.name, ok: 'Saqlash' }, function (name) {
       if (!name || !name.trim()) return;
@@ -369,6 +404,7 @@
 
   /* DELETE */
   App.actions.langDelete = function (a) {
+    if (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) { App.toast("Faqat administrator uchun"); return; }
     App.closeSheet();
     App.confirm('"' + a.name + '" va uning barcha mavzulari o\'chiriladi.', function () {
       try {
@@ -437,6 +473,7 @@
         { n: 'Vocabulary', ic: 'list', img: 'vocabulary', d: 'Lug\'at, flashcard va takrorlash', ready: true, v: 'vocab', p: { lang: 'english' } },
         { n: 'Writing', ic: 'edit', img: 'writing', d: 'Yozish namunalari va mashqlari', ready: true, v: 'library', p: { sec: 'en_writing' } },
         { n: 'Speaking', ic: 'mic', img: 'speaking', d: 'Gapirish uchun material va iboralar', ready: true, v: 'library', p: { sec: 'en_speaking' } },
+        { n: 'Shadowing', ic: 'refresh', img: 'shadowing', d: 'Diktordan keyin takrorlash', ready: true, v: 'library', p: { sec: 'en_shadowing' } },
         { n: 'Mashqlar', ic: 'play', img: 'practice', d: 'Raqam, harf, ism eshitib yozish', ready: true, v: 'practice', p: { lang: 'english' } }
       ]);
     }

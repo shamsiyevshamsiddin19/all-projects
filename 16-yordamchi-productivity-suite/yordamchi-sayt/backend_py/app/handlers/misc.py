@@ -61,10 +61,17 @@ def log_client(request: Request, body: dict):
     if level not in _ALLOWED_LOG_LEVELS:
         level = "info"
     message = _clip(body.get("message"), 1000) or "Frontend log"
+    meta = body.get("meta")
+    meta_str = ""
+    if meta:
+        try:
+            meta_str = " | meta=" + _clip(json.dumps(meta, ensure_ascii=False), 500)
+        except (TypeError, ValueError, OverflowError):
+            pass
     logger.log(
         getattr(logging, level.upper(), logging.INFO),
-        "CLIENT: %s | page=%s url=%s",
-        message, _clip(body.get("page"), 200), _clip(body.get("url"), 300),
+        "CLIENT: %s%s | page=%s url=%s",
+        message, meta_str, _clip(body.get("page"), 200), _clip(body.get("url"), 300),
     )
     return success()
 

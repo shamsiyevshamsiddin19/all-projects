@@ -46,15 +46,29 @@
   App.view('profile', {
     nav: 'profile',
     render: function (page) {
+      /* Boshqa foydalanuvchilar uchun Profil — FAQAT akkaunt sahifasi.
+         Halqalar, faollik jadvali, darslar ro'yxati va "boshqa bo'limlar"
+         to'ri — bularning hammasi adminning o'z kuzatuv vositalari; ularda
+         ma'lumot ham yo'q, ma'no ham. Og'ir chizishlar (heatmap, Goals.load)
+         umuman ishga tushmaydi — sahifa darrov ochiladi. */
+      if (!canOpenSettings()) {
+        page.innerHTML = accountSectionHtml();
+        App.icons(page);
+        return;
+      }
+
       page.innerHTML =
         /* Yuqori qator: salomlashuv + o'ng burchakda bildirishnoma qo'ng'irog'i va Sozlamalar */
         '<div class="h-top">' +
           '<div class="h-hello" id="h-hello"></div>' +
           '<div class="h-top-actions">' +
             '<div id="nt-bell-host">' + (window.Notify ? Notify.bellHtml() : '') + '</div>' +
-            '<button class="h-settings-btn" data-act="go" data-arg=\'{"v":"settings"}\' title="Sozlamalar">' +
-              '<span data-icon="settings" data-icon-size="20"></span>' +
-            '</button>' +
+            /* Sozlamalarga ruxsati yo'q foydalanuvchiga bu tugma
+               "ruxsat etilmagan" xatosidan boshqa hech narsa bermaydi. */
+            (canOpenSettings() ?
+              '<button class="h-settings-btn" data-act="go" data-arg=\'{"v":"settings"}\' title="Sozlamalar">' +
+                '<span data-icon="settings" data-icon-size="20"></span>' +
+              '</button>' : '') +
           '</div>' +
         '</div>' +
         '<div class="rings" id="h-rings"></div>' +
@@ -74,7 +88,7 @@
           '</div>' +
           '<div class="hm-wrap" id="hm-wrap"></div>' +
         '</div>' +
-        '<div id="h-widget"></div>' + renderMoreSectionsGrid();
+        '<div id="h-widget"></div>' + renderMoreSectionsGrid() + accountSectionHtml();
 
       App.icons(page);
       renderHello();
@@ -92,6 +106,82 @@
     },
     leave: function () { unbindResize(); stopHello(); }
   });
+
+  /* ---------- Akkaunt bo'limi ----------
+     Sozlamalar bo'limiga kira olmaydigan foydalanuvchi uchun. Ilgari
+     akkaunt paroli ham, chiqish tugmasi ham FAQAT Sozlamalarda edi —
+     ya'ni ular parolini o'zgartira olmasdi va tizimdan chiqa olmasdi. */
+  function canOpenSettings() {
+    if (!window.Auth || typeof window.Auth.isAllowed !== 'function') return true;
+    return window.Auth.isAllowed('settings');
+  }
+
+  /* Mavzu tanlash — Sozlamalar bo'limidagi bilan AYNI (`setTheme` amali
+     settings.js da, u hamma foydalanuvchida yuklanadi). Sozlamalarga
+     kira olmaydigan foydalanuvchi ilgari mavzuni umuman tanlay olmasdi:
+     qurilma "avto" da qolib ketardi. */
+  var THEME_LABEL = { auto: 'Avto', dark: 'Qorong\'u', light: 'Yorug\'' };
+
+  function themeSectionHtml() {
+    var cur = ls('app_theme', 'auto');
+    return '<div class="list-label">Ko\'rinish</div>' +
+      '<div class="list-row" style="border-bottom:none;padding:9px 1px 15px">' +
+      '<div class="seg" style="width:100%">' +
+      Object.keys(THEME_LABEL).map(function (v) {
+        return '<button class="' + (cur === v ? 'active' : '') + '" data-act="setTheme" data-arg=\'' +
+          App.arg({ v: v }) + '\'>' + THEME_LABEL[v] + '</button>';
+      }).join('') + '</div></div>';
+  }
+
+  function accountSectionHtml() {
+    if (canOpenSettings()) return '';   // adminda bularning hammasi Sozlamalarda
+    var u = (window.Auth && Auth.user) || {};
+    var email = u.doktor_email || u.email || '';
+    var ism = u.doktor_ism || u.ism || '';
+    return themeSectionHtml() +
+      '<div class="list-label">Akkaunt</div>' +
+      (email
+        ? '<div class="list-row" style="cursor:default">' +
+            '<span class="li-ic" style="background:var(--accent-soft);color:var(--accent)" data-icon="user" data-icon-size="15"></span>' +
+            '<div class="li-main"><div class="li-title">' + App.esc(ism || email.split('@')[0]) + '</div>' +
+            '<div class="li-sub">' + App.esc(email) + '</div></div></div>'
+        : '') +
+      '<button class="list-row" data-act="myPassword">' +
+        '<span class="li-ic" style="background:#6366f122;color:#6366f1" data-icon="lock" data-icon-size="15"></span>' +
+        '<div class="li-main"><div class="li-title">Akkaunt paroli</div>' +
+        '<div class="li-sub" id="pf-pass-sub">12 belgili kirish kodi</div></div>' +
+        '<span class="li-chev" data-icon="arrowLeft" data-icon-size="16" style="transform:rotate(180deg)"></span></button>' +
+      '<button class="list-row" data-act="logout" style="color:var(--danger)">' +
+        '<span class="li-ic" style="background:var(--danger-soft);color:var(--danger)" data-icon="lock" data-icon-size="15"></span>' +
+        '<div class="li-main"><div class="li-title" style="color:var(--danger)">Tizimdan chiqish</div></div></button>';
+  }
+
+  /* Parol o'rnatish/almashtirish. Server faqat SESSIYADAGI foydalanuvchining
+     qatorini yangilaydi — boshqasiniki bu yerdan o'zgarmaydi. */
+  App.actions.myPassword = function () {
+    var html =
+      '<p class="muted" style="font-size:12.5px;margin:0 0 12px">' +
+      'Google ishlamay qolganda shu parol bilan kirasiz. ' +
+      'Roppa-rosa <b>12 ta</b> harf yoki raqam, kamida 4 xil belgi.</p>' +
+      '<label class="field"><span>Yangi parol</span>' +
+      '<input class="input" id="pf-pass" maxlength="20" autocomplete="new-password" ' +
+      'placeholder="masalan: K7M2QX9ATB43" spellcheck="false"></label>' +
+      '<div class="btn-row"><button class="btn sec" data-act="closeSheet">Bekor</button>' +
+      '<button class="btn" id="pf-pass-save">Saqlash</button></div>';
+    var sh = App.sheet(html, { title: 'Akkaunt paroli' });
+    var inp = sh.querySelector('#pf-pass');
+    sh.querySelector('#pf-pass-save').onclick = function () {
+      var kod = (inp.value || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      if (kod.length !== 12) { App.toast('Parol 12 ta belgidan iborat bo\'lsin'); return; }
+      var btn = this; btn.disabled = true; btn.textContent = 'Saqlanmoqda...';
+      App.call('mening_kodim_ornatish', { kod: kod })
+        .then(function () { App.closeSheet(); App.toast('✅ Parol yangilandi'); })
+        .catch(function (e) {
+          App.toast('⚠️ ' + e.message);
+          btn.disabled = false; btn.textContent = 'Saqlash';
+        });
+    };
+  };
 
   /* =========================================================
      QUYOSH HISOBI — chiqish/botish vaqti

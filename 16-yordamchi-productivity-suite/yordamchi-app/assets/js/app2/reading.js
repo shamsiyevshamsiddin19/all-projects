@@ -31,7 +31,12 @@
     playing: false, idx: -1, rate: 1, alive: false,
     barOpen: false,
     stepMode: false,      // gap-ma-gap: har gapdan keyin to'xtaydi
-    pendingStop: false
+    pendingStop: false,
+    repeatCount: 1,       // 1 (oddiy), 2 (2x), 3 (3x) takrorlash
+    repeatIdx: 1,         // joriy gap nechanchi marta o'qilyapti (1..repeatCount)
+    shadowMode: false,    // Hands-Free Shadowing: gapdan so'ng takrorlash uchun pauza
+    shadowSecondsLeft: 0,
+    shadowTimer: null
   };
 
   /* ================= Parser ================= */
@@ -71,7 +76,20 @@
 
     lines.forEach(function (line) {
       var h = line.match(/^(#{1,6})\s+(.*)$/);
-      if (h) { blankRun = 0; blocks.push({ k: 'h', lvl: h[1].length, text: h[2].trim() }); return; }
+      if (h) {
+        blankRun = 0;
+        /* Sarlavha ham OVOZDA o'qiladi — ilgari u butunlay o'tkazib
+           yuborilardi va tinglayotgan odam matnning yangi bo'limga
+           o'tganini bilmasdi. `n` beriladi, chunki o'qilayotgan joy
+           `data-n` orqali belgilanadi. */
+        var hb = { k: 'h', lvl: h[1].length, text: h[2].trim(), n: sentences.length };
+        hb.tokens = tokenize(hb.text);
+        hb.raw = hb.text;
+        hb.tr = '';
+        blocks.push(hb);
+        if (hb.text) sentences.push(hb);
+        return;
+      }
 
       var tr = line.match(/^\s*::\s?(.*)$/);
       if (tr) {
@@ -131,6 +149,147 @@
     });
   }
 
+  /* ================= Intonatsiya (tinish belgilariga qarab) =================
+     Ovoz dvigateli butun qatorni bitta bo'lak qilib olsa, ohang tekis
+     chiqadi: so'roq ham, xitob ham, nuqta ham bir xil eshitiladi. Shuning
+     uchun qator tinish belgilari bo'yicha intonatsion bo'laklarga ajratiladi
+     va har bo'lak O'Z ohangi (pitch), tezligi va keyingi jimligi bilan
+     o'qiladi.
+
+     VERGUL ataylab bo'lak CHEGARASI qilinmadi: uni dvigatelning o'zi tabiiy
+     qisqa to'xtash bilan o'qiydi. Har vergulda uzilsa, nutq bo'g'ib-bo'g'ib,
+     sun'iy chiqadi. Chegara — faqat gap oxiri (. ! ? …), nuqtali vergul,
+     ikki nuqta va tire. */
+  var PROSODY = {
+    '.': { pitch: 0.96, rate: 1.00, pause: 340 },   // xabar — ohang pasayadi
+    '!': { pitch: 1.15, rate: 1.06, pause: 400 },   // xitob — baland, jonli
+    '?': { pitch: 1.20, rate: 0.97, pause: 420 },   // so'roq — ohang ko'tariladi
+    '…': { pitch: 0.90, rate: 0.88, pause: 600 },   // tugallanmagan fikr — so'nadi
+    ':': { pitch: 1.06, rate: 1.00, pause: 280 },   // izoh kutilyapti
+    ';': { pitch: 1.00, rate: 1.00, pause: 300 },
+    '—': { pitch: 1.00, rate: 1.00, pause: 300 },   // tire — sezilarli to'xtash
+    '':  { pitch: 1.00, rate: 1.00, pause: 200 }
+  };
+
+  /* Ismdan oldin keladigan unvonlar — ulardan keyin HECH QACHON gap uzilmaydi */
+  var TITLES = ['mr', 'mrs', 'ms', 'dr', 'prof', 'st', 'sr', 'jr'];
+
+  /* Gap OXIRIDA ham kelishi mumkin bo'lgan qisqartmalar — qaror keyingi
+     so'zning bosh harfiga qarab chiqariladi */
+  var ABBREV = ['т', 'д', 'п', 'е', 'г', 'в', 'гг', 'вв', 'см', 'стр', 'рис',
+                'др', 'руб', 'чел', 'ул', 'им', 'etc', 'vs', 'eg', 'ie'];
+
+  var SPLIT = '';
+
+  /* Qatorni intonatsion bo'laklarga ajratadi -> [{ text, pitch, rate, pause }] */
+  function prosodyParts(raw) {
+    var text = String(raw || '').replace(/\s+/g, ' ').trim();
+    if (!text) return [];
+
+    text = text.replace(/\.{3,}/g, '…');
+
+    /* Gap oxiridan keyin ajratamiz.
+
+       QISQARTMA MUAMMOSI: "и т. д. Потом пошёл" da uchta nuqta bor, lekin
+       faqat OXIRGISI gap oxiri. Avvalgi qoida sodda edi — "nuqtadan oldin
+       bitta harf bo'lsa bo'lma" — va u "д." dan keyingi HAQIQIY gap
+       chegarasini ham yutib yuborardi.
+
+       Endi keyingi so'zning bosh harfiga ham qaraladi:
+         "т. д."     -> keyingisi kichik harf ("д") => qisqartma, bo'linmaydi
+         "д. Потом"  -> keyingisi BOSH harf         => gap oxiri, bo'linadi
+       Unvonlar (Mr., Dr.) har doim ism bilan keladi, ya'ni ulardan keyin
+       bosh harf normal — shuning uchun ular alohida ro'yxatda va hech
+       qachon bo'linmaydi.
+
+       `(?<=)` ISHLATILMAYDI — eski Safari uni tushunmaydi va butun faylni
+       yiqitadi (tts.js dagi izohga qarang). */
+    text = text.replace(/([.!?…]+)(\s+)/g, function (m, punct, ws, off, str) {
+      if (punct === '.') {
+        var lastTok = (str.slice(0, off).match(/([^\s.]+)$/) || [])[1] || '';
+        var lt = lastTok.toLowerCase();
+        var nextIsUpper = /[А-ЯЁA-Z]/.test(str.charAt(off + m.length));
+        if (TITLES.indexOf(lt) >= 0) return m;                       // Mr. Smith
+        if ((lastTok.length === 1 || ABBREV.indexOf(lt) >= 0) && !nextIsUpper) return m;
+      }
+      return punct + SPLIT;
+    });
+    text = text.replace(/([;:])\s+/g, '$1' + SPLIT);
+    text = text.replace(/\s*[—–]\s*/g, SPLIT + '— ');
+
+    var parts = [];
+    text.split(SPLIT).forEach(function (piece) {
+      var t = piece.trim();
+      if (!t) return;
+
+      /* Boshidagi tire — o'zi o'qilmaydi, uning o'rniga oldiga jimlik
+         qo'yiladi (yuqorida bo'lak chegarasi shu sabab qo'yilgan). */
+      var leadDash = /^[—–]\s*/.test(t);
+      if (leadDash) t = t.replace(/^[—–]\s*/, '');
+      if (!t) return;
+
+      /* Tire oldidagi jimlik — AVVALGI bo'lakdan keyin bo'lishi kerak
+         (pauza har doim bo'lakdan KEYIN qo'yiladi, tire esa keyingi
+         bo'lakning boshida turadi). */
+      if (leadDash && parts.length) {
+        var prev = parts[parts.length - 1];
+        if (prev.pause < PROSODY['—'].pause) prev.pause = PROSODY['—'].pause;
+      }
+
+      var last = t.charAt(t.length - 1);
+      var key = PROSODY[last] ? last : '';
+      var p = PROSODY[key];
+      parts.push({ text: t, pitch: p.pitch, rate: p.rate, pause: p.pause });
+    });
+
+    return parts;
+  }
+
+  /* Bitta bo'lakni o'z ohangi bilan o'qiydi */
+  function speakPart(part, done) {
+    if (!window.TTS || !TTS.ok()) { if (done) done(); return; }
+    TTS.speak(part.text, {
+      lang: R.lang,
+      rate: R.rate * part.rate,
+      pitch: part.pitch
+    }, function (err) {
+      if (!R.alive) return;
+      if (err) {
+        R.errCount = (R.errCount || 0) + 1;
+        if (R.errCount <= 2) App.toast('Ovozda uzilish — davom etyapmiz');
+      }
+      if (done) done();
+    });
+  }
+
+  /* Qatorni bo'lak-bo'lak, intonatsiya bilan o'qiydi.
+     `done(pause)` — oxirgi bo'lakdan keyin qancha jimlik kerakligini beradi
+     (nuqtadan keyin qisqa, so'roq/xitobdan keyin uzunroq). */
+  function speakProsody(text, done) {
+    var parts = prosodyParts(text);
+    if (!parts.length) { if (done) done(PROSODY[''].pause); return; }
+
+    var i = 0;
+    (function next() {
+      if (!R.alive) return;
+      var p = parts[i++];
+      speakPart(p, function () {
+        if (!R.alive) return;
+        if (i >= parts.length) { if (done) done(p.pause); return; }
+        R.partTimer = setTimeout(next, Math.round(p.pause / (R.rate || 1)));
+      });
+    })();
+  }
+
+  /* Sarlavhani alohida ohangda o'qiydi */
+  function speakHeading(text, done) {
+    if (!window.TTS || !TTS.ok()) { if (done) done(); return; }
+    TTS.speak(text, { lang: R.lang, rate: R.rate * 0.92, pitch: 0.94 }, function () {
+      if (!R.alive) return;
+      if (done) done();
+    });
+  }
+
   function highlight(n) {
     var page = document.getElementById('page'); if (!page) return;
     page.querySelectorAll('.rd-s.reading').forEach(function (el) { el.classList.remove('reading'); });
@@ -142,13 +301,268 @@
     }
   }
 
+  /* Ovozni ham, KUTAYOTGAN TAYMERLARNI ham birga to'xtatadi.
+     Ikkalasi birga bekor qilinmasa, to'xtatilgandan keyin osilib qolgan
+     taymer eski bo'lakni o'qib yuboradi (`R.alive` hamma joyda ham
+     o'chirilmaydi — masalan "keyingi gap" bosilganda u ataylab yoqiladi). */
+  function clearShadowTimer() {
+    if (R.shadowTimer) { clearInterval(R.shadowTimer); R.shadowTimer = null; }
+    if (R.gapTimer) { clearTimeout(R.gapTimer); R.gapTimer = null; }
+    R.shadowSecondsLeft = 0;
+  }
+
+  function getShadowPause(text) {
+    var words = (text || '').trim().split(/\s+/).filter(Boolean).length;
+    return Math.max(3, Math.min(10, Math.round(words * 0.55) + 2));
+  }
+
+  /* Ovozni ham, KUTAYOTGAN TAYMERLARNI ham birga to'xtatadi.
+     Ikkalasi birga bekor qilinmasa, to'xtatilgandan keyin osilib qolgan
+     taymer eski bo'lakni o'qib yuboradi (`R.alive` hamma joyda ham
+     o'chirilmaydi — masalan "keyingi gap" bosilganda u ataylab yoqiladi). */
+  function haltSpeech() {
+    clearShadowTimer();
+    /* Yuklanib kelayotgan gap TO'XTATILGANDAN KEYIN yangramasin. */
+    audioGen++;
+    if (playerAudio) {
+      playerAudio.onended = null;
+      playerAudio.onerror = null;
+      try { playerAudio.pause(); } catch (e) {}
+    }
+    stopAudioKeepAlive();
+    if (R.partTimer) { clearTimeout(R.partTimer); R.partTimer = null; }
+    if (window.TTS) TTS.cancel(); else { try { window.speechSynthesis.cancel(); } catch (e) {} }
+  }
+
+  /* ---------- Fondagi va Lockscreen Audio Pleyeri ----------
+     Mobil qurilmalarda (Android/iOS) ekran qulflanganda yoki foydalanuvchi
+     boshqa ilovalarga o'tganda brauzer `speechSynthesis` ni to'xtatib qo'yadi.
+     Uzluksiz fon ijrosi uchun HTML5 `<audio>` elementi orqali haqiqiy MP3
+     oqimi yangraydi va gaplar orasidagi pauzada ham audio sessiya tirik saqlanadi. */
+  var playerAudio = null;
+  var audioKeeper = null;
+  /* Har ijroga yangi raqam. Yuklash tugaguncha foydalanuvchi boshqa gapga
+     o'tsa, kechikib kelgan javob ESKI gapni yangratmasligi kerak. */
+  var audioGen = 0;
+  var SILENT_AUDIO = 'data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBIAAAABAAEAQB8AAEAfAAABAAgAAABmYWN0BAAAAAAAAABkYXRhAAAAAA==';
+
+  function getPlayerAudio() {
+    if (!playerAudio) {
+      playerAudio = new Audio();
+      playerAudio.preload = 'auto';
+    }
+    return playerAudio;
+  }
+
+  /* ---------- Audio bufer ----------
+     MUAMMO: saytda ovoz yuklab olingan MP3 dan YOMONROQ eshitilardi. Ovoz
+     bir xil (ikkalasi ham serverdagi bir xil Google TTS), farq UZLUKSIZLIKDA
+     edi: yuklab olingan fayl bitta yaxlit MP3, saytda esa har gap uchun
+     alohida so'rov ketardi va u AYNAN o'sha gap boshlanishi kerak paytda
+     boshlanardi. Tarmoq sekin bo'lsa gaplar orasida sukut cho'ziladi;
+     so'rov uzilsa esa brauzerning robot ovoziga o'tib ketardi — o'shanda
+     "sayt yomon" eshitiladi.
+
+     YECHIM: gaplar OLDINDAN yuklab qo'yiladi (blob sifatida xotirada).
+     Navbatdagi gap yangraganda fayl allaqachon tayyor — ijro darhol
+     boshlanadi. Bufer chegaralangan: eng eskisi o'chirilib turadi
+     (`URL.revokeObjectURL` bo'lmasa xotira oqib ketardi). */
+  var AUDIO_BUF_MAX = 14;      // xotirada saqlanadigan gap soni
+  var AUDIO_AHEAD = 3;         // oldindan yuklanadigan gap soni
+  var audioBuf = {};           // kalit -> { url } yoki { p: Promise }
+  var audioOrder = [];         // kalitlar — kelish tartibida (eskisi birinchi)
+
+  function audioSrc(text) {
+    var langCode = (R.lang || '').indexOf('ru') === 0 ? 'ru' : 'en';
+    return '/api?action=tts_audio&text=' + encodeURIComponent(text) + '&lang=' + langCode;
+  }
+  function audioKey(text) {
+    return ((R.lang || '').indexOf('ru') === 0 ? 'ru|' : 'en|') + text;
+  }
+
+  function bufTrim() {
+    while (audioOrder.length > AUDIO_BUF_MAX) {
+      var k = audioOrder.shift();
+      var e = audioBuf[k];
+      delete audioBuf[k];
+      if (e && e.url) { try { URL.revokeObjectURL(e.url); } catch (err) {} }
+    }
+  }
+
+  function bufClear() {
+    audioOrder.forEach(function (k) {
+      var e = audioBuf[k];
+      if (e && e.url) { try { URL.revokeObjectURL(e.url); } catch (err) {} }
+    });
+    audioBuf = {}; audioOrder = [];
+  }
+
+  /* Bitta gap uchun MP3 ni oladi. Keshda bo'lsa darhol, bo'lmasa yuklaydi.
+     Bir marta QAYTA URINADI: bitta uzilgan so'rov uchun butun o'qishni
+     robot ovozga o'tkazish juda qo'pol. */
+  function fetchAudio(text, tries) {
+    var key = audioKey(text);
+    var hit = audioBuf[key];
+    if (hit) return hit.p || Promise.resolve(hit.url);
+
+    var p = fetch(audioSrc(text), { credentials: 'same-origin', cache: 'default' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('tts ' + r.status);
+        return r.blob();
+      })
+      .then(function (b) {
+        if (!b || b.size < 200) throw new Error('tts bo\'sh');
+        var url = URL.createObjectURL(b);
+        /* Kalit `audioOrder` ga QUYIDA, kutish yozuvi bilan birga bir marta
+           qo'shiladi. Bu yerda yana qo'shilsa ro'yxatda ikki nusxa paydo
+           bo'lardi va `bufTrim` birinchisini o'chirganda endigina yuklangan
+           (hatto hozir yangrayotgan) ovozning URL i bekor qilinardi. */
+        audioBuf[key] = { url: url };
+        bufTrim();
+        return url;
+      })
+      .catch(function (e) {
+        delete audioBuf[key];
+        var n = tries == null ? 1 : tries;
+        if (n > 0) return fetchAudio(text, n - 1);
+        throw e;
+      });
+
+    audioBuf[key] = { p: p };
+    /* Kalit ro'yxatda BIR MARTA turadi. Qayta urinish (`catch` -> `fetchAudio`)
+       ham shu yerdan o'tadi — tekshiruvsiz bo'lsa ikki nusxa qolib ketardi. */
+    if (audioOrder.indexOf(key) < 0) audioOrder.push(key);
+    return p;
+  }
+
+  /* Keyingi bir necha gapni jimgina yuklab qo'yadi. */
+  function preloadNextSentence(nextIdx) {
+    if (!R.sentences) return;
+    for (var i = 0; i < AUDIO_AHEAD; i++) {
+      var n = nextIdx + i;
+      if (n < 0 || n >= R.sentences.length) break;
+      var t = R.sentences[n] && R.sentences[n].text;
+      if (t) fetchAudio(t).catch(function () {});   // xato bo'lsa ijro paytida qayta uriniladi
+    }
+  }
+
+  function startAudioKeepAlive() {
+    try {
+      if (!audioKeeper) {
+        audioKeeper = new Audio(SILENT_AUDIO);
+        audioKeeper.loop = true;
+      }
+      var p = audioKeeper.play();
+      if (p && p.catch) p.catch(function () {});
+    } catch (e) {}
+  }
+
+  function stopAudioKeepAlive() {
+    if (audioKeeper) {
+      try { audioKeeper.pause(); } catch (e) {}
+    }
+  }
+
+  function keepAudioAliveDuringPause() {
+    startAudioKeepAlive();
+  }
+
+  function playSentenceAudio(text, done) {
+    text = String(text || '').trim();
+    if (!text) { if (done) done(200); return; }
+
+    var audio = getPlayerAudio();
+    audio.loop = false;
+    audio.playbackRate = R.rate || 1;
+    /* Tezlik o'zgarganda ovoz "cholg'u"ga aylanmasin (Chrome standarti
+       ovoz balandligini ham suradi). */
+    try {
+      audio.preservesPitch = true;
+      audio.mozPreservesPitch = true;
+      audio.webkitPreservesPitch = true;
+    } catch (e) {}
+
+    var myGen = ++audioGen;
+    var finished = false;
+    function onFinish(p) {
+      if (finished) return;
+      finished = true;
+      audio.onended = null;
+      audio.onerror = null;
+      if (done) done(p || 260);
+    }
+    function fallback() {
+      if (myGen !== audioGen) return;
+      speakProsody(text, function (p) { onFinish(p); });
+    }
+
+    /* Navbatdagi gaplarni ijro BOSHLANISHIDAN oldin so'raymiz — shunda
+       ular hozirgi gap yangrayotgan paytda yuklanib ulguradi. */
+    preloadNextSentence(R.idx + 1);
+
+    fetchAudio(text).then(function (url) {
+      if (myGen !== audioGen) return;               // orada boshqa gapga o'tildi
+      audio.onended = function () { onFinish(260); };
+      audio.onerror = fallback;
+      audio.src = url;
+      var p = audio.play();
+      if (p && p.catch) p.catch(fallback);
+    }).catch(fallback);
+  }
+
+  function setupMediaSession() {
+    if (!('mediaSession' in navigator)) return;
+    try {
+      navigator.mediaSession.setActionHandler('play', function () {
+        if (!R.playing) App.actions.rdToggle();
+      });
+      navigator.mediaSession.setActionHandler('pause', function () {
+        if (R.playing) App.actions.rdToggle();
+      });
+      navigator.mediaSession.setActionHandler('previoustrack', function () {
+        jump(-1);
+      });
+      navigator.mediaSession.setActionHandler('nexttrack', function () {
+        jump(1);
+      });
+      navigator.mediaSession.setActionHandler('stop', function () {
+        stopAll();
+      });
+    } catch (e) {}
+  }
+
+  function updateMediaSession() {
+    if (!('mediaSession' in navigator)) return;
+    try {
+      var cur = (R.idx >= 0 && R.sentences && R.sentences[R.idx]) ? R.sentences[R.idx] : null;
+      var title = cur ? cur.text : (R.name || 'Reading');
+      var artist = R.name || (R.sec.indexOf('ru') === 0 ? 'Чтение' : 'Reading');
+      var album = R.sec.indexOf('ru') === 0 ? 'Rus tili (Чтение)' : 'Ingliz tili (Reading)';
+
+      if (window.MediaMetadata) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: title,
+          artist: artist,
+          album: album,
+          artwork: [
+            { src: '/assets/icons/custom-app-icon-192.png', sizes: '192x192', type: 'image/png' },
+            { src: '/assets/icons/custom-app-icon-512.png', sizes: '512x512', type: 'image/png' }
+          ]
+        });
+      }
+      navigator.mediaSession.playbackState = R.playing ? 'playing' : 'paused';
+    } catch (e) {}
+  }
+
   function stopAll() {
     R.playing = false;
     R.alive = false;
+    R.repeatIdx = 1;
     /* Gaplar orasidagi kutish ham bekor qilinsin — aks holda to'xtatilgandan
        keyin yana bitta gap o'qilib ketardi. */
-    if (R.gapTimer) { clearTimeout(R.gapTimer); R.gapTimer = null; }
-    if (window.TTS) TTS.cancel(); else { try { window.speechSynthesis.cancel(); } catch (e) {} }
+    haltSpeech();
+    stopAudioKeepAlive();
+    updateMediaSession();
     releaseWake();
     highlight(-1);
     paintPlayer();
@@ -181,13 +595,18 @@
       R.pendingStop = false;
       R.playing = false;
       R.idx = n;
+      R.repeatIdx = 1;
       highlight(n);
+      updateMediaSession();
       paintPlayer();
       return;
     }
 
     if (n >= R.sentences.length) {
-      R.playing = false; R.idx = -1;
+      R.playing = false; R.idx = -1; R.repeatIdx = 1;
+      clearShadowTimer();
+      stopAudioKeepAlive();
+      updateMediaSession();
       highlight(-1); paintPlayer();
       App.toast('✅ Matn tugadi');
       if (window.Activity) Activity.mark();
@@ -199,22 +618,79 @@
     }
     R.idx = n;
     highlight(n);
+    updateMediaSession();
     paintPlayer();
-    speak(R.sentences[n].text, function () {
-      if (R.stepMode) R.pendingStop = true;   // keyingi qadamda to'xtaydi
-      /* Gaplar orasida kichik jimlik — tinglab tushunish uchun muhim.
-         Tezlikka bog'liq: sekin o'qilsa pauza ham uzunroq bo'ladi. */
-      var pause = Math.round(260 / (R.rate || 1));
+    var cur = R.sentences[n];
+    /* Sarlavha ham, gaplar ham real MP3 orqali o'qiladi — fonda va lockscreen'da to'xtamaydi */
+    if (cur.k === 'h') {
+      playSentenceAudio(cur.text, function () {
+        R.repeatIdx = 1;
+        if (R.stepMode) R.pendingStop = true;
+        keepAudioAliveDuringPause();
+        R.gapTimer = setTimeout(function () { step(n + 1); }, Math.round(700 / (R.rate || 1)));
+      });
+      return;
+    }
+    playSentenceAudio(cur.text, function (endPause) {
+      if (!R.alive || !R.playing) return;
+
+      /* Gapni 2-3 marta takrorlash funksiyasi */
+      if (R.repeatCount > 1 && R.repeatIdx < R.repeatCount) {
+        R.repeatIdx++;
+        paintPlayer();
+        keepAudioAliveDuringPause();
+        var repPause = Math.round(340 / (R.rate || 1));
+        R.gapTimer = setTimeout(function () { step(n); }, repPause);
+        return;
+      }
+
+      /* Barcha takrorlar tugadi */
+      R.repeatIdx = 1;
+      if (R.stepMode) {
+        R.pendingStop = true;   // keyingi qadamda to'xtaydi
+        keepAudioAliveDuringPause();
+        var pause = Math.round((endPause || 260) / (R.rate || 1));
+        R.gapTimer = setTimeout(function () { step(n + 1); }, pause);
+        return;
+      }
+
+      /* Hands-Free Shadowing rejimi: gapdan keyin takrorlash pauzasi */
+      if (R.shadowMode) {
+        clearShadowTimer();
+        keepAudioAliveDuringPause();
+        var waitSec = getShadowPause(cur.text);
+        R.shadowSecondsLeft = waitSec;
+        paintPlayer();
+        R.shadowTimer = setInterval(function () {
+          if (!R.alive || !R.playing) { clearShadowTimer(); return; }
+          R.shadowSecondsLeft--;
+          if (R.shadowSecondsLeft <= 0) {
+            clearShadowTimer();
+            paintPlayer();
+            step(n + 1);
+          } else {
+            paintPlayerTime();
+          }
+        }, 1000);
+        return;
+      }
+
+      keepAudioAliveDuringPause();
+      var pause = Math.round((endPause || 260) / (R.rate || 1));
       R.gapTimer = setTimeout(function () { step(n + 1); }, pause);
     });
   }
 
   /* ================= Pastki pleyer =================
      Yopiq holatda — bitta tugma. Bosilganda videopleyerdagidek boshqaruv
-     paneliga ochiladi: oldingi/keyingi gap, play/pause, progress va tezlik. */
+     paneliga ochiladi: oldingi/keyingi gap, play/pause, progress, tezlik,
+     2-3x takrorlash va audio yuklab olish. */
 
   function paintPlayer() {
     var box = App.el('rd-player'); if (!box) return;
+    /* Surish davomida panel qayta chizilmaydi — barmoq ostidagi element
+       almashsa surish uzilib qolardi. */
+    if (R.seeking) return;
 
     if (!R.barOpen) {
       box.className = 'rd-player';
@@ -229,44 +705,103 @@
     var cur = R.idx < 0 ? 0 : R.idx + 1;
     var pct = Math.round((cur / total) * 100);
 
+    var repInfo = '';
+    if (R.shadowSecondsLeft > 0) {
+      repInfo = ' · <span class="rd-shadow-badge">🗣️ Qaytaring: ' + R.shadowSecondsLeft + 's</span>';
+    } else if (R.repeatCount > 1) {
+      if (R.playing && cur > 0) {
+        repInfo = ' · ' + R.repeatIdx + '/' + R.repeatCount + ' marta';
+      } else {
+        repInfo = ' · ' + R.repeatCount + 'x takror';
+      }
+    }
+
     box.className = 'rd-player open';
     box.innerHTML =
       '<div class="rd-pl-top">' +
-        '<div class="rd-pl-time">' + cur + ' / ' + total + ' gap</div>' +
-        '<button class="rd-pl-x" data-act="rdCloseBar" aria-label="Yopish">' +
-        '<span data-icon="close" data-icon-size="16"></span></button>' +
+        '<div class="rd-pl-time">' + cur + ' / ' + total + ' gap' + repInfo + '</div>' +
+        '<div class="rd-pl-top-actions">' +
+          '<button class="rd-pl-tool-btn" data-act="rdCheckCurrentPronun" aria-label="Talaffuzni tekshirish" title="Talaffuzni tekshirish (mikrofon)">' +
+            '<span data-icon="mic" data-icon-size="15"></span></button>' +
+          '<button class="rd-pl-tool-btn" data-act="rdDownloadAudio" aria-label="Audioni yuklab olish" title="Ovozni yuklab olish (.mp3)">' +
+            '<span data-icon="download" data-icon-size="15"></span></button>' +
+          '<button class="rd-pl-tool-btn" data-act="rdVoice" aria-label="Ovozni tanlash" title="Ovozni tanlash">' +
+            '<span data-icon="volume" data-icon-size="15"></span></button>' +
+          '<button class="rd-pl-x" data-act="rdCloseBar" aria-label="Yopish">' +
+            '<span data-icon="close" data-icon-size="16"></span></button>' +
+        '</div>' +
       '</div>' +
-      '<div class="rd-pl-track"><div class="rd-pl-fill" style="width:' + pct + '%"></div></div>' +
+      '<div class="rd-pl-seek" id="rd-seek">' +
+        '<div class="rd-pl-track"><div class="rd-pl-fill" style="width:' + pct + '%"></div>' +
+        '<div class="rd-pl-knob" style="left:' + pct + '%"></div></div></div>' +
       '<div class="rd-pl-ctrls">' +
-        '<button class="rd-pl-b" data-act="rdPrev" aria-label="Oldingi gap">' +
-        '<span data-icon="skipBack" data-icon-size="20"></span></button>' +
-        '<button class="rd-pl-play" data-act="rdToggle" aria-label="' + (R.playing ? 'To\'xtatish' : 'Boshlash') + '">' +
-        '<span data-icon="' + (R.playing ? 'pause' : 'play') + '" data-icon-size="24"></span></button>' +
-        '<button class="rd-pl-b" data-act="rdNext" aria-label="Keyingi gap">' +
-        '<span data-icon="skipFwd" data-icon-size="20"></span></button>' +
-        '<button class="rd-pl-rate" data-act="rdSpeed">' + rateLabel() + '</button>' +
-        '<button class="rd-pl-step' + (R.stepMode ? ' on' : '') + '" data-act="rdStepMode" ' +
-        'aria-label="Gap-ma-gap rejim" title="Har gapdan keyin to\'xtash">' +
-        '<span data-icon="pauseDot" data-icon-size="16"></span></button>' +
-        '<button class="rd-pl-step" data-act="rdVoice" aria-label="Ovozni tanlash" title="Ovozni tanlash">' +
-        '<span data-icon="volume" data-icon-size="16"></span></button>' +
+        '<div class="rd-pl-side left">' +
+          '<button class="rd-pl-step' + (R.repeatCount > 1 ? ' on' : '') + '" data-act="rdRepeat" ' +
+            'aria-label="Gapni takrorlash" title="Har bir gapni 2 yoki 3 marta takrorlash">' +
+            '<span data-icon="repeat" data-icon-size="14"></span>' +
+            '<span class="rd-pl-badge">' + R.repeatCount + 'x</span></button>' +
+          '<button class="rd-pl-step' + (R.shadowMode ? ' shadow-on' : '') + '" data-act="rdShadow" ' +
+            'aria-label="Shadowing rejim" title="Hands-Free Shadowing: gapdan keyin takrorlash pauzasi">' +
+            '<span data-icon="headphones" data-icon-size="14"></span>' +
+            '<span class="rd-pl-badge">SH</span></button>' +
+        '</div>' +
+        '<div class="rd-pl-center">' +
+          '<button class="rd-pl-b" data-act="rdPrev" aria-label="Oldingi gap">' +
+            '<span data-icon="skipBack" data-icon-size="20"></span></button>' +
+          '<button class="rd-pl-play" data-act="rdToggle" aria-label="' + (R.playing ? 'To\'xtatish' : 'Boshlash') + '">' +
+            '<span data-icon="' + (R.playing ? 'pause' : 'play') + '" data-icon-size="24"></span></button>' +
+          '<button class="rd-pl-b" data-act="rdNext" aria-label="Keyingi gap">' +
+            '<span data-icon="skipFwd" data-icon-size="20"></span></button>' +
+        '</div>' +
+        '<div class="rd-pl-side right">' +
+          '<button class="rd-pl-step' + (R.stepMode ? ' on' : '') + '" data-act="rdStepMode" ' +
+            'aria-label="Gap-ma-gap rejim" title="Gap-ma-gap: har gapdan keyin to\'xtash">' +
+            '<span data-icon="pauseDot" data-icon-size="15"></span></button>' +
+          '<button class="rd-pl-rate" data-act="rdSpeed" title="O\'qish tezligi">' + rateLabel() + '</button>' +
+        '</div>' +
       '</div>';
     App.icons(box);
   }
 
+  function paintPlayerTime() {
+    if (R.seeking) return;          // surish paytida raqamni barmoq boshqaradi
+    var el = document.querySelector('#rd-player .rd-pl-time');
+    if (!el) return;
+    var total = R.sentences.length || 1;
+    var cur = R.idx < 0 ? 0 : R.idx + 1;
+    var repInfo = '';
+    if (R.shadowSecondsLeft > 0) {
+      repInfo = ' · <span class="rd-shadow-badge">🗣️ Qaytaring: ' + R.shadowSecondsLeft + 's</span>';
+    } else if (R.repeatCount > 1) {
+      if (R.playing && cur > 0) {
+        repInfo = ' · ' + R.repeatIdx + '/' + R.repeatCount + ' marta';
+      } else {
+        repInfo = ' · ' + R.repeatCount + 'x takror';
+      }
+    }
+    el.innerHTML = cur + ' / ' + total + ' gap' + repInfo;
+  }
+
   function rateLabel() { return String(R.rate).replace(/\.?0+$/, '') + 'x'; }
 
-  App.actions.rdOpenBar = function () { R.barOpen = true; paintPlayer(); };
+  App.actions.rdOpenBar = function () {
+    R.barOpen = true;
+    paintPlayer();
+    /* Panel ochilishi — "hozir tinglayman" degani. Birinchi gaplarni shu
+       payt yuklab qo'yamiz: ▶ bosilganda kutish bo'lmaydi. */
+    preloadNextSentence(R.idx < 0 ? 0 : R.idx);
+  };
   App.actions.rdCloseBar = function () {
-    if (R.playing) { R.playing = false; if (window.TTS) TTS.cancel(); else { try { window.speechSynthesis.cancel(); } catch (e) {} } highlight(-1); }
+    if (R.playing) { R.playing = false; haltSpeech(); highlight(-1); }
     R.barOpen = false; paintPlayer();
   };
 
   App.actions.rdToggle = function () {
     if (R.playing) {
       R.playing = false;
-      if (R.gapTimer) { clearTimeout(R.gapTimer); R.gapTimer = null; }
-      if (window.TTS) TTS.cancel(); else { try { window.speechSynthesis.cancel(); } catch (e) {} }
+      haltSpeech();
+      stopAudioKeepAlive();
+      updateMediaSession();
       releaseWake();
       paintPlayer();
       return;
@@ -276,13 +811,95 @@
        (aynan shu bosishdan) foydalanib ovozni isitib olamiz. */
     if (window.TTS) TTS.prime();
     requestWake();
+    startAudioKeepAlive();
     R.errCount = 0;
     R.playing = true; R.alive = true;
+    R.repeatIdx = 1;
+    setupMediaSession();
+    updateMediaSession();
     step(R.idx >= 0 && R.idx < R.sentences.length ? R.idx : 0);
   };
 
   App.actions.rdPrev = function () { jump(-1); };
   App.actions.rdNext = function () { jump(1); };
+  /* ---------- Surib o'tish (seek) ----------
+     Chiziq ilgari faqat KO'RSATKICH edi — bosish ham, surish ham hech
+     narsa qilmasdi. Endi u boshqa pleyerlardagidek: barmoqni bosib
+     surganda gap raqami jonli o'zgaradi, qo'yib yuborilganda o'sha
+     gapdan o'qish davom etadi.
+
+     Surish davomida `R.seeking` yoqiladi va `paintPlayer` panelni QAYTA
+     CHIZMAYDI: innerHTML almashsa barmoq ostidagi element yo'qolib,
+     surish yarmida uzilib qolardi. */
+  function seekTo(n) {
+    if (!R.sentences.length) return;
+    if (n < 0) n = 0;
+    if (n >= R.sentences.length) n = R.sentences.length - 1;
+    R.alive = true;
+    R.repeatIdx = 1;
+    if (R.playing) { haltSpeech(); step(n); }
+    else { R.idx = n; highlight(n); updateMediaSession(); paintPlayer(); }
+  }
+
+  /* Bosilgan nuqtaning chiziqdagi ulushi -> gap tartib raqami (0 dan). */
+  function seekIndexAt(track, clientX) {
+    var r = track.getBoundingClientRect();
+    if (!r.width) return R.idx < 0 ? 0 : R.idx;
+    var ratio = (clientX - r.left) / r.width;
+    if (ratio < 0) ratio = 0;
+    if (ratio > 1) ratio = 1;
+    var total = R.sentences.length;
+    /* To'ldirish chizig'i n-gap uchun `(n+1)/total` gacha boradi, ya'ni
+       50% — 5-gapning O'NG cheti. Shuning uchun `ceil` — bosilgan nuqta
+       qaysi gapning yo'lagiga tushsa, o'sha gap tanlanadi. */
+    var n = Math.ceil(ratio * total) - 1;
+    if (n < 0) n = 0;
+    if (n >= total) n = total - 1;
+    return n;
+  }
+
+  function paintSeek(n) {
+    var box = App.el('rd-player'); if (!box) return;
+    var total = R.sentences.length || 1;
+    var pct = Math.round(((n + 1) / total) * 100);
+    var fill = box.querySelector('.rd-pl-fill');
+    var knob = box.querySelector('.rd-pl-knob');
+    var time = box.querySelector('.rd-pl-time');
+    if (fill) fill.style.width = pct + '%';
+    if (knob) knob.style.left = pct + '%';
+    if (time) time.innerHTML = (n + 1) + ' / ' + total + ' gap';
+  }
+
+  /* Hodisa BIR MARTA, hujjat darajasida bog'lanadi: panel har chizilganda
+     qayta bog'lash kerak emas va eski tinglovchilar to'planib qolmaydi. */
+  document.addEventListener('pointerdown', function (e) {
+    var seek = e.target && e.target.closest && e.target.closest('#rd-seek');
+    if (!seek || !R.sentences.length) return;
+    var track = seek.querySelector('.rd-pl-track') || seek;
+
+    e.preventDefault();
+    R.seeking = true;
+    seek.classList.add('dragging');
+    var n = seekIndexAt(track, e.clientX);
+    paintSeek(n);
+
+    function move(ev) {
+      n = seekIndexAt(track, ev.clientX);
+      paintSeek(n);
+    }
+    function up() {
+      document.removeEventListener('pointermove', move);
+      document.removeEventListener('pointerup', up);
+      document.removeEventListener('pointercancel', up);
+      R.seeking = false;
+      seek.classList.remove('dragging');
+      seekTo(n);
+    }
+    document.addEventListener('pointermove', move);
+    document.addEventListener('pointerup', up);
+    document.addEventListener('pointercancel', up);
+  });
+
   function jump(d) {
     if (!R.sentences.length) return;
     /* Hali boshlanmagan (idx = -1) holatda "keyingi" BIRINCHI gapga olib
@@ -292,16 +909,158 @@
     if (n < 0) n = 0;
     if (n >= R.sentences.length) n = R.sentences.length - 1;
     R.alive = true;
-    if (R.playing) { if (window.TTS) TTS.cancel(); else { try { window.speechSynthesis.cancel(); } catch (e) {} } step(n); }
-    else { R.idx = n; highlight(n); paintPlayer(); }
+    R.repeatIdx = 1;
+    if (R.playing) { haltSpeech(); step(n); }
+    else { R.idx = n; highlight(n); updateMediaSession(); paintPlayer(); }
   }
 
   App.actions.rdStepMode = function () {
     R.stepMode = !R.stepMode;
+    if (R.stepMode) { R.shadowMode = false; clearShadowTimer(); }
     R.pendingStop = false;
     try { localStorage.setItem('reading_step_mode', R.stepMode ? '1' : '0'); } catch (e) {}
     paintPlayer();
     App.toast(R.stepMode ? 'Gap-ma-gap: har gapdan keyin to\'xtaydi' : 'Uzluksiz o\'qish');
+  };
+
+  App.actions.rdRepeat = function () {
+    var counts = [1, 2, 3];
+    var next = counts[(counts.indexOf(R.repeatCount) + 1) % counts.length];
+    R.repeatCount = next;
+    R.repeatIdx = 1;
+    try { localStorage.setItem('reading_repeat_count', String(R.repeatCount)); } catch (e) {}
+    paintPlayer();
+    if (R.repeatCount === 1) {
+      App.toast('Takrorlash o\'chirildi (1 marta)');
+    } else {
+      App.toast('Har bir gap ' + R.repeatCount + ' marta takrorlanadi');
+    }
+  };
+
+  App.actions.rdShadow = function () {
+    R.shadowMode = !R.shadowMode;
+    if (R.shadowMode) R.stepMode = false;
+    clearShadowTimer();
+    try { localStorage.setItem('reading_shadow_mode', R.shadowMode ? '1' : '0'); } catch (e) {}
+    paintPlayer();
+    if (R.shadowMode) {
+      App.toast('🗣️ Hands-Free Shadowing yoqildi (gapdan keyin takrorlash uchun pauza beriladi)');
+    } else {
+      App.toast('Shadowing o\'chirildi');
+    }
+  };
+
+  /* ---------- Ovozni yuklab olish (MP3) ---------- */
+  App.actions.rdDownloadAudio = function () {
+    if (!R.sentences || !R.sentences.length) {
+      App.toast('Yuklab olish uchun matn topilmadi');
+      return;
+    }
+
+    var total = R.sentences.length;
+    var curIdx = R.idx >= 0 && R.idx < total ? R.idx : 0;
+    var curSent = R.sentences[curIdx] ? R.sentences[curIdx].text : '';
+    var curShort = curSent.length > 50 ? curSent.slice(0, 47) + '...' : curSent;
+
+    var html =
+      '<p class="muted" style="font-size:12px;margin:0 0 14px">' +
+      'Matn ovozini yuqori sifatli MP3 formatida yuklab oling. ' +
+      'Telefon yoki kompyuterda oflayn tinglash uchun qulay.</p>' +
+      '<div class="rd-dl-list">' +
+        '<button class="list-row" data-act="rdDoDownloadAudio" data-arg=\'' +
+          App.arg({ mode: 'full', repeat: 1 }) + '\'>' +
+          '<span class="li-ic" style="background:var(--accent-soft);color:var(--accent)" data-icon="download" data-icon-size="16"></span>' +
+          '<div class="li-main">' +
+            '<div class="li-title">To\'liq matn audiosi (.mp3)</div>' +
+            '<div class="li-sub">' + total + ' ta gap · Barcha gaplar ketma-ket</div>' +
+          '</div>' +
+        '</button>' +
+        (R.repeatCount > 1 ?
+        '<button class="list-row" data-act="rdDoDownloadAudio" data-arg=\'' +
+          App.arg({ mode: 'full', repeat: R.repeatCount }) + '\'>' +
+          '<span class="li-ic" style="background:var(--purple-soft,var(--card-2));color:var(--purple,#af52de)" data-icon="repeat" data-icon-size="16"></span>' +
+          '<div class="li-main">' +
+            '<div class="li-title">Takrorlangan holda yuklab olish (' + R.repeatCount + 'x .mp3)</div>' +
+            '<div class="li-sub">Har bir gap ' + R.repeatCount + ' marta takrorlangan MP3</div>' +
+          '</div>' +
+        '</button>' : '') +
+        (curSent ?
+        '<button class="list-row" data-act="rdDoDownloadAudio" data-arg=\'' +
+          App.arg({ mode: 'current', idx: curIdx, repeat: 1 }) + '\'>' +
+          '<span class="li-ic" data-icon="volume" data-icon-size="16"></span>' +
+          '<div class="li-main">' +
+            '<div class="li-title">Joriy gap audiosi (' + (curIdx + 1) + '-gap .mp3)</div>' +
+            '<div class="li-sub">' + App.esc(curShort) + '</div>' +
+          '</div>' +
+        '</button>' : '') +
+      '</div>';
+
+    var sh = App.sheet(html, { title: 'Audioni yuklab olish (.mp3)' });
+    App.icons(sh);
+  };
+
+  App.actions.rdDoDownloadAudio = function (a) {
+    App.closeSheet();
+    if (!R.sentences || !R.sentences.length) return;
+
+    var sents = [];
+    var title = (R.name || 'reading_audio').trim();
+    var rep = parseInt(a && a.repeat, 10) || 1;
+
+    if (a && a.mode === 'current') {
+      var idx = parseInt(a.idx, 10);
+      if (isNaN(idx) || idx < 0 || idx >= R.sentences.length) idx = R.idx >= 0 ? R.idx : 0;
+      var cur = R.sentences[idx];
+      if (cur && cur.text) {
+        sents = [cur.text];
+        title += '_gap_' + (idx + 1);
+      }
+    } else {
+      R.sentences.forEach(function (s) {
+        if (s.text) sents.push(s.text);
+      });
+    }
+
+    if (!sents.length) {
+      App.toast('Yuklab olish uchun matn bo\'sh');
+      return;
+    }
+
+    App.toast('⏳ Audio tayyorlanmoqda, biroz kuting...');
+
+    var langCode = R.lang.indexOf('ru') === 0 ? 'ru' : 'en';
+
+    fetch('/api?action=tts_download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sentences: sents,
+        lang: langCode,
+        repeat: rep,
+        title: title
+      })
+    }).then(function (res) {
+      if (!res.ok) {
+        return res.json().catch(function () { return {}; }).then(function (j) {
+          throw new Error(j.message || j.error || ('HTTP ' + res.status));
+        });
+      }
+      return res.blob();
+    }).then(function (blob) {
+      var url = window.URL.createObjectURL(blob);
+      var link = document.createElement('a');
+      link.href = url;
+      var safeName = title.replace(/[^\w\sа-яА-ЯёЁўқғҳЎҚҒҲ-]/gi, '_').replace(/\s+/g, '_');
+      if (rep > 1) safeName += '_' + rep + 'x';
+      link.download = safeName + '.mp3';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      App.toast('✅ Audio yuklab olindi');
+    }).catch(function (err) {
+      App.toast('⚠️ Yuklab olishda xatolik: ' + err.message);
+    });
   };
 
   /* ---------- Ovozni tanlash ----------
@@ -360,8 +1119,11 @@
     var opts = [0.6, 0.75, 0.9, 1, 1.15, 1.3];
     R.rate = opts[(opts.indexOf(R.rate) + 1) % opts.length];
     try { localStorage.setItem('reading_rate', String(R.rate)); } catch (e) {}
+    if (playerAudio) {
+      playerAudio.playbackRate = R.rate;
+    }
     paintPlayer();
-    if (R.playing) { if (window.TTS) TTS.cancel(); else { try { window.speechSynthesis.cancel(); } catch (e) {} } step(R.idx < 0 ? 0 : R.idx); }
+    if (R.playing && !playerAudio) { haltSpeech(); step(R.idx < 0 ? 0 : R.idx); }
   };
 
   /* ================= Tarjima oynachasi (popover) =================
@@ -397,6 +1159,11 @@
       '<div class="rd-pop-acts">' +
         '<button class="rd-pop-b" data-act="rdSay" data-arg=\'' + App.arg({ t: opts.say }) + '\'>' +
         '<span data-icon="volume" data-icon-size="15"></span>Tinglash</button>' +
+        '<button class="rd-pop-b" data-act="rdSayRepeat" data-arg=\'' + App.arg({ t: opts.say, count: 2 }) + '\' title="2 marta takrorlab tinglash">' +
+        '<span data-icon="repeat" data-icon-size="14"></span>2x</button>' +
+        '<button class="rd-pop-b mic" data-act="rdPronunCheck" data-arg=\'' +
+          App.arg({ t: opts.say, tr: opts.tr, n: opts.sent }) + '\' title="Talaffuzni tekshirish">' +
+        '<span data-icon="mic" data-icon-size="14"></span>Talaffuz</button>' +
         (opts.learn
           ? '<button class="rd-pop-b learn" data-act="rdLearn" data-arg=\'' +
             App.arg({ w: opts.src, t: opts.tr }) + '\'>' +
@@ -436,7 +1203,312 @@
     }
   }
 
-  App.actions.rdSay = function (a) { R.alive = true; speak(a && a.t); };
+  /* "Tinglash" — bitta so'z ham, butun gap ham bo'lishi mumkin. Gap bo'lsa
+     u ham intonatsiya bilan o'qilsin (so'z uchun natija bir xil). */
+  App.actions.rdSay = function (a) {
+    R.alive = true;
+    haltSpeech();
+    playSentenceAudio(a && a.t);
+  };
+
+  /* Tanlangan gap/so'zni 2 yoki 3 marta takrorlab o'qish */
+  App.actions.rdSayRepeat = function (a) {
+    var txt = a && a.t;
+    if (!txt) return;
+    R.alive = true;
+    haltSpeech();
+    var count = parseInt(a && a.count, 10) || 2;
+    var cur = 1;
+    function speakOnce() {
+      if (!R.alive) return;
+      playSentenceAudio(txt, function () {
+        if (!R.alive) return;
+        if (cur < count) {
+          cur++;
+          R.gapTimer = setTimeout(speakOnce, Math.round(350 / (R.rate || 1)));
+        }
+      });
+    }
+    speakOnce();
+  };
+
+  /* ================= Talaffuz tekshiruvi (Pronunciation Check) ================= */
+
+  function normWord(s) {
+    return String(s || '').toLowerCase().replace(/[^\wа-яё]/gi, '');
+  }
+
+  function levenshtein(a, b) {
+    if (a.length === 0) return b.length;
+    if (b.length === 0) return a.length;
+    var matrix = [];
+    for (var i = 0; i <= b.length; i++) matrix[i] = [i];
+    for (var j = 0; j <= a.length; j++) matrix[0][j] = j;
+    for (var i = 1; i <= b.length; i++) {
+      for (var j = 1; j <= a.length; j++) {
+        if (b.charAt(i - 1) === a.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1));
+        }
+      }
+    }
+    return matrix[b.length][a.length];
+  }
+
+  function wordSimilarity(a, b) {
+    var na = normWord(a), nb = normWord(b);
+    if (!na && !nb) return 100;
+    if (!na || !nb) return 0;
+    if (na === nb) return 100;
+    var dist = levenshtein(na, nb);
+    var maxLen = Math.max(na.length, nb.length);
+    return Math.max(0, Math.round((1 - dist / maxLen) * 100));
+  }
+
+  function compareSentence(target, said) {
+    var targetTokens = String(target || '').trim().split(/\s+/).filter(Boolean);
+    var saidTokens = String(said || '').trim().split(/\s+/).filter(Boolean);
+
+    var saidIdx = 0;
+    var results = [];
+    var totalScore = 0;
+
+    for (var i = 0; i < targetTokens.length; i++) {
+      var tw = targetTokens[i];
+      var bestSim = 0;
+      var bestStep = 1;
+      var bestSaidIdx = -1;
+
+      var lookEnd = Math.min(saidTokens.length, saidIdx + 4);
+      for (var j = saidIdx; j < lookEnd; j++) {
+        var s1 = wordSimilarity(tw, saidTokens[j]);
+        if (s1 > bestSim) {
+          bestSim = s1;
+          bestStep = 1;
+          bestSaidIdx = j;
+        }
+        if (j + 1 < saidTokens.length) {
+          var s2 = wordSimilarity(tw, saidTokens[j] + saidTokens[j + 1]);
+          if (s2 > bestSim) {
+            bestSim = s2;
+            bestStep = 2;
+            bestSaidIdx = j;
+          }
+        }
+      }
+
+      var status = 'bad';
+      if (bestSim >= 80) {
+        status = 'good';
+        saidIdx = bestSaidIdx + bestStep;
+      } else if (bestSim >= 50) {
+        status = 'warn';
+        saidIdx = bestSaidIdx + bestStep;
+      }
+
+      totalScore += bestSim;
+      results.push({ word: tw, clean: normWord(tw), status: status, sim: bestSim });
+    }
+
+    var score = targetTokens.length ? Math.round(totalScore / targetTokens.length) : 0;
+    return { score: score, words: results };
+  }
+
+  var activePronunRec = null;
+
+  function stopPronunRec() {
+    if (activePronunRec) {
+      try {
+        if (activePronunRec.abort) activePronunRec.abort();
+        else activePronunRec.stop();
+      } catch (e) {}
+      activePronunRec = null;
+    }
+  }
+
+  function openPronunModal(targetText, targetTr, sentIdx) {
+    targetText = String(targetText || '').trim();
+    if (!targetText) { App.toast('Talaffuz uchun matn topilmadi'); return; }
+
+    stopAll();
+    stopPronunRec();
+
+    var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    var hasNext = (typeof sentIdx === 'number' && sentIdx >= 0 && sentIdx + 1 < R.sentences.length);
+
+    var html =
+      '<div class="pr-modal">' +
+        '<div class="pr-target-card">' +
+          '<div class="pr-target-text">' + App.esc(targetText) + '</div>' +
+          (targetTr ? '<div class="pr-trans-text">' + App.esc(targetTr) + '</div>' : '') +
+          '<div class="pr-listen-wrap">' +
+            '<button class="pr-listen-btn" id="pr-listen-btn">' +
+              '<span data-icon="volume" data-icon-size="14"></span>To\'g\'ri talaffuzni tinglash</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="pr-mic-wrap">' +
+          '<button class="pr-mic-btn" id="pr-mic-btn" aria-label="Mikrofon">' +
+            '<span data-icon="mic" data-icon-size="34"></span></button>' +
+          '<div class="pr-status-text" id="pr-status-text">' +
+            (Rec ? 'Mikrofonni bosing va ovoz chiqarib o\'qing' : '⚠️ Brauzeringizda mikrofonli tanish yo\'q — yozib tekshirishingiz mumkin') +
+          '</div>' +
+        '</div>' +
+        '<input class="input" id="pr-typed" placeholder="Yoki yozib tekshiring..." autocomplete="off" style="text-align:center;' + (Rec ? 'display:none;' : 'margin-bottom:12px;') + '">' +
+        '<div class="pr-result-box" id="pr-result-box" style="display:none;">' +
+          '<div style="text-align:center;"><span class="pr-score-badge" id="pr-score-badge"></span></div>' +
+          '<div class="pr-words-feedback" id="pr-words-feedback"></div>' +
+          '<div class="pr-said-wrap" id="pr-said-wrap"><span class="muted">Siz aytdingiz:</span> <b id="pr-said-val"></b></div>' +
+          '<p class="muted" style="font-size:11.5px;text-align:center;margin:8px 0 0">💡 Xato so\'z ustiga bossangiz, uning to\'g\'ri talaffuzini eshitasiz.</p>' +
+        '</div>' +
+        '<div class="btn-row" style="margin-top:14px">' +
+          '<button class="btn sec" data-act="closeSheet">Yopish</button>' +
+          (hasNext ? '<button class="btn" id="pr-next-btn">Keyingi gap ➔</button>' : '') +
+        '</div>' +
+      '</div>';
+
+    var sh = App.sheet(html, { title: 'Talaffuzni tekshirish' });
+    App.icons(sh);
+
+    var micBtn = sh.querySelector('#pr-mic-btn');
+    var statusText = sh.querySelector('#pr-status-text');
+    var listenBtn = sh.querySelector('#pr-listen-btn');
+    var typedInput = sh.querySelector('#pr-typed');
+    var resultBox = sh.querySelector('#pr-result-box');
+    var scoreBadge = sh.querySelector('#pr-score-badge');
+    var wordsBox = sh.querySelector('#pr-words-feedback');
+    var saidVal = sh.querySelector('#pr-said-val');
+    var nextBtn = sh.querySelector('#pr-next-btn');
+
+    listenBtn.onclick = function () {
+      playSentenceAudio(targetText);
+    };
+
+    function displayResult(said) {
+      if (!said) return;
+      var comp = compareSentence(targetText, said);
+      resultBox.style.display = 'block';
+      saidVal.textContent = '"' + said + '"';
+
+      var badgeCls = 'good';
+      var msg = 'A\'lo darajada!';
+      if (comp.score < 60) {
+        badgeCls = 'bad';
+        msg = 'Qaytadan urinib ko\'ring';
+      } else if (comp.score < 85) {
+        badgeCls = 'warn';
+        msg = 'Yaxshi! Qizil so\'zlarga e\'tibor bering';
+      }
+
+      scoreBadge.className = 'pr-score-badge ' + badgeCls;
+      scoreBadge.innerHTML = '<span data-icon="target" data-icon-size="15"></span>' + comp.score + '% aniqlik · ' + msg;
+      App.icons(scoreBadge);
+
+      wordsBox.innerHTML = comp.words.map(function (w) {
+        return '<span class="pr-word ' + w.status + '" data-clean="' + App.esc(w.clean) + '" title="Tinglash uchun bosing">' +
+          App.esc(w.word) + '</span>';
+      }).join('');
+
+      wordsBox.querySelectorAll('.pr-word').forEach(function (el) {
+        el.onclick = function () {
+          var clean = this.getAttribute('data-clean');
+          if (clean) speak(clean);
+        };
+      });
+    }
+
+    var isListening = false;
+    if (Rec) {
+      var rec = new Rec();
+      rec.lang = R.lang;
+      rec.continuous = false;
+      rec.interimResults = false;
+
+      rec.onstart = function () {
+        isListening = true;
+        micBtn.classList.add('listening');
+        statusText.textContent = '🎙️ Eshitilmoqda... Ovoz chiqarib gapiring';
+      };
+
+      rec.onresult = function (e) {
+        isListening = false;
+        micBtn.classList.remove('listening');
+        statusText.textContent = 'Natija tahlil qilindi';
+        var said = (e.results && e.results[0] && e.results[0][0] && e.results[0][0].transcript) || '';
+        displayResult(said.trim());
+      };
+
+      rec.onerror = function () {
+        isListening = false;
+        micBtn.classList.remove('listening');
+        statusText.textContent = '⚠️ Xatolik yoki ovoz eshitilmadi. Qayta urinib ko\'ring.';
+      };
+
+      rec.onend = function () {
+        isListening = false;
+        micBtn.classList.remove('listening');
+      };
+
+      activePronunRec = rec;
+
+      micBtn.onclick = function () {
+        if (isListening) {
+          try { rec.stop(); } catch (e) {}
+          return;
+        }
+        try {
+          rec.start();
+        } catch (e) {
+          try { rec.stop(); setTimeout(function () { rec.start(); }, 150); } catch (e2) {}
+        }
+      };
+    } else {
+      micBtn.onclick = function () {
+        typedInput.style.display = 'block';
+        typedInput.focus();
+      };
+    }
+
+    typedInput.onkeydown = function (e) {
+      if (e.key === 'Enter') {
+        displayResult(this.value.trim());
+        this.value = '';
+      }
+    };
+
+    if (nextBtn) {
+      nextBtn.onclick = function () {
+        App.closeSheet();
+        stopPronunRec();
+        var nextIdx = sentIdx + 1;
+        if (R.sentences[nextIdx]) {
+          R.idx = nextIdx;
+          highlight(nextIdx);
+          paintPlayer();
+          openPronunModal(R.sentences[nextIdx].text, R.sentences[nextIdx].tr, nextIdx);
+        }
+      };
+    }
+  }
+
+  App.actions.rdPronunCheck = function (a) {
+    closePop();
+    var text = (a && a.t) || '';
+    var tr = (a && a.tr) || '';
+    var n = (a && typeof a.n === 'number') ? a.n : -1;
+    openPronunModal(text, tr, n);
+  };
+
+  App.actions.rdCheckCurrentPronun = function () {
+    if (!R.sentences || !R.sentences.length) {
+      App.toast('Talaffuzni tekshirish uchun matn yo\'q');
+      return;
+    }
+    var idx = R.idx >= 0 ? R.idx : 0;
+    var s = R.sentences[idx];
+    if (!s) return;
+    openPronunModal(s.text, s.tr, idx);
+  };
 
   App.actions.rdWord = function (a, el) {
     R.alive = true;
@@ -494,6 +1566,7 @@
   }
 
   App.actions.rdLearn = function (a, el) {
+    if (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) { App.toast("Faqat administrator uchun"); return; }
     var word = String(a.w || '').trim();
     var tr = String(a.t || '').trim();
     if (!word) return;
@@ -527,6 +1600,51 @@
         if (el) { el.disabled = false; }
         App.toast('⚠️ ' + e.message);
       });
+  };
+
+  /* ---------- C tugmasi — matndagi so'zlarni mashq qilish ----------
+     Matnda `{so'z|tarjima}` bilan belgilangan hamma so'z yig'iladi va
+     to'g'ridan-to'g'ri Lug'at bo'limidagi mashqlar sahifasi ochiladi
+     (flashcard, test, juftlash — hammasi shu yerdan).
+
+     Bu to'plam SERVERGA yozilmaydi: `save_dict_cat` faqat adminda ishlaydi
+     va har matn uchun doimiy lug'at yaratish Lug'at ro'yxatini
+     bir martalik yozuvlarga to'ldirib yuborardi. Tafsilot — vocab.js
+     dagi `App.vocabText`. */
+  function textWords() {
+    var seen = {}, out = [];
+    (R.blocks || []).forEach(function (b) {
+      (b.tokens || []).forEach(function (t) {
+        if (t.k === 'x' || !t.t) return;               // belgilanmagan so'z
+        var w = String(t.w || '').trim();
+        var tr = String(t.t || '').trim();
+        if (!w || !tr) return;
+        var k = w.toLowerCase();
+        if (seen[k]) return;
+        seen[k] = 1;
+        out.push({
+          ru: w, uz: tr, note: '', ex: '',
+          pairWith: [], meaningGroup: '',
+          partOfSpeech: '', pronunciation: '', forms: '', formation: '',
+          synonyms: '', antonyms: '', collocations: '', mnemonic: ''
+        });
+      });
+    });
+    return out;
+  }
+
+  App.actions.rdPractice = function () {
+    var words = textWords();
+    if (!words.length) {
+      App.toast('Bu matnda {so\'z|tarjima} bilan belgilangan so\'z yo\'q');
+      return;
+    }
+    var lang = dictLang(R.sec);
+    /* Nomdagi "/" Lug'at bo'limida PAPKA ajratgichi — uni qoldirsak
+       to'plam mavjud bo'lmagan papka ichida qolib ketardi. */
+    var cat = 'Matn: ' + String(R.name || 'Matn').replace(/\//g, '-').trim();
+    App.vocabText.save(lang, cat, words);
+    App.go('vocab_practice', { lang: lang, cat: cat });
   };
 
   /* ---------- "O'rganish lug'ati" tanlash ----------
@@ -598,7 +1716,10 @@
         // Birinchi darajali sarlavha — MARKAZDA (matn boshlanishi shundan)
         var cls = b.lvl === 1 ? 'rd-h1' : 'rd-h2';
         var tag = b.lvl === 1 ? 'h2' : 'h3';
-        html += '<' + tag + ' class="' + cls + '">' + App.esc(b.text) + '</' + tag + '>';
+        /* `rd-s` + `data-n` — o'qilayotganda sarlavha ham belgilanib turishi
+           uchun (gaplar bilan bir xil mexanizm). */
+        html += '<' + tag + ' class="' + cls + ' rd-s" data-n="' + b.n + '">' +
+          App.esc(b.text) + '</' + tag + '>';
         return;
       }
 
@@ -785,8 +1906,10 @@
 
   App.actions.rdSample = function (a) {
     App.closeSheet();
+    var isShadow = String((a && a.sec) || R.sec).indexOf('shadowing') >= 0;
     var ru = String((a && a.sec) || R.sec).indexOf('ru_') === 0;
-    App.download(ru ? 'namuna-chtenie.md' : 'namuna-reading.md', ru ? SAMPLE_RU : SAMPLE_EN);
+    var fileName = isShadow ? (ru ? 'namuna-shedouing.md' : 'namuna-shadowing.md') : (ru ? 'namuna-chtenie.md' : 'namuna-reading.md');
+    App.download(fileName, ru ? SAMPLE_RU : SAMPLE_EN);
     App.toast('Namuna fayl yuklandi — shu formatda yozing');
   };
 
@@ -794,22 +1917,43 @@
 
   App.view('reading_doc', {
     nav: 'languages',
-    leave: function () { stopAll(); closePop(); },
+    leave: function () {
+      stopAll();
+      stopPronunRec();
+      closePop();
+      stopAudioKeepAlive();
+      bufClear();          // blob URL'lar bo'shatilmasa xotira oqib ketadi
+    },
     render: function (page, params) {
       R.sec = params.sec || 'en_reading';
       R.id = params.id;
       R.lang = ttsLang(R.sec);
       R.blocks = []; R.sentences = []; R.idx = -1;
-      R.playing = false; R.alive = true; R.barOpen = false;
+      R.playing = false; R.alive = true; R.barOpen = false; R.seeking = false;
       try { R.rate = parseFloat(localStorage.getItem('reading_rate')) || 1; } catch (e) { R.rate = 1; }
       try { R.stepMode = localStorage.getItem('reading_step_mode') === '1'; } catch (e) { R.stepMode = false; }
+      try { R.repeatCount = parseInt(localStorage.getItem('reading_repeat_count'), 10) || 1; } catch (e) { R.repeatCount = 1; }
+      if (R.repeatCount < 1 || R.repeatCount > 3) R.repeatCount = 1;
+      try { R.shadowMode = localStorage.getItem('reading_shadow_mode') === '1'; } catch (e) { R.shadowMode = false; }
+      if (String(R.sec || '').indexOf('shadowing') >= 0) {
+        R.shadowMode = true;
+        R.stepMode = false;
+      }
+      R.repeatIdx = 1;
+      R.shadowSecondsLeft = 0;
+      R.shadowTimer = null;
       R.pendingStop = false;
 
       page.innerHTML =
         '<div class="topbar" style="margin:-16px -15px 12px">' +
         '<button class="icon-btn ghost" id="rd-back"><span data-icon="arrowLeft" data-icon-size="20"></span></button>' +
         '<h1 id="rd-title"></h1>' +
-        '<button class="icon-btn ghost" id="rd-menu" style="margin-left:auto"><span data-icon="edit" data-icon-size="18"></span></button></div>' +
+        /* C / V — "matndagi so'zlarni mashq qilish". Lug'at bo'limidagi
+           bir xil belgi bilan bir xil ma'noda (C — Словарь, V — Vocabulary). */
+        '<button class="icon-btn ghost rd-voc-btn" data-act="rdPractice" style="margin-left:auto" ' +
+          'aria-label="Matndagi so\'zlarni mashq qilish" title="Matndagi so\'zlarni mashq qilish">' +
+          (dictLang(R.sec) === 'russian' ? 'C' : 'V') + '</button>' +
+        '<button class="icon-btn ghost" id="rd-menu"><span data-icon="edit" data-icon-size="18"></span></button></div>' +
         '<div id="rd-body"><div class="load-wrap"><div class="spinner"></div></div></div>' +
         '<div class="rd-player" id="rd-player"></div>' +
         '<input type="file" id="rd-file" hidden accept=".md,.markdown,.txt,text/markdown,text/plain">';
@@ -875,17 +2019,19 @@
   function bindMenu(page, t) {
     var btn = page.querySelector('#rd-menu'); if (!btn) return;
     btn.onclick = function () {
+      var isRO = window.Auth && Auth.isReadOnly && Auth.isReadOnly();
       var html =
         '<button class="list-row" data-act="rdPickDict">' +
         '<span class="li-ic" style="background:var(--accent-soft);color:var(--accent)" data-icon="list" data-icon-size="15"></span>' +
         '<div class="li-main"><div class="li-title">O\'rganish lug\'ati</div>' +
         '<div class="li-sub">' + App.esc(targetCat()) + '</div></div>' +
         '<span class="li-chev" data-icon="arrowLeft" data-icon-size="15" style="transform:rotate(180deg)"></span></button>' +
+        (isRO ? '' :
         '<button class="list-row" id="rd-m-ed"><span class="li-ic" data-icon="edit" data-icon-size="15"></span>' +
         '<div class="li-main"><div class="li-title">' + (t.content ? 'Tahrirlash' : 'Yozish') + '</div>' +
         '<div class="li-sub">Tarjimalarni shu yerda qo\'shasiz</div></div></button>' +
         '<button class="list-row" id="rd-m-up"><span class="li-ic" data-icon="upload" data-icon-size="15"></span>' +
-        '<div class="li-main"><div class="li-title">' + (t.content ? '.md faylni almashtirish' : '.md fayl yuklash') + '</div></div></button>' +
+        '<div class="li-main"><div class="li-title">' + (t.content ? '.md faylni almashtirish' : '.md fayl yuklash') + '</div></div></button>') +
         (t.content
           ? '<button class="list-row" id="rd-m-dl"><span class="li-ic" data-icon="download" data-icon-size="15"></span>' +
             '<div class="li-main"><div class="li-title">.md faylni yuklab olish</div></div></button>'
@@ -900,8 +2046,10 @@
         '<div class="li-sub">Qisqa misol — format qanday ko\'rinishini ko\'rsatadi</div></div></button>';
       var sh = App.sheet(html, { title: R.name });
       App.icons(sh);
-      sh.querySelector('#rd-m-up').onclick = function () { App.closeSheet(); App.el('rd-file').click(); };
-      sh.querySelector('#rd-m-ed').onclick = function () { App.closeSheet(); editDoc(page, t); };
+      var upEl = sh.querySelector('#rd-m-up');
+      if (upEl) upEl.onclick = function () { App.closeSheet(); App.el('rd-file').click(); };
+      var edEl = sh.querySelector('#rd-m-ed');
+      if (edEl) edEl.onclick = function () { App.closeSheet(); editDoc(page, t); };
       var dl = sh.querySelector('#rd-m-dl');
       if (dl) dl.onclick = function () { App.closeSheet(); App.download(R.name + '.md', t.content); };
     };
@@ -909,6 +2057,8 @@
     var fEl = App.el('rd-file');
     if (fEl) fEl.onchange = function (e) {
       var f = e.target.files[0]; if (!f) return;
+    if (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) { App.toast("Faqat administrator uchun"); return; }
+
       var fr = new FileReader();
       fr.onload = function () {
         App.call('upload_topic_content', { id: R.id, part: 'content', content: String(fr.result || '') })
@@ -931,13 +2081,27 @@
       '<button class="btn" id="rd-ta-save">Saqlash</button></div>';
     var sh = App.sheet(html, { title: R.name, cls: 'editor-sheet' });
     sh.querySelector('#rd-ta-save').onclick = function () {
+    if (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) { App.toast("Faqat administrator uchun"); return; }
       App.call('upload_topic_content', { id: R.id, part: 'content', content: sh.querySelector('#rd-ta').value })
         .then(function () { App.closeSheet(); App.toast('✅ Saqlandi'); loadDoc(page); })
         .catch(function (err) { App.toast('⚠️ ' + err.message); });
     };
   }
 
-  /* Kutubxona "Qo'shish" menyusi Reading bo'limida namuna faylni ham taklif qiladi */
-  window.Reading = { isReadingSec: function (sec) { return /^(en|ru)_reading$/.test(sec || ''); } };
+  /* Kutubxona "Qo'shish" menyusi Reading va Shadowing bo'limida namuna faylni ham taklif qiladi */
+  window.Reading = { isReadingSec: function (sec) { return /^(en|ru)_(reading|shadowing)$/.test(sec || ''); } };
+
+  /* Audirovaniye (listening-doc.js) AYNAN shu parser va intonatsiya
+     dvigatelini ishlatadi — bir xil `.md` format, ikki xil mashq. Kod
+     nusxa ko'chirilmasin: formatga o'zgartirish kiritilsa, ikkala bo'lim
+     birga yangilanishi kerak. */
+  window.RDCore = {
+    parse: parse,
+    prosodyParts: prosodyParts,
+    plainText: plainText,
+    ttsLang: ttsLang,
+    dictLang: dictLang,
+    compareSentence: compareSentence
+  };
 
 })();

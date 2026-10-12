@@ -407,6 +407,11 @@
         }
 
         ops.forEach(function (op) {
+            /* Eski navbatda qolgan ichki kalit tiklanmaydi — u qurilmaga
+               tegishli va serverga ketmasligi kerak. */
+            if (isInternalKey(op.key)) {
+                return;
+            }
             var stamp = normalizeStamp(op.stamp) || makeStamp();
             if (op.type === 'delete') {
                 delete state.cache[op.key];
@@ -477,7 +482,46 @@
        Surat kaliti `__remote_storage_` bilan boshlanadi, ya'ni
        `isInternalKey()` uni ichki deb biladi: `listNativeKeys()` ko'rmaydi,
        demak sinxronizatsiyaga ham, `purgeNativeStorage()` ga ham tushmaydi. */
-    var snapshotKey = '__remote_storage_snapshot_v1';
+
+    /* ---------- FAQAT SHU QURILMADA qoladigan qiymatlar ----------
+       Ba'zi narsalar serverga sinxronlanmasligi kerak, lekin sahifa
+       yangilanganda ham saqlanishi shart. */
+    var localOnlyPrefix = '__remote_storage_local_';
+
+    function localOnlyGet(name) {
+        if (!canPatchStorage) return null;
+        try {
+            return nativeGetItem.call(window.localStorage, localOnlyPrefix + name);
+        } catch (error) { return null; }
+    }
+
+    function localOnlySet(name, value) {
+        if (!canPatchStorage) return;
+        try {
+            if (value === null || value === undefined) {
+                nativeRemoveItem.call(window.localStorage, localOnlyPrefix + name);
+            } else {
+                nativeSetItem.call(window.localStorage, localOnlyPrefix + name, String(value));
+            }
+        } catch (error) {}
+    }
+
+    /* Har bir foydalanuvchi uchun snapshot alohida saqlanadi. */
+    function getSnapshotKey() {
+        var email = '';
+        try {
+            if (window.Auth && window.Auth.user && (window.Auth.user.doktor_email || window.Auth.user.email)) {
+                email = (window.Auth.user.doktor_email || window.Auth.user.email).trim().toLowerCase();
+            } else if (localOnlyGet('auth_last_email_v1')) {
+                email = String(localOnlyGet('auth_last_email_v1')).trim().toLowerCase();
+            }
+        } catch (e) {}
+        if (email) {
+            return '__remote_storage_snapshot_' + email.replace(/[^a-z0-9_]/g, '_');
+        }
+        return '__remote_storage_snapshot_v1';
+    }
+
     var snapshotTimer = null;
 
     function readSnapshot() {
@@ -486,7 +530,10 @@
         }
 
         try {
-            var raw = nativeGetItem.call(window.localStorage, snapshotKey);
+            var raw = nativeGetItem.call(window.localStorage, getSnapshotKey());
+            if (!raw) {
+                raw = nativeGetItem.call(window.localStorage, '__remote_storage_snapshot_v1');
+            }
             if (!raw) {
                 return null;
             }
@@ -506,7 +553,7 @@
         try {
             nativeSetItem.call(
                 window.localStorage,
-                snapshotKey,
+                getSnapshotKey(),
                 JSON.stringify({ at: Date.now(), items: state.cache || {} })
             );
         } catch (error) {
@@ -711,18 +758,34 @@
     }
 
     function buildOps() {
-        return Object.keys(state.queue).map(function (key) {
-            return {
-                key: key,
-                type: state.queue[key].type,
-                value: state.queue[key].value,
-                stamp: state.queue[key].stamp || 0,
-            };
-        });
+        /* ICHKI KALITLAR SHU YERDA TO'SILADI — bu ma'lumot qurilmadan
+           chiqadigan YAGONA joy, shuning uchun himoya aynan shu yerda.
+
+           `setItem` dagi tekshiruvning o'zi yetmagan edi: kalit navbatga
+           boshqa yo'llar bilan ham tushar ekan —
+             - `restorePendingBackups()` tuzatishdan OLDIN navbatga tushgan
+               yozuvni keyin qayta tiklaydi;
+             - eski kod ishlab turgan boshqa qurilma/ilova ham yuborishi
+               mumkin.
+           Natijada 2.3 MB lik lenta keshi serverga QAYTA yozilgan va
+           `storage_bootstrap` yana vaqt chegarasidan chiqib ketgan edi. */
+        return Object.keys(state.queue)
+            .filter(function (key) { return !isInternalKey(key); })
+            .map(function (key) {
+                return {
+                    key: key,
+                    type: state.queue[key].type,
+                    value: state.queue[key].value,
+                    stamp: state.queue[key].stamp || 0,
+                };
+            });
     }
 
     function restoreOps(ops) {
         ops.forEach(function (item) {
+            if (isInternalKey(item.key)) {
+                return;
+            }
             if (!Object.prototype.hasOwnProperty.call(state.queue, item.key)) {
                 state.queue[item.key] = {
                     type: item.type,
@@ -905,6 +968,14 @@
                 return nativeGetItem.call(this, key);
             }
 
+            /* ICHKI KALIT (`__remote_storage_` prefiksi) — masofaviy qatlam
+               umuman aralashmaydi: to'g'ridan-to'g'ri brauzer xotirasidan.
+               Bu kalitlar QURILMAGA tegishli (kesh, navbat surati) va
+               serverga yuborilmasligi kerak. */
+            if (isInternalKey(key)) {
+                return nativeGetItem.call(window.localStorage, key);
+            }
+
             if (!state.ready) {
                 bootstrap();
             }
@@ -930,6 +1001,18 @@
 
             if (!isLocalStorageTarget(this)) {
                 return nativeSetItem.call(this, key, stringValue);
+            }
+
+            /* ICHKI KALIT — serverga YUBORILMAYDI.
+               Ilgari bu tekshiruv FAQAT o'qishda (`listNativeKeys`) bor edi,
+               yozishda esa yo'q edi. Natijada `__remote_storage_` prefiksli
+               kalit ham `app_storage` ga tushardi: bosh sahifa lentasining
+               2.3 MB lik keshi shu yo'l bilan bazaga yozilib, har ochilishda
+               `storage_bootstrap` ni 4.5 soniyalik chegaradan chiqarardi.
+               Bootstrap yiqilsa `state.cache` bo'sh qoladi va HAMMA sozlama
+               (o'rgangan so'zlar ham) "saqlanmagandek" ko'rinardi. */
+            if (isInternalKey(key)) {
+                return nativeSetItem.call(window.localStorage, key, stringValue);
             }
 
             if (!state.ready) {
@@ -983,6 +1066,11 @@
 
             if (!isLocalStorageTarget(this)) {
                 return nativeRemoveItem.call(this, key);
+            }
+
+            /* Ichki kalit — o'chirish ham faqat shu qurilmada */
+            if (isInternalKey(key)) {
+                return nativeRemoveItem.call(window.localStorage, key);
             }
 
             if (!state.ready) {
@@ -1125,46 +1213,39 @@
     /* Qayta ulanish: birinchi urinish muvaffaqiyatsiz bo'lsa (masalan hali tizimga
        kirilmagan bo'lsa) sinxronlash butun sessiya davomida o'chib qolardi. Kirgandan
        keyin shu funksiya chaqiriladi va bog'lanish qaytadan quriladi. */
-    function reset() {
+    /* Qayta ulanish: kirgandan yoki foydalanuvchi almashgandan keyin
+       sinxronlash yangi foydalanuvchi hisobi bilan toza qayta ishga tushiriladi. */
+    function reset(newEmail) {
+        if (newEmail) {
+            localOnlySet('auth_last_email_v1', newEmail);
+        }
+        state.cache = {};
+        state.queue = {};
         state.bootstrapPromise = null;
         state.ready = false;
         state.syncEnabled = true;
         return bootstrap();
     }
 
-    /* ---------- FAQAT SHU QURILMADA qoladigan qiymatlar ----------
-       Ba'zi narsalar serverga sinxronlanmasligi kerak, lekin sahifa
-       yangilanganda ham saqlanishi shart (masalan oxirgi kirish holati:
-       auth.js undan foydalanib ilovani serverni KUTMASDAN ochadi).
-       Oddiy `localStorage` bu yerda yaramaydi — u butunlay shu ko'prik
-       ostida va har yozuv serverga ketadi. Shuning uchun ichki kalit
-       ostida TO'G'RIDAN-TO'G'RI brauzer xotirasiga yozamiz: `__remote_storage_`
-       prefiksi tufayli `isInternalKey()` uni ichki deb biladi, ya'ni
-       sinxronlashga ham, `purgeNativeStorage()` ga ham tushmaydi. */
-    var localOnlyPrefix = '__remote_storage_local_';
-
-    function localOnlyGet(name) {
-        if (!canPatchStorage) return null;
-        try {
-            return nativeGetItem.call(window.localStorage, localOnlyPrefix + name);
-        } catch (error) { return null; }
-    }
-
-    function localOnlySet(name, value) {
-        if (!canPatchStorage) return;
-        try {
-            if (value === null || value === undefined) {
-                nativeRemoveItem.call(window.localStorage, localOnlyPrefix + name);
-            } else {
-                nativeSetItem.call(window.localStorage, localOnlyPrefix + name, String(value));
-            }
-        } catch (error) {}
+    function purgeUserStorage() {
+        state.cache = {};
+        state.queue = {};
+        writePendingOps([]);
+        localOnlySet('auth_last_email_v1', null);
+        if (canPatchStorage) {
+            try {
+                var key = getSnapshotKey();
+                nativeRemoveItem.call(window.localStorage, key);
+                nativeRemoveItem.call(window.localStorage, '__remote_storage_snapshot_v1');
+            } catch (error) {}
+        }
     }
 
     window.RemoteStorageBridge = {
         bootstrap: bootstrap,
         whenReady: whenReady,
         reset: reset,
+        purgeUserStorage: purgeUserStorage,
         flush: flushQueue,
         flushSync: flushQueueSync,
         state: state,

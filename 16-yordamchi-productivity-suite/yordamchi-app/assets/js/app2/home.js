@@ -7,6 +7,16 @@
   'use strict';
 
   /* Stories ro'yxati */
+  /* Kategoriya nomlari — bir necha joyda ishlatiladi, shuning uchun
+     bitta joyda e'lon qilinadi. Ilgari ular satr sifatida qo'lda
+     takrorlanardi va shartlar `indexOf` bilan yozilgani uchun begona
+     kategoriyalarni ham tortib olardi. */
+  /* Lug'at nomi 210 dan 229 ga to'ldirilganda O'ZGARGAN. Eski nom
+     bazada YO'Q, ya'ni bu tekshiruv hech qachon mos kelmasdi va
+     kartochka o'z rangi o'rniga standart ko'rinishda chiqardi. */
+  var CAT_229  = 'я — 229 глаголов';
+  var CAT_TEMA = 'Тематический 9000';
+
   var STORIES = [
     {
       id: 'ru_229',
@@ -14,7 +24,7 @@
       sub: 'Hozirgi zamon',
       type: 'vocab',
       lang: 'russian',
-      category: 'Глаголы настоящего времени',
+      category: 'я — 229 глаголов',
       color: 'linear-gradient(135deg, #f59e0b, #ef4444)',
       badge: '229',
       desc: 'Rus tilida eng ko\'p ishlatiladigan 229 ta fe\'lning hozirgi zamon (я) shakllari va tarjimalari.',
@@ -267,24 +277,48 @@
   ];
 
   /* Wstore uslubidagi kategoriyalar */
-  var WSTORE_CATEGORIES = [
-    { key: 'all', label: 'Barcha so\'zlar', icon: 'globe' },
-    { key: 'ru_229', label: 'Hozirgi zamon (229)', icon: 'zap' },
-    { key: 'ru_1000', label: 'Rus tili 1000', icon: 'book' },
-    { key: 'en_8000', label: 'Ingliz tili 8000', icon: 'globe' },
-    { key: 'ru_8000', label: 'Katta ruscha lug\'at (8000)', icon: 'book' }
-  ];
+  /* Lug'atlar ro'yxati endi QATTIQ EMAS — u so'zlar havzasidan yasaladi
+     (`getAvailableCats`). Yangi lug'at qo'shilsa ro'yxatda o'zi paydo
+     bo'ladi, o'chirilgani esa yo'qoladi.
+
+     Bu xarita faqat ESKI saqlangan tanlov uchun: foydalanuvchida
+     `ru_1000` yozib qo'yilgan bo'lishi mumkin, u yo'qolib qolmasin. */
+  var LEGACY_CATEGORIES = {
+    /* Lug'at nomi o'zgargan (210 -> 229 ta fe'l). Eski kalit saqlangan
+       filtrda qolib ketishi mumkin, shuning uchun u YANGI nomga
+       ko'rsatadi — aks holda filtr "hozir mavjud emas" bo'lib qolardi. */
+    ru_229:  'russian|я — 229 глаголов',
+    ru_1000: 'russian|1-8000/1-1000',
+    ru_8000: 'russian|1-8000',
+    en_8000: 'english|1-8000'
+  };
+
+  var LANG_LABEL = { russian: 'Rus', english: 'Ingliz' };
 
   var WSTORE_COLLECTIONS = [
     { key: 'liked', label: 'Sevimli so\'zlarim', icon: 'heartFill', color: '#ef4444' },
-    { key: 'saved', label: 'Saqlangan xatcho\'plar', icon: 'bookmarkFill', color: '#3b82f6' },
+    { key: 'saved', label: 'Saqlanganlar', icon: 'bookmarkFill', color: '#3b82f6' },
     { key: 'mastered', label: 'O\'rganilgan so\'zlar', icon: 'check', color: '#10b981' }
+  ];
+
+  /* JOIN — so'zlarni qanday BOG'LASH kerakligi. Saralashdan alohida
+     bo'lim: saralash tartibni belgilaydi, join esa qaysi so'zlar bir
+     guruhga tushishini. Ikki mantiq butunlay boshqacha ishlaydi. */
+  var WSTORE_JOINS = [
+    { key: '', label: 'O\'chiq', sub: 'So\'zlar bog\'lanmaydi' },
+    { key: 'words', label: 'So\'zlarni juftlash',
+      sub: 'Yozilishi o\'xshash: храню / храплю' },
+    { key: 'meaning', label: 'Ma\'noni juftlash',
+      sub: 'Ma\'nosi bog\'liq: иду / хожу / еду' }
   ];
 
   var WSTORE_SORTS = [
     { key: 'popular', label: 'Ommabop / Tasodifiy' },
     { key: 'alpha', label: 'Alifbo bo\'yicha (A–Z)' },
     { key: 'recent', label: 'Eng yangi so\'zlar' }
+    /* Juftlash bandlari BU YERDAN olib tashlandi: ular saralash emas,
+       GURUHLASH edi. Endi ular "Join" bo'limida — u yerda mantiq
+       (so'z/ma'no) va ko'rinish (karusel/rangli) alohida tanlanadi. */
   ];
 
   var FEED_WORDS = [];
@@ -299,10 +333,16 @@
       return {
         category: s.category || 'all',
         collections: Array.isArray(s.collections) ? s.collections : [],
-        sort: s.sort || 'popular'
+        sort: s.sort || 'popular',
+        join: s.join || '',
+        joinColor: !!s.joinColor,
+        /* AI .md faylda yozgan "Turkum:" qatoridan kelgan qiymatlar.
+           Qattiq ro'yxat EMAS — qaysi turkumlar mavjud bo'lsa, filtrda
+           o'shalar chiqadi (getAvailablePos() ga qarang). */
+        partsOfSpeech: Array.isArray(s.partsOfSpeech) ? s.partsOfSpeech : []
       };
     } catch (e) {
-      return { category: 'all', collections: [], sort: 'popular' };
+      return { category: 'all', collections: [], sort: 'popular', join: '', joinColor: false, partsOfSpeech: [] };
     }
   }
 
@@ -315,6 +355,8 @@
     if (st.category && st.category !== 'all') count++;
     if (st.collections && st.collections.length > 0) count += st.collections.length;
     if (st.sort && st.sort !== 'popular') count++;
+    if (st.join) count++;
+    if (st.partsOfSpeech && st.partsOfSpeech.length > 0) count += st.partsOfSpeech.length;
     return count;
   }
 
@@ -333,8 +375,11 @@
               '<span class="ig-sparkle" data-icon="sparkles" data-icon-size="16"></span>' +
             '</div>' +
             '<div class="ig-actions">' +
-              '<button class="ig-btn-icon" data-act="igQuickPractice" title="Tezkor amaliyot / Test">' +
-                '<span data-icon="zap" data-icon-size="20"></span>' +
+              /* Test o'rniga TIZIM HOLATI: oflayn/onlayn, versiya, kesh va
+                 xotira sinxronizatsiyasi bir joyda ko'rinsin. Nosozlik
+                 chiqqanda "nima bo'lyapti" degan savolga javob shu yerda. */
+              '<button class="ig-btn-icon" data-act="igSystemStatus" title="Tizim holati">' +
+                '<span data-icon="activity" data-icon-size="20"></span>' +
               '</button>' +
               '<button class="ig-btn-icon" data-act="igShuffleFeed" title="Tasodifiy yangilash">' +
                 '<span data-icon="shuffle" data-icon-size="20"></span>' +
@@ -418,45 +463,6 @@
   };
 
   /* Horizontal Sub Chips */
-  function renderSubChipsHtml(st) {
-    var quickList = [
-      { id: 'all', label: 'Barchasi' },
-      { id: 'ru_229', label: '229 Fe\'l' },
-      { id: 'ru_1000', label: 'Rus 1K' },
-      { id: 'en_8000', label: 'Ingliz 8K' },
-      { id: 'liked', label: '❤️ Sevimlilar', isCol: true },
-      { id: 'saved', label: '🔖 Xatcho\'plar', isCol: true },
-      { id: 'mastered', label: '✅ O\'rganilganlar', isCol: true }
-    ];
-
-    return quickList.map(function (q) {
-      var isAct = false;
-      if (q.isCol) {
-        isAct = st.collections && st.collections.indexOf(q.id) >= 0;
-      } else {
-        isAct = (st.category === q.id) && (!st.collections || st.collections.length === 0);
-      }
-      return '<button class="ws-chip ' + (isAct ? 'active' : '') + '" data-act="wsToggleQuickChip" data-arg=\'' + App.arg(q) + '\'>' +
-        App.esc(q.label) +
-      '</button>';
-    }).join('');
-  }
-
-  App.actions.wsToggleQuickChip = function (a) {
-    var st = getFilterState();
-    if (a.isCol) {
-      var idx = st.collections.indexOf(a.id);
-      if (idx >= 0) st.collections.splice(idx, 1);
-      else st.collections.push(a.id);
-    } else {
-      st.category = a.id;
-      st.collections = [];
-    }
-    saveFilterState(st);
-    updateControlsUI();
-    renderFeedItems(6, false);
-  };
-
   function updateControlsUI() {
     var st = getFilterState();
     var count = getActiveFilterCount(st);
@@ -465,11 +471,9 @@
       badge.textContent = count;
       badge.style.display = count > 0 ? 'flex' : 'none';
     }
-    var chips = document.getElementById('ws-chips-row');
-    if (chips) {
-      chips.innerHTML = renderSubChipsHtml(st);
-      App.icons(chips);
-    }
+    /* Tez chiplar OLIB TASHLANDI (foydalanuvchi so'rovi): ular uchun
+       `ws-chips-row` elementi HTML'da umuman yasalmagan edi, ya'ni kod
+       hech qachon ishlamagan o'lik qism edi. */
   }
 
   /* Mini Stats Bar HTML */
@@ -490,9 +494,19 @@
     }
   }
 
+  /* Dasturlash kontenti FAQAT adminga ko'rinadi. Boshqa foydalanuvchilar
+     bu ilovaga ingliz va rus tilini o'rganish uchun taklif qilinadi —
+     Python/Linux/Git kabi kurslar ular uchun shovqin. */
+  function codingHidden() {
+    return !!(window.Auth && Auth.isReadOnly && Auth.isReadOnly());
+  }
+
   /* Stories HTML generator */
   function renderStoriesHtml() {
-    return STORIES.map(function (s) {
+    var list = codingHidden()
+      ? STORIES.filter(function (s) { return s.type !== 'coding'; })
+      : STORIES;
+    return list.map(function (s) {
       return '<div class="ig-story-bubble" data-act="igOpenStory" data-arg=\'' + App.arg({ id: s.id }) + '\'>' +
         '<div class="ig-story-ring">' +
           '<div class="ig-story-avatar" style="background:' + s.color + '">' +
@@ -505,17 +519,78 @@
   }
 
   /* Load all dictionary words from API or fallback */
-  var FEED_CACHE_KEY = 'yordamchi_feed_cache_v2';
+  /* `__remote_storage_` PREFIKSI ATAYLAB: shu prefiksli kalitlar serverga
+     sinxronlanmaydi (remote-storage.js -> isInternalKey), ya'ni kesh faqat
+     shu qurilmada qoladi.
+
+     NIMA UCHUN SHART: prefiksiz bu kesh app_storage'ga yozilardi va 2.26 MB
+     ga yetgan edi — butun xotiraning 80 foizi. `storage_bootstrap` esa uni
+     har ochilishda tortib olishi kerak va 4.5 soniyalik chegaradan o'tolmay
+     yiqilardi. Bootstrap yiqilsa `state.cache` bo'sh qoladi, ya'ni HAMMA
+     sozlama (o'rgangan so'zlar, xatcho'plar, bildirishnomalar) o'qilmay
+     "default holatga tushib" ko'rinardi.
+
+     Kesh baribir 3 soatda eskiradi va qaytadan yasaladi — uni qurilmalar
+     orasida sinxronlashning ma'nosi yo'q. */
+  /* v3: keshdagi so'zlarda `meaningGroup`/`pairWith` YO'Q edi. Kalit
+     yangilanmasa 3 soat davomida eski shakldagi havza ishlatilib,
+     "Ma'noni juftlash" bo'sh chiqaverardi. */
+  /* v4: kesh shakli siqildi (compactForCache). v3 keshlar xom shaklda va
+     juda katta — ular eskirishini kutmasdan darhol tashlanadi, aks holda
+     yangi 8847 so'z 3 soatgacha ko'rinmasdi. */
+  var FEED_CACHE_KEY = '__remote_storage_feed_cache_v4';
   var FEED_CACHE_TTL = 3 * 60 * 60 * 1000; /* 3 soat — shundan keyin yangilaydi */
+
+  /* Eski, sinxronlanadigan kalit qoldig'ini tozalaymiz — u bo'lmasa ham
+     bootstrap'ni yana og'irlashtirib turardi. */
+  try { localStorage.removeItem('yordamchi_feed_cache_v2'); } catch (e) {}
+  try { localStorage.removeItem('__remote_storage_feed_cache_v3'); } catch (e) {}
+
+  /* Keshga SIQILGAN shakl tushadi, serverdan kelgan xom qator EMAS.
+
+     Server har so'z uchun 15 ta maydon qaytaradi (pronunciation, forms,
+     synonyms, antonyms, collocations, mnemonic, formation...), lekin lenta
+     ulardan FAQAT 8 tasini o'qiydi — qolgani keshda bekorga yotardi.
+     Ustiga maydon NOMLARI har qatorda takrorlanadi, ya'ni "word_ru" 25 ming
+     marta yozilardi.
+
+     O'lchandi: xom shaklda ru 5493 kB + en 2202 kB = 7.7 MB. localStorage
+     chegarasi odatda ~5 MB, ya'ni `setItem` xato berardi, xato yutilardi va
+     kesh HECH QACHON saqlanmasdi — natijada ilova har ochilganda 7.7 MB ni
+     qaytadan tortardi. Sekin internetda aynan shu sezilardi.
+
+     `applyFeedItems` ikkala shaklni ham o'qiydi (`it.word_ru || it.ru`),
+     shuning uchun eski kesh ham buzilmaydi. */
+  function compactForCache(items) {
+    return (items || []).map(function (it) {
+      var o = {
+        ru: it.word_ru || it.ru || '',
+        uz: it.word_uz || it.uz || '',
+        cat: it.category || it.cat || ''
+      };
+      /* Bo'sh maydon yozilmaydi — hozircha so'zlarning katta qismida
+         izoh/misol yo'q, ular uchun bu keshni yana ancha kichraytiradi. */
+      var note = it.note || '';                     if (note) o.note = note;
+      var ex = it.example || it.ex || '';            if (ex) o.ex = ex;
+      var mg = it.meaning_group || it.meaningGroup || ''; if (mg) o.meaning_group = mg;
+      var pw = it.pair_with || '';                   if (pw) o.pair_with = pw;
+      var pos = it.part_of_speech || '';             if (pos) o.part_of_speech = pos;
+      return o;
+    });
+  }
 
   function saveFeedCache(ruItems, enItems) {
     try {
       localStorage.setItem(FEED_CACHE_KEY, JSON.stringify({
         ts: Date.now(),
-        ru: ruItems,
-        en: enItems
+        ru: compactForCache(ruItems),
+        en: compactForCache(enItems)
       }));
-    } catch (e) {}
+    } catch (e) {
+      /* Baribir sig'masa — eski keshni tashlaymiz, aks holda u eskirib
+         yotaveradi va yangilanish hech qachon ko'rinmaydi. */
+      try { localStorage.removeItem(FEED_CACHE_KEY); } catch (e2) {}
+    }
   }
 
   function loadFeedCache() {
@@ -536,7 +611,16 @@
         lang: 'russian',
         cat: it.category || it.cat || 'Rus tili',
         note: it.note || '',
-        ex: it.example || it.ex || ''
+        ex: it.example || it.ex || '',
+        /* Juftlash uchun kerakli maydonlar. Ilgari bu yerda ko'chirilmasdi
+           va lentaga yetib bormasdi — natijada "Ma'noni juftlash" hech
+           qachon guruh topolmasdi, chunki havzadagi so'zlarda yorliq
+           umuman yo'q edi. */
+        meaningGroup: (it.meaning_group || it.meaningGroup || '').trim(),
+        pairWith: (it.pair_with || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean),
+        /* AI .md yozganda to'ldiradi — "Turkum bo'yicha" filtr shundan
+           dinamik ro'yxat yasaydi (qattiq kodlangan ro'yxat emas). */
+        partOfSpeech: (it.part_of_speech || '').trim()
       });
     });
     enItems.forEach(function (it) {
@@ -546,9 +630,23 @@
         lang: 'english',
         cat: it.category || it.cat || 'Ingliz tili',
         note: it.note || '',
-        ex: it.example || it.ex || ''
+        ex: it.example || it.ex || '',
+        meaningGroup: (it.meaning_group || it.meaningGroup || '').trim(),
+        pairWith: (it.pair_with || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean),
+        partOfSpeech: (it.part_of_speech || '').trim()
       });
     });
+
+    /* QULF — bitta joyda. Lenta, qidiruv, filtrlar, juftlash, Reels
+       hammasi shu havzadan oladi, shuning uchun qulflangan bo'limlarni
+       shu yerda olib tashlash yetarli.
+
+       Filtr KESHDAN KEYIN turadi (kesh to'liq saqlanadi): bo'lim ochilganda
+       so'zlar darhol paydo bo'ladi, qaytadan tortib olish shart emas. */
+    if (window.WordLock) {
+      LOADED_WORDS_POOL.forEach(function (w) { WordLock.note(w.cat); });
+      LOADED_WORDS_POOL = WordLock.filterWords(LOADED_WORDS_POOL);
+    }
   }
 
   function initFeed() {
@@ -589,6 +687,74 @@
       });
   }
 
+  /* AI yozgan "Turkum:" matnidan sof yorliqni ajratadi. AI ba'zan qavs
+     ichida qo'shimcha (masalan "fe'l (NSV) — mukammal juft: ...") yozadi
+     — filtr uchun faqat asosiy so'z kerak, aks holda "fe'l (NSV)" va
+     "fe'l (SV)" IKKI XIL guruh bo'lib qolardi. */
+  function normalizePos(raw) {
+    return String(raw || '').split('(')[0].split('—')[0].trim().toLowerCase();
+  }
+
+  /* Havzadagi so'zlarni skanerlab, HOZIR nechta va qanday turkum borligini
+     topadi. Qattiq ro'yxat emas: AI yangi turkum yozsa (masalan "undov"),
+     bu yerda o'zi paydo bo'ladi — kodga tegilmaydi. */
+  function getAvailablePos() {
+    var pool = LOADED_WORDS_POOL.length > 0 ? LOADED_WORDS_POOL : FALLBACK_WORDS;
+    var counts = {}, labels = {};
+    pool.forEach(function (w) {
+      var key = normalizePos(w.partOfSpeech);
+      if (!key) return;
+      counts[key] = (counts[key] || 0) + 1;
+      if (!labels[key]) labels[key] = key.charAt(0).toUpperCase() + key.slice(1);
+    });
+    return Object.keys(counts)
+      .map(function (key) { return { key: key, label: labels[key], count: counts[key] }; })
+      .sort(function (a, b) { return b.count - a.count; });
+  }
+
+  /* Havzada HAQIQATAN mavjud lug'atlar. `getAvailablePos` bilan bir xil
+     usul: ro'yxat ma'lumotdan o'sadi, kodda yozilmaydi.
+
+     Daraja tanlovi: ildizning ostidagi BIRINCHI bo'lak olinadi
+     (`1-8000/1-1000`, `Тематический 9000/ЧЕЛОВЕК`), papkasiz lug'at esa
+     o'zi. Faqat ildiz olinsa "1-1000" ni alohida tanlab bo'lmasdi;
+     to'liq yo'l olinsa ro'yxatda 340 ta qator chiqardi.
+
+     Kalitga TIL ham kiradi: rus va ingliz lug'atlari bir xil `1-8000/...`
+     yo'lidan foydalanadi, tilsiz ikkalasi bitta qatorga qo'shilib ketardi. */
+  function getAvailableCats() {
+    var pool = LOADED_WORDS_POOL.length > 0 ? LOADED_WORDS_POOL : FALLBACK_WORDS;
+    var map = {}, order = [];
+    pool.forEach(function (w) {
+      var cat = String(w.cat || '');
+      if (!cat) return;
+      var parts = cat.split('/');
+      var prefix = parts.length > 1 ? parts[0] + '/' + parts[1] : parts[0];
+      var key = (w.lang || 'russian') + '|' + prefix;
+      if (!map[key]) {
+        map[key] = {
+          key: 'cat:' + key,
+          name: parts.length > 1 ? parts[1] : parts[0],
+          root: parts.length > 1 ? parts[0] : '',
+          lang: w.lang || 'russian',
+          count: 0
+        };
+        order.push(key);
+      }
+      map[key].count++;
+    });
+    return order.map(function (k) { return map[k]; })
+      .sort(function (a, b) { return b.count - a.count; });
+  }
+
+  /* Tanlangan lug'at kalitini `lang|prefix` ga aylantiradi. Eski kalit
+     ham, yangi `cat:` kaliti ham tushunarli. */
+  function resolveCatKey(key) {
+    if (!key || key === 'all') return null;
+    if (key.indexOf('cat:') === 0) return key.slice(4);
+    return LEGACY_CATEGORIES[key] || null;
+  }
+
   /* Filter and Sort pool */
   function getFilteredWordsPool() {
     var pool = LOADED_WORDS_POOL.length > 0 ? LOADED_WORDS_POOL : FALLBACK_WORDS;
@@ -607,15 +773,48 @@
       });
     }
 
-    // 2. Kategoriya
-    if (st.category === 'ru_229') {
-      pool = pool.filter(function (w) { return w.cat && (w.cat.indexOf('Глаголы') >= 0 || w.cat.indexOf('229') >= 0); });
-    } else if (st.category === 'ru_1000') {
-      pool = pool.filter(function (w) { return w.lang === 'russian' && (!w.cat || (w.cat.indexOf('Глаголы') < 0 && w.cat.indexOf('229') < 0)); });
-    } else if (st.category === 'ru_8000') {
-      pool = pool.filter(function (w) { return w.lang === 'russian'; });
-    } else if (st.category === 'en_8000') {
-      pool = pool.filter(function (w) { return w.lang === 'english'; });
+    /* 2. Kategoriya.
+
+       Kategoriya nomlari `1-8000/1001-2000/1001-1100` ko'rinishida, 229 lik
+       ro'yxat esa alohida: `Глаголы настоящего времени`.
+
+       Ilgari bu shartlar NOTO'G'RI edi va o'lchab tasdiqlandi:
+         - `ru_1000` "rus va 229 emas" derdi -> 1000 emas, 8000 ta so'z
+           qaytarardi, ya'ni `ru_8000` dan farq qilmasdi;
+         - `ru_8000` "hamma rus" derdi -> 8229 ta, ya'ni 229 lik ro'yxatni
+           ham o'z ichiga olardi.
+       Endi ikkalasi ham yo'l bo'yicha aniq ajratiladi.
+
+       Shart ham QATTIQ EMAS: tanlov `lang|yo'l` ko'rinishida keladi va
+       bitta solishtirish bilan bajariladi. Ilgari har lug'at uchun alohida
+       `if` yozilardi — yangi lug'at qo'shilganda uni filtrlab bo'lmasdi va
+       aynan shu sabab shartlar bir-biriga o'xshab ketib xato qilardi. */
+    var catSel = resolveCatKey(st.category);
+    if (catSel) {
+      var bar = catSel.indexOf('|');
+      var selLang = catSel.slice(0, bar);
+      var selPath = catSel.slice(bar + 1);
+      pool = pool.filter(function (w) {
+        if (w.lang !== selLang) return false;
+        var c = w.cat || '';
+        return c === selPath || c.indexOf(selPath + '/') === 0;
+      });
+    }
+
+    // 2.6 Turkum (so'z turi) — bir nechtasi tanlansa, ULARDAN BIRIGA mos
+    // so'zlar qoladi (OR, Kategoriya bilan esa AND).
+    if (st.partsOfSpeech && st.partsOfSpeech.length > 0) {
+      pool = pool.filter(function (w) {
+        return st.partsOfSpeech.indexOf(normalizePos(w.partOfSpeech)) >= 0;
+      });
+    }
+
+    // 2.5 "O'rgandim" belgilangan so'zlar lentada CHIQMAYDI.
+    // Istisno: foydalanuvchi ataylab "O'rganilganlar" to'plamini tanlagan
+    // bo'lsa — u holda maqsad aynan o'shalarni ko'rish.
+    var wantsMastered = st.collections && st.collections.indexOf('mastered') >= 0;
+    if (!wantsMastered && window.WordState) {
+      pool = WordState.forPractice(pool);
     }
 
     // 3. Shaxsiy to'plamlar
@@ -629,18 +828,179 @@
       });
     }
 
-    // Fallback if empty
+    /* Natija bo'sh bo'lsa.
+
+       ESKI XATO: bu yerda `pool = FALLBACK_WORDS` qilinardi — ya'ni filtr
+       hech narsa topmasa, lentaga BEGONA so'zlar chiqardi. Foydalanuvchiga
+       bu "filtr umuman ishlamayapti" bo'lib ko'rinardi, aslida filtr
+       ishlagan, faqat natijasi bo'sh edi va tizim buni yashirardi.
+
+       Endi FILTR YOQILGAN bo'lsa hech qachon zaxira so'zlarga tushmaymiz —
+       bo'shligini ochiq aytamiz. Zaxira faqat FILTRSIZ holatda ishlaydi
+       (masalan lug'at hali yuklanmagan). */
     if (pool.length === 0) {
+      var filterOn = !!SEARCH_QUERY.trim() ||
+        st.category !== 'all' ||
+        (st.collections && st.collections.length > 0) ||
+        (st.partsOfSpeech && st.partsOfSpeech.length > 0) ||
+        !!st.join;
+
       if (SEARCH_QUERY.trim()) {
-        return [{ ru: "Qidiruv natijasi topilmadi", uz: "Boshqa so'z kiritib ko'ring yoki filtrlarni tozalang.", lang: "russian", cat: "Natija yo'q", note: "", ex: "" }];
+        return [{ ru: "Topilmadi", uz: "«" + SEARCH_QUERY.trim() + "» bo'yicha so'z yo'q. Boshqa so'z kiriting yoki filtrni tozalang.", lang: "russian", cat: "Natija yo'q", note: "", ex: "" }];
       }
-      if (st.collections && st.collections.length > 0) {
-        return [{ ru: "To'plam bo'sh", uz: "Tanlangan filtr bo'yicha hali so'zlar mavjud emas.", lang: "russian", cat: "Bo'sh", note: "", ex: "" }];
+      if (filterOn) {
+        return [{ ru: "Natija yo'q", uz: "Tanlangan filtrlarga mos so'z topilmadi. Filtrni o'zgartiring yoki «Tozalash» bosing.", lang: "russian", cat: "Bo'sh", note: "", ex: "" }];
       }
       pool = FALLBACK_WORDS;
     }
 
     return pool;
+  }
+
+  /* ---------- Juftlash saralashi: o'xshash/adashtiriladigan so'zlarni yonma-yon qo'yish ----------
+     vocab.js dagi buildPairGroups bilan bir xil mantiq (rus fe'l oilalari + imlosi
+     yaqin so'zlar). Bu yerda til aralash bo'lishi mumkinligi uchun ru/en alohida
+     guruhlanadi, keyin natija bitta lentaga birlashtiriladi. */
+  /* Juftlash algoritmi `assets/js/core/paircore.js` da — YAGONA manba.
+     Ilgari aynan shu kod bu yerda ham, home.js da ham nusxa bo'lib turardi;
+     biri tuzatilib, ikkinchisi eskirib qolish xavfi bor edi. */
+  function buildHomePairGroups(words, lang) {
+    return window.PairCore ? PairCore.build(words, lang) : [];
+  }
+
+  var PAIRS_SORT_CACHE = { key: null, list: null };
+  var pairGroupSeq = 0;
+  /* Guruh a'zolarini "_pairGroupId" bilan belgilaydi — renderFeedItems shu orqali
+     ularni bitta karusel kartaga birlashtiradi (o'rniga alohida-alohida kartalar). */
+  /* `mode`: 'words' — yozilishi o'xshashlar (imlo/o'zak);
+              'meaning' — ma'nosi bog'liqlar (.md dagi "Ma'no guruhi").
+     Ikkalasi ham bir xil natija shaklini qaytaradi: guruh a'zolari
+     ketma-ket, `_pairGroupId` bilan belgilangan holda. */
+  function buildPairsSortedList(pool, mode) {
+    /* Ma'no guruhi TILGA BOG'LIQ EMAS: yorliq o'zbekcha ("bormoq"),
+       so'zlar esa rus yoki ingliz bo'lishi mumkin. Shuning uchun bu
+       yerda tillarga bo'linmaydi. */
+    if (mode === 'meaning') {
+      var ordered2 = [], used2 = {};
+      (window.PairCore ? PairCore.buildMeaning(pool) : []).forEach(function (g) {
+        var fresh = g.filter(function (w) { return !used2[w.ru + '|' + w.uz]; });
+        if (fresh.length < 2) return;
+        pairGroupSeq++;
+        fresh.forEach(function (w) {
+          used2[w.ru + '|' + w.uz] = true;
+          w._pairGroupId = pairGroupSeq;
+          w._pairGroupSize = fresh.length;
+          ordered2.push(w);
+        });
+      });
+      pool.forEach(function (w) {
+        var k = w.ru + '|' + w.uz;
+        if (!used2[k]) { used2[k] = true; w._pairGroupId = null; ordered2.push(w); }
+      });
+      return ordered2;
+    }
+
+    var byLang = {};
+    pool.forEach(function (w) {
+      var l = w.lang === 'russian' ? 'russian' : 'english';
+      (byLang[l] = byLang[l] || []).push(w);
+    });
+    var ordered = [], used = {};
+    Object.keys(byLang).forEach(function (l) {
+      buildHomePairGroups(byLang[l], l).forEach(function (g) {
+        var fresh = g.filter(function (w) { return !used[w.ru + '|' + w.uz]; });
+        if (fresh.length < 2) return;
+        pairGroupSeq++;
+        fresh.forEach(function (w) {
+          used[w.ru + '|' + w.uz] = true;
+          w._pairGroupId = pairGroupSeq;
+          w._pairGroupSize = fresh.length;
+          ordered.push(w);
+        });
+      });
+    });
+    pool.forEach(function (w) {
+      var k = w.ru + '|' + w.uz;
+      if (!used[k]) {
+        used[k] = true;
+        w._pairGroupId = null;
+        ordered.push(w);
+      }
+    });
+    return ordered;
+  }
+
+  /* Guruhdagi so'zlarning umumiy boshi/oxirini o'chirib, farq qiladigan qismini <b> bilan ajratadi */
+  function highlightPairDiff(list) {
+    if (list.length < 2) return list.map(function (w) { return App.esc(w); });
+    var minLen = Math.min.apply(null, list.map(function (w) { return w.length; }));
+    var pre = 0;
+    while (pre < minLen && list.every(function (w) { return w[pre] === list[0][pre]; })) pre++;
+    var suf = 0;
+    while (suf < minLen - pre && list.every(function (w) { return w[w.length - 1 - suf] === list[0][list[0].length - 1 - suf]; })) suf++;
+    return list.map(function (w) {
+      var p = App.esc(w.slice(0, pre));
+      var mid = App.esc(w.slice(pre, w.length - suf));
+      var s = App.esc(w.slice(w.length - suf));
+      return p + (mid ? '<b class="ig-pair-diff">' + mid + '</b>' : '') + s;
+    });
+  }
+
+  /* Rangli rejim: har bir o'xshash so'zlar oilasi o'z rangini oladi, shu oiladagi
+     barcha kartalar bir xil rangda ko'rinadi — bir qarashda qaysi so'z qaysi
+     oilaga tegishli ekani bilinadi. */
+  var PAIR_PALETTE = [
+    { color: 'linear-gradient(135deg, #6366f1, #a855f7)', glow: 'linear-gradient(90deg, #6366f1, #a855f7, #ec4899)', accent: '#8b5cf6' },
+    { color: 'linear-gradient(135deg, #0284c7, #06b6d4)', glow: 'linear-gradient(90deg, #0284c7, #06b6d4, #22d3ee)', accent: '#0891b2' },
+    { color: 'linear-gradient(135deg, #059669, #10b981)', glow: 'linear-gradient(90deg, #059669, #10b981, #34d399)', accent: '#10b981' },
+    { color: 'linear-gradient(135deg, #f59e0b, #f97316)', glow: 'linear-gradient(90deg, #f59e0b, #f97316, #ef4444)', accent: '#f97316' },
+    { color: 'linear-gradient(135deg, #ec4899, #f43f5e)', glow: 'linear-gradient(90deg, #ec4899, #f43f5e, #fb7185)', accent: '#f43f5e' },
+    { color: 'linear-gradient(135deg, #7c3aed, #6366f1)', glow: 'linear-gradient(90deg, #7c3aed, #6366f1, #818cf8)', accent: '#7c3aed' }
+  ];
+  function pairThemeFor(groupId, size) {
+    var t = PAIR_PALETTE[Math.abs(groupId - 1) % PAIR_PALETTE.length];
+    return {
+      color: t.color, glow: t.glow, accent: t.accent,
+      label: 'O\'xshash so\'zlar guruhi · ' + size + ' ta'
+    };
+  }
+
+  /* Bir guruhdagi o'xshash so'zlar — har biri to'liq Reel karta, chapga/o'ngga
+     surilganda guruhdagi keyingi so'zga o'tadi (lentaning o'zi tik suriladi). */
+  function renderPairCarouselCard(words, baseIdx) {
+    var ruList = words.map(function (w) { return String(w.ru || ''); });
+    var highlighted = highlightPairDiff(ruList);
+
+    var slidesHtml = words.map(function (w, i) {
+      return '<div class="ig-pair-slide">' + renderReelCard(w, baseIdx + i, highlighted[i]) + '</div>';
+    }).join('');
+
+    var dotsHtml = words.map(function (w, i) {
+      return '<span class="ig-pair-dot' + (i === 0 ? ' active' : '') + '"></span>';
+    }).join('');
+
+    return '<div class="ig-pair-carousel">' +
+      '<div class="ig-pair-track">' + slidesHtml + '</div>' +
+      '<div class="ig-pair-dots">' + dotsHtml + '</div>' +
+    '</div>';
+  }
+
+  /* Surilganda faol nuqtani yangilab turadi */
+  function bindPairCarouselEvents(host) {
+    host.querySelectorAll('.ig-pair-carousel').forEach(function (car) {
+      var track = car.querySelector('.ig-pair-track');
+      var dots = car.querySelectorAll('.ig-pair-dot');
+      if (!track || !dots.length) return;
+      var raf = null;
+      track.addEventListener('scroll', function () {
+        if (raf) return;
+        raf = requestAnimationFrame(function () {
+          raf = null;
+          var i = Math.round(track.scrollLeft / track.clientWidth);
+          dots.forEach(function (d, di) { d.classList.toggle('active', di === i); });
+        });
+      }, { passive: true });
+    });
   }
 
   /* Pick next batch of words from loaded pool based on current filter & offset */
@@ -662,6 +1022,21 @@
       var end = start + count;
       if (end <= pool.length) return pool.slice(start, end);
       return pool.slice(start).concat(pool.slice(0, end - pool.length));
+    } else if (st.join) {
+      /* Join yoqilgan bo'lsa saralash ORNIGA guruhlash ishlaydi: guruh
+         a'zolari yonma-yon turishi kerak, aks holda ularni bitta
+         karuselga yig'ib bo'lmaydi. */
+      var cacheKey = st.join + ':' + pool.length + ':' + (pool[0] ? pool[0].ru : '') + ':' + (pool[pool.length - 1] ? pool[pool.length - 1].ru : '');
+      if (PAIRS_SORT_CACHE.key !== cacheKey) {
+        PAIRS_SORT_CACHE.key = cacheKey;
+        PAIRS_SORT_CACHE.list = buildPairsSortedList(pool, st.join);
+      }
+      var sorted = PAIRS_SORT_CACHE.list;
+      if (!sorted.length) return [];
+      var start = offset % sorted.length;
+      var end = start + count;
+      if (end <= sorted.length) return sorted.slice(start, end);
+      return sorted.slice(start).concat(sorted.slice(0, end - sorted.length));
     } else {
       var selected = [];
       var poolCopy = pool.slice();
@@ -677,7 +1052,19 @@
   function getCardTheme(w) {
     var cat = w.cat || '';
     var isRu = (w.lang === 'russian');
-    if (cat.indexOf('229') >= 0 || cat.indexOf('Глаголы') >= 0) {
+    /* Тематический 9000 — ikkinchi katta to'plam. Sharti BIRINCHI
+       tekshiriladi: uning ichida `252. Глаголы А-Е` kabi mavzular bor,
+       pastdagi 229 shartiga tushib qolmasligi kerak. */
+    if (cat.indexOf(CAT_TEMA + '/') === 0) {
+      return {
+        badge: '9K',
+        title: 'Rus tili · Mavzulashtirilgan (9000)',
+        color: 'linear-gradient(135deg, #0d9488, #10b981)',
+        glow: 'linear-gradient(90deg, #0d9488, #10b981, #84cc16)',
+        accent: '#10b981'
+      };
+    }
+    if (cat === CAT_229) {
       return {
         badge: '229',
         title: 'Rus tili · Hozirgi zamon (229)',
@@ -713,8 +1100,9 @@
     };
   }
 
-  /* Render a single Reel card */
-  function renderReelCard(w, idx) {
+  /* Render a single Reel card. `titleHtml` berilsa sarlavha o'rniga ishlatiladi
+     (juftlash karuselida farq qiluvchi harflarni ajratib ko'rsatish uchun). */
+  function renderReelCard(w, idx, titleHtml, themeOverride) {
     var cardId = 'ig_card_' + idx + '_' + Math.floor(Math.random() * 10000);
     var isRu = (w.lang === 'russian' || /[а-яёА-ЯЁ]/.test(w.ru || ''));
     var ttsLang = isRu ? 'ru-RU' : 'en-US';
@@ -722,10 +1110,19 @@
     var isLiked = likes.indexOf(w.ru) >= 0;
     var bms = getBookmarkedWords();
     var isBookmarked = bms.indexOf(w.ru) >= 0;
+    var isMastered = !!(window.WordState && WordState.isMastered(w.ru));
 
     var theme = getCardTheme(w);
+    // Juftlash (rangli) rejimida rang oilaga qarab almashtiriladi, qolgani o'z holicha.
+    if (themeOverride) {
+      theme = {
+        badge: theme.badge, title: theme.title,
+        color: themeOverride.color, glow: themeOverride.glow, accent: themeOverride.accent
+      };
+    }
 
-    return '<div class="ig-post-card" id="' + cardId + '">' +
+    return '<div class="ig-post-card' + (themeOverride ? ' ig-pair-tinted' : '') + '" id="' + cardId + '"' +
+      (themeOverride ? ' style="--pair-accent:' + themeOverride.accent + '"' : '') + '>' +
       /* Card Ambient Top Glow */
       '<div class="ig-card-ambient" style="background:' + theme.glow + '"></div>' +
 
@@ -740,7 +1137,7 @@
               '<span>' + App.esc(theme.title) + '</span>' +
               '<span class="ig-verified" title="Tasdiqlangan">✓</span>' +
             '</div>' +
-            '<div class="ig-post-sub">Lug\'at Reels · O\'rganish</div>' +
+            '<div class="ig-post-sub">' + (themeOverride && themeOverride.label ? App.esc(themeOverride.label) : 'Lug\'at Reels · O\'rganish') + '</div>' +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -752,7 +1149,7 @@
         '<div class="vr-screen-flow">' +
           '<div class="vr-md-header">' +
             '<div class="vr-title-row">' +
-              '<h1 class="vr-md-title">' + App.esc(w.ru) + '</h1>' +
+              '<h1 class="vr-md-title">' + (titleHtml || App.esc(w.ru)) + '</h1>' +
             '</div>' +
             '<div class="vr-md-sub">' + App.esc(w.uz) + '</div>' +
             '<div class="vr-md-divider" style="background:' + theme.color + '"></div>' +
@@ -766,9 +1163,14 @@
           '<button class="ig-act-btn ' + (isLiked ? 'active liked' : '') + '" data-act="igToggleLike" data-arg=\'' + App.arg({ word: w.ru, id: cardId }) + '\' title="Yoqdi">' +
             '<span data-icon="' + (isLiked ? 'heartFill' : 'heart') + '" data-icon-size="24"></span>' +
           '</button>' +
-          '<button class="ig-act-btn ig-quiz-act-btn" data-act="igOpenQuiz" data-arg=\'' + App.arg({ ru: w.ru, uz: w.uz, id: cardId }) + '\' title="O\'zini tekshirish (Test)">' +
+          /* "Test" o'rniga "O'rgandim": lentada so'z ko'rilganda eng kerakli
+             amal — uni bir bosishda hamma mashqdan chiqarish. Test uchun
+             alohida bo'lim bor, lentada u kamdan-kam ishlatilardi. */
+          '<button class="ig-act-btn ig-quiz-act-btn' + (isMastered ? ' active mastered' : '') + '" ' +
+            'data-act="igToggleMastered" data-arg=\'' + App.arg({ ru: w.ru, id: cardId }) + '\' ' +
+            'title="O\'rgandim — hech qayerda chiqmaydi">' +
             '<span data-icon="check" data-icon-size="20"></span>' +
-            '<span class="ig-act-badge-text">Test</span>' +
+            '<span class="ig-act-badge-text">' + (isMastered ? 'Bildim' : 'O\'rgandim') + '</span>' +
           '</button>' +
           '<button class="ig-act-btn" data-act="igCopyWord" data-arg=\'' + App.arg({ ru: w.ru, uz: w.uz, ex: w.ex }) + '\' title="Nusxa olish">' +
             '<span data-icon="share" data-icon-size="22"></span>' +
@@ -790,6 +1192,7 @@
   var COURSES_POOL = [
     {
       id: 'python_core',
+      logo: 'assets/icons/tech/python-original.svg',
       title: 'Python Dasturlash',
       sub: 'Noldan professional darajagacha amaliy darslar',
       badge: 'Python',
@@ -802,6 +1205,7 @@
     },
     {
       id: 'fastapi_backend',
+      logo: 'assets/icons/tech/fastapi-original.svg',
       title: 'FastAPI Backend',
       sub: 'Zamonaviy REST API va Microservice arxitekturasi',
       badge: 'FastAPI',
@@ -814,6 +1218,7 @@
     },
     {
       id: 'ru_grammar_229',
+      logo: 'assets/icons/tech/flag-ru.png',
       title: 'Rus tili: 229 Fe\'l',
       sub: 'Hozirgi zamon tuslanishi, audio va misollar',
       badge: '229 Fe\'l',
@@ -826,6 +1231,7 @@
     },
     {
       id: 'ru_tenses',
+      logo: 'assets/icons/tech/flag-ru.png',
       title: 'Rus tili: Zamonlar',
       sub: 'O\'tgan, hozirgi va kelasi zamon qoidalari',
       badge: 'Grammatika',
@@ -838,6 +1244,7 @@
     },
     {
       id: 'en_vocab_8000',
+      logo: 'assets/icons/tech/flag-gb.png',
       title: 'Ingliz tili: 8000 So\'z',
       sub: 'Oxford 8000 eng faol va kerakli so\'zlar',
       badge: '8K So\'z',
@@ -850,6 +1257,7 @@
     },
     {
       id: 'postgres_db',
+      logo: 'assets/icons/tech/postgresql-original.svg',
       title: 'PostgreSQL & SQL',
       sub: 'Ma\'lumotlar bazasi, jadvallar va murakkab so\'rovlar',
       badge: 'SQL',
@@ -862,6 +1270,7 @@
     },
     {
       id: 'linux_terminal',
+      logo: 'assets/icons/tech/linux-original.svg',
       title: 'Linux & Terminal',
       sub: 'Server boshqaruvi, bash script va buyruqlar',
       badge: 'Linux',
@@ -874,6 +1283,7 @@
     },
     {
       id: 'git_github',
+      logo: 'assets/icons/tech/git-original.svg',
       title: 'Git & GitHub',
       sub: 'Versiyalarni boshqarish va jamoaviy loyihalar',
       badge: 'Git',
@@ -886,6 +1296,7 @@
     },
     {
       id: 'books_library',
+      logo: 'assets/img/vocab/book.jpg',
       title: 'Kutubxona & Kitoblar',
       sub: 'Badiiy va ilmiy kitoblar, audio kitoblar',
       badge: 'Kitoblar',
@@ -898,6 +1309,7 @@
     },
     {
       id: 'sport_workout',
+      logo: 'assets/img/nav/sport.svg',
       title: 'Sport & Kunlik Mashq',
       sub: 'Kunlik qomat va salomatlik mashg\'ulotlari',
       badge: 'Workout',
@@ -925,9 +1337,15 @@
     var itemsHtml = selected.map(function (c) {
       return '<div class="ig-course-snap-item">' +
         '<div class="ig-course-snap-card">' +
-          '<div class="ig-course-snap-top" style="background:' + c.color + '">' +
+          /* Kursning O'Z logosi. Ilgari bu yerda faqat gradient va umumiy
+             ikonka turardi — Python ham, Git ham bir xil ko'rinardi.
+             Logo bo'lmasa eski gradient qoladi (zaxira sifatida). */
+          '<div class="ig-course-snap-top' + (c.logo ? ' has-logo' : '') + '"' +
+            (c.logo ? '' : ' style="background:' + c.color + '"') + '>' +
+            (c.logo
+              ? '<img class="ig-course-snap-logo" src="' + c.logo + '" alt="" loading="lazy">'
+              : '<span class="ig-course-snap-icon" data-icon="' + (c.icon || 'book') + '" data-icon-size="28"></span>') +
             '<span class="ig-course-snap-badge">' + App.esc(c.badge) + '</span>' +
-            '<span class="ig-course-snap-icon" data-icon="' + (c.icon || 'book') + '" data-icon-size="28"></span>' +
           '</div>' +
           '<div class="ig-course-snap-body">' +
             '<div class="ig-course-snap-title">' + App.esc(c.title) + '</div>' +
@@ -977,16 +1395,41 @@
 
     var startIdx = FEED_WORDS.length;
     FEED_WORDS = FEED_WORDS.concat(newWords);
+    var fst = getFilterState();
+    var colorMode = !!(fst.join && fst.joinColor);
 
     var htmlArr = [];
-    newWords.forEach(function (w, i) {
+    for (var i = 0; i < newWords.length; i++) {
+      var w = newWords[i];
       var globalIdx = startIdx + i;
       // Har 13 ta so'zdan keyin (2.5 baravar kamroq) tavsiya etilgan kurslar karuseli chiqsin
-      if (globalIdx > 0 && globalIdx % 13 === 0) {
+      if (globalIdx > 0 && globalIdx % 13 === 0 && !codingHidden()) {
         htmlArr.push(renderCoursesCarouselCard(globalIdx));
       }
+      // Juftlash saralashida ketma-ket kelgan bir guruh a'zolari yig'iladi.
+      if (w._pairGroupId) {
+        var run = [w];
+        var j = i + 1;
+        while (j < newWords.length && newWords[j]._pairGroupId === w._pairGroupId) {
+          run.push(newWords[j]); j++;
+        }
+        if (colorMode) {
+          // Rangli rejim: kartalar odatdagidek tik lentada qoladi, faqat bitta
+          // oiladagilar bir xil rangda bo'ladi.
+          var hl = highlightPairDiff(run.map(function (x) { return String(x.ru || ''); }));
+          var grpTheme = pairThemeFor(w._pairGroupId, run.length);
+          for (var k = 0; k < run.length; k++) {
+            htmlArr.push(renderReelCard(run[k], globalIdx + k, hl[k], grpTheme));
+          }
+        } else {
+          // Karusel rejimi: bitta surib ko'riladigan karuselga birlashtiriladi.
+          htmlArr.push(renderPairCarouselCard(run, globalIdx));
+        }
+        i = j - 1;
+        continue;
+      }
       htmlArr.push(renderReelCard(w, globalIdx));
-    });
+    }
     var html = htmlArr.join('');
 
     if (append) {
@@ -994,11 +1437,13 @@
       tmp.innerHTML = html;
       App.icons(tmp);
       bindDoubleTapEvents(tmp);
+      bindPairCarouselEvents(tmp);
       while (tmp.firstChild) host.appendChild(tmp.firstChild);
     } else {
       host.innerHTML = html;
       App.icons(host);
       bindDoubleTapEvents(host);
+      bindPairCarouselEvents(host);
     }
   }
 
@@ -1112,86 +1557,167 @@
     try { localStorage.setItem('vocab_likes_v1', JSON.stringify(list)); } catch (e) {}
   }
 
+  /* Bu ikkisi endi FAQAT `WordState` orqali o'qiladi/yoziladi.
+     Ilgari home.js o'sha kalitlarga to'g'ridan-to'g'ri yozardi, WordState
+     esa ularni XOTIRADA keshlaydi — natijada bosh sahifada xatcho'p
+     bosilsa, o'sha seansda lug'at ko'rgichi ESKI holatni ko'rsatardi.
+     Bitta manba bo'lgach bunday ajralish mumkin emas. */
   function getBookmarkedWords() {
-    try { return JSON.parse(localStorage.getItem('vocab_bookmarks_v1') || '[]'); } catch (e) { return []; }
+    return window.WordState ? WordState.savedList() : [];
   }
-  function saveBookmarkedWords(list) {
-    try { localStorage.setItem('vocab_bookmarks_v1', JSON.stringify(list)); } catch (e) {}
-  }
-
   function getMasteredWords() {
-    try { return JSON.parse(localStorage.getItem('vocab_mastered_v1') || '[]'); } catch (e) { return []; }
-  }
-  function saveMasteredWords(list) {
-    try { localStorage.setItem('vocab_mastered_v1', JSON.stringify(list)); } catch (e) {}
+    return window.WordState ? WordState.masteredList() : [];
   }
 
   /* =========================================================
      WSTORE USLUBIDAGI MUKAMMAL FILTR MODAL (BOTTOM SHEET)
      ========================================================= */
-  App.actions.wsOpenFilterModal = function () {
+  function buildFilterModalHtml() {
     var st = getFilterState();
     var activeCount = getActiveFilterCount(st);
     var filteredCount = getFilteredWordsPool().length;
+    var posOptions = getAvailablePos();
 
-    var html =
-      '<div class="ws-filter-modal-wrap">' +
-        /* Wstore Filter Sidebar Card */
-        '<div class="ws-filter-card">' +
-          '<div class="ws-filter-card-inner">' +
-            /* Bo'lim 1: Saralash (Sort) */
-            '<div class="ws-sec first">' +
-              '<h3 class="ws-sec-title"><span class="ws-sec-bar"></span> Saralash</h3>' +
-              '<div class="ws-sec-body">' +
-                WSTORE_SORTS.map(function (s) {
-                  var isChecked = (st.sort === s.key);
-                  return '<label class="ws-radio-row" data-act="wsSelectSort" data-arg=\'' + App.arg({ s: s.key }) + '\'>' +
-                    '<span class="ws-radio-circle ' + (isChecked ? 'checked' : '') + '">' +
-                      (isChecked ? '<span class="ws-radio-dot"></span>' : '') +
-                    '</span>' +
-                    '<span class="ws-row-label">' + App.esc(s.label) + '</span>' +
-                  '</label>';
-                }).join('') +
-              '</div>' +
+    return (
+      '<div class="ws-filter-modal-wrap" id="ws-filter-modal-container">' +
+        /* Wstore Side Panel Header */
+        '<div class="ws-p-head">' +
+          '<div class="ws-p-title-wrap">' +
+            '<div class="ws-p-title">' +
+              'Filtr' + (activeCount > 0 ? ' <span class="ws-p-badge">' + activeCount + '</span>' : '') +
             '</div>' +
-
-            /* Bo'lim 2: Tillar va Lug'atlar (Category) */
-            '<div class="ws-sec">' +
-              '<h3 class="ws-sec-title"><span class="ws-sec-bar"></span> Tillar va Lug\'atlar</h3>' +
-              '<div class="ws-sec-body">' +
-                WSTORE_CATEGORIES.map(function (c) {
-                  var isChecked = (st.category === c.key);
-                  return '<label class="ws-check-row" data-act="wsSelectCategory" data-arg=\'' + App.arg({ c: c.key }) + '\'>' +
-                    '<span class="ws-check-box ' + (isChecked ? 'checked' : '') + '">' +
-                      (isChecked ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '') +
-                    '</span>' +
-                    '<span class="ws-row-icon" data-icon="' + c.icon + '" data-icon-size="15"></span>' +
-                    '<span class="ws-row-label">' + App.esc(c.label) + '</span>' +
-                  '</label>';
-                }).join('') +
-              '</div>' +
-            '</div>' +
-
-            /* Bo'lim 3: Shaxsiy To'plamlar (Collections) */
-            '<div class="ws-sec last">' +
-              '<h3 class="ws-sec-title"><span class="ws-sec-bar"></span> Shaxsiy To\'plamlar</h3>' +
-              '<div class="ws-sec-body">' +
-                WSTORE_COLLECTIONS.map(function (col) {
-                  var isChecked = (st.collections && st.collections.indexOf(col.key) >= 0);
-                  return '<label class="ws-check-row" data-act="wsToggleCollection" data-arg=\'' + App.arg({ col: col.key }) + '\'>' +
-                    '<span class="ws-check-box ' + (isChecked ? 'checked' : '') + '">' +
-                      (isChecked ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '') +
-                    '</span>' +
-                    '<span class="ws-row-icon" data-icon="' + col.icon + '" data-icon-size="15" style="color:' + col.color + '"></span>' +
-                    '<span class="ws-row-label">' + App.esc(col.label) + '</span>' +
-                  '</label>';
-                }).join('') +
-              '</div>' +
-            '</div>' +
+            '<div class="ws-p-sub">Saralash, bog\'lash va lug\'atlar</div>' +
           '</div>' +
+          '<button type="button" class="ws-p-close" id="ws-panel-close" data-act="wsCloseFilterModal" title="Yopish" aria-label="Yopish">' +
+            '<span data-icon="close" data-icon-size="16"></span>' +
+          '</button>' +
+        '</div>' +
 
-          /* Wstore pastki urg'u chizig'i */
-          '<div class="ws-accent-line"></div>' +
+        /* Scrollable body */
+        '<div class="ws-filter-scroll-body">' +
+          /* Wstore Filter Sidebar Card */
+          '<div class="ws-filter-card">' +
+            '<div class="ws-filter-card-inner">' +
+              /* Bo'lim 1: Saralash (Sort) */
+              '<div class="ws-sec first">' +
+                '<h3 class="ws-sec-title"><span class="ws-sec-bar"></span> Saralash</h3>' +
+                '<div class="ws-sec-body">' +
+                  WSTORE_SORTS.map(function (s) {
+                    var isChecked = (st.sort === s.key);
+                    return '<label class="ws-radio-row" data-act="wsSelectSort" data-arg=\'' + App.arg({ s: s.key }) + '\'>' +
+                      '<span class="ws-radio-circle ' + (isChecked ? 'checked' : '') + '">' +
+                        (isChecked ? '<span class="ws-radio-dot"></span>' : '') +
+                      '</span>' +
+                      '<span class="ws-row-label">' + App.esc(s.label) + '</span>' +
+                    '</label>';
+                  }).join('') +
+                '</div>' +
+              '</div>' +
+
+              /* Bo'lim: Join — so'zlarni bog'lash mantiqi */
+              '<div class="ws-sec">' +
+                '<h3 class="ws-sec-title"><span class="ws-sec-bar"></span> Join</h3>' +
+                '<div class="ws-sec-body">' +
+                  WSTORE_JOINS.map(function (j) {
+                    var on = (st.join || '') === j.key;
+                    return '<label class="ws-radio-row" data-act="wsSelectJoin" data-arg=\'' + App.arg({ j: j.key }) + '\'>' +
+                      '<span class="ws-radio-circle ' + (on ? 'checked' : '') + '">' +
+                        (on ? '<span class="ws-radio-dot"></span>' : '') +
+                      '</span>' +
+                      '<span class="ws-row-label">' + App.esc(j.label) +
+                        '<i class="ws-row-hint">' + App.esc(j.sub) + '</i></span>' +
+                    '</label>';
+                  }).join('') +
+                  (st.join
+                    ? '<label class="ws-check-row" data-act="wsToggleJoinColor">' +
+                      '<span class="ws-check-box ' + (st.joinColor ? 'checked' : '') + '">' +
+                        (st.joinColor ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '') +
+                      '</span>' +
+                      '<span class="ws-row-label">Rangli kartalar' +
+                        '<i class="ws-row-hint">Karusel o\'rniga: bir guruh — bir rang</i></span>' +
+                    '</label>'
+                    : '') +
+                '</div>' +
+              '</div>' +
+
+              /* Bo'lim 2: Tillar va Lug'atlar (Category) */
+              '<div class="ws-sec">' +
+                '<h3 class="ws-sec-title"><span class="ws-sec-bar"></span> Tillar va Lug\'atlar</h3>' +
+                '<div class="ws-sec-body">' +
+                  (function () {
+                    var opts = getAvailableCats();
+                    var selKey = resolveCatKey(st.category);
+                    var found = opts.some(function (c) { return c.key === 'cat:' + selKey; });
+                    var rows = [{ key: 'all', label: 'Barcha so\'zlar', hint: '', icon: 'globe' }];
+                    opts.forEach(function (c) {
+                      rows.push({
+                        key: c.key,
+                        label: c.name,
+                        hint: (LANG_LABEL[c.lang] || c.lang) +
+                              (c.root ? ' · ' + c.root : '') + ' · ' + c.count + ' ta so\'z',
+                        icon: c.lang === 'english' ? 'globe' : 'book'
+                      });
+                    });
+                    if (selKey && !found) {
+                      rows.push({ key: st.category, label: selKey.split('|').pop().split('/').pop(),
+                                   hint: 'hozir mavjud emas', icon: 'alert' });
+                    }
+                    return rows.map(function (c) {
+                      var isChecked = (st.category === c.key);
+                      return '<label class="ws-check-row" data-act="wsSelectCategory" data-arg=\'' + App.arg({ c: c.key }) + '\'>' +
+                        '<span class="ws-check-box ' + (isChecked ? 'checked' : '') + '">' +
+                          (isChecked ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '') +
+                        '</span>' +
+                        '<span class="ws-row-icon" data-icon="' + c.icon + '" data-icon-size="15"></span>' +
+                        '<span class="ws-row-label">' + App.esc(c.label) +
+                          (c.hint ? '<i class="ws-row-hint">' + App.esc(c.hint) + '</i>' : '') +
+                        '</span>' +
+                      '</label>';
+                    }).join('');
+                  })() +
+                '</div>' +
+              '</div>' +
+
+              /* Bo'lim: Turkum (AI .md dan) */
+              (posOptions.length
+                ? '<div class="ws-sec">' +
+                  '<h3 class="ws-sec-title"><span class="ws-sec-bar"></span> Turkum</h3>' +
+                  '<div class="ws-sec-body">' +
+                    posOptions.map(function (p) {
+                      var isChecked = st.partsOfSpeech.indexOf(p.key) >= 0;
+                      return '<label class="ws-check-row" data-act="wsTogglePos" data-arg=\'' + App.arg({ k: p.key }) + '\'>' +
+                        '<span class="ws-check-box ' + (isChecked ? 'checked' : '') + '">' +
+                          (isChecked ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '') +
+                        '</span>' +
+                        '<span class="ws-row-label">' + App.esc(p.label) +
+                          '<i class="ws-row-hint">' + p.count + ' ta so\'z</i></span>' +
+                      '</label>';
+                    }).join('') +
+                  '</div>' +
+                '</div>'
+                : '') +
+
+              /* Bo'lim 3: Shaxsiy To'plamlar (Collections) */
+              '<div class="ws-sec last">' +
+                '<h3 class="ws-sec-title"><span class="ws-sec-bar"></span> Shaxsiy To\'plamlar</h3>' +
+                '<div class="ws-sec-body">' +
+                  WSTORE_COLLECTIONS.map(function (col) {
+                    var isChecked = (st.collections && st.collections.indexOf(col.key) >= 0);
+                    return '<label class="ws-check-row" data-act="wsToggleCollection" data-arg=\'' + App.arg({ col: col.key }) + '\'>' +
+                      '<span class="ws-check-box ' + (isChecked ? 'checked' : '') + '">' +
+                        (isChecked ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '') +
+                      '</span>' +
+                      '<span class="ws-row-icon" data-icon="' + col.icon + '" data-icon-size="15" style="color:' + col.color + '"></span>' +
+                      '<span class="ws-row-label">' + App.esc(col.label) + '</span>' +
+                    '</label>';
+                  }).join('') +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+
+            /* Wstore pastki urg'u chizig'i */
+            '<div class="ws-accent-line"></div>' +
+          '</div>' +
         '</div>' +
 
         /* Wstore Pastki Sticky Tugmalar */
@@ -1203,17 +1729,61 @@
             'Ko\'rsatish (' + filteredCount + ')' +
           '</button>' +
         '</div>' +
-      '</div>';
+      '</div>'
+    );
+  }
 
-    App.sheet(html, {
-      title: 'Filtr ' + (activeCount > 0 ? '(' + activeCount + ')' : '')
+  App.actions.wsCloseFilterModal = function () {
+    App.closeSheet();
+  };
+
+  App.actions.wsOpenFilterModal = function () {
+    var existingWrap = document.getElementById('ws-filter-modal-container');
+    var st = getFilterState();
+    var activeCount = getActiveFilterCount(st);
+
+    if (existingWrap) {
+      var scrollEl = existingWrap.querySelector ? existingWrap.querySelector('.ws-filter-scroll-body') : null;
+      var prevScroll = scrollEl ? scrollEl.scrollTop : 0;
+      var parent = existingWrap.parentElement;
+      if (parent) {
+        parent.innerHTML = buildFilterModalHtml();
+        App.icons(parent);
+        var closeBtn = parent.querySelector ? parent.querySelector('#ws-panel-close') : null;
+        if (closeBtn) closeBtn.onclick = function () { App.closeSheet(); };
+      }
+      var newScrollEl = parent ? (parent.querySelector ? parent.querySelector('.ws-filter-scroll-body') : null) : null;
+      if (newScrollEl && prevScroll > 0) newScrollEl.scrollTop = prevScroll;
+      return;
+    }
+
+    var html = buildFilterModalHtml();
+    var sh = App.sheet(html, {
+      cls: 'ws-filter-side-panel'
     });
+    App.icons(sh);
+    var closeBtn = sh ? (sh.querySelector ? sh.querySelector('#ws-panel-close') : null) : null;
+    if (closeBtn) closeBtn.onclick = function () { App.closeSheet(); };
   };
 
   /* Filter Modal Actions */
   App.actions.wsSelectSort = function (a) {
     var st = getFilterState();
     st.sort = a.s || 'popular';
+    saveFilterState(st);
+    App.actions.wsOpenFilterModal();
+  };
+
+  App.actions.wsSelectJoin = function (a) {
+    var st = getFilterState();
+    st.join = a.j || '';
+    saveFilterState(st);
+    App.actions.wsOpenFilterModal();
+  };
+
+  App.actions.wsToggleJoinColor = function () {
+    var st = getFilterState();
+    st.joinColor = !st.joinColor;
     saveFilterState(st);
     App.actions.wsOpenFilterModal();
   };
@@ -1234,8 +1804,20 @@
     App.actions.wsOpenFilterModal();
   };
 
+  App.actions.wsTogglePos = function (a) {
+    var st = getFilterState();
+    var idx = st.partsOfSpeech.indexOf(a.k);
+    if (idx >= 0) st.partsOfSpeech.splice(idx, 1);
+    else st.partsOfSpeech.push(a.k);
+    saveFilterState(st);
+    App.actions.wsOpenFilterModal();
+  };
+
   App.actions.wsClearAllFilters = function () {
-    var st = { category: 'all', collections: [], sort: 'popular' };
+    /* Ilgari bu yerda `join`/`joinColor` unutilgan edi — "Tozalash"
+       bosilsa ular eskicha qolib ketardi. Endi HAMMASI asl holatiga
+       qaytadi. */
+    var st = { category: 'all', collections: [], sort: 'popular', join: '', joinColor: false, partsOfSpeech: [] };
     saveFilterState(st);
     SEARCH_QUERY = '';
     var inp = document.getElementById('ws-search-input');
@@ -1301,73 +1883,413 @@
   };
 
   App.actions.igToggleBookmark = function (a) {
-    var bms = getBookmarkedWords();
-    var idx = bms.indexOf(a.word);
+    if (!window.WordState) return;
+    /* `WordState` orqali: u "o'rgandim" bilan ziddiyatni ham o'zi hal
+       qiladi (bir so'z bir vaqtda ikkalasida turolmaydi) va keshini
+       yangilaydi. Ilgari bu yerda localStorage'ga to'g'ridan-to'g'ri
+       yozilardi va WordState keshi eskirib qolardi. */
+    var on = WordState.toggleSaved(a.word);
     var el = document.getElementById(a.id);
     var btn = el ? el.querySelector('.ig-act-btn[data-act="igToggleBookmark"]') : null;
-
-    if (idx >= 0) {
-      bms.splice(idx, 1);
-      if (btn) {
-        btn.classList.remove('active', 'saved');
-        btn.innerHTML = '<span data-icon="bookmark" data-icon-size="24"></span>';
-        App.icons(btn);
-      }
-      App.toast('Xatcho\'plardan olib tashlandi');
-    } else {
-      bms.push(a.word);
-      if (btn) {
-        btn.classList.add('active', 'saved');
-        btn.innerHTML = '<span data-icon="bookmarkFill" data-icon-size="24"></span>';
-        App.icons(btn);
-      }
-      App.toast('Xatcho\'plarga saqlandi! 🔖');
+    if (btn) {
+      btn.classList.toggle('active', on);
+      btn.classList.toggle('saved', on);
+      btn.innerHTML = '<span data-icon="' + (on ? 'bookmarkFill' : 'bookmark') + '" data-icon-size="24"></span>';
+      App.icons(btn);
     }
-    saveBookmarkedWords(bms);
+    App.toast(on ? 'Saqlanganlarga qo\'shildi 🔖' : 'Saqlanganlardan olib tashlandi');
     updateStatsBar();
   };
 
   App.actions.igToggleMastered = function (a) {
-    var list = getMasteredWords();
-    var idx = list.indexOf(a.word);
-    var el = document.getElementById(a.id);
-    var btn = el ? el.querySelector('.ig-post-more') : null;
+    if (!window.WordState) return;
+    var on = WordState.toggleMastered(a.ru);
+    var card = document.getElementById(a.id);
+    var btn = card && card.querySelector('[data-act="igToggleMastered"]');
+    if (btn) {
+      btn.classList.toggle('active', on);
+      btn.classList.toggle('mastered', on);
+      var t = btn.querySelector('.ig-act-badge-text');
+      if (t) t.textContent = on ? 'Bildim' : 'O\'rgandim';
+    }
+    App.toast(on ? '✓ O\'rgandim — endi mashqlarda chiqmaydi' : 'Belgi olib tashlandi');
+  };
 
-    if (idx >= 0) {
-      list.splice(idx, 1);
-      if (btn) {
-        btn.classList.remove('mastered');
-        btn.innerHTML = '<span data-icon="circle" data-icon-size="18"></span><span class="ig-master-text">O\'rganish</span>';
-        App.icons(btn);
-      }
-      App.toast('O\'rganilmagan holatga qaytarildi');
+  /* ================= TIZIM HOLATI =================
+     Nosozlik chiqqanda birinchi savol — "nima bo'lyapti?". Ilgari buni
+     faqat brauzer konsolidan bilish mumkin edi. Bu panel o'sha
+     tekshiruvlarni bir joyga yig'adi va MUAMMONI ODDIY TIL bilan aytadi.
+
+     Tekshiriladigan narsalar aynan shu kunlarda nosozlik bergan joylar:
+       - ulanish va serverga javob vaqti
+       - sahifa versiyasi serverdagidan orqada emasmi (eski kesh)
+       - xotira sinxronizatsiyasi (`storage_bootstrap`) ishladimi —
+         u yiqilsa HAMMA sozlama "saqlanmagandek" ko'rinardi
+       - navbatda yuborilmagan yozuv qolmadimi
+       - kesh hajmi */
+
+  function stRow(id, label, hint) {
+    return '<div class="st-row" id="st-' + id + '">' +
+      '<span class="st-dot wait"></span>' +
+      '<div class="st-main"><div class="st-lbl">' + App.esc(label) + '</div>' +
+      '<div class="st-val">tekshirilyapti…</div></div>' +
+      (hint ? '<div class="st-hint">' + App.esc(hint) + '</div>' : '') +
+    '</div>';
+  }
+
+  /* state: 'ok' | 'warn' | 'bad' */
+  function stSet(id, state, value, problem) {
+    var el = document.getElementById('st-' + id);
+    if (!el) return;
+    var dot = el.querySelector('.st-dot');
+    dot.className = 'st-dot ' + state;
+    el.querySelector('.st-val').textContent = value;
+    var old = el.querySelector('.st-problem');
+    if (old) old.remove();
+    if (problem) {
+      var p = document.createElement('div');
+      p.className = 'st-problem';
+      p.textContent = problem;
+      el.appendChild(p);
+    }
+    stSummary();
+  }
+
+  /* Yuqoridagi bitta qatorli xulosa. Panelda 12 ta qator bor — ularni
+     birma-bir o'qimasdan ham "hammasi joyidami yoki yo'q" degan javob
+     darhol ko'rinishi kerak. */
+  function stSummary() {
+    var box = document.getElementById('st-sum');
+    if (!box) return;
+    var rows = document.querySelectorAll('.st-row');
+    var bad = 0, warn = 0, wait = 0, firstBad = '';
+    rows.forEach(function (r) {
+      var c = r.querySelector('.st-dot').className;
+      if (c.indexOf('bad') >= 0) {
+        bad++;
+        if (!firstBad) firstBad = r.querySelector('.st-lbl').textContent;
+      } else if (c.indexOf('warn') >= 0) warn++;
+      else if (c.indexOf('wait') >= 0) wait++;
+    });
+    if (wait) { box.className = 'st-sum wait'; box.textContent = 'Tekshirilyapti…'; return; }
+    if (bad) {
+      box.className = 'st-sum bad';
+      box.textContent = bad + ' ta jiddiy muammo' + (warn ? ' va ' + warn + ' ta ogohlantirish' : '') +
+        ' — birinchisi: ' + firstBad;
+    } else if (warn) {
+      box.className = 'st-sum warn';
+      box.textContent = warn + ' ta ogohlantirish, jiddiy muammo yo\'q';
     } else {
-      list.push(a.word);
-      if (btn) {
-        btn.classList.add('mastered');
-        btn.innerHTML = '<span data-icon="check" data-icon-size="18"></span><span class="ig-master-text">O\'rgandim</span>';
-        App.icons(btn);
-      }
-      if (window.Activity && Activity.log) {
-        Activity.log('vocab_master', { word: a.word, xp: 10 });
-      }
-      App.toast('Ajoyib! So\'z o\'rganildi (+10 XP) 🎉');
+      box.className = 'st-sum ok';
+      box.textContent = 'Hammasi joyida';
     }
-    saveMasteredWords(list);
-    updateStatsBar();
+  }
+
+  App.actions.igSystemStatus = function () {
+    var html =
+      '<div class="st-sum" id="st-sum">Tekshirilyapti…</div>' +
+
+      '<div class="st-grp">Server bilan aloqa</div>' +
+      '<div class="st-wrap">' +
+        stRow('net', 'Ulanish') +
+        stRow('auth', 'Kirish') +
+        stRow('api', 'Ma\'lumot o\'qish tezligi') +
+      '</div>' +
+
+      '<div class="st-grp">Ilova</div>' +
+      '<div class="st-wrap">' +
+        stRow('ver', 'Versiya') +
+        stRow('mod', 'Modullar') +
+        stRow('sw', 'Oflayn rejim') +
+      '</div>' +
+
+      '<div class="st-grp">Ma\'lumot saqlash</div>' +
+      '<div class="st-wrap">' +
+        stRow('sync', 'Xotira sinxronizatsiyasi') +
+        stRow('size', 'Server xotirasi hajmi') +
+        stRow('queue', 'Yuborilmagan o\'zgarishlar') +
+        stRow('data', 'Yuklangan lug\'at') +
+        stRow('cache', 'Qurilma keshi') +
+      '</div>' +
+
+      '<div class="st-grp">Yaqin xatolar</div>' +
+      '<div class="st-wrap">' + stRow('err', 'JS xatolari') + '</div>' +
+      '<div id="st-errlist"></div>' +
+
+      '<div class="btn-row" style="margin-top:16px">' +
+        '<button class="btn sec" id="st-again">Qayta tekshirish</button>' +
+        '<button class="btn sec" id="st-copy">Hisobotni nusxalash</button>' +
+      '</div>' +
+      '<button class="btn" id="st-fix" style="margin-top:8px">Keshni tozalab yangilash</button>';
+
+    var sh = App.sheet(html, { title: 'Tizim holati' });
+    App.icons(sh);
+    sh.querySelector('#st-again').onclick = runChecks;
+    /* Hisobotni matn qilib nusxalash — nosozlikni boshqa birovga
+       (yoki o'ziga keyinroq) yuborish uchun eng tez yo'l. */
+    sh.querySelector('#st-copy').onclick = function () {
+      var lines = ['Yordamchi — tizim holati', new Date().toLocaleString(), ''];
+      sh.querySelectorAll('.st-row').forEach(function (r) {
+        var dot = r.querySelector('.st-dot').className.replace('st-dot ', '');
+        var mark = dot === 'ok' ? '[ok]  ' : dot === 'warn' ? '[!]   ' : dot === 'bad' ? '[XATO]' : '[?]   ';
+        lines.push(mark + ' ' + r.querySelector('.st-lbl').textContent + ': ' +
+                   r.querySelector('.st-val').textContent);
+        var p = r.querySelector('.st-problem');
+        if (p) lines.push('        -> ' + p.textContent);
+      });
+      var el = sh.querySelector('#st-errlist');
+      if (el && el.textContent.trim()) lines.push('', 'Xatolar:', el.innerText);
+      lines.push('', 'UA: ' + navigator.userAgent);
+      try {
+        navigator.clipboard.writeText(lines.join('\n'))
+          .then(function () { App.toast('✅ Nusxa olindi'); })
+          .catch(function () { App.toast('⚠️ Nusxa olinmadi'); });
+      } catch (e) { App.toast('⚠️ Nusxa olinmadi'); }
+    };
+    sh.querySelector('#st-fix').onclick = function () {
+      App.confirm('Barcha kesh tozalanadi va sahifa qaytadan yuklanadi. Saqlangan ma\'lumotlaringizga tegilmaydi.', function () {
+        var jobs = [];
+        if (window.caches) {
+          jobs.push(caches.keys().then(function (k) {
+            return Promise.all(k.map(function (x) { return caches.delete(x); }));
+          }));
+        }
+        if (navigator.serviceWorker) {
+          jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) {
+            return Promise.all(rs.map(function (r) { return r.unregister(); }));
+          }));
+        }
+        Promise.all(jobs).catch(function () {}).then(function () { location.reload(); });
+      });
+    };
+    runChecks();
   };
 
-  App.actions.igCopyWord = function (a) {
-    var text = '📖 ' + (a.ru || '') + ' — ' + (a.uz || '') + '\n' +
-      (a.ex ? '💬 ' + a.ex + '\n' : '') +
-      '✨ Yordamchi ilovasi orqali';
-    try {
-      navigator.clipboard.writeText(text);
-      App.toast('So\'z nusxalandi! 📋');
-    } catch (e) {
-      App.toast('Nusxalab bo\'lmadi');
+  /* Har so'rov CHEGARALANGAN vaqtda tugaydi. Usiz sekin tarmoqda qator
+     "tekshirilyapti…" holatida abadiy osilib qolardi — ya'ni panel
+     aynan kerak bo'lgan paytda javob bermasdi. */
+  function withTimeout(promise, ms) {
+    return new Promise(function (resolve, reject) {
+      var done = false;
+      var t = setTimeout(function () {
+        if (!done) { done = true; reject(new Error('timeout')); }
+      }, ms);
+      promise.then(function (v) {
+        if (!done) { done = true; clearTimeout(t); resolve(v); }
+      }, function (e) {
+        if (!done) { done = true; clearTimeout(t); reject(e); }
+      });
+    });
+  }
+
+  function runChecks() {
+    /* --- Ulanish ---
+       `navigator.onLine` ga TAYANMAYMIZ: u faqat tarmoq interfeysi
+       borligini biladi, server javob berishini emas, va ba'zi muhitlarda
+       noto'g'ri `false` qaytaradi. Shuning uchun har doim HAQIQIY so'rov
+       yuboriladi; `onLine` esa qo'shimcha izoh sifatida ishlatiladi. */
+    var t0 = Date.now();
+    withTimeout(
+      fetch('version.json?t=' + Date.now(), { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('http')); }),
+      6000
+    ).then(function (j) {
+      var ms = Date.now() - t0;
+      stSet('net', ms > 1500 ? 'warn' : 'ok', 'Ulangan · server ' + ms + ' ms',
+        ms > 1500 ? 'Server sekin javob beryapti — sahifa ochilishi cho\'zilishi mumkin.' : '');
+      checkVersion(j.build);
+    }).catch(function () {
+      if (!navigator.onLine) {
+        stSet('net', 'bad', 'Internet yo\'q',
+          'Ilova oflayn ishlayapti. O\'zgarishlar shu qurilmada saqlanadi va ulanish qaytganda serverga yuboriladi.');
+      } else {
+        stSet('net', 'bad', 'Server javob bermadi',
+          'Internet bor ko\'rinadi, lekin serverga ulanib bo\'lmadi.');
+      }
+      stSet('ver', 'warn', 'tekshirib bo\'lmadi',
+        'Server bilan aloqa yo\'q — ilova eng so\'nggi versiyadami, bilib bo\'lmadi.');
+    });
+
+    /* --- Versiya --- */
+    function checkVersion(serverBuild) {
+      var m = document.querySelector('meta[name="app-build"]');
+      var mine = m ? m.getAttribute('content') : '';
+      if (!mine || mine === 'dev') { stSet('ver', 'ok', 'mahalliy (dev)'); return; }
+      if (mine === serverBuild) stSet('ver', 'ok', mine + ' — eng so\'nggisi');
+      else stSet('ver', 'bad', mine + ' (serverda ' + serverBuild + ')',
+        'Ilova ESKI versiyada ishlayapti. Pastdagi "Keshni tozalab yangilash" tugmasini bosing.');
     }
-  };
+
+    /* --- Kirish --- */
+    withTimeout(fetch('/api', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amal: 'sessiya_tekshir' })
+    }).then(function (r) { return r.json(); }), 6000).then(function (j) {
+      if (j.kirganmi) stSet('auth', 'ok', 'Kirilgan');
+      else if (j.himoya) stSet('auth', 'bad', 'Kirilmagan',
+        'Sayt qulflangan. O\'zgarishlar SERVERGA SAQLANMAYDI — qaytadan kiring.');
+      else stSet('auth', 'warn', 'Kirilmagan (sayt ochiq)');
+    }).catch(function () {
+      stSet('auth', 'warn', 'tekshirib bo\'lmadi', 'Server javob bermadi.');
+    });
+
+    /* --- Xotira sinxronizatsiyasi --- */
+    var B = window.RemoteStorageBridge;
+    if (!B) {
+      stSet('sync', 'bad', 'modul yuklanmagan',
+        'remote-storage.js ishga tushmagan — sozlamalar saqlanmaydi.');
+      stSet('queue', 'warn', '—');
+    } else {
+      var st = B.state || {};
+      var keys = st.cache ? Object.keys(st.cache).length : 0;
+      if (st.ready) {
+        stSet('sync', 'ok', 'Ishlayapti · ' + keys + ' ta yozuv');
+      } else {
+        stSet('sync', 'bad', 'Yuklanmadi',
+          'Server xotirasi o\'qilmadi. Shu sababli sozlamalar (o\'rgangan so\'zlar, xatcho\'plar) BO\'SH ko\'rinishi mumkin. Ulanishni tekshiring va qayta yuklang.');
+      }
+      var q = st.queue ? Object.keys(st.queue).length : 0;
+      if (!q) stSet('queue', 'ok', 'Hammasi yuborilgan');
+      else stSet('queue', 'warn', q + ' ta kutmoqda',
+        'Bu o\'zgarishlar hali serverga yetmagan. Ulanish tiklanganda o\'zi yuboriladi.');
+    }
+
+    /* --- Service worker --- */
+    if (!navigator.serviceWorker) {
+      stSet('sw', 'warn', 'qo\'llab-quvvatlanmaydi', 'Bu brauzerda oflayn rejim ishlamaydi.');
+    } else {
+      navigator.serviceWorker.getRegistrations().then(function (rs) {
+        if (!rs.length) stSet('sw', 'warn', 'ro\'yxatdan o\'tmagan', 'Oflayn rejim yoqilmagan.');
+        else if (!navigator.serviceWorker.controller) {
+          stSet('sw', 'warn', 'faol emas', 'Sahifa bir marta yangilangach ishga tushadi.');
+        } else stSet('sw', 'ok', 'Faol · oflayn ishlaydi');
+      }).catch(function () { stSet('sw', 'warn', 'tekshirib bo\'lmadi'); });
+    }
+
+    /* --- Kesh hajmi --- */
+    if (navigator.storage && navigator.storage.estimate) {
+      navigator.storage.estimate().then(function (e) {
+        var mb = (e.usage || 0) / 1048576;
+        var qmb = (e.quota || 0) / 1048576;
+        stSet('cache', mb > 300 ? 'warn' : 'ok',
+          mb.toFixed(1) + ' MB' + (qmb ? ' / ' + qmb.toFixed(0) + ' MB' : ''),
+          mb > 300 ? 'Kesh kattalashib ketdi — tozalash foydali bo\'lishi mumkin.' : '');
+      }).catch(function () { stSet('cache', 'warn', 'tekshirib bo\'lmadi'); });
+    } else {
+      stSet('cache', 'warn', 'qo\'llab-quvvatlanmaydi');
+    }
+
+    /* --- Modullar ---
+       Bitta JS fayl yuklanmasa (masalan yarim yozilgan fayl keshlanib
+       qolsa) ilova jimgina buziladi: xato konsolda qoladi, ekranda esa
+       shunchaki "nimadir ishlamaydi". Har modul o'z global nomini
+       qo'yadi — yo'qi qaysi fayl yiqilganini aniq ko'rsatadi. */
+    var MODULES = [
+      ['App', 'core.js'], ['Auth', 'auth.js'], ['TTS', 'tts.js'],
+      ['AppLogger', 'logger.js'], ['RemoteStorageBridge', 'remote-storage.js'],
+      ['WordState', 'wordstate.js'], ['PairCore', 'paircore.js'],
+      ['RDCore', 'reading.js'], ['Notify', 'notify.js']
+    ];
+    var missing = MODULES.filter(function (m) { return !window[m[0]]; });
+    if (!missing.length) {
+      stSet('mod', 'ok', MODULES.length + ' tadan ' + MODULES.length + ' ta yuklandi');
+    } else {
+      stSet('mod', 'bad', missing.length + ' ta yuklanmadi',
+        'Bu fayllar ishga tushmadi: ' + missing.map(function (m) { return m[1]; }).join(', ') +
+        '. Odatda sabab — buzuq keshlangan fayl. "Keshni tozalab yangilash" ni bosing.');
+    }
+
+    /* --- Server xotirasi hajmi ---
+       Ikki marta nosozlik shu yerdan chiqqan: bitta yozuv haddan tashqari
+       kattalashib, `storage_bootstrap` vaqt chegarasidan chiqib ketgan va
+       BARCHA sozlama bo'sh ko'ringan. Endi hajm ko'rinib turadi, ya'ni
+       muammo yuzaga chiqishidan oldin bilinadi. */
+    var Bs = window.RemoteStorageBridge && RemoteStorageBridge.state;
+    if (Bs && Bs.cache) {
+      /* `__remote_storage_` prefiksli kalitlar HISOBGA OLINMAYDI: ular
+         qurilmada qoladi va serverga hech qachon yuborilmaydi. Ilgari
+         ular ham qo'shilib, o'lchov "server xotirasi" deb noto'g'ri
+         katta ko'rsatardi. */
+      var total = 0, biggest = null;
+      Object.keys(Bs.cache).forEach(function (k) {
+        if (k.indexOf('__remote_storage_') === 0) return;
+        var len = (Bs.cache[k] || '').length;
+        total += len;
+        if (!biggest || len > biggest.n) biggest = { k: k, n: len };
+      });
+      var mb = total / 1048576;
+      var big = biggest ? (biggest.k + ' — ' + Math.round(biggest.n / 1024) + ' KB') : '';
+      if (mb > 1.5) {
+        stSet('size', 'bad', mb.toFixed(2) + ' MB',
+          'Juda katta. Eng kattasi: ' + big + '. Shu sababli sozlamalar yuklanmay qolishi mumkin.');
+      } else if (mb > 0.8) {
+        stSet('size', 'warn', mb.toFixed(2) + ' MB',
+          'Kattalashib boryapti. Eng kattasi: ' + big);
+      } else {
+        stSet('size', 'ok', mb.toFixed(2) + ' MB' + (big ? ' · eng kattasi: ' + big : ''));
+      }
+    } else {
+      stSet('size', 'warn', 'tekshirib bo\'lmadi');
+    }
+
+    /* --- Ma'lumot o'qish tezligi --- */
+    var a0 = Date.now();
+    withTimeout(
+      fetch('/api?action=get_topics&lang=russian').then(function (r) {
+        return r.ok ? r.json() : Promise.reject(new Error(String(r.status)));
+      }), 8000
+    ).then(function () {
+      var ms = Date.now() - a0;
+      stSet('api', ms > 2500 ? 'warn' : 'ok', ms + ' ms',
+        ms > 2500 ? 'Server sekin javob beryapti — bo\'limlar kech ochiladi.' : '');
+    }).catch(function (e) {
+      var msg = String(e && e.message || '');
+      if (msg === '401') stSet('api', 'bad', 'ruxsat yo\'q (401)', 'Tizimga kirilmagan.');
+      else stSet('api', 'bad', msg === 'timeout' ? 'javob bermadi (8 s)' : 'xato',
+        'Ma\'lumot o\'qib bo\'lmadi.');
+    });
+
+    /* --- Yaqin xatolar --- */
+    var box = document.getElementById('st-errlist');
+    var log = window.AppLogger && AppLogger.recent ? AppLogger.recent() : null;
+    if (!log) {
+      stSet('err', 'warn', 'jurnal mavjud emas');
+    } else if (!log.length) {
+      stSet('err', 'ok', 'Xato yo\'q');
+      if (box) box.innerHTML = '';
+    } else {
+      var errs = log.filter(function (x) { return x.level === 'error'; });
+      stSet('err', errs.length ? 'bad' : 'warn',
+        log.length + ' ta yozuv' + (errs.length ? ' (' + errs.length + ' xato)' : ''),
+        errs.length ? 'Quyida oxirgilari ko\'rsatilgan.' : '');
+      if (box) {
+        box.innerHTML = log.slice(-6).reverse().map(function (x) {
+          var m = x.meta || {};
+          var where = m.file ? String(m.file).split('/').pop() + (m.line ? ':' + m.line : '') : '';
+          var t = new Date(x.at);
+          return '<div class="st-err ' + x.level + '">' +
+            '<b>' + App.esc(x.message) + '</b>' +
+            (m.message ? '<span>' + App.esc(String(m.message)) + '</span>' : '') +
+            (m.reason ? '<span>' + App.esc(String(m.reason)) + '</span>' : '') +
+            '<i>' + App.esc(where) + ' · ' +
+            ('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2) + '</i>' +
+          '</div>';
+        }).join('');
+      }
+    }
+
+    /* --- Ma'lumot --- */
+    var n = (LOADED_WORDS_POOL || []).length;
+    var cached = loadFeedCache();
+    var age = cached && cached.ts ? Math.round((Date.now() - cached.ts) / 60000) : null;
+    if (!n) {
+      stSet('data', 'bad', 'so\'zlar yuklanmagan',
+        'Lug\'at o\'qilmadi. Ulanishni tekshiring yoki sahifani yangilang.');
+    } else {
+      stSet('data', 'ok', n + ' ta so\'z' +
+        (age === null ? '' : ' · kesh ' + (age < 60 ? age + ' daqiqa' : Math.round(age / 60) + ' soat') + ' oldin'));
+    }
+  }
 
   /* Interactive Quick Quiz Sheet */
   App.actions.igOpenQuiz = function (a) {
@@ -1438,6 +2360,8 @@
   App.actions.igOpenStory = function (a) {
     var story = STORIES.find(function (s) { return s.id === a.id; });
     if (!story) return;
+    /* Lenta yashirilgan bo'lsa ham eski havola bosilishi mumkin. */
+    if (story.type === 'coding' && codingHidden()) return;
 
     var modal = document.getElementById('ig-story-modal');
     if (!modal) return;
@@ -1691,6 +2615,7 @@
 
   function mountDrawer() {
     unmountDrawer();
+    if (window.Auth && Auth.user && Auth.user.role === 'user') return;
     var el = document.createElement('div');
     el.className = 'hdw';
     el.innerHTML =

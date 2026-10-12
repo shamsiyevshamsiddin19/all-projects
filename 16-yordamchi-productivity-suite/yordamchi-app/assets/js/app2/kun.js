@@ -533,6 +533,20 @@
     if (kunView() === 'grid') renderGrid(); else renderDay();
   }
 
+  /* ODATLAR tugmasi — sarlavhaning o'ng burchagida.
+     Ko'rinishi ataylab MINIMAL va MONOXROM: ingichka halqa + mil.
+     "Har kuni, hozir qilinadigan ish" ma'nosini beradi va yonidagi
+     yuklash tugmasi bilan bir xil og'irlikda turadi. */
+  function habitsBtnHtml() {
+    return '<button class="icon-btn ghost kun-habits-btn" data-act="go" data-arg=\'' +
+      App.arg({ v: 'habits' }) + '\' title="Kunlik odatlar" aria-label="Kunlik odatlar">' +
+      '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" ' +
+      'stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
+      '<circle cx="12" cy="12" r="9"></circle>' +
+      '<path d="M12 7v5l3.2 2"></path>' +
+      '</svg></button>';
+  }
+
   App.view('kun', {
     nav: 'kun',
     render: function (page, params) {
@@ -554,14 +568,22 @@
         '<h1 style="display:flex;align-items:center;gap:6px">Kun hisobi <label style="cursor:pointer;color:var(--accent);display:flex"><span data-icon="calendar" data-icon-size="18"></span><input type="date" style="position:absolute;opacity:0;width:1px;height:1px;overflow:hidden;padding:0;border:0" onchange="App.go(\'kun\', {date: this.value})"></label></h1>' +
         '<div style="flex:1"></div>' +
         '<button class="icon-btn ghost" data-act="kunImport" aria-label="Fayldan yuklash" title="Fayldan yuklash"><span data-icon="upload" data-icon-size="19"></span></button>' +
-        '<button class="icon-btn ghost" data-act="kunAdd" aria-label="Qo\'shish"><span data-icon="plus" data-icon-size="20"></span></button></div>' +
-        /* Bitta ixcham qator: chapda hafta o'qlari, o'ngda rejim tanlagichi */
+        /* ODATLAR — har kuni takrorlanadigan ishlar. Ilgari bu joyda
+           "Qo'shish" (+) turardi, lekin u kunda bir marta bosiladi;
+           odatlar esa har kuni ko'riladi. Shuning uchun o'rin
+           almashtirildi: `+` pastdagi qatorga tushdi. */
+        habitsBtnHtml() + '</div>' +
+        /* Bitta ixcham qator: chapda hafta o'qlari, o'ngda rejim tanlagichi
+           va qo'shish tugmasi */
         '<div class="kun-bar">' +
         '<div id="kun-nav"></div>' +
         '<div class="seg seg-sm" id="kun-modes">' +
         '<button class="' + (mode === 'list' ? 'active' : '') + '" data-act="kunMode" data-arg=\'{"m":"list"}\'>Kun</button>' +
         '<button class="' + (mode === 'grid' ? 'active' : '') + '" data-act="kunMode" data-arg=\'{"m":"grid"}\'>Jadval</button>' +
-        '</div></div>' +
+        '</div>' +
+        '<button class="icon-btn ghost kun-add-btn" data-act="kunAdd" aria-label="Qo\'shish" title="Mashg\'ulot qo\'shish">' +
+        '<span data-icon="plus" data-icon-size="19"></span></button>' +
+        '</div>' +
         '<div id="kun-week"></div>' +
         '<div id="kun-sum"></div>' +
         '<div id="kun-list"><div class="load-wrap"><div class="spinner"></div></div></div>';
@@ -749,7 +771,7 @@
     if (!timed.length && !untimed.length) {
       box.innerHTML = html + App.empty({
         icon: 'calendar', title: 'Bu kun bo\'sh',
-        text: 'Yuqoridagi + tugmasi bilan mashg\'ulot qo\'shing yoki ⬆ orqali .md jadval yuklang.'
+        text: '"Kun / Jadval" yonidagi + tugmasi bilan mashg\'ulot qo\'shing yoki tepadagi ⬆ orqali .md jadval yuklang.'
       });
       App.icons(box);
       return;
@@ -974,7 +996,7 @@
     if (!total) {
       box.innerHTML = App.empty({
         icon: 'calendar', title: 'Bu hafta bo\'sh',
-        text: 'Yuqoridagi + tugmasi bilan mashg\'ulot qo\'shing yoki ⬆ orqali .md reja yuklang.'
+        text: '"Kun / Jadval" yonidagi + tugmasi bilan mashg\'ulot qo\'shing yoki tepadagi ⬆ orqali .md reja yuklang.'
       });
       App.icons(box);
       return;
@@ -1519,6 +1541,7 @@
       if (/^```/.test(line)) return;
 
       var lvl = (line.match(/^(#{1,6})\s/) || [, ''])[1].length;
+      if (isHabitsHeader(line)) { inPlanGroup = true; cur = null; return; }
       if (lvl >= 3) { inPlanGroup = true; return; }
       if (lvl && lvl <= 2) inPlanGroup = false;
       if (inPlanGroup) return;
@@ -1636,11 +1659,19 @@
       curGroup = null;
     }
 
+    /* `## Odatlar` bo'limi REJA emas — uni butunlay o'tkazib yuboramiz.
+       Aks holda odat qatorlari o'zidan oldingi kunning vazifasiga
+       aylanib qolardi (`cur` tanilmagan `##` da tozalanmaydi). */
+    var inHabits = false;
+
     lines.forEach(function (raw) {
       var line = raw.trim();
       if (!line || /^```/.test(line)) return;
 
       var hLevel = (line.match(/^(#{1,6})\s/) || [, ''])[1].length;
+      if (isHabitsHeader(line)) { inHabits = true; cur = null; curGroup = null; return; }
+      if (hLevel && hLevel <= 2) inHabits = false;
+      if (inHabits) return;
 
       /* ### (yoki undan chuqurroq) — BO'LIM sarlavhasi */
       if (hLevel >= 3 && cur) {
@@ -1700,11 +1731,292 @@
   }
   App.parsePlanMd = parsePlanMd;   // sinov uchun
 
+  /* ================= ODATLAR (har kuni takrorlanadigan) =================
+     Reja va jadvaldan FARQI: odat bir kunga emas, HAR KUNGA tegishli va
+     u bot bazasida yashaydi (eslatmalarni bot yuboradi).
+
+     Faylda alohida `## Odatlar` bo'limi bilan ajratiladi. Bu bo'lim
+     ichidagi qatorlarni reja ham, jadval ham O'QIMASLIGI kerak — aks
+     holda "22:00 Tish yuvish" o'zidan oldingi kunning vazifasi bo'lib
+     ham tushib ketardi. */
+  var HABIT_HEADS = /^(odatlar|kunlik odatlar|habits|odat)$/i;
+
+  function isHabitsHeader(line) {
+    var lvl = (String(line).match(/^(#{1,6})\s/) || [, ''])[1].length;
+    if (!lvl || lvl > 2) return false;
+    var t = String(line).replace(/^#{1,6}\s*/, '').replace(/:\s*$/, '').trim();
+    return HABIT_HEADS.test(t);
+  }
+
+  /* Odat rejimi: yozuvdan `week_mode` kalitiga. */
+  var HABIT_MODES = [
+    ['everyday', /har\s*kuni|kunda|everyday|daily/i],
+    ['odd',      /toq/i],
+    ['even',     /juft/i],
+    ['weekday',  /ish\s*kun|weekday|dush[^|]*juma/i],
+    ['weekend',  /dam\s*olish|weekend|shanba[^|]*yakshanba/i]
+  ];
+  function normHabitMode(raw) {
+    var t = String(raw || '');
+    for (var i = 0; i < HABIT_MODES.length; i++) {
+      if (HABIT_MODES[i][1].test(t)) return HABIT_MODES[i][0];
+    }
+    return '';
+  }
+
+  function parseHabitsMd(text) {
+    var lines = String(text || '').replace(/\r/g, '').split('\n');
+    var inBlock = false, out = [], seen = {};
+
+    lines.forEach(function (raw) {
+      var line = raw.trim();
+      if (!line || /^```/.test(line)) return;
+
+      if (isHabitsHeader(line)) { inBlock = true; return; }
+      var lvl = (line.match(/^(#{1,6})\s/) || [, ''])[1].length;
+      if (lvl && lvl <= 2) { inBlock = false; return; }   // boshqa `##` — blok tugadi
+      if (!inBlock) return;
+
+      var s2 = line.replace(/^[-*+]\s+/, '').replace(/^\d+[.)]\s+/, '').trim();
+      s2 = s2.replace(/^\[[ xX]\]\s*/, '');
+      if (!s2) return;
+
+      var parts = s2.split('|').map(function (x) { return x.trim(); }).filter(Boolean);
+      if (!parts.length) return;
+
+      /* Vaqt qaysi bo'lakda bo'lsa ham topiladi (jadval qatoridagi kabi). */
+      var time = '', timeIdx = -1;
+      for (var i = 0; i < parts.length; i++) {
+        var m = parts[i].match(/(\d{1,2}[:.]\d{2})/);
+        if (m) { time = normTime(m[1]); timeIdx = i; break; }
+      }
+
+      var rest = [];
+      parts.forEach(function (p2, i2) {
+        if (i2 === timeIdx) {
+          var left = p2.replace(/\d{1,2}[:.]\d{2}/, ' ').trim();
+          if (left) rest.push(left);
+        } else if (p2) rest.push(p2);
+      });
+      if (!rest.length) return;
+
+      /* Oxirgi bo'lak rejim bo'lishi mumkin: "- 22:00 | Tish yuvish | juft kunlari" */
+      var mode = '';
+      if (rest.length > 1) {
+        var last = normHabitMode(rest[rest.length - 1]);
+        if (last) { mode = last; rest.pop(); }
+      }
+      var name = rest.join(' ').trim();
+      /* Nom ichidagi qavsli izoh ham rejim bo'lishi mumkin:
+         "Cho'milish (juft kunlari)". */
+      if (!mode) {
+        var par = name.match(/\(([^()]{1,24})\)\s*$/);
+        if (par) {
+          var pm = normHabitMode(par[1]);
+          if (pm) { mode = pm; name = name.replace(par[0], '').trim(); }
+        }
+      }
+      name = name.replace(/^[-–—:\s]+|[-–—:\s]+$/g, '').trim();
+      if (!name) return;
+
+      var key = name.toLowerCase();
+      if (seen[key]) return;                 // faylda ikki marta yozilgan
+      seen[key] = 1;
+      out.push({ name: name, time: time || '22:00', week_mode: mode || 'everyday' });
+    });
+
+    return { habits: out, stats: { total: out.length } };
+  }
+  App.parseHabitsMd = parseHabitsMd;   // sinov uchun
+
   /* ---------- Import oynasi ----------
      Ikki xil .md qabul qilinadi va TUR AVTOMATIK aniqlanadi:
        · REJA   — `### 08:00-09:00 | Bo'lim` + vazifalar (Boostdayga yoziladi)
        · JADVAL — `- 08:30-10:00 | Xona | Fan` (haftalik takrorlanuvchi dars)
      Ikkalasi bitta faylda aralash bo'lsa, ikkalasi ham qo'llanadi. */
+  /* ================= AI uchun qo'llanma =================
+     Ilgari bu qo'llanma `<a href="Jadval_AI_Qollanma.md" download>` bilan
+     STATIK fayl sifatida berilardi — lekin bunday fayl na repoda, na
+     serverda bor edi. Server yo'q sahifa o'rniga `index.html` ni
+     qaytargani uchun foydalanuvchi `.md` nomli, ichi HTML bo'lgan fayl
+     yuklab olardi.
+
+     Endi qo'llanma SHU YERDA, kod ichida yasaladi: yo'qolib qolishi ham,
+     serverga yuklashni unutish ham mumkin emas. Saytdagi boshqa
+     qo'llanmalar (O'qish, Говорение, Lug'at) ham xuddi shunday. */
+  var KUN_AI_GUIDE = [
+    "# Yordamchi — kunlik reja va dars jadvali uchun .md tayyorlash qo'llanmasi",
+    "",
+    "Bu faylni sun'iy intellektga bering va \"shu qoidalar bo'yicha menga",
+    "reja tayyorla\" deng. Tayyor `.md` ni «Kun hisobi → Fayldan yuklash»",
+    "orqali joylaysiz.",
+    "",
+    "---",
+    "",
+    "## 1. Uch xil ma'lumot — bitta fayl",
+    "",
+    "Ilova faylni o'qiganda UCH narsani ajratadi:",
+    "",
+    "- **KUN REJASI** — bir martalik ishlar (`### vaqt | bo'lim` + vazifalar).",
+    "- **DARS JADVALI** — HAR HAFTA takrorlanadigan darslar (`- vaqt | xona | fan`).",
+    "- **ODATLAR** — HAR KUNI takrorlanadigan ishlar (`## Odatlar` bo'limi).",
+    "",
+    "Uchalasi bitta faylda birga bo'lsa ham bo'ladi — ilova o'zi ajratadi.",
+    "",
+    "## 2. KUN REJASI formati",
+    "",
+    "```markdown",
+    "## Dushanba",
+    "",
+    "### 07:00 - 07:40 | Ertalabki rejim [hayot]",
+    "- Yuzni yuvish",
+    "- Nonushta",
+    "",
+    "### 18:00 - 19:30 | Sport [sport]",
+    "- Tortilish 4x10",
+    "- Press",
+    "```",
+    "",
+    "Qoidalar:",
+    "",
+    "1. `## Kun` — kun sarlavhasi. Kun nomi ham, sana ham bo'ladi:",
+    "   `## Dushanba`, `## 12.08.2026`, `## 2026-08-12`, `## 1-sentabr`.",
+    "   Kun NOMI yozilsa — joriy haftaning o'sha kuniga tushadi.",
+    "   SANA yozilsa — aynan o'sha kunga tushadi.",
+    "2. `### 08:00 - 09:00 | Bo'lim nomi` — bo'lim. Vaqt BO'LIMGA tegishli,",
+    "   ayrim vazifalarga emas.",
+    "3. Bo'lim ostida `- vazifa` qatorlari. `1.` va `- [ ]` ham qabul qilinadi.",
+    "4. Vazifasi yo'q bo'lim TASHLAB YUBORILADI — bo'sh sarlavha yozmang.",
+    "",
+    "## 3. Turkum (rang) belgilash",
+    "",
+    "Bo'lim nomidan keyin kvadrat qavsda turkum yozsangiz, ilova o'sha rangni",
+    "beradi. Qavs ekranda KO'RINMAYDI:",
+    "",
+    "```markdown",
+    "### 18:00 - 19:30 | Kechki mashg'ulot [sport]",
+    "```",
+    "",
+    "Turkumlar: `kurs` · `rus` · `dasturlash` · `sport` · `hayot` · `boshqa`",
+    "",
+    "Qavs yozilmasa, ilova BO'LIM NOMIDAN taxmin qiladi — ichidagi",
+    "vazifalardan EMAS. Masalan \"Sport\" → `sport`, \"Python darsi\" →",
+    "`dasturlash`. \"Ertalabki rejim\" kabi neytral nomdan esa taxmin",
+    "chiqmaydi va `boshqa` bo'lib qoladi — shuning uchun qavsni yozgan",
+    "ma'qul.",
+    "",
+    "## 4. DARS JADVALI formati",
+    "",
+    "```markdown",
+    "## Dushanba",
+    "- 08:30-10:00 | A-408 | Matematika",
+    "- 10:10-11:40 | B-201 | Fizika",
+    "",
+    "## Seshanba",
+    "- 08:30-10:00 | A-105 | Ingliz tili (1-hafta)",
+    "```",
+    "",
+    "Qoidalar:",
+    "",
+    "1. Tartib: `vaqt | xona | fan`. Vaqt qaysi ustunda bo'lsa ham topiladi,",
+    "   lekin XONA fandan OLDIN turishi shart — aks holda ular almashib ketadi.",
+    "2. Tugash vaqti yozilmasa, ilova 90 daqiqa deb hisoblaydi.",
+    "3. Faqat ikki bo'lak bo'lsa: birinchisi xona, qolgani fan.",
+    "4. Bir bo'lak bo'lsa: xonani qavsda yozing — `- 08:30-10:00 Matematika (A-408)`.",
+    "5. Ikki haftalik jadval: `(1-hafta)` / `(2-hafta)`, yoki `toq hafta` /",
+    "   `juft hafta`. Kun sarlavhasiga yozilsa — o'sha kundagi hamma darsga tegadi.",
+    "",
+    "## 5. ODATLAR formati",
+    "",
+    "Odat — har kuni takrorlanadigan ish. U reja kabi bitta kunga emas,",
+    "HAMMA kunga tegishli va eslatmasini bot yuboradi.",
+    "",
+    "```markdown",
+    "## Odatlar",
+    "- 07:00 | Ertalabki gimnastika",
+    "- 22:00 | Yuz yuvish",
+    "- 23:00 | Tish yuvish",
+    "- 21:00 | Cho'milish | juft kunlari",
+    "```",
+    "",
+    "Qoidalar:",
+    "",
+    "1. Sarlavha AYNAN `## Odatlar` (yoki `## Kunlik odatlar`, `## Habits`).",
+    "2. Tartib: `vaqt | nom`. Vaqt majburiy emas — yozilmasa `22:00` olinadi.",
+    "3. Takrorlanish uchinchi ustunda yoki qavsda: `har kuni`, `toq kunlari`,",
+    "   `juft kunlari`, `ish kunlari`, `dam olish kunlari`. Yozilmasa — har kuni.",
+    "4. Odat NOMI takrorlanmasin: ayni nomli odat qayta yuklanganda",
+    "   yangisi ochilmaydi, mavjudi yangilanadi.",
+    "5. `## Odatlar` bo'limi keyingi `##` sarlavhasigacha davom etadi.",
+    "",
+    "## 6. Nimalarga E'TIBOR berish kerak",
+    "",
+    "1. **Dars qatorlari `##` kun sarlavhasi ostida turishi SHART.** Ular",
+    "   `###` bo'lim ichiga tushib qolsa, ilova ularni reja vazifasi deb",
+    "   o'qiydi va jadvalga umuman qo'shmaydi.",
+    "2. **Vaqtni `08:30` ko'rinishida yozing** (`8:30` ham bo'ladi, `08.30` ham).",
+    "   Oraliq ajratgichi: `-` yoki `–`.",
+    "3. **`|` faqat ajratgich.** Fan yoki bo'lim nomining ICHIDA `|` bo'lmasin.",
+    "4. **`**qalin**`, jadval (`| --- |`), emoji va havola ishlatmang** —",
+    "   ilova ularni o'qimaydi, ekranda ortiqcha belgi bo'lib qoladi.",
+    "5. **Bitta kun bir marta yozilsin.** Bir kun ikki xil sarlavha bilan",
+    "   (`## Dushanba` va `## 12.08.2026`) yozilsa ular BIR kunga qo'shiladi.",
+    "6. **Odatlarni kun rejasiga aralashtirmang.** \"Tish yuvish\" har kuni",
+    "   takrorlansa — u `## Odatlar` bo'limiga yozilsin, har kunning",
+    "   rejasiga alohida emas. Aks holda u yetti marta takrorlanadi.",
+    "",
+    "## 7. AI ga beriladigan tayyor so'rov",
+    "",
+    "```",
+    "Menga bir haftalik kunlik reja tayyorla va uni .md fayl qilib ber.",
+    "",
+    "FORMAT (aynan shunday):",
+    "## <Kun nomi>",
+    "",
+    "### <HH:MM> - <HH:MM> | <Bo'lim nomi> [<turkum>]",
+    "- <vazifa>",
+    "- <vazifa>",
+    "",
+    "QOIDALAR:",
+    "- Har kun uchun `## Kun nomi` sarlavhasi (Dushanba ... Yakshanba).",
+    "- Har bo'lim `###` bilan, vaqti oralig'i bilan: `### 07:00 - 07:40 | Nom`.",
+    "- Turkum kvadrat qavsda: kurs / rus / dasturlash / sport / hayot / boshqa.",
+    "- Har bo'lim ostida kamida 2 ta `- vazifa` bo'lsin, vazifasiz bo'lim yozma.",
+    "- Vaqtlar ustma-ust tushmasin va kun bo'ylab tartib bilan borsin.",
+    "- `**qalin**`, jadval, emoji, havola ISHLATMA.",
+    "- Javobni faqat .md matn sifatida ber, izohsiz.",
+    "",
+    "Oxirida ALOHIDA odatlar bo'limini ham qo'sh:",
+    "",
+    "## Odatlar",
+    "- <HH:MM> | <har kuni takrorlanadigan ish>",
+    "",
+    "ODATLAR QOIDASI:",
+    "- Har kuni takrorlanadigan ishni (tish yuvish, gimnastika, kitob o'qish)",
+    "  kunlar rejasiga YOZMA — faqat shu bo'limga yoz, aks holda u",
+    "  hafta davomida yetti marta takrorlanadi.",
+    "- 4-8 ta odat yetarli. Har biriga aniq vaqt qo'y.",
+    "- Faqat ayrim kunlarda bo'lsa: `- 21:00 | Cho'milish | juft kunlari`.",
+    "",
+    "MENING KUNIM:",
+    "<bu yerga o'z sharoitingizni yozing: uyg'onish vaqti, ish/o'qish soatlari,",
+    " sport, qaysi fanlarni o'rganyapsiz>",
+    "```",
+    "",
+    "## 8. Tayyor bo'lgach",
+    "",
+    "«Kun hisobi» bo'limida `Fayldan yuklash` ni oching, `.md` ni tanlang.",
+    "Ilova nechta vazifa va nechta dars topganini KO'RSATADI — qo'shishdan",
+    "oldin shuni tekshiring. Agar `0` chiqsa, format buzilgan: `##` va `###`",
+    "sarlavhalarini qaytadan solishtiring.",
+    ""
+  ].join('\n');
+
+  App.actions.kunGuide = function () {
+    App.download('Jadval_AI_Qollanma.md', KUN_AI_GUIDE);
+    App.toast("Qo'llanma yuklandi — uni AI ga bering");
+  };
+  App.KUN_AI_GUIDE = KUN_AI_GUIDE;   // sinov uchun
   App.actions.kunImport = function () {
     var html =
       '<input type="file" id="k-file" hidden accept=".md,.markdown,.txt,text/markdown,text/plain">' +
@@ -1721,7 +2033,7 @@
       'Vaqt BO\'LIMGA qo\'yiladi.<br>' +
       '<b>Dars jadvali:</b> <code>- 08:30-10:00 | Xona | Fan</code>.<br>' +
       '<i style="display:inline-block;margin-top:6px;color:var(--accent)">Rejani AI ga yozdirib olsangiz ham bo\'ladi — ' +
-      '<a href="Jadval_AI_Qollanma.md" download style="color:var(--accent);text-decoration:underline;font-weight:600">qo\'llanmani yuklab oling</a></i>' +
+      '<a href="#" data-act="kunGuide" style="color:var(--accent);text-decoration:underline;font-weight:600">qo\'llanmani yuklab oling</a></i>' +
       '</p>' +
 
       '<label class="field"><span>Reja qanday yozilsin?</span>' +
@@ -1748,13 +2060,14 @@
     sh.querySelector('#k-pick').onclick = function () { fileEl.click(); };
 
     function describe(text, prefix) {
-      var p = parsePlanMd(text), s = parseScheduleMd(text);
+      var p = parsePlanMd(text), s = parseScheduleMd(text), hb = parseHabitsMd(text);
       var bits = [];
       if (p.stats.tasks) bits.push('<b>' + p.stats.tasks + '</b> ta vazifa (' + p.stats.groups + ' bo\'lim, ' + p.stats.days + ' kun)');
       if (s.stats.total) bits.push('<b>' + s.stats.total + '</b> ta dars');
+      if (hb.stats.total) bits.push('<b>' + hb.stats.total + '</b> ta odat');
       info.innerHTML = bits.length ? '✅ ' + prefix + bits.join(' · ') : '⚠️ ' + prefix + 'hech narsa topilmadi — formatni tekshiring';
       info.style.color = bits.length ? 'var(--success)' : 'var(--danger)';
-      return { plan: p, sched: s };
+      return { plan: p, sched: s, habits: hb };
     }
 
     fileEl.onchange = function () {
@@ -1773,8 +2086,8 @@
 
     sh.querySelector('#k-import').onclick = function () {
       var text = sh.querySelector('#k-text').value;
-      var plan = parsePlanMd(text), sched = parseScheduleMd(text);
-      if (!plan.stats.tasks && !sched.stats.total) {
+      var plan = parsePlanMd(text), sched = parseScheduleMd(text), habits = parseHabitsMd(text);
+      if (!plan.stats.tasks && !sched.stats.total && !habits.stats.total) {
         return App.toast('Hech narsa topilmadi — formatni tekshiring');
       }
       var planMode = sh.querySelector('#k-pmode').value;
@@ -1793,16 +2106,65 @@
         if (msg.length) msg.push('');
         msg.push(sched.stats.total + ' ta dars haftalik jadvalga qo\'shiladi');
       }
+      if (habits.stats.total) {
+        if (msg.length) msg.push('');
+        msg.push(habits.stats.total + ' ta odat kunlik odatlarga qo\'shiladi:');
+        habits.habits.slice(0, 6).forEach(function (h) {
+          msg.push('  ' + h.time + ' — ' + h.name);
+        });
+        if (habits.habits.length > 6) msg.push('  ... yana ' + (habits.habits.length - 6) + ' ta');
+      }
 
       App.confirm(msg.join('\n'), function () {
         App.closeSheet();
-        runImport(plan, sched, planMode, schedMode, linkSport);
+        runImport(plan, sched, planMode, schedMode, linkSport, habits);
       }, { yes: 'Qo\'shish', title: 'Tasdiqlang' });
     };
   };
 
   /* Importni bajaradi: jadval (mahalliy) + reja (Boostday) + sport ulash */
-  function runImport(plan, sched, planMode, schedMode, linkSport) {
+  /* Odatlarni bot bazasiga yozadi. NOM BO'YICHA moslashtiriladi: ayni
+     fayl ikki marta yuklansa, odat ikki nusxada paydo bo'lmasin —
+     mavjudi yangilanadi.
+
+     Ketma-ket yuboriladi (parallel emas): hammasi bitta ro'yxatni
+     qayta yozadi, bir vaqtda yuborilsa oxirgisi oldingilarini bosib
+     ketishi mumkin — reja importida ham shu sabab shunday qilingan. */
+  function importHabits(habits) {
+    var list = (habits && habits.habits) || [];
+    if (!list.length) return Promise.resolve(0);
+    if (!window.Habits || !window.Habits.ensureLoaded) {
+      App.toast("⚠️ Odatlar moduli yuklanmagan");
+      return Promise.resolve(0);
+    }
+
+    return Habits.ensureLoaded().then(function (cur) {
+      var byName = {};
+      (cur || []).forEach(function (h) { byName[String(h.name || '').trim().toLowerCase()] = h; });
+
+      var n = 0, chain = Promise.resolve();
+      list.forEach(function (h) {
+        chain = chain.then(function () {
+          var old = byName[h.name.toLowerCase()];
+          return Habits.save({
+            id: (old && old.id) || 0,
+            name: h.name,
+            time: h.time,
+            week_mode: h.week_mode,
+            note: (old && old.note) || '',
+            remind: old ? !!old.remind : true
+          }).then(function () { n++; }).catch(function () {});
+        });
+      });
+      return chain.then(function () { return n; });
+    }).catch(function () { return 0; });
+  }
+
+  function runImport(plan, sched, planMode, schedMode, linkSport, habits) {
+    /* 0) Odatlar — bot bazasiga. Reja/jadvaldan MUSTAQIL: fayl faqat
+       odatlardan iborat bo'lsa ham qo'shiladi. */
+    var habitsDone = importHabits(habits);
+
     /* 1) Dars jadvali — mahalliy, darhol */
     if (sched.stats.total) {
       ensureLoaded();
@@ -1815,8 +2177,13 @@
     }
 
     if (!plan.stats.tasks) {
-      App.toast('✅ ' + sched.stats.total + ' ta dars qo\'shildi');
-      App.reload();
+      habitsDone.then(function (n) {
+        var parts = [];
+        if (sched.stats.total) parts.push(sched.stats.total + ' ta dars');
+        if (n) parts.push(n + ' ta odat');
+        App.toast(parts.length ? '✅ ' + parts.join(' · ') + ' qo\'shildi' : '✅ Tayyor');
+        App.reload();
+      });
       return;
     }
     if (!window.BoostPush || !BoostPush.pushDayPlan) {
@@ -1855,6 +2222,7 @@
       if (sched.stats.total) parts.push(sched.stats.total + ' ta dars jadvalga');
       if (linked) parts.push(linked + ' ta sport mashqi ulandi');
       App.toast('✅ ' + parts.join(' · '));
+      habitsDone.then(function (n) { if (n) App.toast('✅ ' + n + ' ta odat qo\'shildi'); });
       var boot = window.BoostDay ? BoostDay.ensureLoaded(true) : Promise.resolve();
       boot.then(function () { App.go('kun', { date: plan.days[0].date }); });
     });

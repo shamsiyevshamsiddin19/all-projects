@@ -18,7 +18,7 @@
     { v: 'qoidalar', n: 'Qoidalar', ic: 'file' },
     { v: 'settings', n: 'Sozlamalar', ic: 'settings' }
   ];
-  var BOTTOM = ['home', 'languages', 'kun', 'sport', 'settings'];
+  var BOTTOM = ['home', 'kun', 'languages', 'sport', 'settings'];
 
   var NAV_IMG = {
     home: 1, profile: 1, goals: 1, stats: 1, tarix: 1, fanlar: 1, languages: 1, coding: 1,
@@ -42,76 +42,143 @@
       return Array.isArray(v) ? v.filter(function (x) { return x !== 'home' && x !== 'profile' && x !== 'settings'; }) : [];
     } catch (e) { return []; }
   }
+  /* Sozlamalar bo'limiga kira oladimi. Standart `ruxsatlar`
+     (`["home","languages","fanlar","stats"]`) ichida `settings` YO'Q —
+     ya'ni oddiy foydalanuvchi Sozlamalarni umuman ocholmaydi. Chiqish
+     tugmasi esa FAQAT o'sha sahifada edi, natijada ular tizimdan
+     chiqa olmasdi. Shuning uchun chiqishni menyuga ham qo'shamiz. */
+  function canOpenSettings() {
+    if (!window.Auth || typeof Auth.isAllowed !== 'function') return true;
+    return Auth.isAllowed('settings');
+  }
+
+  function logoutRowHtml() {
+    return '<button class="list-row" data-act="logout" style="color:var(--danger);margin-top:8px">' +
+      '<span class="li-ic" style="background:var(--danger-soft);color:var(--danger)" ' +
+      'data-icon="lock" data-icon-size="20"></span>' +
+      '<div class="li-main"><div class="li-title" style="color:var(--danger)">' +
+      'Tizimdan chiqish</div></div></button>';
+  }
+
+  function isAdminUser() {
+    return !window.Auth || typeof Auth.isAdmin !== 'function' || Auth.isAdmin();
+  }
+
+  /* Oddiy foydalanuvchida menyu tartibini `ruxsatlar` belgilaydi — admin
+     bergan ketma-ketlik (Bosh, Testlar, Learn, Statistika, Profil) yon
+     menyuda ham bir xil ko'rinsin. Adminda NAV tartibi o'zgarmaydi. */
+  function orderForUser(list) {
+    if (isAdminUser()) return list;
+    var r = (window.Auth && Auth.user && Auth.user.ruxsatlar) || null;
+    if (!Array.isArray(r) || r.indexOf('*') >= 0) return list;
+    return list.slice().sort(function (a, b) {
+      var ia = r.indexOf(a.v), ib = r.indexOf(b.v);
+      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+    });
+  }
+
   function visibleNav() {
     var h = hiddenSet();
-    return NAV.filter(function (i) { return h.indexOf(i.v) < 0; });
+    return orderForUser(NAV.filter(function (i) {
+      if (h.indexOf(i.v) >= 0) return false;
+      if (window.Auth && typeof Auth.isAllowed === 'function') {
+        return Auth.isAllowed(i.v);
+      }
+      return true;
+    }));
   }
   window.NavConfig = { all: NAV, hidden: hiddenSet };
   // Sozlamalardan bo'lim yashirilganda menyuni darhol qayta quradi
   window.NavRebuild = function () { buildSidebar(); buildBottom(); };
 
+  var SIDE_ICONS = {
+    home: '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M3 4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4zm10 0a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1V4zM3 14a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6zm10-2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-8z"/></svg>',
+    languages: '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 4.5C9.5 2.8 6 2.5 3 3v14c3-.5 6.5-.2 9 1.5 2.5-1.7 6-2 9-1.5V3c-3-.5-6.5-.2-9 1.5zm-1 12c-2.3-1.1-5.2-1.3-7.5-.8V4.8c2.2-.4 5-.2 7.5.9v10.8zm9.5-.8c-2.3-.5-5.2-.3-7.5.8V5.7c2.5-1.1 5.3-1.3 7.5-.9v10.9z"/></svg>',
+    kun: '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3zm1 15a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9h16v9zm0-11H4V7a1 1 0 0 1 1-1h1v1h2V6h8v1h2V6h1a1 1 0 0 1 1 1v1z"/><circle cx="8" cy="13" r="1.2"/><circle cx="12" cy="13" r="1.2"/><circle cx="16" cy="13" r="1.2"/><circle cx="8" cy="17" r="1.2"/><circle cx="12" cy="17" r="1.2"/><circle cx="16" cy="17" r="1.2"/></svg>',
+    sport: '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20.5 7h-1.8a4.9 4.9 0 0 0-1.4-2.5l1.3-1.3a1 1 0 0 0-1.4-1.4L15.9 3.1A4.9 4.9 0 0 0 13.4 1.7V.5a1 1 0 0 0-2 0v1.2a4.9 4.9 0 0 0-2.5 1.4L7.6 1.8a1 1 0 0 0-1.4 1.4l1.3 1.3A4.9 4.9 0 0 0 6.1 7H4.3A2.3 2.3 0 0 0 2 9.3v5.4A2.3 2.3 0 0 0 4.3 17h1.8a4.9 4.9 0 0 0 1.4 2.5l-1.3 1.3a1 1 0 0 0 1.4 1.4l1.3-1.3a4.9 4.9 0 0 0 2.5 1.4v1.2a1 1 0 0 0 2 0v-1.2a4.9 4.9 0 0 0 2.5-1.4l1.3 1.3a1 1 0 0 0 1.4-1.4l-1.3-1.3a4.9 4.9 0 0 0 1.4-2.5h1.8a2.3 2.3 0 0 0 2.3-2.3V9.3A2.3 2.3 0 0 0 20.5 7zM6 13.5v-3c0-.3.2-.5.5-.5h1.1a4.9 4.9 0 0 0 0 4H6.5a.5.5 0 0 1-.5-.5zm12 0c0 .3-.2.5-.5.5h-1.1a4.9 4.9 0 0 0 0-4h1.1c.3 0 .5.2.5.5v3z"/></svg>',
+    profile: '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8V21a.6.6 0 0 0 .6.6h18a.6.6 0 0 0 .6-.6v-1.8c0-3.2-6.4-4.8-9.6-4.8z"/></svg>',
+    goals: '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm0-13a5 5 0 1 0 5 5 5 5 0 0 0-5-5zm0 8a3 3 0 1 1 3-3 3 3 0 0 1-3 3zm0-4a1 1 0 1 0 1 1 1 1 0 0 0-1-1z"/></svg>',
+    stats: '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M4 19h16a1 1 0 0 0 0-2H4a1 1 0 0 0 0 2zm1-5h3a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1zm6 0h3a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1zm6 0h3a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1h-3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1z"/></svg>',
+    tarix: '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm.8-13H11v6.2l4.8 2.8.8-1.3-4.1-2.4V7z"/></svg>',
+    fanlar: '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm-3 2v6l-2.5-1.5L11 11V5h5zm-9 4h2v2H7V9zm0 4h7v2H7v-2zm10 4H7v-2h10v2z"/></svg>',
+    coding: '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8.7 15.3L4.4 11l4.3-4.3a1 1 0 0 0-1.4-1.4l-5 5a1 1 0 0 0 0 1.4l5 5a1 1 0 0 0 1.4-1.4zm6.6-8.6l4.3 4.3-4.3 4.3a1 1 0 0 0 1.4 1.4l5-5a1 1 0 0 0 0-1.4l-5-5a1 1 0 0 0-1.4 1.4zm-4.7 12a1 1 0 0 0 1.2-.7l3-12a1 1 0 0 0-1.9-.5l-3 12a1 1 0 0 0 .7 1.2z"/></svg>',
+    boost: '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M13 2L4 13.5h6L9 22l11-12.5h-7L13 2z"/></svg>',
+    arxiv: '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 4H4a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM4 6h16v2H4V6zm14 13H6v-9h12v9zm-3-6H9a1 1 0 0 0 0 2h6a1 1 0 0 0 0-2z"/></svg>',
+    qoidalar: '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 12h8v2H8v-2zm0 4h8v2H8v-2z"/></svg>',
+    settings: '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm8.6 3.2l-1.8-.3a6.7 6.7 0 0 0-.6-1.5l1.1-1.5a1 1 0 0 0-.1-1.3l-1.9-1.9a1 1 0 0 0-1.3-.1l-1.5 1.1a6.7 6.7 0 0 0-1.5-.6l-.3-1.8a1 1 0 0 0-1-.8h-2.6a1 1 0 0 0-1 .8l-.3 1.8a6.7 6.7 0 0 0-1.5.6L7.3 4.8a1 1 0 0 0-1.3.1L4.1 6.8a1 1 0 0 0-.1 1.3l1.1 1.5a6.7 6.7 0 0 0-.6 1.5l-1.8.3a1 1 0 0 0-.8 1v2.6a1 1 0 0 0 .8 1l1.8.3a6.7 6.7 0 0 0 .6 1.5l-1.1 1.5a1 1 0 0 0 .1 1.3l1.9 1.9a1 1 0 0 0 1.3.1l1.5-1.1a6.7 6.7 0 0 0 1.5.6l.3 1.8a1 1 0 0 0 1 .8h2.6a1 1 0 0 0 1-.8l.3-1.8a6.7 6.7 0 0 0 1.5-.6l1.5 1.1a1 1 0 0 0 1.3-.1l1.9-1.9a1 1 0 0 0 .1-1.3l-1.1-1.5a6.7 6.7 0 0 0 .6-1.5l1.8-.3a1 1 0 0 0 .8-1v-2.6a1 1 0 0 0-.8-1z"/></svg>'
+  };
+
   function buildSidebar() {
     var el = document.getElementById('side-nav');
+    if (!el) return;
     el.innerHTML = visibleNav().map(function (i) {
+      var ic = SIDE_ICONS[i.v] || ('<span data-icon="' + (i.ic || 'circle') + '" data-icon-size="20"></span>');
       return '<button class="side-link" data-nav="' + i.v + '" data-act="go" data-arg=\'' + App.arg({ v: i.v }) + '\'>' +
-        navIcon(i.v, i.ic, 22) + i.n + '</button>';
+        '<span class="side-rail-slot">' + ic + '</span>' +
+        '<span class="side-link-txt">' + i.n + '</span></button>';
     }).join('');
     
-    // Global harakat tugmalari
-    var pbtn = document.getElementById('global-pomo-btn');
-    if (!pbtn) {
-      pbtn = document.createElement('button');
-      pbtn.id = 'global-pomo-btn';
-      pbtn.className = 'side-link';
-      pbtn.style.marginTop = 'auto';
-      pbtn.style.background = 'var(--accent-soft)';
-      pbtn.style.color = 'var(--accent)';
-      pbtn.innerHTML = navIcon('pomodoro', 'clock', 22) + 'Pomodoro';
-      pbtn.setAttribute('data-act', 'pomoToggle');
-      el.appendChild(pbtn);
-    }
-    
+    var oldPomo = document.getElementById('global-pomo-btn');
+    if (oldPomo) oldPomo.remove();
+
     App.icons(el);
   }
 
-  var TG_ICONS = {
-    home: {
-      out: '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
-      fill: '<svg viewBox="0 0 24 24" width="24" height="24"><defs><linearGradient id="tg-ig-home" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#f09433"/><stop offset="25%" stop-color="#e6683c"/><stop offset="50%" stop-color="#dc2743"/><stop offset="75%" stop-color="#cc2366"/><stop offset="100%" stop-color="#bc1888"/></linearGradient></defs><path fill="url(#tg-ig-home)" d="M12 2.5L2 9.8V20a2 2 0 0 0 2 2h5a1 1 0 0 0 1-1v-6h4v6a1 1 0 0 0 1 1h5a2 2 0 0 0 2-2V9.8L12 2.5z"/></svg>'
-    },
-    languages: {
-      out: '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
-      fill: '<svg viewBox="0 0 24 24" width="24" height="24"><defs><linearGradient id="tg-ig-lang" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#f09433"/><stop offset="25%" stop-color="#e6683c"/><stop offset="50%" stop-color="#dc2743"/><stop offset="75%" stop-color="#cc2366"/><stop offset="100%" stop-color="#bc1888"/></linearGradient></defs><path fill="url(#tg-ig-lang)" d="M6.5 2H19a1 1 0 0 1 1 1v17.5a1 1 0 0 1-1 1H6.5A2.5 2.5 0 0 1 4 19V4.5A2.5 2.5 0 0 1 6.5 2zM6.5 17a2.5 2.5 0 0 0-2.5 2.5c0 .28.22.5.5.5H19v-3H6.5z"/></svg>'
-    },
-    kun: {
-      out: '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
-      fill: '<svg viewBox="0 0 24 24" width="24" height="24"><defs><linearGradient id="tg-ig-kun" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#f09433"/><stop offset="25%" stop-color="#e6683c"/><stop offset="50%" stop-color="#dc2743"/><stop offset="75%" stop-color="#cc2366"/><stop offset="100%" stop-color="#bc1888"/></linearGradient></defs><path fill="url(#tg-ig-kun)" d="M19 4h-2V2.5a1 1 0 0 0-2 0V4H9V2.5a1 1 0 0 0-2 0V4H5a3 3 0 0 0-3 3v13a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3zm1 16a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V10h16v10z"/></svg>'
-    },
-    sport: {
-      out: '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5v14M18 5v14M2 8v8M22 8v8M6 12h12"/></svg>',
-      fill: '<svg viewBox="0 0 24 24" width="24" height="24"><defs><linearGradient id="tg-ig-sport" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#f09433"/><stop offset="25%" stop-color="#e6683c"/><stop offset="50%" stop-color="#dc2743"/><stop offset="75%" stop-color="#cc2366"/><stop offset="100%" stop-color="#bc1888"/></linearGradient></defs><path fill="url(#tg-ig-sport)" d="M6 4a1 1 0 0 0-1 1v6H3a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h2v2a1 1 0 0 0 2 0v-6h10v6a1 1 0 0 0 2 0v-2h2a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1h-2V5a1 1 0 0 0-2 0v6H7V5a1 1 0 0 0-1-1z"/></svg>'
-    },
-    settings: {
-      out: '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83 2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
-      fill: '<svg viewBox="0 0 24 24" width="24" height="24"><defs><linearGradient id="tg-ig-set" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#f09433"/><stop offset="25%" stop-color="#e6683c"/><stop offset="50%" stop-color="#dc2743"/><stop offset="75%" stop-color="#cc2366"/><stop offset="100%" stop-color="#bc1888"/></linearGradient></defs><path fill="url(#tg-ig-set)" d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm8 3.16-1.54-.26a6.97 6.97 0 0 0-.58-1.4l.9-1.28a1 1 0 0 0-.12-1.32l-1.92-1.92a1 1 0 0 0-1.32-.12l-1.28.9c-.45-.24-.92-.44-1.4-.58L12.5 3.6a1 1 0 0 0-1-.6h-2.72a1 1 0 0 0-1 .6l-.26 1.54c-.48.14-.95.34-1.4.58l-1.28-.9a1 1 0 0 0-1.32.12L1.6 6.86a1 1 0 0 0-.12 1.32l.9 1.28c-.24.45-.44.92-.58 1.4L.26 11.16a1 1 0 0 0-.6 1v2.72c0 .48.34.88.8.98l1.54.26c.14.48.34.95.58 1.4l-.9 1.28a1 1 0 0 0 .12 1.32l1.92 1.92a1 1 0 0 0 1.32.12l1.28-.9c.45.24.92.44 1.4.58l.26 1.54a1 1 0 0 0 1 .6h2.72a1 1 0 0 0 1-.6l.26-1.54c.48-.14.95-.34 1.4-.58l1.28.9a1 1 0 0 0 1.32-.12l1.92-1.92a1 1 0 0 0 .12-1.32l-.9-1.28c.24-.45.44-.92.58-1.4l1.54-.26a1 1 0 0 0 .6-1v-2.72a1 1 0 0 0-.6-.98z"/></svg>'
-    }
+  var BOT_ICONS = {
+    home: '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2.1L2.8 9.5a1.2 1.2 0 0 0-.4.9v10a1.6 1.6 0 0 0 1.6 1.6h4.5a1 1 0 0 0 1-1v-5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v5a1 1 0 0 0 1 1h4.5a1.6 1.6 0 0 0 1.6-1.6v-10a1.2 1.2 0 0 0-.4-.9L12 2.1z"/></svg>',
+    kun: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2.5"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+    languages: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>',
+    sport: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5v14M18 5v14M2 8v8M22 8v8M6 12h12"/></svg>',
+    settings: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+    profile: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+    stats: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>',
+    fanlar: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>'
   };
 
   function buildBottom() {
     var el = document.getElementById('botnav');
-    var h = hiddenSet();
-    el.innerHTML = BOTTOM.filter(function (v) { return v === '__more__' || h.indexOf(v) < 0; }).map(function (v) {
-      if (v === '__more__') {
-        return '<a data-nav="__more__" data-act="moreMenu"><span class="tg-tab-ic"><span data-icon="menu" data-icon-size="22"></span></span><span>Yana</span></a>';
-      }
+    if (!el) return;
+    
+    // Foydalanuvchi tanlagan qat'iy tartib:
+    // 1: Bosh sahifa, 2: Kun hisobi
+    // 3: Learn (Markaziy ko'tarilgan + FAB tugmasi)
+    // 4: Sport, 5: Sozlamalar
+    var leftItems = ['home', 'kun'];
+    var rightItems = ['sport', 'settings'];
+
+    /* Oddiy foydalanuvchida `kun`, `sport`, `settings` ga ruxsat YO'Q —
+       ular filtrdan tushib, pastda faqat "Bosh + Learn" qolardi.
+       Ularga o'z to'plami:
+       1 Bosh · 2 Testlar · 3 Learn (markazdagi FAB) · 4 Statistika · 5 Profil */
+    if (!isAdminUser()) {
+      leftItems = ['home', 'fanlar'];
+      rightItems = ['stats', 'profile'];
+    }
+
+    if (window.Auth && typeof Auth.isAllowed === 'function') {
+      leftItems = leftItems.filter(function (v) { return Auth.isAllowed(v); });
+      rightItems = rightItems.filter(function (v) { return Auth.isAllowed(v); });
+    }
+
+    function itemHtml(v) {
       var i = NAV.find(function (x) { return x.v === v; }) || { n: v, ic: 'user' };
-      var tg = TG_ICONS[v];
-      var iconHtml = tg
-        ? '<span class="tg-tab-ic"><span class="tg-ic-out">' + tg.out + '</span><span class="tg-ic-fill">' + tg.fill + '</span></span>'
-        : '<span class="tg-tab-ic">' + navIcon(v, i.ic || 'user', 24) + '</span>';
-      return '<a data-nav="' + v + '" data-act="go" data-arg=\'' + App.arg({ v: v }) + '\'>' +
-        iconHtml + '<span>' + (i.bn || i.n) + '</span></a>';
-    }).join('');
+      var ic = BOT_ICONS[v] || ('<span data-icon="' + (i.ic || 'circle') + '" data-icon-size="20"></span>');
+      return '<a class="botnav-item" data-nav="' + v + '" data-act="go" data-arg=\'' + App.arg({ v: v }) + '\' title="' + App.esc(i.n) + '" aria-label="' + App.esc(i.n) + '">' +
+        '<span class="botnav-ic">' + ic + '</span>' +
+        '<span class="botnav-dot"></span>' +
+      '</a>';
+    }
+
+    var fabHtml = '<div class="botnav-fab-slot">' +
+      '<a class="botnav-fab" data-nav="languages" data-act="go" data-arg=\'' + App.arg({ v: 'languages' }) + '\' aria-label="Learn" title="Learn">' +
+        '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round">' +
+          '<line x1="12" y1="5" x2="12" y2="19"/>' +
+          '<line x1="5" y1="12" x2="19" y2="12"/>' +
+        '</svg>' +
+      '</a>' +
+    '</div>';
+
+    el.innerHTML = leftItems.map(itemHtml).join('') + fabHtml + rightItems.map(itemHtml).join('');
     App.icons(el);
   }
 
@@ -119,17 +186,23 @@
     var h = hiddenSet();
     // Pastki panelga sig'magan + yashirilmagan barcha bo'limlar
     var items = NAV.map(function (i) { return i.v; })
-      .filter(function (v) { return BOTTOM.indexOf(v) < 0 && h.indexOf(v) < 0; })
-      .concat(['settings']);
+      .filter(function (v) {
+        if (BOTTOM.indexOf(v) >= 0 || h.indexOf(v) >= 0) return false;
+        if (window.Auth && typeof Auth.isAllowed === 'function') return Auth.isAllowed(v);
+        return true;
+      });
+    if (!window.Auth || typeof Auth.isAdmin !== 'function' || Auth.isAdmin()) {
+      if (items.indexOf('settings') < 0) items.push('settings');
+    }
     items = items.filter(function (v, i) { return items.indexOf(v) === i; });
-    var html = items.map(function (v) {
+    var html = '<div class="more-menu-grid">' + items.map(function (v) {
       var i = NAV.find(function (x) { return x.v === v; });
-      return '<button class="list-row" data-act="goClose" data-arg=\'' + App.arg({ v: v }) + '\'>' +
-        '<span class="li-ic nav-ic-img">' + navIcon(v, i.ic, 20) + '</span>' +
-        '<div class="li-main"><div class="li-title">' + i.n + '</div></div>' +
-        '<span class="li-chev" data-icon="arrowLeft" data-icon-size="16" style="transform:rotate(180deg)"></span></button>';
-    }).join('');
-    App.sheet(html, { title: 'Menyu' });
+      var ic = SIDE_ICONS[v] || ('<span data-icon="' + (i.ic || 'circle') + '" data-icon-size="20"></span>');
+      return '<button class="more-menu-item" data-act="goClose" data-arg=\'' + App.arg({ v: v }) + '\'>' +
+        '<span class="more-menu-ic">' + ic + '</span>' +
+        '<span class="more-menu-txt">' + i.n + '</span></button>';
+    }).join('') + '</div>' + logoutRowHtml();
+    App.sheet(html, { title: 'Barcha bo\'limlar' });
   };
   App.actions.goClose = function (a) { App.closeSheet(); App.go(a.v); };
 
@@ -234,20 +307,35 @@
 
      Ikki qoida:
        1) Ro'yxatdan TASHQARIDAGI bo'limda (Sport, Boostday, Learn...)
-          surish umuman ishlamaydi — o'sha bo'limlarning o'z gorizontal
+          surish umuman ishlaydi — o'sha bo'limlarning o'z gorizontal
           elementlari bor va tasodifiy o'tib ketish bezovta qilardi.
        2) Aylanma EMAS: `Statistika` dan o'ngga yoki `Kun hisobi` dan
           chapga surilsa hech qayerga o'tmaydi.
 
      Ro'yxat `navList()` dan MUSTAQIL: bu ataylab qisqa, tez-tez ochiladigan
-     bo'limlar yo'li — yon paneldagi to'liq tartib bilan aralashtirilmaydi. */
-  var SWIPE_PATH = ['home', 'languages', 'kun', 'sport', 'settings'];
+     bo'limlar yo'li. Learn va uning ichki sahifalarida surish xalaqit
+     bermasligi uchun 'languages' va barcha o'rganish bo'limlarida surish o'chirilgan. */
+  var SWIPE_PATH = ['home', 'kun', 'sport', 'settings'];
+
+  var LEARN_VIEWS = [
+    'languages', 'english', 'russian', 'grammar', 'grammar_topic',
+    'vocab', 'vocab_browse', 'vocab_practice', 'library', 'library_doc',
+    'reading_doc', 'listening_doc', 'coding', 'qoidalar', 'test_results'
+  ];
+
+  function isLearnView(v) {
+    if (!v) return false;
+    return LEARN_VIEWS.indexOf(v) >= 0 || v.indexOf('lang_') === 0 || v.indexOf('ru_') === 0 || v.indexOf('en_') === 0;
+  }
 
   /* Joriy bo'lim shu yo'lning qaysi o'rnida (-1 = yo'lda yo'q). */
   function swipeIndex() {
+    var cur = App.currentView && App.currentView();
+    if (isLearnView(cur)) return -1;
     var active = document.querySelector('.botnav a.active, .side-link.active');
     var v = active ? active.getAttribute('data-nav') : null;
-    if (!v || v === '__more__') v = App.currentView && App.currentView();
+    if (!v || v === '__more__') v = cur;
+    if (isLearnView(v)) return -1;
     return SWIPE_PATH.indexOf(v);
   }
 
@@ -300,43 +388,55 @@
     /* Uzoq bosilganda chiqadigan "nusxa olish / tanlash" menyusi barmoq
        harakatini o'g'irlab, g'ildirakni aylantirishga xalaqit berardi. */
     nav.addEventListener('contextmenu', function (e) { e.preventDefault(); });
-    nav.addEventListener('selectstart', function (e) { e.preventDefault(); });
-    nav.addEventListener('dragstart', function (e) { e.preventDefault(); });
-
     nav.addEventListener('touchstart', function (e) {
       if (e.touches.length !== 1) return;
-      var list = navList();
-      if (list.length < 2) return;
+      var cur = App.currentView && App.currentView();
+      if (isLearnView(cur)) return;
+      var t = e.touches[0];
+      var list = dialList();
+      var active = document.querySelector('.botnav a.active, .side-link.active');
+      var v = active ? active.getAttribute('data-nav') : null;
+      if (!v || v === '__more__') v = cur;
+      var idx = list.indexOf(v);
+      if (idx < 0) idx = 0;
       DIAL = {
-        list: list, startX: e.touches[0].clientX,
-        startIdx: currentIndex(list), idx: currentIndex(list),
-        el: dialOverlay(), moved: false
+        list: list,
+        startX: t.clientX,
+        idx: idx,
+        startIdx: idx,
+        el: dialOverlay(),
+        moved: false,
+        suppressClickUntil: 0,
       };
-      // Tanlash boshlanib qolgan bo'lsa bekor qilamiz
-      try { var sel = window.getSelection && window.getSelection(); if (sel && sel.removeAllRanges) sel.removeAllRanges(); } catch (x) {}
+      DIAL.el.classList.add('show');
+      paintDial();
     }, { passive: true });
 
     nav.addEventListener('touchmove', function (e) {
       if (!DIAL || e.touches.length !== 1) return;
       var dx = e.touches[0].clientX - DIAL.startX;
-      if (!DIAL.moved) {
-        if (Math.abs(dx) < 12) return;      // oddiy bosishni buzmaymiz
-        DIAL.moved = true;
-        DIAL.el.classList.add('show');
-      }
-      // Surish YO'NALISHI: o'ngga -> ro'yxat bo'ylab oldinga
-      var next = DIAL.startIdx + Math.round(dx / STEP);
-      next = Math.max(0, Math.min(DIAL.list.length - 1, next));
+      if (Math.abs(dx) > 10) DIAL.moved = true;
+      var steps = Math.round(dx / STEP);
+      var next = Math.max(0, Math.min(DIAL.list.length - 1, DIAL.startIdx + steps));
       if (next !== DIAL.idx) {
         DIAL.idx = next;
-        if (navigator.vibrate) { try { navigator.vibrate(8); } catch (x) {} }
+        paintDial();
       }
-      paintDial();
-      e.preventDefault();                    // sahifa siljimasin
-    }, { passive: false });
+    }, { passive: true });
 
-    nav.addEventListener('touchend', function () { dialEnd(true); }, { passive: true });
+    nav.addEventListener('touchend', function () {
+      if (DIAL && DIAL.moved) DIAL.suppressClickUntil = Date.now() + 350;
+      dialEnd(true);
+    }, { passive: true });
+
     nav.addEventListener('touchcancel', function () { dialEnd(false); }, { passive: true });
+
+    nav.addEventListener('click', function (e) {
+      if (DIAL && DIAL.suppressClickUntil && Date.now() < DIAL.suppressClickUntil) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
   }
 
   /* ---------- 2) Sahifani surish (Telegram jildlari kabi) ---------- */
@@ -350,8 +450,11 @@
     /* Gorizontal siljiydigan yoki matn tanlanadigan joylarda ishlamasin —
        aks holda heatmap lentasi, chiplar va inputlar buzilardi. */
     function blocked(t) {
+      var cur = App.currentView && App.currentView();
+      if (isLearnView(cur)) return true;
+      if (document.querySelector('.page-languages, .page-grammar, .page-vocab, .page-library, .page-reading, .page-coding')) return true;
       if (!t || !t.closest) return true;
-      if (t.closest('input,textarea,select,.sheet,.rd-pop,.rd-player')) return true;
+      if (t.closest('input,textarea,select,.sheet,.rd-pop,.rd-player,.vocab-screen,.reading-screen,.grammar-view,.page-languages')) return true;
       var el = t;
       while (el && el !== page) {
         if (el.scrollWidth > el.clientWidth + 4) {
@@ -410,6 +513,68 @@
   else start();
 
   // Service worker
+  /* ---------------- Versiya qo'riqchisi ----------------
+     MUAMMO: navigatsiya "avval tarmoq" tartibida ishlaydi, lekin tarmoq
+     UZILSA service worker keshdagi ESKI index.html ni beradi. Eski
+     index.html esa eski `?v=` manzillarini chaqiradi va ular ham keshda
+     bor — natijada internet sekin/uzuq bo'lgan bir lahzada butun ilova
+     ESKI holatda ochilib qolardi va shundayligicha qolib ketardi.
+
+     YECHIM: sahifa ochilgach serverdan `version.json` so'raladi (kesh
+     butunlay chetlab o'tiladi). Serverdagi build sahifadagidan farq qilsa
+     — hamma kesh tozalanadi, service worker ro'yxatdan chiqariladi va
+     sahifa BIR MARTA qayta yuklanadi.
+
+     Tarmoq yo'q bo'lsa hech narsa qilinmaydi: oflaynda eski nusxa bilan
+     ishlash — bu xato emas, ataylab shunday. */
+  function currentBuild() {
+    var m = document.querySelector('meta[name="app-build"]');
+    return m ? (m.getAttribute('content') || '') : '';
+  }
+
+  function guardVersion() {
+    var mine = currentBuild();
+    if (!mine || mine === 'dev') return;          // mahalliy ishlash — tekshirilmaydi
+
+    fetch('version.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        if (!j || !j.build || j.build === mine) return;
+
+        /* Qayta yuklash HALQASIGA tushmaslik uchun: shu build uchun bir
+           marta urinamiz. Agar tozalashdan keyin ham eski nusxa kelsa
+           (masalan server orqada), cheksiz yangilanib turmaydi. */
+        var mark = 'app_build_reload_' + j.build;
+        try {
+          if (sessionStorage.getItem(mark)) return;
+          sessionStorage.setItem(mark, '1');
+        } catch (e) {}
+
+        var jobs = [];
+        if (window.caches) {
+          jobs.push(caches.keys().then(function (keys) {
+            return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+          }));
+        }
+        if (navigator.serviceWorker) {
+          jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) {
+            return Promise.all(rs.map(function (r) { return r.unregister(); }));
+          }));
+        }
+        Promise.all(jobs).catch(function () {}).then(function () {
+          location.reload();
+        });
+      })
+      .catch(function () {});                     // oflayn — tegmaymiz
+  }
+
+  window.addEventListener('load', guardVersion);
+  /* Ulanish qaytganda ham tekshiramiz: ilova oflayn ochilgan bo'lsa,
+     internet kelishi bilan o'zi eng so'nggisiga o'tadi. */
+  window.addEventListener('online', guardVersion);
+  window.addEventListener('hashchange', guardVersion);
+  setInterval(guardVersion, 30000);
+
   if ('serviceWorker' in navigator) {
     /* SW o'qish javoblarini keshdan DARHOL beradi, yangisini esa orqa fonda
        oladi. Yangisi eskisidan farq qilsa shu xabar keladi — joriy bo'lim

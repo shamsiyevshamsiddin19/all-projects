@@ -69,7 +69,8 @@
   var MODE_ORDER = ['everyday', 'odd', 'even', 'weekday', 'weekend'];
   var MODE_NAME = {
     everyday: 'Har kuni', odd: 'Toq kunlari', even: 'Juft kunlari',
-    weekday: 'Ish kunlari', weekend: 'Dam olish kunlari'
+    weekday: 'Ish kunlari', weekend: 'Dam olish kunlari',
+    __other__: 'Boshqa'
   };
 
   App.view('habits', {
@@ -108,8 +109,20 @@
         '</div>' +
         '<div id="hb-push"></div>';
 
-      MODE_ORDER.forEach(function (m) {
-        var group = list.filter(function (x) { return x.week_mode === m; });
+      /* Ma'lum rejimlarga TUSHMAGAN odatlar ham chiqishi kerak.
+         Ilgari ro'yxat faqat beshta rejim bo'yicha aylanardi: `week_mode`
+         bo'sh yoki notanish bo'lsa (eski yozuv, qo'lda kiritilgan qiymat)
+         odat ekranda UMUMAN ko'rinmasdi — o'chirib ham bo'lmasdi. */
+      var known = {};
+      MODE_ORDER.forEach(function (m) { known[m] = 1; });
+      var groups = MODE_ORDER.slice();
+      var hasOther = list.some(function (x) { return !known[x.week_mode]; });
+      if (hasOther) groups.push('__other__');
+
+      groups.forEach(function (m) {
+        var group = m === '__other__'
+          ? list.filter(function (x) { return !known[x.week_mode]; })
+          : list.filter(function (x) { return x.week_mode === m; });
         if (!group.length) return;
         html += '<div class="list-label">' + App.esc(MODE_NAME[m] || m) + '</div>';
         html += group.map(function (h) {
@@ -264,6 +277,33 @@
 
   window.Habits = {
     load: load, stat: stat, ringHtml: ringHtml,
-    ensureLoaded: function () { return load(false); }
+    ensureLoaded: function () { return load(false); },
+    /* Bugungi odatlar — qo'ng'iroq panelida ham shu ro'yxat ko'rinadi. */
+    today: function (list) { return todayItems(list); },
+    /* Tashqaridan belgilash (qo'ng'iroq paneli). Ro'yxatni yangilangan
+       holida qaytaradi, shunda chaqiruvchi o'zini qayta chizadi. */
+    toggle: function (id) {
+      return call('habits_toggle', { id: id }).then(function (j) {
+        if (j && j.habits) H.items = j.habits;
+        return H.items;
+      });
+    },
+    /* Tashqaridan odat qo'shish/yangilash — "Kun hisobi" dagi .md
+       importi shu orqali ishlaydi. `id: 0` yangi odat ochadi.
+       Ro'yxat javobdan yangilanadi: import tugagach ekran o'zi
+       to'g'ri holatni ko'rsatadi. */
+    save: function (h) {
+      return call('habits_save', {
+        id: (h && h.id) || 0,
+        name: String((h && h.name) || '').trim(),
+        time: (h && h.time) || '22:00',
+        week_mode: (h && h.week_mode) || 'everyday',
+        note: (h && h.note) || '',
+        remind: h && h.remind === false ? false : true
+      }).then(function (j) {
+        if (j && j.habits) H.items = j.habits;
+        return j;
+      });
+    }
   };
 })();

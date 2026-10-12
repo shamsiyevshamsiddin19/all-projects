@@ -580,12 +580,30 @@
       var replaceEl = sh.querySelector('#ex-replace');
       if (replaceEl && replaceEl.checked) fd.append('replace_media', '1');
       var files = sh.querySelector('#ex-media').files;
-      for (var i = 0; i < files.length; i++) fd.append('media', files[i]);
       var link = sh.querySelector('#ex-link').value.trim();
       if (link) fd.append('media_links', link);
 
-      var btn = sh.querySelector('#ex-save'); btn.textContent = 'Saqlanmoqda...'; btn.disabled = true;
-      App.callForm('sport_save_exercise', fd).then(function (res) {
+      var btn = sh.querySelector('#ex-save'); btn.disabled = true;
+      /* Yorliq progress panelida ko'rinadi. Media bo'lsa nechtaligini
+         aytamiz — foydalanuvchi nima yuklanayotganini bilsin. */
+      var upLabel = files.length ? (files.length > 1 ? (files.length + ' ta media') : files[0].name) : name;
+
+      /* Rasmlar YUKLASHDAN OLDIN siqiladi — telefon surati 3-8 MB bo'ladi,
+         sekin tarmoqda bu eng katta kechikish sababi. Video va GIF
+         `compressImage` ichida tegilmasdan o'tadi. */
+      btn.textContent = files.length ? 'Tayyorlanmoqda...' : 'Saqlanmoqda...';
+      App.compressAll(files).then(function (ready) {
+        var before = 0, after = 0;
+        for (var i = 0; i < ready.length; i++) {
+          before += files[i].size; after += ready[i].size;
+          fd.append('media', ready[i]);
+        }
+        if (before > after) {
+          App.toast('Rasmlar siqildi: ' + Math.round(before / 1024) + ' → ' + Math.round(after / 1024) + ' KB');
+        }
+        btn.textContent = 'Saqlanmoqda...';
+        return App.callForm('sport_save_exercise', fd, { label: upLabel });
+      }).then(function (res) {
         App.closeSheet(); App.toast('✅ Saqlandi');
         S.data = res.data || null;
         App.reload();

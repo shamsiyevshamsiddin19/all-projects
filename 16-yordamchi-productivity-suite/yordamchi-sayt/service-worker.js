@@ -1,5 +1,5 @@
 /* Yordamchi service worker — OFFLINE REJIM. */
-const VERSION = '20261005-154745';
+const VERSION = '20261012-084435';
 const SHELL_CACHE = 'yordamchi-shell-' + VERSION;
 const DATA_CACHE = 'yordamchi-data-' + VERSION;
 
@@ -17,6 +17,15 @@ async function shellUrls() {
   } catch (e) {
     // index.html o'qilmasa — hech bo'lmasa shell qoladi
   }
+  // MD Lug'at kitoblarini ham oflayn o'qish uchun oldindan keshga olamiz
+  [
+    './assets/md_books/229_ta_fel_MUKAMMAL.md',
+    './assets/md_books/Rus_tili_1000_soz_MUKAMMAL.md',
+    './assets/md_books/Rus_tili_8000_soz_TARJIMA.md',
+    './assets/md_books/Rus_tili_8000_soz.md',
+    './assets/md_books/Ingliz_tili_8000_soz_TARJIMA.md',
+    './assets/md_books/Ingliz_tili_8000_soz.md'
+  ].forEach((b) => urls.add(b));
   return [...urls];
 }
 
@@ -291,7 +300,7 @@ self.addEventListener('fetch', (e) => {
           }
           return r;
         })
-        .catch(() => cached);
+        .catch(() => cached || new Response('', { status: 404 }));
       return cached || net;
     })
   );
