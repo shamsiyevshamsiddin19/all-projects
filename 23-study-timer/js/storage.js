@@ -157,10 +157,24 @@ export class Storage {
     this._timer = null;
     this._pending = null;
     this.lastError = null;
+    /**
+     * Statik hostingda (masalan, nginx) `/api/data` yo'q.
+     * Birinchi 404/405 dan keyin so'rovlar to'xtatiladi — har saqlashda
+     * behuda so'rov yuborilmaydi va konsol xatolarga to'lmaydi.
+     */
+    this.serverAvailable = true;
   }
 
   get serverSyncEnabled() {
-    return Boolean(this.fetchFn) && this.protocol.startsWith('http');
+    return Boolean(this.fetchFn) && this.protocol.startsWith('http') && this.serverAvailable;
+  }
+
+  /** Server API'si yo'qligini bildiradigan javob kodlari */
+  _noteResponse(res) {
+    if (res && (res.status === 404 || res.status === 405 || res.status === 501)) {
+      this.serverAvailable = false;
+    }
+    return res;
   }
 
   /** localStorage'dan o'qish + eski kalitlardan migratsiya */
@@ -245,7 +259,8 @@ export class Storage {
         body: json,
         signal: ctrl ? ctrl.signal : undefined
       }))
-      .catch(() => { /* statik hosting — jim o'tkazib yuboriladi */ })
+      .then((res) => this._noteResponse(res))
+      .catch(() => { /* tarmoq uzilgan — keyingi safar qayta uriniladi */ })
       .finally(() => { if (timer) clearTimeout(timer); });
   }
 
@@ -263,6 +278,7 @@ export class Storage {
         signal: ctrl ? ctrl.signal : undefined
       });
       if (timer) clearTimeout(timer);
+      this._noteResponse(res);
       if (!res || !res.ok) return null;
       const raw = await res.json();
       if (!looksLikeBackup(raw)) return null;

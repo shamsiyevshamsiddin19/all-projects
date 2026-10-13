@@ -161,3 +161,31 @@ test('seans statistikasi kunlar bo\'yicha yoziladi', () => {
   const same = recordSession(stats, { focusMs: 500, type: 'duration', title: 'C', when });
   assert.equal(same.completedSessionsCount, 2);
 });
+
+test('statik hostingda API 404 dan keyin so\'rovlar to\'xtaydi', async () => {
+  let calls = 0;
+  const storage = new Storage({
+    storage: makeStorageBackend(),
+    locationProtocol: 'https:',
+    fetchFn: async () => { calls += 1; return { ok: false, status: 404, json: async () => ({}) }; }
+  });
+  assert.equal(storage.serverSyncEnabled, true);
+  assert.equal(await storage.fetchRemote(null), null);
+  assert.equal(calls, 1);
+  assert.equal(storage.serverSyncEnabled, false, '404 dan keyin sinxronizatsiya o\'chadi');
+
+  storage.saveNow(defaultState());
+  storage.saveNow(defaultState());
+  assert.equal(calls, 1, 'keyingi saqlashlar behuda so\'rov yubormaydi');
+});
+
+test('vaqtinchalik tarmoq xatosi sinxronizatsiyani o\'chirmaydi', async () => {
+  let calls = 0;
+  const storage = new Storage({
+    storage: makeStorageBackend(),
+    locationProtocol: 'http:',
+    fetchFn: async () => { calls += 1; throw new Error('network down'); }
+  });
+  assert.equal(await storage.fetchRemote(null), null);
+  assert.equal(storage.serverSyncEnabled, true, 'tarmoq xatosi — qayta urinish mumkin');
+});

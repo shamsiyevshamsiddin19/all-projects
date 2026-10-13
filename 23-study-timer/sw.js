@@ -37,7 +37,11 @@ const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(SHELL_CACHE)
-      .then((cache) => cache.addAll(SHELL_ASSETS))
+      // `cache: 'reload'` majburiy: busiz brauzer o'z HTTP keshidagi ESKI nusxani
+      // service worker keshiga ko'chirib qo'yadi va yangi deploy foydalanuvchiga yetmaydi.
+      .then((cache) => cache.addAll(
+        SHELL_ASSETS.map((url) => new Request(url, { cache: 'reload' }))
+      ))
       .then(() => self.skipWaiting())
       .catch(() => self.skipWaiting())
   );
