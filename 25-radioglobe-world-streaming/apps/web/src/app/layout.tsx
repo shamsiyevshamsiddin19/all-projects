@@ -26,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="uz" className="dark">
-      <body className="bg-space-950 text-slate-100 min-h-screen flex flex-col antialiased">
+      <body className="bg-void-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-crimson selection:text-white">
         <Header />
         <main className="flex-1 pt-14 pb-20">{children}</main>
         <PersistentPlayer />

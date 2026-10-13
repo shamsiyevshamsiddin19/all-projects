@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --background: #040711;
-  --foreground: #f8fafc;
+  --background: #040406;
+  --foreground: #f4f4f7;
 }
 
 body {
@@ -14,23 +14,55 @@ body {
   overflow-x: hidden;
 }
 
-/* Custom Cyber Scrollbar */
+/* Tactical Corner Brackets */
+.tactical-box {
+  position: relative;
+  background: rgba(12, 12, 18, 0.75);
+  border: 1px solid rgba(45, 45, 60, 0.6);
+  backdrop-filter: blur(12px);
+}
+
+.tactical-box::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: 8px;
+  height: 8px;
+  border-top: 2px solid #ff1a35;
+  border-left: 2px solid #ff1a35;
+  pointer-events: none;
+}
+
+.tactical-box::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 8px;
+  height: 8px;
+  border-bottom: 2px solid #ff1a35;
+  border-right: 2px solid #ff1a35;
+  pointer-events: none;
+}
+
+/* Custom Crimson Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #080d1a;
+  background: #08080c;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e2e57;
-  border-radius: 9999px;
+  background: #272738;
+  border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #00f2fe;
+  background: #ff1a35;
 }
 
 /* MapLibre Canvas overrides */
@@ -41,4 +73,20 @@ body {
 .maplibregl-ctrl-bottom-left,
 .maplibregl-ctrl-bottom-right {
   display: none !important;
+}
+
+/* Radar scanline animation */
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(1000%); }
+}
+
+.scanline-overlay {
+  background: linear-gradient(
+    to bottom,
+    transparent 50%,
+    rgba(255, 26, 53, 0.02) 51%,
+    transparent 52%
+  );
+  background-size: 100% 4px;
 }

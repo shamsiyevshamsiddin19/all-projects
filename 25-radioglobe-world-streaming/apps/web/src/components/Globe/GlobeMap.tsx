@@ -34,7 +34,7 @@ export default function GlobeMap({ countries }: GlobeMapProps) {
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
-    // Create MapLibre map instance
+    // Create MapLibre map instance with Samolevsky monochrome/crimson theme
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
       style: {
@@ -51,7 +51,7 @@ export default function GlobeMap({ countries }: GlobeMapProps) {
             id: 'background',
             type: 'background',
             paint: {
-              'background-color': '#040711',
+              'background-color': '#030305',
             },
           },
           {
@@ -62,22 +62,22 @@ export default function GlobeMap({ countries }: GlobeMapProps) {
               'fill-color': [
                 'case',
                 ['boolean', ['feature-state', 'hover'], false],
-                '#00f2fe',
+                '#ff2a4b', // Electric crimson on hover
                 [
                   'interpolate',
                   ['linear'],
                   ['coalesce', ['get', 'radio_count'], 0],
-                  0, '#0c1527',
-                  1, '#13284c',
-                  10, '#0284c7',
-                  30, '#00f2fe',
+                  0, '#0a0b10',       // Deep void dark
+                  1, '#1a1820',       // Dark graphite
+                  10, '#801020',      // Muted crimson
+                  30, '#ff1a35',      // High-vis broadcast red
                 ],
               ],
               'fill-opacity': [
                 'case',
                 ['boolean', ['feature-state', 'hover'], false],
-                0.9,
-                0.75,
+                0.95,
+                0.8,
               ],
             },
           },
@@ -90,7 +90,7 @@ export default function GlobeMap({ countries }: GlobeMapProps) {
                 'case',
                 ['boolean', ['feature-state', 'hover'], false],
                 '#ffffff',
-                '#38bdf8',
+                '#4a4d5e',
               ],
               'line-width': [
                 'case',
@@ -98,7 +98,7 @@ export default function GlobeMap({ countries }: GlobeMapProps) {
                 2,
                 0.6,
               ],
-              'line-opacity': 0.8,
+              'line-opacity': 0.85,
             },
           },
         ],
@@ -114,7 +114,6 @@ export default function GlobeMap({ countries }: GlobeMapProps) {
     // Set globe projection
     map.on('load', () => {
       try {
-        // MapLibre GL v5 Globe projection
         (map as any).setProjection({ type: 'globe' });
       } catch (e) {
         console.warn('MapLibre globe projection notice:', e);
@@ -126,7 +125,7 @@ export default function GlobeMap({ countries }: GlobeMapProps) {
     const rotateGlobe = () => {
       if (isRotatingRef.current && map) {
         const center = map.getCenter();
-        center.lng = (center.lng + 0.12) % 360;
+        center.lng = (center.lng + 0.1) % 360;
         map.setCenter(center);
       }
       animationFrameId = requestAnimationFrame(rotateGlobe);
@@ -155,10 +154,10 @@ export default function GlobeMap({ countries }: GlobeMapProps) {
           );
         }
 
-        map.getCanvas().style.cursor = 'pointer';
+        map.getCanvas().style.cursor = 'crosshair';
 
         setHoveredCountry({
-          name: props.name_uz || props.name_en || 'Davlat',
+          name: props.name_uz || props.name_en || 'Sector',
           flag: props.flag_emoji,
           radioCount: props.radio_count || 0,
           x: e.point.x,
@@ -213,14 +212,14 @@ export default function GlobeMap({ countries }: GlobeMapProps) {
   };
 
   return (
-    <div className="relative w-full h-[calc(100vh-60px)] min-h-[580px] bg-space-950 overflow-hidden select-none">
+    <div className="relative w-full h-[calc(100vh-60px)] min-h-[620px] bg-void-950 overflow-hidden select-none">
       {/* 3D Map canvas container */}
       <div ref={mapContainerRef} className="w-full h-full" />
 
-      {/* Cyber atmospheric overlay */}
-      <div className="absolute inset-0 pointer-events-none bg-gradient-radial from-transparent via-transparent to-space-950/80" />
+      {/* Atmospheric radial vignette */}
+      <div className="absolute inset-0 pointer-events-none bg-radial from-transparent via-transparent to-void-950/90" />
 
-      {/* Futuristic HUD overlay */}
+      {/* Samolevsky HUD overlay (Orbital rings, Broadcast badge, Equalizer spectrum) */}
       <GlobeHUD
         isRotating={isRotating}
         onRotateToggle={handleRotateToggle}
@@ -230,19 +229,25 @@ export default function GlobeMap({ countries }: GlobeMapProps) {
         quickCountries={countries}
       />
 
-      {/* Hover cyber tooltip */}
+      {/* Tactical hover crosshair callout */}
       {hoveredCountry && (
         <div
-          className="absolute z-30 pointer-events-none -translate-x-1/2 -translate-y-full mb-3 px-3 py-2 rounded-xl bg-space-900/90 backdrop-blur-md border border-cyan-400/50 shadow-cyan-glow text-white animate-in fade-in zoom-in-95 duration-100"
+          className="absolute z-30 pointer-events-none -translate-x-1/2 -translate-y-full mb-3 px-3 py-2 rounded-none tactical-box shadow-crimson-glow text-white animate-in fade-in zoom-in-95 duration-100"
           style={{ left: `${hoveredCountry.x}px`, top: `${hoveredCountry.y}px` }}
         >
           <div className="flex items-center gap-2">
+            <span className="text-crimson font-mono font-bold text-sm">⌖</span>
             <span className="text-base">{hoveredCountry.flag || '🌍'}</span>
-            <span className="text-xs font-bold tracking-tight">{hoveredCountry.name}</span>
+            <span className="text-xs font-mono font-bold tracking-wider uppercase">
+              {hoveredCountry.name}
+            </span>
           </div>
-          <p className="text-[10px] font-mono text-cyan-300 mt-0.5">
-            {hoveredCountry.radioCount} ta radiostansiya
-          </p>
+          <div className="flex items-center justify-between gap-3 mt-1 pt-1 border-t border-void-700/80 font-mono text-[10px]">
+            <span className="text-slate-400">SIGNALS:</span>
+            <span className="text-crimson-bright font-bold">
+              {hoveredCountry.radioCount} NODES
+            </span>
+          </div>
         </div>
       )}
     </div>

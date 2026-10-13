@@ -113,7 +113,7 @@ export default function PersistentPlayer() {
   const favorite = isFavorite(currentStation.id);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 bg-space-950/95 backdrop-blur-xl border-t border-space-800/90 px-4 py-3 shadow-glass transition-all duration-300">
+    <div className="fixed bottom-0 left-0 right-0 z-40 bg-void-950/95 backdrop-blur-xl border-t border-void-800 px-4 py-3 shadow-tactical-glass transition-all duration-300">
       <audio
         ref={audioRef}
         onWaiting={() => setIsLoading(true)}
@@ -130,45 +130,45 @@ export default function PersistentPlayer() {
         preload="none"
       />
 
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 font-mono">
         {/* Station Info */}
         <div className="flex items-center gap-3.5 min-w-0 max-w-[40%]">
-          <div className="relative w-12 h-12 rounded-xl bg-space-850 border border-space-700/80 flex items-center justify-center overflow-hidden flex-shrink-0">
+          <div className="relative w-12 h-12 bg-void-900 border border-void-750 flex items-center justify-center overflow-hidden flex-shrink-0">
             {currentStation.logo_url ? (
               <img
                 src={currentStation.logo_url}
                 alt={currentStation.name}
-                className="w-10 h-10 object-contain rounded"
+                className="w-10 h-10 object-contain"
                 onError={(e) => {
                   (e.target as HTMLElement).style.display = 'none';
                 }}
               />
             ) : (
-              <Radio className="w-6 h-6 text-cyan-400" />
+              <Radio className="w-5 h-5 text-crimson" />
             )}
             {isPlaying && (
-              <div className="absolute inset-0 bg-cyan-500/10 border border-cyan-400/40 rounded-xl" />
+              <div className="absolute inset-0 bg-crimson/10 border border-crimson/50" />
             )}
           </div>
 
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h4 className="text-sm font-bold text-white truncate">{currentStation.name}</h4>
+              <h4 className="text-sm font-bold text-white truncate uppercase tracking-tight">{currentStation.name}</h4>
               <button
                 onClick={() => toggleFavorite(currentStation)}
-                className="text-slate-400 hover:text-rose-500 transition-colors"
+                className="text-slate-400 hover:text-crimson transition-colors"
                 title="Sevimlilarga qo'shish"
               >
-                <Heart className={`w-4 h-4 ${favorite ? 'fill-rose-500 text-rose-500' : ''}`} />
+                <Heart className={`w-4 h-4 ${favorite ? 'fill-crimson text-crimson' : ''}`} />
               </button>
             </div>
             <div className="flex items-center gap-2 mt-0.5">
               <AudioVisualizer isPlaying={isPlaying && !isLoading} />
-              <span className="text-xs text-slate-400 truncate">
-                {currentStation.tags.slice(0, 2).join(' • ') || 'Live Stream'}
+              <span className="text-[11px] text-slate-400 truncate">
+                {currentStation.tags.slice(0, 2).join(' • ') || 'Live Frequency'}
               </span>
               {currentStream?.bitrate && (
-                <span className="text-[10px] px-1.5 py-0.2 rounded bg-space-800 text-cyan-400 border border-space-700 font-mono">
+                <span className="text-[9px] px-1.5 py-0.2 bg-void-850 text-crimson-bright border border-void-700 font-mono">
                   {currentStream.bitrate} kbps
                 </span>
               )}
@@ -182,20 +182,20 @@ export default function PersistentPlayer() {
             <button
               onClick={togglePlay}
               disabled={isLoading}
-              className="w-11 h-11 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-space-950 flex items-center justify-center shadow-cyan-glow hover:scale-105 active:scale-95 transition-all duration-200 disabled:opacity-50"
+              className="w-11 h-11 bg-crimson hover:bg-crimson-light text-white flex items-center justify-center shadow-crimson-glow hover:scale-105 active:scale-95 transition-all duration-200 disabled:opacity-50"
             >
               {isLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin text-space-950" />
+                <Loader2 className="w-5 h-5 animate-spin text-white" />
               ) : isPlaying ? (
-                <Pause className="w-5 h-5 fill-space-950" />
+                <Pause className="w-5 h-5 fill-white text-white" />
               ) : (
-                <Play className="w-5 h-5 fill-space-950 ml-0.5" />
+                <Play className="w-5 h-5 fill-white text-white ml-0.5" />
               )}
             </button>
           </div>
 
           {error && (
-            <div className="flex items-center gap-1 text-[11px] text-rose-400 animate-in fade-in">
+            <div className="flex items-center gap-1 text-[10px] text-crimson-bright animate-in fade-in">
               <AlertCircle className="w-3 h-3" />
               <span>{error}</span>
             </div>
@@ -210,9 +210,9 @@ export default function PersistentPlayer() {
             title={isMuted ? 'Ovozni yoqish' : 'Ovozni o\'chirish'}
           >
             {isMuted || volume === 0 ? (
-              <VolumeX className="w-4 h-4 text-rose-400" />
+              <VolumeX className="w-4 h-4 text-crimson" />
             ) : (
-              <Volume2 className="w-4 h-4 text-cyan-400" />
+              <Volume2 className="w-4 h-4 text-crimson" />
             )}
           </button>
           <input
@@ -222,7 +222,7 @@ export default function PersistentPlayer() {
             step="0.01"
             value={isMuted ? 0 : volume}
             onChange={(e) => setVolume(parseFloat(e.target.value))}
-            className="w-20 h-1 bg-space-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+            className="w-20 h-1 bg-void-800 appearance-none cursor-pointer accent-crimson"
           />
         </div>
       </div>
