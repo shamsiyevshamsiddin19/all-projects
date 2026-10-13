@@ -60,6 +60,7 @@ Agar `sync-git.sh` biror sabab bilan ishlamasa, AI qo'lda tegishli repolarga pus
 | `19-captionflow-desktop-studio` | `https://github.com/shamsiyevshamsiddin19/captionflow-desktop-.git` |
 | `23-study-timer` | `https://github.com/shamsiyevshamsiddin19/study-timer.git` |
 | `24-blog` | `https://github.com/shamsiyevshamsiddin19/blog.git` |
+| `25-radioglobe-world-streaming` | `https://github.com/shamsiyevshamsiddin19/radio-world-streaming.git` |
 
 ---
 

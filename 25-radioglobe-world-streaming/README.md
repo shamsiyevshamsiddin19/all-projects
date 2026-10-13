@@ -11,6 +11,8 @@ chiqadi, bosib darhol tinglash/tomosha qilish mumkin.
 ![MapLibre](https://img.shields.io/badge/MapLibre_GL-v5_globe-396CB2?logo=maplibre&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white)
 
+**Repozitoriya:** [shamsiyevshamsiddin19/radio-world-streaming](https://github.com/shamsiyevshamsiddin19/radio-world-streaming)
+
 ---
 
 ## 📌 Loyiha holati
@@ -86,5 +88,7 @@ Batafsil: [`docs/01-arxitektura.md`](./docs/01-arxitektura.md)
 ## 👨‍💻 Muallif
 
 **Shamsiddin Shamsiyev** — Backend Developer (Python, FastAPI, PostgreSQL, Docker)
+
+Litsenziya: [MIT](./LICENSE)
 
 [![GitHub](https://img.shields.io/badge/GitHub-@shamsiyevshamsiddin19-181717?logo=github&logoColor=white)](https://github.com/shamsiyevshamsiddin19)
