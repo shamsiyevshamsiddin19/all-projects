@@ -8,13 +8,11 @@ import {
   DEFAULT_DURATION
 } from './constants.js';
 import { TimerEngine } from './engine/timer-engine.js';
-import {
-  Storage, recordSession, emptyStatistics, normalizeState, looksLikeBackup
-} from './storage.js';
-import { UI, queryElements, statusKeyFor } from './ui.js';
+import { Storage, recordSession, emptyStatistics } from './storage.js';
+import { UI, queryElements } from './ui.js';
 import { zenithAudio } from './audio.js';
 import { setLang, t } from './i18n.js';
-import { toLocalInputValue, formatDurationHuman } from './format.js';
+import { formatDurationHuman } from './format.js';
 import {
   toggleFullscreen, isFullscreen, onFullscreenChange, WakeLockManager,
   isMobileViewport, isPortrait, notifications, debounce, registerServiceWorker
@@ -83,7 +81,6 @@ function boot() {
     ui.renderStats(state.statistics);
     ui.renderPomodoro(engine);
     ui.renderLaps(engine.stopwatch.laps);
-    if (engine.targetAt) els.targetDateTimeInput.value = toLocalInputValue(new Date(engine.targetAt));
     ui.writeDurationInputs(engine.configuredDurationSec);
     ui.applyMode(engine.mode);
   }
@@ -97,7 +94,7 @@ function boot() {
       showClockDate: els.checkClockShowDate.checked,
       now: new Date()
     });
-    ui.setStatus(statusKeyFor(sample), sample.running);
+    ui.setStatus(sample.running);
     if (sample.mode === MODES.POMODORO) ui.renderPomodoro(engine);
   }
 
@@ -124,8 +121,6 @@ function boot() {
       body = ev.phase === POMODORO_PHASES.WORK
         ? t('notify.pomoWorkDone', { n: ev.cycles })
         : t('notify.pomoBreakDone');
-    } else if (ev.mode === MODES.TARGET) {
-      body = t('notify.targetDone');
     } else {
       body = t('notify.durationDone', { duration: formatDurationHuman(ev.nominalMs, t) });
     }
@@ -195,7 +190,6 @@ function boot() {
   function resetCurrent() {
     engine.reset();
     if (engine.mode === MODES.DURATION) ui.writeDurationInputs(engine.configuredDurationSec);
-    if (engine.mode === MODES.TARGET) els.targetDateTimeInput.value = '';
     ui.renderLaps(engine.stopwatch.laps);
     renderNow();
     persist();
@@ -209,84 +203,9 @@ function boot() {
     persist();
   }
 
-  function applyTargetPreset(type) {
-    const now = new Date();
-    let target = new Date(now.getTime());
-    switch (type) {
-      case 'tomorrow':
-        target.setDate(target.getDate() + 1);
-        target.setHours(0, 0, 0, 0);
-        break;
-      case 'weekend': {
-        const dist = (6 - target.getDay() + 7) % 7 || 7;
-        target.setDate(target.getDate() + dist);
-        target.setHours(0, 0, 0, 0);
-        break;
-      }
-      case 'month_end':
-        target = new Date(target.getFullYear(), target.getMonth() + 1, 0, 23, 59, 59);
-        break;
-      case 'days_7':
-        target.setDate(target.getDate() + 7);
-        break;
-      case 'days_30':
-        target.setDate(target.getDate() + 30);
-        break;
-      case 'new_year':
-        target = new Date(now.getFullYear() + 1, 0, 1, 0, 0, 0);
-        break;
-      default:
-        return;
-    }
-    engine.setTarget(target);
-    els.targetDateTimeInput.value = toLocalInputValue(target);
-    renderNow();
-    persist();
-  }
-
   function unlockAudio() {
     if (audioUnlocked) return;
     audioUnlocked = zenithAudio.unlock();
-  }
-
-  /* ------------------------------------------------------------ eksport/import */
-
-  function exportJson() {
-    const data = persistNow();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `study-timer-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
-
-  function importJson(file) {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onerror = () => ui.showToast(t('data.importFail', { msg: 'read error' }));
-    reader.onload = (e) => {
-      try {
-        const parsed = JSON.parse(String(e.target.result));
-        if (!looksLikeBackup(parsed)) {
-          ui.showToast(t('data.importInvalid'));
-          return;
-        }
-        state = normalizeState(parsed);
-        engine.restore(state.timerState);
-        engine.setPomodoroConfig(state.settings.pomodoro);
-        applySettingsToUI();
-        renderNow();
-        persistNow();
-        ui.showToast(t('data.importOk'));
-      } catch (err) {
-        ui.showToast(t('data.importFail', { msg: err.message }));
-      }
-    };
-    reader.readAsText(file);
   }
 
   /* ------------------------------------------------------------- orientatsiya */
@@ -385,19 +304,6 @@ function boot() {
         renderNow();
         persist();
       });
-    });
-
-    // Maqsadli sana
-    els.targetDateTimeInput.addEventListener('change', () => {
-      const picked = new Date(els.targetDateTimeInput.value);
-      if (!Number.isNaN(picked.getTime())) {
-        engine.setTarget(picked);
-        renderNow();
-        persist();
-      }
-    });
-    els.targetPresets.forEach((btn) => {
-      btn.addEventListener('click', () => applyTargetPreset(btn.dataset.target));
     });
 
     // Pomodoro
@@ -563,19 +469,12 @@ function boot() {
       ui.enterZen();
     });
 
-    // Statistika va ma'lumotlar
+    // Statistika
     els.clearStatsBtn.addEventListener('click', () => {
       if (!window.confirm(t('stats.clearConfirm'))) return;
       state.statistics = emptyStatistics();
       ui.renderStats(state.statistics);
       persistNow();
-    });
-    els.exportJsonBtn.addEventListener('click', exportJson);
-    els.importJsonBtn.addEventListener('click', () => els.jsonFileInput.click());
-    els.jsonFileInput.addEventListener('change', (e) => {
-      const file = e.target.files && e.target.files[0];
-      importJson(file);
-      els.jsonFileInput.value = '';
     });
 
     // Klaviatura

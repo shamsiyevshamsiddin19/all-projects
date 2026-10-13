@@ -58,7 +58,7 @@ test('klaviatura: Space boshlaydi, R tiklaydi', async ({ page }) => {
   await page.locator('#inputMinutes').fill('3');
   await page.locator('body').click({ position: { x: 600, y: 60 } });
   await page.keyboard.press('Space');
-  await expect(page.locator('#statusText')).not.toHaveText('TAYYOR');
+  await expect(page.locator('#playPauseText')).toHaveText("To'xtatish");
   await page.keyboard.press('KeyR');
   await expect(page.locator('#minutesValue')).toHaveText('03');
 });

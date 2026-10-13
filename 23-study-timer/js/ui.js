@@ -22,9 +22,8 @@ export const REQUIRED_IDS = Object.freeze([
   'appBody', 'hoverZone', 'hoverPeekBar', 'drawerBackdrop', 'settingsDrawer',
   'drawerBrandTitle', 'drawerBrandBadge', 'openSettingsHeaderBtn', 'pinDrawerBtn',
   'closeDrawerBtn', 'timerSubView', 'settingsSubView', 'backToTimerBtn',
-  'tabTarget', 'tabDuration', 'tabPomodoro', 'tabStopwatch', 'tabClock',
-  'panelTarget', 'panelDuration', 'panelPomodoro', 'panelStopwatch', 'panelClock',
-  'targetDateTimeInput',
+  'tabDuration', 'tabPomodoro', 'tabStopwatch', 'tabClock',
+  'panelDuration', 'panelPomodoro', 'panelStopwatch',
   'inputDays', 'inputHours', 'inputMinutes', 'inputSeconds',
   'inputPomoWork', 'inputPomoShort', 'inputPomoLong', 'inputPomoCycles',
   'checkPomoAutoStart', 'phaseMinWork', 'phaseMinShort', 'phaseMinLong',
@@ -35,7 +34,6 @@ export const REQUIRED_IDS = Object.freeze([
   'toggleRunBtn', 'playPauseIcon', 'playPauseText', 'resetBtn', 'quickAdjustRow',
   'fullscreenBtn', 'rotateTimerBtn', 'zenModeBtn',
   'totalFocusTimeDisplay', 'completedSessionsDisplay', 'todayFocusDisplay', 'clearStatsBtn',
-  'exportJsonBtn', 'importJsonBtn', 'jsonFileInput',
   'langSelect', 'themeSelect', 'fontSelect',
   'alarmSoundSelect', 'volumeSlider', 'volumePercent', 'testSoundBtn',
   'ambientSoundSelect', 'ambientNote',
@@ -45,7 +43,7 @@ export const REQUIRED_IDS = Object.freeze([
   'digitsContainer', 'colDays', 'colHours', 'colMinutes', 'colSeconds',
   'daysValue', 'hoursValue', 'minutesValue', 'secondsValue',
   'labelDays', 'labelHours', 'labelMinutes', 'labelSeconds',
-  'srAnnounce', 'statusBar', 'statusPulse', 'statusText', 'hintText'
+  'srAnnounce'
 ]);
 
 /**
@@ -63,18 +61,16 @@ export function queryElements(doc = document) {
   els.modeTabs = Array.from(doc.querySelectorAll('.mode-tab'));
   els.phaseBtns = Array.from(doc.querySelectorAll('.phase-btn'));
   els.durationPresets = Array.from(doc.querySelectorAll('#panelDuration .preset-btn'));
-  els.targetPresets = Array.from(doc.querySelectorAll('#panelTarget .preset-btn'));
   els.adjustChips = Array.from(doc.querySelectorAll('#quickAdjustRow .chip-btn'));
   return { els, missing };
 }
 
 /** Rejim ↔ panel/tab moslashuvi */
 const MODE_PANEL = {
-  [MODES.TARGET]: 'panelTarget',
   [MODES.DURATION]: 'panelDuration',
   [MODES.POMODORO]: 'panelPomodoro',
-  [MODES.STOPWATCH]: 'panelStopwatch',
-  [MODES.CLOCK]: 'panelClock'
+  [MODES.STOPWATCH]: 'panelStopwatch'
+  // Soat rejimining sozlanadigan qismi yo'q — paneli ham yo'q
 };
 
 export class UI {
@@ -239,7 +235,7 @@ export class UI {
       panel.classList.toggle('active', active);
       panel.hidden = !active;
     }
-    const adjustable = mode === MODES.DURATION || mode === MODES.POMODORO || mode === MODES.TARGET;
+    const adjustable = mode === MODES.DURATION || mode === MODES.POMODORO;
     this.els.quickAdjustRow.hidden = !adjustable;
     this.els.appBody.dataset.mode = mode;
   }
@@ -341,14 +337,15 @@ export class UI {
 
   /* -------------------------------------------------------------------- status */
 
-  setStatus(key, running) {
-    this.els.statusText.textContent = t(key);
-    this.els.statusPulse.classList.toggle('paused', !running);
+  /**
+   * Ekranda status ko'rsatilmaydi (ataylab — maksimal minimalizm).
+   * Faqat paneldagi start/pauza tugmasi holatni aks ettiradi.
+   */
+  setStatus(running) {
     this.els.playPauseText.textContent = running ? t('ctrl.pause') : t('ctrl.start');
     this.els.playPauseIcon.innerHTML = running
       ? '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>'
       : '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg>';
-    this.els.hintText.hidden = running;
   }
 
   /* --------------------------------------------------------------------- toast */
@@ -490,21 +487,3 @@ export class UI {
   }
 }
 
-/** Pomodoro bosqichiga mos status kaliti */
-export function statusKeyFor(sample) {
-  switch (sample.mode) {
-    case MODES.CLOCK: return 'status.clock';
-    case MODES.STOPWATCH: return sample.running ? 'status.stopwatch' : 'status.ready';
-    case MODES.TARGET:
-      if (sample.finished) return 'status.targetDone';
-      return sample.running ? 'status.target' : 'status.ready';
-    case MODES.POMODORO:
-      if (!sample.running) return 'status.ready';
-      return sample.phase === POMODORO_PHASES.WORK ? 'status.pomoWork' : 'status.pomoBreak';
-    case MODES.DURATION:
-    default:
-      if (sample.running) return 'status.focus';
-      if (sample.finished) return 'status.finished';
-      return 'status.ready';
-  }
-}

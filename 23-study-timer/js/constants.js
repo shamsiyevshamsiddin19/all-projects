@@ -12,7 +12,6 @@ export const MS = 1000;
 
 /** Taymer yurish rejimlari */
 export const MODES = Object.freeze({
-  TARGET: 'target',
   DURATION: 'duration',
   POMODORO: 'pomodoro',
   STOPWATCH: 'stopwatch',

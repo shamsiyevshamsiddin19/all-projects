@@ -232,10 +232,14 @@ def structure_tests() -> None:
     # --- 2.4 Rejimlar ---
     tabs = soup.select(".mode-tab")
     modes = {tab.get("data-mode") for tab in tabs}
-    R.check("Beshta ish rejimi mavjud (README bilan mos)",
-            modes == {"target", "duration", "pomodoro", "stopwatch", "clock"}, f"({sorted(modes)})")
+    R.check("To'rtta ish rejimi mavjud (README bilan mos)",
+            modes == {"duration", "pomodoro", "stopwatch", "clock"}, f"({sorted(modes)})")
+    # Panelga ega tablarning aria-controls'i haqiqiy elementga ko'rsatishi shart.
+    # Soat rejimining sozlanadigan qismi yo'q — unda panel ham bo'lmaydi.
     for tab in tabs:
         panel_id = tab.get("aria-controls")
+        if panel_id is None:
+            continue
         if not R.check(f"'{tab.get('data-mode')}' rejimi uchun panel bor",
                        panel_id in html_ids, f"(aria-controls={panel_id})"):
             break
@@ -244,7 +248,8 @@ def structure_tests() -> None:
     R.check("Tab tugmalarida role='tab' bor", all(t.get("role") == "tab" for t in tabs))
     R.check("Tab tugmalarida aria-selected bor", all(t.has_attr("aria-selected") for t in tabs))
     R.check("Panellarda role='tabpanel' bor",
-            all(soup.find(id=t.get("aria-controls")).get("role") == "tabpanel" for t in tabs))
+            all(soup.find(id=t.get("aria-controls")).get("role") == "tabpanel"
+                for t in tabs if t.get("aria-controls")))
     R.check("Panel role='dialog' bilan belgilangan",
             soup.find(id="settingsDrawer").get("role") == "dialog")
     R.check("Raqamlar uchun aria-live hudud bor",
@@ -259,8 +264,31 @@ def structure_tests() -> None:
     R.check("Har bir <label> boshqaruvga bog'langan",
             not orphan_labels, f"bog'lanmagan: {len(orphan_labels)}" if orphan_labels else "")
 
+    removed = {
+        "Maqsadli sana rejimi": ["panelTarget", "tabTarget", "targetDateTimeInput", "data-target="],
+        "JSON eksport/import": ["exportJsonBtn", "importJsonBtn", "jsonFileInput"]
+    }
+    for name, markers in removed.items():
+        found = [m for m in markers if m in html or m in all_js]
+        R.check(f"Olib tashlangan: {name}", not found, f"qoldiq: {found}" if found else "")
+
     inline_hidden = re.findall(r'style="[^"]*display:\s*none', html)
     R.check("Inline 'display:none' ishlatilmagan (hidden atributi)", not inline_hidden)
+
+    # --- 2.5b Sozlamalar ajratilgan: sozlanadigan narsalar Sozlamalar bo'limida ---
+    settings_view = soup.find(id="settingsSubView")
+    timer_view = soup.find(id="timerSubView")
+    for control in ("inputPomoWork", "inputPomoCycles", "checkPomoAutoStart",
+                    "intervalReminderSelect", "checkPreEndWarning", "checkClockShowDate",
+                    "themeSelect", "fontSelect", "langSelect", "volumeSlider"):
+        el = soup.find(id=control)
+        if not R.check(f"Sozlama Sozlamalar bo'limida: #{control}",
+                       el is not None and settings_view.find(id=control) is not None):
+            break
+    for control in ("toggleRunBtn", "resetBtn", "lapBtn", "tabDuration", "inputMinutes"):
+        if not R.check(f"Boshqaruv taymer bo'limida: #{control}",
+                       timer_view.find(id=control) is not None):
+            break
 
     # --- 2.6 CSS sifat tekshiruvlari ---
     R.check("prefers-reduced-motion qo'llanilgan", "prefers-reduced-motion" in css)

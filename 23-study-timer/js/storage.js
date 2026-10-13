@@ -104,8 +104,6 @@ export function normalizeState(raw) {
       pomoPhase: typeof ts.pomoPhase === 'string' ? ts.pomoPhase : 'work',
       pomoCycles: Math.max(0, int(ts.pomoCycles, 0)),
       pomodoroConfig: out.settings.pomodoro,
-      targetAt: Number.isFinite(Number(ts.targetAt)) ? Number(ts.targetAt) : null,
-      targetFinished: bool(ts.targetFinished, false),
       stopwatch: ts.stopwatch && typeof ts.stopwatch === 'object' ? ts.stopwatch : null
     };
   }

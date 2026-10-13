@@ -124,7 +124,6 @@ html, body {
 body.user-idle {
   cursor: none !important;
 }
-body.user-idle .bottom-status-bar,
 body.user-idle .hover-peek-bar {
   opacity: 0 !important;
   pointer-events: none;
@@ -231,68 +230,6 @@ body.user-idle .hover-peek-bar {
   text-transform: uppercase;
   color: var(--label-color);
   transition: color 0.3s ease;
-}
-
-/* Bottom Status Bar */
-.bottom-status-bar {
-  position: fixed;
-  bottom: clamp(1.5rem, 4vh, 3rem);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.6rem;
-  z-index: 40;
-  transition: opacity 0.4s ease;
-}
-
-.status-pill {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.35rem 0.9rem;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 999px;
-  backdrop-filter: blur(8px);
-}
-
-.status-pulse {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #22c55e;
-  box-shadow: 0 0 8px #22c55e;
-  animation: pulseGlow 2s infinite ease-in-out;
-}
-
-.status-pulse.paused {
-  background: #94a3b8;
-  box-shadow: 0 0 8px #94a3b8;
-  animation: none;
-}
-
-.status-pill > span:last-child {
-  font-size: 0.72rem;
-  letter-spacing: 0.18em;
-  color: rgba(255, 255, 255, 0.75);
-  text-transform: uppercase;
-  font-weight: 500;
-}
-
-.hint-text {
-  font-size: 0.74rem;
-  color: rgba(255, 255, 255, 0.35);
-  letter-spacing: 0.05em;
-}
-
-.hint-text kbd {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
-  padding: 0.1rem 0.35rem;
-  font-family: inherit;
-  font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.8);
 }
 
 /* ==========================================================================
@@ -955,11 +892,6 @@ input[type="range"] {
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes pulseGlow {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.15); }
-}
-
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .digits-container {
@@ -971,13 +903,7 @@ input[type="range"] {
   .settings-drawer {
     width: 100vw;
   }
-  .bottom-status-bar {
-    bottom: 1.2rem;
-  }
-  .hint-text {
-    display: none;
-  }
-}
+    }
 
 /* ==========================================================================
    DRAWER SUB-VIEWS (TIMER CONTROLS <-> SETTINGS CONFIG)
@@ -1330,10 +1256,7 @@ body.drawer-open {
     scroll-behavior: auto !important;
   }
 
-  .status-pulse {
-    animation: none !important;
   }
-}
 
 /* ==========================================================================
    KICHIK EKRANLAR: panelni qulay yopish

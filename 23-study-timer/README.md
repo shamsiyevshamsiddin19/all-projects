@@ -12,12 +12,11 @@ SOAT  DAQIQA  SONIYA
 
 ## ✨ Imkoniyatlar
 
-### Beshta ish rejimi
+### To'rtta ish rejimi
 | Rejim | Tavsif |
 | :--- | :--- |
-| 🎯 **Maqsadli sana** | Imtihon, taqdimot yoki yangi yilgacha kun/soat/daqiqa/soniya. Presetlar: ertaga, hafta oxiri, oy oxiri, +7 kun, +30 kun, yangi yil. |
 | ⏳ **Davomiylik** | Kun/soat/daqiqa/soniya bo'yicha taymer. Presetlar: 5, 15, 25, 30, 45 daqiqa, 1 soat, 2 soat, 1 kun. `+1 / +5 / +15 / +1 soat / −5 daqiqa` tugmalari. |
-| 🍅 **Pomodoro** | Dars, qisqa va uzun tanaffus — **davomiyliklari sozlanadi**. Sikl hisoblagichi (nolga qaytariladi) va "keyingi bosqichni avtomatik boshlash" tanlovi. |
+| 🍅 **Pomodoro** | Dars, qisqa va uzun tanaffus. Bosqichni tanlash va sikl hisoblagichi shu yerda, davomiyliklari esa **Sozlamalar** bo'limida. |
 | ⏱ **Sekundomer** | Yuzinchi ulushlargacha, bosqich (lap) yozib borish bilan. |
 | 🕒 **Soat** | Hozirgi vaqt (sanani ko'rsatish ixtiyoriy). |
 
@@ -33,14 +32,21 @@ Taymer `setInterval` sanog'iga emas, **haqiqiy timestamp'ga** tayanadi. Natijada
 * Tugashdan 1 daqiqa oldin ogohlantirish.
 * Tizim bildirishnomalari (ruxsat **faqat** siz sozlamani yoqqaningizda so'raladi).
 * Statistika: umumiy fokus vaqti, seanslar soni, bugungi natija. Fokus vaqti **haqiqatda yurgan**
-  vaqt bo'yicha hisoblanadi — pauzalar qo'shilmaydi.
-* JSON eksport / import va statistikani tozalash tugmalari.
+  vaqt bo'yicha hisoblanadi — pauzalar qo'shilmaydi. Tozalash tugmasi bilan.
 
 ### Ovoz (Web Audio, tashqi fayllarsiz)
 * Signallar: Zen Singing Bowl, mayin billur qo'ng'iroq, Digital Chime, billur gong, o'chiq.
 * Orqa fon: mayin yomg'ir, binaural (4 Hz farq — faqat naushnikda seziladi, ta'siri ilmiy
   isbotlanmagan), kosmik drone.
 * Fon tabdan qaytganda audio konteksti uyqudan chiqariladi — signal yo'qolmaydi.
+
+### Interfeys taqsimoti
+Panel ikki bo'limdan iborat:
+
+* **Taymer** — kundalik boshqaruv: rejim tanlash, vaqt kiritish va presetlar, pomodoro bosqichi,
+  sekundomer bosqichlari, sarlavha, start/pauza/qaytarish, to'liq ekran va statistika.
+* **Sozlamalar** (`S` tugmasi) — bir marta sozlanadigan narsalar: pomodoro davomiyliklari,
+  eslatmalar, ovoz va ambient, til, mavzu, shrift va ko'rinish sozlamalari.
 
 ### Ko'rinish va qulaylik
 * 6 ta mavzu (Pitch Black, Deep Navy, Matrix Emerald, Amber Luxury, Cyber Violet, Aurora).

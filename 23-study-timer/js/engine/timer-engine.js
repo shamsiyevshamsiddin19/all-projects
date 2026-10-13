@@ -34,10 +34,6 @@ export class TimerEngine {
     this.pomodoro = new Countdown(this.pomodoroConfig.work * MS);
     this.pomoPhase = POMODORO_PHASES.WORK;
     this.pomoCycles = 0;
-    /** Maqsadli sana */
-    this.targetAt = null;
-    this.targetFinished = false;
-    this.targetWarned = false;
     /** Sekundomer */
     this.stopwatch = { elapsedMs: 0, startedAt: null, running: false, remindersFired: 0, laps: [] };
   }
@@ -52,7 +48,7 @@ export class TimerEngine {
 
   /** Hozirgi rejim orqaga sanaydimi? */
   isCountdownMode(mode = this.mode) {
-    return mode === MODES.DURATION || mode === MODES.POMODORO || mode === MODES.TARGET;
+    return mode === MODES.DURATION || mode === MODES.POMODORO;
   }
 
   /** Hozirgi rejimning Countdown obyekti (bo'lsa) */
@@ -67,7 +63,6 @@ export class TimerEngine {
       case MODES.DURATION: return this.duration.running;
       case MODES.POMODORO: return this.pomodoro.running;
       case MODES.STOPWATCH: return this.stopwatch.running;
-      case MODES.TARGET: return Boolean(this.targetAt) && !this.targetFinished;
       case MODES.CLOCK: return true;
       default: return false;
     }
@@ -135,24 +130,6 @@ export class TimerEngine {
 
   resetPomoCycles() {
     this.pomoCycles = 0;
-    return this;
-  }
-
-  /* ------------------------------------------------------------ maqsadli sana */
-
-  setTarget(date) {
-    const d = date instanceof Date ? date : new Date(date);
-    if (Number.isNaN(d.getTime())) return this;
-    this.targetAt = d.getTime();
-    this.targetFinished = this.targetAt <= this.now();
-    this.targetWarned = false;
-    return this;
-  }
-
-  clearTarget() {
-    this.targetAt = null;
-    this.targetFinished = false;
-    this.targetWarned = false;
     return this;
   }
 
@@ -240,9 +217,6 @@ export class TimerEngine {
         this.stopwatch.remindersFired = 0;
         this.stopwatch.laps = [];
         break;
-      case MODES.TARGET:
-        this.clearTarget();
-        break;
       default: break;
     }
     return this;
@@ -253,10 +227,6 @@ export class TimerEngine {
     const now = this.now();
     const cd = this.activeCountdown();
     if (cd) cd.adjust(deltaMs, now);
-    else if (this.mode === MODES.TARGET && this.targetAt) {
-      this.targetAt = Math.max(now, this.targetAt + deltaMs);
-      this.targetFinished = false;
-    }
     return this;
   }
 
@@ -318,17 +288,6 @@ export class TimerEngine {
           });
         }
       }
-    } else if (this.mode === MODES.TARGET && this.targetAt && !this.targetFinished) {
-      const remaining = Math.max(0, this.targetAt - now);
-      if (this.reminders.preEndWarning && !this.targetWarned && remaining > 0 &&
-          remaining <= MINUTE * MS) {
-        this.targetWarned = true;
-        events.push({ type: 'preEnd', mode: MODES.TARGET, remainingMs: remaining });
-      }
-      if (remaining <= 0) {
-        this.targetFinished = true;
-        events.push({ type: 'finished', mode: MODES.TARGET, focusMs: 0, nominalMs: 0 });
-      }
     }
 
     return events;
@@ -376,17 +335,6 @@ export class TimerEngine {
         const elapsed = this.stopwatchElapsed(now);
         return { ...base, remainingMs: elapsed, elapsedMs: elapsed, totalMs: 0, progress: 0 };
       }
-      case MODES.TARGET: {
-        const remaining = this.targetAt ? Math.max(0, this.targetAt - now) : 0;
-        return {
-          ...base,
-          remainingMs: remaining,
-          elapsedMs: 0,
-          totalMs: 0,
-          progress: 0,
-          finished: this.targetFinished
-        };
-      }
       case MODES.CLOCK:
       default:
         return { ...base, remainingMs: 0, elapsedMs: 0, totalMs: 0, progress: 0 };
@@ -403,8 +351,6 @@ export class TimerEngine {
       pomoPhase: this.pomoPhase,
       pomoCycles: this.pomoCycles,
       pomodoroConfig: { ...this.pomodoroConfig },
-      targetAt: this.targetAt,
-      targetFinished: this.targetFinished,
       stopwatch: {
         elapsedMs: this.stopwatchElapsed(),
         running: this.stopwatch.running,
@@ -436,11 +382,6 @@ export class TimerEngine {
     this.pomodoro = pomo.countdown;
     if (this.pomodoro.totalMs <= 0) this.pomodoro.reset(this.phaseDurationMs(this.pomoPhase));
     missedFinish = missedFinish || (pomo.missedFinish && raw.mode === MODES.POMODORO);
-
-    if (Number.isFinite(Number(raw.targetAt)) && raw.targetAt) {
-      this.targetAt = Number(raw.targetAt);
-      this.targetFinished = Boolean(raw.targetFinished) || this.targetAt <= now;
-    }
 
     if (raw.stopwatch && typeof raw.stopwatch === 'object') {
       const swElapsed = Math.max(0, Number(raw.stopwatch.elapsedMs) || 0);

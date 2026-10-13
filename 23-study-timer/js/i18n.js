@@ -22,16 +22,13 @@ const DICT = {
 
     'group.mode': 'ISH REJIMI',
     'group.duration': 'VAQTNI SOZLASH',
-    'group.target': 'MAQSADLI SANA',
     'group.pomodoro': 'POMODORO BOSQICHI',
     'group.pomodoroConfig': 'POMODORO SOZLAMALARI',
     'group.stopwatch': 'SEKUNDOMER',
-    'group.clock': 'SOAT',
     'group.title': "SARLAVHA / MAQSAD (IXTIYORIY)",
     'group.reminders': 'ESLATMALAR',
     'group.controls': 'BOSHQARUV',
     'group.stats': 'STATISTIKA',
-    'group.data': "MA'LUMOTLAR",
     'group.theme': 'FON MAVZUSI',
     'group.font': 'SHRIFT USLUBI',
     'group.lang': 'TIL / LANGUAGE',
@@ -39,7 +36,6 @@ const DICT = {
     'group.ambient': 'FOKUS AMBIENTI',
     'group.display': "KO'RINISHLARNI BOSHQARISH",
 
-    'mode.target': 'Maqsadli sana',
     'mode.duration': 'Davomiylik',
     'mode.pomodoro': 'Pomodoro',
     'mode.stopwatch': 'Sekundomer',
@@ -57,7 +53,6 @@ const DICT = {
     'input.minutes': 'Daqiqa',
     'input.seconds': 'Soniya',
     'input.titlePlaceholder': 'Masalan: IMTIHON, LOYIHA TAQDIMOTI...',
-    'input.targetLabel': 'Sana va vaqtni tanlang',
 
     'preset.5m': '5 daqiqa',
     'preset.15m': '15 daqiqa',
@@ -67,12 +62,6 @@ const DICT = {
     'preset.1h': '1 soat',
     'preset.2h': '2 soat',
     'preset.24h': '1 kun (24 soat)',
-    'preset.tomorrow': 'Ertaga 00:00',
-    'preset.weekend': 'Hafta oxiri',
-    'preset.monthEnd': 'Oy oxiri',
-    'preset.days7': '+7 kun',
-    'preset.days30': '+30 kun',
-    'preset.newYear': 'Yangi yil',
 
     'pomo.work': 'Dars / Fokus',
     'pomo.shortBreak': 'Qisqa tanaffus',
@@ -109,17 +98,6 @@ const DICT = {
     'ctrl.add1h': '+1 soat',
     'ctrl.sub5m': '−5 daq',
 
-    'status.ready': 'TAYYOR',
-    'status.running': 'SANALMOQDA',
-    'status.paused': 'PAUZA',
-    'status.focus': 'FOKUS VAQTI',
-    'status.finished': 'VAQT TUGADI',
-    'status.pomoWork': 'DARS FOKUSI',
-    'status.pomoBreak': 'TANAFFUS',
-    'status.stopwatch': 'SEKUNDOMER',
-    'status.clock': 'HAQIQIY VAQT',
-    'status.target': 'MAQSADGACHA',
-    'status.targetDone': 'MAQSAD VAQTI YETDI',
 
     'stats.totalFocus': 'Umumiy fokus',
     'stats.sessions': 'Seanslar',
@@ -127,11 +105,6 @@ const DICT = {
     'stats.clear': 'Statistikani tozalash',
     'stats.clearConfirm': "Butun statistika va tarix o'chiriladi. Davom etasizmi?",
 
-    'data.export': 'JSON eksport',
-    'data.import': 'JSON import',
-    'data.importOk': "Ma'lumotlar JSON fayldan muvaffaqiyatli tiklandi.",
-    'data.importFail': "JSON faylni o'qishda xatolik: {msg}",
-    'data.importInvalid': "Fayl tuzilmasi mos emas (Zenith zaxira fayli kutilgan).",
 
     'sound.alarm': 'Tugash signali',
     'sound.test': 'Ovozni testlash',
@@ -149,6 +122,7 @@ const DICT = {
     'ambient.note': "Binaural effekt faqat naushnikda seziladi. Ta'siri ilmiy isbotlanmagan — did bo'yicha tanlang.",
 
     'display.showDays': "Birinchi ustunni ko'rsatish (kunlar)",
+    'display.clockDate': "Soat rejimida sanani ko'rsatish",
     'display.autoRotate': "Vertikal telefonda avtomatik 90° ga burish",
     'display.wakeLock': "Ekran o'chib qolmasligi (WakeLock)",
     'display.notify': 'Tizim eslatmalari (Desktop Notification)',
@@ -162,7 +136,6 @@ const DICT = {
     'shortcuts.r': "Qayta o'rnatish",
     'shortcuts.l': 'Bosqich (lap)',
     'shortcuts.esc': 'Yopish',
-    'hint.space': 'boshlash uchun',
 
     'a11y.digits': 'Taymerni boshlash yoki pauza qilish',
     'a11y.timeLeft': 'Qolgan vaqt: {time}',
@@ -177,7 +150,6 @@ const DICT = {
     'notify.durationDone': '{duration}lik taymer yakunlandi',
     'notify.pomoWorkDone': 'Dars seansi tugadi (#{n}) — tanaffus vaqti',
     'notify.pomoBreakDone': 'Tanaffus tugadi — keyingi darsga tayyorlaning',
-    'notify.targetDone': 'Maqsad vaqti yetdi',
     'session.default': 'Fokus seansi'
   },
 
@@ -197,16 +169,13 @@ const DICT = {
 
     'group.mode': 'MODE',
     'group.duration': 'SET DURATION',
-    'group.target': 'TARGET DATE',
     'group.pomodoro': 'POMODORO PHASE',
     'group.pomodoroConfig': 'POMODORO SETTINGS',
     'group.stopwatch': 'STOPWATCH',
-    'group.clock': 'CLOCK',
     'group.title': 'TITLE / GOAL (OPTIONAL)',
     'group.reminders': 'REMINDERS',
     'group.controls': 'CONTROLS',
     'group.stats': 'STATISTICS',
-    'group.data': 'DATA',
     'group.theme': 'THEME',
     'group.font': 'TYPEFACE',
     'group.lang': 'LANGUAGE',
@@ -214,7 +183,6 @@ const DICT = {
     'group.ambient': 'FOCUS AMBIENCE',
     'group.display': 'DISPLAY OPTIONS',
 
-    'mode.target': 'Target date',
     'mode.duration': 'Duration',
     'mode.pomodoro': 'Pomodoro',
     'mode.stopwatch': 'Stopwatch',
@@ -232,7 +200,6 @@ const DICT = {
     'input.minutes': 'Minutes',
     'input.seconds': 'Seconds',
     'input.titlePlaceholder': 'e.g. FINAL EXAM, PROJECT LAUNCH...',
-    'input.targetLabel': 'Pick a date and time',
 
     'preset.5m': '5 min',
     'preset.15m': '15 min',
@@ -242,12 +209,6 @@ const DICT = {
     'preset.1h': '1 hour',
     'preset.2h': '2 hours',
     'preset.24h': '1 day (24 h)',
-    'preset.tomorrow': 'Tomorrow 00:00',
-    'preset.weekend': 'Weekend',
-    'preset.monthEnd': 'End of month',
-    'preset.days7': '+7 days',
-    'preset.days30': '+30 days',
-    'preset.newYear': 'New Year',
 
     'pomo.work': 'Focus',
     'pomo.shortBreak': 'Short break',
@@ -284,17 +245,6 @@ const DICT = {
     'ctrl.add1h': '+1 hour',
     'ctrl.sub5m': '−5 min',
 
-    'status.ready': 'READY',
-    'status.running': 'COUNTING',
-    'status.paused': 'PAUSED',
-    'status.focus': 'FOCUS TIME',
-    'status.finished': 'TIME IS UP',
-    'status.pomoWork': 'FOCUS',
-    'status.pomoBreak': 'BREAK',
-    'status.stopwatch': 'STOPWATCH',
-    'status.clock': 'LIVE CLOCK',
-    'status.target': 'UNTIL TARGET',
-    'status.targetDone': 'TARGET REACHED',
 
     'stats.totalFocus': 'Total focus',
     'stats.sessions': 'Sessions',
@@ -302,11 +252,6 @@ const DICT = {
     'stats.clear': 'Clear statistics',
     'stats.clearConfirm': 'This erases all statistics and history. Continue?',
 
-    'data.export': 'Export JSON',
-    'data.import': 'Import JSON',
-    'data.importOk': 'Data restored from the JSON file.',
-    'data.importFail': 'Could not read the JSON file: {msg}',
-    'data.importInvalid': 'File structure does not match a Zenith backup.',
 
     'sound.alarm': 'Alarm sound',
     'sound.test': 'Test sound',
@@ -324,6 +269,7 @@ const DICT = {
     'ambient.note': 'Binaural beats are only audible with headphones. The effect is not scientifically established — pick what you enjoy.',
 
     'display.showDays': 'Show the first column (days)',
+    'display.clockDate': 'Show the date in clock mode',
     'display.autoRotate': 'Auto-rotate 90° on portrait phones',
     'display.wakeLock': 'Keep the screen awake (WakeLock)',
     'display.notify': 'System notifications',
@@ -337,7 +283,6 @@ const DICT = {
     'shortcuts.r': 'Reset',
     'shortcuts.l': 'Lap',
     'shortcuts.esc': 'Close',
-    'hint.space': 'to start',
 
     'a11y.digits': 'Start or pause the timer',
     'a11y.timeLeft': 'Time left: {time}',
@@ -352,7 +297,6 @@ const DICT = {
     'notify.durationDone': '{duration} timer finished',
     'notify.pomoWorkDone': 'Focus session done (#{n}) — break time',
     'notify.pomoBreakDone': 'Break over — back to focus',
-    'notify.targetDone': 'Target time reached',
     'session.default': 'Focus session'
   }
 };

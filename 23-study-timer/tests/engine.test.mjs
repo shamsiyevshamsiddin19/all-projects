@@ -235,20 +235,6 @@ test('sekundomer: yurish, pauza, bosqichlar', () => {
   assert.equal(engine.stopwatch.laps.length, 0);
 });
 
-test('maqsadli sana bir marta tugaydi', () => {
-  const { engine, clock, advance } = makeEngine();
-  engine.setMode(MODES.TARGET);
-  engine.setTarget(new Date(clock.now + 150 * 1000));
-  engine.reminders.preEndWarning = true;
-  advance(60_000); // qolgani 90 s — hali ogohlantirish yo'q
-  assert.deepEqual(engine.tick(), []);
-  advance(31_000); // qolgani 59 s
-  assert.equal(engine.tick().filter((e) => e.type === 'preEnd').length, 1);
-  advance(60_000);
-  assert.equal(engine.tick().filter((e) => e.type === 'finished').length, 1);
-  assert.deepEqual(engine.tick(), [], 'ikkinchi marta tugamaydi');
-});
-
 test('sahifa yangilangandan keyin yurib turgan taymer davom etadi', () => {
   const { engine, advance, clock } = makeEngine();
   engine.setMode(MODES.DURATION);
