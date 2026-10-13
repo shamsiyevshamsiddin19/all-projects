@@ -17,18 +17,14 @@ chiqadi, bosib darhol tinglash/tomosha qilish mumkin.
 
 ## 📌 Loyiha holati
 
-> ⚠️ **Hozircha kod yozilmagan.** Bu bosqichda faqat tizim arxitekturasi, ma'lumotlar
-> modeli, API shartnomasi va texnik tuzoqlar hujjatlashtirilgan. Kod yozishdan oldin
-> `docs/` dagi barcha hujjatlarni o'qib chiqish shart.
-
 | Bosqich | Holat |
 | :--- | :--- |
 | G'oya va qamrov | ✅ Tugallandi |
 | Tizim arxitekturasi | ✅ Hujjatlashtirildi |
 | Ma'lumotlar modeli | ✅ Hujjatlashtirildi |
 | API shartnomasi | ✅ Hujjatlashtirildi |
-| Backend kodi | ⬜ Boshlanmagan |
-| Frontend kodi | ⬜ Boshlanmagan |
+| Backend kodi (FastAPI + Proxy + Worker) | ✅ Amalga oshirildi (0 & 1-bosqich) |
+| Frontend kodi (Next.js 15 + MapLibre + Zustand) | ✅ Amalga oshirildi (0 & 1-bosqich) |
 
 ---
 

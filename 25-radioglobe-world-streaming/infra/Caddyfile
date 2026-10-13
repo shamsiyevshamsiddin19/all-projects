@@ -1,0 +1,13 @@
+radio.shamsiyev.uz {
+    encode gzip zstd
+
+    # API and Stream Proxy
+    handle /api/* {
+        reverse_proxy api:8000
+    }
+
+    # Frontend Web App
+    handle /* {
+        reverse_proxy web:3000
+    }
+}
