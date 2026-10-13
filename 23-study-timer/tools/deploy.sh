@@ -37,12 +37,14 @@ FILES=$(find "$STAGE" -type f | wc -l)
 echo "   Fayllar: $FILES ($(du -sh "$STAGE" | cut -f1))"
 
 # --- 3. Yuklash ---
-rsync -az --delete "$STAGE"/ "$HOST:/tmp/zenith_deploy/"
+# --chmod: mktemp -d papkasi 700 bo'ladi — uni web root'ga ko'chirib yubormaslik uchun
+# huquqlar ataylab normallashtiriladi (papka 755, fayl 644).
+rsync -az --delete --chmod=D755,F644 "$STAGE"/ "$HOST:/tmp/zenith_deploy/"
 
 ssh "$HOST" "bash -s" <<REMOTE
 set -e
 sudo tar czf "\$HOME/timer-backup-\$(date +%Y%m%d-%H%M).tar.gz" -C "$WEBROOT" . 2>/dev/null || true
-sudo rsync -a --delete /tmp/zenith_deploy/ "$WEBROOT/"
+sudo rsync -a --delete --chmod=D755,F644 /tmp/zenith_deploy/ "$WEBROOT/"
 sudo chown -R nginx:nginx "$WEBROOT"
 sudo restorecon -R "$WEBROOT" 2>/dev/null || true
 rm -rf /tmp/zenith_deploy
