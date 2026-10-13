@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+dist/
+.turbo/
+*.tsbuildinfo
+
+# Maxfiy ma'lumotlar
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Ma'lumotlar bazasi va keshlar
+*.db
+*.sqlite3
+dump.rdb
+
+# Generatsiya qilinadigan xarita fayllari
+apps/web/public/countries.geojson
+data/raw/
+
+# Loglar va tizim fayllari
+*.log
+logs/
+.DS_Store

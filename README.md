@@ -41,6 +41,7 @@ foydalanuvchilarga xizmat ko'rsatadigan tayyor mahsulotlar.
 | 📚 **[16-yordamchi-productivity-suite](./16-yordamchi-productivity-suite)** | Shaxsiy o'quv platformasi — sayt, desktop app va mobil ilova. | `FastAPI` `PostgreSQL` `Vanilla JS` |
 | 🎨 **[17-craftsite-web-templates](./17-craftsite-web-templates)** | Turli sohalar uchun tayyor statik sayt shablonlari (7 ta namuna). | `HTML` `CSS` `JavaScript` |
 | 📰 **[24-blog](./24-blog)** | HAGUE — Bootstrap 5.3 asosidagi zamonaviy interaktiv blog va yangiliklar jurnali (editorial news magazine). | `HTML5` `CSS3` `Bootstrap 5.3` `JavaScript` |
+| 🌍 **[25-radioglobe-world-streaming](./25-radioglobe-world-streaming)** | RadioGlobe — interaktiv 3D globus orqali dunyo radio va TV kanallarini tinglash platformasi (arxitektura bosqichida). | `FastAPI` `PostgreSQL` `Next.js 15` `MapLibre GL` |
 
 ### 🛠️ Integratsiyalar va Kutubxonalar
 
