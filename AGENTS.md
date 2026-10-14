@@ -7,7 +7,7 @@ Ushbu loyihalar papkasida (`/home/shamsiddin/Documents/project/loyihalar`) ishla
 
 ### 0. SHAXSIY BILIMLAR VA QOIDALAR BAZASI (MY_SCILL)
 Har qanday vazifaga kirishishdan oldin AI agent `/home/shamsiddin/Documents/MY_SCILL/` dagi qoidalarni (saytlar uchun `preferences/websites.md`, botlar uchun `preferences/bots.md`, hujjatlar uchun `preferences/academic_docs.md`, umumiy qoidalar uchun `preferences/general.md`) o'qishi SHART!
-Foydalanuvchi biror narsani o'zgartirishni yoki yoqmaganini aytsa, `MY_SCILL/feedback/` ga yozib, `python3 /home/shamsiddin/Documents/MY_SCILL/sync.py` orqali sinxronlang.
+Foydalanuvchi biror narsani ma'qullasa, e'tiroz bildirsa yoki o'zgartirishni aytsa, eslatishni kutmasdan DARHOL o'sha qadamning o'zidayoq `MY_SCILL/feedback/` ga yozib (`liked` yoki `disliked`), `python3 /home/shamsiddin/Documents/MY_SCILL/sync.py` orqali sinxronlash SHART!
 
 ---
 
