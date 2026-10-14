@@ -9,6 +9,7 @@ Parol: 2501 (yoki .env dagi PANEL_PASSWORD / PANEL_TOKEN).
 import hashlib
 import json
 import os
+import re
 import time
 
 from aiohttp import web
@@ -232,6 +233,22 @@ async def api_toggle(req):
     return web.json_response({"ok": True})
 
 
+async def api_avatar(req):
+    chat_id = req.match_info.get("id", "").strip()
+    if not chat_id or not re.match(r"^-?[0-9a-zA-Z_]+$", chat_id):
+        return web.Response(status=400)
+    file_path = os.path.join(DATA, "avatars", f"{chat_id}.jpg")
+    if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+        return web.FileResponse(
+            file_path,
+            headers={
+                "Cache-Control": "public, max-age=604800, immutable",
+                "Content-Type": "image/jpeg",
+            },
+        )
+    return web.Response(status=404)
+
+
 async def favicon(req):
     svg_icon = (
         "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='#10a37f'>"
@@ -281,6 +298,7 @@ def main():
         web.get("/dashboard", index),
         web.get("/panel", index),
         web.get("/favicon.ico", favicon),
+        web.get("/api/avatar/{id}", api_avatar),
         web.post("/api/login", api_login),
         web.post("/api/logout", api_logout),
         web.get("/api/state", api_state),

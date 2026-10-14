@@ -14,17 +14,50 @@ from ._helpers import command, register_all
 
 logger = logging.getLogger("userbot.stats")
 DATA_DIR = os.path.join(config.BASE_DIR, "data")
+AVATARS_DIR = os.path.join(DATA_DIR, "avatars")
+AVATAR_CACHE_TTL = 86400 * 3  # 3 kun
+
+
+async def _save_avatar(client, entity, file_id):
+    """Telegram profil yoki chat rasmini kichik hajmda yuklab olish va saqlash."""
+    if not entity or not file_id:
+        return False
+    # Agar chat/userda rasm bo'lmasa, ortiqcha so'rov yubormaymiz
+    if not getattr(entity, "photo", None):
+        return False
+
+    dest = os.path.join(AVATARS_DIR, f"{file_id}.jpg")
+    try:
+        if (
+            os.path.exists(dest)
+            and os.path.getsize(dest) > 0
+            and (time.time() - os.path.getmtime(dest) < AVATAR_CACHE_TTL)
+        ):
+            return True
+        res = await asyncio.wait_for(
+            client.download_profile_photo(entity, file=dest, download_big=False),
+            timeout=4.0,
+        )
+        return bool(res and os.path.exists(dest) and os.path.getsize(dest) > 0)
+    except Exception as e:  # noqa: BLE001
+        logger.debug("Avatar yuklashda xatolik (%s): %s", file_id, e)
+        return False
 
 
 async def collect_account_stats(client):
     """Akkaunt haqidagi to'liq ma'lumotlar va chat statistikasini yig'ish."""
     try:
         os.makedirs(DATA_DIR, exist_ok=True)
+        os.makedirs(AVATARS_DIR, exist_ok=True)
         stats_file = os.path.join(DATA_DIR, f"stats_{config.SESSION}.json")
 
         me = await client.get_me()
         if not me:
             return None
+
+        # O'z profil rasmini yuklab olish (ham me.id, ham accX nomi bilan)
+        await _save_avatar(client, me, me.id)
+        await _save_avatar(client, me, config.SESSION)
 
         stats = {
             "account": config.SESSION,
@@ -37,6 +70,7 @@ async def collect_account_stats(client):
                 "phone": getattr(me, "phone", "") or "",
                 "premium": bool(getattr(me, "premium", False)),
                 "is_bot": bool(getattr(me, "bot", False)),
+                "avatar": f"/api/avatar/{me.id}",
             },
             "summary": {
                 "total_chats": 0,
@@ -55,6 +89,7 @@ async def collect_account_stats(client):
             "recent_dialogs": [],
         }
 
+        avatar_queue = []
         count = 0
         async for d in client.iter_dialogs(limit=600):
             count += 1
@@ -86,7 +121,9 @@ async def collect_account_stats(client):
                         "title": title,
                         "username": username,
                         "unread": unread,
+                        "avatar": f"/api/avatar/{chat_id}",
                     })
+                    avatar_queue.append((ent, chat_id))
                 elif admin_rights:
                     stats["summary"]["admin_chats_count"] += 1
                     stats["admin_chats"].append({
@@ -94,7 +131,9 @@ async def collect_account_stats(client):
                         "title": title,
                         "username": username,
                         "type": "group",
+                        "avatar": f"/api/avatar/{chat_id}",
                     })
+                    avatar_queue.append((ent, chat_id))
             elif d.is_channel and not is_megagroup:
                 stats["summary"]["channels"] += 1
                 if is_creator:
@@ -104,7 +143,9 @@ async def collect_account_stats(client):
                         "title": title,
                         "username": username,
                         "unread": unread,
+                        "avatar": f"/api/avatar/{chat_id}",
                     })
+                    avatar_queue.append((ent, chat_id))
                 elif admin_rights:
                     stats["summary"]["admin_chats_count"] += 1
                     stats["admin_chats"].append({
@@ -112,9 +153,11 @@ async def collect_account_stats(client):
                         "title": title,
                         "username": username,
                         "type": "channel",
+                        "avatar": f"/api/avatar/{chat_id}",
                     })
+                    avatar_queue.append((ent, chat_id))
 
-            if len(stats["recent_dialogs"]) < 12:
+            if len(stats["recent_dialogs"]) < 16:
                 date_str = ""
                 if hasattr(d, "date") and d.date:
                     date_str = d.date.strftime("%H:%M")
@@ -133,15 +176,30 @@ async def collect_account_stats(client):
                     "type": chat_type,
                     "unread": unread,
                     "date": date_str,
+                    "avatar": f"/api/avatar/{chat_id}",
                 })
+                avatar_queue.append((ent, chat_id))
 
         stats["summary"]["total_chats"] = count
+
+        # Dastlabki eng muhim suhbatlar rasmlarini tezkor yuklab olish
+        for ent, cid in avatar_queue[:15]:
+            await _save_avatar(client, ent, cid)
+
+        # Qolgan chat rasmlarini fon rejimida sekin yuklab olish (Telegram limitini buzmaslik uchun)
+        if len(avatar_queue) > 15:
+            async def _bg_avatars(items):
+                for e, cid in items:
+                    await _save_avatar(client, e, cid)
+                    await asyncio.sleep(0.05)
+
+            client.loop.create_task(_bg_avatars(avatar_queue[15:]))
 
         tmp = stats_file + ".tmp"
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(stats, f, ensure_ascii=False, indent=2)
         os.replace(tmp, stats_file)
-        logger.info("Statistika muvaffaqiyatli saqlandi: %s", config.SESSION)
+        logger.info("Statistika va avatarlar muvaffaqiyatli saqlandi: %s", config.SESSION)
         return stats
     except Exception as e:  # noqa: BLE001
         logger.error("Statistika yig'ishda xatolik (%s): %s", config.SESSION, e)
