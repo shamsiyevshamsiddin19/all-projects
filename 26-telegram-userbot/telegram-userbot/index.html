@@ -783,27 +783,22 @@
   /* RESOURCE GRID CARDS */
   .resource-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
     gap: 10px;
   }
   .res-card {
     background: #282828;
     border-radius: var(--radius-md);
-    padding: 12px 14px;
+    padding: 10px 14px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    transition: background 0.15s ease;
     gap: 12px;
+    transition: background 0.15s ease;
+    min-width: 0;
+    overflow: hidden;
   }
   .res-card:hover {
     background: var(--bg-card-hover);
-  }
-  .rc-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-width: 0;
   }
 
   /* CHAT AVATAR FRAME (TELEGRAM AVATAR IMAGE WITH FALLBACK) */
@@ -839,8 +834,15 @@
     user-select: none;
   }
 
+  /* CENTER: FLEXIBLE CONTENT THAT CANNOT OVERFLOW */
   .rc-details {
+    flex: 1 1 auto;
     min-width: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
   }
   .rc-title {
     font-size: 13px;
@@ -849,42 +851,65 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    line-height: 1.3;
   }
   .rc-subrow {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-top: 3px;
+    gap: 6px;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
     font-size: 11px;
+    line-height: 1.3;
   }
   .rc-link {
-    color: #ffffff;
+    color: var(--text-secondary);
     text-decoration: none;
     font-family: 'JetBrains Mono', monospace;
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
+    display: inline-block;
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     background: #202020;
-    padding: 2px 6px;
+    padding: 1px 5px;
     border-radius: 4px;
+    flex-shrink: 1;
   }
   .rc-link:hover {
+    color: #ffffff;
     background: #383838;
   }
   .rc-id-pill {
     color: var(--text-muted);
     font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
+  }
+
+  /* RIGHT: FIXED BADGES & ACTION BUTTONS */
+  .rc-right {
+    margin-left: auto;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
   .rc-tag {
     font-size: 10px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    padding: 3px 8px;
+    padding: 2px 7px;
     border-radius: var(--radius-pill);
     flex-shrink: 0;
     background: #202020;
     color: var(--text-secondary);
+    white-space: nowrap;
   }
 
   /* AUTOMATION TOGGLES CARDS */
@@ -1961,20 +1986,18 @@ function renderChannelsList(list) {
     const userLink = ch.username ? `<a href="https://t.me/${ch.username}" target="_blank" rel="noopener" class="rc-link">@${ch.username}</a>` : '';
     const initial = (ch.title || "K").trim().slice(0, 1).toUpperCase();
     card.innerHTML = `
-      <div class="rc-left">
-        <div class="chat-avatar-frame">
-          <img src="/api/avatar/${ch.id}" class="chat-avatar-img" loading="lazy" onload="this.classList.add('loaded')" onerror="this.remove()" />
-          <span class="chat-avatar-fallback">${initial}</span>
-        </div>
-        <div class="rc-details">
-          <div class="rc-title" title="${ch.title}">${ch.title}</div>
-          <div class="rc-subrow">
-            ${userLink}
-            <span class="rc-id-pill">${ch.id}</span>
-          </div>
+      <div class="chat-avatar-frame">
+        <img src="/api/avatar/${ch.id}" class="chat-avatar-img" loading="lazy" onload="this.classList.add('loaded')" onerror="this.remove()" />
+        <span class="chat-avatar-fallback">${initial}</span>
+      </div>
+      <div class="rc-details">
+        <div class="rc-title" title="${ch.title}">${ch.title}</div>
+        <div class="rc-subrow">
+          ${userLink}
+          <span class="rc-id-pill">${ch.id}</span>
         </div>
       </div>
-      <div style="display:flex; align-items:center; gap:6px;">
+      <div class="rc-right">
         <span class="rc-tag">Egasi</span>
         <button class="btn-icon-soft" onclick="copyId('${ch.id}', event)" title="ID nusxalash">
           <svg class="icon" style="width:13px;height:13px;" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
@@ -1998,20 +2021,18 @@ function renderGroupsList(list) {
     const userLink = gr.username ? `<a href="https://t.me/${gr.username}" target="_blank" rel="noopener" class="rc-link">@${gr.username}</a>` : '';
     const initial = (gr.title || "G").trim().slice(0, 1).toUpperCase();
     card.innerHTML = `
-      <div class="rc-left">
-        <div class="chat-avatar-frame">
-          <img src="/api/avatar/${gr.id}" class="chat-avatar-img" loading="lazy" onload="this.classList.add('loaded')" onerror="this.remove()" />
-          <span class="chat-avatar-fallback">${initial}</span>
-        </div>
-        <div class="rc-details">
-          <div class="rc-title" title="${gr.title}">${gr.title}</div>
-          <div class="rc-subrow">
-            ${userLink}
-            <span class="rc-id-pill">${gr.id}</span>
-          </div>
+      <div class="chat-avatar-frame">
+        <img src="/api/avatar/${gr.id}" class="chat-avatar-img" loading="lazy" onload="this.classList.add('loaded')" onerror="this.remove()" />
+        <span class="chat-avatar-fallback">${initial}</span>
+      </div>
+      <div class="rc-details">
+        <div class="rc-title" title="${gr.title}">${gr.title}</div>
+        <div class="rc-subrow">
+          ${userLink}
+          <span class="rc-id-pill">${gr.id}</span>
         </div>
       </div>
-      <div style="display:flex; align-items:center; gap:6px;">
+      <div class="rc-right">
         <span class="rc-tag">Egasi</span>
         <button class="btn-icon-soft" onclick="copyId('${gr.id}', event)" title="ID nusxalash">
           <svg class="icon" style="width:13px;height:13px;" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
@@ -2035,20 +2056,18 @@ function renderAdminList(list) {
     const userLink = a.username ? `<a href="https://t.me/${a.username}" target="_blank" rel="noopener" class="rc-link">@${a.username}</a>` : '';
     const initial = (a.title || "A").trim().slice(0, 1).toUpperCase();
     card.innerHTML = `
-      <div class="rc-left">
-        <div class="chat-avatar-frame">
-          <img src="/api/avatar/${a.id}" class="chat-avatar-img" loading="lazy" onload="this.classList.add('loaded')" onerror="this.remove()" />
-          <span class="chat-avatar-fallback">${initial}</span>
-        </div>
-        <div class="rc-details">
-          <div class="rc-title" title="${a.title}">${a.title}</div>
-          <div class="rc-subrow">
-            ${userLink}
-            <span class="rc-id-pill">${a.id}</span>
-          </div>
+      <div class="chat-avatar-frame">
+        <img src="/api/avatar/${a.id}" class="chat-avatar-img" loading="lazy" onload="this.classList.add('loaded')" onerror="this.remove()" />
+        <span class="chat-avatar-fallback">${initial}</span>
+      </div>
+      <div class="rc-details">
+        <div class="rc-title" title="${a.title}">${a.title}</div>
+        <div class="rc-subrow">
+          ${userLink}
+          <span class="rc-id-pill">${a.id}</span>
         </div>
       </div>
-      <div style="display:flex; align-items:center; gap:6px;">
+      <div class="rc-right">
         <span class="rc-tag">Admin</span>
         <button class="btn-icon-soft" onclick="copyId('${a.id}', event)" title="ID nusxalash">
           <svg class="icon" style="width:13px;height:13px;" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
@@ -2081,20 +2100,18 @@ function renderRecentDialogs(list) {
     const unreadBadge = item.unread > 0 ? `<span class="nb-pill pulse-red">${item.unread} ta</span>` : '';
     const initial = (item.title || "U").trim().slice(0, 1).toUpperCase();
     card.innerHTML = `
-      <div class="rc-left">
-        <div class="chat-avatar-frame">
-          <img src="/api/avatar/${item.id}" class="chat-avatar-img" loading="lazy" onload="this.classList.add('loaded')" onerror="this.remove()" />
-          <span class="chat-avatar-fallback">${initial}</span>
-        </div>
-        <div class="rc-details">
-          <div class="rc-title" title="${item.title}">${item.title}</div>
-          <div class="rc-subrow">
-            ${userLink}
-            <span class="rc-id-pill">${item.date || ''}</span>
-          </div>
+      <div class="chat-avatar-frame">
+        <img src="/api/avatar/${item.id}" class="chat-avatar-img" loading="lazy" onload="this.classList.add('loaded')" onerror="this.remove()" />
+        <span class="chat-avatar-fallback">${initial}</span>
+      </div>
+      <div class="rc-details">
+        <div class="rc-title" title="${item.title}">${item.title}</div>
+        <div class="rc-subrow">
+          ${userLink}
+          <span class="rc-id-pill">${item.date || ''}</span>
         </div>
       </div>
-      <div style="display:flex; align-items:center; gap:6px;">
+      <div class="rc-right">
         ${unreadBadge}
         <span class="rc-tag">${typeLabels[item.type] || item.type}</span>
         <button class="btn-icon-soft" onclick="copyId('${item.id}', event)" title="ID nusxalash">
@@ -2275,21 +2292,21 @@ function render() {
     const c = document.createElement("div");
     c.className = "res-card";
     c.innerHTML = `
-      <div class="rc-left">
-        <div class="chat-avatar-frame">
-          <img src="/api/avatar/${acc}?t=${aSt.updated_at || ''}" class="chat-avatar-img" loading="lazy" onload="this.classList.add('loaded')" onerror="this.remove()" />
-          <span class="chat-avatar-fallback">${aInitial}</span>
-        </div>
-        <div class="rc-details">
-          <div class="rc-title">${prof.first_name || acc} (@${prof.username || 'user'})</div>
-          <div class="rc-subrow">
-            <span>Tel: +${prof.phone || '-'}</span>
-            <span>·</span>
-            <span>Jami: ${sum.total_chats || 0} chat</span>
-          </div>
+      <div class="chat-avatar-frame">
+        <img src="/api/avatar/${acc}?t=${aSt.updated_at || ''}" class="chat-avatar-img" loading="lazy" onload="this.classList.add('loaded')" onerror="this.remove()" />
+        <span class="chat-avatar-fallback">${aInitial}</span>
+      </div>
+      <div class="rc-details">
+        <div class="rc-title">${prof.first_name || acc} (@${prof.username || 'user'})</div>
+        <div class="rc-subrow">
+          <span>Tel: +${prof.phone || '-'}</span>
+          <span>·</span>
+          <span>Jami: ${sum.total_chats || 0} chat</span>
         </div>
       </div>
-      <span class="rc-tag" style="cursor:pointer;" onclick="switchAccount('${acc}')">O'tish</span>
+      <div class="rc-right">
+        <span class="rc-tag" style="cursor:pointer;" onclick="switchAccount('${acc}')">O'tish</span>
+      </div>
     `;
     sysAccBox.appendChild(c);
   });
