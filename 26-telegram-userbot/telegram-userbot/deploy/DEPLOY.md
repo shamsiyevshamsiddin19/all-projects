@@ -1,4 +1,4 @@
-# Hetzner serverga o'rnatish (3 ta akkaunt)
+# Serverga o'rnatish va sozlash (shamsiyev.uz / Linux VPS - 3 ta akkaunt)
 
 Har bir akkaunt alohida jarayon bo'lib ishlaydi: `acc1`, `acc2`, `acc3`.
 Barchasi bitta `systemd` shabloni (`userbot@.service`) orqali boshqariladi.

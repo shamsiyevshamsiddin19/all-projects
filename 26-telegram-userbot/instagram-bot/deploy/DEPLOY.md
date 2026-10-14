@@ -1,4 +1,4 @@
-# Hetzner serverга botni chiqarish (deploy)
+# Serverга botni chiqarish (deploy)
 
 Bot 24/7 ishlashi va Instagram webhook'ni qabul qilishi uchun serverда
 HTTPS manzil kerak. Meta faqat **haqiqiy SSL sertifikatли HTTPS** manzilni qabul qiladi.
@@ -8,7 +8,7 @@ Quyida to'liq, qadamma-qadam yo'riqnoma.
 ---
 
 ## 0. Nima kerak
-- Hetzner serverга SSH orqali kira olish (sizда bor)
+- Serverга SSH orqali kira olish
 - Domen yoki bepul subdomen (masalan **duckdns.org** — bepul)
   > IP manzilning o'ziga Let's Encrypt sertifikat bermaydi, shuning uchun
   > domen kerak. duckdns.org da 2 daqiqада bepul subdomen olasiz.
@@ -59,7 +59,7 @@ Bot endi `127.0.0.1:5000` da ishlaydi (faqat server ichida).
 ## 4. Domenni serverга yo'naltirish
 
 - **duckdns.org**: ro'yxatdan o'ting → subdomen yarating (masalan `shamsbot`) →
-  IP maydoniga Hetzner server IP'sini yozing. Manzilingiz:
+  IP maydoniga serveringiz IP'sini yozing. Manzilingiz:
   `shamsbot.duckdns.org`
 - Yoki o'z domeningizda **A record** yaratib, server IP'ga yo'naltiring.
 

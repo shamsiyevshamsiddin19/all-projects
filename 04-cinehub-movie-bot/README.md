@@ -28,7 +28,7 @@ kino/
 └── .env.example
 ```
 
-## O'rnatish (Hetzner / Ubuntu)
+## O'rnatish (Ubuntu / Linux VPS)
 
 ```bash
 sudo apt update && sudo apt install -y python3-venv postgresql

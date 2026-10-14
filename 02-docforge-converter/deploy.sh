@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Document Convertor bot — Hetzner (Ubuntu) uchun o'rnatish/yangilash skripti.
+# Document Convertor bot — Ubuntu / Linux VPS uchun o'rnatish/yangilash skripti.
 # Ishlatish (server ichida):  sudo bash deploy.sh
 set -euo pipefail
 

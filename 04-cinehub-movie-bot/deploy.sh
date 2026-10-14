@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Kino bot — Hetzner (Ubuntu) uchun to'liq avtomat o'rnatish.
+# Kino bot — Ubuntu / Linux VPS uchun to'liq avtomat o'rnatish.
 # Ishlatish (server ichida):  sudo bash deploy.sh
 set -euo pipefail
 

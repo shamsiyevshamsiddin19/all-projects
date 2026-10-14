@@ -71,7 +71,7 @@ ko'rsatishni osonlashtiradi:
 - Har bir botda ichki **web-admin panel** (`aiohttp`) — statistika, foydalanuvchilar,
   sozlamalar; ko'pchiligi umumiy master-domen dropdown uslubida
 - `.env` / `.env.example` orqali sozlamalar — maxfiy qiymatlar kodda emas
-- `deploy.sh` — Hetzner/Ubuntu serverga bir buyruq bilan o'rnatish (venv, systemd, PostgreSQL)
+- `deploy.sh` — Ubuntu / Linux VPS serverga bir buyruq bilan o'rnatish (venv, systemd, PostgreSQL)
 - Eski PHP botlarning aksariyati **Python'ga to'liq ko'chirilgan** (tarixiy ma'lumotlar
   migratsiya skriptlari bilan)
 

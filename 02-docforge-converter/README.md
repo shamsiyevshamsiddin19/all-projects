@@ -25,7 +25,7 @@ document-convertor/
 │   └── tuit_titul.docx      # tayyor shablon fayl
 ├── import_mysql_dump.py     # eski MySQL bazadan PostgreSQL'ga ko'chirish (bir martalik)
 ├── requirements.txt
-├── deploy.sh                # Hetzner/Ubuntu uchun o'rnatish skripti
+├── deploy.sh                # Ubuntu / Linux VPS uchun o'rnatish skripti
 └── .env.example
 ```
 

@@ -29,7 +29,7 @@ Telethon (Python) asosidagi ko'p akkauntli Telegram userbot hamda Instagram yord
 │   │   ├── control.py      # Userbot holatini boshqarish
 │   │   ├── statewatch.py   # Restartsiz sozlamalarni yangilovchi modul
 │   │   └── _state.py       # State boshqaruvi
-│   ├── deploy/             # Hetzner serveri uchun systemd va monitor skriptlari
+│   ├── deploy/             # Server (shamsiyev.uz) uchun systemd va monitor skriptlari
 │   └── persona.txt.example # AI javob uslubi va ko'rsatmalar
 └── instagram-bot/          # Instagram va Gemini AI integratsiyasi
     ├── app.py              # Instagram webhook / bot ilovasi
@@ -94,7 +94,7 @@ cp .env.example .env     # API_ID va API_HASH ni kiriting
 python3 userbot.py acc1  # acc1, acc2 yoki acc3
 ```
 
-### Serverda boshqaruv (Hetzner CX23):
+### Serverda boshqaruv (shamsiyev.uz / Oracle Cloud Stockholm):
 ```bash
 # Xizmat holatini tekshirish
 systemctl status userbot@acc1
@@ -114,4 +114,5 @@ systemctl restart userbot-panel
 ## 🔗 Aloqador manbalar
 
 - Mustaqil repozitoriy: [github.com/shamsiyevshamsiddin19/userbot](https://github.com/shamsiyevshamsiddin19/userbot)
-- Server joylashuvi: Hetzner CX23 `/opt/telegram-userbot`
+- Server joylashuvi: shamsiyev.uz (`79.76.49.83`) — `/opt/telegram-userbot`
+- Web panel: [userbot.shamsiyev.uz](https://userbot.shamsiyev.uz)

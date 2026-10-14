@@ -1,6 +1,6 @@
 """Uy kompyuteri orqali YouTube/Instagram yuklab olish — mijoz skripti.
 
-Serverdagi (Hetzner) bot ba'zi foydalanuvchilar uchun YouTube/Instagram
+Serverdagi bot ba'zi foydalanuvchilar uchun YouTube/Instagram
 havolalarini datacenter IP bloklangani uchun to'g'ridan-to'g'ri yuklay olmaydi.
 Bu skript SHU kompyuterda (uy IP, odatda bloklanmagan) ishlaydi: serverdan
 navbatdagi ishni so'raydi (pull), yt-dlp bilan yuklaydi, natijani serverga

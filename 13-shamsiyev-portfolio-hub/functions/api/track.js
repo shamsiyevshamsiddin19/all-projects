@@ -5,7 +5,7 @@
 // changes, update ONE Pages env var (TRACK_UPSTREAM) — the site never changes.
 //
 // Upstream is a DNS-only (grey-cloud, NOT Cloudflare-proxied) subdomain
-// pointing at the Hetzner server's IP. Using the bare IP directly triggers
+// pointing at the production server's IP. Using the bare IP directly triggers
 // Cloudflare error 1003 "Direct IP Access Not Allowed" — because that IP is
 // already a protected origin behind another Cloudflare-proxied domain
 // (wstore.uz) on this same server, so Cloudflare's edge blocks Workers/Pages

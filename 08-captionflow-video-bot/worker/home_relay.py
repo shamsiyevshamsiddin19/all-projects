@@ -1,6 +1,6 @@
 """Uy kompyuteri orqali video yuklab olish (YouTube/Instagram datacenter IP bloki uchun).
 
-Muammo: Hetzner (datacenter) IP'dan YouTube/Instagram ko'p hollarda "Sign in to
+Muammo: Server (datacenter) IP'dan YouTube/Instagram ko'p hollarda "Sign in to
 confirm you're not a bot" yoki 403 bilan bloklaydi. Uy/mobil IP odatda bloklanmaydi.
 
 Yechim: belgilangan admin(lar) yuborgan YouTube/Instagram havolalari uchun bot
