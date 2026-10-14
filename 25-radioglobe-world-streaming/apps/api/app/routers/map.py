@@ -78,7 +78,9 @@ async def get_countries_geojson(
     bo'lib chiqadi va ular bog'lanmay qolardi.
     """
     response.headers["Cache-Control"] = "public, max-age=600, stale-while-revalidate=86400"
-    response.headers["Content-Type"] = "application/geo+json"
+    # Content-Type QO'LDA qo'yilmaydi: FastAPI o'zi "application/json" qo'yadi va
+    # ikkitasi birikib "application/json, application/geo+json" degan buzuq
+    # qiymat hosil bo'lardi — MapLibre bunday javobni parse qila olmaydi.
 
     geojson = _load_geojson()
     counts = await cached_json(redis, "map:counts", 600, lambda: _fetch_counts(db))

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Radio, Compass, Heart, Search, Shield, Crosshair } from 'lucide-react';
 import { usePlayerStore } from '@/stores/playerStore';
@@ -10,7 +10,15 @@ import { useRouter } from 'next/navigation';
 
 export default function Header() {
   const router = useRouter();
-  const { favorites, isPlaying, playStation } = usePlayerStore();
+  const favorites = usePlayerStore((s) => s.favorites);
+  const hydrated = usePlayerStore((s) => s.hydrated);
+  const hydrate = usePlayerStore((s) => s.hydrate);
+  const playStation = usePlayerStore((s) => s.playStation);
+  const isPlaying = usePlayerStore((s) => s.isPlaying);
+
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ countries: Country[]; stations: Channel[] }>({
@@ -73,7 +81,7 @@ export default function Header() {
             >
               <Heart className="w-3.5 h-3.5 text-crimson" />
               <span>[ SEVIMLILAR ]</span>
-              {favorites.length > 0 && (
+              {hydrated && favorites.length > 0 && (
                 <span className="text-[10px] font-bold px-1.5 py-0.2 bg-crimson text-white">
                   {favorites.length}
                 </span>

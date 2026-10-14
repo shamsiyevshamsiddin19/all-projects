@@ -1,255 +1,323 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useRouter } from 'next/navigation';
-import GlobeHUD from './GlobeHUD';
-import { Country } from '@/types';
+
+import GlobeHUD from '@/components/Globe/GlobeHUD';
+import type { Country } from '@/types';
 
 interface GlobeMapProps {
   countries: Country[];
+  geojsonUrl: string;
+  /** MapLibre ishga tusholmasa chaqiriladi — ota komponent ro'yxatga o'tadi */
+  onUnsupported?: () => void;
 }
 
-export default function GlobeMap({ countries }: GlobeMapProps) {
-  const router = useRouter();
-  const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<maplibregl.Map | null>(null);
-  const [isRotating, setIsRotating] = useState(true);
-  const [hoveredCountry, setHoveredCountry] = useState<{
-    name: string;
-    flag?: string;
-    radioCount: number;
-    x: number;
-    y: number;
-  } | null>(null);
+interface HoverInfo {
+  name: string;
+  flag?: string;
+  radioCount: number;
+  x: number;
+  y: number;
+}
 
-  const hoveredStateIdRef = useRef<string | number | null>(null);
-  const isRotatingRef = useRef(true);
+// Aylanish tezligi: gradus/soniya. Har kadrda emas, vaqtga bog'lab hisoblanadi,
+// shunda tez va sekin qurilmalarda bir xil ko'rinadi.
+const ROTATION_DEG_PER_SEC = 3;
+// Aylanishni ~20 fps da yangilaymiz: 60 fps da butun xarita qayta chizilib,
+// noutbuk ventilyatori ishlab ketadi va mobil batareya tez tugaydi.
+const ROTATION_FRAME_MS = 50;
+// Foydalanuvchi globusga tekkanidan keyin shuncha vaqt aylanmaydi
+const RESUME_AFTER_INTERACTION_MS = 4000;
+
+export default function GlobeMap({ countries, geojsonUrl, onUnsupported }: GlobeMapProps) {
+  const router = useRouter();
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
+  const hoveredIdRef = useRef<string | number | null>(null);
+  const rotatingRef = useRef(true);
+  const interactionUntilRef = useRef(0);
+  const hoverRafRef = useRef<number | null>(null);
+
+  const [isRotating, setIsRotating] = useState(true);
+  const [hovered, setHovered] = useState<HoverInfo | null>(null);
+  const [ready, setReady] = useState(false);
+
+  const goToCountry = useCallback(
+    (slug: string) => {
+      if (slug) router.push(`/radio/${slug}`);
+    },
+    [router],
+  );
 
   useEffect(() => {
-    isRotatingRef.current = isRotating;
+    rotatingRef.current = isRotating;
   }, [isRotating]);
 
   useEffect(() => {
-    if (!mapContainerRef.current) return;
+    if (!containerRef.current) return;
 
-    // Create MapLibre map instance with Samolevsky monochrome/crimson theme
-    const map = new maplibregl.Map({
-      container: mapContainerRef.current,
-      style: {
-        version: 8,
-        sources: {
-          countries: {
-            type: 'geojson',
-            data: '/countries.geojson',
-            generateId: true,
-          },
-        },
-        layers: [
-          {
-            id: 'background',
-            type: 'background',
-            paint: {
-              'background-color': '#030305',
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) {
+      rotatingRef.current = false;
+      setIsRotating(false);
+    }
+
+    let map: maplibregl.Map;
+    try {
+      map = new maplibregl.Map({
+        container: containerRef.current,
+        style: {
+          version: 8,
+          // Projeksiya uslubda e'lon qilinadi — `load` hodisasini kutish shart emas
+          projection: { type: 'globe' },
+          sources: {
+            countries: {
+              type: 'geojson',
+              // Jonli hisoblagichli GeoJSON. Oldin `public/countries.geojson`
+              // o'qilardi va unda barcha radio_count = 0 edi — globus doim
+              // bo'm-bo'sh ko'rinardi.
+              data: geojsonUrl,
+              // Barqaror id — har yuklashda o'zgaradigan generateId emas,
+              // shunda feature-state (hover) to'g'ri ishlaydi
+              promoteId: 'm49',
             },
           },
-          {
-            id: 'countries-fill',
-            type: 'fill',
-            source: 'countries',
-            paint: {
-              'fill-color': [
-                'case',
-                ['boolean', ['feature-state', 'hover'], false],
-                '#ff2a4b', // Electric crimson on hover
-                [
-                  'interpolate',
-                  ['linear'],
-                  ['coalesce', ['get', 'radio_count'], 0],
-                  0, '#0a0b10',       // Deep void dark
-                  1, '#1a1820',       // Dark graphite
-                  10, '#801020',      // Muted crimson
-                  30, '#ff1a35',      // High-vis broadcast red
+          sky: {
+            'sky-color': '#05070d',
+            'sky-horizon-blend': 0.6,
+            'horizon-color': '#1a1f33',
+            'horizon-fog-blend': 0.6,
+            'fog-color': '#0a0f1c',
+            'fog-ground-blend': 0.4,
+            'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 0, 0.9, 5, 0.4],
+          },
+          layers: [
+            {
+              // Globus sferasining "okeani"
+              id: 'ocean',
+              type: 'background',
+              paint: { 'background-color': '#070a12' },
+            },
+            {
+              id: 'countries-fill',
+              type: 'fill',
+              source: 'countries',
+              paint: {
+                // Chiziqli shkala ishlamaydi: bitta davlatda 2 ta, boshqasida
+                // 500 ta stansiya bo'ladi va deyarli hamma joy bir xil qora
+                // bo'lib qoladi. Shuning uchun bosqichli (step) shkala.
+                'fill-color': [
+                  'case',
+                  ['boolean', ['feature-state', 'hover'], false],
+                  '#ff2a4b',
+                  [
+                    'step',
+                    ['coalesce', ['get', 'radio_count'], 0],
+                    '#11141c',   // 0 — stansiya yo'q
+                    1, '#2a1620',
+                    5, '#4a1824',
+                    20, '#7a1128',
+                    50, '#b01228',
+                    150, '#ff1a35',
+                  ],
                 ],
-              ],
-              'fill-opacity': [
-                'case',
-                ['boolean', ['feature-state', 'hover'], false],
-                0.95,
-                0.8,
-              ],
+                'fill-opacity': [
+                  'case',
+                  ['boolean', ['feature-state', 'hover'], false],
+                  0.95,
+                  0.85,
+                ],
+              },
             },
-          },
-          {
-            id: 'countries-border',
-            type: 'line',
-            source: 'countries',
-            paint: {
-              'line-color': [
-                'case',
-                ['boolean', ['feature-state', 'hover'], false],
-                '#ffffff',
-                '#4a4d5e',
-              ],
-              'line-width': [
-                'case',
-                ['boolean', ['feature-state', 'hover'], false],
-                2,
-                0.6,
-              ],
-              'line-opacity': 0.85,
+            {
+              id: 'countries-border',
+              type: 'line',
+              source: 'countries',
+              paint: {
+                'line-color': [
+                  'case',
+                  ['boolean', ['feature-state', 'hover'], false],
+                  '#ffffff',
+                  'rgba(180, 190, 215, 0.25)',
+                ],
+                'line-width': [
+                  'case',
+                  ['boolean', ['feature-state', 'hover'], false],
+                  1.8,
+                  0.5,
+                ],
+              },
             },
-          },
-        ],
-      },
-      center: [64.5, 41.3], // Central Asia / Uzbekistan
-      zoom: 1.7,
-      maxZoom: 6,
-      minZoom: 1,
-    });
+          ],
+        },
+        center: [64.5, 41.3],
+        zoom: 1.7,
+        minZoom: 1,
+        maxZoom: 6,
+        attributionControl: false,
+      });
+    } catch (err) {
+      // WebGL yo'q yoki GPU kontekst bermadi — ro'yxatga tushamiz
+      console.error('[globe] MapLibre ishga tushmadi:', err);
+      onUnsupported?.();
+      return;
+    }
 
     mapRef.current = map;
+    // Nosozlikni tekshirish uchun: ?debug=globe bilan ochilsa xarita
+    // instansiyasi konsoldan ko'rinadi
+    if (new URLSearchParams(window.location.search).get('debug') === 'globe') {
+      (window as unknown as { __globeMap?: unknown }).__globeMap = map;
+    }
 
-    // Set globe projection
-    map.on('load', () => {
-      try {
-        (map as any).setProjection({ type: 'globe' });
-      } catch (e) {
-        console.warn('MapLibre globe projection notice:', e);
-      }
+    /*
+      Yuklanish qoplamasini olib tashlash bitta hodisaga bog'lanmaydi.
+      `load` ba'zi holatlarda umuman kelmaydi (uslub manbasi sekin, tab fonda,
+      GPU kech tayyor) — bunday paytda qoplama ishlayotgan globusni butunlay
+      yopib turardi. Shuning uchun uchta mustaqil signal bor.
+    */
+    const reveal = () => setReady(true);
+    map.on('load', reveal);
+    map.once('idle', reveal);
+    const revealTimer = setTimeout(reveal, 4000);
+
+    map.on('error', (e) => {
+      // Manba yuklanmasa yoki uslubda xato bo'lsa — jim qolmaymiz
+      console.error('[globe] xato:', e?.error?.message || e);
     });
 
-    // Auto-rotate globe
-    let animationFrameId: number;
-    const rotateGlobe = () => {
-      if (isRotatingRef.current && map) {
-        const center = map.getCenter();
-        center.lng = (center.lng + 0.1) % 360;
-        map.setCenter(center);
-      }
-      animationFrameId = requestAnimationFrame(rotateGlobe);
+    // --- Aylanish ---
+    let timer: ReturnType<typeof setInterval> | null = null;
+    let lastTick = performance.now();
+
+    const tick = () => {
+      const now = performance.now();
+      const deltaSec = (now - lastTick) / 1000;
+      lastTick = now;
+
+      if (!rotatingRef.current || now < interactionUntilRef.current) return;
+      if (document.hidden) return; // ko'rinmayotgan tabda ishlamaymiz
+
+      const center = map.getCenter();
+      center.lng += ROTATION_DEG_PER_SEC * deltaSec;
+      map.setCenter(center);
     };
-    animationFrameId = requestAnimationFrame(rotateGlobe);
 
-    // Hover interactions
-    map.on('mousemove', 'countries-fill', (e) => {
-      if (e.features && e.features.length > 0) {
-        const feature = e.features[0];
-        const featureId = feature.id;
-        const props = feature.properties || {};
+    timer = setInterval(tick, ROTATION_FRAME_MS);
 
-        if (hoveredStateIdRef.current !== null && hoveredStateIdRef.current !== featureId) {
-          map.setFeatureState(
-            { source: 'countries', id: hoveredStateIdRef.current },
-            { hover: false }
-          );
-        }
+    // Foydalanuvchi globusni ushlaganda aylanish to'xtaydi
+    const pauseRotation = () => {
+      interactionUntilRef.current = performance.now() + RESUME_AFTER_INTERACTION_MS;
+    };
+    map.on('mousedown', pauseRotation);
+    map.on('touchstart', pauseRotation);
+    map.on('wheel', pauseRotation);
+    map.on('dragstart', pauseRotation);
 
-        hoveredStateIdRef.current = featureId ?? null;
-        if (featureId !== undefined) {
-          map.setFeatureState(
-            { source: 'countries', id: featureId },
-            { hover: true }
-          );
-        }
-
-        map.getCanvas().style.cursor = 'crosshair';
-
-        setHoveredCountry({
-          name: props.name_uz || props.name_en || 'Sector',
-          flag: props.flag_emoji,
-          radioCount: props.radio_count || 0,
-          x: e.point.x,
-          y: e.point.y,
-        });
+    // --- Hover ---
+    const clearHover = () => {
+      if (hoveredIdRef.current !== null) {
+        map.setFeatureState({ source: 'countries', id: hoveredIdRef.current }, { hover: false });
+        hoveredIdRef.current = null;
       }
+    };
+
+    map.on('mousemove', 'countries-fill', (e) => {
+      const feature = e.features?.[0];
+      if (!feature) return;
+
+      const id = feature.id ?? null;
+      if (hoveredIdRef.current !== id) {
+        clearHover();
+        if (id !== null) {
+          map.setFeatureState({ source: 'countries', id }, { hover: true });
+          hoveredIdRef.current = id;
+        }
+      }
+      map.getCanvas().style.cursor = 'crosshair';
+
+      // React holatini har piksel harakatida emas, kadrga bir marta
+      // yangilaymiz — aks holda render bo'roni bo'ladi
+      if (hoverRafRef.current !== null) cancelAnimationFrame(hoverRafRef.current);
+      const props = feature.properties || {};
+      const point = e.point;
+      hoverRafRef.current = requestAnimationFrame(() => {
+        setHovered({
+          name: props.name_uz || props.name_en || '—',
+          flag: props.flag_emoji,
+          radioCount: Number(props.radio_count) || 0,
+          x: point.x,
+          y: point.y,
+        });
+      });
     });
 
     map.on('mouseleave', 'countries-fill', () => {
-      if (hoveredStateIdRef.current !== null) {
-        map.setFeatureState(
-          { source: 'countries', id: hoveredStateIdRef.current },
-          { hover: false }
-        );
-      }
-      hoveredStateIdRef.current = null;
+      clearHover();
       map.getCanvas().style.cursor = '';
-      setHoveredCountry(null);
+      if (hoverRafRef.current !== null) cancelAnimationFrame(hoverRafRef.current);
+      setHovered(null);
     });
 
-    // Click interaction
+    // --- Bosish ---
     map.on('click', 'countries-fill', (e) => {
-      if (e.features && e.features.length > 0) {
-        const props = e.features[0].properties || {};
-        const slug = props.slug || (props.name_en ? props.name_en.toLowerCase().replace(/\s+/g, '-') : '');
-        if (slug) {
-          router.push(`/radio/${slug}`);
-        }
-      }
+      const props = e.features?.[0]?.properties;
+      // slug endi GeoJSON ichida keladi. Oldin u yo'q edi va nomdan yasalardi,
+      // natijada ko'p davlatda 404 chiqardi.
+      if (props?.slug) goToCountry(String(props.slug));
     });
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
+      clearTimeout(revealTimer);
+      if (timer) clearInterval(timer);
+      if (hoverRafRef.current !== null) cancelAnimationFrame(hoverRafRef.current);
       map.remove();
+      mapRef.current = null;
     };
-  }, [router]);
-
-  const handleRotateToggle = () => {
-    setIsRotating(!isRotating);
-  };
-
-  const handleZoomIn = () => {
-    if (mapRef.current) mapRef.current.zoomIn({ duration: 300 });
-  };
-
-  const handleZoomOut = () => {
-    if (mapRef.current) mapRef.current.zoomOut({ duration: 300 });
-  };
-
-  const handleCountrySelect = (slug: string) => {
-    router.push(`/radio/${slug}`);
-  };
+  }, [geojsonUrl, goToCountry]);
 
   return (
-    <div className="relative w-full h-[calc(100vh-60px)] min-h-[620px] bg-void-950 overflow-hidden select-none">
-      {/* 3D Map canvas container */}
-      <div ref={mapContainerRef} className="w-full h-full" />
+    <div className="relative w-full h-[calc(100vh-7rem)] min-h-[560px] bg-void-950 overflow-hidden select-none">
+      <div ref={containerRef} className="w-full h-full" />
 
-      {/* Atmospheric radial vignette */}
-      <div className="absolute inset-0 pointer-events-none bg-radial from-transparent via-transparent to-void-950/90" />
+      {!ready ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-void-950">
+          <div className="w-12 h-12 rounded-full border-2 border-crimson/20 border-t-crimson animate-spin" />
+        </div>
+      ) : null}
 
-      {/* Samolevsky HUD overlay (Orbital rings, Broadcast badge, Equalizer spectrum) */}
+      <div className="absolute inset-0 pointer-events-none bg-gradient-radial from-transparent via-transparent to-void-950/80" />
+
       <GlobeHUD
         isRotating={isRotating}
-        onRotateToggle={handleRotateToggle}
-        onZoomIn={handleZoomIn}
-        onZoomOut={handleZoomOut}
-        onCountrySelect={handleCountrySelect}
+        onRotateToggle={() => setIsRotating((v) => !v)}
+        onZoomIn={() => mapRef.current?.zoomIn({ duration: 300 })}
+        onZoomOut={() => mapRef.current?.zoomOut({ duration: 300 })}
+        onCountrySelect={goToCountry}
         quickCountries={countries}
       />
 
-      {/* Tactical hover crosshair callout */}
-      {hoveredCountry && (
+      {hovered ? (
         <div
-          className="absolute z-30 pointer-events-none -translate-x-1/2 -translate-y-full mb-3 px-3 py-2 rounded-none tactical-box shadow-crimson-glow text-white animate-in fade-in zoom-in-95 duration-100"
-          style={{ left: `${hoveredCountry.x}px`, top: `${hoveredCountry.y}px` }}
+          className="absolute z-30 pointer-events-none -translate-x-1/2 -translate-y-[calc(100%+12px)] px-3 py-2 tactical-box shadow-crimson-glow text-white"
+          style={{ left: hovered.x, top: hovered.y }}
         >
           <div className="flex items-center gap-2">
             <span className="text-crimson font-mono font-bold text-sm">⌖</span>
-            <span className="text-base">{hoveredCountry.flag || '🌍'}</span>
+            <span className="text-base">{hovered.flag || '🌍'}</span>
             <span className="text-xs font-mono font-bold tracking-wider uppercase">
-              {hoveredCountry.name}
+              {hovered.name}
             </span>
           </div>
           <div className="flex items-center justify-between gap-3 mt-1 pt-1 border-t border-void-700/80 font-mono text-[10px]">
-            <span className="text-slate-400">SIGNALS:</span>
-            <span className="text-crimson-bright font-bold">
-              {hoveredCountry.radioCount} NODES
-            </span>
+            <span className="text-slate-400">STANSIYA:</span>
+            <span className="text-crimson-bright font-bold">{hovered.radioCount}</span>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -1,13 +1,28 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { Heart, Radio, ArrowLeft } from 'lucide-react';
 import { usePlayerStore } from '@/stores/playerStore';
 import StationCard from '@/components/Country/StationCard';
 
 export default function FavoritesPage() {
-  const { favorites } = usePlayerStore();
+  const favorites = usePlayerStore((s) => s.favorites);
+  const hydrated = usePlayerStore((s) => s.hydrated);
+  const hydrate = usePlayerStore((s) => s.hydrate);
+
+  // Sevimlilar localStorage'da — ular faqat mijozda o'qiladi
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
+
+  if (!hydrated) {
+    return (
+      <div className="min-h-screen bg-void-950 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-full border-2 border-crimson/20 border-t-crimson animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-void-950 py-8 px-4 lg:px-8 font-mono">
@@ -18,7 +33,7 @@ export default function FavoritesPage() {
             className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors py-1.5 px-3 bg-void-900 border border-void-750 hover:border-crimson"
           >
             <ArrowLeft className="w-3.5 h-3.5 text-crimson" />
-            <span>[ RETURN TO GLOBE COMMAND ]</span>
+            <span>Globusga qaytish</span>
           </Link>
         </div>
 
@@ -28,7 +43,7 @@ export default function FavoritesPage() {
           </div>
           <div>
             <h1 className="text-2xl sm:text-3xl font-black text-white tracking-wider uppercase">
-              SEVIMLI RADIOLAR [ FAVORITES ]
+              Sevimli radiolar
             </h1>
             <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
               Siz saqlagan barcha sevimli stansiyalar ro'yxati (jami {favorites.length} ta).

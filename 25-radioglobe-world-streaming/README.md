@@ -70,6 +70,7 @@ Batafsil: [`docs/01-arxitektura.md`](./docs/01-arxitektura.md)
 | [`docs/05-manbalar.md`](./docs/05-manbalar.md) | Kontent manbalari (radio-browser, iptv-org), ingest, huquqiy jihat |
 | [`docs/06-tuzoqlar.md`](./docs/06-tuzoqlar.md) | ⚠️ **Eng muhim fayl** — CORS, mixed content, SSRF, SEO/WebGL ziddiyati |
 | [`docs/07-reja.md`](./docs/07-reja.md) | Bosqichlar (roadmap), har bir bosqichning "tayyor" mezoni |
+| [`docs/08-tuzatishlar.md`](./docs/08-tuzatishlar.md) | Audit natijasi — topilgan 45 ta muammo va ularning holati |
 
 ---
 
@@ -88,3 +89,51 @@ Batafsil: [`docs/01-arxitektura.md`](./docs/01-arxitektura.md)
 Litsenziya: [MIT](./LICENSE)
 
 [![GitHub](https://img.shields.io/badge/GitHub-@shamsiyevshamsiddin19-181717?logo=github&logoColor=white)](https://github.com/shamsiyevshamsiddin19)
+
+---
+
+## ⚙️ Ishga tushirish
+
+### Serverda (production)
+
+```bash
+cd infra
+cp .env.example .env     # va barcha bo'sh qiymatlarni to'ldiring
+./deploy.sh
+```
+
+Sirlarni yaratish:
+```bash
+openssl rand -base64 32                                  # parollar uchun
+python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # PROXY_SECRET_KEY
+```
+
+Reverse proxy: `infra/nginx.conf` ni `/etc/nginx/conf.d/` ga nusxalang.
+
+### Lokal ishlab chiqish
+
+```bash
+# 1. Baza va kesh
+docker compose -f infra/docker-compose.yml up -d postgres redis
+
+# 2. Migratsiyalar va ma'lumot
+cd apps/api && alembic upgrade head
+cd ../worker && python build_countries.py && python seed_countries.py && python ingest.py
+
+# 3. API
+cd ../api && uvicorn app.main:app --reload
+
+# 4. Frontend
+cd ../web && npm install && npm run dev
+```
+
+### Worker vazifalari
+
+`apps/worker/scheduler.py` bitta jarayonda hammasini bajaradi:
+
+| Vazifa | Chastota | Buyruq (qo'lda) |
+| :--- | :--- | :--- |
+| Oqimlarni tekshirish | har 10 daqiqa | `python health_checker.py` |
+| radio-browser sinxronizatsiyasi | kuniga 1 marta | `python ingest.py` |
+| Partitsiya va tozalash | kuniga 1 marta | — |
+| Davlatlar ma'lumotini qayta qurish | qo'lda | `python build_countries.py` |

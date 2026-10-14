@@ -119,6 +119,8 @@ services:
       INTERNAL_API_URL: http://api:8000/api/v1
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
       NEXT_PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:-https://radio.shamsiyev.uz}
+      # Deploydan keyin keshni darhol yangilash uchun
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET:?REVALIDATE_SECRET kerak}
     networks: [radioglobe]
 
 volumes:
