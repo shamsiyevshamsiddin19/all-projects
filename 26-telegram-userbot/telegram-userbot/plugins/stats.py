@@ -56,33 +56,35 @@ async def collect_account_stats(client):
         }
 
         count = 0
-        async for d in client.iter_dialogs(limit=300):
+        async for d in client.iter_dialogs(limit=600):
             count += 1
-            is_user = d.is_user
-            is_group = d.is_group
-            is_channel = d.is_channel
             unread = d.unread_count or 0
             stats["summary"]["unread_messages"] += unread
 
             ent = d.entity
             is_creator = getattr(ent, "creator", False)
             admin_rights = getattr(ent, "admin_rights", None) is not None
+            is_megagroup = bool(getattr(ent, "megagroup", False))
+            username = getattr(ent, "username", "") or ""
 
             title = d.name or "Noma'lum"
             chat_id = d.id
 
-            if is_user:
+            # Aniq turlarga ajratish:
+            # Telegramda superguruhlar Channel(megagroup=True) hisoblanadi.
+            if d.is_user:
                 if getattr(ent, "bot", False):
                     stats["summary"]["bots"] += 1
                 else:
                     stats["summary"]["private_chats"] += 1
-            elif is_group:
+            elif d.is_group or is_megagroup:
                 stats["summary"]["groups"] += 1
                 if is_creator:
                     stats["summary"]["created_groups_count"] += 1
                     stats["created_groups"].append({
                         "id": chat_id,
                         "title": title,
+                        "username": username,
                         "unread": unread,
                     })
                 elif admin_rights:
@@ -90,15 +92,17 @@ async def collect_account_stats(client):
                     stats["admin_chats"].append({
                         "id": chat_id,
                         "title": title,
+                        "username": username,
                         "type": "group",
                     })
-            elif is_channel:
+            elif d.is_channel and not is_megagroup:
                 stats["summary"]["channels"] += 1
                 if is_creator:
                     stats["summary"]["created_channels_count"] += 1
                     stats["created_channels"].append({
                         "id": chat_id,
                         "title": title,
+                        "username": username,
                         "unread": unread,
                     })
                 elif admin_rights:
@@ -106,17 +110,18 @@ async def collect_account_stats(client):
                     stats["admin_chats"].append({
                         "id": chat_id,
                         "title": title,
+                        "username": username,
                         "type": "channel",
                     })
 
-            if len(stats["recent_dialogs"]) < 8:
+            if len(stats["recent_dialogs"]) < 12:
                 date_str = ""
                 if hasattr(d, "date") and d.date:
                     date_str = d.date.strftime("%H:%M")
                 chat_type = "user"
-                if is_channel:
+                if d.is_channel and not is_megagroup:
                     chat_type = "channel"
-                elif is_group:
+                elif d.is_group or is_megagroup:
                     chat_type = "group"
                 elif getattr(ent, "bot", False):
                     chat_type = "bot"
@@ -124,6 +129,7 @@ async def collect_account_stats(client):
                 stats["recent_dialogs"].append({
                     "id": chat_id,
                     "title": title,
+                    "username": username,
                     "type": chat_type,
                     "unread": unread,
                     "date": date_str,
@@ -164,14 +170,43 @@ async def stats_cmd(event):
 
 
 async def _background_loop(client):
-    """Har 10 daqiqada statistikani yangilab turish."""
+    """Fon rejimida har 10 daqiqada yoki yangilash flag fayli paydo bo'lganda statistika yig'ish."""
     await asyncio.sleep(4)
+    # Dastlabki ishga tushganda yig'ish
+    await collect_account_stats(client)
+
+    flag_acc = os.path.join(DATA_DIR, f"refresh_stats_{config.SESSION}.flag")
+    flag_all = os.path.join(DATA_DIR, "refresh_stats_all.flag")
+
+    last_periodic = time.time()
+    last_flag_mtime = 0.0
+
     while True:
-        try:
-            await collect_account_stats(client)
-        except Exception:  # noqa: BLE001
-            pass
-        await asyncio.sleep(600)
+        await asyncio.sleep(3)
+        now = time.time()
+        need_refresh = False
+
+        if os.path.exists(flag_acc):
+            try:
+                os.remove(flag_acc)
+            except Exception:  # noqa: BLE001
+                pass
+            need_refresh = True
+        elif os.path.exists(flag_all):
+            try:
+                mtime = os.path.getmtime(flag_all)
+                if mtime > last_flag_mtime:
+                    last_flag_mtime = mtime
+                    need_refresh = True
+            except Exception:  # noqa: BLE001
+                pass
+
+        if need_refresh or (now - last_periodic >= 600):
+            try:
+                await collect_account_stats(client)
+            except Exception as e:  # noqa: BLE001
+                logger.error("Statistika yig'ishda xatolik: %s", e)
+            last_periodic = now
 
 
 def register(client):
