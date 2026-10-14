@@ -1,0 +1,4163 @@
+[
+ {
+  "iso2": "AD",
+  "iso3": "AND",
+  "m49": 20,
+  "name_en": "Andorra",
+  "name_uz": "Andorra",
+  "slug": "andorra",
+  "continent": "—",
+  "flag_emoji": "🇦🇩",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "AE",
+  "iso3": "ARE",
+  "m49": 784,
+  "name_en": "United Arab Emirates",
+  "name_uz": "Birlashgan Arab Amirliklari",
+  "slug": "united-arab-emirates",
+  "continent": "Osiyo",
+  "flag_emoji": "🇦🇪",
+  "centroid_lat": 24.276,
+  "centroid_lon": 53.9885,
+  "bbox": [
+   51.58,
+   22.497,
+   56.397,
+   26.055
+  ]
+ },
+ {
+  "iso2": "AF",
+  "iso3": "AFG",
+  "m49": 4,
+  "name_en": "Afghanistan",
+  "name_uz": "Afg'oniston",
+  "slug": "afghanistan",
+  "continent": "Osiyo",
+  "flag_emoji": "🇦🇫",
+  "centroid_lat": 33.9025,
+  "centroid_lon": 67.843,
+  "bbox": [
+   60.528,
+   29.319,
+   75.158,
+   38.486
+  ]
+ },
+ {
+  "iso2": "AG",
+  "iso3": "ATG",
+  "m49": 28,
+  "name_en": "Antigua and Barbuda",
+  "name_uz": "Antigua and Barbuda",
+  "slug": "antigua-and-barbuda",
+  "continent": "—",
+  "flag_emoji": "🇦🇬",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "AI",
+  "iso3": "AIA",
+  "m49": 660,
+  "name_en": "Anguilla",
+  "name_uz": "Anguilla",
+  "slug": "anguilla",
+  "continent": "—",
+  "flag_emoji": "🇦🇮",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "AL",
+  "iso3": "ALB",
+  "m49": 8,
+  "name_en": "Albania",
+  "name_uz": "Albaniya",
+  "slug": "albania",
+  "continent": "Yevropa",
+  "flag_emoji": "🇦🇱",
+  "centroid_lat": 41.1565,
+  "centroid_lon": 20.162,
+  "bbox": [
+   19.304,
+   39.625,
+   21.02,
+   42.688
+  ]
+ },
+ {
+  "iso2": "AM",
+  "iso3": "ARM",
+  "m49": 51,
+  "name_en": "Armenia",
+  "name_uz": "Armaniston",
+  "slug": "armenia",
+  "continent": "Osiyo",
+  "flag_emoji": "🇦🇲",
+  "centroid_lat": 39.9945,
+  "centroid_lon": 45.0445,
+  "bbox": [
+   43.583,
+   38.741,
+   46.506,
+   41.248
+  ]
+ },
+ {
+  "iso2": "AO",
+  "iso3": "AGO",
+  "m49": 24,
+  "name_en": "Angola",
+  "name_uz": "Angola",
+  "slug": "angola",
+  "continent": "Afrika",
+  "flag_emoji": "🇦🇴",
+  "centroid_lat": -11.8975,
+  "centroid_lon": 17.86,
+  "bbox": [
+   11.64,
+   -17.931,
+   24.08,
+   -5.864
+  ]
+ },
+ {
+  "iso2": "AQ",
+  "iso3": "ATA",
+  "m49": 10,
+  "name_en": "Antarctica",
+  "name_uz": "Antarktida",
+  "slug": "antarctica",
+  "continent": "Antarktida",
+  "flag_emoji": "🇦🇶",
+  "centroid_lat": -76.6355,
+  "centroid_lon": 0.0,
+  "bbox": [
+   -180.0,
+   -90.0,
+   180.0,
+   -63.271
+  ]
+ },
+ {
+  "iso2": "AR",
+  "iso3": "ARG",
+  "m49": 32,
+  "name_en": "Argentina",
+  "name_uz": "Argentina",
+  "slug": "argentina",
+  "continent": "Janubiy Amerika",
+  "flag_emoji": "🇦🇷",
+  "centroid_lat": -37.091,
+  "centroid_lon": -63.5215,
+  "bbox": [
+   -73.415,
+   -52.35,
+   -53.628,
+   -21.832
+  ]
+ },
+ {
+  "iso2": "AS",
+  "iso3": "ASM",
+  "m49": 16,
+  "name_en": "American Samoa",
+  "name_uz": "American Samoa",
+  "slug": "american-samoa",
+  "continent": "—",
+  "flag_emoji": "🇦🇸",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "AT",
+  "iso3": "AUT",
+  "m49": 40,
+  "name_en": "Austria",
+  "name_uz": "Avstriya",
+  "slug": "austria",
+  "continent": "Yevropa",
+  "flag_emoji": "🇦🇹",
+  "centroid_lat": 47.7355,
+  "centroid_lon": 13.23,
+  "bbox": [
+   9.48,
+   46.432,
+   16.98,
+   49.039
+  ]
+ },
+ {
+  "iso2": "AU",
+  "iso3": "AUS",
+  "m49": 36,
+  "name_en": "Australia",
+  "name_uz": "Avstraliya",
+  "slug": "australia",
+  "continent": "Okeaniya",
+  "flag_emoji": "🇦🇺",
+  "centroid_lat": -24.852,
+  "centroid_lon": 133.454,
+  "bbox": [
+   113.339,
+   -39.036,
+   153.569,
+   -10.668
+  ]
+ },
+ {
+  "iso2": "AW",
+  "iso3": "ABW",
+  "m49": 533,
+  "name_en": "Aruba",
+  "name_uz": "Aruba",
+  "slug": "aruba",
+  "continent": "—",
+  "flag_emoji": "🇦🇼",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "AX",
+  "iso3": "ALA",
+  "m49": 248,
+  "name_en": "Åland Islands",
+  "name_uz": "Åland Islands",
+  "slug": "aland-islands",
+  "continent": "—",
+  "flag_emoji": "🇦🇽",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "AZ",
+  "iso3": "AZE",
+  "m49": 31,
+  "name_en": "Azerbaijan",
+  "name_uz": "Ozarbayjon",
+  "slug": "azerbaijan",
+  "continent": "Osiyo",
+  "flag_emoji": "🇦🇿",
+  "centroid_lat": 40.0655,
+  "centroid_lon": 47.6825,
+  "bbox": [
+   44.972,
+   38.27,
+   50.393,
+   41.861
+  ]
+ },
+ {
+  "iso2": "BA",
+  "iso3": "BIH",
+  "m49": 70,
+  "name_en": "Bosnia and Herzegovina",
+  "name_uz": "Bosniya va Gertsegovina",
+  "slug": "bosnia-and-herzegovina",
+  "continent": "Yevropa",
+  "flag_emoji": "🇧🇦",
+  "centroid_lat": 43.942,
+  "centroid_lon": 17.675,
+  "bbox": [
+   15.75,
+   42.65,
+   19.6,
+   45.234
+  ]
+ },
+ {
+  "iso2": "BB",
+  "iso3": "BRB",
+  "m49": 52,
+  "name_en": "Barbados",
+  "name_uz": "Barbados",
+  "slug": "barbados",
+  "continent": "—",
+  "flag_emoji": "🇧🇧",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "BD",
+  "iso3": "BGD",
+  "m49": 50,
+  "name_en": "Bangladesh",
+  "name_uz": "Bangladesh",
+  "slug": "bangladesh",
+  "continent": "Osiyo",
+  "flag_emoji": "🇧🇩",
+  "centroid_lat": 23.559,
+  "centroid_lon": 90.3785,
+  "bbox": [
+   88.084,
+   20.671,
+   92.673,
+   26.447
+  ]
+ },
+ {
+  "iso2": "BE",
+  "iso3": "BEL",
+  "m49": 56,
+  "name_en": "Belgium",
+  "name_uz": "Belgiya",
+  "slug": "belgium",
+  "continent": "Yevropa",
+  "flag_emoji": "🇧🇪",
+  "centroid_lat": 50.502,
+  "centroid_lon": 4.3355,
+  "bbox": [
+   2.514,
+   49.529,
+   6.157,
+   51.475
+  ]
+ },
+ {
+  "iso2": "BF",
+  "iso3": "BFA",
+  "m49": 854,
+  "name_en": "Burkina Faso",
+  "name_uz": "Burkina-Faso",
+  "slug": "burkina-faso",
+  "continent": "Afrika",
+  "flag_emoji": "🇧🇫",
+  "centroid_lat": 12.3635,
+  "centroid_lon": -1.647,
+  "bbox": [
+   -5.471,
+   9.611,
+   2.177,
+   15.116
+  ]
+ },
+ {
+  "iso2": "BG",
+  "iso3": "BGR",
+  "m49": 100,
+  "name_en": "Bulgaria",
+  "name_uz": "Bolgariya",
+  "slug": "bulgaria",
+  "continent": "Yevropa",
+  "flag_emoji": "🇧🇬",
+  "centroid_lat": 42.7345,
+  "centroid_lon": 25.4695,
+  "bbox": [
+   22.381,
+   41.234,
+   28.558,
+   44.235
+  ]
+ },
+ {
+  "iso2": "BH",
+  "iso3": "BHR",
+  "m49": 48,
+  "name_en": "Bahrain",
+  "name_uz": "Bahrayn",
+  "slug": "bahrain",
+  "continent": "—",
+  "flag_emoji": "🇧🇭",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "BI",
+  "iso3": "BDI",
+  "m49": 108,
+  "name_en": "Burundi",
+  "name_uz": "Burundi",
+  "slug": "burundi",
+  "continent": "Afrika",
+  "flag_emoji": "🇧🇮",
+  "centroid_lat": -3.424,
+  "centroid_lon": 29.8885,
+  "bbox": [
+   29.025,
+   -4.5,
+   30.752,
+   -2.348
+  ]
+ },
+ {
+  "iso2": "BJ",
+  "iso3": "BEN",
+  "m49": 204,
+  "name_en": "Benin",
+  "name_uz": "Benin",
+  "slug": "benin",
+  "continent": "Afrika",
+  "flag_emoji": "🇧🇯",
+  "centroid_lat": 9.189,
+  "centroid_lon": 2.2845,
+  "bbox": [
+   0.772,
+   6.142,
+   3.797,
+   12.236
+  ]
+ },
+ {
+  "iso2": "BL",
+  "iso3": "BLM",
+  "m49": 652,
+  "name_en": "Saint Barthélemy",
+  "name_uz": "Saint Barthélemy",
+  "slug": "saint-barthelemy",
+  "continent": "—",
+  "flag_emoji": "🇧🇱",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "BM",
+  "iso3": "BMU",
+  "m49": 60,
+  "name_en": "Bermuda",
+  "name_uz": "Bermuda",
+  "slug": "bermuda",
+  "continent": "—",
+  "flag_emoji": "🇧🇲",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "BN",
+  "iso3": "BRN",
+  "m49": 96,
+  "name_en": "Brunei Darussalam",
+  "name_uz": "Bruney",
+  "slug": "brunei-darussalam",
+  "continent": "Osiyo",
+  "flag_emoji": "🇧🇳",
+  "centroid_lat": 4.728,
+  "centroid_lon": 114.8275,
+  "bbox": [
+   114.204,
+   4.008,
+   115.451,
+   5.448
+  ]
+ },
+ {
+  "iso2": "BO",
+  "iso3": "BOL",
+  "m49": 68,
+  "name_en": "Bolivia",
+  "name_uz": "Boliviya",
+  "slug": "bolivia",
+  "continent": "Janubiy Amerika",
+  "flag_emoji": "🇧🇴",
+  "centroid_lat": -16.3175,
+  "centroid_lon": -63.544,
+  "bbox": [
+   -69.59,
+   -22.873,
+   -57.498,
+   -9.762
+  ]
+ },
+ {
+  "iso2": "BQ",
+  "iso3": "BES",
+  "m49": 535,
+  "name_en": "Bonaire, Sint Eustatius and Saba",
+  "name_uz": "Bonaire, Sint Eustatius and Saba",
+  "slug": "bonaire-sint-eustatius-and-saba",
+  "continent": "—",
+  "flag_emoji": "🇧🇶",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "BR",
+  "iso3": "BRA",
+  "m49": 76,
+  "name_en": "Brazil",
+  "name_uz": "Braziliya",
+  "slug": "brazil",
+  "continent": "Janubiy Amerika",
+  "flag_emoji": "🇧🇷",
+  "centroid_lat": -14.262,
+  "centroid_lon": -54.3585,
+  "bbox": [
+   -73.987,
+   -33.768,
+   -34.73,
+   5.244
+  ]
+ },
+ {
+  "iso2": "BS",
+  "iso3": "BHS",
+  "m49": 44,
+  "name_en": "Bahamas",
+  "name_uz": "Bagama orollari",
+  "slug": "bahamas",
+  "continent": "Shimoliy Amerika",
+  "flag_emoji": "🇧🇸",
+  "centroid_lat": 24.46,
+  "centroid_lon": -77.9715,
+  "bbox": [
+   -78.408,
+   23.71,
+   -77.535,
+   25.21
+  ]
+ },
+ {
+  "iso2": "BT",
+  "iso3": "BTN",
+  "m49": 64,
+  "name_en": "Bhutan",
+  "name_uz": "Butan",
+  "slug": "bhutan",
+  "continent": "Osiyo",
+  "flag_emoji": "🇧🇹",
+  "centroid_lat": 27.5075,
+  "centroid_lon": 90.459,
+  "bbox": [
+   88.814,
+   26.719,
+   92.104,
+   28.296
+  ]
+ },
+ {
+  "iso2": "BV",
+  "iso3": "BVT",
+  "m49": 74,
+  "name_en": "Bouvet Island",
+  "name_uz": "Bouvet Island",
+  "slug": "bouvet-island",
+  "continent": "—",
+  "flag_emoji": "🇧🇻",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "BW",
+  "iso3": "BWA",
+  "m49": 72,
+  "name_en": "Botswana",
+  "name_uz": "Botsvana",
+  "slug": "botswana",
+  "continent": "Afrika",
+  "flag_emoji": "🇧🇼",
+  "centroid_lat": -22.2455,
+  "centroid_lon": 24.6635,
+  "bbox": [
+   19.895,
+   -26.829,
+   29.432,
+   -17.662
+  ]
+ },
+ {
+  "iso2": "BY",
+  "iso3": "BLR",
+  "m49": 112,
+  "name_en": "Belarus",
+  "name_uz": "Belarus",
+  "slug": "belarus",
+  "continent": "Yevropa",
+  "flag_emoji": "🇧🇾",
+  "centroid_lat": 53.7445,
+  "centroid_lon": 27.9465,
+  "bbox": [
+   23.199,
+   51.32,
+   32.694,
+   56.169
+  ]
+ },
+ {
+  "iso2": "BZ",
+  "iso3": "BLZ",
+  "m49": 84,
+  "name_en": "Belize",
+  "name_uz": "Beliz",
+  "slug": "belize",
+  "continent": "Shimoliy Amerika",
+  "flag_emoji": "🇧🇿",
+  "centroid_lat": 17.1935,
+  "centroid_lon": -88.668,
+  "bbox": [
+   -89.229,
+   15.887,
+   -88.107,
+   18.5
+  ]
+ },
+ {
+  "iso2": "CA",
+  "iso3": "CAN",
+  "m49": 124,
+  "name_en": "Canada",
+  "name_uz": "Kanada",
+  "slug": "canada",
+  "continent": "Shimoliy Amerika",
+  "flag_emoji": "🇨🇦",
+  "centroid_lat": 56.798,
+  "centroid_lon": -98.3405,
+  "bbox": [
+   -140.998,
+   41.675,
+   -55.683,
+   71.921
+  ]
+ },
+ {
+  "iso2": "CC",
+  "iso3": "CCK",
+  "m49": 166,
+  "name_en": "Cocos (Keeling) Islands",
+  "name_uz": "Cocos (Keeling) Islands",
+  "slug": "cocos-keeling-islands",
+  "continent": "—",
+  "flag_emoji": "🇨🇨",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "CD",
+  "iso3": "COD",
+  "m49": 180,
+  "name_en": "Democratic Republic of the Congo",
+  "name_uz": "Kongo Demokratik Respublikasi",
+  "slug": "democratic-republic-of-the-congo",
+  "continent": "Afrika",
+  "flag_emoji": "🇨🇩",
+  "centroid_lat": -4.0005,
+  "centroid_lon": 21.678,
+  "bbox": [
+   12.182,
+   -13.257,
+   31.174,
+   5.256
+  ]
+ },
+ {
+  "iso2": "CF",
+  "iso3": "CAF",
+  "m49": 140,
+  "name_en": "Central African Republic",
+  "name_uz": "Markaziy Afrika Respublikasi",
+  "slug": "central-african-republic",
+  "continent": "Afrika",
+  "flag_emoji": "🇨🇫",
+  "centroid_lat": 6.705,
+  "centroid_lon": 20.9165,
+  "bbox": [
+   14.459,
+   2.268,
+   27.374,
+   11.142
+  ]
+ },
+ {
+  "iso2": "CG",
+  "iso3": "COG",
+  "m49": 178,
+  "name_en": "Republic of Congo",
+  "name_uz": "Kongo Respublikasi",
+  "slug": "republic-of-congo",
+  "continent": "Afrika",
+  "flag_emoji": "🇨🇬",
+  "centroid_lat": -0.655,
+  "centroid_lon": 14.7735,
+  "bbox": [
+   11.094,
+   -5.038,
+   18.453,
+   3.728
+  ]
+ },
+ {
+  "iso2": "CH",
+  "iso3": "CHE",
+  "m49": 756,
+  "name_en": "Switzerland",
+  "name_uz": "Shveytsariya",
+  "slug": "switzerland",
+  "continent": "Yevropa",
+  "flag_emoji": "🇨🇭",
+  "centroid_lat": 46.804,
+  "centroid_lon": 8.233,
+  "bbox": [
+   6.023,
+   45.777,
+   10.443,
+   47.831
+  ]
+ },
+ {
+  "iso2": "CI",
+  "iso3": "CIV",
+  "m49": 384,
+  "name_en": "Côte d'Ivoire",
+  "name_uz": "Kot-d'Ivuar",
+  "slug": "cote-d-ivoire",
+  "continent": "Afrika",
+  "flag_emoji": "🇨🇮",
+  "centroid_lat": 7.431,
+  "centroid_lon": -5.5825,
+  "bbox": [
+   -8.603,
+   4.338,
+   -2.562,
+   10.524
+  ]
+ },
+ {
+  "iso2": "CK",
+  "iso3": "COK",
+  "m49": 184,
+  "name_en": "Cook Islands",
+  "name_uz": "Cook Islands",
+  "slug": "cook-islands",
+  "continent": "—",
+  "flag_emoji": "🇨🇰",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "CL",
+  "iso3": "CHL",
+  "m49": 152,
+  "name_en": "Chile",
+  "name_uz": "Chili",
+  "slug": "chile",
+  "continent": "Janubiy Amerika",
+  "flag_emoji": "🇨🇱",
+  "centroid_lat": -35.718,
+  "centroid_lon": -71.3145,
+  "bbox": [
+   -75.644,
+   -53.856,
+   -66.985,
+   -17.58
+  ]
+ },
+ {
+  "iso2": "CM",
+  "iso3": "CMR",
+  "m49": 120,
+  "name_en": "Cameroon",
+  "name_uz": "Kamerun",
+  "slug": "cameroon",
+  "continent": "Afrika",
+  "flag_emoji": "🇨🇲",
+  "centroid_lat": 7.2935,
+  "centroid_lon": 12.251,
+  "bbox": [
+   8.489,
+   1.728,
+   16.013,
+   12.859
+  ]
+ },
+ {
+  "iso2": "CN",
+  "iso3": "CHN",
+  "m49": 156,
+  "name_en": "China",
+  "name_uz": "Xitoy",
+  "slug": "china",
+  "continent": "Osiyo",
+  "flag_emoji": "🇨🇳",
+  "centroid_lat": 36.8705,
+  "centroid_lon": 104.3505,
+  "bbox": [
+   73.675,
+   20.282,
+   135.026,
+   53.459
+  ]
+ },
+ {
+  "iso2": "CO",
+  "iso3": "COL",
+  "m49": 170,
+  "name_en": "Colombia",
+  "name_uz": "Kolumbiya",
+  "slug": "colombia",
+  "continent": "Janubiy Amerika",
+  "flag_emoji": "🇨🇴",
+  "centroid_lat": 4.0695,
+  "centroid_lon": -72.9335,
+  "bbox": [
+   -78.991,
+   -4.298,
+   -66.876,
+   12.437
+  ]
+ },
+ {
+  "iso2": "CR",
+  "iso3": "CRI",
+  "m49": 188,
+  "name_en": "Costa Rica",
+  "name_uz": "Kosta-Rika",
+  "slug": "costa-rica",
+  "continent": "Shimoliy Amerika",
+  "flag_emoji": "🇨🇷",
+  "centroid_lat": 9.721,
+  "centroid_lon": -84.244,
+  "bbox": [
+   -85.942,
+   8.225,
+   -82.546,
+   11.217
+  ]
+ },
+ {
+  "iso2": "CU",
+  "iso3": "CUB",
+  "m49": 192,
+  "name_en": "Cuba",
+  "name_uz": "Kuba",
+  "slug": "cuba",
+  "continent": "Shimoliy Amerika",
+  "flag_emoji": "🇨🇺",
+  "centroid_lat": 21.522,
+  "centroid_lon": -79.5765,
+  "bbox": [
+   -84.975,
+   19.855,
+   -74.178,
+   23.189
+  ]
+ },
+ {
+  "iso2": "CV",
+  "iso3": "CPV",
+  "m49": 132,
+  "name_en": "Cabo Verde",
+  "name_uz": "Kabo-Verde",
+  "slug": "cabo-verde",
+  "continent": "—",
+  "flag_emoji": "🇨🇻",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "CW",
+  "iso3": "CUW",
+  "m49": 531,
+  "name_en": "Curaçao",
+  "name_uz": "Kyurasao",
+  "slug": "curacao",
+  "continent": "—",
+  "flag_emoji": "🇨🇼",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "CX",
+  "iso3": "CXR",
+  "m49": 162,
+  "name_en": "Christmas Island",
+  "name_uz": "Christmas Island",
+  "slug": "christmas-island",
+  "continent": "—",
+  "flag_emoji": "🇨🇽",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "CY",
+  "iso3": "CYP",
+  "m49": 196,
+  "name_en": "Cyprus",
+  "name_uz": "Kipr",
+  "slug": "cyprus",
+  "continent": "Osiyo",
+  "flag_emoji": "🇨🇾",
+  "centroid_lat": 34.8725,
+  "centroid_lon": 33.131,
+  "bbox": [
+   32.257,
+   34.572,
+   34.005,
+   35.173
+  ]
+ },
+ {
+  "iso2": "CY-N",
+  "iso3": "CYN",
+  "m49": 9001,
+  "name_en": "Northern Cyprus",
+  "name_uz": "Shimoliy Kipr",
+  "slug": "northern-cyprus",
+  "continent": "Osiyo",
+  "flag_emoji": "",
+  "centroid_lat": 35.336,
+  "centroid_lon": 33.654,
+  "bbox": [
+   32.732,
+   35.0,
+   34.576,
+   35.672
+  ]
+ },
+ {
+  "iso2": "CZ",
+  "iso3": "CZE",
+  "m49": 203,
+  "name_en": "Czech Republic",
+  "name_uz": "Chexiya",
+  "slug": "czech-republic",
+  "continent": "Yevropa",
+  "flag_emoji": "🇨🇿",
+  "centroid_lat": 49.836,
+  "centroid_lon": 15.5465,
+  "bbox": [
+   12.24,
+   48.555,
+   18.853,
+   51.117
+  ]
+ },
+ {
+  "iso2": "DE",
+  "iso3": "DEU",
+  "m49": 276,
+  "name_en": "Germany",
+  "name_uz": "Germaniya",
+  "slug": "germany",
+  "continent": "Yevropa",
+  "flag_emoji": "🇩🇪",
+  "centroid_lat": 51.1425,
+  "centroid_lon": 10.503,
+  "bbox": [
+   5.989,
+   47.302,
+   15.017,
+   54.983
+  ]
+ },
+ {
+  "iso2": "DJ",
+  "iso3": "DJI",
+  "m49": 262,
+  "name_en": "Djibouti",
+  "name_uz": "Jibuti",
+  "slug": "djibouti",
+  "continent": "Afrika",
+  "flag_emoji": "🇩🇯",
+  "centroid_lat": 11.8135,
+  "centroid_lon": 42.49,
+  "bbox": [
+   41.662,
+   10.927,
+   43.318,
+   12.7
+  ]
+ },
+ {
+  "iso2": "DK",
+  "iso3": "DNK",
+  "m49": 208,
+  "name_en": "Denmark",
+  "name_uz": "Daniya",
+  "slug": "denmark",
+  "continent": "Yevropa",
+  "flag_emoji": "🇩🇰",
+  "centroid_lat": 56.2805,
+  "centroid_lon": 9.501,
+  "bbox": [
+   8.09,
+   54.831,
+   10.912,
+   57.73
+  ]
+ },
+ {
+  "iso2": "DM",
+  "iso3": "DMA",
+  "m49": 212,
+  "name_en": "Dominica",
+  "name_uz": "Dominica",
+  "slug": "dominica",
+  "continent": "—",
+  "flag_emoji": "🇩🇲",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "DO",
+  "iso3": "DOM",
+  "m49": 214,
+  "name_en": "Dominican Republic",
+  "name_uz": "Dominikan Respublikasi",
+  "slug": "dominican-republic",
+  "continent": "Shimoliy Amerika",
+  "flag_emoji": "🇩🇴",
+  "centroid_lat": 18.742,
+  "centroid_lon": -70.1315,
+  "bbox": [
+   -71.945,
+   17.599,
+   -68.318,
+   19.885
+  ]
+ },
+ {
+  "iso2": "DZ",
+  "iso3": "DZA",
+  "m49": 12,
+  "name_en": "Algeria",
+  "name_uz": "Jazoir",
+  "slug": "algeria",
+  "continent": "Afrika",
+  "flag_emoji": "🇩🇿",
+  "centroid_lat": 28.0875,
+  "centroid_lon": 1.658,
+  "bbox": [
+   -8.684,
+   19.057,
+   12.0,
+   37.118
+  ]
+ },
+ {
+  "iso2": "EC",
+  "iso3": "ECU",
+  "m49": 218,
+  "name_en": "Ecuador",
+  "name_uz": "Ekvador",
+  "slug": "ecuador",
+  "continent": "Janubiy Amerika",
+  "flag_emoji": "🇪🇨",
+  "centroid_lat": -1.789,
+  "centroid_lon": -78.101,
+  "bbox": [
+   -80.968,
+   -4.959,
+   -75.234,
+   1.381
+  ]
+ },
+ {
+  "iso2": "EE",
+  "iso3": "EST",
+  "m49": 233,
+  "name_en": "Estonia",
+  "name_uz": "Estoniya",
+  "slug": "estonia",
+  "continent": "Yevropa",
+  "flag_emoji": "🇪🇪",
+  "centroid_lat": 58.543,
+  "centroid_lon": 25.736,
+  "bbox": [
+   23.34,
+   57.475,
+   28.132,
+   59.611
+  ]
+ },
+ {
+  "iso2": "EG",
+  "iso3": "EGY",
+  "m49": 818,
+  "name_en": "Egypt",
+  "name_uz": "Misr",
+  "slug": "egypt",
+  "continent": "Afrika",
+  "flag_emoji": "🇪🇬",
+  "centroid_lat": 26.793,
+  "centroid_lon": 30.783,
+  "bbox": [
+   24.7,
+   22.0,
+   36.866,
+   31.586
+  ]
+ },
+ {
+  "iso2": "EH",
+  "iso3": "ESH",
+  "m49": 732,
+  "name_en": "Western Sahara",
+  "name_uz": "G'arbiy Sahara",
+  "slug": "western-sahara",
+  "continent": "Afrika",
+  "flag_emoji": "🇪🇭",
+  "centroid_lat": 24.328,
+  "centroid_lon": -12.864,
+  "bbox": [
+   -17.063,
+   21.0,
+   -8.665,
+   27.656
+  ]
+ },
+ {
+  "iso2": "ER",
+  "iso3": "ERI",
+  "m49": 232,
+  "name_en": "Eritrea",
+  "name_uz": "Eritreya",
+  "slug": "eritrea",
+  "continent": "Afrika",
+  "flag_emoji": "🇪🇷",
+  "centroid_lat": 15.2265,
+  "centroid_lon": 39.702,
+  "bbox": [
+   36.323,
+   12.455,
+   43.081,
+   17.998
+  ]
+ },
+ {
+  "iso2": "ES",
+  "iso3": "ESP",
+  "m49": 724,
+  "name_en": "Spain",
+  "name_uz": "Ispaniya",
+  "slug": "spain",
+  "continent": "Yevropa",
+  "flag_emoji": "🇪🇸",
+  "centroid_lat": 39.8475,
+  "centroid_lon": -3.177,
+  "bbox": [
+   -9.393,
+   35.947,
+   3.039,
+   43.748
+  ]
+ },
+ {
+  "iso2": "ET",
+  "iso3": "ETH",
+  "m49": 231,
+  "name_en": "Ethiopia",
+  "name_uz": "Efiopiya",
+  "slug": "ethiopia",
+  "continent": "Afrika",
+  "flag_emoji": "🇪🇹",
+  "centroid_lat": 9.1905,
+  "centroid_lon": 40.3715,
+  "bbox": [
+   32.954,
+   3.422,
+   47.789,
+   14.959
+  ]
+ },
+ {
+  "iso2": "FI",
+  "iso3": "FIN",
+  "m49": 246,
+  "name_en": "Finland",
+  "name_uz": "Finlyandiya",
+  "slug": "finland",
+  "continent": "Yevropa",
+  "flag_emoji": "🇫🇮",
+  "centroid_lat": 65.005,
+  "centroid_lon": 26.081,
+  "bbox": [
+   20.646,
+   59.846,
+   31.516,
+   70.164
+  ]
+ },
+ {
+  "iso2": "FJ",
+  "iso3": "FJI",
+  "m49": 242,
+  "name_en": "Fiji",
+  "name_uz": "Fiji",
+  "slug": "fiji",
+  "continent": "Okeaniya",
+  "flag_emoji": "🇫🇯",
+  "centroid_lat": -17.814,
+  "centroid_lon": 178.0015,
+  "bbox": [
+   177.285,
+   -18.288,
+   178.718,
+   -17.34
+  ]
+ },
+ {
+  "iso2": "FK",
+  "iso3": "FLK",
+  "m49": 238,
+  "name_en": "Falkland Islands",
+  "name_uz": "Folklend orollari",
+  "slug": "falkland-islands",
+  "continent": "Janubiy Amerika",
+  "flag_emoji": "🇫🇰",
+  "centroid_lat": -51.7,
+  "centroid_lon": -59.475,
+  "bbox": [
+   -61.2,
+   -52.3,
+   -57.75,
+   -51.1
+  ]
+ },
+ {
+  "iso2": "FM",
+  "iso3": "FSM",
+  "m49": 583,
+  "name_en": "Micronesia, Federated States of",
+  "name_uz": "Mikroneziya",
+  "slug": "micronesia-federated-states-of",
+  "continent": "—",
+  "flag_emoji": "🇫🇲",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "FO",
+  "iso3": "FRO",
+  "m49": 234,
+  "name_en": "Faroe Islands",
+  "name_uz": "Faroe Islands",
+  "slug": "faroe-islands",
+  "continent": "—",
+  "flag_emoji": "🇫🇴",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "FR",
+  "iso3": "FRA",
+  "m49": 250,
+  "name_en": "France",
+  "name_uz": "Fransiya",
+  "slug": "france",
+  "continent": "Yevropa",
+  "flag_emoji": "🇫🇷",
+  "centroid_lat": 46.746,
+  "centroid_lon": 1.7535,
+  "bbox": [
+   -4.592,
+   42.343,
+   8.099,
+   51.149
+  ]
+ },
+ {
+  "iso2": "GA",
+  "iso3": "GAB",
+  "m49": 266,
+  "name_en": "Gabon",
+  "name_uz": "Gabon",
+  "slug": "gabon",
+  "continent": "Afrika",
+  "flag_emoji": "🇬🇦",
+  "centroid_lat": -0.826,
+  "centroid_lon": 11.6115,
+  "bbox": [
+   8.798,
+   -3.979,
+   14.425,
+   2.327
+  ]
+ },
+ {
+  "iso2": "GB",
+  "iso3": "GBR",
+  "m49": 826,
+  "name_en": "United Kingdom",
+  "name_uz": "Buyuk Britaniya",
+  "slug": "united-kingdom",
+  "continent": "Yevropa",
+  "flag_emoji": "🇬🇧",
+  "centroid_lat": 54.2975,
+  "centroid_lon": -2.234,
+  "bbox": [
+   -6.15,
+   49.96,
+   1.682,
+   58.635
+  ]
+ },
+ {
+  "iso2": "GD",
+  "iso3": "GRD",
+  "m49": 308,
+  "name_en": "Grenada",
+  "name_uz": "Grenada",
+  "slug": "grenada",
+  "continent": "—",
+  "flag_emoji": "🇬🇩",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "GE",
+  "iso3": "GEO",
+  "m49": 268,
+  "name_en": "Georgia",
+  "name_uz": "Gruziya",
+  "slug": "georgia",
+  "continent": "Osiyo",
+  "flag_emoji": "🇬🇪",
+  "centroid_lat": 42.3085,
+  "centroid_lon": 43.2965,
+  "bbox": [
+   39.955,
+   41.064,
+   46.638,
+   43.553
+  ]
+ },
+ {
+  "iso2": "GF",
+  "iso3": "GUF",
+  "m49": 254,
+  "name_en": "French Guiana",
+  "name_uz": "Fransuz Gvianasi",
+  "slug": "french-guiana",
+  "continent": "—",
+  "flag_emoji": "🇬🇫",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "GG",
+  "iso3": "GGY",
+  "m49": 831,
+  "name_en": "Guernsey",
+  "name_uz": "Guernsey",
+  "slug": "guernsey",
+  "continent": "—",
+  "flag_emoji": "🇬🇬",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "GH",
+  "iso3": "GHA",
+  "m49": 288,
+  "name_en": "Ghana",
+  "name_uz": "Gana",
+  "slug": "ghana",
+  "continent": "Afrika",
+  "flag_emoji": "🇬🇭",
+  "centroid_lat": 7.904,
+  "centroid_lon": -1.092,
+  "bbox": [
+   -3.244,
+   4.71,
+   1.06,
+   11.098
+  ]
+ },
+ {
+  "iso2": "GI",
+  "iso3": "GIB",
+  "m49": 292,
+  "name_en": "Gibraltar",
+  "name_uz": "Gibraltar",
+  "slug": "gibraltar",
+  "continent": "—",
+  "flag_emoji": "🇬🇮",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "GL",
+  "iso3": "GRL",
+  "m49": 304,
+  "name_en": "Greenland",
+  "name_uz": "Grenlandiya",
+  "slug": "greenland",
+  "continent": "Shimoliy Amerika",
+  "flag_emoji": "🇬🇱",
+  "centroid_lat": 71.841,
+  "centroid_lon": -42.753,
+  "bbox": [
+   -73.297,
+   60.037,
+   -12.209,
+   83.645
+  ]
+ },
+ {
+  "iso2": "GM",
+  "iso3": "GMB",
+  "m49": 270,
+  "name_en": "The Gambia",
+  "name_uz": "Gambiya",
+  "slug": "the-gambia",
+  "continent": "Afrika",
+  "flag_emoji": "🇬🇲",
+  "centroid_lat": 13.503,
+  "centroid_lon": -15.3435,
+  "bbox": [
+   -16.842,
+   13.13,
+   -13.845,
+   13.876
+  ]
+ },
+ {
+  "iso2": "GN",
+  "iso3": "GIN",
+  "m49": 324,
+  "name_en": "Guinea",
+  "name_uz": "Gvineya",
+  "slug": "guinea",
+  "continent": "Afrika",
+  "flag_emoji": "🇬🇳",
+  "centroid_lat": 9.9475,
+  "centroid_lon": -11.481,
+  "bbox": [
+   -15.13,
+   7.309,
+   -7.832,
+   12.586
+  ]
+ },
+ {
+  "iso2": "GP",
+  "iso3": "GLP",
+  "m49": 312,
+  "name_en": "Guadeloupe",
+  "name_uz": "Guadeloupe",
+  "slug": "guadeloupe",
+  "continent": "—",
+  "flag_emoji": "🇬🇵",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "GQ",
+  "iso3": "GNQ",
+  "m49": 226,
+  "name_en": "Equatorial Guinea",
+  "name_uz": "Ekvatorial Gvineya",
+  "slug": "equatorial-guinea",
+  "continent": "Afrika",
+  "flag_emoji": "🇬🇶",
+  "centroid_lat": 1.647,
+  "centroid_lon": 10.2955,
+  "bbox": [
+   9.306,
+   1.01,
+   11.285,
+   2.284
+  ]
+ },
+ {
+  "iso2": "GR",
+  "iso3": "GRC",
+  "m49": 300,
+  "name_en": "Greece",
+  "name_uz": "Gretsiya",
+  "slug": "greece",
+  "continent": "Yevropa",
+  "flag_emoji": "🇬🇷",
+  "centroid_lat": 39.1185,
+  "centroid_lon": 23.377,
+  "bbox": [
+   20.15,
+   36.41,
+   26.604,
+   41.827
+  ]
+ },
+ {
+  "iso2": "GS",
+  "iso3": "SGS",
+  "m49": 239,
+  "name_en": "South Georgia and the South Sandwich Islands",
+  "name_uz": "South Georgia and the South Sandwich Islands",
+  "slug": "south-georgia-and-the-south-sandwich-islands",
+  "continent": "—",
+  "flag_emoji": "🇬🇸",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "GT",
+  "iso3": "GTM",
+  "m49": 320,
+  "name_en": "Guatemala",
+  "name_uz": "Gvatemala",
+  "slug": "guatemala",
+  "continent": "Shimoliy Amerika",
+  "flag_emoji": "🇬🇹",
+  "centroid_lat": 15.777,
+  "centroid_lon": -90.227,
+  "bbox": [
+   -92.229,
+   13.735,
+   -88.225,
+   17.819
+  ]
+ },
+ {
+  "iso2": "GU",
+  "iso3": "GUM",
+  "m49": 316,
+  "name_en": "Guam",
+  "name_uz": "Guam",
+  "slug": "guam",
+  "continent": "—",
+  "flag_emoji": "🇬🇺",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "GW",
+  "iso3": "GNB",
+  "m49": 624,
+  "name_en": "Guinea-Bissau",
+  "name_uz": "Gvineya-Bisau",
+  "slug": "guinea-bissau",
+  "continent": "Afrika",
+  "flag_emoji": "🇬🇼",
+  "centroid_lat": 11.834,
+  "centroid_lon": -15.1885,
+  "bbox": [
+   -16.677,
+   11.04,
+   -13.7,
+   12.628
+  ]
+ },
+ {
+  "iso2": "GY",
+  "iso3": "GUY",
+  "m49": 328,
+  "name_en": "Guyana",
+  "name_uz": "Gayana",
+  "slug": "guyana",
+  "continent": "Janubiy Amerika",
+  "flag_emoji": "🇬🇾",
+  "centroid_lat": 4.8175,
+  "centroid_lon": -58.9745,
+  "bbox": [
+   -61.41,
+   1.268,
+   -56.539,
+   8.367
+  ]
+ },
+ {
+  "iso2": "HK",
+  "iso3": "HKG",
+  "m49": 344,
+  "name_en": "Hong Kong",
+  "name_uz": "Gonkong",
+  "slug": "hong-kong",
+  "continent": "—",
+  "flag_emoji": "🇭🇰",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "HM",
+  "iso3": "HMD",
+  "m49": 334,
+  "name_en": "Heard Island and McDonald Islands",
+  "name_uz": "Heard Island and McDonald Islands",
+  "slug": "heard-island-and-mcdonald-islands",
+  "continent": "—",
+  "flag_emoji": "🇭🇲",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "HN",
+  "iso3": "HND",
+  "m49": 340,
+  "name_en": "Honduras",
+  "name_uz": "Gonduras",
+  "slug": "honduras",
+  "continent": "Shimoliy Amerika",
+  "flag_emoji": "🇭🇳",
+  "centroid_lat": 14.495,
+  "centroid_lon": -86.25,
+  "bbox": [
+   -89.353,
+   12.985,
+   -83.147,
+   16.005
+  ]
+ },
+ {
+  "iso2": "HR",
+  "iso3": "HRV",
+  "m49": 191,
+  "name_en": "Croatia",
+  "name_uz": "Xorvatiya",
+  "slug": "croatia",
+  "continent": "Yevropa",
+  "flag_emoji": "🇭🇷",
+  "centroid_lat": 44.492,
+  "centroid_lon": 16.5235,
+  "bbox": [
+   13.657,
+   42.48,
+   19.39,
+   46.504
+  ]
+ },
+ {
+  "iso2": "HT",
+  "iso3": "HTI",
+  "m49": 332,
+  "name_en": "Haiti",
+  "name_uz": "Gaiti",
+  "slug": "haiti",
+  "continent": "Shimoliy Amerika",
+  "flag_emoji": "🇭🇹",
+  "centroid_lat": 18.9735,
+  "centroid_lon": -73.0415,
+  "bbox": [
+   -74.458,
+   18.031,
+   -71.625,
+   19.916
+  ]
+ },
+ {
+  "iso2": "HU",
+  "iso3": "HUN",
+  "m49": 348,
+  "name_en": "Hungary",
+  "name_uz": "Vengriya",
+  "slug": "hungary",
+  "continent": "Yevropa",
+  "flag_emoji": "🇭🇺",
+  "centroid_lat": 47.1915,
+  "centroid_lon": 19.4565,
+  "bbox": [
+   16.202,
+   45.759,
+   22.711,
+   48.624
+  ]
+ },
+ {
+  "iso2": "ID",
+  "iso3": "IDN",
+  "m49": 360,
+  "name_en": "Indonesia",
+  "name_uz": "Indoneziya",
+  "slug": "indonesia",
+  "continent": "Osiyo",
+  "flag_emoji": "🇮🇩",
+  "centroid_lat": 0.1,
+  "centroid_lon": 113.975,
+  "bbox": [
+   108.953,
+   -4.107,
+   118.997,
+   4.307
+  ]
+ },
+ {
+  "iso2": "IE",
+  "iso3": "IRL",
+  "m49": 372,
+  "name_en": "Ireland",
+  "name_uz": "Irlandiya",
+  "slug": "ireland",
+  "continent": "Yevropa",
+  "flag_emoji": "🇮🇪",
+  "centroid_lat": 53.4005,
+  "centroid_lon": -8.005,
+  "bbox": [
+   -9.977,
+   51.669,
+   -6.033,
+   55.132
+  ]
+ },
+ {
+  "iso2": "IL",
+  "iso3": "ISR",
+  "m49": 376,
+  "name_en": "Israel",
+  "name_uz": "Isroil",
+  "slug": "israel",
+  "continent": "Osiyo",
+  "flag_emoji": "🇮🇱",
+  "centroid_lat": 31.389,
+  "centroid_lon": 35.0505,
+  "bbox": [
+   34.265,
+   29.501,
+   35.836,
+   33.277
+  ]
+ },
+ {
+  "iso2": "IM",
+  "iso3": "IMN",
+  "m49": 833,
+  "name_en": "Isle of Man",
+  "name_uz": "Isle of Man",
+  "slug": "isle-of-man",
+  "continent": "—",
+  "flag_emoji": "🇮🇲",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "IN",
+  "iso3": "IND",
+  "m49": 356,
+  "name_en": "India",
+  "name_uz": "Hindiston",
+  "slug": "india",
+  "continent": "Osiyo",
+  "flag_emoji": "🇮🇳",
+  "centroid_lat": 21.73,
+  "centroid_lon": 82.79,
+  "bbox": [
+   68.177,
+   7.966,
+   97.403,
+   35.494
+  ]
+ },
+ {
+  "iso2": "IO",
+  "iso3": "IOT",
+  "m49": 86,
+  "name_en": "British Indian Ocean Territory",
+  "name_uz": "British Indian Ocean Territory",
+  "slug": "british-indian-ocean-territory",
+  "continent": "—",
+  "flag_emoji": "🇮🇴",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "IQ",
+  "iso3": "IRQ",
+  "m49": 368,
+  "name_en": "Iraq",
+  "name_uz": "Iroq",
+  "slug": "iraq",
+  "continent": "Osiyo",
+  "flag_emoji": "🇮🇶",
+  "centroid_lat": 33.242,
+  "centroid_lon": 43.68,
+  "bbox": [
+   38.792,
+   29.099,
+   48.568,
+   37.385
+  ]
+ },
+ {
+  "iso2": "IR",
+  "iso3": "IRN",
+  "m49": 364,
+  "name_en": "Iran",
+  "name_uz": "Eron",
+  "slug": "iran",
+  "continent": "Osiyo",
+  "flag_emoji": "🇮🇷",
+  "centroid_lat": 32.3955,
+  "centroid_lon": 53.713,
+  "bbox": [
+   44.109,
+   25.078,
+   63.317,
+   39.713
+  ]
+ },
+ {
+  "iso2": "IS",
+  "iso3": "ISL",
+  "m49": 352,
+  "name_en": "Iceland",
+  "name_uz": "Islandiya",
+  "slug": "iceland",
+  "continent": "Yevropa",
+  "flag_emoji": "🇮🇸",
+  "centroid_lat": 65.0115,
+  "centroid_lon": -18.968,
+  "bbox": [
+   -24.326,
+   63.496,
+   -13.61,
+   66.527
+  ]
+ },
+ {
+  "iso2": "IT",
+  "iso3": "ITA",
+  "m49": 380,
+  "name_en": "Italy",
+  "name_uz": "Italiya",
+  "slug": "italy",
+  "continent": "Yevropa",
+  "flag_emoji": "🇮🇹",
+  "centroid_lat": 42.512,
+  "centroid_lon": 12.615,
+  "bbox": [
+   6.75,
+   37.909,
+   18.48,
+   47.115
+  ]
+ },
+ {
+  "iso2": "JE",
+  "iso3": "JEY",
+  "m49": 832,
+  "name_en": "Jersey",
+  "name_uz": "Jersey",
+  "slug": "jersey",
+  "continent": "—",
+  "flag_emoji": "🇯🇪",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "JM",
+  "iso3": "JAM",
+  "m49": 388,
+  "name_en": "Jamaica",
+  "name_uz": "Yamayka",
+  "slug": "jamaica",
+  "continent": "Shimoliy Amerika",
+  "flag_emoji": "🇯🇲",
+  "centroid_lat": 18.1125,
+  "centroid_lon": -77.269,
+  "bbox": [
+   -78.338,
+   17.701,
+   -76.2,
+   18.524
+  ]
+ },
+ {
+  "iso2": "JO",
+  "iso3": "JOR",
+  "m49": 400,
+  "name_en": "Jordan",
+  "name_uz": "Iordaniya",
+  "slug": "jordan",
+  "continent": "Osiyo",
+  "flag_emoji": "🇯🇴",
+  "centroid_lat": 31.288,
+  "centroid_lon": 37.059,
+  "bbox": [
+   34.923,
+   29.197,
+   39.195,
+   33.379
+  ]
+ },
+ {
+  "iso2": "JP",
+  "iso3": "JPN",
+  "m49": 392,
+  "name_en": "Japan",
+  "name_uz": "Yaponiya",
+  "slug": "japan",
+  "continent": "Osiyo",
+  "flag_emoji": "🇯🇵",
+  "centroid_lat": 36.2045,
+  "centroid_lon": 135.661,
+  "bbox": [
+   129.408,
+   31.03,
+   141.914,
+   41.379
+  ]
+ },
+ {
+  "iso2": "KE",
+  "iso3": "KEN",
+  "m49": 404,
+  "name_en": "Kenya",
+  "name_uz": "Keniya",
+  "slug": "kenya",
+  "continent": "Afrika",
+  "flag_emoji": "🇰🇪",
+  "centroid_lat": 0.4145,
+  "centroid_lon": 37.8745,
+  "bbox": [
+   33.894,
+   -4.677,
+   41.855,
+   5.506
+  ]
+ },
+ {
+  "iso2": "KG",
+  "iso3": "KGZ",
+  "m49": 417,
+  "name_en": "Kyrgyzstan",
+  "name_uz": "Qirg'iziston",
+  "slug": "kyrgyzstan",
+  "continent": "Osiyo",
+  "flag_emoji": "🇰🇬",
+  "centroid_lat": 41.2885,
+  "centroid_lon": 74.8625,
+  "bbox": [
+   69.465,
+   39.279,
+   80.26,
+   43.298
+  ]
+ },
+ {
+  "iso2": "KH",
+  "iso3": "KHM",
+  "m49": 116,
+  "name_en": "Cambodia",
+  "name_uz": "Kambodja",
+  "slug": "cambodia",
+  "continent": "Osiyo",
+  "flag_emoji": "🇰🇭",
+  "centroid_lat": 12.529,
+  "centroid_lon": 104.9815,
+  "bbox": [
+   102.348,
+   10.487,
+   107.615,
+   14.571
+  ]
+ },
+ {
+  "iso2": "KI",
+  "iso3": "KIR",
+  "m49": 296,
+  "name_en": "Kiribati",
+  "name_uz": "Kiribati",
+  "slug": "kiribati",
+  "continent": "—",
+  "flag_emoji": "🇰🇮",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "KM",
+  "iso3": "COM",
+  "m49": 174,
+  "name_en": "Comoros",
+  "name_uz": "Komor orollari",
+  "slug": "comoros",
+  "continent": "—",
+  "flag_emoji": "🇰🇲",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "KN",
+  "iso3": "KNA",
+  "m49": 659,
+  "name_en": "Saint Kitts and Nevis",
+  "name_uz": "Saint Kitts and Nevis",
+  "slug": "saint-kitts-and-nevis",
+  "continent": "—",
+  "flag_emoji": "🇰🇳",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "KP",
+  "iso3": "PRK",
+  "m49": 408,
+  "name_en": "Dem. Rep. Korea",
+  "name_uz": "Shimoliy Koreya",
+  "slug": "dem-rep-korea",
+  "continent": "Osiyo",
+  "flag_emoji": "🇰🇵",
+  "centroid_lat": 40.327,
+  "centroid_lon": 127.523,
+  "bbox": [
+   124.266,
+   37.669,
+   130.78,
+   42.985
+  ]
+ },
+ {
+  "iso2": "KR",
+  "iso3": "KOR",
+  "m49": 410,
+  "name_en": "Republic of Korea",
+  "name_uz": "Janubiy Koreya",
+  "slug": "republic-of-korea",
+  "continent": "Osiyo",
+  "flag_emoji": "🇰🇷",
+  "centroid_lat": 36.501,
+  "centroid_lon": 127.7925,
+  "bbox": [
+   126.117,
+   34.39,
+   129.468,
+   38.612
+  ]
+ },
+ {
+  "iso2": "KW",
+  "iso3": "KWT",
+  "m49": 414,
+  "name_en": "Kuwait",
+  "name_uz": "Quvayt",
+  "slug": "kuwait",
+  "continent": "Osiyo",
+  "flag_emoji": "🇰🇼",
+  "centroid_lat": 29.2925,
+  "centroid_lon": 47.4925,
+  "bbox": [
+   46.569,
+   28.526,
+   48.416,
+   30.059
+  ]
+ },
+ {
+  "iso2": "KY",
+  "iso3": "CYM",
+  "m49": 136,
+  "name_en": "Cayman Islands",
+  "name_uz": "Cayman Islands",
+  "slug": "cayman-islands",
+  "continent": "—",
+  "flag_emoji": "🇰🇾",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "KZ",
+  "iso3": "KAZ",
+  "m49": 398,
+  "name_en": "Kazakhstan",
+  "name_uz": "Qozog'iston",
+  "slug": "kazakhstan",
+  "continent": "Osiyo",
+  "flag_emoji": "🇰🇿",
+  "centroid_lat": 48.0235,
+  "centroid_lon": 66.913,
+  "bbox": [
+   46.466,
+   40.662,
+   87.36,
+   55.385
+  ]
+ },
+ {
+  "iso2": "LA",
+  "iso3": "LAO",
+  "m49": 418,
+  "name_en": "Lao PDR",
+  "name_uz": "Laos",
+  "slug": "lao-pdr",
+  "continent": "Osiyo",
+  "flag_emoji": "🇱🇦",
+  "centroid_lat": 18.173,
+  "centroid_lon": 103.8405,
+  "bbox": [
+   100.116,
+   13.881,
+   107.565,
+   22.465
+  ]
+ },
+ {
+  "iso2": "LB",
+  "iso3": "LBN",
+  "m49": 422,
+  "name_en": "Lebanon",
+  "name_uz": "Livan",
+  "slug": "lebanon",
+  "continent": "Osiyo",
+  "flag_emoji": "🇱🇧",
+  "centroid_lat": 33.867,
+  "centroid_lon": 35.869,
+  "bbox": [
+   35.126,
+   33.089,
+   36.612,
+   34.645
+  ]
+ },
+ {
+  "iso2": "LC",
+  "iso3": "LCA",
+  "m49": 662,
+  "name_en": "Saint Lucia",
+  "name_uz": "Saint Lucia",
+  "slug": "saint-lucia",
+  "continent": "—",
+  "flag_emoji": "🇱🇨",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "LI",
+  "iso3": "LIE",
+  "m49": 438,
+  "name_en": "Liechtenstein",
+  "name_uz": "Lixtenshteyn",
+  "slug": "liechtenstein",
+  "continent": "—",
+  "flag_emoji": "🇱🇮",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "LK",
+  "iso3": "LKA",
+  "m49": 144,
+  "name_en": "Sri Lanka",
+  "name_uz": "Shri-Lanka",
+  "slug": "sri-lanka",
+  "continent": "Osiyo",
+  "flag_emoji": "🇱🇰",
+  "centroid_lat": 7.896,
+  "centroid_lon": 80.7415,
+  "bbox": [
+   79.695,
+   5.968,
+   81.788,
+   9.824
+  ]
+ },
+ {
+  "iso2": "LR",
+  "iso3": "LBR",
+  "m49": 430,
+  "name_en": "Liberia",
+  "name_uz": "Liberiya",
+  "slug": "liberia",
+  "continent": "Afrika",
+  "flag_emoji": "🇱🇷",
+  "centroid_lat": 6.4485,
+  "centroid_lon": -9.4895,
+  "bbox": [
+   -11.439,
+   4.356,
+   -7.54,
+   8.541
+  ]
+ },
+ {
+  "iso2": "LS",
+  "iso3": "LSO",
+  "m49": 426,
+  "name_en": "Lesotho",
+  "name_uz": "Lesoto",
+  "slug": "lesotho",
+  "continent": "Afrika",
+  "flag_emoji": "🇱🇸",
+  "centroid_lat": -29.6465,
+  "centroid_lon": 28.162,
+  "bbox": [
+   26.999,
+   -30.645,
+   29.325,
+   -28.648
+  ]
+ },
+ {
+  "iso2": "LT",
+  "iso3": "LTU",
+  "m49": 440,
+  "name_en": "Lithuania",
+  "name_uz": "Litva",
+  "slug": "lithuania",
+  "continent": "Yevropa",
+  "flag_emoji": "🇱🇹",
+  "centroid_lat": 55.1395,
+  "centroid_lon": 23.822,
+  "bbox": [
+   21.056,
+   53.906,
+   26.588,
+   56.373
+  ]
+ },
+ {
+  "iso2": "LU",
+  "iso3": "LUX",
+  "m49": 442,
+  "name_en": "Luxembourg",
+  "name_uz": "Lyuksemburg",
+  "slug": "luxembourg",
+  "continent": "Yevropa",
+  "flag_emoji": "🇱🇺",
+  "centroid_lat": 49.7855,
+  "centroid_lon": 5.9585,
+  "bbox": [
+   5.674,
+   49.443,
+   6.243,
+   50.128
+  ]
+ },
+ {
+  "iso2": "LV",
+  "iso3": "LVA",
+  "m49": 428,
+  "name_en": "Latvia",
+  "name_uz": "Latviya",
+  "slug": "latvia",
+  "continent": "Yevropa",
+  "flag_emoji": "🇱🇻",
+  "centroid_lat": 56.7925,
+  "centroid_lon": 24.6165,
+  "bbox": [
+   21.056,
+   55.615,
+   28.177,
+   57.97
+  ]
+ },
+ {
+  "iso2": "LY",
+  "iso3": "LBY",
+  "m49": 434,
+  "name_en": "Libya",
+  "name_uz": "Liviya",
+  "slug": "libya",
+  "continent": "Afrika",
+  "flag_emoji": "🇱🇾",
+  "centroid_lat": 26.3585,
+  "centroid_lon": 17.242,
+  "bbox": [
+   9.319,
+   19.58,
+   25.165,
+   33.137
+  ]
+ },
+ {
+  "iso2": "MA",
+  "iso3": "MAR",
+  "m49": 504,
+  "name_en": "Morocco",
+  "name_uz": "Marokash",
+  "slug": "morocco",
+  "continent": "Afrika",
+  "flag_emoji": "🇲🇦",
+  "centroid_lat": 28.5905,
+  "centroid_lon": -9.0725,
+  "bbox": [
+   -17.02,
+   21.421,
+   -1.125,
+   35.76
+  ]
+ },
+ {
+  "iso2": "MC",
+  "iso3": "MCO",
+  "m49": 492,
+  "name_en": "Monaco",
+  "name_uz": "Monako",
+  "slug": "monaco",
+  "continent": "—",
+  "flag_emoji": "🇲🇨",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "MD",
+  "iso3": "MDA",
+  "m49": 498,
+  "name_en": "Moldova",
+  "name_uz": "Moldova",
+  "slug": "moldova",
+  "continent": "Yevropa",
+  "flag_emoji": "🇲🇩",
+  "centroid_lat": 46.9775,
+  "centroid_lon": 28.322,
+  "bbox": [
+   26.619,
+   45.488,
+   30.025,
+   48.467
+  ]
+ },
+ {
+  "iso2": "ME",
+  "iso3": "MNE",
+  "m49": 499,
+  "name_en": "Montenegro",
+  "name_uz": "Chernogoriya",
+  "slug": "montenegro",
+  "continent": "Yevropa",
+  "flag_emoji": "🇲🇪",
+  "centroid_lat": 42.701,
+  "centroid_lon": 19.395,
+  "bbox": [
+   18.45,
+   41.878,
+   20.34,
+   43.524
+  ]
+ },
+ {
+  "iso2": "MF",
+  "iso3": "MAF",
+  "m49": 663,
+  "name_en": "Saint Martin (French part)",
+  "name_uz": "Saint Martin (French part)",
+  "slug": "saint-martin-french-part",
+  "continent": "—",
+  "flag_emoji": "🇲🇫",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "MG",
+  "iso3": "MDG",
+  "m49": 450,
+  "name_en": "Madagascar",
+  "name_uz": "Madagaskar",
+  "slug": "madagascar",
+  "continent": "Afrika",
+  "flag_emoji": "🇲🇬",
+  "centroid_lat": -18.821,
+  "centroid_lon": 46.8655,
+  "bbox": [
+   43.254,
+   -25.601,
+   50.477,
+   -12.041
+  ]
+ },
+ {
+  "iso2": "MH",
+  "iso3": "MHL",
+  "m49": 584,
+  "name_en": "Marshall Islands",
+  "name_uz": "Marshall orollari",
+  "slug": "marshall-islands",
+  "continent": "—",
+  "flag_emoji": "🇲🇭",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "MK",
+  "iso3": "MKD",
+  "m49": 807,
+  "name_en": "Macedonia",
+  "name_uz": "Shimoliy Makedoniya",
+  "slug": "macedonia",
+  "continent": "Yevropa",
+  "flag_emoji": "🇲🇰",
+  "centroid_lat": 41.5815,
+  "centroid_lon": 21.7075,
+  "bbox": [
+   20.463,
+   40.843,
+   22.952,
+   42.32
+  ]
+ },
+ {
+  "iso2": "ML",
+  "iso3": "MLI",
+  "m49": 466,
+  "name_en": "Mali",
+  "name_uz": "Mali",
+  "slug": "mali",
+  "continent": "Afrika",
+  "flag_emoji": "🇲🇱",
+  "centroid_lat": 17.5355,
+  "centroid_lon": -3.9505,
+  "bbox": [
+   -12.171,
+   10.096,
+   4.27,
+   24.975
+  ]
+ },
+ {
+  "iso2": "MM",
+  "iso3": "MMR",
+  "m49": 104,
+  "name_en": "Myanmar",
+  "name_uz": "Myanma",
+  "slug": "myanmar",
+  "continent": "Osiyo",
+  "flag_emoji": "🇲🇲",
+  "centroid_lat": 19.1345,
+  "centroid_lon": 96.7415,
+  "bbox": [
+   92.303,
+   9.933,
+   101.18,
+   28.336
+  ]
+ },
+ {
+  "iso2": "MN",
+  "iso3": "MNG",
+  "m49": 496,
+  "name_en": "Mongolia",
+  "name_uz": "Mo'g'uliston",
+  "slug": "mongolia",
+  "continent": "Osiyo",
+  "flag_emoji": "🇲🇳",
+  "centroid_lat": 46.822,
+  "centroid_lon": 103.762,
+  "bbox": [
+   87.751,
+   41.597,
+   119.773,
+   52.047
+  ]
+ },
+ {
+  "iso2": "MO",
+  "iso3": "MAC",
+  "m49": 446,
+  "name_en": "Macao",
+  "name_uz": "Makao",
+  "slug": "macao",
+  "continent": "—",
+  "flag_emoji": "🇲🇴",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "MP",
+  "iso3": "MNP",
+  "m49": 580,
+  "name_en": "Northern Mariana Islands",
+  "name_uz": "Northern Mariana Islands",
+  "slug": "northern-mariana-islands",
+  "continent": "—",
+  "flag_emoji": "🇲🇵",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "MQ",
+  "iso3": "MTQ",
+  "m49": 474,
+  "name_en": "Martinique",
+  "name_uz": "Martinique",
+  "slug": "martinique",
+  "continent": "—",
+  "flag_emoji": "🇲🇶",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "MR",
+  "iso3": "MRT",
+  "m49": 478,
+  "name_en": "Mauritania",
+  "name_uz": "Mavritaniya",
+  "slug": "mauritania",
+  "continent": "Afrika",
+  "flag_emoji": "🇲🇷",
+  "centroid_lat": 21.0065,
+  "centroid_lon": -10.993,
+  "bbox": [
+   -17.063,
+   14.617,
+   -4.923,
+   27.396
+  ]
+ },
+ {
+  "iso2": "MS",
+  "iso3": "MSR",
+  "m49": 500,
+  "name_en": "Montserrat",
+  "name_uz": "Montserrat",
+  "slug": "montserrat",
+  "continent": "—",
+  "flag_emoji": "🇲🇸",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "MT",
+  "iso3": "MLT",
+  "m49": 470,
+  "name_en": "Malta",
+  "name_uz": "Malta",
+  "slug": "malta",
+  "continent": "—",
+  "flag_emoji": "🇲🇹",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "MU",
+  "iso3": "MUS",
+  "m49": 480,
+  "name_en": "Mauritius",
+  "name_uz": "Mavrikiy",
+  "slug": "mauritius",
+  "continent": "—",
+  "flag_emoji": "🇲🇺",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "MV",
+  "iso3": "MDV",
+  "m49": 462,
+  "name_en": "Maldives",
+  "name_uz": "Maldiv orollari",
+  "slug": "maldives",
+  "continent": "—",
+  "flag_emoji": "🇲🇻",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "MW",
+  "iso3": "MWI",
+  "m49": 454,
+  "name_en": "Malawi",
+  "name_uz": "Malavi",
+  "slug": "malawi",
+  "continent": "Afrika",
+  "flag_emoji": "🇲🇼",
+  "centroid_lat": -13.016,
+  "centroid_lon": 34.23,
+  "bbox": [
+   32.688,
+   -16.801,
+   35.772,
+   -9.231
+  ]
+ },
+ {
+  "iso2": "MX",
+  "iso3": "MEX",
+  "m49": 484,
+  "name_en": "Mexico",
+  "name_uz": "Meksika",
+  "slug": "mexico",
+  "continent": "Shimoliy Amerika",
+  "flag_emoji": "🇲🇽",
+  "centroid_lat": 23.63,
+  "centroid_lon": -101.97,
+  "bbox": [
+   -117.128,
+   14.539,
+   -86.812,
+   32.721
+  ]
+ },
+ {
+  "iso2": "MY",
+  "iso3": "MYS",
+  "m49": 458,
+  "name_en": "Malaysia",
+  "name_uz": "Malayziya",
+  "slug": "malaysia",
+  "continent": "Osiyo",
+  "flag_emoji": "🇲🇾",
+  "centroid_lat": 3.8505,
+  "centroid_lon": 114.4225,
+  "bbox": [
+   109.663,
+   0.773,
+   119.182,
+   6.928
+  ]
+ },
+ {
+  "iso2": "MZ",
+  "iso3": "MOZ",
+  "m49": 508,
+  "name_en": "Mozambique",
+  "name_uz": "Mozambik",
+  "slug": "mozambique",
+  "continent": "Afrika",
+  "flag_emoji": "🇲🇿",
+  "centroid_lat": -18.5295,
+  "centroid_lon": 35.477,
+  "bbox": [
+   30.179,
+   -26.742,
+   40.775,
+   -10.317
+  ]
+ },
+ {
+  "iso2": "NA",
+  "iso3": "NAM",
+  "m49": 516,
+  "name_en": "Namibia",
+  "name_uz": "Namibiya",
+  "slug": "namibia",
+  "continent": "Afrika",
+  "flag_emoji": "🇳🇦",
+  "centroid_lat": -22.993,
+  "centroid_lon": 18.409,
+  "bbox": [
+   11.734,
+   -29.045,
+   25.084,
+   -16.941
+  ]
+ },
+ {
+  "iso2": "NC",
+  "iso3": "NCL",
+  "m49": 540,
+  "name_en": "New Caledonia",
+  "name_uz": "Yangi Kaledoniya",
+  "slug": "new-caledonia",
+  "continent": "Okeaniya",
+  "flag_emoji": "🇳🇨",
+  "centroid_lat": -21.253,
+  "centroid_lon": 165.575,
+  "bbox": [
+   164.03,
+   -22.4,
+   167.12,
+   -20.106
+  ]
+ },
+ {
+  "iso2": "NE",
+  "iso3": "NER",
+  "m49": 562,
+  "name_en": "Niger",
+  "name_uz": "Niger",
+  "slug": "niger",
+  "continent": "Afrika",
+  "flag_emoji": "🇳🇪",
+  "centroid_lat": 17.566,
+  "centroid_lon": 8.0995,
+  "bbox": [
+   0.296,
+   11.66,
+   15.903,
+   23.472
+  ]
+ },
+ {
+  "iso2": "NF",
+  "iso3": "NFK",
+  "m49": 574,
+  "name_en": "Norfolk Island",
+  "name_uz": "Norfolk Island",
+  "slug": "norfolk-island",
+  "continent": "—",
+  "flag_emoji": "🇳🇫",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "NG",
+  "iso3": "NGA",
+  "m49": 566,
+  "name_en": "Nigeria",
+  "name_uz": "Nigeriya",
+  "slug": "nigeria",
+  "continent": "Afrika",
+  "flag_emoji": "🇳🇬",
+  "centroid_lat": 9.0535,
+  "centroid_lon": 8.6345,
+  "bbox": [
+   2.692,
+   4.241,
+   14.577,
+   13.866
+  ]
+ },
+ {
+  "iso2": "NI",
+  "iso3": "NIC",
+  "m49": 558,
+  "name_en": "Nicaragua",
+  "name_uz": "Nikaragua",
+  "slug": "nicaragua",
+  "continent": "Shimoliy Amerika",
+  "flag_emoji": "🇳🇮",
+  "centroid_lat": 12.8715,
+  "centroid_lon": -85.4075,
+  "bbox": [
+   -87.668,
+   10.727,
+   -83.147,
+   15.016
+  ]
+ },
+ {
+  "iso2": "NL",
+  "iso3": "NLD",
+  "m49": 528,
+  "name_en": "Netherlands",
+  "name_uz": "Niderlandiya",
+  "slug": "netherlands",
+  "continent": "Yevropa",
+  "flag_emoji": "🇳🇱",
+  "centroid_lat": 52.157,
+  "centroid_lon": 5.2035,
+  "bbox": [
+   3.315,
+   50.804,
+   7.092,
+   53.51
+  ]
+ },
+ {
+  "iso2": "NO",
+  "iso3": "NOR",
+  "m49": 578,
+  "name_en": "Norway",
+  "name_uz": "Norvegiya",
+  "slug": "norway",
+  "continent": "Yevropa",
+  "flag_emoji": "🇳🇴",
+  "centroid_lat": 64.632,
+  "centroid_lon": 18.1425,
+  "bbox": [
+   4.992,
+   58.079,
+   31.293,
+   71.185
+  ]
+ },
+ {
+  "iso2": "NP",
+  "iso3": "NPL",
+  "m49": 524,
+  "name_en": "Nepal",
+  "name_uz": "Nepal",
+  "slug": "nepal",
+  "continent": "Osiyo",
+  "flag_emoji": "🇳🇵",
+  "centroid_lat": 28.4105,
+  "centroid_lon": 84.1315,
+  "bbox": [
+   80.088,
+   26.398,
+   88.175,
+   30.423
+  ]
+ },
+ {
+  "iso2": "NR",
+  "iso3": "NRU",
+  "m49": 520,
+  "name_en": "Nauru",
+  "name_uz": "Nauru",
+  "slug": "nauru",
+  "continent": "—",
+  "flag_emoji": "🇳🇷",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "NU",
+  "iso3": "NIU",
+  "m49": 570,
+  "name_en": "Niue",
+  "name_uz": "Niue",
+  "slug": "niue",
+  "continent": "—",
+  "flag_emoji": "🇳🇺",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "NZ",
+  "iso3": "NZL",
+  "m49": 554,
+  "name_en": "New Zealand",
+  "name_uz": "Yangi Zelandiya",
+  "slug": "new-zealand",
+  "continent": "Okeaniya",
+  "flag_emoji": "🇳🇿",
+  "centroid_lat": -43.5675,
+  "centroid_lon": 170.379,
+  "bbox": [
+   166.509,
+   -46.641,
+   174.249,
+   -40.494
+  ]
+ },
+ {
+  "iso2": "OM",
+  "iso3": "OMN",
+  "m49": 512,
+  "name_en": "Oman",
+  "name_uz": "Ummon",
+  "slug": "oman",
+  "continent": "Osiyo",
+  "flag_emoji": "🇴🇲",
+  "centroid_lat": 20.788,
+  "centroid_lon": 55.904,
+  "bbox": [
+   52.0,
+   16.651,
+   59.808,
+   24.925
+  ]
+ },
+ {
+  "iso2": "PA",
+  "iso3": "PAN",
+  "m49": 591,
+  "name_en": "Panama",
+  "name_uz": "Panama",
+  "slug": "panama",
+  "continent": "Shimoliy Amerika",
+  "flag_emoji": "🇵🇦",
+  "centroid_lat": 8.4165,
+  "centroid_lon": -80.1045,
+  "bbox": [
+   -82.966,
+   7.221,
+   -77.243,
+   9.612
+  ]
+ },
+ {
+  "iso2": "PE",
+  "iso3": "PER",
+  "m49": 604,
+  "name_en": "Peru",
+  "name_uz": "Peru",
+  "slug": "peru",
+  "continent": "Janubiy Amerika",
+  "flag_emoji": "🇵🇪",
+  "centroid_lat": -9.2025,
+  "centroid_lon": -75.038,
+  "bbox": [
+   -81.411,
+   -18.348,
+   -68.665,
+   -0.057
+  ]
+ },
+ {
+  "iso2": "PF",
+  "iso3": "PYF",
+  "m49": 258,
+  "name_en": "French Polynesia",
+  "name_uz": "Fransuz Polineziyasi",
+  "slug": "french-polynesia",
+  "continent": "—",
+  "flag_emoji": "🇵🇫",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "PG",
+  "iso3": "PNG",
+  "m49": 598,
+  "name_en": "Papua New Guinea",
+  "name_uz": "Papua Yangi Gvineya",
+  "slug": "papua-new-guinea",
+  "continent": "Okeaniya",
+  "flag_emoji": "🇵🇬",
+  "centroid_lat": -6.626,
+  "centroid_lon": 145.901,
+  "bbox": [
+   141.0,
+   -10.652,
+   150.802,
+   -2.6
+  ]
+ },
+ {
+  "iso2": "PH",
+  "iso3": "PHL",
+  "m49": 608,
+  "name_en": "Philippines",
+  "name_uz": "Filippin",
+  "slug": "philippines",
+  "continent": "Osiyo",
+  "flag_emoji": "🇵🇭",
+  "centroid_lat": 15.521,
+  "centroid_lon": 122.0325,
+  "bbox": [
+   119.884,
+   12.537,
+   124.181,
+   18.505
+  ]
+ },
+ {
+  "iso2": "PK",
+  "iso3": "PAK",
+  "m49": 586,
+  "name_en": "Pakistan",
+  "name_uz": "Pokiston",
+  "slug": "pakistan",
+  "continent": "Osiyo",
+  "flag_emoji": "🇵🇰",
+  "centroid_lat": 30.4125,
+  "centroid_lon": 69.3555,
+  "bbox": [
+   60.874,
+   23.692,
+   77.837,
+   37.133
+  ]
+ },
+ {
+  "iso2": "PL",
+  "iso3": "POL",
+  "m49": 616,
+  "name_en": "Poland",
+  "name_uz": "Polsha",
+  "slug": "poland",
+  "continent": "Yevropa",
+  "flag_emoji": "🇵🇱",
+  "centroid_lat": 51.9395,
+  "centroid_lon": 19.0525,
+  "bbox": [
+   14.075,
+   49.027,
+   24.03,
+   54.852
+  ]
+ },
+ {
+  "iso2": "PM",
+  "iso3": "SPM",
+  "m49": 666,
+  "name_en": "Saint Pierre and Miquelon",
+  "name_uz": "Saint Pierre and Miquelon",
+  "slug": "saint-pierre-and-miquelon",
+  "continent": "—",
+  "flag_emoji": "🇵🇲",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "PN",
+  "iso3": "PCN",
+  "m49": 612,
+  "name_en": "Pitcairn",
+  "name_uz": "Pitcairn",
+  "slug": "pitcairn",
+  "continent": "—",
+  "flag_emoji": "🇵🇳",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "PR",
+  "iso3": "PRI",
+  "m49": 630,
+  "name_en": "Puerto Rico",
+  "name_uz": "Puerto-Riko",
+  "slug": "puerto-rico",
+  "continent": "Shimoliy Amerika",
+  "flag_emoji": "🇵🇷",
+  "centroid_lat": 18.234,
+  "centroid_lon": -66.4165,
+  "bbox": [
+   -67.242,
+   17.947,
+   -65.591,
+   18.521
+  ]
+ },
+ {
+  "iso2": "PS",
+  "iso3": "PSE",
+  "m49": 275,
+  "name_en": "Palestine",
+  "name_uz": "Falastin",
+  "slug": "palestine",
+  "continent": "Osiyo",
+  "flag_emoji": "🇵🇸",
+  "centroid_lat": 31.943,
+  "centroid_lon": 35.2365,
+  "bbox": [
+   34.927,
+   31.353,
+   35.546,
+   32.533
+  ]
+ },
+ {
+  "iso2": "PT",
+  "iso3": "PRT",
+  "m49": 620,
+  "name_en": "Portugal",
+  "name_uz": "Portugaliya",
+  "slug": "portugal",
+  "continent": "Yevropa",
+  "flag_emoji": "🇵🇹",
+  "centroid_lat": 39.559,
+  "centroid_lon": -7.958,
+  "bbox": [
+   -9.527,
+   36.838,
+   -6.389,
+   42.28
+  ]
+ },
+ {
+  "iso2": "PW",
+  "iso3": "PLW",
+  "m49": 585,
+  "name_en": "Palau",
+  "name_uz": "Palau",
+  "slug": "palau",
+  "continent": "—",
+  "flag_emoji": "🇵🇼",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "PY",
+  "iso3": "PRY",
+  "m49": 600,
+  "name_en": "Paraguay",
+  "name_uz": "Paragvay",
+  "slug": "paraguay",
+  "continent": "Janubiy Amerika",
+  "flag_emoji": "🇵🇾",
+  "centroid_lat": -23.4455,
+  "centroid_lon": -58.489,
+  "bbox": [
+   -62.685,
+   -27.548,
+   -54.293,
+   -19.343
+  ]
+ },
+ {
+  "iso2": "QA",
+  "iso3": "QAT",
+  "m49": 634,
+  "name_en": "Qatar",
+  "name_uz": "Qatar",
+  "slug": "qatar",
+  "continent": "Osiyo",
+  "flag_emoji": "🇶🇦",
+  "centroid_lat": 25.3355,
+  "centroid_lon": 51.1755,
+  "bbox": [
+   50.744,
+   24.556,
+   51.607,
+   26.115
+  ]
+ },
+ {
+  "iso2": "RE",
+  "iso3": "REU",
+  "m49": 638,
+  "name_en": "Réunion",
+  "name_uz": "Réunion",
+  "slug": "reunion",
+  "continent": "—",
+  "flag_emoji": "🇷🇪",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "RO",
+  "iso3": "ROU",
+  "m49": 642,
+  "name_en": "Romania",
+  "name_uz": "Ruminiya",
+  "slug": "romania",
+  "continent": "Yevropa",
+  "flag_emoji": "🇷🇴",
+  "centroid_lat": 45.9545,
+  "centroid_lon": 24.9235,
+  "bbox": [
+   20.22,
+   43.688,
+   29.627,
+   48.221
+  ]
+ },
+ {
+  "iso2": "RS",
+  "iso3": "SRB",
+  "m49": 688,
+  "name_en": "Serbia",
+  "name_uz": "Serbiya",
+  "slug": "serbia",
+  "continent": "Yevropa",
+  "flag_emoji": "🇷🇸",
+  "centroid_lat": 44.2085,
+  "centroid_lon": 20.908,
+  "bbox": [
+   18.83,
+   42.245,
+   22.986,
+   46.172
+  ]
+ },
+ {
+  "iso2": "RU",
+  "iso3": "RUS",
+  "m49": 643,
+  "name_en": "Russian Federation",
+  "name_uz": "Rossiya",
+  "slug": "russian-federation",
+  "continent": "Yevropa",
+  "flag_emoji": "🇷🇺",
+  "centroid_lat": 59.4245,
+  "centroid_lon": 103.644,
+  "bbox": [
+   27.288,
+   41.151,
+   180.0,
+   77.698
+  ]
+ },
+ {
+  "iso2": "RW",
+  "iso3": "RWA",
+  "m49": 646,
+  "name_en": "Rwanda",
+  "name_uz": "Ruanda",
+  "slug": "rwanda",
+  "continent": "Afrika",
+  "flag_emoji": "🇷🇼",
+  "centroid_lat": -2.0265,
+  "centroid_lon": 29.9205,
+  "bbox": [
+   29.025,
+   -2.918,
+   30.816,
+   -1.135
+  ]
+ },
+ {
+  "iso2": "SA",
+  "iso3": "SAU",
+  "m49": 682,
+  "name_en": "Saudi Arabia",
+  "name_uz": "Saudiya Arabistoni",
+  "slug": "saudi-arabia",
+  "continent": "Osiyo",
+  "flag_emoji": "🇸🇦",
+  "centroid_lat": 24.2545,
+  "centroid_lon": 45.1495,
+  "bbox": [
+   34.632,
+   16.348,
+   55.667,
+   32.161
+  ]
+ },
+ {
+  "iso2": "SB",
+  "iso3": "SLB",
+  "m49": 90,
+  "name_en": "Solomon Islands",
+  "name_uz": "Solomon orollari",
+  "slug": "solomon-islands",
+  "continent": "Okeaniya",
+  "flag_emoji": "🇸🇧",
+  "centroid_lat": -7.929,
+  "centroid_lon": 159.064,
+  "bbox": [
+   158.211,
+   -8.538,
+   159.917,
+   -7.32
+  ]
+ },
+ {
+  "iso2": "SC",
+  "iso3": "SYC",
+  "m49": 690,
+  "name_en": "Seychelles",
+  "name_uz": "Seyshel orollari",
+  "slug": "seychelles",
+  "continent": "—",
+  "flag_emoji": "🇸🇨",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "SD",
+  "iso3": "SDN",
+  "m49": 729,
+  "name_en": "Sudan",
+  "name_uz": "Sudan",
+  "slug": "sudan",
+  "continent": "Afrika",
+  "flag_emoji": "🇸🇩",
+  "centroid_lat": 15.31,
+  "centroid_lon": 30.1735,
+  "bbox": [
+   21.937,
+   8.62,
+   38.41,
+   22.0
+  ]
+ },
+ {
+  "iso2": "SE",
+  "iso3": "SWE",
+  "m49": 752,
+  "name_en": "Sweden",
+  "name_uz": "Shvetsiya",
+  "slug": "sweden",
+  "continent": "Yevropa",
+  "flag_emoji": "🇸🇪",
+  "centroid_lat": 62.234,
+  "centroid_lon": 17.465,
+  "bbox": [
+   11.027,
+   55.362,
+   23.903,
+   69.106
+  ]
+ },
+ {
+  "iso2": "SG",
+  "iso3": "SGP",
+  "m49": 702,
+  "name_en": "Singapore",
+  "name_uz": "Singapur",
+  "slug": "singapore",
+  "continent": "—",
+  "flag_emoji": "🇸🇬",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "SH",
+  "iso3": "SHN",
+  "m49": 654,
+  "name_en": "Saint Helena, Ascension and Tristan da Cunha",
+  "name_uz": "Saint Helena, Ascension and Tristan da Cunha",
+  "slug": "saint-helena-ascension-and-tristan-da-cunha",
+  "continent": "—",
+  "flag_emoji": "🇸🇭",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "SI",
+  "iso3": "SVN",
+  "m49": 705,
+  "name_en": "Slovenia",
+  "name_uz": "Sloveniya",
+  "slug": "slovenia",
+  "continent": "Yevropa",
+  "flag_emoji": "🇸🇮",
+  "centroid_lat": 46.152,
+  "centroid_lon": 15.1315,
+  "bbox": [
+   13.698,
+   45.452,
+   16.565,
+   46.852
+  ]
+ },
+ {
+  "iso2": "SJ",
+  "iso3": "SJM",
+  "m49": 744,
+  "name_en": "Svalbard and Jan Mayen",
+  "name_uz": "Svalbard and Jan Mayen",
+  "slug": "svalbard-and-jan-mayen",
+  "continent": "—",
+  "flag_emoji": "🇸🇯",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "SK",
+  "iso3": "SVK",
+  "m49": 703,
+  "name_en": "Slovakia",
+  "name_uz": "Slovakiya",
+  "slug": "slovakia",
+  "continent": "Yevropa",
+  "flag_emoji": "🇸🇰",
+  "centroid_lat": 48.665,
+  "centroid_lon": 19.719,
+  "bbox": [
+   16.88,
+   47.758,
+   22.558,
+   49.572
+  ]
+ },
+ {
+  "iso2": "SL",
+  "iso3": "SLE",
+  "m49": 694,
+  "name_en": "Sierra Leone",
+  "name_uz": "Syerra-Leone",
+  "slug": "sierra-leone",
+  "continent": "Afrika",
+  "flag_emoji": "🇸🇱",
+  "centroid_lat": 8.4165,
+  "centroid_lon": -11.7385,
+  "bbox": [
+   -13.247,
+   6.786,
+   -10.23,
+   10.047
+  ]
+ },
+ {
+  "iso2": "SM",
+  "iso3": "SMR",
+  "m49": 674,
+  "name_en": "San Marino",
+  "name_uz": "San-Marino",
+  "slug": "san-marino",
+  "continent": "—",
+  "flag_emoji": "🇸🇲",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "SN",
+  "iso3": "SEN",
+  "m49": 686,
+  "name_en": "Senegal",
+  "name_uz": "Senegal",
+  "slug": "senegal",
+  "continent": "Afrika",
+  "flag_emoji": "🇸🇳",
+  "centroid_lat": 14.465,
+  "centroid_lon": -14.5465,
+  "bbox": [
+   -17.625,
+   12.332,
+   -11.468,
+   16.598
+  ]
+ },
+ {
+  "iso2": "SO",
+  "iso3": "SOM",
+  "m49": 706,
+  "name_en": "Somalia",
+  "name_uz": "Somali",
+  "slug": "somalia",
+  "continent": "Afrika",
+  "flag_emoji": "🇸🇴",
+  "centroid_lat": 5.171,
+  "centroid_lon": 46.0575,
+  "bbox": [
+   40.981,
+   -1.683,
+   51.134,
+   12.025
+  ]
+ },
+ {
+  "iso2": "SO-L",
+  "iso3": "SOL",
+  "m49": 9003,
+  "name_en": "Somaliland",
+  "name_uz": "Somalilend",
+  "slug": "somaliland",
+  "continent": "Afrika",
+  "flag_emoji": "",
+  "centroid_lat": 9.7295,
+  "centroid_lon": 45.7535,
+  "bbox": [
+   42.559,
+   7.997,
+   48.948,
+   11.462
+  ]
+ },
+ {
+  "iso2": "SR",
+  "iso3": "SUR",
+  "m49": 740,
+  "name_en": "Suriname",
+  "name_uz": "Surinam",
+  "slug": "suriname",
+  "continent": "Janubiy Amerika",
+  "flag_emoji": "🇸🇷",
+  "centroid_lat": 3.9215,
+  "centroid_lon": -56.0015,
+  "bbox": [
+   -58.045,
+   1.818,
+   -53.958,
+   6.025
+  ]
+ },
+ {
+  "iso2": "SS",
+  "iso3": "SSD",
+  "m49": 728,
+  "name_en": "South Sudan",
+  "name_uz": "Janubiy Sudan",
+  "slug": "south-sudan",
+  "continent": "Afrika",
+  "flag_emoji": "🇸🇸",
+  "centroid_lat": 7.8785,
+  "centroid_lon": 29.5925,
+  "bbox": [
+   23.887,
+   3.509,
+   35.298,
+   12.248
+  ]
+ },
+ {
+  "iso2": "ST",
+  "iso3": "STP",
+  "m49": 678,
+  "name_en": "Sao Tome and Principe",
+  "name_uz": "San-Tome va Prinsipi",
+  "slug": "sao-tome-and-principe",
+  "continent": "—",
+  "flag_emoji": "🇸🇹",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "SV",
+  "iso3": "SLV",
+  "m49": 222,
+  "name_en": "El Salvador",
+  "name_uz": "Salvador",
+  "slug": "el-salvador",
+  "continent": "Shimoliy Amerika",
+  "flag_emoji": "🇸🇻",
+  "centroid_lat": 13.7865,
+  "centroid_lon": -88.91,
+  "bbox": [
+   -90.096,
+   13.149,
+   -87.724,
+   14.424
+  ]
+ },
+ {
+  "iso2": "SX",
+  "iso3": "SXM",
+  "m49": 534,
+  "name_en": "Sint Maarten (Dutch part)",
+  "name_uz": "Sint Maarten (Dutch part)",
+  "slug": "sint-maarten-dutch-part",
+  "continent": "—",
+  "flag_emoji": "🇸🇽",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "SY",
+  "iso3": "SYR",
+  "m49": 760,
+  "name_en": "Syria",
+  "name_uz": "Suriya",
+  "slug": "syria",
+  "continent": "Osiyo",
+  "flag_emoji": "🇸🇾",
+  "centroid_lat": 34.7715,
+  "centroid_lon": 39.0255,
+  "bbox": [
+   35.701,
+   32.313,
+   42.35,
+   37.23
+  ]
+ },
+ {
+  "iso2": "SZ",
+  "iso3": "SWZ",
+  "m49": 748,
+  "name_en": "Swaziland",
+  "name_uz": "Esvatini",
+  "slug": "swaziland",
+  "continent": "Afrika",
+  "flag_emoji": "🇸🇿",
+  "centroid_lat": -26.473,
+  "centroid_lon": 31.3745,
+  "bbox": [
+   30.677,
+   -27.286,
+   32.072,
+   -25.66
+  ]
+ },
+ {
+  "iso2": "TC",
+  "iso3": "TCA",
+  "m49": 796,
+  "name_en": "Turks and Caicos Islands",
+  "name_uz": "Turks and Caicos Islands",
+  "slug": "turks-and-caicos-islands",
+  "continent": "—",
+  "flag_emoji": "🇹🇨",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "TD",
+  "iso3": "TCD",
+  "m49": 148,
+  "name_en": "Chad",
+  "name_uz": "Chad",
+  "slug": "chad",
+  "continent": "Afrika",
+  "flag_emoji": "🇹🇩",
+  "centroid_lat": 15.416,
+  "centroid_lon": 18.7135,
+  "bbox": [
+   13.54,
+   7.422,
+   23.887,
+   23.41
+  ]
+ },
+ {
+  "iso2": "TF",
+  "iso3": "ATF",
+  "m49": 260,
+  "name_en": "French Southern and Antarctic Lands",
+  "name_uz": "French Southern and Antarctic Lands",
+  "slug": "french-southern-and-antarctic-lands",
+  "continent": "Ochiq okean",
+  "flag_emoji": "🇹🇫",
+  "centroid_lat": -49.2,
+  "centroid_lon": 69.64,
+  "bbox": [
+   68.72,
+   -49.775,
+   70.56,
+   -48.625
+  ]
+ },
+ {
+  "iso2": "TG",
+  "iso3": "TGO",
+  "m49": 768,
+  "name_en": "Togo",
+  "name_uz": "Togo",
+  "slug": "togo",
+  "continent": "Afrika",
+  "flag_emoji": "🇹🇬",
+  "centroid_lat": 8.474,
+  "centroid_lon": 0.9075,
+  "bbox": [
+   -0.05,
+   5.929,
+   1.865,
+   11.019
+  ]
+ },
+ {
+  "iso2": "TH",
+  "iso3": "THA",
+  "m49": 764,
+  "name_en": "Thailand",
+  "name_uz": "Tailand",
+  "slug": "thailand",
+  "continent": "Osiyo",
+  "flag_emoji": "🇹🇭",
+  "centroid_lat": 13.0545,
+  "centroid_lon": 101.4825,
+  "bbox": [
+   97.376,
+   5.691,
+   105.589,
+   20.418
+  ]
+ },
+ {
+  "iso2": "TJ",
+  "iso3": "TJK",
+  "m49": 762,
+  "name_en": "Tajikistan",
+  "name_uz": "Tojikiston",
+  "slug": "tajikistan",
+  "continent": "Osiyo",
+  "flag_emoji": "🇹🇯",
+  "centroid_lat": 38.849,
+  "centroid_lon": 71.211,
+  "bbox": [
+   67.442,
+   36.738,
+   74.98,
+   40.96
+  ]
+ },
+ {
+  "iso2": "TK",
+  "iso3": "TKL",
+  "m49": 772,
+  "name_en": "Tokelau",
+  "name_uz": "Tokelau",
+  "slug": "tokelau",
+  "continent": "—",
+  "flag_emoji": "🇹🇰",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "TL",
+  "iso3": "TLS",
+  "m49": 626,
+  "name_en": "Timor-Leste",
+  "name_uz": "Sharqiy Timor",
+  "slug": "timor-leste",
+  "continent": "Osiyo",
+  "flag_emoji": "🇹🇱",
+  "centroid_lat": -8.833,
+  "centroid_lon": 126.1525,
+  "bbox": [
+   124.969,
+   -9.393,
+   127.336,
+   -8.273
+  ]
+ },
+ {
+  "iso2": "TM",
+  "iso3": "TKM",
+  "m49": 795,
+  "name_en": "Turkmenistan",
+  "name_uz": "Turkmaniston",
+  "slug": "turkmenistan",
+  "continent": "Osiyo",
+  "flag_emoji": "🇹🇲",
+  "centroid_lat": 39.0115,
+  "centroid_lon": 59.524,
+  "bbox": [
+   52.502,
+   35.271,
+   66.546,
+   42.752
+  ]
+ },
+ {
+  "iso2": "TN",
+  "iso3": "TUN",
+  "m49": 788,
+  "name_en": "Tunisia",
+  "name_uz": "Tunis",
+  "slug": "tunisia",
+  "continent": "Afrika",
+  "flag_emoji": "🇹🇳",
+  "centroid_lat": 33.829,
+  "centroid_lon": 9.5065,
+  "bbox": [
+   7.524,
+   30.308,
+   11.489,
+   37.35
+  ]
+ },
+ {
+  "iso2": "TO",
+  "iso3": "TON",
+  "m49": 776,
+  "name_en": "Tonga",
+  "name_uz": "Tonga",
+  "slug": "tonga",
+  "continent": "—",
+  "flag_emoji": "🇹🇴",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "TR",
+  "iso3": "TUR",
+  "m49": 792,
+  "name_en": "Turkey",
+  "name_uz": "Turkiya",
+  "slug": "turkey",
+  "continent": "Osiyo",
+  "flag_emoji": "🇹🇷",
+  "centroid_lat": 38.931,
+  "centroid_lon": 35.4825,
+  "bbox": [
+   26.171,
+   35.822,
+   44.794,
+   42.04
+  ]
+ },
+ {
+  "iso2": "TT",
+  "iso3": "TTO",
+  "m49": 780,
+  "name_en": "Trinidad and Tobago",
+  "name_uz": "Trinidad va Tobago",
+  "slug": "trinidad-and-tobago",
+  "continent": "Shimoliy Amerika",
+  "flag_emoji": "🇹🇹",
+  "centroid_lat": 10.445,
+  "centroid_lon": -61.4225,
+  "bbox": [
+   -61.95,
+   10.0,
+   -60.895,
+   10.89
+  ]
+ },
+ {
+  "iso2": "TV",
+  "iso3": "TUV",
+  "m49": 798,
+  "name_en": "Tuvalu",
+  "name_uz": "Tuvalu",
+  "slug": "tuvalu",
+  "continent": "—",
+  "flag_emoji": "🇹🇻",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "TW",
+  "iso3": "TWN",
+  "m49": 158,
+  "name_en": "Taiwan",
+  "name_uz": "Tayvan",
+  "slug": "taiwan",
+  "continent": "Osiyo",
+  "flag_emoji": "🇹🇼",
+  "centroid_lat": 23.633,
+  "centroid_lon": 121.0285,
+  "bbox": [
+   120.106,
+   21.971,
+   121.951,
+   25.295
+  ]
+ },
+ {
+  "iso2": "TZ",
+  "iso3": "TZA",
+  "m49": 834,
+  "name_en": "Tanzania",
+  "name_uz": "Tanzaniya",
+  "slug": "tanzania",
+  "continent": "Afrika",
+  "flag_emoji": "🇹🇿",
+  "centroid_lat": -6.3355,
+  "centroid_lon": 34.8285,
+  "bbox": [
+   29.34,
+   -11.721,
+   40.317,
+   -0.95
+  ]
+ },
+ {
+  "iso2": "UA",
+  "iso3": "UKR",
+  "m49": 804,
+  "name_en": "Ukraine",
+  "name_uz": "Ukraina",
+  "slug": "ukraine",
+  "continent": "Yevropa",
+  "flag_emoji": "🇺🇦",
+  "centroid_lat": 48.348,
+  "centroid_lon": 31.0835,
+  "bbox": [
+   22.086,
+   44.361,
+   40.081,
+   52.335
+  ]
+ },
+ {
+  "iso2": "UG",
+  "iso3": "UGA",
+  "m49": 800,
+  "name_en": "Uganda",
+  "name_uz": "Uganda",
+  "slug": "uganda",
+  "continent": "Afrika",
+  "flag_emoji": "🇺🇬",
+  "centroid_lat": 1.4035,
+  "centroid_lon": 32.3075,
+  "bbox": [
+   29.579,
+   -1.443,
+   35.036,
+   4.25
+  ]
+ },
+ {
+  "iso2": "UM",
+  "iso3": "UMI",
+  "m49": 581,
+  "name_en": "United States Minor Outlying Islands",
+  "name_uz": "United States Minor Outlying Islands",
+  "slug": "united-states-minor-outlying-islands",
+  "continent": "—",
+  "flag_emoji": "🇺🇲",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "US",
+  "iso3": "USA",
+  "m49": 840,
+  "name_en": "United States",
+  "name_uz": "AQSH",
+  "slug": "united-states",
+  "continent": "Shimoliy Amerika",
+  "flag_emoji": "🇺🇸",
+  "centroid_lat": 37.2345,
+  "centroid_lon": -95.826,
+  "bbox": [
+   -124.687,
+   25.08,
+   -66.965,
+   49.389
+  ]
+ },
+ {
+  "iso2": "UY",
+  "iso3": "URY",
+  "m49": 858,
+  "name_en": "Uruguay",
+  "name_uz": "Urugvay",
+  "slug": "uruguay",
+  "continent": "Janubiy Amerika",
+  "flag_emoji": "🇺🇾",
+  "centroid_lat": -32.5315,
+  "centroid_lon": -55.8185,
+  "bbox": [
+   -58.427,
+   -34.953,
+   -53.21,
+   -30.11
+  ]
+ },
+ {
+  "iso2": "UZ",
+  "iso3": "UZB",
+  "m49": 860,
+  "name_en": "Uzbekistan",
+  "name_uz": "O'zbekiston",
+  "slug": "uzbekistan",
+  "continent": "Osiyo",
+  "flag_emoji": "🇺🇿",
+  "centroid_lat": 41.366,
+  "centroid_lon": 64.492,
+  "bbox": [
+   55.929,
+   37.145,
+   73.055,
+   45.587
+  ]
+ },
+ {
+  "iso2": "VA",
+  "iso3": "VAT",
+  "m49": 336,
+  "name_en": "Holy See (Vatican City State)",
+  "name_uz": "Vatikan",
+  "slug": "holy-see-vatican-city-state",
+  "continent": "—",
+  "flag_emoji": "🇻🇦",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "VC",
+  "iso3": "VCT",
+  "m49": 670,
+  "name_en": "Saint Vincent and the Grenadines",
+  "name_uz": "Saint Vincent and the Grenadines",
+  "slug": "saint-vincent-and-the-grenadines",
+  "continent": "—",
+  "flag_emoji": "🇻🇨",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "VE",
+  "iso3": "VEN",
+  "m49": 862,
+  "name_en": "Venezuela",
+  "name_uz": "Venesuela",
+  "slug": "venezuela",
+  "continent": "Janubiy Amerika",
+  "flag_emoji": "🇻🇪",
+  "centroid_lat": 6.443,
+  "centroid_lon": -66.5315,
+  "bbox": [
+   -73.305,
+   0.724,
+   -59.758,
+   12.162
+  ]
+ },
+ {
+  "iso2": "VG",
+  "iso3": "VGB",
+  "m49": 92,
+  "name_en": "Virgin Islands, British",
+  "name_uz": "Virgin Islands, British",
+  "slug": "virgin-islands-british",
+  "continent": "—",
+  "flag_emoji": "🇻🇬",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "VI",
+  "iso3": "VIR",
+  "m49": 850,
+  "name_en": "Virgin Islands, U.S.",
+  "name_uz": "Virgin Islands, U.S.",
+  "slug": "virgin-islands-u-s",
+  "continent": "—",
+  "flag_emoji": "🇻🇮",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "VN",
+  "iso3": "VNM",
+  "m49": 704,
+  "name_en": "Vietnam",
+  "name_uz": "Vyetnam",
+  "slug": "vietnam",
+  "continent": "Osiyo",
+  "flag_emoji": "🇻🇳",
+  "centroid_lat": 15.976,
+  "centroid_lon": 105.7525,
+  "bbox": [
+   102.17,
+   8.6,
+   109.335,
+   23.352
+  ]
+ },
+ {
+  "iso2": "VU",
+  "iso3": "VUT",
+  "m49": 548,
+  "name_en": "Vanuatu",
+  "name_uz": "Vanuatu",
+  "slug": "vanuatu",
+  "continent": "Okeaniya",
+  "flag_emoji": "🇻🇺",
+  "centroid_lat": -15.183,
+  "centroid_lon": 166.9495,
+  "bbox": [
+   166.629,
+   -15.74,
+   167.27,
+   -14.626
+  ]
+ },
+ {
+  "iso2": "WF",
+  "iso3": "WLF",
+  "m49": 876,
+  "name_en": "Wallis and Futuna",
+  "name_uz": "Wallis and Futuna",
+  "slug": "wallis-and-futuna",
+  "continent": "—",
+  "flag_emoji": "🇼🇫",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "WS",
+  "iso3": "WSM",
+  "m49": 882,
+  "name_en": "Samoa",
+  "name_uz": "Samoa",
+  "slug": "samoa",
+  "continent": "—",
+  "flag_emoji": "🇼🇸",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "XK",
+  "iso3": "XKX",
+  "m49": 9002,
+  "name_en": "Kosovo",
+  "name_uz": "Kosovo",
+  "slug": "kosovo",
+  "continent": "Yevropa",
+  "flag_emoji": "🇽🇰",
+  "centroid_lat": 42.5595,
+  "centroid_lon": 20.923,
+  "bbox": [
+   20.071,
+   41.847,
+   21.775,
+   43.272
+  ]
+ },
+ {
+  "iso2": "YE",
+  "iso3": "YEM",
+  "m49": 887,
+  "name_en": "Yemen",
+  "name_uz": "Yaman",
+  "slug": "yemen",
+  "continent": "Osiyo",
+  "flag_emoji": "🇾🇪",
+  "centroid_lat": 15.793,
+  "centroid_lon": 47.857,
+  "bbox": [
+   42.605,
+   12.586,
+   53.109,
+   19.0
+  ]
+ },
+ {
+  "iso2": "YT",
+  "iso3": "MYT",
+  "m49": 175,
+  "name_en": "Mayotte",
+  "name_uz": "Mayotte",
+  "slug": "mayotte",
+  "continent": "—",
+  "flag_emoji": "🇾🇹",
+  "centroid_lat": null,
+  "centroid_lon": null,
+  "bbox": null
+ },
+ {
+  "iso2": "ZA",
+  "iso3": "ZAF",
+  "m49": 710,
+  "name_en": "South Africa",
+  "name_uz": "Janubiy Afrika Respublikasi",
+  "slug": "south-africa",
+  "continent": "Afrika",
+  "flag_emoji": "🇿🇦",
+  "centroid_lat": -28.455,
+  "centroid_lon": 24.5875,
+  "bbox": [
+   16.345,
+   -34.819,
+   32.83,
+   -22.091
+  ]
+ },
+ {
+  "iso2": "ZM",
+  "iso3": "ZMB",
+  "m49": 894,
+  "name_en": "Zambia",
+  "name_uz": "Zambiya",
+  "slug": "zambia",
+  "continent": "Afrika",
+  "flag_emoji": "🇿🇲",
+  "centroid_lat": -13.0995,
+  "centroid_lon": 27.687,
+  "bbox": [
+   21.888,
+   -17.961,
+   33.486,
+   -8.238
+  ]
+ },
+ {
+  "iso2": "ZW",
+  "iso3": "ZWE",
+  "m49": 716,
+  "name_en": "Zimbabwe",
+  "name_uz": "Zimbabve",
+  "slug": "zimbabwe",
+  "continent": "Afrika",
+  "flag_emoji": "🇿🇼",
+  "centroid_lat": -18.89,
+  "centroid_lon": 29.057,
+  "bbox": [
+   25.264,
+   -22.272,
+   32.85,
+   -15.508
+  ]
+ }
+]

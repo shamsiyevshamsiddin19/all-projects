@@ -1,128 +1,237 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, asc
-from typing import List, Optional
-from app.database import get_db
-from app.models.country import Country
-from app.models.channel import Channel, ChannelCountry
-from app.models.stream import Stream
-from app.schemas.channel import ChannelSimple, ChannelDetail, ChannelListResponse
-from app.schemas.stream import StreamInfo
-from app.services.token_service import generate_stream_token
-from app.config import settings
+"""Kanallar ro'yxati va tafsiloti."""
 
+import base64
+import json
+import logging
+from typing import Any, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from sqlalchemy import and_, asc, desc, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
+from app.database import get_db
+from app.models.channel import Channel, ChannelCountry
+from app.models.country import Country
+from app.models.stream import Stream
+from app.schemas.channel import ChannelDetail, ChannelListResponse, ChannelSimple
+from app.schemas.stream import StreamInfo
+from app.services.token_service import build_play_url
+
+logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Channels"])
 
-def format_stream_info(stream: Stream) -> StreamInfo:
-    token = generate_stream_token(stream.id)
-    play_url = f"{settings.PROXY_BASE_URL}/{stream.id}?t={token}" if stream.needs_proxy else stream.url
+# Shu balldan pastdagi oqimlar foydalanuvchiga umuman ko'rsatilmaydi
+MIN_PLAYABLE_SCORE = 20
+
+
+def stream_info(stream: Stream) -> StreamInfo:
     return StreamInfo(
         id=stream.id,
         format=stream.format or "mp3",
-        bitrate=stream.bitrate or 128,
+        bitrate=stream.bitrate,
         is_https=stream.is_https,
         needs_proxy=stream.needs_proxy,
         score=stream.score,
-        play_url=play_url
+        play_url=build_play_url(stream),
     )
+
+
+def playable_streams(channel: Channel) -> list[Stream]:
+    """Kanalning ijro etsa bo'ladigan oqimlari — yaxshisidan boshlab."""
+    streams = [
+        s for s in channel.streams
+        if s.is_active and s.score > MIN_PLAYABLE_SCORE and not s.is_geo_blocked
+    ]
+    return sorted(streams, key=lambda s: (s.priority, -s.score))
+
+
+def to_simple(channel: Channel) -> Optional[ChannelSimple]:
+    """Ijro etib bo'lmaydigan kanal uchun None — u ro'yxatga tushmaydi."""
+    streams = playable_streams(channel)
+    if not streams:
+        return None
+
+    infos = [stream_info(s) for s in streams]
+    return ChannelSimple(
+        id=channel.id,
+        type=channel.type,
+        slug=channel.slug,
+        name=channel.name,
+        logo_url=channel.logo_url,
+        tags=channel.tags or [],
+        languages=channel.languages or [],
+        bitrate=channel.bitrate_max,
+        score=infos[0].score,
+        primary_stream=infos[0],
+        # Birinchi oqim ishlamasa frontend zaxiraga o'tadi
+        fallback_streams=infos[1:4],
+    )
+
+
+def _encode_cursor(payload: dict[str, Any]) -> str:
+    return base64.urlsafe_b64encode(
+        json.dumps(payload, default=str).encode()
+    ).decode().rstrip("=")
+
+
+def _decode_cursor(cursor: str) -> Optional[dict[str, Any]]:
+    try:
+        padded = cursor + "=" * (-len(cursor) % 4)
+        return json.loads(base64.urlsafe_b64decode(padded).decode())
+    except Exception:
+        return None
+
+
+# Tartiblash ustunlari: (asosiy ustun, yo'nalish). id har doim tiebreaker —
+# busiz bir xil qiymatli qatorlar sahifalar orasida takrorlanadi yoki tushib qoladi.
+_SORTS = {
+    "popular": (Channel.popularity, "desc"),
+    "name": (Channel.name, "asc"),
+    "bitrate": (Channel.bitrate_max, "desc"),
+}
+
 
 @router.get("/countries/{slug}/channels", response_model=ChannelListResponse)
 async def list_country_channels(
     slug: str,
+    response: Response,
     type: str = Query("radio", pattern="^(radio|tv)$"),
     sort: str = Query("popular", pattern="^(popular|name|bitrate)$"),
-    tag: Optional[str] = None,
-    lang: Optional[str] = None,
+    tag: Optional[str] = Query(None, max_length=50),
+    lang: Optional[str] = Query(None, max_length=50),
     limit: int = Query(50, ge=1, le=100),
-    cursor: Optional[int] = None,
-    db: AsyncSession = Depends(get_db)
+    cursor: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
 ):
-    country_res = await db.execute(select(Country).where(Country.slug == slug))
-    country = country_res.scalar_one_or_none()
+    # Javobda imzolangan play_url bor — umumiy keshlarga tushmasligi kerak
+    response.headers["Cache-Control"] = "private, no-store"
+
+    country = (
+        await db.execute(select(Country).where(Country.slug == slug))
+    ).scalar_one_or_none()
     if not country:
-        raise HTTPException(status_code=404, detail="Country not found")
+        raise HTTPException(status_code=404, detail="Davlat topilmadi")
+
+    # Faqat ijro etsa bo'ladigan oqimi bor kanallar
+    has_playable = (
+        select(Stream.channel_id)
+        .where(
+            Stream.channel_id == Channel.id,
+            Stream.is_active.is_(True),
+            Stream.score > MIN_PLAYABLE_SCORE,
+            Stream.is_geo_blocked.is_(False),
+        )
+        .exists()
+    )
+
+    base_filters = [
+        ChannelCountry.country_iso2 == country.iso2,
+        Channel.type == type,
+        Channel.is_archived.is_(False),
+        has_playable,
+    ]
+    if tag:
+        # JSONB `@>` — GIN indeksdan foydalanadi
+        base_filters.append(Channel.tags.contains([tag.lower()]))
+    if lang:
+        base_filters.append(Channel.languages.contains([lang.lower()]))
+
+    # Umumiy son — alohida COUNT. Oldin `total` sahifadagi elementlar soniga
+    # teng edi va foydalanuvchiga noto'g'ri raqam ko'rsatilardi.
+    total = (
+        await db.execute(
+            select(func.count(func.distinct(Channel.id)))
+            .select_from(Channel)
+            .join(ChannelCountry, ChannelCountry.channel_id == Channel.id)
+            .where(and_(*base_filters))
+        )
+    ).scalar() or 0
+
+    sort_column, direction = _SORTS[sort]
+    order = [
+        desc(sort_column).nulls_last() if direction == "desc" else asc(sort_column),
+        asc(Channel.id),
+    ]
 
     query = (
         select(Channel)
+        .options(selectinload(Channel.streams))  # N+1 ni yo'q qiladi
         .join(ChannelCountry, ChannelCountry.channel_id == Channel.id)
-        .where(
-            ChannelCountry.country_iso2 == country.iso2,
-            Channel.type == type,
-            Channel.is_archived == False
-        )
+        .where(and_(*base_filters))
+        .order_by(*order)
     )
 
-    if tag:
-        query = query.where(Channel.tags.contains([tag]))
-    if lang:
-        query = query.where(Channel.languages.contains([lang]))
-
-    if sort == "name":
-        query = query.order_by(asc(Channel.name))
-    elif sort == "bitrate":
-        query = query.order_by(desc(Channel.bitrate_max), desc(Channel.popularity))
-    else:
-        query = query.order_by(desc(Channel.popularity), asc(Channel.name))
-
+    # Keyset paginatsiya — OFFSET emas. OFFSET katta ro'yxatlarda sekin ishlaydi
+    # va yangi yozuv qo'shilganda sahifalar siljib ketadi.
     if cursor:
-        query = query.offset(cursor)
-    query = query.limit(limit)
+        decoded = _decode_cursor(cursor)
+        if decoded and "v" in decoded and "id" in decoded:
+            last_value, last_id = decoded["v"], decoded["id"]
+            if last_value is None:
+                query = query.where(Channel.id > last_id)
+            elif direction == "desc":
+                query = query.where(
+                    or_(
+                        sort_column < last_value,
+                        and_(sort_column == last_value, Channel.id > last_id),
+                    )
+                )
+            else:
+                query = query.where(
+                    or_(
+                        sort_column > last_value,
+                        and_(sort_column == last_value, Channel.id > last_id),
+                    )
+                )
 
-    channels_res = await db.execute(query)
-    channels = channels_res.scalars().all()
+    # Bitta ortiqcha qator — keyingi sahifa bor-yo'qligini bilish uchun
+    rows = (await db.execute(query.limit(limit + 1))).scalars().unique().all()
+    has_more = len(rows) > limit
+    rows = rows[:limit]
 
-    items: List[ChannelSimple] = []
-    for ch in channels:
-        # Load streams for channel
-        streams_res = await db.execute(
-            select(Stream)
-            .where(Stream.channel_id == ch.id, Stream.is_active == True, Stream.score > 20)
-            .order_by(desc(Stream.score))
-        )
-        streams = streams_res.scalars().all()
-        primary_stream = format_stream_info(streams[0]) if streams else None
+    items = [simple for simple in (to_simple(ch) for ch in rows) if simple]
 
-        items.append(
-            ChannelSimple(
-                id=ch.id,
-                type=ch.type,
-                slug=ch.slug,
-                name=ch.name,
-                logo_url=ch.logo_url,
-                tags=ch.tags or [],
-                languages=ch.languages or [],
-                bitrate=ch.bitrate_max or 128,
-                score=primary_stream.score if primary_stream else 0,
-                primary_stream=primary_stream
-            )
-        )
+    next_cursor = None
+    if has_more and rows:
+        last = rows[-1]
+        next_cursor = _encode_cursor({
+            "v": getattr(last, sort_column.key),
+            "id": last.id,
+        })
 
-    next_cursor = (cursor or 0) + len(items) if len(items) == limit else None
-    return ChannelListResponse(
-        total=len(items),
-        items=items,
-        next_cursor=next_cursor
-    )
+    return ChannelListResponse(total=total, items=items, next_cursor=next_cursor)
 
 
 @router.get("/channels/{slug}", response_model=ChannelDetail)
 async def get_channel_detail(
     slug: str,
-    db: AsyncSession = Depends(get_db)
+    response: Response,
+    db: AsyncSession = Depends(get_db),
 ):
-    channel_res = await db.execute(select(Channel).where(Channel.slug == slug))
-    channel = channel_res.scalar_one_or_none()
-    if not channel:
-        raise HTTPException(status_code=404, detail="Channel not found")
+    response.headers["Cache-Control"] = "private, no-store"
 
-    streams_res = await db.execute(
-        select(Stream)
-        .where(Stream.channel_id == channel.id, Stream.is_active == True)
-        .order_by(desc(Stream.score))
+    channel = (
+        await db.execute(
+            select(Channel)
+            .options(selectinload(Channel.streams), selectinload(Channel.country_links))
+            .where(Channel.slug == slug, Channel.is_archived.is_(False))
+        )
+    ).scalar_one_or_none()
+    if not channel:
+        raise HTTPException(status_code=404, detail="Kanal topilmadi")
+
+    # Tafsilot sahifasida ham filtr qo'llanadi — oldin bu yerda filtr yo'q edi
+    # va o'lik oqimlar qaytarilardi
+    streams = playable_streams(channel)
+    if not streams:
+        raise HTTPException(status_code=404, detail="Bu kanalda faol oqim yo'q")
+
+    infos = [stream_info(s) for s in streams]
+    primary_country = next(
+        (link.country_iso2 for link in channel.country_links if link.is_primary),
+        next((link.country_iso2 for link in channel.country_links), None),
     )
-    streams = streams_res.scalars().all()
-    stream_infos = [format_stream_info(s) for s in streams]
-    primary_stream = stream_infos[0] if stream_infos else None
 
     return ChannelDetail(
         id=channel.id,
@@ -133,9 +242,11 @@ async def get_channel_detail(
         homepage=channel.homepage,
         tags=channel.tags or [],
         languages=channel.languages or [],
-        bitrate=channel.bitrate_max or 128,
-        score=primary_stream.score if primary_stream else 0,
-        primary_stream=primary_stream,
+        bitrate=channel.bitrate_max,
+        score=infos[0].score,
+        primary_stream=infos[0],
+        fallback_streams=infos[1:4],
         popularity=channel.popularity,
-        streams=stream_infos
+        streams=infos,
+        country_iso2=primary_country,
     )

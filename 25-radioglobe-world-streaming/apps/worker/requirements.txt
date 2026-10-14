@@ -7,3 +7,4 @@ pydantic-settings>=2.2.0
 python-dotenv>=1.0.1
 orjson>=3.10.3
 tqdm>=4.66.4
+pycountry>=24.6.1

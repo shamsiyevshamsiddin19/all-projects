@@ -1,98 +1,88 @@
-from fastapi import APIRouter, Depends, Query
+"""Kanal va davlat bo'yicha qidiruv."""
+
+from fastapi import APIRouter, Depends, Query, Response
+from sqlalchemy import desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_, desc
-from typing import List, Dict, Any
+from sqlalchemy.orm import selectinload
+
 from app.database import get_db
-from app.models.country import Country
 from app.models.channel import Channel
+from app.models.country import Country
 from app.models.stream import Stream
-from app.schemas.channel import ChannelSimple
+from app.routers.channels import MIN_PLAYABLE_SCORE, to_simple
 from app.schemas.country import CountrySimple
-from app.routers.channels import format_stream_info
 
 router = APIRouter(prefix="/search", tags=["Search"])
 
+# Trigram o'xshashligi chegarasi: pastroq qiymat ko'proq (lekin shovqinli) natija
+SIMILARITY_THRESHOLD = 0.15
+
+
 @router.get("")
-async def search_stations_and_countries(
-    q: str = Query(..., min_length=1, max_length=100),
+async def search(
+    response: Response,
+    q: str = Query(..., min_length=2, max_length=100),
     limit: int = Query(20, ge=1, le=50),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
-    query_pattern = f"%{q.lower()}%"
+    # Natijada imzolangan play_url bor
+    response.headers["Cache-Control"] = "private, no-store"
 
-    # Search countries
-    c_stmt = (
-        select(Country)
+    term = q.strip()
+    pattern = f"%{term.lower()}%"
+
+    countries = (
+        await db.execute(
+            select(Country)
+            .where(
+                or_(
+                    Country.name_en.ilike(pattern),
+                    Country.name_uz.ilike(pattern),
+                    func.lower(Country.iso2) == term.lower(),
+                )
+            )
+            .order_by(desc(Country.radio_count))
+            .limit(5)
+        )
+    ).scalars().all()
+
+    # Trigram o'xshashligi bo'yicha tartiblash — ix_channels_name_trgm
+    # GIN indeksidan foydalanadi. Oldin faqat ilike '%...%' ishlatilardi va
+    # har qidiruvda butun jadval skanerlanardi.
+    similarity = func.similarity(Channel.name, term)
+
+    has_playable = (
+        select(Stream.channel_id)
         .where(
-            or_(
-                Country.name_en.ilike(query_pattern),
-                Country.name_uz.ilike(query_pattern),
-                Country.iso2.ilike(query_pattern)
-            )
+            Stream.channel_id == Channel.id,
+            Stream.is_active.is_(True),
+            Stream.score > MIN_PLAYABLE_SCORE,
+            Stream.is_geo_blocked.is_(False),
         )
-        .order_by(desc(Country.radio_count))
-        .limit(5)
+        .exists()
     )
-    c_res = await db.execute(c_stmt)
-    countries = c_res.scalars().all()
 
-    # Search channels
-    ch_stmt = (
-        select(Channel)
-        .where(
-            Channel.is_archived == False,
-            or_(
-                Channel.name.ilike(query_pattern),
-                Channel.slug.ilike(query_pattern)
+    channels = (
+        await db.execute(
+            select(Channel)
+            .options(selectinload(Channel.streams))
+            .where(
+                Channel.is_archived.is_(False),
+                has_playable,
+                or_(
+                    Channel.name.ilike(pattern),
+                    similarity > SIMILARITY_THRESHOLD,
+                ),
             )
+            .order_by(desc(similarity), desc(Channel.popularity))
+            .limit(limit)
         )
-        .order_by(desc(Channel.popularity))
-        .limit(limit)
-    )
-    ch_res = await db.execute(ch_stmt)
-    channels = ch_res.scalars().all()
+    ).scalars().unique().all()
 
-    channel_items: List[ChannelSimple] = []
-    for ch in channels:
-        streams_res = await db.execute(
-            select(Stream)
-            .where(Stream.channel_id == ch.id, Stream.is_active == True, Stream.score > 20)
-            .order_by(desc(Stream.score))
-        )
-        streams = streams_res.scalars().all()
-        primary_stream = format_stream_info(streams[0]) if streams else None
-
-        channel_items.append(
-            ChannelSimple(
-                id=ch.id,
-                type=ch.type,
-                slug=ch.slug,
-                name=ch.name,
-                logo_url=ch.logo_url,
-                tags=ch.tags or [],
-                languages=ch.languages or [],
-                bitrate=ch.bitrate_max or 128,
-                score=primary_stream.score if primary_stream else 0,
-                primary_stream=primary_stream
-            )
-        )
+    stations = [simple for simple in (to_simple(ch) for ch in channels) if simple]
 
     return {
-        "query": q,
-        "countries": [
-            CountrySimple(
-                iso2=c.iso2,
-                iso3=c.iso3,
-                m49=c.m49,
-                name_uz=c.name_uz,
-                name_en=c.name_en,
-                slug=c.slug,
-                continent=c.continent,
-                flag_emoji=c.flag_emoji,
-                radio_count=c.radio_count,
-                tv_count=c.tv_count
-            )
-            for c in countries
-        ],
-        "stations": channel_items
+        "query": term,
+        "countries": [CountrySimple.model_validate(c) for c in countries],
+        "stations": stations,
     }
