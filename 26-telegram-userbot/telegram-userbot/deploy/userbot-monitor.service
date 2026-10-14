@@ -1,0 +1,6 @@
+[Unit]
+Description=Userbot health monitor (alert on failure)
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /opt/telegram-userbot/deploy/monitor.sh

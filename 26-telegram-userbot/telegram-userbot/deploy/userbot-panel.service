@@ -1,0 +1,16 @@
+[Unit]
+Description=Userbot web boshqaruv paneli
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Environment=PYTHONUNBUFFERED=1
+WorkingDirectory=/opt/telegram-userbot
+ExecStart=/opt/telegram-userbot/venv/bin/python webpanel.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

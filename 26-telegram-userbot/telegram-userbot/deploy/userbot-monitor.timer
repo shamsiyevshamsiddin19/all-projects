@@ -1,0 +1,10 @@
+[Unit]
+Description=Userbot monitorni har 3 daqiqada ishga tushiradi
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=3min
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target

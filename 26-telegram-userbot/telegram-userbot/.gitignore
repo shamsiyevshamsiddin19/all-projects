@@ -1,0 +1,17 @@
+# Maxfiy / shaxsiy — hech qachon yuklanmasin
+.env
+*.session
+*.session-journal
+sessions/
+data/
+persona.txt
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Boshqa
+*.tmp
+.DS_Store

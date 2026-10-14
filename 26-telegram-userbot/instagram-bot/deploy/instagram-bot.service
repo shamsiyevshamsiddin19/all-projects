@@ -1,0 +1,19 @@
+[Unit]
+Description=Instagram Bot (webhook)
+After=network.target
+
+[Service]
+Type=simple
+# O'zingizga moslang: bot papkasi qayerda joylashgan
+WorkingDirectory=/opt/instagram-bot
+# .env fayldan sozlamalarni o'qiydi
+EnvironmentFile=/opt/instagram-bot/.env
+# gunicorn bilan 2 ta worker, 5000-portда
+ExecStart=/opt/instagram-bot/venv/bin/gunicorn --workers 2 --bind 127.0.0.1:5000 app:app
+Restart=always
+RestartSec=5
+User=www-data
+Group=www-data
+
+[Install]
+WantedBy=multi-user.target

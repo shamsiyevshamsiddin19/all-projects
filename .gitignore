@@ -13,3 +13,4 @@ env/
 *.pem
 *.key
 *.log
+*.rdb

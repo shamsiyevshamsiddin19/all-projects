@@ -1,0 +1,19 @@
+[Unit]
+Description=Telegram Userbot (%i)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Environment=PYTHONUNBUFFERED=1
+WorkingDirectory=/opt/telegram-userbot
+ExecStart=/opt/telegram-userbot/venv/bin/python userbot.py %i
+Restart=always
+RestartSec=5
+# Loglar journalctl orqali ko'rinadi
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

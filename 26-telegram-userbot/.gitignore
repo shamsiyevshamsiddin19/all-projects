@@ -1,0 +1,25 @@
+# Maxfiy va shaxsiy ma'lumotlar
+.env
+.env.*
+*.session
+*.session-journal
+sessions/
+data/
+persona.txt
+*.key
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+venv/
+.venv/
+env/
+ENV/
+
+# Logs va vaqtinchalik fayllar
+*.log
+*.tmp
+.DS_Store

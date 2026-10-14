@@ -24,6 +24,7 @@ REPOS = {
     "23-study-timer": "https://github.com/shamsiyevshamsiddin19/study-timer.git",
     "24-blog": "https://github.com/shamsiyevshamsiddin19/blog.git",
     "25-radioglobe-world-streaming": "https://github.com/shamsiyevshamsiddin19/radio-world-streaming.git",
+    "26-telegram-userbot": "https://github.com/shamsiyevshamsiddin19/userbot.git",
 }
 
 ROOT_DIR = Path(__file__).resolve().parent

@@ -27,6 +27,7 @@ foydalanuvchilarga xizmat ko'rsatadigan tayyor mahsulotlar.
 | 🗓️ **[07-studyvault-exam-store](./07-studyvault-exam-store)** | Sessiyaga tayyorgarlik materiallari savdosi — Click to'lov, referal, HWID-aktivatsiya. | `Python` `Aiogram 3` `PostgreSQL` |
 | 📝 **[08-captionflow-video-bot](./08-captionflow-video-bot)** | Videoga avtomatik subtitr (tarjima) yaratib qo'shib beradi. | `Python` `Aiogram 3` `FFmpeg` |
 | 🎓 **[09-campusmate-lms-bot](./09-campusmate-lms-bot)** | TUIT LMS integratsiyasi — dars jadvali, baholar, deadline eslatmalari. | `Python` `Aiogram 3` `httpx/lxml` |
+| 🤖 **[26-telegram-userbot](./26-telegram-userbot)** | Telethon asosidagi ko'p akkauntli shaxsiy Telegram userbot + Instagram Gemini boti (autodraft, autoreply, web panel). | `Python` `Telethon` `Gemini AI` `aiohttp` |
 
 ### 🌐 Web platformalar
 
