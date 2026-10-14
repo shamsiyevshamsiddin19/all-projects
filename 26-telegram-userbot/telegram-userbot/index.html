@@ -1247,22 +1247,356 @@
     .mobile-close-btn {
       display: flex;
     }
+
+    /* TOPBAR COMPACT ON MOBILE */
+    .top-app-bar {
+      height: 50px;
+      padding: 0 12px;
+    }
+    .top-left {
+      gap: 8px;
+    }
+    .breadcrumbs .bc-brand-title,
+    .breadcrumbs .bc-slash-brand {
+      display: none;
+    }
+    .breadcrumbs {
+      font-size: 13px;
+      gap: 6px;
+    }
+    .bc-acc-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--brand);
+      background: rgba(16, 163, 127, 0.15);
+      border: 1px solid rgba(16, 163, 127, 0.3);
+      padding: 2px 7px;
+      border-radius: 6px;
+    }
+    .btn-refresh {
+      padding: 6px 11px;
+      font-size: 11.5px;
+      gap: 5px;
+    }
+    .btn-refresh-text {
+      display: none;
+    }
+    .btn-refresh .icon {
+      width: 15px;
+      height: 15px;
+    }
+
+    /* VIEWS WRAPPER & HEADERS */
     .views-wrapper {
-      padding: 16px;
+      padding: 10px 12px;
     }
-    .metrics-grid-4 {
-      grid-template-columns: 1fr;
+    .view-header {
+      margin-bottom: 12px;
+      gap: 6px;
     }
-    .toggles-grid-2 {
-      grid-template-columns: 1fr;
+    .vh-title {
+      font-size: 16px;
+      gap: 8px;
     }
-    .resource-grid {
-      grid-template-columns: 1fr;
+    .vh-sub {
+      font-size: 11.5px;
+      margin-top: 2px;
+      line-height: 1.35;
+    }
+
+    /* COMPACT HERO PROFILE CARD ON MOBILE */
+    .profile-hero {
+      padding: 13px 14px;
+      border-radius: 14px;
+      margin-bottom: 10px;
+      gap: 10px;
     }
     .ph-left {
-      flex-direction: column;
-      align-items: flex-start;
+      flex-direction: row !important;
+      align-items: center !important;
+      gap: 12px;
+      width: 100%;
     }
+    .ph-avatar {
+      width: 46px;
+      height: 46px;
+      flex-shrink: 0;
+    }
+    .ph-avatar .avatar-fallback {
+      font-size: 18px;
+    }
+    .ph-name {
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .ph-meta {
+      display: flex;
+      align-items: center;
+      gap: 4px 6px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+    .ph-meta-item {
+      font-size: 10.5px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      gap: 4px;
+    }
+    .ph-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      width: 100%;
+      margin-top: 2px;
+    }
+    .ph-actions .btn-refresh {
+      width: 100%;
+      justify-content: center;
+      padding: 8px 10px;
+      font-size: 12px;
+      border-radius: 10px;
+    }
+    .ph-actions .btn-refresh .btn-refresh-text {
+      display: inline !important;
+    }
+
+    /* METRICS 2-COLUMN GRID (COMPACT 2x2 ON MOBILE) */
+    .metrics-grid-4 {
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .stat-card {
+      padding: 10px 12px;
+      border-radius: 12px;
+    }
+    .sc-header {
+      font-size: 11px;
+      margin-bottom: 4px;
+    }
+    .sc-header .icon {
+      width: 13px;
+      height: 13px;
+    }
+    .sc-val {
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .sc-sub {
+      font-size: 10.5px;
+      margin-top: 2px;
+    }
+
+    /* DISTRIBUTION / CHART SECTION ON MOBILE */
+    .chart-bar-section {
+      padding: 12px 14px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+    }
+    .chart-bar-wrap {
+      height: 8px;
+      margin: 8px 0;
+    }
+    .chart-legend {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 8px;
+      margin-top: 8px;
+    }
+    .legend-item {
+      font-size: 11px;
+      gap: 5px;
+    }
+
+    /* RESOURCE TOOLBAR & HORIZONTAL SCROLLABLE FILTER PILLS */
+    .resource-toolbar {
+      margin-bottom: 10px;
+      gap: 8px;
+    }
+    .search-wrapper {
+      max-width: 100% !important;
+      width: 100%;
+    }
+    .search-input-field {
+      font-size: 12px;
+      padding: 8px 12px 8px 32px;
+    }
+    .dialogs-filter-bar {
+      display: flex !important;
+      gap: 6px !important;
+      overflow-x: auto !important;
+      white-space: nowrap !important;
+      padding: 2px 2px 6px 2px !important;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      width: 100%;
+    }
+    .dialogs-filter-bar::-webkit-scrollbar {
+      display: none;
+    }
+    .df-btn {
+      flex-shrink: 0;
+      padding: 5px 12px;
+      font-size: 11.5px;
+      border-radius: 16px;
+    }
+
+    /* RESOURCE CARDS ON MOBILE */
+    .resource-grid {
+      grid-template-columns: 1fr !important;
+      gap: 7px;
+    }
+    .res-card {
+      padding: 8px 10px;
+      gap: 9px;
+      border-radius: 10px;
+    }
+    .chat-avatar-frame {
+      width: 34px;
+      height: 34px;
+    }
+    .rc-title {
+      font-size: 12.5px;
+    }
+    .rc-subrow {
+      font-size: 10.5px;
+      gap: 4px;
+    }
+    .rc-tag {
+      font-size: 10px;
+      padding: 2px 6px;
+    }
+
+    /* SYSTEM DIAGNOSTICS GRID */
+    .system-grid {
+      grid-template-columns: 1fr 1fr !important;
+      gap: 8px;
+    }
+    .sys-box {
+      padding: 10px 12px;
+      border-radius: 10px;
+    }
+    .sys-box-lbl {
+      font-size: 10.5px;
+    }
+    .sys-box-val {
+      font-size: 12px;
+    }
+
+    /* AUTOMATION CARDS */
+    .toggles-grid-2 {
+      grid-template-columns: 1fr !important;
+      gap: 8px;
+    }
+    .toggle-card {
+      padding: 12px 14px;
+      border-radius: 12px;
+    }
+
+    /* LOADING PROGRESS CARD COMPACT */
+    .chats-loading-wrap {
+      padding: 26px 14px;
+      margin: 18px auto;
+      border-radius: 14px;
+      max-width: 100%;
+    }
+    .chats-loading-icon-ring {
+      width: 42px;
+      height: 42px;
+      margin-bottom: 10px;
+    }
+    .chats-loading-header {
+      font-size: 13.5px;
+      gap: 8px;
+    }
+    .chats-pct-badge {
+      font-size: 11.5px;
+      padding: 2px 7px;
+    }
+    .chats-loading-hint {
+      font-size: 11px;
+    }
+  }
+
+  /* CHATS PROGRESS & LOADING INDICATOR */
+  .chats-loading-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 44px 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    text-align: center;
+    max-width: 480px;
+    margin: 40px auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    animation: fadeIn 0.3s ease;
+  }
+  .chats-loading-icon-ring {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: rgba(16, 163, 127, 0.12);
+    border: 1px solid rgba(16, 163, 127, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+  .chats-loading-icon-ring svg {
+    animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    color: var(--brand);
+  }
+  .chats-loading-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+  }
+  .chats-pct-badge {
+    background: rgba(16, 163, 127, 0.18);
+    color: var(--brand);
+    border: 1px solid rgba(16, 163, 127, 0.4);
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.5px;
+    min-width: 48px;
+    display: inline-block;
+    text-align: center;
+  }
+  .chats-progress-bar-bg {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 14px 0 10px 0;
+    position: relative;
+  }
+  .chats-progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #10a37f 0%, #34d399 60%, #6ee7b7 100%);
+    border-radius: 999px;
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 10px rgba(16, 163, 127, 0.6);
+  }
+  .chats-loading-hint {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
   }
 </style>
 </head>
@@ -1429,17 +1763,17 @@
           <svg class="icon" viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
         </button>
         <div class="breadcrumbs">
-          <span>Userbot Studio</span>
-          <span>/</span>
-          <span style="font-family:'JetBrains Mono'; color:#ffffff;" id="top-acc-indicator">acc1</span>
+          <span class="bc-brand-title">Userbot Studio</span>
+          <span class="bc-slash-brand">/</span>
+          <span class="bc-acc-tag" id="top-acc-indicator">acc1</span>
           <span>/</span>
           <span class="bc-active" id="top-view-title">Dashboard</span>
         </div>
       </div>
       <div class="top-actions">
-        <button class="btn-refresh" id="btn-refresh" onclick="triggerLiveRefresh()">
+        <button class="btn-refresh" id="btn-refresh" onclick="triggerLiveRefresh()" title="Telegram'dan jonli yangilash">
           <svg class="icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-          <span>Jonli Yangilash</span>
+          <span class="btn-refresh-text">Yangilash</span>
         </button>
       </div>
     </header>
@@ -1464,14 +1798,14 @@
               </div>
             </div>
           </div>
-          <div style="display:flex; gap:10px;">
+          <div class="ph-actions">
             <button class="btn-refresh" onclick="switchView('chats')">
               <svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-              <span>Suhbatlar</span>
+              <span class="btn-refresh-text">Suhbatlar</span>
             </button>
             <button class="btn-refresh" style="background:#ffffff; color:#000000; font-weight:600;" onclick="switchView('automation')">
               <svg class="icon" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-              <span>AI Rejimlari</span>
+              <span class="btn-refresh-text">AI Rejimlari</span>
             </button>
           </div>
         </div>
@@ -1667,7 +2001,21 @@
         </div>
 
         <div id="chats-content-container">
-          <div style="color:var(--text-muted); padding:30px; text-align:center;">Suhbatlar yuklanmoqda…</div>
+          <div class="chats-loading-wrap" id="chats-loading-box">
+            <div class="chats-loading-icon-ring">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+            </div>
+            <div class="chats-loading-header">
+              <span>Suhbatlar yuklanmoqda…</span>
+              <span class="chats-pct-badge" id="chats-live-pct">0%</span>
+            </div>
+            <div class="chats-progress-bar-bg">
+              <div class="chats-progress-bar-fill" id="chats-live-fill" style="width: 0%;"></div>
+            </div>
+            <div class="chats-loading-hint" id="chats-live-hint">
+              Telegram bulutidan barcha yozishmalar, guruhlar va kanallar sinxronlanmoqda…
+            </div>
+          </div>
         </div>
       </section>
 
@@ -1875,6 +2223,10 @@ function switchView(viewName) {
   const activePanel = document.getElementById("view-" + viewName);
   if (activePanel) activePanel.classList.add("active");
 
+  if (viewName === "chats") {
+    renderChatsView();
+  }
+
   // Close mobile sidebar if open
   closeMobileSidebar();
 
@@ -1894,7 +2246,18 @@ function switchAccount(acc) {
   if (activePill) activePill.classList.add("active");
 
   closeMobileSidebar();
-  render();
+
+  if (activeView === "chats") {
+    startChatLoadingProgress();
+    renderChatsView();
+    setTimeout(() => {
+      finishChatLoadingProgress(() => {
+        render();
+      });
+    }, 350);
+  } else {
+    render();
+  }
 }
 
 /* ========================================================
@@ -1946,10 +2309,58 @@ async function logout() {
 }
 
 /* ========================================================
+   CHATS REALTIME PROGRESS CONTROLLER
+   ======================================================== */
+let chatLoadProgress = 0;
+let chatLoadInterval = null;
+let isChatsLoading = false;
+
+function setChatProgress(pct, hintText) {
+  chatLoadProgress = Math.min(100, Math.max(0, Math.round(pct)));
+  const pctEl = document.getElementById("chats-live-pct");
+  const fillEl = document.getElementById("chats-live-fill");
+  const hintEl = document.getElementById("chats-live-hint");
+  if (pctEl) pctEl.textContent = chatLoadProgress + "%";
+  if (fillEl) fillEl.style.width = chatLoadProgress + "%";
+  if (hintEl && hintText) hintEl.textContent = hintText;
+}
+
+function startChatLoadingProgress() {
+  if (isChatsLoading) return;
+  isChatsLoading = true;
+  chatLoadProgress = 0;
+  setChatProgress(0, "Telegram MTProto serveriga ulanmoqda…");
+
+  if (chatLoadInterval) clearInterval(chatLoadInterval);
+  chatLoadInterval = setInterval(() => {
+    if (chatLoadProgress < 25) {
+      setChatProgress(chatLoadProgress + 5, "Akkaunt dialoglar ro'yxati olinmoqda…");
+    } else if (chatLoadProgress < 75) {
+      setChatProgress(chatLoadProgress + Math.floor(Math.random() * 5) + 3, "Shaxsiy yozishmalar, guruhlar va kanallar sinxronlanmoqda…");
+    } else if (chatLoadProgress < 94) {
+      setChatProgress(chatLoadProgress + Math.floor(Math.random() * 2) + 1, "Profil rasmlari va chat ma'lumotlari keshlanmoqda…");
+    }
+  }, 80);
+}
+
+function finishChatLoadingProgress(onComplete) {
+  if (chatLoadInterval) clearInterval(chatLoadInterval);
+  chatLoadInterval = null;
+  setChatProgress(100, "Barcha suhbatlar muvaffaqiyatli yuklandi!");
+  setTimeout(() => {
+    isChatsLoading = false;
+    if (onComplete) onComplete();
+  }, 220);
+}
+
+/* ========================================================
    API DATA FETCHING
    ======================================================== */
 async function refreshData() {
   try {
+    const isFirst = Object.keys(allStats).length === 0;
+    if (isFirst) startChatLoadingProgress();
+
     const [resState, resStats] = await Promise.all([
       fetch("/api/state"),
       fetch("/api/stats")
@@ -1963,7 +2374,14 @@ async function refreshData() {
     allStates = await resState.json();
     allStats = await resStats.json();
     hideLogin();
-    render();
+
+    if (isFirst) {
+      finishChatLoadingProgress(() => {
+        render();
+      });
+    } else {
+      render();
+    }
   } catch (err) {
     console.error("Data refresh error:", err);
   }
@@ -1971,18 +2389,43 @@ async function refreshData() {
 
 async function triggerLiveRefresh() {
   const btn = document.getElementById("btn-refresh");
-  btn.classList.add("loading");
+  if (btn) btn.classList.add("loading");
   showToast("Telegram MTProto'dan ma'lumotlar olinmoqda…");
+  startChatLoadingProgress();
+  if (activeView === "chats") renderChatsView();
+
   try {
     await fetch("/api/refresh_stats", { method: "POST" });
-    setTimeout(async () => {
-      await refreshData();
-      btn.classList.remove("loading");
-      showToast("Statistika va avatarlar yangilandi!");
-    }, 1200);
+    let attempts = 0;
+    const pollInterval = setInterval(async () => {
+      attempts++;
+      try {
+        const resStats = await fetch("/api/stats");
+        if (resStats.ok) {
+          allStats = await resStats.json();
+          const curProg = (allStats[currentAcc] && allStats[currentAcc].progress) || {};
+          if (curProg.percent) {
+            setChatProgress(curProg.percent, `Telegram bulutidan ${curProg.current || 0} ta chat yuklandi…`);
+          }
+          if (curProg.status === "done" || attempts >= 8) {
+            clearInterval(pollInterval);
+            finishChatLoadingProgress(() => {
+              if (btn) btn.classList.remove("loading");
+              render();
+              showToast("Statistika va suhbatlar yangilandi!");
+            });
+          }
+        }
+      } catch (err) {
+        // ignore
+      }
+    }, 600);
   } catch (e) {
-    btn.classList.remove("loading");
-    showToast("Yangilashda xato yuz berdi");
+    if (btn) btn.classList.remove("loading");
+    finishChatLoadingProgress(() => {
+      render();
+      showToast("Yangilashda xato yuz berdi");
+    });
   }
 }
 
@@ -2192,10 +2635,50 @@ function renderChatsView() {
   if (cntBot) cntBot.textContent = bots.length;
   if (topTotal) topTotal.textContent = allChats.length + " ta";
 
+  // Agar hozir yuklanayotgan bo'lsa yoki serverda yig'ilayotgan bo'lsa:
+  const isServerCollecting = st.progress && st.progress.status === "collecting";
+  if (isChatsLoading || isServerCollecting) {
+    if (isServerCollecting && st.progress.percent) {
+      chatLoadProgress = st.progress.percent;
+    }
+    if (!document.getElementById("chats-loading-box")) {
+      container.innerHTML = `
+        <div class="chats-loading-wrap" id="chats-loading-box">
+          <div class="chats-loading-icon-ring">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+          </div>
+          <div class="chats-loading-header">
+            <span>Suhbatlar yuklanmoqda…</span>
+            <span class="chats-pct-badge" id="chats-live-pct">${chatLoadProgress}%</span>
+          </div>
+          <div class="chats-progress-bar-bg">
+            <div class="chats-progress-bar-fill" id="chats-live-fill" style="width: ${chatLoadProgress}%;"></div>
+          </div>
+          <div class="chats-loading-hint" id="chats-live-hint">
+            ${isServerCollecting ? `Telegram bulutidan ${st.progress.current || 0} ta chat yuklandi…` : "Telegram bulutidan suhbatlar olinmoqda…"}
+          </div>
+        </div>
+      `;
+    } else {
+      setChatProgress(chatLoadProgress, isServerCollecting ? `Telegram bulutidan ${st.progress.current || 0} ta chat yuklandi…` : null);
+    }
+    return;
+  }
+
   container.innerHTML = "";
 
   if (allChats.length === 0) {
-    container.innerHTML = '<div style="color:var(--text-muted); padding:30px; text-align:center;">Chatlar topilmadi</div>';
+    container.innerHTML = `
+      <div class="chats-loading-wrap" style="max-width:440px;">
+        <div style="font-size:32px; margin-bottom:12px;">💬</div>
+        <div style="font-size:16px; font-weight:700; color:var(--text-primary); margin-bottom:6px;">Suhbatlar topilmadi</div>
+        <div style="font-size:13px; color:var(--text-muted); margin-bottom:18px;">Ushbu akkaunt uchun suhbatlar hali keshlanmagan yoki yangilanmoqda.</div>
+        <button class="btn btn-primary" onclick="triggerLiveRefresh()" style="font-size:13px; padding:8px 18px;">
+          <svg class="icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+          Hozir yangilash
+        </button>
+      </div>
+    `;
     return;
   }
 
@@ -2348,7 +2831,7 @@ function render() {
   // 1. Sidebar Account Deck
   const curAccAvatarEl = document.getElementById("cur-acc-avatar");
   curAccAvatarEl.innerHTML = `
-    <img src="/api/avatar/${currentAcc}?t=${st.updated_at || ''}" class="avatar-img" loading="lazy" onload="this.classList.add('loaded')" onerror="this.remove()" />
+    <img src="/api/avatar/${p.id || currentAcc}?t=${st.updated_at || ''}" class="avatar-img" loading="lazy" onload="this.classList.add('loaded')" onerror="this.remove()" />
     <span class="avatar-fallback">${initials}</span>
   `;
   document.getElementById("cur-acc-name").textContent = fullName;
@@ -2380,7 +2863,7 @@ function render() {
   document.getElementById("footer-id").textContent = "ID: " + (p.id || "-");
   const footerAvatarEl = document.getElementById("footer-avatar");
   footerAvatarEl.innerHTML = `
-    <img src="/api/avatar/${currentAcc}?t=${st.updated_at || ''}" class="avatar-img" loading="lazy" onload="this.classList.add('loaded')" onerror="this.remove()" />
+    <img src="/api/avatar/${p.id || currentAcc}?t=${st.updated_at || ''}" class="avatar-img" loading="lazy" onload="this.classList.add('loaded')" onerror="this.remove()" />
     <span class="avatar-fallback">${initials}</span>
   `;
 
@@ -2434,6 +2917,7 @@ function render() {
   renderAdminList(st.admin_chats || []);
   renderRecentDialogs(st.recent_dialogs || []);
   renderAutomationCards(state);
+  renderChatsView();
 
   // 9. System Accounts Summary Table
   const sysAccBox = document.getElementById("system-accounts-summary");
@@ -2447,7 +2931,7 @@ function render() {
     c.className = "res-card";
     c.innerHTML = `
       <div class="chat-avatar-frame">
-        <img src="/api/avatar/${acc}?t=${aSt.updated_at || ''}" class="chat-avatar-img" loading="lazy" onload="this.classList.add('loaded')" onerror="this.remove()" />
+        <img src="/api/avatar/${prof.id || acc}?t=${aSt.updated_at || ''}" class="chat-avatar-img" loading="lazy" onload="this.classList.add('loaded')" onerror="this.remove()" />
         <span class="chat-avatar-fallback">${aInitial}</span>
       </div>
       <div class="rc-details">

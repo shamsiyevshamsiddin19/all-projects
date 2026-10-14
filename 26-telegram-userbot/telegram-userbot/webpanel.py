@@ -181,6 +181,17 @@ async def api_state(req):
     return web.json_response(out)
 
 
+def read_progress(acc):
+    pfile = os.path.join(DATA, f"progress_{acc}.json")
+    if os.path.exists(pfile):
+        try:
+            with open(pfile, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:  # noqa: BLE001
+            pass
+    return {"status": "done", "percent": 100, "current": 0}
+
+
 async def api_stats(req):
     if not is_authenticated(req):
         return web.json_response({"error": "unauthorized"}, status=401)
@@ -197,6 +208,7 @@ async def api_stats(req):
                 "admin_chats": [],
                 "recent_dialogs": [],
             }
+        st["progress"] = read_progress(acc)
         out[acc] = st
     return web.json_response(out)
 
@@ -212,6 +224,12 @@ async def api_refresh_stats(req):
         for acc, _ in ACCOUNTS:
             with open(os.path.join(DATA, f"refresh_stats_{acc}.flag"), "w", encoding="utf-8") as f:
                 f.write(ts)
+            prog_file = os.path.join(DATA, f"progress_{acc}.json")
+            try:
+                with open(prog_file, "w", encoding="utf-8") as pf:
+                    json.dump({"status": "collecting", "percent": 5, "current": 0, "updated_at": time.time()}, pf)
+            except Exception:  # noqa: BLE001
+                pass
         return web.json_response({"ok": True, "message": "Yangilash so'rovi yuborildi"})
     except Exception as e:  # noqa: BLE001
         return web.json_response({"ok": False, "error": str(e)}, status=500)
@@ -237,6 +255,13 @@ async def api_avatar(req):
     chat_id = req.match_info.get("id", "").strip()
     if not chat_id or not re.match(r"^-?[0-9a-zA-Z_]+$", chat_id):
         return web.Response(status=400)
+
+    # Agar chat_id acc1/acc2/acc3 bo'lsa, profil ID sini topamiz
+    if chat_id in ACC_KEYS:
+        st = read_stats(chat_id)
+        if st and st.get("profile", {}).get("id"):
+            chat_id = str(st["profile"]["id"])
+
     file_path = os.path.join(DATA, "avatars", f"{chat_id}.jpg")
     if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
         return web.FileResponse(
@@ -246,7 +271,7 @@ async def api_avatar(req):
                 "Content-Type": "image/jpeg",
             },
         )
-    return web.Response(status=404)
+    return web.Response(status=204)
 
 
 async def favicon(req):

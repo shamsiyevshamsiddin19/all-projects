@@ -92,8 +92,21 @@ async def collect_account_stats(client):
 
         avatar_queue = []
         count = 0
+        prog_file = os.path.join(DATA_DIR, f"progress_{config.SESSION}.json")
         async for d in client.iter_dialogs(limit=600):
             count += 1
+            if count % 25 == 0:
+                try:
+                    with open(prog_file + ".tmp", "w", encoding="utf-8") as pf:
+                        json.dump({
+                            "status": "collecting",
+                            "current": count,
+                            "percent": min(95, int((count / 550) * 100)),
+                            "updated_at": time.time(),
+                        }, pf)
+                    os.replace(prog_file + ".tmp", prog_file)
+                except Exception:  # noqa: BLE001
+                    pass
             unread = d.unread_count or 0
             stats["summary"]["unread_messages"] += unread
 
@@ -204,6 +217,17 @@ async def collect_account_stats(client):
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(stats, f, ensure_ascii=False, indent=2)
         os.replace(tmp, stats_file)
+        try:
+            with open(prog_file + ".tmp", "w", encoding="utf-8") as pf:
+                json.dump({
+                    "status": "done",
+                    "current": count,
+                    "percent": 100,
+                    "updated_at": time.time(),
+                }, pf)
+            os.replace(prog_file + ".tmp", prog_file)
+        except Exception:  # noqa: BLE001
+            pass
         logger.info("Statistika va avatarlar muvaffaqiyatli saqlandi: %s", config.SESSION)
         return stats
     except Exception as e:  # noqa: BLE001
