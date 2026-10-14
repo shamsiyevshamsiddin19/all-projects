@@ -1,35 +1,49 @@
+# DIQQAT: bu faylda hech qanday maxfiy qiymat YO'Q.
+# Barcha sirlar infra/.env dan o'qiladi (u .gitignore da).
+# Namuna uchun: infra/.env.example
+
 services:
   postgres:
     image: postgres:16-alpine
     container_name: radioglobe_db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: radioglobe
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgrespassword
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: ${POSTGRES_DB:-radioglobe}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER kerak}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD kerak}
+    # Port tashqariga CHIQARILMAYDI — bazaga faqat ichki tarmoqdan kiriladi.
+    # Lokal debug uchun: docker compose exec postgres psql -U $POSTGRES_USER radioglobe
+    expose:
+      - "5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d radioglobe"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
       timeout: 5s
       retries: 5
+    networks: [radioglobe]
 
   redis:
     image: redis:7-alpine
     container_name: radioglobe_redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
-    volumes:
-      - redisdata:/data
+    # Parolsiz Redis — eng ko'p ekspluatatsiya qilinadigan xatolardan biri.
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD kerak}
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --save ""
+      --appendonly no
+    expose:
+      - "6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
+      test: ["CMD-SHELL", "redis-cli -a $${REDIS_PASSWORD} ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
       retries: 5
+    networks: [radioglobe]
 
   api:
     build:
@@ -38,46 +52,79 @@ services:
     container_name: radioglobe_api
     restart: unless-stopped
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    # Faqat localhost — tashqi dunyo nginx orqali kiradi
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgrespassword@postgres:5432/radioglobe
-      REDIS_URL: redis://redis:6379/0
-      PROXY_SECRET_KEY: radioglobe-production-secret-key-2026
-      PROXY_BASE_URL: http://localhost:8000/api/v1/stream
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-radioglobe}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      PROXY_SECRET_KEY: ${PROXY_SECRET_KEY:?PROXY_SECRET_KEY kerak}
+      PROXY_BASE_URL: ${PROXY_BASE_URL:?PROXY_BASE_URL kerak}
+      PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:-https://radio.shamsiyev.uz}
+    # Migratsiyalar konteyner startida bajariladi
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips='*'"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=5).status==200 else 1)\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks: [radioglobe]
 
   worker:
     build:
-      context: ../apps/worker
-      dockerfile: Dockerfile
+      # Kontekst `apps` — worker'ga `api` paketidagi modellar kerak.
+      # Oldin kontekst faqat `apps/worker` edi, shuning uchun worker
+      # konteyneri `app.config` ni topolmay ishga tushmasdi.
+      context: ../apps
+      dockerfile: worker/Dockerfile
     container_name: radioglobe_worker
     restart: unless-stopped
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      api: { condition: service_started }
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgrespassword@postgres:5432/radioglobe
-      REDIS_URL: redis://redis:6379/0
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-radioglobe}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      PROXY_SECRET_KEY: ${PROXY_SECRET_KEY}
+      PROXY_BASE_URL: ${PROXY_BASE_URL}
+      INGEST_INTERVAL_HOURS: ${INGEST_INTERVAL_HOURS:-24}
+      HEALTH_CHECK_INTERVAL_MINUTES: ${HEALTH_CHECK_INTERVAL_MINUTES:-10}
+      HEALTH_CHECK_BATCH: ${HEALTH_CHECK_BATCH:-300}
+    networks: [radioglobe]
 
   web:
     build:
       context: ../apps/web
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?NEXT_PUBLIC_API_URL kerak}
+        NEXT_PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:-https://radio.shamsiyev.uz}
     container_name: radioglobe_web
     restart: unless-stopped
     depends_on:
-      - api
+      api: { condition: service_started }
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+      NODE_ENV: production
+      # Server tomonidagi fetch ichki tarmoq orqali — tashqi DNS/TLS kerak emas
+      INTERNAL_API_URL: http://api:8000/api/v1
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      NEXT_PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:-https://radio.shamsiyev.uz}
+    networks: [radioglobe]
 
 volumes:
   pgdata:
   redisdata:
+
+networks:
+  radioglobe:
+    driver: bridge
