@@ -1,7 +1,7 @@
-"""Userbot uchun Apple VisionOS uslubidagi zamonaviy web boshqaruv paneli.
+"""Userbot uchun ChatGPT / OpenAI uslubidagi professional boshqaruv paneli.
 
-Sozlamalarni (data/state_<acc>.json) va batafsil akkaunt/chat statistikalarini
-(data/stats_<acc>.json) xavfsiz boshqarish.
+Zamonaviy minimalist dark interfeys, to'liq SVG ikonkalari (hech qanday xom emojilarsiz),
+100% mobil va barcha ekranlarga moslashuvchan (responsive).
 Parol: 2501 (yoki .env dagi PANEL_PASSWORD / PANEL_TOKEN).
 """
 import hashlib
@@ -29,10 +29,10 @@ ACCOUNTS = [
     ("acc3", "@scarpiont"),
 ]
 FEATURES = [
-    ("autoreply", "Avto-javob", "Gemini AI orqali intellektual tabiiy javob"),
-    ("autodraft", "Qoralama (shaxsiy)", "Javobni yubormasdan qoralama (draft) qilib qo'yish"),
+    ("autoreply", "Avto-javob", "Gemini AI yordamida tabiiy intellektual javob"),
+    ("autodraft", "Qoralama (Draft)", "Javobni yubormasdan qoralama qilib saqlash"),
     ("autoread", "Avto-o'qish", "Kanal va guruhlarni avtomatik o'qilgan qilish"),
-    ("autoai", "Yarim-avto taklif", "Kelgan xabarga AI javob taklifini tasdiqlash"),
+    ("autoai", "Yarim-avto taklif", "Kelgan xabarga AI taklifini tasdiqlash"),
 ]
 FEAT_KEYS = {k for k, _, _ in FEATURES}
 ACC_KEYS = {a for a, _ in ACCOUNTS}
@@ -194,975 +194,1039 @@ PAGE = """<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Shamsiyev · Userbot Studio</title>
+<title>Userbot Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg-dark: #07090e;
-    --spatial-glass: rgba(28, 32, 45, 0.72);
-    --spatial-card: rgba(22, 26, 38, 0.78);
-    --spatial-card-hover: rgba(30, 35, 52, 0.85);
-    --spatial-border: rgba(255, 255, 255, 0.12);
-    --spatial-border-active: rgba(255, 255, 255, 0.28);
-    --spatial-highlight: inset 0 1px 1px 0 rgba(255, 255, 255, 0.2);
-    --accent-cyan: #38bdf8;
-    --accent-blue: #0284c7;
-    --accent-blue-glow: rgba(56, 189, 248, 0.4);
-    --accent-green: #10b981;
-    --accent-amber: #f59e0b;
+    --bg-base: #101010;
+    --bg-sidebar: #171717;
+    --bg-card: #1e1e1e;
+    --bg-card-hover: #262626;
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-hover: rgba(255, 255, 255, 0.16);
+    --text-primary: #f5f5f5;
+    --text-secondary: #a3a3a3;
+    --text-muted: #737373;
+    --brand: #10a37f;
+    --brand-hover: #1a7f64;
+    --brand-glow: rgba(16, 163, 127, 0.25);
+    --accent-blue: #3b82f6;
     --accent-purple: #8b5cf6;
-    --text-main: #ffffff;
-    --text-sub: rgba(255, 255, 255, 0.72);
-    --text-dim: rgba(255, 255, 255, 0.45);
-    --radius-window: 28px;
-    --radius-card: 20px;
-    --radius-inner: 14px;
-    --radius-pill: 999px;
+    --danger: #ef4444;
+    --sidebar-w: 260px;
+    --radius-lg: 14px;
+    --radius-md: 10px;
+    --radius-sm: 6px;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
     margin: 0;
     min-height: 100vh;
-    background-color: var(--bg-dark);
-    background-image: 
-      radial-gradient(at 0% 0%, rgba(14, 165, 233, 0.15) 0px, transparent 45%),
-      radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.14) 0px, transparent 45%),
-      radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 40%),
-      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.015'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-    background-attachment: fixed;
-    color: var(--text-main);
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 14px;
     line-height: 1.5;
-    padding: 30px 18px 60px;
     display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
-  /* SPATIAL CANVAS (VISION PRO SHELL) */
-  .spatial-canvas {
-    width: 100%;
-    max-width: 1240px;
-    background: var(--spatial-glass);
-    backdrop-filter: blur(45px);
-    -webkit-backdrop-filter: blur(45px);
-    border: 1px solid var(--spatial-border);
-    border-radius: var(--radius-window);
-    box-shadow: 0 35px 80px -15px rgba(0, 0, 0, 0.8), var(--spatial-highlight);
-    display: flex;
-    min-height: 840px;
-    overflow: hidden;
-    position: relative;
-  }
-
-  /* LEFT FLOATING VERTICAL DOCK */
-  .spatial-dock {
-    width: 82px;
-    background: rgba(14, 17, 26, 0.65);
-    border-right: 1px solid var(--spatial-border);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 24px 0 20px;
-    gap: 16px;
-    flex-shrink: 0;
-  }
-  .dock-btn {
-    width: 46px;
-    height: 46px;
-    border-radius: 14px;
-    background: transparent;
-    border: 1px solid transparent;
-    color: var(--text-dim);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    cursor: pointer;
-    transition: all 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-  .dock-btn:hover {
-    color: var(--text-main);
-    background: rgba(255, 255, 255, 0.08);
-    border-color: var(--spatial-border);
-  }
-  .dock-btn.active {
-    color: var(--accent-cyan);
-    background: rgba(56, 189, 248, 0.16);
-    border-color: rgba(56, 189, 248, 0.4);
-    box-shadow: 0 0 16px var(--accent-blue-glow);
-  }
-  .dock-divider {
-    width: 36px;
-    height: 1px;
-    background: var(--spatial-border);
-    margin: 4px 0;
-  }
-  .dock-spacer { flex: 1; }
-  .btn-power {
-    color: #f87171 !important;
-  }
-  .btn-power:hover {
-    background: rgba(239, 68, 68, 0.2) !important;
-    border-color: rgba(239, 68, 68, 0.4) !important;
-  }
-
-  /* MAIN WORKSPACE */
-  .spatial-body {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 24px 28px 30px;
-    overflow-y: auto;
     overflow-x: hidden;
   }
 
-  /* TOP NAVIGATION BAR */
-  .spatial-topbar {
+  /* SVG ICON STYLING */
+  .icon {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+  }
+
+  /* LAYOUT */
+  .app-container {
+    display: flex;
+    width: 100%;
+    min-height: 100vh;
+  }
+
+  /* CHATGPT STYLE SIDEBAR */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 16px 12px;
+    flex-shrink: 0;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px 18px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .brand-logo {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--brand);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    box-shadow: 0 2px 8px var(--brand-glow);
+  }
+  .brand-text {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+  }
+
+  .sidebar-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    padding: 14px 10px 6px;
+  }
+
+  /* ACCOUNT SWITCHER IN SIDEBAR */
+  .account-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 24px;
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-  .account-tabs {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(14, 18, 28, 0.6);
-    padding: 6px;
-    border-radius: var(--radius-pill);
-    border: 1px solid var(--spatial-border);
-  }
-  .tab-pill {
-    padding: 8px 18px;
-    border-radius: var(--radius-pill);
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-sub);
-    background: transparent;
-    border: none;
+    padding: 9px 12px;
+    border-radius: var(--radius-md);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.15s;
+    margin-bottom: 2px;
+    color: var(--text-secondary);
+    border: 1px solid transparent;
+  }
+  .account-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+  }
+  .account-item.active {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+    border-color: var(--border-subtle);
+  }
+  .ai-left {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    overflow: hidden;
   }
-  .tab-pill:hover {
-    color: var(--text-main);
+  .ai-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: #2a2a2a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary);
   }
-  .tab-pill.active {
-    background: rgba(255, 255, 255, 0.12);
-    color: var(--text-main);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), var(--spatial-highlight);
+  .account-item.active .ai-avatar {
+    background: var(--brand);
+    color: #fff;
   }
-  .tab-pill.active .pill-dot {
-    background: var(--accent-cyan);
-    box-shadow: 0 0 8px var(--accent-cyan);
+  .ai-name {
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .pill-dot {
+  .ai-dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: var(--text-dim);
+    background: var(--brand);
+    box-shadow: 0 0 6px var(--brand);
   }
 
-  .topbar-right {
+  /* SIDEBAR FOOTER (USER & LOCK) */
+  .sidebar-footer {
+    padding-top: 14px;
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .user-profile-tile {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.03);
+  }
+  .upt-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .upt-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #10a37f, #0284c7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .btn-logout {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    transition: all 0.15s;
+  }
+  .btn-logout:hover {
+    color: var(--danger);
+    background: rgba(239, 68, 68, 0.1);
+  }
+
+  /* MAIN WORKSPACE */
+  .main-workspace {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  /* TOP APP BAR */
+  .top-app-bar {
+    position: sticky;
+    top: 0;
+    background: rgba(16, 16, 16, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 50;
+  }
+  .tab-title-group {
     display: flex;
     align-items: center;
     gap: 12px;
   }
-  .btn-round {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid var(--spatial-border);
-    color: var(--text-main);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .btn-round:hover {
-    background: rgba(255, 255, 255, 0.14);
-    transform: scale(1.05);
-  }
-  .user-badge {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid var(--spatial-border);
-    padding: 4px 14px 4px 6px;
-    border-radius: var(--radius-pill);
-  }
-  .user-badge-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #0284c7, #8b5cf6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    font-weight: 700;
-  }
-
-  /* SPATIAL DASHBOARD GRID */
-  .spatial-grid {
-    display: grid;
-    grid-template-columns: 280px 1fr 340px;
-    grid-template-rows: auto auto auto;
-    gap: 20px;
-  }
-
-  /* CARDS */
-  .card {
-    background: var(--spatial-card);
-    backdrop-filter: blur(28px);
-    -webkit-backdrop-filter: blur(28px);
-    border: 1px solid var(--spatial-border);
-    border-radius: var(--radius-card);
-    padding: 20px;
-    box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.5), var(--spatial-highlight);
-    position: relative;
-    transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-  .card:hover {
-    border-color: var(--spatial-border-active);
-    transform: translateY(-2px);
-  }
-  .card-label {
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: var(--text-dim);
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  /* WIDGET 1: MEMBERS / AKKAUNTLAR */
-  .members-card {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-  }
-  .avatar-stack {
-    display: flex;
-    align-items: center;
-    margin-bottom: 16px;
-  }
-  .stack-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 2px solid #141724;
-    background: linear-gradient(135deg, #38bdf8, #2563eb);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    font-weight: 700;
-    margin-right: -10px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
-    cursor: pointer;
-    transition: transform 0.2s;
-  }
-  .stack-avatar:hover { transform: translateY(-3px) scale(1.1); z-index: 10; }
-  .stack-avatar.a2 { background: linear-gradient(135deg, #8b5cf6, #ec4899); }
-  .stack-avatar.a3 { background: linear-gradient(135deg, #10b981, #06b6d4); }
-  .stack-more {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 2px solid #141724;
-    background: rgba(255, 255, 255, 0.12);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text-sub);
-  }
-  .profile-details {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: var(--radius-inner);
-    padding: 12px 14px;
-  }
-  .p-name { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
-  .p-user { font-size: 13px; color: var(--accent-cyan); font-family: 'JetBrains Mono', monospace; }
-  .p-meta { font-size: 12px; color: var(--text-dim); margin-top: 6px; display: flex; justify-content: space-between; }
-
-  /* WIDGET 2: THERMOSTAT GAUGE */
-  .gauge-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-  .gauge-container {
-    position: relative;
-    width: 170px;
-    height: 170px;
-    margin: 8px 0 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .gauge-svg {
-    transform: rotate(-90deg);
-  }
-  .gauge-bg {
-    stroke: rgba(255, 255, 255, 0.08);
-    stroke-width: 10;
-    fill: none;
-  }
-  .gauge-bar {
-    stroke: url(#gauge-gradient);
-    stroke-width: 10;
-    stroke-linecap: round;
-    fill: none;
-    stroke-dasharray: 440;
-    stroke-dashoffset: 140;
-    transition: stroke-dashoffset 0.8s ease;
-  }
-  .gauge-content {
-    position: absolute;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  .gauge-val {
-    font-size: 34px;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    font-family: 'JetBrains Mono', monospace;
-  }
-  .gauge-sub {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-  }
-  .gauge-btn-row {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-    width: 100%;
-  }
-  .g-btn {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--spatial-border);
-    border-radius: 12px;
-    padding: 8px 4px;
-    color: var(--text-sub);
-    font-size: 11px;
-    font-weight: 600;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .g-btn:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
-  .g-btn.on { background: rgba(56, 189, 248, 0.18); border-color: rgba(56, 189, 248, 0.4); color: var(--accent-cyan); }
-
-  /* WIDGET 3: ACTIVITY WAVE CHART */
-  .wave-card {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-  }
-  .wave-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .wave-title-big {
-    font-size: 28px;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-  }
-  .wave-title-big span { font-size: 14px; font-weight: 500; color: var(--text-dim); }
-  .wave-svg { width: 100%; height: 85px; margin: 10px 0; }
-  .wave-pill-group {
-    display: flex;
-    gap: 6px;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 3px;
-    border-radius: var(--radius-pill);
-  }
-  .wave-pill {
-    padding: 4px 10px;
-    border-radius: var(--radius-pill);
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-dim);
+  .mobile-menu-btn {
+    display: none;
     background: transparent;
     border: none;
+    color: var(--text-primary);
     cursor: pointer;
+    padding: 4px;
   }
-  .wave-pill.active { background: rgba(255, 255, 255, 0.15); color: #fff; }
-  .wave-bottom-chips {
+  .breadcrumbs {
     display: flex;
-    justify-content: space-between;
-    font-size: 11px;
-    color: var(--text-dim);
-    padding-top: 6px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-  }
-
-  /* WIDGET 4: SECURITY DOORS (DUAL LOCKS) */
-  .dual-doors {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-  }
-  .door-mini {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--spatial-border);
-    border-radius: var(--radius-inner);
-    padding: 14px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    min-height: 100px;
-  }
-  .door-icon {
-    font-size: 22px;
-    margin-bottom: 6px;
-  }
-  .door-label { font-size: 13px; font-weight: 700; color: #fff; }
-  .door-status { font-size: 11px; color: var(--accent-green); font-weight: 600; }
-
-  /* WIDGET 5: ENERGY BAR CHART (XABARLAR STATISTIKASI) */
-  .bar-chart-card {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-  }
-  .bar-chart {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    height: 110px;
-    padding: 10px 0 4px;
-    gap: 8px;
-  }
-  .bar-col {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
     align-items: center;
     gap: 8px;
-    height: 100%;
-    justify-content: flex-end;
+    font-size: 13px;
+    color: var(--text-muted);
   }
-  .bar-stick {
-    width: 14px;
-    background: rgba(255, 255, 255, 0.12);
-    border-radius: 999px;
-    transition: height 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  .bc-active {
+    font-weight: 600;
+    color: var(--text-primary);
   }
-  .bar-col.active .bar-stick {
-    background: var(--accent-cyan);
-    box-shadow: 0 0 16px var(--accent-blue-glow);
+  .badge-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: var(--radius-pill);
+    background: rgba(16, 163, 127, 0.12);
+    color: var(--brand);
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid rgba(16, 163, 127, 0.25);
   }
-  .bar-day { font-size: 11px; color: var(--text-dim); }
+  .badge-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--brand);
+    box-shadow: 0 0 6px var(--brand);
+  }
 
-  /* WIDGET 6: CHATLAR & AUDITORIYA (DETAILED BREAKDOWN) */
-  .chats-hero-card {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-    background: rgba(24, 28, 42, 0.8);
+  .topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
-  .chat-stat-box {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: var(--radius-inner);
-    padding: 16px;
+  .btn-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-action:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--border-hover);
+  }
+
+  /* WORKSPACE CONTENT */
+  .workspace-content {
+    padding: 28px;
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
+    gap: 28px;
+  }
+
+  /* SECTION TITLE */
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .section-title {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  /* CHATGPT METRIC STATS GRID */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 14px;
+  }
+  .metric-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 110px;
+    transition: all 0.2s;
+  }
+  .metric-card:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-card-hover);
+  }
+  .mc-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--text-muted);
+  }
+  .mc-label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .mc-value {
+    font-size: 28px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    margin: 8px 0 2px;
+  }
+  .mc-sub {
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .mc-pill {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
+    background: rgba(16, 163, 127, 0.15);
+    color: var(--brand);
+  }
+
+  /* AUTOMATION CONTROLS (LINEAR STYLE TILES) */
+  .toggles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 14px;
+  }
+  .toggle-tile {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
     justify-content: space-between;
     transition: all 0.2s;
   }
-  .chat-stat-box:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: var(--accent-cyan);
+  .toggle-tile:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-card-hover);
   }
-  .cs-top {
+  .tt-left {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 8px;
+    align-items: flex-start;
+    gap: 12px;
   }
-  .cs-icon { font-size: 24px; }
-  .cs-badge {
-    font-size: 11px;
-    font-weight: 700;
-    padding: 2px 7px;
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.08);
-    color: var(--text-sub);
-  }
-  .cs-num {
-    font-size: 28px;
-    font-weight: 800;
-    font-family: 'JetBrains Mono', monospace;
-    letter-spacing: -0.02em;
-    color: #fff;
-  }
-  .cs-desc { font-size: 12px; color: var(--text-dim); }
-  .cs-owner {
-    font-size: 11px;
-    color: var(--accent-cyan);
-    margin-top: 6px;
-    padding-top: 6px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    font-weight: 600;
-  }
-
-  /* LIST OF CREATED CHANNELS & GROUPS */
-  .ownership-section {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
-  .owner-list-box {
-    max-height: 240px;
-    overflow-y: auto;
-    padding-right: 6px;
-  }
-  .owner-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 12px;
-    background: rgba(255, 255, 255, 0.025);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
-    margin-bottom: 8px;
-    transition: all 0.15s;
-  }
-  .owner-item:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(56, 189, 248, 0.3);
-  }
-  .oi-title { font-weight: 600; font-size: 13px; color: #f1f5f9; }
-  .oi-tag { font-size: 11px; color: var(--accent-cyan); background: rgba(56, 189, 248, 0.12); padding: 2px 6px; border-radius: 6px; }
-
-  /* WIDGET 7: RIGHT TOGGLE CARDS (LIGHT, STEREO, MONITORING, TV IN REFERENCE) */
-  .controls-sidebar {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-  .toggle-card {
-    background: rgba(255, 255, 255, 0.035);
-    border: 1px solid var(--spatial-border);
-    border-radius: var(--radius-inner);
-    padding: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    transition: all 0.25s;
-  }
-  .toggle-card:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: var(--spatial-border-active);
-  }
-  .tc-left { display: flex; align-items: center; gap: 12px; }
-  .tc-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.08);
+  .tt-icon-wrap {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.05);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    color: var(--text-secondary);
+    margin-top: 2px;
   }
-  .tc-name { font-size: 14px; font-weight: 600; color: #fff; }
-  .tc-desc { font-size: 11px; color: var(--text-dim); }
+  .tt-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+  }
+  .tt-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.35;
+  }
 
   /* SWITCH TOGGLE */
-  .sw { position: relative; width: 48px; height: 28px; flex: 0 0 auto; }
-  .sw input { opacity: 0; width: 0; height: 0; }
-  .sl {
-    position: absolute; inset: 0;
-    background: rgba(255, 255, 255, 0.12);
+  .switch {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  .slider {
+    position: absolute;
+    inset: 0;
+    background: #333333;
     border-radius: 999px;
-    transition: all 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
     cursor: pointer;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.2s ease;
   }
-  .sl:before {
-    content: ""; position: absolute;
-    width: 22px; height: 22px; left: 2px; top: 2px;
-    background: #ffffff; border-radius: 50%;
-    transition: all 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  .slider:before {
+    content: "";
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 3px;
+    top: 3px;
+    background: #ffffff;
+    border-radius: 50%;
+    transition: all 0.2s ease;
   }
-  input:checked + .sl {
-    background: var(--accent-cyan);
-    border-color: rgba(56, 189, 248, 0.8);
-    box-shadow: 0 0 16px var(--accent-blue-glow);
+  input:checked + .slider {
+    background: var(--brand);
   }
-  input:checked + .sl:before {
+  input:checked + .slider:before {
     transform: translateX(20px);
   }
 
-  /* WIDGET 8: MEDIA PLAYER STYLE (COFFIN IN IMAGE) */
-  .player-card {
+  /* OWNERSHIP TABLES SECTION (MEN OCHGAN KANALLAR VA GURUHLAR) */
+  .ownership-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .ownership-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 18px;
     display: flex;
     flex-direction: column;
+  }
+  .oc-header {
+    display: flex;
+    align-items: center;
     justify-content: space-between;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border-subtle);
   }
-  .player-top { display: flex; align-items: center; gap: 12px; }
-  .player-art {
-    width: 44px; height: 44px; border-radius: 10px;
-    background: linear-gradient(135deg, #0284c7, #6366f1);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px;
+  .oc-title {
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
-  .player-track { font-size: 13px; font-weight: 700; color: #fff; }
-  .player-artist { font-size: 11px; color: var(--text-dim); }
-  .player-bar {
-    width: 100%; height: 4px; background: rgba(255, 255, 255, 0.1);
-    border-radius: 999px; margin: 14px 0 6px; overflow: hidden;
+  .oc-count {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.06);
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
   }
-  .player-prog { width: 68%; height: 100%; background: var(--accent-cyan); box-shadow: 0 0 10px var(--accent-cyan); }
-  .player-controls {
-    display: flex; align-items: center; justify-content: space-between;
-    font-size: 14px; color: var(--text-sub);
+  .oc-list {
+    max-height: 280px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-right: 4px;
   }
-  .btn-play {
-    width: 32px; height: 32px; border-radius: 50%;
-    background: #fff; color: #000;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
+  .oc-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: var(--radius-md);
+    transition: all 0.15s;
+  }
+  .oc-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--border-hover);
+  }
+  .oci-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 220px;
+  }
+  .oci-tag {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--brand);
+    background: rgba(16, 163, 127, 0.1);
+    padding: 2px 7px;
+    border-radius: 4px;
   }
 
-  /* LOGIN MODAL */
+  /* SYSTEM DETAILS BOX (BOTTOM) */
+  .sys-details-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .sys-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .sys-val {
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* OPENAI AUTH MODAL */
   #login-overlay {
-    position: fixed; inset: 0;
-    background: rgba(7, 9, 14, 0.82);
-    backdrop-filter: blur(45px); -webkit-backdrop-filter: blur(45px);
-    display: none; align-items: center; justify-content: center;
-    padding: 20px; z-index: 2000;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 1000;
   }
   .login-card {
-    background: rgba(26, 30, 44, 0.88);
-    border: 1px solid var(--spatial-border);
-    border-radius: 26px; padding: 40px 32px;
-    width: 100%; max-width: 370px; text-align: center;
-    box-shadow: 0 35px 70px rgba(0, 0, 0, 0.8), 0 0 40px var(--accent-blue-glow);
+    background: #181818;
+    border: 1px solid var(--border-subtle);
+    border-radius: 18px;
+    padding: 38px 32px;
+    width: 100%;
+    max-width: 360px;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
   }
-  .lock-circle {
-    width: 60px; height: 60px; border-radius: 18px;
-    background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 26px; margin: 0 auto 16px;
-    border: 1px solid rgba(56, 189, 248, 0.3);
+  .login-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: var(--brand);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 18px;
+    box-shadow: 0 4px 14px var(--brand-glow);
+  }
+  .login-card h2 {
+    margin: 0 0 6px;
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .login-card p {
+    margin: 0 0 24px;
+    font-size: 13px;
+    color: var(--text-muted);
   }
   .pin-input {
-    width: 100%; background: rgba(0, 0, 0, 0.4);
-    border: 1px solid var(--spatial-border); border-radius: 14px;
-    color: #fff; font-size: 26px; letter-spacing: 12px;
-    text-align: center; padding: 14px; margin-bottom: 20px;
-    outline: none; font-family: 'JetBrains Mono', monospace;
+    width: 100%;
+    background: #242424;
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    color: #fff;
+    font-size: 24px;
+    letter-spacing: 10px;
+    text-align: center;
+    padding: 12px 10px;
+    margin-bottom: 16px;
+    outline: none;
+    font-family: 'JetBrains Mono', monospace;
   }
-  .pin-input:focus { border-color: var(--accent-cyan); box-shadow: 0 0 16px var(--accent-blue-glow); }
+  .pin-input:focus {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 2px var(--brand-glow);
+  }
   .btn-submit {
-    width: 100%; background: linear-gradient(135deg, #0284c7, #38bdf8);
-    border: none; border-radius: 14px; color: #fff;
-    font-size: 15px; font-weight: 700; padding: 14px; cursor: pointer;
-    box-shadow: 0 6px 20px rgba(2, 132, 199, 0.4);
+    width: 100%;
+    background: var(--brand);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-submit:hover {
+    background: var(--brand-hover);
+  }
+  .login-err {
+    color: var(--danger);
+    font-size: 12px;
+    margin-top: 10px;
+    min-height: 18px;
   }
   .shake { animation: shake 0.4s ease-in-out; }
   @keyframes shake {
     0%, 100% { transform: translateX(0); }
-    20%, 60% { transform: translateX(-8px); }
-    40%, 80% { transform: translateX(8px); }
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
   }
 
   /* TOAST */
   .toast {
-    position: fixed; left: 50%; bottom: 28px;
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
     transform: translateX(-50%) translateY(20px);
-    background: rgba(28, 32, 45, 0.95);
-    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    color: #fff; border: 1px solid var(--spatial-border);
-    padding: 12px 24px; border-radius: var(--radius-pill);
-    font-size: 13px; font-weight: 600; opacity: 0;
-    transition: all 0.25s; pointer-events: none; z-index: 3000;
+    background: #262626;
+    color: #fff;
+    border: 1px solid var(--border-subtle);
+    padding: 10px 20px;
+    border-radius: var(--radius-pill);
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0;
+    transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    pointer-events: none;
+    z-index: 2000;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 
-  /* RESPONSIVE */
-  @media (max-width: 1100px) {
-    .spatial-grid { grid-template-columns: 1fr 1fr; }
-    .chats-hero-card { grid-template-columns: 1fr 1fr; }
-    .ownership-section { grid-template-columns: 1fr; }
+  /* MOBILE BACKDROP */
+  .sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 90;
+  }
+
+  /* RESPONSIVE BREAKPOINTS */
+  @media (max-width: 900px) {
+    .ownership-grid {
+      grid-template-columns: 1fr;
+    }
   }
   @media (max-width: 768px) {
-    body { padding: 10px; }
-    .spatial-canvas { flex-direction: column; }
-    .spatial-dock { width: 100%; height: 60px; flex-direction: row; border-right: none; border-bottom: 1px solid var(--spatial-border); padding: 0 16px; }
-    .spatial-grid { grid-template-columns: 1fr; }
-    .chats-hero-card { grid-template-columns: 1fr; }
+    .sidebar {
+      position: fixed;
+      left: -100%;
+      transition: left 0.25s ease;
+    }
+    .sidebar.open {
+      left: 0;
+    }
+    .sidebar-backdrop.open {
+      display: block;
+    }
+    .mobile-menu-btn {
+      display: flex;
+    }
+    .top-app-bar {
+      padding: 12px 16px;
+    }
+    .workspace-content {
+      padding: 16px;
+      gap: 20px;
+    }
+    .metrics-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+    .toggles-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (max-width: 480px) {
+    .metrics-grid {
+      grid-template-columns: 1fr;
+    }
+    .breadcrumbs span:not(.bc-active) {
+      display: none;
+    }
   }
 </style>
 </head>
 <body>
 
-<div class="spatial-canvas">
-  <!-- LEFT FLOATING DOCK -->
-  <div class="spatial-dock">
-    <button class="dock-btn active" onclick="switchView('overview')" title="Dashboard">🏠</button>
-    <button class="dock-btn" onclick="switchView('chats')" title="Chatlar va Auditoriya">💬</button>
-    <button class="dock-btn" onclick="switchView('toggles')" title="Userbot Rejimlari">🎛</button>
-    <button class="dock-btn" onclick="switchView('analytics')" title="Statistika">📊</button>
-    <div class="dock-divider"></div>
-    <button class="dock-btn" onclick="refreshData()" title="Yangilash">🔄</button>
-    <div class="dock-spacer"></div>
-    <button class="dock-btn btn-power" onclick="logout()" title="Panelni qulflash">🔒</button>
-  </div>
+<div class="app-container">
+  <!-- MOBILE BACKDROP -->
+  <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleMobileSidebar()"></div>
+
+  <!-- CHATGPT STYLE SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div>
+      <div class="sidebar-header">
+        <div class="brand-logo">
+          <!-- CPU/Chip icon -->
+          <svg class="icon" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
+        </div>
+        <div>
+          <div class="brand-text">Userbot Studio</div>
+          <div style="font-size:11px; color:var(--text-muted);">Shamsiddin Shamsiyev</div>
+        </div>
+      </div>
+
+      <div class="sidebar-section-label">Akkauntlar</div>
+      <div id="accounts-nav">
+        <div class="account-item active" id="nav-acc1" onclick="selectAcc('acc1')">
+          <div class="ai-left">
+            <div class="ai-avatar">1</div>
+            <div class="ai-name">@shamsiyev_shamsiddin</div>
+          </div>
+          <div class="ai-dot"></div>
+        </div>
+        <div class="account-item" id="nav-acc2" onclick="selectAcc('acc2')">
+          <div class="ai-left">
+            <div class="ai-avatar">2</div>
+            <div class="ai-name">@Shamsiyevshamsiddin</div>
+          </div>
+          <div class="ai-dot" style="display:none;"></div>
+        </div>
+        <div class="account-item" id="nav-acc3" onclick="selectAcc('acc3')">
+          <div class="ai-left">
+            <div class="ai-avatar">3</div>
+            <div class="ai-name">@scarpiont</div>
+          </div>
+          <div class="ai-dot" style="display:none;"></div>
+        </div>
+      </div>
+
+      <div class="sidebar-section-label" style="margin-top:12px;">Navigatsiya</div>
+      <div style="display:flex; flex-direction:column; gap:2px;">
+        <div class="account-item active" onclick="scrollToSection('sec-stats')">
+          <div class="ai-left">
+            <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+            <span class="ai-name">Statistika</span>
+          </div>
+        </div>
+        <div class="account-item" onclick="scrollToSection('sec-toggles')">
+          <div class="ai-left">
+            <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            <span class="ai-name">Rejimlar</span>
+          </div>
+        </div>
+        <div class="account-item" onclick="scrollToSection('sec-ownership')">
+          <div class="ai-left">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            <span class="ai-name">Kanal va Guruhlar</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR FOOTER -->
+    <div class="sidebar-footer">
+      <div class="user-profile-tile">
+        <div class="upt-user">
+          <div class="upt-avatar" id="sb-avatar">S</div>
+          <div>
+            <div style="font-weight:600; font-size:13px;" id="sb-name">Shamsiddin</div>
+            <div style="font-size:11px; color:var(--text-muted);" id="sb-handle">@shamsiyev</div>
+          </div>
+        </div>
+        <button class="btn-logout" onclick="logout()" title="Chiqish / Qulflash">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
 
   <!-- MAIN WORKSPACE -->
-  <div class="spatial-body">
-    <!-- TOP BAR -->
-    <div class="spatial-topbar">
-      <div class="account-tabs">
-        <button class="tab-pill active" onclick="selectAcc('acc1')" id="tab-acc1">
-          <span class="pill-dot"></span> acc1 · @shamsiyev_shamsiddin
+  <main class="main-workspace">
+    <!-- TOP APP BAR -->
+    <header class="top-app-bar">
+      <div class="tab-title-group">
+        <button class="mobile-menu-btn" onclick="toggleMobileSidebar()" title="Menyu">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
         </button>
-        <button class="tab-pill" onclick="selectAcc('acc2')" id="tab-acc2">
-          <span class="pill-dot"></span> acc2 · @Shamsiyevshamsiddin
-        </button>
-        <button class="tab-pill" onclick="selectAcc('acc3')" id="tab-acc3">
-          <span class="pill-dot"></span> acc3 · @scarpiont
-        </button>
+        <div class="breadcrumbs">
+          <span>Userbot</span>
+          <span>/</span>
+          <span class="bc-active" id="top-title">acc1</span>
+        </div>
+        <span class="badge-status"><span class="badge-status-dot"></span> Onlayn</span>
       </div>
 
-      <div class="topbar-right">
-        <button class="btn-round" onclick="refreshData()" title="Ma'lumotlarni yangilash">⚡</button>
-        <div class="user-badge">
-          <div class="user-badge-avatar" id="avatar-circle">SS</div>
-          <span id="badge-name" style="font-weight: 600;">Shamsiddin</span>
-        </div>
+      <div class="topbar-actions">
+        <button class="btn-action" onclick="refreshData()" title="Ma'lumotlarni yangilash">
+          <svg class="icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+          <span>Yangilash</span>
+        </button>
       </div>
+    </header>
+
+    <!-- CONTENT -->
+    <div class="workspace-content">
+      <!-- 1. AKKAUNT HAQIDA BATAFSIL METRIKALAR -->
+      <section id="sec-stats">
+        <div class="section-header">
+          <div>
+            <div class="section-title">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              <span>Akkaunt Metrikalari</span>
+            </div>
+            <div class="section-desc" id="acc-header-desc">Telegram MTProto orqali olingan jonli ma'lumotlar</div>
+          </div>
+          <div style="font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--text-muted);" id="acc-phone-box">
+            Tel: <span style="color:var(--text-primary);" id="acc-phone">-</span>
+          </div>
+        </div>
+
+        <div class="metrics-grid">
+          <!-- Shaxsiy chatlar -->
+          <div class="metric-card">
+            <div class="mc-top">
+              <span class="mc-label">Shaxsiy Chatlar</span>
+              <svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            </div>
+            <div class="mc-value" id="m-priv">0</div>
+            <div class="mc-sub">Muloqotdagi foydalanuvchilar</div>
+          </div>
+
+          <!-- Guruhlar -->
+          <div class="metric-card">
+            <div class="mc-top">
+              <span class="mc-label">Guruhlar</span>
+              <svg class="icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            </div>
+            <div class="mc-value" id="m-groups">0</div>
+            <div class="mc-sub">
+              <span>Men ochgan:</span>
+              <span class="mc-pill" id="m-created-groups">0 ta</span>
+            </div>
+          </div>
+
+          <!-- Kanallar -->
+          <div class="metric-card">
+            <div class="mc-top">
+              <span class="mc-label">Kanallar</span>
+              <svg class="icon" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            </div>
+            <div class="mc-value" id="m-channels">0</div>
+            <div class="mc-sub">
+              <span>Men ochgan:</span>
+              <span class="mc-pill" id="m-created-channels">0 ta</span>
+            </div>
+          </div>
+
+          <!-- Botlar & Unread -->
+          <div class="metric-card">
+            <div class="mc-top">
+              <span class="mc-label">Botlar</span>
+              <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="M12 7v4"></path><line x1="8" y1="16" x2="8" y2="16"></line><line x1="16" y1="16" x2="16" y2="16"></line></svg>
+            </div>
+            <div class="mc-value" id="m-bots">0</div>
+            <div class="mc-sub">
+              <span>O'qilmagan xabarlar:</span>
+              <span style="color:#f87171; font-weight:600;" id="m-unread">0</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. USERBOT REJIMLARI VA AVTOMATLASHTIRISH -->
+      <section id="sec-toggles">
+        <div class="section-header">
+          <div>
+            <div class="section-title">
+              <svg class="icon" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+              <span>Avtomatlashtirish Rejimlari</span>
+            </div>
+            <div class="section-desc">Userbot xususiyatlarini real vaqt rejimida yoqish yoki o'chirish</div>
+          </div>
+        </div>
+
+        <div class="toggles-grid" id="toggles-container">
+          <!-- Dinamik ravishda yuklanadi -->
+        </div>
+      </section>
+
+      <!-- 3. MEN OCHGAN KANALLAR VA GURUHLAR RO'YXATI -->
+      <section id="sec-ownership">
+        <div class="section-header">
+          <div>
+            <div class="section-title">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+              <span>Mening Egaligimdagi Resurslar</span>
+            </div>
+            <div class="section-desc">Ushbu akkaunt orqali yaratilgan va boshqariladigan kanallar hamda guruhlar</div>
+          </div>
+        </div>
+
+        <div class="ownership-grid">
+          <!-- Men ochgan kanallar -->
+          <div class="ownership-card">
+            <div class="oc-header">
+              <div class="oc-title">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                <span>Men Ochgan Kanallar</span>
+              </div>
+              <span class="oc-count" id="count-created-ch">0 ta</span>
+            </div>
+            <div class="oc-list" id="list-created-ch">
+              <div style="color:var(--text-muted); padding:10px; text-align:center;">Yuklanmoqda…</div>
+            </div>
+          </div>
+
+          <!-- Men ochgan guruhlar -->
+          <div class="ownership-card">
+            <div class="oc-header">
+              <div class="oc-title">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+                <span>Men Ochgan Guruhlar</span>
+              </div>
+              <span class="oc-count" id="count-created-gr">0 ta</span>
+            </div>
+            <div class="oc-list" id="list-created-gr">
+              <div style="color:var(--text-muted); padding:10px; text-align:center;">Yuklanmoqda…</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. TIZIM VA SERVER STATUSI -->
+      <section>
+        <div class="sys-details-card">
+          <div class="sys-item">
+            <svg class="icon" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+            <span>Server:</span>
+            <span class="sys-val">Hetzner CX23 (shamsiyev.uz)</span>
+          </div>
+          <div class="sys-item">
+            <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            <span>Faollik Vaqti:</span>
+            <span class="sys-val">08:00 – 24:00 (UTC+5)</span>
+          </div>
+          <div class="sys-item">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            <span>Flood Himoyasi:</span>
+            <span class="sys-val">15 ta / 60s max</span>
+          </div>
+          <div class="sys-item">
+            <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            <span>Model:</span>
+            <span class="sys-val">Gemini Flash Latest</span>
+          </div>
+        </div>
+      </section>
     </div>
-
-    <!-- SPATIAL DASHBOARD GRID -->
-    <div class="spatial-grid">
-      <!-- 1. MEMBERS / AKKAUNT CARD -->
-      <div class="card members-card">
-        <div class="card-label">Akkaunt Profili <span style="color:var(--accent-cyan);">● Faol</span></div>
-        <div class="avatar-stack">
-          <div class="stack-avatar" onclick="selectAcc('acc1')" title="acc1">1</div>
-          <div class="stack-avatar a2" onclick="selectAcc('acc2')" title="acc2">2</div>
-          <div class="stack-avatar a3" onclick="selectAcc('acc3')" title="acc3">3</div>
-          <div class="stack-more">+3</div>
-        </div>
-        <div class="profile-details">
-          <div class="p-name" id="prof-name">Yuklanmoqda…</div>
-          <div class="p-user" id="prof-user">@username</div>
-          <div class="p-meta">
-            <span>Tel: <strong id="prof-phone">-</strong></span>
-            <span>ID: <strong id="prof-id">-</strong></span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 2. ACTIVITY WAVE CHART -->
-      <div class="card wave-card">
-        <div class="wave-head">
-          <div>
-            <div class="card-label">Bugungi Faollik</div>
-            <div class="wave-title-big"><span id="wave-total">300+</span> <span>chat faol</span></div>
-          </div>
-          <div class="wave-pill-group">
-            <button class="wave-pill active">Bugun</button>
-            <button class="wave-pill">Hafta</button>
-          </div>
-        </div>
-        <svg class="wave-svg" viewBox="0 0 300 70">
-          <defs>
-            <linearGradient id="wave-grad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.5"/>
-              <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.0"/>
-            </linearGradient>
-          </defs>
-          <path d="M0,45 Q40,15 80,35 T160,20 T240,40 T300,10 L300,70 L0,70 Z" fill="url(#wave-grad)"/>
-          <path d="M0,45 Q40,15 80,35 T160,20 T240,40 T300,10" fill="none" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
-        </svg>
-        <div class="wave-bottom-chips">
-          <span>AI Javoblari: <strong style="color:#fff;" id="wave-ai">Faol</strong></span>
-          <span>Kechikish: <strong style="color:var(--accent-cyan);">2.4s</strong></span>
-          <span>Holat: <strong style="color:var(--accent-green);">Optimal</strong></span>
-        </div>
-      </div>
-
-      <!-- 3. THERMOSTAT CIRCULAR GAUGE -->
-      <div class="card gauge-card">
-        <div class="card-label" style="width:100%;">Tizim Yuklamasi & Holati</div>
-        <div class="gauge-container">
-          <svg class="gauge-svg" width="160" height="160" viewBox="0 0 160 160">
-            <defs>
-              <linearGradient id="gauge-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#38bdf8"/>
-                <stop offset="100%" stop-color="#0284c7"/>
-              </linearGradient>
-            </defs>
-            <circle class="gauge-bg" cx="80" cy="80" r="68"/>
-            <circle class="gauge-bar" id="gauge-arc" cx="80" cy="80" r="68"/>
-          </svg>
-          <div class="gauge-content">
-            <div class="gauge-val" id="gauge-num">98%</div>
-            <div class="gauge-sub">Uptime</div>
-          </div>
-        </div>
-        <div class="gauge-btn-row">
-          <div class="g-btn on" id="g-reply"><span>🤖</span>Avto</div>
-          <div class="g-btn" id="g-draft"><span>✍️</span>Draft</div>
-          <div class="g-btn on" id="g-read"><span>👁</span>Read</div>
-          <div class="g-btn" id="g-ai"><span>📝</span>Taklif</div>
-        </div>
-      </div>
-
-      <!-- 4. CHATLAR & AUDITORIYA (HERO BREAKDOWN) -->
-      <div class="card chats-hero-card">
-        <div class="chat-stat-box">
-          <div class="cs-top">
-            <span class="cs-icon">👤</span>
-            <span class="cs-badge">Shaxsiy</span>
-          </div>
-          <div class="cs-num" id="stat-priv">0</div>
-          <div class="cs-desc">Muloqotdagi odamlar</div>
-          <div class="cs-owner">Yozishmalar faol</div>
-        </div>
-
-        <div class="chat-stat-box">
-          <div class="cs-top">
-            <span class="cs-icon">👥</span>
-            <span class="cs-badge">Guruhlar</span>
-          </div>
-          <div class="cs-num" id="stat-groups">0</div>
-          <div class="cs-desc">A'zo bo'lingan guruhlar</div>
-          <div class="cs-owner" id="owner-groups-count">Men ochgan: 0 ta</div>
-        </div>
-
-        <div class="chat-stat-box">
-          <div class="cs-top">
-            <span class="cs-icon">📢</span>
-            <span class="cs-badge">Kanallar</span>
-          </div>
-          <div class="cs-num" id="stat-channels">0</div>
-          <div class="cs-desc">A'zo bo'lingan kanallar</div>
-          <div class="cs-owner" id="owner-channels-count">Men ochgan: 0 ta</div>
-        </div>
-
-        <div class="chat-stat-box">
-          <div class="cs-top">
-            <span class="cs-icon">🤖</span>
-            <span class="cs-badge">Botlar</span>
-          </div>
-          <div class="cs-num" id="stat-bots">0</div>
-          <div class="cs-desc">Ulangan Telegram botlar</div>
-          <div class="cs-owner">O'qilmagan: <span id="stat-unread">0</span></div>
-        </div>
-      </div>
-
-      <!-- 5. OCHILGAN KANALLAR VA GURUHLAR RO'YXATI -->
-      <div class="card ownership-section">
-        <div>
-          <div class="card-label">📢 Men Ochgan Kanallar (<span id="count-ch">0</span>)</div>
-          <div class="owner-list-box" id="list-channels">
-            <div style="color:var(--text-dim); padding:10px;">Yuklanmoqda…</div>
-          </div>
-        </div>
-        <div>
-          <div class="card-label">👥 Men Ochgan Guruhlar (<span id="count-gr">0</span>)</div>
-          <div class="owner-list-box" id="list-groups">
-            <div style="color:var(--text-dim); padding:10px;">Yuklanmoqda…</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 6. SECURITY DUAL LOCKS -->
-      <div class="card dual-doors">
-        <div class="door-mini">
-          <div>
-            <div class="door-icon">🛡</div>
-            <div class="door-label">Anti-Ban Filter</div>
-          </div>
-          <div class="door-status">Cheklov: 15 / 60s</div>
-        </div>
-        <div class="door-mini">
-          <div>
-            <div class="door-icon">⏰</div>
-            <div class="door-label">Ish Vaqti Rejimi</div>
-          </div>
-          <div class="door-status">08:00 – 24:00 (UTC+5)</div>
-        </div>
-      </div>
-
-      <!-- 7. BAR CHART WIDGET -->
-      <div class="card bar-chart-card">
-        <div class="card-label">Haftalik Xabarlar Taqvimi</div>
-        <div class="bar-chart">
-          <div class="bar-col"><div class="bar-stick" style="height: 45%;"></div><div class="bar-day">Du</div></div>
-          <div class="bar-col"><div class="bar-stick" style="height: 65%;"></div><div class="bar-day">Se</div></div>
-          <div class="bar-col active"><div class="bar-stick" style="height: 90%;"></div><div class="bar-day">Ch</div></div>
-          <div class="bar-col"><div class="bar-stick" style="height: 70%;"></div><div class="bar-day">Pa</div></div>
-          <div class="bar-col"><div class="bar-stick" style="height: 55%;"></div><div class="bar-day">Ju</div></div>
-          <div class="bar-col"><div class="bar-stick" style="height: 80%;"></div><div class="bar-day">Sh</div></div>
-          <div class="bar-col"><div class="bar-stick" style="height: 60%;"></div><div class="bar-day">Ya</div></div>
-        </div>
-      </div>
-
-      <!-- 8. CONTROLS TOGGLES (LIGHT/STEREO STYLE) -->
-      <div class="card controls-sidebar">
-        <div class="card-label">Userbot Rejimlari</div>
-        <div id="toggles-box">
-          <!-- Dinamik toggllar -->
-        </div>
-      </div>
-    </div>
-  </div>
+  </main>
 </div>
 
-<!-- PIN MODAL -->
+<!-- OPENAI / CHATGPT STYLE AUTH MODAL -->
 <div id="login-overlay">
   <div class="login-card" id="login-box">
-    <div class="lock-circle">🔐</div>
-    <h2 style="margin:0 0 8px; font-size:22px; font-weight:700;">Shamsiyev Studio</h2>
-    <p style="color:var(--text-sub); font-size:13px; margin:0 0 24px;">VisionOS paneliga kirish uchun PIN kodni kiriting</p>
+    <div class="login-logo">
+      <svg class="icon" style="width:24px; height:24px;" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+    </div>
+    <h2>Xavfsiz Kirish</h2>
+    <p>Userbot paneliga kirish uchun PIN parolni kiriting</p>
     <form onsubmit="handleLogin(event)">
       <input type="password" id="pin-input" class="pin-input" placeholder="••••" maxlength="10" inputmode="numeric" pattern="[0-9]*" autofocus autocomplete="off">
-      <button type="submit" class="btn-submit">Panelga Kirish</button>
+      <button type="submit" class="btn-submit">Davom etish</button>
     </form>
-    <div id="login-err" style="color:#f87171; font-size:13px; margin-top:12px; min-height:18px;"></div>
+    <div id="login-err" class="login-err"></div>
   </div>
 </div>
 
@@ -1175,10 +1239,10 @@ let allStats = {};
 let allStates = {};
 
 const FEATURES = [
-  ["autoreply", "Avto-javob", "Gemini AI intellektual javob"],
-  ["autodraft", "Qoralama (Draft)", "Javobni qoralama qilib qo'yish"],
-  ["autoread", "Avto-o'qish", "Kanal/guruhlarni avto-o'qish"],
-  ["autoai", "Yarim-avto taklif", "Xabarga taklif tayyorlash"]
+  ["autoreply", "Avto-javob", "Gemini AI orqali intellektual tabiiy javob"],
+  ["autodraft", "Qoralama (Draft)", "Javobni yubormasdan qoralama qilib saqlash"],
+  ["autoread", "Avto-o'qish", "Kanal va guruhlarni avtomatik o'qilgan qilish"],
+  ["autoai", "Yarim-avto taklif", "Kelgan xabarga AI taklifini tayyorlash"]
 ];
 
 function showToast(text) {
@@ -1202,6 +1266,19 @@ function hideLogin() {
   document.getElementById("login-overlay").style.display = "none";
 }
 
+function toggleMobileSidebar() {
+  const sb = document.getElementById("sidebar");
+  const bd = document.getElementById("sidebar-backdrop");
+  sb.classList.toggle("open");
+  bd.classList.toggle("open");
+}
+
+function scrollToSection(id) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth' });
+  if (window.innerWidth <= 768) toggleMobileSidebar();
+}
+
 async function handleLogin(e) {
   e.preventDefault();
   const pwd = document.getElementById("pin-input").value.trim();
@@ -1217,7 +1294,7 @@ async function handleLogin(e) {
     if (res.ok && d.ok) {
       if (d.auth) localStorage.setItem("userbot_auth", d.auth);
       hideLogin();
-      showToast("Xush kelibsiz! 👋");
+      showToast("Xush kelibsiz! Panel yuklandi");
       refreshData();
     } else {
       const box = document.getElementById("login-box");
@@ -1233,20 +1310,29 @@ async function handleLogin(e) {
 async function logout() {
   await fetch("/api/logout", { method: "POST" });
   localStorage.removeItem("userbot_auth");
-  showToast("Panel qulflandi 🔒");
+  showToast("Panel qulflandi");
   showLogin();
 }
 
 function selectAcc(acc) {
   currentAcc = acc;
-  document.querySelectorAll(".tab-pill").forEach(el => el.classList.remove("active"));
-  const tab = document.getElementById("tab-" + acc);
-  if (tab) tab.classList.add("active");
+  document.querySelectorAll(".account-item").forEach(el => {
+    el.classList.remove("active");
+    const dot = el.querySelector(".ai-dot");
+    if (dot) dot.style.display = "none";
+  });
+  const navItem = document.getElementById("nav-" + acc);
+  if (navItem) {
+    navItem.classList.add("active");
+    const dot = navItem.querySelector(".ai-dot");
+    if (dot) dot.style.display = "block";
+  }
+  if (window.innerWidth <= 768) {
+    const sb = document.getElementById("sidebar");
+    const bd = document.getElementById("sidebar-backdrop");
+    if (sb.classList.contains("open")) toggleMobileSidebar();
+  }
   render();
-}
-
-function switchView(view) {
-  showToast("Bo'lim: " + view);
 }
 
 async function refreshData() {
@@ -1270,6 +1356,7 @@ async function refreshData() {
     if (resStats.ok) allStats = await resStats.json();
     hideLogin();
     render();
+    showToast("Ma'lumotlar yangilandi");
   } catch (err) {
     showLogin();
   }
@@ -1281,86 +1368,94 @@ function render() {
   const p = st.profile || {};
   const s = st.summary || {};
 
-  // Profile details
-  document.getElementById("prof-name").textContent = (p.first_name || "") + " " + (p.last_name || "");
-  document.getElementById("prof-user").textContent = "@" + (p.username || "noma'lum");
-  document.getElementById("prof-phone").textContent = p.phone ? "+" + p.phone : "-";
-  document.getElementById("prof-id").textContent = p.id || "-";
-  document.getElementById("badge-name").textContent = p.first_name || "Shamsiddin";
-  document.getElementById("avatar-circle").textContent = (p.first_name || "S")[0].toUpperCase();
+  // Top title & sidebar user
+  document.getElementById("top-title").textContent = currentAcc + " · @" + (p.username || "user");
+  document.getElementById("sb-handle").textContent = "@" + (p.username || currentAcc);
+  const fullName = ((p.first_name || "") + " " + (p.last_name || "")).trim() || "Shamsiddin";
+  document.getElementById("sb-name").textContent = fullName;
+  document.getElementById("sb-avatar").textContent = (p.first_name || "S")[0].toUpperCase();
+  document.getElementById("acc-header-desc").textContent = fullName + " (@" + (p.username || "") + ") Telegram profili";
+  document.getElementById("acc-phone").textContent = p.phone ? "+" + p.phone : "Mavjud emas";
 
-  // Summary counts
-  document.getElementById("stat-priv").textContent = s.private_chats || 0;
-  document.getElementById("stat-groups").textContent = s.groups || 0;
-  document.getElementById("stat-channels").textContent = s.channels || 0;
-  document.getElementById("stat-bots").textContent = s.bots || 0;
-  document.getElementById("stat-unread").textContent = s.unread_messages || 0;
-  document.getElementById("wave-total").textContent = (s.total_chats || 0) + "+";
+  // Metrics
+  document.getElementById("m-priv").textContent = s.private_chats || 0;
+  document.getElementById("m-groups").textContent = s.groups || 0;
+  document.getElementById("m-channels").textContent = s.channels || 0;
+  document.getElementById("m-bots").textContent = s.bots || 0;
+  document.getElementById("m-unread").textContent = s.unread_messages || 0;
 
-  document.getElementById("owner-groups-count").textContent = "Men ochgan: " + (s.created_groups_count || 0) + " ta";
-  document.getElementById("owner-channels-count").textContent = "Men ochgan: " + (s.created_channels_count || 0) + " ta";
-  document.getElementById("count-ch").textContent = s.created_channels_count || 0;
-  document.getElementById("count-gr").textContent = s.created_groups_count || 0;
+  document.getElementById("m-created-groups").textContent = (s.created_groups_count || 0) + " ta";
+  document.getElementById("m-created-channels").textContent = (s.created_channels_count || 0) + " ta";
+  document.getElementById("count-created-ch").textContent = (s.created_channels_count || 0) + " ta";
+  document.getElementById("count-created-gr").textContent = (s.created_groups_count || 0) + " ta";
 
-  // Channels list
-  const chBox = document.getElementById("list-channels");
+  // Created channels list
+  const chBox = document.getElementById("list-created-ch");
   chBox.innerHTML = "";
   const createdCh = st.created_channels || [];
   if (createdCh.length === 0) {
-    chBox.innerHTML = '<div style="color:var(--text-dim); padding:10px;">Kanal topilmadi</div>';
+    chBox.innerHTML = '<div style="color:var(--text-muted); padding:14px; text-align:center;">Ushbu akkauntda ochilgan kanallar yo\'q</div>';
   } else {
     createdCh.forEach(ch => {
       const d = document.createElement("div");
-      d.className = "owner-item";
-      d.innerHTML = `<span class="oi-title">📢 ${ch.title}</span><span class="oi-tag">Egasi</span>`;
+      d.className = "oc-item";
+      d.innerHTML = `
+        <span class="oci-name" title="${ch.title}">${ch.title}</span>
+        <span class="oci-tag">Egasi</span>
+      `;
       chBox.appendChild(d);
     });
   }
 
-  // Groups list
-  const grBox = document.getElementById("list-groups");
+  // Created groups list
+  const grBox = document.getElementById("list-created-gr");
   grBox.innerHTML = "";
   const createdGr = st.created_groups || [];
   if (createdGr.length === 0) {
-    grBox.innerHTML = '<div style="color:var(--text-dim); padding:10px;">Guruh topilmadi</div>';
+    grBox.innerHTML = '<div style="color:var(--text-muted); padding:14px; text-align:center;">Ushbu akkauntda ochilgan guruhlar yo\'q</div>';
   } else {
     createdGr.forEach(gr => {
       const d = document.createElement("div");
-      d.className = "owner-item";
-      d.innerHTML = `<span class="oi-title">👥 ${gr.title}</span><span class="oi-tag">Egasi</span>`;
+      d.className = "oc-item";
+      d.innerHTML = `
+        <span class="oci-name" title="${gr.title}">${gr.title}</span>
+        <span class="oci-tag">Egasi</span>
+      `;
       grBox.appendChild(d);
     });
   }
 
-  // Right switches (Toggles)
-  const togBox = document.getElementById("toggles-box");
+  // Automation toggles
+  const togBox = document.getElementById("toggles-container");
   togBox.innerHTML = "";
+
+  const icons = {
+    autoreply: '<svg class="icon" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>',
+    autodraft: '<svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>',
+    autoread: '<svg class="icon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>',
+    autoai: '<svg class="icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="M12 7v4"></path></svg>'
+  };
+
   FEATURES.forEach(([f, label, desc]) => {
-    const card = document.createElement("div");
-    card.className = "toggle-card";
+    const tile = document.createElement("div");
+    tile.className = "toggle-tile";
     const checked = !!state[f];
 
-    card.innerHTML = `
-      <div class="tc-left">
-        <div class="tc-icon">${f === 'autoreply' ? '🤖' : (f === 'autodraft' ? '✍️' : (f === 'autoread' ? '👁' : '📝'))}</div>
+    tile.innerHTML = `
+      <div class="tt-left">
+        <div class="tt-icon-wrap">${icons[f] || ''}</div>
         <div>
-          <div class="tc-name">${label}</div>
-          <div class="tc-desc">${desc}</div>
+          <div class="tt-name">${label}</div>
+          <div class="tt-desc">${desc}</div>
         </div>
       </div>
-      <label class="sw">
+      <label class="switch">
         <input type="checkbox" ${checked ? "checked" : ""} onchange="toggleFeature('${f}', this.checked, '${label}')">
-        <span class="sl"></span>
+        <span class="slider"></span>
       </label>
     `;
-    togBox.appendChild(card);
+    togBox.appendChild(tile);
   });
-
-  // Gauge quick buttons state
-  document.getElementById("g-reply").className = "g-btn " + (state.autoreply ? "on" : "");
-  document.getElementById("g-draft").className = "g-btn " + (state.autodraft ? "on" : "");
-  document.getElementById("g-read").className = "g-btn " + (state.autoread ? "on" : "");
-  document.getElementById("g-ai").className = "g-btn " + (state.autoai ? "on" : "");
 }
 
 async function toggleFeature(feat, val, label) {
@@ -1382,10 +1477,10 @@ async function toggleFeature(feat, val, label) {
       if (!allStates[currentAcc]) allStates[currentAcc] = {};
       allStates[currentAcc][feat] = val;
       render();
-      showToast(label + (val ? " yoqildi 🟢" : " o'chirildi ⚪️"));
+      showToast(label + (val ? " yoqildi" : " o'chirildi"));
     }
   } catch (e) {
-    showToast("Tarmoq xatosi ❌");
+    showToast("O'zgartirishda xato yuz berdi");
   }
 }
 
