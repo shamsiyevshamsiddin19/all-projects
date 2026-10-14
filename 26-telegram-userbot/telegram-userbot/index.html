@@ -1041,6 +1041,53 @@
     font-weight: 600;
   }
 
+  /* GROUPED CHATS SECTIONS */
+  .chat-group-section {
+    margin-bottom: 28px;
+  }
+  .chat-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-divider);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .cgh-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .cgh-badge {
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    background: #242424;
+    color: var(--text-secondary);
+  }
+  .btn-show-more {
+    background: #242424;
+    border: none;
+    color: var(--text-secondary);
+    padding: 5px 12px;
+    border-radius: var(--radius-pill);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .btn-show-more:hover {
+    background: #343434;
+    color: #ffffff;
+  }
+
   /* TOAST NOTIFICATION */
   .toast {
     position: fixed;
@@ -1591,29 +1638,36 @@
       </section>
 
       <!-- ==============================================
-           VIEW 5: SUHBATLAR (Live Chat Feed)
+           VIEW 5: SUHBATLAR (All Chats Grouped)
            ============================================== -->
       <section class="view-panel" id="view-chats">
         <div class="view-header">
           <div>
             <div class="vh-title">
               <svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-              <span>So'nggi Muloqotlar & Dialoglar</span>
+              <span>Barcha Suhbatlar & Chatlar</span>
+              <span class="nb-pill" id="vw-chats-count">0 ta</span>
             </div>
-            <div class="vh-sub">Telegram akkauntingizdagi eng oxirgi jonli suhbatlar va xabarlar oqimi</div>
+            <div class="vh-sub">Telegram akkauntingizdagi barcha chatlar toifalari bo'yicha guruhlangan</div>
           </div>
         </div>
 
-        <div class="dialogs-filter-bar">
-          <button class="df-btn active" onclick="filterRecentDialogsType('all', this)">Barchasi</button>
-          <button class="df-btn" onclick="filterRecentDialogsType('user', this)">Shaxsiy</button>
-          <button class="df-btn" onclick="filterRecentDialogsType('group', this)">Guruhlar</button>
-          <button class="df-btn" onclick="filterRecentDialogsType('channel', this)">Kanallar</button>
-          <button class="df-btn" onclick="filterRecentDialogsType('bot', this)">Botlar</button>
+        <div class="resource-toolbar">
+          <div class="search-wrapper" style="max-width:380px;">
+            <svg class="icon search-icon-pos" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="chats-search-input" class="search-input-field" placeholder="Chat nomi yoki @username qidirish..." oninput="filterAllChatsSearch(this.value)">
+          </div>
+          <div class="dialogs-filter-bar" style="margin-bottom:0;">
+            <button class="df-btn active" id="df-btn-all" onclick="filterChatsCategory('all', this)">Barchasi <span id="cnt-df-all" style="opacity:0.65; margin-left:4px;">0</span></button>
+            <button class="df-btn" id="df-btn-user" onclick="filterChatsCategory('user', this)">Shaxsiy <span id="cnt-df-user" style="opacity:0.65; margin-left:4px;">0</span></button>
+            <button class="df-btn" id="df-btn-group" onclick="filterChatsCategory('group', this)">Guruhlar <span id="cnt-df-group" style="opacity:0.65; margin-left:4px;">0</span></button>
+            <button class="df-btn" id="df-btn-channel" onclick="filterChatsCategory('channel', this)">Kanallar <span id="cnt-df-channel" style="opacity:0.65; margin-left:4px;">0</span></button>
+            <button class="df-btn" id="df-btn-bot" onclick="filterChatsCategory('bot', this)">Botlar <span id="cnt-df-bot" style="opacity:0.65; margin-left:4px;">0</span></button>
+          </div>
         </div>
 
-        <div class="resource-grid" id="full-dialogs-grid">
-          <div style="color:var(--text-muted); padding:20px; text-align:center; grid-column:1/-1;">Suhbatlar yuklanmoqda…</div>
+        <div id="chats-content-container">
+          <div style="color:var(--text-muted); padding:30px; text-align:center;">Suhbatlar yuklanmoqda…</div>
         </div>
       </section>
 
@@ -1959,15 +2013,49 @@ function filterAdminChats(q) {
   renderAdminList(filtered);
 }
 
-let activeRecentFilter = "all";
-function filterRecentDialogsType(type, btn) {
-  activeRecentFilter = type;
-  document.querySelectorAll(".df-btn").forEach(b => b.classList.remove("active"));
+let currentChatFilter = "all";
+let currentChatSearch = "";
+
+function filterChatsCategory(cat, btn) {
+  currentChatFilter = cat;
+  document.querySelectorAll(".dialogs-filter-bar .df-btn").forEach(b => b.classList.remove("active"));
   if (btn) btn.classList.add("active");
-  const st = allStats[currentAcc] || {};
-  const list = st.recent_dialogs || [];
-  const filtered = type === "all" ? list : list.filter(d => d.type === type);
-  renderRecentDialogs(filtered);
+  renderChatsView();
+}
+
+function filterAllChatsSearch(q) {
+  currentChatSearch = q.toLowerCase().trim();
+  renderChatsView();
+}
+
+function createChatCard(item) {
+  const card = document.createElement("div");
+  card.className = "res-card";
+  const userLink = item.username ? `<a href="https://t.me/${item.username}" target="_blank" rel="noopener" class="rc-link">@${item.username}</a>` : '';
+  const unreadBadge = item.unread > 0 ? `<span class="nb-pill pulse-red">${item.unread} ta</span>` : '';
+  const initial = (item.title || "U").trim().slice(0, 1).toUpperCase();
+  const typeLabels = { user: "Shaxsiy", group: "Guruh", channel: "Kanal", bot: "Bot" };
+  card.innerHTML = `
+    <div class="chat-avatar-frame">
+      <img src="/api/avatar/${item.id}" class="chat-avatar-img" loading="lazy" onload="this.classList.add('loaded')" onerror="this.remove()" />
+      <span class="chat-avatar-fallback">${initial}</span>
+    </div>
+    <div class="rc-details">
+      <div class="rc-title" title="${item.title}">${item.title}</div>
+      <div class="rc-subrow">
+        ${userLink}
+        <span class="rc-id-pill">${item.date || ''}</span>
+      </div>
+    </div>
+    <div class="rc-right">
+      ${unreadBadge}
+      <span class="rc-tag">${typeLabels[item.type] || item.type}</span>
+      <button class="btn-icon-soft" onclick="copyId('${item.id}', event)" title="ID nusxalash">
+        <svg class="icon" style="width:13px;height:13px;" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+      </button>
+    </div>
+  `;
+  return card;
 }
 
 /* ========================================================
@@ -2078,51 +2166,117 @@ function renderAdminList(list) {
   });
 }
 
-function renderRecentDialogs(list) {
-  const container = document.getElementById("full-dialogs-grid");
-  const dashContainer = document.getElementById("dashboard-recent-grid");
-  container.innerHTML = "";
-  dashContainer.innerHTML = "";
+function renderChatsView() {
+  const container = document.getElementById("chats-content-container");
+  if (!container) return;
 
-  if (!list || list.length === 0) {
-    const emptyMsg = '<div style="color:var(--text-muted); padding:20px; text-align:center; grid-column:1/-1;">Suhbatlar topilmadi</div>';
-    container.innerHTML = emptyMsg;
-    dashContainer.innerHTML = emptyMsg;
+  const st = allStats[currentAcc] || {};
+  const allChats = (st.chats && st.chats.length > 0) ? st.chats : (st.recent_dialogs || []);
+
+  const users = allChats.filter(c => c.type === "user");
+  const groups = allChats.filter(c => c.type === "group");
+  const channels = allChats.filter(c => c.type === "channel");
+  const bots = allChats.filter(c => c.type === "bot");
+
+  const cntAll = document.getElementById("cnt-df-all");
+  const cntUser = document.getElementById("cnt-df-user");
+  const cntGroup = document.getElementById("cnt-df-group");
+  const cntChan = document.getElementById("cnt-df-channel");
+  const cntBot = document.getElementById("cnt-df-bot");
+  const topTotal = document.getElementById("vw-chats-count");
+
+  if (cntAll) cntAll.textContent = allChats.length;
+  if (cntUser) cntUser.textContent = users.length;
+  if (cntGroup) cntGroup.textContent = groups.length;
+  if (cntChan) cntChan.textContent = channels.length;
+  if (cntBot) cntBot.textContent = bots.length;
+  if (topTotal) topTotal.textContent = allChats.length + " ta";
+
+  container.innerHTML = "";
+
+  if (allChats.length === 0) {
+    container.innerHTML = '<div style="color:var(--text-muted); padding:30px; text-align:center;">Chatlar topilmadi</div>';
     return;
   }
 
-  const typeLabels = { user: "Shaxsiy", group: "Guruh", channel: "Kanal", bot: "Bot" };
-
-  list.forEach((item, idx) => {
-    const card = document.createElement("div");
-    card.className = "res-card";
-    const userLink = item.username ? `<a href="https://t.me/${item.username}" target="_blank" rel="noopener" class="rc-link">@${item.username}</a>` : '';
-    const unreadBadge = item.unread > 0 ? `<span class="nb-pill pulse-red">${item.unread} ta</span>` : '';
-    const initial = (item.title || "U").trim().slice(0, 1).toUpperCase();
-    card.innerHTML = `
-      <div class="chat-avatar-frame">
-        <img src="/api/avatar/${item.id}" class="chat-avatar-img" loading="lazy" onload="this.classList.add('loaded')" onerror="this.remove()" />
-        <span class="chat-avatar-fallback">${initial}</span>
-      </div>
-      <div class="rc-details">
-        <div class="rc-title" title="${item.title}">${item.title}</div>
-        <div class="rc-subrow">
-          ${userLink}
-          <span class="rc-id-pill">${item.date || ''}</span>
-        </div>
-      </div>
-      <div class="rc-right">
-        ${unreadBadge}
-        <span class="rc-tag">${typeLabels[item.type] || item.type}</span>
-        <button class="btn-icon-soft" onclick="copyId('${item.id}', event)" title="ID nusxalash">
-          <svg class="icon" style="width:13px;height:13px;" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-        </button>
-      </div>
-    `;
-    container.appendChild(card);
-    if (idx < 6) {
-      dashContainer.appendChild(card.cloneNode(true));
+  // 1. Agar qidiruv maydonida so'z bo'lsa: barcha chatlar ichidan qidirish
+  if (currentChatSearch) {
+    const matched = allChats.filter(c =>
+      (c.title || "").toLowerCase().includes(currentChatSearch) ||
+      (c.username || "").toLowerCase().includes(currentChatSearch) ||
+      String(c.id).includes(currentChatSearch)
+    );
+    if (matched.length === 0) {
+      container.innerHTML = `<div style="color:var(--text-muted); padding:30px; text-align:center;">"${currentChatSearch}" bo'yicha hech qanday suhbat topilmadi</div>`;
+      return;
     }
+    const grid = document.createElement("div");
+    grid.className = "resource-grid";
+    matched.forEach(item => grid.appendChild(createChatCard(item)));
+    container.appendChild(grid);
+    return;
+  }
+
+  // 2. Agar aniq toifa tanlangan bo'lsa (Shaxsiy, Guruhlar, Kanallar, Botlar):
+  if (currentChatFilter !== "all") {
+    const list = allChats.filter(c => c.type === currentChatFilter);
+    if (list.length === 0) {
+      container.innerHTML = '<div style="color:var(--text-muted); padding:30px; text-align:center;">Ushbu toifada chatlar mavjud emas</div>';
+      return;
+    }
+    const grid = document.createElement("div");
+    grid.className = "resource-grid";
+    list.forEach(item => grid.appendChild(createChatCard(item)));
+    container.appendChild(grid);
+    return;
+  }
+
+  // 3. Agar 'Barchasi' tanlangan bo'lsa: BUTUN CHATLARNI GURUHLAB KO'RSATISH
+  const sections = [
+    { key: "user", title: "Shaxsiy Chatlar", icon: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>', list: users },
+    { key: "group", title: "Guruhlar", icon: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>', list: groups },
+    { key: "channel", title: "Kanallar", icon: '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path>', list: channels },
+    { key: "bot", title: "Botlar", icon: '<rect x="3" y="11" width="18" height="10" rx="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="M12 7v4"></path>', list: bots },
+  ];
+
+  sections.forEach(sec => {
+    if (sec.list.length === 0) return;
+    const secWrap = document.createElement("div");
+    secWrap.className = "chat-group-section";
+
+    const header = document.createElement("div");
+    header.className = "chat-group-header";
+    header.innerHTML = `
+      <div class="cgh-left">
+        <svg class="icon" viewBox="0 0 24 24">${sec.icon}</svg>
+        <span>${sec.title}</span>
+        <span class="cgh-badge">${sec.list.length} ta</span>
+      </div>
+      <button class="btn-show-more" onclick="filterChatsCategory('${sec.key}', document.getElementById('df-btn-${sec.key}'))">Faqat ${sec.title} (${sec.list.length}) →</button>
+    `;
+    secWrap.appendChild(header);
+
+    const grid = document.createElement("div");
+    grid.className = "resource-grid";
+    sec.list.forEach(item => grid.appendChild(createChatCard(item)));
+    secWrap.appendChild(grid);
+
+    container.appendChild(secWrap);
+  });
+}
+
+function renderRecentDialogs(list) {
+  const dashContainer = document.getElementById("dashboard-recent-grid");
+  if (!dashContainer) return;
+  dashContainer.innerHTML = "";
+
+  if (!list || list.length === 0) {
+    dashContainer.innerHTML = '<div style="color:var(--text-muted); padding:20px; text-align:center; grid-column:1/-1;">Suhbatlar topilmadi</div>';
+    return;
+  }
+
+  list.slice(0, 6).forEach(item => {
+    dashContainer.appendChild(createChatCard(item));
   });
 }
 

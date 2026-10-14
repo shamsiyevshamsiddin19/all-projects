@@ -87,6 +87,7 @@ async def collect_account_stats(client):
             "created_groups": [],
             "admin_chats": [],
             "recent_dialogs": [],
+            "chats": [],
         }
 
         avatar_queue = []
@@ -157,27 +158,31 @@ async def collect_account_stats(client):
                     })
                     avatar_queue.append((ent, chat_id))
 
-            if len(stats["recent_dialogs"]) < 16:
-                date_str = ""
-                if hasattr(d, "date") and d.date:
-                    date_str = d.date.strftime("%H:%M")
-                chat_type = "user"
-                if d.is_channel and not is_megagroup:
-                    chat_type = "channel"
-                elif d.is_group or is_megagroup:
-                    chat_type = "group"
-                elif getattr(ent, "bot", False):
-                    chat_type = "bot"
+            date_str = ""
+            if hasattr(d, "date") and d.date:
+                date_str = d.date.strftime("%H:%M")
+            chat_type = "user"
+            if d.is_channel and not is_megagroup:
+                chat_type = "channel"
+            elif d.is_group or is_megagroup:
+                chat_type = "group"
+            elif getattr(ent, "bot", False):
+                chat_type = "bot"
 
-                stats["recent_dialogs"].append({
-                    "id": chat_id,
-                    "title": title,
-                    "username": username,
-                    "type": chat_type,
-                    "unread": unread,
-                    "date": date_str,
-                    "avatar": f"/api/avatar/{chat_id}",
-                })
+            chat_item = {
+                "id": chat_id,
+                "title": title,
+                "username": username,
+                "type": chat_type,
+                "unread": unread,
+                "date": date_str,
+                "avatar": f"/api/avatar/{chat_id}",
+            }
+            stats["chats"].append(chat_item)
+            if len(stats["recent_dialogs"]) < 12:
+                stats["recent_dialogs"].append(chat_item)
+
+            if len(avatar_queue) < 60:
                 avatar_queue.append((ent, chat_id))
 
         stats["summary"]["total_chats"] = count
