@@ -6,7 +6,7 @@ redis==6.4.0
 aiogram==3.22.0
 groq==1.0.0
 google-genai==1.47.0
-openai==2.42.0
+openai==3.29.0
 anthropic==0.116.0
 reportlab==4.5.1
 requests==2.32.5
