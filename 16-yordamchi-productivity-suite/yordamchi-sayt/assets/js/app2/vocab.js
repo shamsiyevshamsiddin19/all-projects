@@ -14,6 +14,7 @@
      ishlatiladi (nishon, karta ko'rinishi, yorliq), qo'lda takrorlansa
      biri o'zgarib qolishi aniq edi. */
   var TEMA_ROOT = 'Тематический 9000';
+  var SLOVAR_ROOT = 'Словарь 5000';
   var FC = null; // flashcard session state
 
     function vocabBadgeHtml(name) {
@@ -30,6 +31,12 @@
        bilinishi kerak. Qizil olinmadi — u xato/o'chirish rangi. */
     if (name === TEMA_ROOT) {
       return '<span class="chat-av" style="background:linear-gradient(135deg,#0d9488,#10b981,#84cc16);color:#fff;font-size:14.5px;font-weight:900;box-shadow:0 4px 14px rgba(16,185,129,0.45);letter-spacing:-0.5px">9K</span>';
+    }
+
+    /* Словарь 5000 — 1-8000 va Тематический 9000 yonidagi uchinchi katta to'plam.
+       Olovrang-oltin rang: 5K belgisi, yorqin va hashamatli. */
+    if (name === SLOVAR_ROOT) {
+      return '<span class="chat-av" style="background:linear-gradient(135deg,#f59e0b,#ea580c,#ef4444);color:#fff;font-size:14.5px;font-weight:900;box-shadow:0 4px 14px rgba(249,115,22,0.45);letter-spacing:-0.5px">5K</span>';
     }
 
     // 1-1000 folder badge
@@ -76,7 +83,14 @@
   }
 
   function loadDict(lang) {
-    return App.call('get_dict_data', null, { query: 'lang=' + lang }).then(function (j) {
+    return App.call('get_dict_data', null, { query: 'lang=' + lang }).catch(function () {
+      return fetch('assets/data/snapshot.json').then(function (r) {
+        if (!r.ok) throw new Error('snapshot not found');
+        return r.json();
+      }).then(function (s) {
+        return (s && s.dict && s.dict[lang]) || { items: [], order: [] };
+      }).catch(function () { return { items: [], order: [] }; });
+    }).then(function (j) {
       V.lang = lang; V.order = j.order || []; V.data = {};
       (j.items || []).forEach(function (it) {
         (V.data[it.category] = V.data[it.category] || []).push({
@@ -473,16 +487,19 @@
         if (order.length) {
           html += '<div class="chat-list">' + order.map(function (path) {
             var f = map[path];
-            var isTema  = (f.name === TEMA_ROOT);
-            var isMagic = (f.name === '1-8000' || (f.name === '1-1000' && !folder));
-            /* Ichki tugma har ikkala holatda ham shaffof bo'ladi — rang
+            var isTema   = (f.name === TEMA_ROOT);
+            var isSlovar = (f.name === SLOVAR_ROOT);
+            var isMagic  = (f.name === '1-8000' || (f.name === '1-1000' && !folder));
+            /* Ichki tugma barcha holatda ham shaffof bo'ladi — rang
                o'ram `div` da, aks holda ikki fon ustma-ust tushardi. */
-            var magicClass = (isMagic || isTema) ? ' chat-row-magic' : '';
-            var itemClass = isTema ? ' chat-item-tema' : (isMagic ? ' chat-item-magic' : '');
+            var magicClass = (isMagic || isTema || isSlovar) ? ' chat-row-magic' : '';
+            var itemClass = isTema ? ' chat-item-tema' : (isSlovar ? ' chat-item-slovar' : (isMagic ? ' chat-item-magic' : ''));
             var titleExtra = isTema
               ? ' <span class="tag-tema">9 000 So\'z · 257 mavzu</span>'
-              : (f.name === '1-8000' ? ' <span class="tag-magic">✨ 8 000 So\'z</span>'
-                : (isMagic ? ' <span class="tag-magic">✨ 1 000 So\'z</span>' : ''));
+              : (isSlovar
+                ? ' <span class="tag-slovar">5 200 So\'z · 25 toifa</span>'
+                : (f.name === '1-8000' ? ' <span class="tag-magic">✨ 8 000 So\'z</span>'
+                  : (isMagic ? ' <span class="tag-magic">✨ 1 000 So\'z</span>' : '')));
             /* Qulflangan papka KO'RINADI (nima kutayotgani bilinsin),
                lekin bosilganda ichiga o'tmaydi — tushuntirish chiqadi. */
             var lockedF = !!(window.WordLock && WordLock.isLocked(path));
@@ -950,6 +967,7 @@
   /* ---------- MD Kitoblar alohida sahifasi ---------- */
     var SYSTEM_MD_BOOKS = {
     russian: [
+      { id: 'Rus_tili_slovar_5000', title: '📙 Rus tili Amaliy lug\'at (5200 so\'z · 25 toifa)', file: 'Rus_tili_slovar_5000.md', desc: '5 203 ta so\'z: Ruscha, O\'zbekcha, Tushuntirish izohi va namunaviy gaplar bilan', isSys: true },
       { id: '229_ta_fel_MUKAMMAL', title: '🔥 229 ta Rus tili Fe\'llari (Mukammal AI Lug\'at)', file: '229_ta_fel_MUKAMMAL.md', desc: '229 ta asosiy fe\'llar: Infinitiv, Shakl, Vid juftligi, Sinonimlar va Misollar bilan', isSys: true },
       { id: 'Rus_tili_1000_soz_MUKAMMAL', title: '⭐ Rus tili 1000 so\'z (Mukammal Tavsifli AI Lug\'at)', file: 'Rus_tili_1000_soz_MUKAMMAL.md', desc: '1 000 ta so\'z: Qayerda, Shakl, Vid juftligi, Ma\'nodosh va Misollar bilan', isSys: true },
       { id: 'Rus_tili_8000_soz_TARJIMA', title: 'Rus tili 8000 so\'z (Tarjima bilan)', file: 'Rus_tili_8000_soz_TARJIMA.md', desc: '8 000 ta ruscha so\'z o\'zbekcha tarjimalari bilan', isSys: true },

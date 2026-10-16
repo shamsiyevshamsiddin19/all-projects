@@ -36,6 +36,11 @@ class Settings:
     fernet_key: str = os.getenv("FERNET_KEY", "")
     lms_base_url: str = os.getenv("LMS_BASE_URL", "https://lms.tuit.uz").rstrip("/")
     hemis_base_url: str = os.getenv("HEMIS_BASE_URL", "").rstrip("/")
+    # OneID (id.egov.uz) faqat O'zbekiston IP'laridan ochiladi. Bot chet eldagi
+    # serverda tursa, shu proksi orqali o'tkaziladi. Masalan:
+    #   ONEID_PROXY=http://user:pass@uz-proksi:8080
+    #   ONEID_PROXY=socks5://127.0.0.1:1080      (socksio paketi kerak)
+    oneid_proxy: str = os.getenv("ONEID_PROXY", "").strip()
     db_path: str = os.getenv("DB_PATH", "tatu.db")
     tz: str = os.getenv("TZ", "Asia/Tashkent")
     morning_push: str = os.getenv("MORNING_PUSH", "07:00")

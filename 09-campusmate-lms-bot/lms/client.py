@@ -38,6 +38,8 @@ ONEID_API = "https://id.egov.uz/api"
 ONEID_START = "/login/oneid"          # lms.tuit.uz dagi boshlanish nuqtasi
 ONEID_METHOD = "LOGINPASSMETHOD"      # login+parol usuli
 ONEID_SMS_CODE = 2                    # javobdagi code=2 → SMS tasdiqlash kerak
+# Proksi orqali o'tkaziladigan hostlar (qolgan hammasi to'g'ridan-to'g'ri ketadi)
+ONEID_PROXY_HOSTS = ("id.egov.uz", "sso.egov.uz")
 
 
 def _oneid_headers(**extra) -> dict:
@@ -85,21 +87,32 @@ async def _oneid_req(coro):
         return await coro
     except (httpx.ConnectTimeout, httpx.ConnectError,
             httpx.ReadTimeout, httpx.PoolTimeout) as e:
+        hint = ("ONEID_PROXY sozlanmagan — chet eldagi serverdan egov.uz ochilmaydi."
+                if not settings.oneid_proxy else
+                f"ONEID_PROXY ({settings.oneid_proxy.split('@')[-1]}) orqali ham ulanib bo'lmadi.")
         raise OneIdUnreachable(
-            "OneID serveri (id.egov.uz) ochilmadi. Bot turgan server O'zbekistondan "
-            "tashqarida bo'lsa, egov.uz uni bloklaydi — hozircha "
-            "🔑 LMS login/parol usulidan foydalaning."
+            f"OneID serveri (id.egov.uz) ochilmadi. {hint} "
+            "Hozircha 🔑 LMS login/parol usulidan foydalaning."
         ) from e
 
 
 class LmsClient:
     def __init__(self, base_url: str | None = None, timeout: float = 30.0):
         self.base = (base_url or settings.lms_base_url).rstrip("/")
+        # ONEID_PROXY berilgan bo'lsa, FAQAT egov.uz so'rovlari proksi orqali ketadi.
+        # lms.tuit.uz va dl.tuit.uz to'g'ridan-to'g'ri qoladi — fayl yuklash tezligi
+        # va trafik proksiga tushmaydi. Cookie idishi bitta, chunki klient ham bitta.
+        mounts: dict = {}
+        self.proxy = settings.oneid_proxy
+        if self.proxy:
+            tr = httpx.AsyncHTTPTransport(proxy=self.proxy, retries=1)
+            mounts = {f"all://{h}": tr for h in ONEID_PROXY_HOSTS}
         self.c = httpx.AsyncClient(
             base_url=self.base,
             timeout=timeout,
             follow_redirects=True,
             headers={"User-Agent": UA, "Accept-Language": "uz,ru;q=0.9,en;q=0.8"},
+            mounts=mounts,
         )
         self._authed = False
         self._csrf: str | None = None

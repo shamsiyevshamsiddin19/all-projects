@@ -15,7 +15,8 @@
      bazada YO'Q, ya'ni bu tekshiruv hech qachon mos kelmasdi va
      kartochka o'z rangi o'rniga standart ko'rinishda chiqardi. */
   var CAT_229  = 'я — 229 глаголов';
-  var CAT_TEMA = 'Тематический 9000';
+  var CAT_TEMA   = 'Тематический 9000';
+  var CAT_SLOVAR = 'Словарь 5000';
 
   var STORIES = [
     {
@@ -1062,6 +1063,15 @@
         color: 'linear-gradient(135deg, #0d9488, #10b981)',
         glow: 'linear-gradient(90deg, #0d9488, #10b981, #84cc16)',
         accent: '#10b981'
+      };
+    }
+    if (cat.indexOf(CAT_SLOVAR + '/') === 0 || cat === CAT_SLOVAR) {
+      return {
+        badge: '5K',
+        title: 'Rus tili · Amaliy lug\'at (5000)',
+        color: 'linear-gradient(135deg, #f59e0b, #ea580c)',
+        glow: 'linear-gradient(90deg, #f59e0b, #ea580c, #ef4444)',
+        accent: '#f97316'
       };
     }
     if (cat === CAT_229) {

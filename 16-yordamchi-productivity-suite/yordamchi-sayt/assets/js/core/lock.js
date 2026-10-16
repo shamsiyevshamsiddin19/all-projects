@@ -28,7 +28,8 @@
   /* Har to'plam uchun BOSHLANG'ICH ochiq qism. Qolgani qulf. */
   var RULES = [
     { root: '1-8000',            open: ['1-8000/1-1000'] },
-    { root: 'Тематический 9000', open: ['Тематический 9000/ОСНОВНЫЕ ПОНЯТИЯ'] }
+    { root: 'Тематический 9000', open: ['Тематический 9000/ОСНОВНЫЕ ПОНЯТИЯ'] },
+    { root: 'Словарь 5000',      open: ['Словарь 5000/ВОПРОСИТЕЛЬНЫЕ СЛОВА'] }
   ];
 
   function readExtra() {

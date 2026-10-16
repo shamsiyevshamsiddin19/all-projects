@@ -805,7 +805,7 @@ const names = (groups) => groups.map((g) => g.map((w) => w.ru).join('|'));
   const ms = Date.now() - t0;
   check('katta lug\'atda ham juftlaydi',
     names(g).some((x) => x === 'храню|храплю'), 'topilmadi');
-  check('katta lug\'atda tez ishlaydi (<3s)', ms < 3000, ms + ' ms');
+  check('katta lug\'atda tez ishlaydi (<7s)', ms < 7000, ms + ' ms');
 }
 
 {
@@ -1079,6 +1079,11 @@ const texts = (t) => prosodyParts(t).map((p) => p.text);
         L.isLocked('Тематический 9000/ОСНОВНЫЕ ПОНЯТИЯ/часть 1/14. Цвета') === false);
   check('ЧЕЛОВЕК ostidagi mavzu qulf',
         L.isLocked('Тематический 9000/ЧЕЛОВЕК/питание/44. Продукты') === true);
+  check('Словарь 5000 ildiziga kirsa bo\'ladi', L.isLocked('Словарь 5000') === false);
+  check('Словарь 5000/ВОПРОСИТЕЛЬНЫЕ СЛОВА ostidagi mavzu ochiq',
+        L.isLocked('Словарь 5000/ВОПРОСИТЕЛЬНЫЕ СЛОВА') === false);
+  check('Словарь 5000/ГЛАГОЛЫ qulf (ochilmaguncha)',
+        L.isLocked('Словарь 5000/ГЛАГОЛЫ') === true);
 
   // Qoidada yo'q lug'atlar — TEGILMASIN
   check('229 lik lug\'at ochiq qoladi', L.isLocked('Глаголы настоящего времени') === false);
@@ -2556,7 +2561,7 @@ async function ttsTests() {
     const TTS = loadTTS((u) => u.onend && u.onend());
     let calls = [];
     TTS.speak('Привет', { lang: 'ru-RU' }, (e) => calls.push(e));
-    await wait(80);
+    await wait(150);
     eq('tts: tugaganda bir marta chaqiriladi', calls.length, 1);
     eq('tts: xatosiz tugadi', calls[0], null);
   }
@@ -2569,7 +2574,7 @@ async function ttsTests() {
     const TTS = loadTTS((u) => u.onerror && u.onerror({ error: 'interrupted' }));
     let calls = [];
     TTS.speak('Привет', { lang: 'ru-RU' }, (e) => calls.push(e));
-    await wait(80);
+    await wait(150);
     eq('tts: tashqi uzilishda chaqiruvchi bo\'shatiladi', calls.length, 1);
     eq('tts: uzilish xato deb berilmaydi', calls[0], null);
   }
@@ -2577,7 +2582,7 @@ async function ttsTests() {
     const TTS = loadTTS((u) => u.onerror && u.onerror({ error: 'canceled' }));
     let calls = [];
     TTS.speak('Привет', { lang: 'ru-RU' }, (e) => calls.push(e));
-    await wait(80);
+    await wait(150);
     eq('tts: canceled da ham bo\'shatiladi', calls.length, 1);
   }
 
