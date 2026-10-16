@@ -34,7 +34,7 @@ idna==3.18
 jiter==0.15.0
 magic-filter==1.0.12
 multidict==6.7.1
-openai==2.41.1
+openai==3.29.0
 propcache==0.5.2
 proto-plus==1.28.0
 protobuf==5.29.6
