@@ -34,9 +34,23 @@
     }
 
     /* Словарь 5000 — 1-8000 va Тематический 9000 yonidagi uchinchi katta to'plam.
-       Olovrang-oltin rang: 5K belgisi, yorqin va hashamatli. */
+       Olovrang-oltin rang: 5K belgisi, porlamaydigan toza bosiq dizayn. */
     if (name === SLOVAR_ROOT) {
-      return '<span class="chat-av" style="background:linear-gradient(135deg,#f59e0b,#ea580c,#ef4444);color:#fff;font-size:14.5px;font-weight:900;box-shadow:0 4px 14px rgba(249,115,22,0.45);letter-spacing:-0.5px">5K</span>';
+      return '<span class="chat-av" style="background:#d97706;color:#fff;font-size:14px;font-weight:800;letter-spacing:-0.5px">5K</span>';
+    }
+
+    // Словарь 5000 ichidagi 4 asosiy so'z turkumlari uchun maxsus nishonlar
+    if (name === 'СУЩЕСТВИТЕЛЬНЫЕ') {
+      return '<span class="chat-av" style="background:#0284c7;color:#fff;font-size:13.5px;font-weight:900;letter-spacing:-0.5px">ОТ</span>';
+    }
+    if (name === 'ПРИЛАГАТЕЛЬНЫЕ') {
+      return '<span class="chat-av" style="background:#9333ea;color:#fff;font-size:13.5px;font-weight:900;letter-spacing:-0.5px">СФ</span>';
+    }
+    if (name === 'ГЛАГОЛЫ') {
+      return '<span class="chat-av" style="background:#059669;color:#fff;font-size:13.5px;font-weight:900;letter-spacing:-0.5px">ФЛ</span>';
+    }
+    if (name === 'НАРЕЧИЯ') {
+      return '<span class="chat-av" style="background:#d97706;color:#fff;font-size:13.5px;font-weight:900;letter-spacing:-0.5px">РВ</span>';
     }
 
     // 1-1000 folder badge
@@ -458,6 +472,30 @@
           map[path].words += (V.data[cat] || []).length;
         });
 
+        if (!folder) {
+          /* Asosiy lug'atlar ro'yxatida: 1-o'rinda 1-8000, 2-o'rinda Тематический 9000, 3-o'rinda Словарь 5000 */
+          var ROOT_PRIO = ['1-8000', TEMA_ROOT, SLOVAR_ROOT];
+          order.sort(function (a, b) {
+            var ia = ROOT_PRIO.indexOf(a);
+            var ib = ROOT_PRIO.indexOf(b);
+            if (ia >= 0 && ib >= 0) return ia - ib;
+            if (ia >= 0) return -1;
+            if (ib >= 0) return 1;
+            return 0;
+          });
+        } else if (folder === SLOVAR_ROOT) {
+          /* Словарь 5000 ichida: Ot, Sifat, Fe'l, Ravish qat'iy ketma-ketlikda eng boshida */
+          var POS_PRIO = ['СУЩЕСТВИТЕЛЬНЫЕ', 'ПРИЛАГАТЕЛЬНЫЕ', 'ГЛАГОЛЫ', 'НАРЕЧИЯ'];
+          root.sort(function (a, b) {
+            var ia = POS_PRIO.indexOf(a.name);
+            var ib = POS_PRIO.indexOf(b.name);
+            if (ia >= 0 && ib >= 0) return ia - ib;
+            if (ia >= 0) return -1;
+            if (ib >= 0) return 1;
+            return 0;
+          });
+        }
+
         function catRow(it) {
           var lockedC = !!(window.WordLock && WordLock.isLocked(it.full));
           var actC = lockedC
@@ -465,13 +503,30 @@
             : 'data-act="go" data-arg=\'' + App.arg({ v: 'vocab_practice', p: { lang: lang, cat: it.full } }) + '\'';
           /* Qulflangan qatorda belgilash yo'q: uni hali ocholmaydi. */
           var doneC = !lockedC && isMarked(lang, 'dict', it.full);
-          return '<div class="chat-item' + (lockedC ? ' chat-item-locked' : '') +
+
+          var posClass = '';
+          var posTag = '';
+          if (it.name === 'СУЩЕСТВИТЕЛЬНЫЕ') {
+            posClass = ' chat-item-pos chat-item-noun';
+            posTag = ' <span class="tag-pos-noun">ОТ · Существительные</span>';
+          } else if (it.name === 'ПРИЛАГАТЕЛЬНЫЕ') {
+            posClass = ' chat-item-pos chat-item-adj';
+            posTag = ' <span class="tag-pos-adj">СФ · Прилагательные</span>';
+          } else if (it.name === 'ГЛАГОЛЫ') {
+            posClass = ' chat-item-pos chat-item-verb';
+            posTag = ' <span class="tag-pos-verb">ФЛ · Глаголы</span>';
+          } else if (it.name === 'НАРЕЧИЯ') {
+            posClass = ' chat-item-pos chat-item-adv';
+            posTag = ' <span class="tag-pos-adv">РВ · Наречия</span>';
+          }
+
+          return '<div class="chat-item' + posClass + (lockedC ? ' chat-item-locked' : '') +
             (doneC ? ' rm-done' : '') + '">' +
             '<button class="chat-row" ' + actC +
               (lockedC ? '' : holdAttrs('dict', it.full, it.name)) + '>' +
             avatarHtml(vocabBadgeHtml(it.name), doneC) +
             '<span class="chat-main">' +
-              '<span class="chat-title">' + App.esc(it.name) + '</span>' +
+              '<span class="chat-title">' + App.esc(it.name) + posTag + '</span>' +
               '<span class="chat-sub">' + it.count + ' so\'z' + (doneC ? ' · yodlandi' : '') + '</span>' +
             '</span>' +
             (lockedC ? '' : '<span class="rm-hold-bar"></span>') +
@@ -491,8 +546,9 @@
             var isSlovar = (f.name === SLOVAR_ROOT);
             var isMagic  = (f.name === '1-8000' || (f.name === '1-1000' && !folder));
             /* Ichki tugma barcha holatda ham shaffof bo'ladi — rang
-               o'ram `div` da, aks holda ikki fon ustma-ust tushardi. */
-            var magicClass = (isMagic || isTema || isSlovar) ? ' chat-row-magic' : '';
+               o'ram `div` da, aks holda ikki fon ustma-ust tushardi.
+               Slova 5000 porlamaydi (magicClass qo'shilmaydi), bosiq qahrabo. */
+            var magicClass = (isMagic || isTema) ? ' chat-row-magic' : '';
             var itemClass = isTema ? ' chat-item-tema' : (isSlovar ? ' chat-item-slovar' : (isMagic ? ' chat-item-magic' : ''));
             var titleExtra = isTema
               ? ' <span class="tag-tema">9 000 So\'z · 257 mavzu</span>'

@@ -675,38 +675,135 @@ body.lm-noscroll .lm-pull{ display:none; }
   box-shadow:0 2px 8px rgba(16, 185, 129, 0.4);
 }
 
-/* Словарь 5000 kartasi — 1-8000 va Тематический 9000 ning yonidagi uchinchi to'plam.
-   Rangi yorqin olovrang-oltin (Amber/Orange/Coral), binafsha (8K) va zumrad (9K) bilan ajoyib uyg'unlikda. */
+/* Словарь 5000 kartasi — porlamaydigan, bosiq, toza va olijanob qahrabo/oltin dizayn */
 .chat-item-slovar{
   position:relative;
   margin-bottom:12px;
-  border-radius:18px;
-  background:linear-gradient(135deg, rgba(245, 158, 11, 0.14) 0%, rgba(249, 115, 22, 0.14) 50%, rgba(239, 68, 68, 0.14) 100%);
-  border:1.5px solid rgba(249, 115, 22, 0.45);
-  box-shadow:0 6px 24px rgba(249, 115, 22, 0.18);
+  border-radius:16px;
+  background:rgba(245, 158, 11, 0.05);
+  border:1.2px solid rgba(245, 158, 11, 0.28);
+  box-shadow:none !important;
   overflow:hidden;
-  transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  transition:border-color .2s ease, background .2s ease;
 }
 
 .chat-item-slovar:hover{
-  transform:translateY(-1px);
-  border-color:rgba(249, 115, 22, 0.75);
-  box-shadow:0 8px 32px rgba(249, 115, 22, 0.28);
+  background:rgba(245, 158, 11, 0.09);
+  border-color:rgba(245, 158, 11, 0.5);
+  box-shadow:none !important;
+  transform:none !important;
 }
 
 .tag-slovar{
   display:inline-flex;
   align-items:center;
   font-size:11px;
-  font-weight:800;
-  padding:2.5px 8.5px;
-  border-radius:99px;
-  background:linear-gradient(135deg, #f59e0b, #ef4444);
-  color:#ffffff;
+  font-weight:700;
+  padding:2px 8px;
+  border-radius:6px;
+  background:rgba(245, 158, 11, 0.16);
+  color:#fbbf24;
+  border:1px solid rgba(245, 158, 11, 0.3);
   margin-left:6px;
   letter-spacing:0.02em;
   vertical-align:middle;
-  box-shadow:0 2px 8px rgba(249, 115, 22, 0.4);
+  box-shadow:none !important;
+}
+
+/* Словарь 5000 ichidagi asosiy 4 ta turkum kartalari (Ot, Sifat, Fe'l, Ravish) */
+.chat-item-pos{
+  position:relative;
+  margin-bottom:10px;
+  border-radius:14px;
+  transition:all .2s ease;
+}
+
+/* Ot (Существительные) — Moviy */
+.chat-item-noun{
+  background:rgba(14, 165, 233, 0.07);
+  border:1px solid rgba(14, 165, 233, 0.3);
+}
+.chat-item-noun:hover{
+  background:rgba(14, 165, 233, 0.13);
+  border-color:rgba(14, 165, 233, 0.55);
+}
+.tag-pos-noun{
+  display:inline-flex;
+  align-items:center;
+  font-size:11px;
+  font-weight:700;
+  padding:2px 7px;
+  border-radius:6px;
+  background:rgba(14, 165, 233, 0.15);
+  color:#38bdf8;
+  border:1px solid rgba(14, 165, 233, 0.3);
+  margin-left:6px;
+}
+
+/* Sifat (Прилагательные) — Binafsha */
+.chat-item-adj{
+  background:rgba(168, 85, 247, 0.07);
+  border:1px solid rgba(168, 85, 247, 0.3);
+}
+.chat-item-adj:hover{
+  background:rgba(168, 85, 247, 0.13);
+  border-color:rgba(168, 85, 247, 0.55);
+}
+.tag-pos-adj{
+  display:inline-flex;
+  align-items:center;
+  font-size:11px;
+  font-weight:700;
+  padding:2px 7px;
+  border-radius:6px;
+  background:rgba(168, 85, 247, 0.15);
+  color:#c084fc;
+  border:1px solid rgba(168, 85, 247, 0.3);
+  margin-left:6px;
+}
+
+/* Fe'l (Глаголы) — Zumrad / Yashil */
+.chat-item-verb{
+  background:rgba(16, 185, 129, 0.07);
+  border:1px solid rgba(16, 185, 129, 0.3);
+}
+.chat-item-verb:hover{
+  background:rgba(16, 185, 129, 0.13);
+  border-color:rgba(16, 185, 129, 0.55);
+}
+.tag-pos-verb{
+  display:inline-flex;
+  align-items:center;
+  font-size:11px;
+  font-weight:700;
+  padding:2px 7px;
+  border-radius:6px;
+  background:rgba(16, 185, 129, 0.15);
+  color:#34d399;
+  border:1px solid rgba(16, 185, 129, 0.3);
+  margin-left:6px;
+}
+
+/* Ravish (Наречия) — Qahrabo / To'q sariq */
+.chat-item-adv{
+  background:rgba(245, 158, 11, 0.07);
+  border:1px solid rgba(245, 158, 11, 0.3);
+}
+.chat-item-adv:hover{
+  background:rgba(245, 158, 11, 0.13);
+  border-color:rgba(245, 158, 11, 0.55);
+}
+.tag-pos-adv{
+  display:inline-flex;
+  align-items:center;
+  font-size:11px;
+  font-weight:700;
+  padding:2px 7px;
+  border-radius:6px;
+  background:rgba(245, 158, 11, 0.15);
+  color:#fbbf24;
+  border:1px solid rgba(245, 158, 11, 0.3);
+  margin-left:6px;
 }
 
 /* Instagram Reels Button in practice */
