@@ -1072,29 +1072,24 @@ const texts = (t) => prosodyParts(t).map((p) => p.text);
 
   check('1-8000 ildiziga kirsa bo\'ladi (ichida 1-1000 ochiq)', L.isLocked('1-8000') === false);
   check('1-1000 ostidagi lug\'at ochiq', L.isLocked('1-8000/1-1000/301-400') === false);
-  check('1001-2000 qulf', L.isLocked('1-8000/1001-2000') === true);
-  check('7001-8000 ostidagisi qulf', L.isLocked('1-8000/7001-8000/7101-7200') === true);
+  check('1001-2000 ochiq (bloklar olib tashlangan)', L.isLocked('1-8000/1001-2000') === false);
+  check('7001-8000 ostidagisi ochiq', L.isLocked('1-8000/7001-8000/7101-7200') === false);
   check('Тематический ildiziga kirsa bo\'ladi', L.isLocked('Тематический 9000') === false);
   check('ОСНОВНЫЕ ПОНЯТИЯ ostidagi mavzu ochiq',
         L.isLocked('Тематический 9000/ОСНОВНЫЕ ПОНЯТИЯ/часть 1/14. Цвета') === false);
-  check('ЧЕЛОВЕК ostidagi mavzu qulf',
-        L.isLocked('Тематический 9000/ЧЕЛОВЕК/питание/44. Продукты') === true);
+  check('ЧЕЛОВЕК ostidagi mavzu ochiq',
+        L.isLocked('Тематический 9000/ЧЕЛОВЕК/питание/44. Продукты') === false);
   check('Словарь 5000 ildiziga kirsa bo\'ladi', L.isLocked('Словарь 5000') === false);
   check('Словарь 5000/ВОПРОСИТЕЛЬНЫЕ СЛОВА ostidagi mavzu ochiq',
         L.isLocked('Словарь 5000/ВОПРОСИТЕЛЬНЫЕ СЛОВА') === false);
-  check('Словарь 5000/ГЛАГОЛЫ qulf (ochilmaguncha)',
-        L.isLocked('Словарь 5000/ГЛАГОЛЫ') === true);
+  check('Словарь 5000/ГЛАГОЛЫ ochiq',
+        L.isLocked('Словарь 5000/ГЛАГОЛЫ') === false);
 
-  // Qoidada yo'q lug'atlar — TEGILMASIN
+  // Qoidada yo'q lug'atlar — ochiq
   check('229 lik lug\'at ochiq qoladi', L.isLocked('Глаголы настоящего времени') === false);
   check('Возвратные глаголы ochiq qoladi', L.isLocked('Возвратные глаголы') === false);
-  /* DIQQAT: ingliz lug'ati ham `1-8000/...` yo'lidan foydalanadi, ya'ni
-     qoida unga HAM tegadi — ingliz 1001+ boblari ham qulflangan. Qulf yo'l
-     bo'yicha ishlaydi, til bo'yicha emas. Buni ochiq yozib qo'yamiz, aks
-     holda "ingliz tegilmagan" degan noto'g'ri taassurot qolardi. */
   check('ingliz 1-1000 ham ochiq', L.isLocked('1-8000/1-1000/1-100') === false);
-  check('ingliz 1001+ ham qulf (yo\'l bo\'yicha, til emas)',
-        L.isLocked('1-8000/2001-3000') === true);
+  check('ingliz 1001+ ham ochiq', L.isLocked('1-8000/2001-3000') === false);
   check('qoidasiz nomdagi lug\'at ochiq', L.isLocked('Yangi lug\'at') === false);
 
   const pool = [
@@ -1104,14 +1099,7 @@ const texts = (t) => prosodyParts(t).map((p) => p.text);
     { ru: 'd', cat: 'Тематический 9000/ПРИРОДА/фауна/210. Млекопитающие' },
     { ru: 'e', cat: 'Глаголы настоящего времени' }
   ];
-  eq('havzadan qulflanganlar chiqib ketdi', L.filterWords(pool).length, 3);
-
-  L.setOpen('Тематический 9000/ПРИРОДА', true);
-  eq('bo\'lim ochilgach havzaga qaytdi', L.filterWords(pool).length, 4);
-  L.setOpen('Тематический 9000/ПРИРОДА', false);
-  check('qaytib yopildi', L.isLocked('Тематический 9000/ПРИРОДА') === true);
-
-  check('boshlang\'ich ochiq bo\'limni yopib bo\'lmaydi', L.isFixedOpen('1-8000/1-1000') === true);
+  eq('havzada barcha so\'zlar qoladi (bloklarsiz)', L.filterWords(pool).length, 5);
 
   global.window = prev.window;
   global.localStorage = prev.localStorage;

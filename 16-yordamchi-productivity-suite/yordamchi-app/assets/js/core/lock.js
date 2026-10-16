@@ -25,63 +25,27 @@
 
   var KEY = 'vocab_unlocked_v1';   // qo'shimcha ochilgan yo'llar
 
-  /* Har to'plam uchun BOSHLANG'ICH ochiq qism. Qolgani qulf. */
-  var RULES = [
-    { root: '1-8000',            open: ['1-8000/1-1000'] },
-    { root: 'Тематический 9000', open: ['Тематический 9000/ОСНОВНЫЕ ПОНЯТИЯ'] },
-    { root: 'Словарь 5000',      open: ['Словарь 5000/ВОПРОСИТЕЛЬНЫЕ СЛОВА'] }
-  ];
+  /* Foydalanuvchi talabi: barcha lug'atlardan bloklar olib tashlangan, barcha to'plamlar to'liq ochiq. */
+  var RULES = [];
 
   function readExtra() {
-    try {
-      var v = JSON.parse(localStorage.getItem(KEY) || '[]');
-      return Array.isArray(v) ? v.filter(function (x) { return typeof x === 'string' && x; }) : [];
-    } catch (e) { return []; }
+    return [];
   }
   function writeExtra(list) {
-    try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) {}
     cache = null;
   }
 
-  /* Ochiq prefikslar ro'yxati — qoidadagilar + qo'lda ochilganlar. */
   var cache = null;
   function openList() {
-    if (!cache) {
-      cache = [];
-      RULES.forEach(function (r) { r.open.forEach(function (p) { cache.push(p); }); });
-      readExtra().forEach(function (p) { if (cache.indexOf(p) < 0) cache.push(p); });
-    }
-    return cache;
+    return [];
   }
 
   function ruleFor(path) {
-    for (var i = 0; i < RULES.length; i++) {
-      var r = RULES[i].root;
-      if (path === r || path.indexOf(r + '/') === 0) return RULES[i];
-    }
-    return null;   // qoida yo'q -> ochiq
+    return null;   // qoida yo'q -> to'liq ochiq
   }
 
-  /* `path` — kategoriya YO'LI yoki papka yo'li. Uchta holat bor:
-       - ochiq prefiks ICHIDA        -> ochiq
-       - ochiq prefiks SHU YO'L ichida -> "yarim ochiq", kirsa bo'ladi
-         (masalan `1-8000` ning o'zi: ichida 1-1000 ochiq turibdi)
-       - aks holda                    -> qulf */
   function isLocked(path) {
-    /* Qulf — ADMINNING o'z o'quv rejasi uchun: lug'atni bosqichma-bosqich
-       ochib borish vositasi. Boshqa foydalanuvchilarda u ma'nosiz — ular
-       admin tayyorlagan lug'atlarni to'liq yodlashlari kerak, shuning
-       uchun ularda hech narsa qulflanmaydi. */
-    if (window.Auth && Auth.isReadOnly && Auth.isReadOnly()) return false;
-    path = String(path || '');
-    if (!path || !ruleFor(path)) return false;
-    var list = openList();
-    for (var i = 0; i < list.length; i++) {
-      var op = list[i];
-      if (path === op || path.indexOf(op + '/') === 0) return false;  // ichida
-      if (op.indexOf(path + '/') === 0) return false;                 // yarim ochiq
-    }
-    return true;
+    return false;  // barcha bloklar olib tashlangan
   }
 
   /* Havzadan qulflanganlarini olib tashlaydi. Lenta, qidiruv, filtrlar va
