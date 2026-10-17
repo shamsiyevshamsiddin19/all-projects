@@ -1,0 +1,21 @@
+name: 🐛 Xatolik haqida xabar (Bug Report)
+description: Loyihadagi xatolik yoki kamchilik haqida xabar berish
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Loyihani yaxshilashga yordam berayotganingiz uchun rahmat!
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: Xatolik tavsifi
+      description: Qanday xatolik yuz berdi?
+    validations:
+      required: true
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Takrorlash qadamlari
+      description: Xatolikni qayta yuzaga keltirish uchun nima qilish kerak?
+    validations:
+      required: true
