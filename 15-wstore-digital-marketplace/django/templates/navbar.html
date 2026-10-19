@@ -36,9 +36,6 @@
       <a href="{% url 'store:catalog' %}" class="transition hover:text-fg {% if request.resolver_match.url_name == 'catalog' and not 'seller' in request.path and not 'dashboard' in request.path %}text-fg font-medium{% endif %}">
         {% translate "Katalog" %}
       </a>
-      <a href="{% url 'orders:seller_dashboard' %}" class="transition hover:text-fg {% if 'seller' in request.path %}text-fg font-medium{% endif %}">
-        {% translate "Sotuvchi paneli" %}
-      </a>
       <a href="{% url 'orders:dashboard' %}" class="transition hover:text-fg {% if 'dashboard' in request.path %}text-fg font-medium{% endif %}">
         {% translate "Kabinet" %}
       </a>
@@ -121,6 +118,11 @@
               </div>
             </div>
             
+            <a href="{% url 'core:profile' %}" class="account-menu-item">
+              <i data-lucide="user" style="width: 15px; height: 15px;"></i>
+              <span>{% translate "Mening profilim" %}</span>
+            </a>
+
             <a href="{% url 'orders:dashboard' %}" class="account-menu-item">
               <i data-lucide="layout-dashboard" style="width: 15px; height: 15px;"></i>
               <span>{% translate "Kabinet" %}</span>
@@ -131,15 +133,31 @@
               <span>{% translate "Sevimlilar" %}</span>
             </a>
 
-            <a href="{% url 'orders:seller_dashboard' %}" class="account-menu-item">
-              <i data-lucide="store" style="width: 15px; height: 15px;"></i>
-              <span>{% translate "Sotuvchi paneli" %}</span>
-            </a>
+            {% if user.seller_onboarded %}
+              <div class="dropdown-divider"></div>
 
-            <a href="{% url 'orders:seller_balance' %}" class="account-menu-item">
-              <i data-lucide="wallet" style="width: 15px; height: 15px;"></i>
-              <span>{% translate "Balans & Yechib olish" %}</span>
-            </a>
+              <a href="{% url 'orders:seller_dashboard' %}" class="account-menu-item">
+                <i data-lucide="store" style="width: 15px; height: 15px;"></i>
+                <span>{% translate "Sotuvchi paneli" %}</span>
+              </a>
+
+              <a href="{% url 'core:api_tokens' %}" class="account-menu-item">
+                <i data-lucide="key" style="width: 15px; height: 15px;"></i>
+                <span>{% translate "API kalitlari" %}</span>
+              </a>
+
+              <a href="{% url 'orders:seller_balance' %}" class="account-menu-item">
+                <i data-lucide="wallet" style="width: 15px; height: 15px;"></i>
+                <span>{% translate "Balans & Yechib olish" %}</span>
+              </a>
+            {% else %}
+              <div class="dropdown-divider"></div>
+
+              <a href="{% url 'core:seller_onboarding' %}" class="account-menu-item text-accent">
+                <i data-lucide="store" style="width: 15px; height: 15px;"></i>
+                <span>{% translate "Mahsulot sotish" %}</span>
+              </a>
+            {% endif %}
 
             {% if user.is_staff %}
               <a href="{% url 'admin:index' %}" class="account-menu-item text-accent" target="_blank">
@@ -200,11 +218,21 @@
         <i data-lucide="chevron-right" style="width: 15px; height: 15px;" class="text-border-strong"></i>
       </a>
 
-      <a href="{% url 'orders:seller_dashboard' %}" class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition text-muted hover:bg-surface-2 hover:text-fg">
-        <i data-lucide="store" style="width: 18px; height: 18px;"></i>
-        <span class="flex-1">{% translate "Sotuvchi paneli" %}</span>
-        <i data-lucide="chevron-right" style="width: 15px; height: 15px;" class="text-border-strong"></i>
-      </a>
+      {% if user.is_authenticated %}
+        <a href="{% url 'core:profile' %}" class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition text-muted hover:bg-surface-2 hover:text-fg">
+          <i data-lucide="user" style="width: 18px; height: 18px;"></i>
+          <span class="flex-1">{% translate "Mening profilim" %}</span>
+          <i data-lucide="chevron-right" style="width: 15px; height: 15px;" class="text-border-strong"></i>
+        </a>
+      {% endif %}
+
+      {% if user.seller_onboarded %}
+        <a href="{% url 'orders:seller_dashboard' %}" class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition text-muted hover:bg-surface-2 hover:text-fg">
+          <i data-lucide="store" style="width: 18px; height: 18px;"></i>
+          <span class="flex-1">{% translate "Sotuvchi paneli" %}</span>
+          <i data-lucide="chevron-right" style="width: 15px; height: 15px;" class="text-border-strong"></i>
+        </a>
+      {% endif %}
 
       <a href="{% url 'orders:dashboard' %}" class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition text-muted hover:bg-surface-2 hover:text-fg">
         <i data-lucide="user" style="width: 18px; height: 18px;"></i>

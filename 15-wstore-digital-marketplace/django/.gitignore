@@ -22,3 +22,6 @@ media/products/
 .vscode/
 .idea/
 .DS_Store
+
+# Lokal dev-server sozlamalari (Claude Code preview uchun, mashinaga xos)
+.claude/

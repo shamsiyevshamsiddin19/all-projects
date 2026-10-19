@@ -12,6 +12,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
+from core.decorators import seller_required
 from core.logging_utils import log_error
 from store.models import Product
 from .models import Order, ClickTransaction, Withdrawal
@@ -130,7 +131,7 @@ def checkout_view(request, product_id):
     return redirect(click_url)
 
 
-@login_required
+@seller_required
 @require_POST
 def listing_pay_view(request, product_id):
     product = get_object_or_404(Product, id=product_id, seller=request.user)
@@ -324,6 +325,7 @@ def dashboard_view(request):
     })
 
 
+@seller_required
 def seller_dashboard_view(request):
     """
     Seller panel: products list, statistics, balance overview.
@@ -348,6 +350,7 @@ def seller_dashboard_view(request):
     })
 
 
+@seller_required
 def seller_balance_view(request):
     """
     Seller balance & withdrawal requests page.

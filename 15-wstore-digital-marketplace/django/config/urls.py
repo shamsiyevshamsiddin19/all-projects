@@ -13,6 +13,8 @@ urlpatterns = [
     # Django'ning set_language view'i — navbar'dagi til almashtirgich
     # shu manzilga POST yuboradi va tilni cookie'ga yozadi.
     path("i18n/", include("django.conf.urls.i18n")),
+    # Sotuvchi API'si (Bearer token bilan)
+    path("api/v1/", include("core.api_urls")),
     
     # Kanonik Next.js manzillar (1:1 moslik)
     path("dashboard/", orders_views.dashboard_view, name="canonical_dashboard"),

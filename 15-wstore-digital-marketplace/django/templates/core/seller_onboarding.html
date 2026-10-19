@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% load static i18n wstore_extras %}
+
+{% block title %}{% translate "Sotuvchi bo'lish — wstore.uz" %}{% endblock %}
+{% block description %}{% translate "Sotuvchi anketasini to'ldiring va loyihalaringizni sotuvga qo'ying." %}{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 680px; padding-top: 2.5rem; padding-bottom: 5rem;">
+
+  <a href="{% url 'core:profile' %}" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; color: var(--muted); margin-bottom: 1.5rem;">
+    <i data-lucide="arrow-left" style="width:15px;height:15px;"></i>
+    {% translate "Profilga qaytish" %}
+  </a>
+
+  <div style="margin-bottom: 1.75rem;">
+    <h1 style="font-size: 1.75rem; font-weight: 800; color: var(--fg); letter-spacing: -0.02em;">
+      {% translate "Sotuvchi bo'lish" %}
+    </h1>
+    <p style="font-size: 0.92rem; color: var(--muted); margin-top: 0.4rem; line-height: 1.6;">
+      {% translate "Quyidagi ma'lumotlar xaridorlar siz bilan bog'lanishi va sizga to'lov o'tkazish uchun kerak." %}
+    </p>
+  </div>
+
+  <div class="card">
+    <form method="POST" action="{% url 'core:seller_onboarding' %}">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-error" style="margin-bottom: 1.25rem;">
+          {% for e in form.non_field_errors %}<span>{{ e }}</span>{% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="form-group">
+        <label class="form-label">{% translate "Telegram username" %} *</label>
+        {{ form.telegram_username }}
+        <span style="font-size: 0.78rem; color: var(--muted); margin-top: 3px; display: block;">
+          {% translate "«@» belgisiz yozing. Xaridorlar loyiha sahifasidan shu orqali yozadi." %}
+        </span>
+        {% if form.telegram_username.errors %}<div class="form-error">{{ form.telegram_username.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{% translate "Karta raqami (Uzcard / Humo)" %} *</label>
+        {{ form.card_number }}
+        <span style="font-size: 0.78rem; color: var(--muted); margin-top: 3px; display: block;">
+          {% translate "Sotuvdan tushgan mablag' shu kartaga yechib beriladi." %}
+        </span>
+        {% if form.card_number.errors %}<div class="form-error">{{ form.card_number.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{% translate "Shaxsiy sayt yoki portfolio" %}</label>
+        {{ form.website }}
+        {% if form.website.errors %}<div class="form-error">{{ form.website.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{% translate "O'zingiz haqingizda" %}</label>
+        {{ form.bio }}
+        {% if form.bio.errors %}<div class="form-error">{{ form.bio.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label class="filter-checkbox-item" style="margin: 0; padding: 0.5rem 0;">
+          {{ form.agree }}
+          <span>{% translate "Sotuvchi shartlariga roziman: faqat o'zimga tegishli, qonuniy kontent joylashtiraman." %}</span>
+        </label>
+        {% if form.agree.errors %}<div class="form-error">{{ form.agree.errors }}</div>{% endif %}
+      </div>
+
+      <div class="alert alert-info" style="display: block; margin-bottom: 1.25rem; line-height: 1.55;">
+        <strong>{% translate "Keyin nima bo'ladi?" %}</strong><br>
+        <span style="font-size: 0.85rem;">
+          {% blocktranslate with fee=LISTING_FEE_SOM|som %}Sotuvchi paneli va API kaliti ochiladi. Har bir yangi loyiha uchun bir martalik {{ fee }} so'm e'lon to'lovi olinadi, so'ng moderatsiyadan o'tadi.{% endblocktranslate %}
+        </span>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
+        <i data-lucide="check" style="width:17px;height:17px;"></i>
+        <span>{% translate "Sotuvchi bo'lish" %}</span>
+      </button>
+    </form>
+  </div>
+
+</div>
+{% endblock %}

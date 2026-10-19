@@ -11,12 +11,15 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
-#: templates/navbar.html templates/orders/dashboard.html templates/orders/order_status.html templates/orders/seller_balance.html
+#: templates/navbar.html templates/orders/dashboard.html
+#: templates/orders/order_status.html templates/orders/seller_balance.html
 msgid "%(amount)s so'm"
 msgstr "%(amount)s сум"
 
 #: apps/orders/views.py
-msgid "%(amount)s so'm yechib olish uchun so'rov qabul qilindi. Tez orada ko'rib chiqiladi."
+msgid ""
+"%(amount)s so'm yechib olish uchun so'rov qabul qilindi. Tez orada ko'rib "
+"chiqiladi."
 msgstr "Заявка на вывод %(amount)s сум принята. Скоро она будет рассмотрена."
 
 #: (baza qiymati)
@@ -64,8 +67,12 @@ msgid "16 xonali Uzcard yoki Humo karta raqami"
 msgstr "16-значный номер карты Uzcard или Humo"
 
 #: templates/core/login.html
-msgid "<code>.env</code> faylida <code>GOOGLE_OAUTH_CLIENT_ID</code> va <code>GOOGLE_OAUTH_CLIENT_SECRET</code> qiymatlarini kiriting."
-msgstr "Укажите значения <code>GOOGLE_OAUTH_CLIENT_ID</code> и <code>GOOGLE_OAUTH_CLIENT_SECRET</code> в файле <code>.env</code>."
+msgid ""
+"<code>.env</code> faylida <code>GOOGLE_OAUTH_CLIENT_ID</code> va "
+"<code>GOOGLE_OAUTH_CLIENT_SECRET</code> qiymatlarini kiriting."
+msgstr ""
+"Укажите значения <code>GOOGLE_OAUTH_CLIENT_ID</code> и "
+"<code>GOOGLE_OAUTH_CLIENT_SECRET</code> в файле <code>.env</code>."
 
 #: templates/store/_product_card.html
 msgid "@%(seller)s · %(n)s sotuv"
@@ -139,7 +146,8 @@ msgstr "Подробное описание"
 msgid "Bekor qilindi"
 msgstr "Отменён"
 
-#: templates/store/product_create.html templates/store/product_detail.html templates/store/product_edit.html
+#: templates/store/product_create.html templates/store/product_detail.html
+#: templates/store/product_edit.html
 msgid "Bekor qilish"
 msgstr "Отмена"
 
@@ -200,19 +208,26 @@ msgid "Click orqali to'lash"
 msgstr "Оплатить через Click"
 
 #: templates/orders/order_status.html
-msgid "Click orqali to'lovni tasdiqlang. Tizim to'lovni avtomatik ravishda tekshirib boradi."
+msgid ""
+"Click orqali to'lovni tasdiqlang. Tizim to'lovni avtomatik ravishda "
+"tekshirib boradi."
 msgstr "Подтвердите оплату в Click. Система проверит платёж автоматически."
 
 #: templates/store/product_create.html
-msgid "Click to'lovida avtomatik ravishda so'mga o'giriladi (1 USD = %(rate)s so'm)."
-msgstr "При оплате через Click сумма автоматически конвертируется в сумы (1 USD = %(rate)s сум)."
+msgid ""
+"Click to'lovida avtomatik ravishda so'mga o'giriladi (1 USD = %(rate)s "
+"so'm)."
+msgstr ""
+"При оплате через Click сумма автоматически конвертируется в сумы (1 USD = "
+"%(rate)s сум)."
 
 #: templates/footer.html
 msgid "Django Full-stack Platformasi"
 msgstr "Full-stack платформа на Django"
 
 #: templates/orders/dashboard.html
-msgid "Do'stlaringizni taklif qiling va har bir xarid uchun %(bonus)s so'm oling!"
+msgid ""
+"Do'stlaringizni taklif qiling va har bir xarid uchun %(bonus)s so'm oling!"
 msgstr "Приглашайте друзей и получайте %(bonus)s сум за каждую покупку!"
 
 #: apps/store/forms.py
@@ -300,8 +315,13 @@ msgid "Hal qilingan"
 msgstr "Решено"
 
 #: templates/store/product_create.html
-msgid "Har bir yangi loyihani joylashtirish uchun bir martalik <strong>%(fee)s so'm</strong> e'lon to'lovi mavjud. To'lovdan so'ng loyihangiz moderatorlar tomonidan ko'rib chiqiladi."
-msgstr "За размещение каждого нового проекта взимается разовая плата <strong>%(fee)s сум</strong>. После оплаты проект проверят модераторы."
+msgid ""
+"Har bir yangi loyihani joylashtirish uchun bir martalik <strong>%(fee)s "
+"so'm</strong> e'lon to'lovi mavjud. To'lovdan so'ng loyihangiz moderatorlar "
+"tomonidan ko'rib chiqiladi."
+msgstr ""
+"За размещение каждого нового проекта взимается разовая плата <strong>%(fee)s"
+" сум</strong>. После оплаты проект проверят модераторы."
 
 #: apps/core/oauth.py
 msgid "Hisob yaratishda xatolik yuz berdi."
@@ -351,13 +371,18 @@ msgstr "Приложения"
 msgid "Ishlangan bonus (so'm)"
 msgstr "Заработанный бонус (сум)"
 
-#: apps/store/forms.py templates/store/product_create.html templates/store/product_edit.html
+#: apps/store/forms.py templates/store/product_create.html
+#: templates/store/product_edit.html
 msgid "Ishlatilgan texnologiyalar"
 msgstr "Использованные технологии"
 
 #: templates/core/login.html
-msgid "Ismingiz, emailingiz va rasmingiz Google hisobingizdan olinadi. Parolingiz bizga ko'rinmaydi."
-msgstr "Имя, email и фото берутся из вашего аккаунта Google. Ваш пароль нам не виден."
+msgid ""
+"Ismingiz, emailingiz va rasmingiz Google hisobingizdan olinadi. Parolingiz "
+"bizga ko'rinmaydi."
+msgstr ""
+"Имя, email и фото берутся из вашего аккаунта Google. Ваш пароль нам не "
+"виден."
 
 #: templates/store/product_detail.html
 msgid "Izoh"
@@ -368,8 +393,12 @@ msgid "Izoh matni"
 msgstr "Текст отзыва"
 
 #: templates/store/product_detail.html
-msgid "Izoh qoldirish uchun <a href=\"%(href)s?next=%(nxt)s\" class=\"font-semibold text-accent hover:underline\">tizimga kiring</a>."
-msgstr "Чтобы оставить отзыв, <a href=\"%(href)s?next=%(nxt)s\" class=\"font-semibold text-accent hover:underline\">войдите в систему</a>."
+msgid ""
+"Izoh qoldirish uchun <a href=\"%(href)s?next=%(nxt)s\" class=\"font-semibold"
+" text-accent hover:underline\">tizimga kiring</a>."
+msgstr ""
+"Чтобы оставить отзыв, <a href=\"%(href)s?next=%(nxt)s\" class=\"font-"
+"semibold text-accent hover:underline\">войдите в систему</a>."
 
 #: templates/store/product_detail.html
 msgid "Izohlar"
@@ -412,18 +441,24 @@ msgid "Katalog"
 msgstr "Каталог"
 
 #: templates/orders/dashboard.html
-msgid "Katalogdagi tayyor loyihalar, botlar va shablonlar bilan tanishib, o'zingizga kerakli kodni xarid qiling."
-msgstr "Изучите готовые проекты, боты и шаблоны в каталоге и купите нужный вам код."
+msgid ""
+"Katalogdagi tayyor loyihalar, botlar va shablonlar bilan tanishib, "
+"o'zingizga kerakli kodni xarid qiling."
+msgstr ""
+"Изучите готовые проекты, боты и шаблоны в каталоге и купите нужный вам код."
 
 #: templates/store/wishlist.html
-msgid "Katalogdan yoqqan loyihalaringizni yurakcha tugmasini bosib saqlab qo'yishingiz mumkin."
+msgid ""
+"Katalogdan yoqqan loyihalaringizni yurakcha tugmasini bosib saqlab "
+"qo'yishingiz mumkin."
 msgstr "Понравившиеся проекты можно сохранить, нажав на сердечко в каталоге."
 
 #: templates/store/wishlist.html
 msgid "Katalogga o'tish"
 msgstr "Перейти в каталог"
 
-#: templates/core/login.html templates/orders/order_status.html templates/store/product_detail.html
+#: templates/core/login.html templates/orders/order_status.html
+#: templates/store/product_detail.html
 msgid "Katalogga qaytish"
 msgstr "Вернуться в каталог"
 
@@ -604,8 +639,12 @@ msgid "Mahsulotlar"
 msgstr "Товары"
 
 #: templates/orders/seller_dashboard.html
-msgid "Mahsulotlaringizni boshqaring, sotuvlar statistikasini kuzating va yangi loyihalar qo'shing."
-msgstr "Управляйте товарами, следите за статистикой продаж и добавляйте новые проекты."
+msgid ""
+"Mahsulotlaringizni boshqaring, sotuvlar statistikasini kuzating va yangi "
+"loyihalar qo'shing."
+msgstr ""
+"Управляйте товарами, следите за статистикой продаж и добавляйте новые "
+"проекты."
 
 #: templates/orders/seller_balance.html
 msgid "Mavjud balans:"
@@ -640,7 +679,9 @@ msgid "Merchant Tranzaksiya Param (masalan WSTP123)"
 msgstr "Параметр транзакции мерчанта (например WSTP123)"
 
 #: templates/store/product_create.html
-msgid "Mijoz to'lov qilgandan so'ng xavfsiz token orqali ushbu ZIP faylni yuklab oladi."
+msgid ""
+"Mijoz to'lov qilgandan so'ng xavfsiz token orqali ushbu ZIP faylni yuklab "
+"oladi."
 msgstr "После оплаты клиент скачает этот ZIP-файл по защищённому токену."
 
 #: templates/orders/seller_balance.html
@@ -712,8 +753,12 @@ msgid "O'zgarishlarni saqlash"
 msgstr "Сохранить изменения"
 
 #: templates/orders/seller_dashboard.html
-msgid "O'zingiz yaratgan bot, sayt yoki kod blokini sotuvga qo'ying va daromad olishni boshlang."
-msgstr "Выставьте на продажу созданный вами бот, сайт или блок кода и начните зарабатывать."
+msgid ""
+"O'zingiz yaratgan bot, sayt yoki kod blokini sotuvga qo'ying va daromad "
+"olishni boshlang."
+msgstr ""
+"Выставьте на продажу созданный вами бот, сайт или блок кода и начните "
+"зарабатывать."
 
 #: templates/store/catalog.html
 msgid "Oldingi"
@@ -780,20 +825,30 @@ msgid "Qoralama (to'lov kutilmoqda)"
 msgstr "Черновик (ожидает оплаты)"
 
 #: templates/orders/dashboard.html
-msgid "Quyidagi shaxsiy havolangiz orqali ro'yxatdan o'tgan foydalanuvchi birinchi xaridni amalga oshirganda hisobingizga avtomatik tarzda %(bonus)s so'm qo'shiladi."
-msgstr "Когда пользователь, зарегистрировавшийся по вашей персональной ссылке, совершит первую покупку, на ваш счёт автоматически начислится %(bonus)s сум."
+msgid ""
+"Quyidagi shaxsiy havolangiz orqali ro'yxatdan o'tgan foydalanuvchi birinchi "
+"xaridni amalga oshirganda hisobingizga avtomatik tarzda %(bonus)s so'm "
+"qo'shiladi."
+msgstr ""
+"Когда пользователь, зарегистрировавшийся по вашей персональной ссылке, "
+"совершит первую покупку, на ваш счёт автоматически начислится %(bonus)s сум."
 
 #: apps/orders/models.py
 msgid "Rad etildi"
 msgstr "Отклонено"
 
-#: apps/store/models.py templates/orders/seller_balance.html templates/orders/seller_dashboard.html
+#: apps/store/models.py templates/orders/seller_balance.html
+#: templates/orders/seller_dashboard.html
 msgid "Rad etilgan"
 msgstr "Отклонён"
 
 #: templates/footer.html
-msgid "Raqamli mahsulotlar marketi — tayyor kod loyihalari, botlar, saytlar, mobil ilovalar va kod bloklari platformasi."
-msgstr "Маркет цифровых товаров — платформа готовых проектов, ботов, сайтов, мобильных приложений и блоков кода."
+msgid ""
+"Raqamli mahsulotlar marketi — tayyor kod loyihalari, botlar, saytlar, mobil "
+"ilovalar va kod bloklari platformasi."
+msgstr ""
+"Маркет цифровых товаров — платформа готовых проектов, ботов, сайтов, "
+"мобильных приложений и блоков кода."
 
 #: templates/orders/dashboard.html
 msgid "Referal Dasturi"
@@ -931,7 +986,8 @@ msgstr "История заявок"
 msgid "Sotilgan loyihalardan tushgan mablag'ni kartangizga yechib oling."
 msgstr "Выведите на карту средства, полученные от продажи проектов."
 
-#: apps/core/models.py apps/orders/models.py apps/store/models.py templates/core/login.html templates/store/product_detail.html
+#: apps/core/models.py apps/orders/models.py apps/store/models.py
+#: templates/core/login.html templates/store/product_detail.html
 msgid "Sotuvchi"
 msgstr "Продавец"
 
@@ -955,7 +1011,8 @@ msgstr "Панель продавца"
 msgid "Sotuvchi paneli — wstore.uz"
 msgstr "Панель продавца — wstore.uz"
 
-#: templates/orders/seller_balance.html templates/store/product_create.html templates/store/product_edit.html
+#: templates/orders/seller_balance.html templates/store/product_create.html
+#: templates/store/product_edit.html
 msgid "Sotuvchi paneliga qaytish"
 msgstr "Вернуться в панель продавца"
 
@@ -1008,12 +1065,19 @@ msgid "Tayyor bot, sayt yoki kod blokini sotuvga qo'ying."
 msgstr "Выставьте на продажу готовый бот, сайт или блок кода."
 
 #: templates/base.html
-msgid "Tayyor kod loyihalari, botlar, saytlar, ilovalar va kod bloklarini sotish platformasi."
-msgstr "Платформа для продажи готовых кодовых проектов, ботов, сайтов, приложений и блоков кода."
+msgid ""
+"Tayyor kod loyihalari, botlar, saytlar, ilovalar va kod bloklarini sotish "
+"platformasi."
+msgstr ""
+"Платформа для продажи готовых кодовых проектов, ботов, сайтов, приложений и "
+"блоков кода."
 
 #: templates/store/catalog.html
-msgid "Tayyor loyihalar, kod bloklari, Telegram botlar, saytlar va ilovalar kodlarini sotib oling."
-msgstr "Покупайте готовые проекты, блоки кода, Telegram-ботов, сайты и приложения."
+msgid ""
+"Tayyor loyihalar, kod bloklari, Telegram botlar, saytlar va ilovalar "
+"kodlarini sotib oling."
+msgstr ""
+"Покупайте готовые проекты, блоки кода, Telegram-ботов, сайты и приложения."
 
 #: templates/store/product_edit.html
 msgid "Telegram username"
@@ -1080,8 +1144,12 @@ msgid "To'lov holati avtomatik yangilanmoqda..."
 msgstr "Статус оплаты обновляется автоматически..."
 
 #: templates/orders/order_status.html
-msgid "To'lov jarayonida xatolik yuz berdi yoki bekor qilindi. Qayta urinib ko'rishingiz mumkin."
-msgstr "Во время оплаты произошла ошибка или она была отменена. Вы можете попробовать снова."
+msgid ""
+"To'lov jarayonida xatolik yuz berdi yoki bekor qilindi. Qayta urinib "
+"ko'rishingiz mumkin."
+msgstr ""
+"Во время оплаты произошла ошибка или она была отменена. Вы можете "
+"попробовать снова."
 
 #: templates/orders/dashboard.html templates/orders/order_status.html
 msgid "To'lov kutilmoqda"
@@ -1124,8 +1192,12 @@ msgid "UI kitlar"
 msgstr "UI-киты"
 
 #: templates/orders/seller_balance.html
-msgid "Uzcard yoki Humo plastik kartangiz raqamini kiriting. Mablag' 24 soat ichida o'tkazib beriladi."
-msgstr "Введите номер вашей карты Uzcard или Humo. Средства будут переведены в течение 24 часов."
+msgid ""
+"Uzcard yoki Humo plastik kartangiz raqamini kiriting. Mablag' 24 soat ichida"
+" o'tkazib beriladi."
+msgstr ""
+"Введите номер вашей карты Uzcard или Humo. Средства будут переведены в "
+"течение 24 часов."
 
 #: templates/store/catalog.html
 msgid "Valyuta"
@@ -1176,8 +1248,12 @@ msgid "Xush kelibsiz, %(name)s! Hisobingiz Google orqali yaratildi."
 msgstr "Добро пожаловать, %(name)s! Ваш аккаунт создан через Google."
 
 #: templates/orders/dashboard.html
-msgid "Xush kelibsiz, <strong style=\"color: var(--fg);\">%(name)s</strong>. Barcha xaridlaringiz va yuklab olish havolalari shu yerda."
-msgstr "Добро пожаловать, <strong style=\"color: var(--fg);\">%(name)s</strong>. Все ваши покупки и ссылки для скачивания здесь."
+msgid ""
+"Xush kelibsiz, <strong style=\"color: var(--fg);\">%(name)s</strong>. Barcha"
+" xaridlaringiz va yuklab olish havolalari shu yerda."
+msgstr ""
+"Добро пожаловать, <strong style=\"color: var(--fg);\">%(name)s</strong>. Все"
+" ваши покупки и ссылки для скачивания здесь."
 
 #: templates/store/product_detail.html
 msgid "Xususiyatlar"
@@ -1312,8 +1388,12 @@ msgid "«%(title)s» vaqtincha to'xtatildi."
 msgstr "«%(title)s» временно приостановлен."
 
 #: templates/orders/order_status.html
-msgid "«<strong style=\"color: var(--fg);\">%(title)s</strong>» loyihasining to'liq manba kodi siz uchun tayyor."
-msgstr "Полный исходный код проекта «<strong style=\"color: var(--fg);\">%(title)s</strong>» готов для вас."
+msgid ""
+"«<strong style=\"color: var(--fg);\">%(title)s</strong>» loyihasining to'liq"
+" manba kodi siz uchun tayyor."
+msgstr ""
+"Полный исходный код проекта «<strong style=\"color: "
+"var(--fg);\">%(title)s</strong>» готов для вас."
 
 #: templates/navbar.html
 msgid "— tayyor kod, botlar, saytlar va ilovalar bozori"
@@ -1327,3 +1407,493 @@ msgstr "Вы можете осмотреть сайт через демо-акк
 
 msgid "Saytni sinab ko'rish uchun demo hisoblar"
 msgstr "Демо-аккаунты для знакомства с сайтом"
+
+msgid "API kalit"
+msgstr "API-ключ"
+
+msgid "API kalitlar"
+msgstr "API-ключи"
+
+msgid "API kalitlari"
+msgstr "API-ключи"
+
+msgid "API kalitlari sotuvchilar uchun — avval sotuvchi bo'ling."
+msgstr "API-ключи доступны продавцам — сначала станьте продавцом."
+
+msgid "API kalitlari — wstore.uz"
+msgstr "API-ключи — wstore.uz"
+
+msgid "Allaqachon akkauntingiz bormi?"
+msgstr "Уже есть аккаунт?"
+
+msgid "Balansni ko'rish uchun tizimga kiring"
+msgstr "Войдите, чтобы увидеть баланс"
+
+msgid "Bekor qilingan"
+msgstr "Отменён"
+
+msgid "Bekor qilish va orqaga qaytish"
+msgstr "Отменить и вернуться назад"
+
+msgid "Bu bo'lim sotuvchilar uchun — avval sotuvchi bo'ling."
+msgstr "Этот раздел для продавцов — сначала станьте продавцом."
+
+msgid "Bu email manzil bilan allaqachon ro'yxatdan o'tilgan."
+msgstr "Этот email уже зарегистрирован."
+
+msgid "Bu foydalanuvchi nomi band."
+msgstr "Это имя пользователя занято."
+
+msgid "Bu parol juda ko'p ishlatiladi — kamroq tarqalgan parol tanlang."
+msgstr "Этот пароль слишком распространён — выберите менее популярный."
+
+msgid ""
+"Bu qiymat boshqa ko'rsatilmaydi. Yo'qotsangiz, yangisini yaratishingiz kerak"
+" bo'ladi."
+msgstr ""
+"Это значение больше не будет показано. Если потеряете его, придётся создать "
+"новый ключ."
+
+msgid "Click orqali to'lashni davom ettirish"
+msgstr "Продолжить оплату через Click"
+
+msgid "Davom etish uchun hisob tanlang yoki yangi Google hisob kiriting"
+msgstr "Чтобы продолжить, выберите аккаунт или войдите в новый Google-аккаунт"
+
+msgid "Davom etish uchun shartlarga rozilik bildiring."
+msgstr "Чтобы продолжить, примите условия."
+
+msgid "Egasi"
+msgstr "Владелец"
+
+msgid "Email manzili *"
+msgstr "Email-адрес *"
+
+msgid "Familiya"
+msgstr "Фамилия"
+
+msgid "Familiyangiz"
+msgstr "Ваша фамилия"
+
+msgid "Faol API kalit"
+msgstr "Активный API-ключ"
+
+msgid "Faol kalitlar soni 10 tadan oshmasligi kerak."
+msgstr "Количество активных ключей не должно превышать 10."
+
+msgid "Fikringizni yozing..."
+msgstr "Напишите ваш отзыв..."
+
+msgid "Foydalanuvchi nomi (Username) *"
+msgstr "Имя пользователя (Username) *"
+
+msgid ""
+"Google Client Secret sozlanmagan. Iltimos, GOOGLE_OAUTH_CLIENT_SECRET ni "
+"kiriting."
+msgstr "Google Client Secret не настроен. Укажите GOOGLE_OAUTH_CLIENT_SECRET."
+
+msgid "Google bilan davom etish"
+msgstr "Продолжить через Google"
+
+msgid "Google bilan tezkor ro'yxatdan o'tish"
+msgstr "Быстрая регистрация через Google"
+
+msgid "Google email manzili"
+msgstr "Email Google-аккаунта"
+
+msgid "Google hisobi orqali kirishda xatolik yuz berdi."
+msgstr "Произошла ошибка при входе через Google."
+
+msgid "Google orqali kirish sozlanmagan."
+msgstr "Вход через Google не настроен."
+
+msgid "Google orqali kirish — wstore.uz"
+msgstr "Вход через Google — wstore.uz"
+
+msgid ""
+"Google orqali ro'yxatdan o'tish avtomatik ravishda xavfsiz Google ID va "
+"avatar bilan hisob yaratadi."
+msgstr ""
+"Регистрация через Google автоматически создаёт аккаунт с защищённым Google "
+"ID и аватаром."
+
+msgid "Google orqali wstore.uz ga kirish"
+msgstr "Вход в wstore.uz через Google"
+
+msgid "Hali hisobingiz yo'qmi?"
+msgstr "Ещё нет аккаунта?"
+
+msgid ""
+"Har bir so'rovga kalitni sarlavhada qo'shing. Kalit faqat sizning "
+"mahsulotlaringizga yo'l ochadi."
+msgstr ""
+"Добавляйте ключ в заголовок каждого запроса. Ключ открывает доступ только к "
+"вашим товарам."
+
+msgid "Hozircha kalit yaratilmagan."
+msgstr "Пока нет ни одного ключа."
+
+msgid "Iltimos, reyting va fikringizni to'liq kiriting."
+msgstr "Пожалуйста, укажите оценку и отзыв полностью."
+
+msgid "Ism"
+msgstr "Имя"
+
+msgid "Ism va familiyangiz"
+msgstr "Ваше имя и фамилия"
+
+msgid "Ismingiz"
+msgstr "Ваше имя"
+
+msgid "Izoh qoldirish uchun kiring"
+msgstr "Войдите, чтобы оставить отзыв"
+
+msgid "Jami tushum"
+msgstr "Общий доход"
+
+msgid "Kabinetni ko'rish uchun tizimga kiring"
+msgstr "Войдите, чтобы открыть кабинет"
+
+msgid "Kalit nomi"
+msgstr "Название ключа"
+
+msgid "Kalit yaratildi — hozir nusxalab oling"
+msgstr "Ключ создан — скопируйте его сейчас"
+
+msgid "Kalit yaratildi. Uni hozir nusxalab oling — boshqa ko'rsatilmaydi."
+msgstr "Ключ создан. Скопируйте его сейчас — повторно он не будет показан."
+
+msgid "Kalitni bekor qilasizmi? Uni ishlatayotgan skriptlar to‘xtaydi."
+msgstr "Отменить ключ? Скрипты, использующие его, перестанут работать."
+
+msgid "Kamida 8 ta belgi"
+msgstr "Минимум 8 символов"
+
+msgid "Karta raqami (Uzcard / Humo)"
+msgstr "Номер карты (Uzcard / Humo)"
+
+msgid "Karta raqami 16 ta raqamdan iborat bo'lishi kerak (Uzcard / Humo)."
+msgstr "Номер карты должен содержать 16 цифр (Uzcard / Humo)."
+
+msgid "Keyin nima bo'ladi?"
+msgstr "Что дальше?"
+
+msgid "Kiritilgan parollar bir xil emas."
+msgstr "Введённые пароли не совпадают."
+
+msgid "Ko'rinishi"
+msgstr "Отображение"
+
+msgid "Login yoki Email"
+msgstr "Логин или Email"
+
+msgid "Login yoki parol noto'g'ri kiritildi."
+msgstr "Неверный логин или пароль."
+
+msgid "Loyihalar"
+msgstr "Проекты"
+
+msgid ""
+"Loyihalaringiz, sotuvlar statistikasi va balansingizni boshqarish uchun "
+"hisobingizga kiring."
+msgstr ""
+"Войдите в аккаунт, чтобы управлять проектами, статистикой продаж и балансом."
+
+msgid ""
+"Mablag'ni kartaga yechib olish va so'rovlar tarixini ko'rish uchun "
+"hisobingizga kiring."
+msgstr ""
+"Войдите в аккаунт, чтобы вывести средства на карту и посмотреть историю "
+"заявок."
+
+msgid "Mahsulot nomi (snapshot)"
+msgstr "Название товара (снимок)"
+
+msgid "Mahsulot sotish"
+msgstr "Продажа товара"
+
+msgid "Mahsulotlar ro'yxati"
+msgstr "Список товаров"
+
+msgid "Mahsulotlarni avtomatik yuklash uchun API kalitlari."
+msgstr "API-ключи для автоматической загрузки товаров."
+
+msgid "Maqsadingiz (Rol)"
+msgstr "Ваша цель (Роль)"
+
+msgid "Masalan: AI yuklovchi"
+msgstr "Например: AI-загрузчик"
+
+msgid "Masalan: «AI yuklovchi» yoki «Lokal skript»"
+msgstr "Например: «AI-загрузчик» или «Локальный скрипт»"
+
+msgid "Mavjud Google hisoblari:"
+msgstr "Доступные Google-аккаунты:"
+
+msgid "Mening kalitlarim"
+msgstr "Мои ключи"
+
+msgid "Mening profilim"
+msgstr "Мой профиль"
+
+msgid "Mening profilim — wstore.uz"
+msgstr "Мой профиль — wstore.uz"
+
+msgid "Nomi"
+msgstr "Название"
+
+msgid "O'chirilgan (arxiv)"
+msgstr "Удалён (архив)"
+
+msgid "O'zingiz haqingizda"
+msgstr "О себе"
+
+msgid "O'zingiz va ishlaringiz haqida qisqacha"
+msgstr "Коротко о себе и своих работах"
+
+msgid ""
+"O'zingiz yaratgan bot, sayt yoki kod blokini sotuvga qo'ying. Qo'shimcha "
+"ma'lumotlarni to'ldirgach, sotuvchi paneli va avtomatik yuklash uchun API "
+"kaliti ochiladi."
+msgstr ""
+"Выставьте на продажу созданный вами бот, сайт или блок кода. После "
+"заполнения данных откроется панель продавца и API-ключ для автоматической "
+"загрузки."
+
+msgid "Oxirgi ishlatilgan"
+msgstr "Последнее использование"
+
+msgid "Parol"
+msgstr "Пароль"
+
+msgid "Parol *"
+msgstr "Пароль *"
+
+msgid "Parol faqat raqamlardan iborat bo'lmasligi kerak."
+msgstr "Пароль не должен состоять только из цифр."
+
+msgid "Parol foydalanuvchi nomi yoki emailga juda o'xshab ketyapti."
+msgstr "Пароль слишком похож на имя пользователя или email."
+
+msgid "Parol kamida 8 ta belgidan iborat bo'lishi kerak."
+msgstr "Пароль должен содержать не менее 8 символов."
+
+msgid "Parolni tasdiqlang"
+msgstr "Подтвердите пароль"
+
+msgid "Parolni tasdiqlang *"
+msgstr "Подтвердите пароль *"
+
+msgid "Platformaga o'z hisobingiz orqali kiring"
+msgstr "Войдите на платформу через свой аккаунт"
+
+msgid "Profil yangilandi."
+msgstr "Профиль обновлён."
+
+msgid "Profilga qaytish"
+msgstr "Вернуться в профиль"
+
+msgid "Qanday ishlatiladi"
+msgstr "Как использовать"
+
+msgid "Qanday loyihalar yaratasiz?"
+msgstr "Какие проекты вы создаёте?"
+
+msgid ""
+"Quyidagi ma'lumotlar xaridorlar siz bilan bog'lanishi va sizga to'lov "
+"o'tkazish uchun kerak."
+msgstr ""
+"Эти данные нужны, чтобы покупатели могли связаться с вами и получить оплату."
+
+msgid "Raqamli mahsulotlar xarid qiling yoki o'z loyihalaringizni soting"
+msgstr "Покупайте цифровые товары или продавайте свои проекты"
+
+msgid "Ro'yxatdan muvaffaqiyatli o'tdingiz! Xush kelibsiz!"
+msgstr "Вы успешно зарегистрированы! Добро пожаловать!"
+
+msgid "Ro'yxatdan o'tish"
+msgstr "Регистрация"
+
+msgid "Ro'yxatdan o'tish — wstore.uz"
+msgstr "Регистрация — wstore.uz"
+
+msgid "Saqlash"
+msgstr "Сохранить"
+
+msgid "Sevimlilarni ko'rish uchun tizimga kiring."
+msgstr "Войдите, чтобы увидеть избранное."
+
+msgid "Sharhni yangilash"
+msgstr "Обновить отзыв"
+
+msgid "Shaxsiy ma'lumotlar"
+msgstr "Личные данные"
+
+msgid "Shaxsiy ma'lumotlar, statistika va sotuvchi bo'limi."
+msgstr "Личные данные, статистика и раздел продавца."
+
+msgid "Shaxsiy sayt yoki portfolio"
+msgstr "Личный сайт или портфолио"
+
+msgid ""
+"Skript yoki AI agent sizning nomingizdan mahsulot qo'shishi, tahrirlashi va "
+"sotuv statistikasini o'qishi uchun."
+msgstr ""
+"Для скрипта или AI-агента, который добавляет и редактирует товары от вашего "
+"имени и читает статистику продаж."
+
+msgid "Sotuv tahlili"
+msgstr "Анализ продаж"
+
+msgid "Sotuvchi anketasini to'ldiring va loyihalaringizni sotuvga qo'ying."
+msgstr "Заполните анкету продавца и выставьте проекты на продажу."
+
+msgid "Sotuvchi bo'lgan sana"
+msgstr "Дата, когда стал продавцом"
+
+msgid "Sotuvchi bo'limi"
+msgstr "Раздел продавца"
+
+msgid "Sotuvchi bo'lish"
+msgstr "Стать продавцом"
+
+msgid "Sotuvchi bo'lish — wstore.uz"
+msgstr "Стать продавцом — wstore.uz"
+
+msgid ""
+"Sotuvchi paneli va API kaliti ochiladi. Har bir yangi loyiha uchun bir "
+"martalik %(fee)s so'm e'lon to'lovi olinadi, so'ng moderatsiyadan o'tadi."
+msgstr ""
+"Откроются панель продавца и API-ключ. За каждый новый проект взимается "
+"разовая плата за размещение %(fee)s сум, после чего он проходит модерацию."
+
+msgid "Sotuvchi panelini ko'rish uchun tizimga kiring"
+msgstr "Войдите, чтобы открыть панель продавца"
+
+msgid "Sotuvchi shartlariga roziman"
+msgstr "Я согласен с условиями для продавцов"
+
+msgid ""
+"Sotuvchi shartlariga roziman: faqat o'zimga tegishli, qonuniy kontent "
+"joylashtiraman."
+msgstr ""
+"Я согласен с условиями: размещаю только легальный контент, принадлежащий "
+"мне."
+
+msgid "Sotuvdan tushgan mablag' shu kartaga yechib beriladi."
+msgstr "Средства от продаж будут выводиться на эту карту."
+
+msgid "Sotuvdan tushgan mablag' shu kartaga yechiladi"
+msgstr "Средства от продаж выводятся на эту карту"
+
+msgid "Sotuvlar"
+msgstr "Продажи"
+
+msgid "Tabriklaymiz! Endi siz sotuvchisiz — birinchi loyihangizni qo'shing."
+msgstr "Поздравляем! Теперь вы продавец — добавьте свой первый проект."
+
+msgid "Tasdiqlangan sotuvchi"
+msgstr "Подтверждённый продавец"
+
+msgid "Tasdiqlangan xarid"
+msgstr "Подтверждённая покупка"
+
+msgid ""
+"Telegram username majburiy — xaridorlar siz bilan shu orqali bog'lanadi."
+msgstr ""
+"Telegram-имя обязательно — через него покупатели будут с вами связываться."
+
+msgid "Tizimga kirish"
+msgstr "Вход в систему"
+
+msgid "To'g'ri email manzil kiriting."
+msgstr "Введите корректный email-адрес."
+
+msgid "Username yoki emailingiz"
+msgstr "Ваш username или email"
+
+msgid "Ushbu mahsulot haqida fikringizni bildiring"
+msgstr "Поделитесь мнением об этом товаре"
+
+msgid "Xarid qilingan loyihalar va manba kodlari."
+msgstr "Купленные проекты и исходный код."
+
+msgid "Xaridlar"
+msgstr "Покупки"
+
+msgid ""
+"Xaridlaringiz, yuklab olish tokenlari va referal havolangizni ko'rish uchun "
+"hisobingizga kiring."
+msgstr ""
+"Войдите в аккаунт, чтобы увидеть покупки, токены скачивания и реферальную "
+"ссылку."
+
+msgid "Xaridorlar siz bilan shu orqali bog'lanadi"
+msgstr "Через него покупатели будут с вами связываться"
+
+msgid "Yangi hisob yaratish"
+msgstr "Создать новый аккаунт"
+
+msgid "Yangi kalit yaratish"
+msgstr "Создать новый ключ"
+
+msgid ""
+"Yangi mahsulot DRAFT holatida yaratiladi — e'lon to'lovi va moderatsiya "
+"saytdagi oddiy tartibda o'tadi."
+msgstr ""
+"Новый товар создаётся в статусе «черновик» — оплата размещения и модерация "
+"проходят в обычном порядке сайта."
+
+msgid "Yangi mahsulot qo'shish"
+msgstr "Добавить новый товар"
+
+msgid "Yaratilgan"
+msgstr "Создан"
+
+msgid "Yaratish"
+msgstr "Создать"
+
+msgid "Yuklab olishlar soni"
+msgstr "Количество скачиваний"
+
+msgid "kalit egasi"
+msgstr "владелец ключа"
+
+msgid "kategoriyalar ro'yxati"
+msgstr "список категорий"
+
+msgid "sotuv tahlili"
+msgstr "анализ продаж"
+
+msgid "wstore.uz raqamli bozorida hisob yarating."
+msgstr "Создайте аккаунт на цифровом маркете wstore.uz."
+
+msgid "wstore.uz raqamli bozoriga kiring."
+msgstr "Войдите на цифровой маркет wstore.uz."
+
+msgid "yoki boshqa hisob kiriting"
+msgstr "или войдите в другой аккаунт"
+
+msgid "yoki forma orqali"
+msgstr "или через форму"
+
+msgid "yoki login va parol bilan"
+msgstr "или с логином и паролем"
+
+msgid "«%(name)s» kaliti bekor qilindi."
+msgstr "Ключ «%(name)s» отменён."
+
+msgid "«%(title)s» butunlay o'chirildi."
+msgstr "«%(title)s» полностью удалён."
+
+msgid ""
+"«%(title)s» do'kondan olib tashlandi (arxivlandi). Oldin sotib olgan "
+"xaridorlar o'z kabinetida yuklab olishda davom etishadi."
+msgstr ""
+"«%(title)s» снят с продажи (архивирован). Покупатели, купившие его ранее, "
+"по-прежнему смогут скачать его в своём кабинете."
+
+msgid "«@» belgisiz yozing. Xaridorlar loyiha sahifasidan shu orqali yozadi."
+msgstr ""
+"Укажите без символа «@». Покупатели будут писать вам через него со страницы "
+"проекта."

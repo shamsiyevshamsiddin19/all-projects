@@ -1,5 +1,5 @@
 from django.urls import path
-from . import oauth, views
+from . import oauth, profile_views, views
 
 app_name = "core"
 
@@ -14,4 +14,10 @@ urlpatterns = [
     path("google/callback", oauth.google_callback_view),
     path("google/callback/", oauth.google_callback_view, name="google_callback"),
     path("google/dev-mock/", oauth.google_dev_mock_view, name="google_dev_mock"),
+
+    # Profil va sotuvchi bo'limi
+    path("profile/", profile_views.profile_view, name="profile"),
+    path("profile/seller/", profile_views.seller_onboarding_view, name="seller_onboarding"),
+    path("profile/api/", profile_views.api_tokens_view, name="api_tokens"),
+    path("profile/api/<int:token_id>/revoke/", profile_views.api_token_revoke_view, name="api_token_revoke"),
 ]

@@ -9,6 +9,8 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
 
+from core.decorators import seller_required
+
 from .models import Category, Product, Review, Wishlist, Report
 from .forms import ProductForm, ReviewForm, ReportForm, TECH_CHOICES, SUBCAT_CHOICES
 from core.telegram import send_telegram_notification
@@ -101,7 +103,7 @@ def catalog_view(request):
             "price": float(p.price),
             "cover": p.cover_url,
             "cover_url": p.cover_url,
-            "category": p.category.name,
+            "category": p.category.display_name,
             "tech": p.tech_stack,
         }
         for p in all_active
@@ -201,7 +203,7 @@ def product_detail_view(request, slug):
     })
 
 
-@login_required
+@seller_required
 def product_create_view(request):
     if request.method == "POST":
         form = ProductForm(request.POST, request.FILES)
@@ -234,7 +236,7 @@ def product_create_view(request):
     })
 
 
-@login_required
+@seller_required
 def product_edit_view(request, slug=None, product_id=None):
     if product_id:
         product = get_object_or_404(Product, pk=product_id)
@@ -258,7 +260,7 @@ def product_edit_view(request, slug=None, product_id=None):
     })
 
 
-@login_required
+@seller_required
 @require_POST
 def product_toggle_pause_view(request, slug):
     product = get_object_or_404(Product, slug=slug)
@@ -275,7 +277,7 @@ def product_toggle_pause_view(request, slug):
     return redirect("orders:seller_dashboard")
 
 
-@login_required
+@seller_required
 @require_POST
 def product_delete_view(request, slug):
     product = get_object_or_404(Product, slug=slug)

@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% load static i18n %}
+
+{% block title %}{% translate "API kalitlari — wstore.uz" %}{% endblock %}
+{% block description %}{% translate "Mahsulotlarni avtomatik yuklash uchun API kalitlari." %}{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 860px; padding-top: 2.5rem; padding-bottom: 5rem;">
+
+  <a href="{% url 'core:profile' %}" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; color: var(--muted); margin-bottom: 1.5rem;">
+    <i data-lucide="arrow-left" style="width:15px;height:15px;"></i>
+    {% translate "Profilga qaytish" %}
+  </a>
+
+  <div style="margin-bottom: 1.75rem;">
+    <h1 style="font-size: 1.75rem; font-weight: 800; color: var(--fg); letter-spacing: -0.02em;">
+      {% translate "API kalitlari" %}
+    </h1>
+    <p style="font-size: 0.92rem; color: var(--muted); margin-top: 0.4rem; line-height: 1.6;">
+      {% translate "Skript yoki AI agent sizning nomingizdan mahsulot qo'shishi, tahrirlashi va sotuv statistikasini o'qishi uchun." %}
+    </p>
+  </div>
+
+  {% if new_token %}
+    <!-- Yangi kalit — faqat shu safar ko'rsatiladi -->
+    <div class="card" style="margin-bottom: 1.5rem; border-color: rgba(34,197,94,0.45); background: rgba(34,197,94,0.06);">
+      <h2 style="font-size: 1rem; font-weight: 700; color: #4ade80; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+        <i data-lucide="check-circle" style="width:17px;height:17px;"></i>
+        {% translate "Kalit yaratildi — hozir nusxalab oling" %}
+      </h2>
+      <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 0.85rem;">
+        {% translate "Bu qiymat boshqa ko'rsatilmaydi. Yo'qotsangiz, yangisini yaratishingiz kerak bo'ladi." %}
+      </p>
+      <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        <input type="text" readonly value="{{ new_token }}" id="newTokenInput"
+               class="form-control" style="font-family: monospace; font-size: 0.85rem; background: var(--bg); flex: 1; min-width: 260px;">
+        <button type="button" class="btn btn-primary btn-sm" data-copy="{{ new_token }}" style="white-space: nowrap;">
+          <i data-lucide="copy" style="width:14px;height:14px;"></i>
+          <span>{% translate "Nusxa olish" %}</span>
+        </button>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Yangi kalit yaratish -->
+  <div class="card" style="margin-bottom: 1.5rem;">
+    <h2 style="font-size: 1.05rem; font-weight: 700; color: var(--fg); margin-bottom: 1rem;">
+      {% translate "Yangi kalit yaratish" %}
+    </h2>
+    <form method="POST" action="{% url 'core:api_tokens' %}" style="display: flex; gap: 0.6rem; align-items: flex-start; flex-wrap: wrap;">
+      {% csrf_token %}
+      <div style="flex: 1; min-width: 220px;">
+        {{ form.name }}
+        {% if form.name.errors %}<div class="form-error">{{ form.name.errors }}</div>{% endif %}
+      </div>
+      <button type="submit" class="btn btn-primary" style="white-space: nowrap;">
+        <i data-lucide="plus" style="width:15px;height:15px;"></i>
+        <span>{% translate "Yaratish" %}</span>
+      </button>
+    </form>
+  </div>
+
+  <!-- Mavjud kalitlar -->
+  <div class="card" style="margin-bottom: 2rem;">
+    <h2 style="font-size: 1.05rem; font-weight: 700; color: var(--fg); margin-bottom: 1rem;">
+      {% translate "Mening kalitlarim" %}
+    </h2>
+
+    {% if tokens %}
+      <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+        {% for t in tokens %}
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding: 0.85rem 1rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); {% if not t.is_active %}opacity: 0.55;{% endif %}">
+            <div style="min-width: 200px;">
+              <div style="font-weight: 600; color: var(--fg); font-size: 0.92rem;">{{ t.name }}</div>
+              <div style="font-family: monospace; font-size: 0.8rem; color: var(--muted); margin-top: 2px;">{{ t.token_prefix }}…</div>
+            </div>
+            <div style="font-size: 0.78rem; color: var(--muted); min-width: 150px;">
+              <div>{% translate "Yaratilgan" %}: {{ t.created_at|date:"d.m.Y" }}</div>
+              <div>{% translate "Oxirgi ishlatilgan" %}:
+                {% if t.last_used_at %}{{ t.last_used_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}
+              </div>
+            </div>
+            <div>
+              {% if t.is_active %}
+                <form method="POST" action="{% url 'core:api_token_revoke' token_id=t.id %}"
+                      onsubmit="return confirm('{% translate "Kalitni bekor qilasizmi? Uni ishlatayotgan skriptlar to‘xtaydi." %}')">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-outline btn-sm" style="color: #f87171;">
+                    <i data-lucide="x-circle" style="width:14px;height:14px;"></i>
+                    <span>{% translate "Bekor qilish" %}</span>
+                  </button>
+                </form>
+              {% else %}
+                <span class="badge-tech">{% translate "Bekor qilingan" %}</span>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p style="color: var(--muted); font-size: 0.9rem;">{% translate "Hozircha kalit yaratilmagan." %}</p>
+    {% endif %}
+  </div>
+
+  <!-- Qisqa qo'llanma -->
+  <div class="card">
+    <h2 style="font-size: 1.05rem; font-weight: 700; color: var(--fg); margin-bottom: 0.4rem;">
+      {% translate "Qanday ishlatiladi" %}
+    </h2>
+    <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem;">
+      {% translate "Har bir so'rovga kalitni sarlavhada qo'shing. Kalit faqat sizning mahsulotlaringizga yo'l ochadi." %}
+    </p>
+
+    <pre style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; overflow-x: auto; font-size: 0.8rem; line-height: 1.6; color: var(--fg);"><code># {% translate "Mahsulotlar ro'yxati" %}
+curl -H "Authorization: Bearer wst_..." \
+  {{ api_base }}/products
+
+# {% translate "Yangi mahsulot qo'shish" %}
+curl -X POST -H "Authorization: Bearer wst_..." \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Telegram bot","price":29,"category":"bot","description":"..."}' \
+  {{ api_base }}/products
+
+# {% translate "Sotuv tahlili" %}
+curl -H "Authorization: Bearer wst_..." \
+  {{ api_base }}/stats</code></pre>
+
+    <div style="margin-top: 1rem; font-size: 0.82rem; color: var(--muted); line-height: 1.7;">
+      <div><code>GET&nbsp;&nbsp; /me</code> — {% translate "kalit egasi" %}</div>
+      <div><code>GET&nbsp;&nbsp; /categories</code> — {% translate "kategoriyalar ro'yxati" %}</div>
+      <div><code>GET&nbsp;&nbsp; /products</code> · <code>POST /products</code></div>
+      <div><code>GET&nbsp;&nbsp; /products/&lt;id&gt;</code> · <code>PATCH</code> · <code>DELETE</code></div>
+      <div><code>GET&nbsp;&nbsp; /stats</code> — {% translate "sotuv tahlili" %}</div>
+    </div>
+
+    <div class="alert alert-warning" style="display: block; margin-top: 1.25rem; line-height: 1.55;">
+      <span style="font-size: 0.83rem;">
+        {% translate "Yangi mahsulot DRAFT holatida yaratiladi — e'lon to'lovi va moderatsiya saytdagi oddiy tartibda o'tadi." %}
+      </span>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

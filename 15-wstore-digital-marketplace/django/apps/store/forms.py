@@ -99,6 +99,12 @@ class ProductForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # ModelChoiceField standart holatda Category.__str__() (ya'ni
+        # bazadagi o'zbekcha `name`) ni ko'rsatadi. EN/RU rejimida ham
+        # "Botlar", "Saytlar" kabi tarjimasiz nom chiqib qolardi — katalog
+        # sahifasida buning oldi `category.display_name` bilan olingan edi,
+        # lekin mahsulot qo'shish formasi bu yerdan chetda qolgan ekan.
+        self.fields["category"].label_from_instance = lambda c: c.display_name
         if self.instance and self.instance.pk:
             self.fields["tech_stack_selection"].initial = self.instance.tech_stack or []
             if self.instance.features:
