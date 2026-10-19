@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}SSH kalit — {{ server.name }}{% endblock %}
+{% block content %}
+<div style="max-width:720px;margin:0 auto">
+  <div class="eyebrow">{{ server.domain }}</div>
+  <h1 style="margin:8px 0 18px">SSH kalitingiz tayyor</h1>
+
+  <div class="callout">
+    <strong>⚠️ Bu kalit faqat shu safar ko'rsatiladi</strong>
+    <p>Maxfiy kalit serverda <b>saqlanmaydi</b>. Hozir yuklab oling yoki nusxalab qo'ying —
+       sahifani yopsangiz qaytarib bo'lmaydi, faqat yangi kalit yaratish mumkin.</p>
+  </div>
+
+  <div class="card" style="margin-bottom:18px">
+    <h2>Maxfiy kalit (private key)</h2>
+    <div class="key-box">
+      <button class="btn btn-ghost btn-sm copy-btn" type="button" id="copyBtn">Nusxalash</button>
+      <pre id="privateKey">{{ private_key }}</pre>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+      <a class="btn btn-primary" href="{% url 'servers:key_download' server.slug %}">
+        ⬇ {{ server.slug }}_ed25519 faylini yuklab olish
+      </a>
+      <a class="btn btn-ghost" href="{{ server.get_absolute_url }}">Yuklab oldim, davom etish</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Kalitni o'rnatish</h2>
+    <pre>mv ~/Downloads/{{ server.slug }}_ed25519 ~/.ssh/
+chmod 600 ~/.ssh/{{ server.slug }}_ed25519
+
+# ~/.ssh/config ga qo'shing:
+Host {{ server.slug }}
+  HostName git.{{ PLATFORM_DOMAIN }}
+  User git
+  IdentityFile ~/.ssh/{{ server.slug }}_ed25519</pre>
+    <p class="hint" style="margin-top:12px">
+      <b>chmod 600</b> majburiy — aks holda SSH kalitni "UNPROTECTED PRIVATE KEY FILE" deb rad etadi.
+    </p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('copyBtn').addEventListener('click', async function () {
+  try {
+    await navigator.clipboard.writeText(document.getElementById('privateKey').textContent);
+    this.textContent = '✓ Nusxalandi';
+    setTimeout(() => { this.textContent = 'Nusxalash'; }, 2000);
+  } catch (e) { this.textContent = 'Qo‘lda nusxalang'; }
+});
+</script>
+{% endblock %}

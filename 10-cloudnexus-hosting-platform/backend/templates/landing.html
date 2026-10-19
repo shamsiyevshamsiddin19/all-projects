@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}NexCloud — AI yozgan kodni bir buyruq bilan joylashtiring{% endblock %}
+{% block content %}
+<div style="max-width:620px;margin:40px auto;text-align:center">
+  <div class="eyebrow">Control plane</div>
+  <h1 style="margin:10px 0 14px">AI kod yozdi.<br>Joylashtirishni biz hal qilamiz.</h1>
+  <p class="sub">Google yoki GitHub bilan kiring, serveringizga nom bering —
+     tizim sizga <code>nomingiz.{{ PLATFORM_DOMAIN }}</code> subdomenini va SSH kalitni beradi.</p>
+  <div style="margin-top:26px">
+    <a class="btn btn-primary" href="{% url 'account_login' %}">Boshlash</a>
+  </div>
+</div>
+{% endblock %}

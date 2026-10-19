@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Ro'yxatdan o'tish — NexCloud{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="card">
+    <div style="text-align:center;margin-bottom:20px">
+      <h1 style="font-size:1.4rem">Ro'yxatdan o'tish</h1>
+      <p class="sub">Google yoki GitHub bilan kirsangiz bu shart emas.</p>
+    </div>
+    <form method="post" action="{% url 'account_signup' %}">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="msg msg-error">{{ form.non_field_errors.0 }}</div>{% endif %}
+      {% for field in form %}
+        <div class="field">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {{ field.errors }}
+        </div>
+      {% endfor %}
+      <button class="btn btn-primary" style="width:100%" type="submit">Hisob ochish</button>
+    </form>
+    <p class="hint" style="text-align:center;margin-top:14px">
+      Hisobingiz bormi? <a href="{% url 'account_login' %}" style="color:var(--green-dark);font-weight:700">Kirish</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

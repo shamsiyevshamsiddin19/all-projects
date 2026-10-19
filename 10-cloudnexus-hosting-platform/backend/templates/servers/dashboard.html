@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Serverlarim — NexCloud{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Serverlarim</div>
+    <h1>Deploy nuqtalaringiz</h1>
+    <p class="sub">{{ used }} / {{ limit }} ta ishlatilgan · har biriga alohida subdomen va SSH kalit</p>
+  </div>
+  {% if can_create %}
+    <a class="btn btn-primary" href="{% url 'servers:create' %}">+ Yangi server</a>
+  {% else %}
+    <span class="btn btn-ghost" aria-disabled="true">Tarif chegarasi to'ldi</span>
+  {% endif %}
+</div>
+
+{% if servers %}
+  <div class="grid">
+    {% for s in servers %}
+      <a class="card server-card" href="{{ s.get_absolute_url }}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+          <span class="name">{{ s.name }}</span>
+          <span class="badge badge-{{ s.status }}"><span class="dot"></span>{{ s.get_status_display }}</span>
+        </div>
+        <div class="server-domain">{{ s.domain }}</div>
+        <div class="hint" style="margin-top:auto">
+          {% if s.active_key %}🔑 {{ s.active_key.fingerprint|truncatechars:28 }}{% else %}⚠️ Kalit yo'q{% endif %}
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card empty">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <rect x="2" y="3" width="20" height="7" rx="2"/><rect x="2" y="14" width="20" height="7" rx="2"/>
+      <line x1="6" y1="6.5" x2="6.01" y2="6.5"/><line x1="6" y1="17.5" x2="6.01" y2="17.5"/>
+    </svg>
+    <h2>Hali server yo'q</h2>
+    <p class="sub" style="margin-bottom:20px">Birinchi serveringizni yarating — nom bering, subdomen va SSH kalit avtomatik beriladi.</p>
+    <a class="btn btn-primary" href="{% url 'servers:create' %}">Birinchi serverni yaratish</a>
+  </div>
+{% endif %}
+{% endblock %}

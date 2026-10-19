@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Yangi server — NexCloud{% endblock %}
+{% block content %}
+<div style="max-width:560px;margin:0 auto">
+  <div class="eyebrow">Yangi server</div>
+  <h1 style="margin:8px 0 22px">Serveringizga nom bering</h1>
+
+  <form method="post" class="card" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="msg msg-error">{{ form.non_field_errors.0 }}</div>{% endif %}
+
+    <div class="field">
+      <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+      {{ form.name }}
+      {{ form.name.errors }}
+      <p class="hint">Faqat siz ko'rasiz — xohlagan tilda yozishingiz mumkin.</p>
+    </div>
+
+    <div class="field">
+      <label for="{{ form.slug.id_for_label }}">{{ form.slug.label }}</label>
+      <div class="slug-row">
+        {{ form.slug }}
+        <span class="slug-suffix">.{{ PLATFORM_DOMAIN }}</span>
+      </div>
+      {{ form.slug.errors }}
+      <div id="slugCheck"></div>
+      <p class="hint">Kichik harflar, raqamlar va defis. Keyinchalik o'zgartirib bo'lmaydi.</p>
+    </div>
+
+    <button class="btn btn-primary" style="width:100%" type="submit">Yaratish va kalit olish</button>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const name = document.getElementById('{{ form.name.id_for_label }}');
+  const slug = document.getElementById('{{ form.slug.id_for_label }}');
+  const out  = document.getElementById('slugCheck');
+  let touched = slug.value.length > 0;
+  let timer;
+
+  const slugify = s => s.toLowerCase().normalize('NFKD')
+      .replace(/[^a-z0-9]+/g, '-').replace(/-{2,}/g, '-').replace(/^-|-$/g, '').slice(0, 63);
+
+  slug.addEventListener('input', () => { touched = true; check(); });
+  name.addEventListener('input', () => {
+    if (!touched) { slug.value = slugify(name.value); check(); }
+  });
+
+  function check() {
+    clearTimeout(timer);
+    const v = slug.value.trim();
+    if (!v) { out.innerHTML = ''; return; }
+    timer = setTimeout(async () => {
+      try {
+        const r = await fetch('{% url "servers:check_slug" %}?slug=' + encodeURIComponent(v));
+        const d = await r.json();
+        out.className = d.ok ? 'check-ok' : 'check-bad';
+        out.textContent = d.ok ? '✓ ' + d.domain + ' — bo‘sh' : '✕ ' + d.message;
+      } catch (e) { out.innerHTML = ''; }
+    }, 280);
+  }
+  if (touched) check();
+})();
+</script>
+{% endblock %}
