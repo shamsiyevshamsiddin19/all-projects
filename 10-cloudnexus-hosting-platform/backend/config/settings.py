@@ -1,5 +1,5 @@
 """
-NexCloud control plane — Django settings.
+whost.uz control plane — Django settings.
 
 Dev defaults to SQLite so the project runs with no external services.
 Set DATABASE_URL (postgres://...) to use PostgreSQL in staging/production.

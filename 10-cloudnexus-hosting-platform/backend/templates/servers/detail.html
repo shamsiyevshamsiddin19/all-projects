@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ server.name }} — NexCloud{% endblock %}
+{% block title %}{{ server.name }} — whost.uz{% endblock %}
 {% block content %}
 <div style="max-width:760px;margin:0 auto">
   <div class="page-head">
@@ -55,8 +55,8 @@
 
   <div class="card" style="margin-bottom:16px">
     <h2>Deploy qilish</h2>
-    <pre>git remote add nexcloud {{ server.ssh_remote }}
-git push nexcloud main</pre>
+    <pre>git remote add whost {{ server.ssh_remote }}
+git push whost main</pre>
     <p class="hint" style="margin-top:12px">Push qilinganda loyiha turi avtomatik aniqlanadi va build boshlanadi.</p>
   </div>
 
