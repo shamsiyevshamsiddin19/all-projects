@@ -1,0 +1,39 @@
+{% load i18n %}
+<footer class="footer">
+  <div class="container footer-inner">
+    <div>
+      <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+        <span style="font-size: 1.25rem; font-weight: 800; color: var(--fg);">wstore</span>
+        <span class="brand-badge">uz</span>
+      </div>
+      <p style="font-size: 0.85rem; color: var(--muted); max-width: 380px;">
+        {% translate "Raqamli mahsulotlar marketi — tayyor kod loyihalari, botlar, saytlar, mobil ilovalar va kod bloklari platformasi." %}
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 3rem; flex-wrap: wrap;">
+      <div>
+        <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--fg); text-transform: uppercase; margin-bottom: 0.8rem;">{% translate "Platforma" %}</h4>
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.88rem;">
+          <a href="{% url 'store:catalog' %}" class="footer-link">{% translate "Katalog" %}</a>
+          <a href="{% url 'store:product_create' %}" class="footer-link">{% translate "Loyiha sotish" %}</a>
+          <a href="{% url 'orders:dashboard' %}" class="footer-link">{% translate "Xaridlar kabineti" %}</a>
+        </div>
+      </div>
+
+      <div>
+        <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--fg); text-transform: uppercase; margin-bottom: 0.8rem;">{% translate "To'lov tizimlari" %}</h4>
+        <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.88rem; color: var(--muted);">
+          <span style="padding: 4px 8px; background: var(--surface-2); border-radius: 4px; border: 1px solid var(--border);">Click</span>
+          <span style="padding: 4px 8px; background: var(--surface-2); border-radius: 4px; border: 1px solid var(--border);">Payme</span>
+          <span style="padding: 4px 8px; background: var(--surface-2); border-radius: 4px; border: 1px solid var(--border);">Uzum</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container" style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--muted);">
+    <div>{% translate "&copy; 2026 wstore.uz. Barcha huquqlar himoyalangan." %}</div>
+    <div>{% translate "Django Full-stack Platformasi" %}</div>
+  </div>
+</footer>

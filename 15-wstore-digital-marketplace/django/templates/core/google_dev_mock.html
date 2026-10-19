@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% translate "Google orqali kirish — wstore.uz" %}{% endblock %}
+
+{% block content %}
+<div class="container" style="min-height: calc(100vh - 180px); display: flex; align-items: center; justify-content: center; padding: 2.5rem 1rem;">
+  <div style="width: 100%; max-width: 480px;">
+
+    <!-- Google Authentic Account Chooser Card -->
+    <div class="card" style="border-radius: 18px; border: 1px solid var(--border-strong); box-shadow: 0 20px 60px rgba(0,0,0,0.45); padding: 2.25rem 2rem;">
+      
+      <!-- Google Brand Header -->
+      <div style="text-align: center; margin-bottom: 1.75rem;">
+        <div style="display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+          <svg width="40" height="40" viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.3-.4-3.5z"/>
+            <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+            <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.1-11.3-7.6l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
+            <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.5l6.2 5.2C41.9 35.6 44 30.2 44 24c0-1.3-.1-2.3-.4-3.5z"/>
+          </svg>
+        </div>
+        <h1 style="font-size: 1.35rem; font-weight: 700; color: var(--fg); margin-bottom: 0.35rem; letter-spacing: -0.01em;">
+          {% translate "Google orqali wstore.uz ga kirish" %}
+        </h1>
+        <p style="font-size: 0.86rem; color: var(--muted);">
+          {% translate "Davom etish uchun hisob tanlang yoki yangi Google hisob kiriting" %}
+        </p>
+      </div>
+
+      <!-- Quick 1-Click Google Accounts List -->
+      <div style="margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.6rem;">
+        <div style="font-size: 0.76rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.2rem;">
+          {% translate "Mavjud Google hisoblari:" %}
+        </div>
+
+        <!-- Account 1: Shamsiddin -->
+        <form method="POST" action="{% url 'core:google_dev_mock' %}" style="margin: 0;">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ next }}">
+          <input type="hidden" name="email" value="shamsiddin@gmail.com">
+          <input type="hidden" name="name" value="Shamsiddin Xoliqov">
+          <button type="submit" class="google-acc-btn" style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); cursor: pointer; transition: all 0.15s ease;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div style="width: 38px; height: 38px; border-radius: 50%; background: #4285F4; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.95rem;">
+                S
+              </div>
+              <div style="text-align: left;">
+                <div style="font-size: 0.9rem; font-weight: 600; color: var(--fg);">Shamsiddin Xoliqov</div>
+                <div style="font-size: 0.78rem; color: var(--muted);">shamsiddin@gmail.com</div>
+              </div>
+            </div>
+            <i data-lucide="chevron-right" style="width: 16px; height: 16px; color: var(--muted);"></i>
+          </button>
+        </form>
+
+        <!-- Account 2: Alisher Developer -->
+        <form method="POST" action="{% url 'core:google_dev_mock' %}" style="margin: 0;">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ next }}">
+          <input type="hidden" name="email" value="alisher.dev@gmail.com">
+          <input type="hidden" name="name" value="Alisher Karimov">
+          <button type="submit" class="google-acc-btn" style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); cursor: pointer; transition: all 0.15s ease;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div style="width: 38px; height: 38px; border-radius: 50%; background: #0F9D58; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.95rem;">
+                A
+              </div>
+              <div style="text-align: left;">
+                <div style="font-size: 0.9rem; font-weight: 600; color: var(--fg);">Alisher Karimov</div>
+                <div style="font-size: 0.78rem; color: var(--muted);">alisher.dev@gmail.com</div>
+              </div>
+            </div>
+            <i data-lucide="chevron-right" style="width: 16px; height: 16px; color: var(--muted);"></i>
+          </button>
+        </form>
+      </div>
+
+      <!-- Divider -->
+      <div style="display: flex; align-items: center; margin: 1.5rem 0; color: var(--muted); font-size: 0.78rem;">
+        <div style="flex: 1; height: 1px; background: var(--border);"></div>
+        <span style="padding: 0 0.75rem;">{% translate "yoki boshqa hisob kiriting" %}</span>
+        <div style="flex: 1; height: 1px; background: var(--border);"></div>
+      </div>
+
+      <!-- Custom Google Account Form -->
+      <form method="POST" action="{% url 'core:google_dev_mock' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
+
+        <div class="form-group" style="margin-bottom: 0.85rem;">
+          <label class="form-label" style="font-size: 0.84rem; font-weight: 600; color: var(--fg); margin-bottom: 0.35rem; display: block;">
+            {% translate "Ism va familiyangiz" %}
+          </label>
+          <input 
+            type="text" 
+            name="name" 
+            placeholder="Masalan: Sardor Rustamov" 
+            class="form-control" 
+            required
+            autocomplete="name"
+          >
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+          <label class="form-label" style="font-size: 0.84rem; font-weight: 600; color: var(--fg); margin-bottom: 0.35rem; display: block;">
+            {% translate "Google email manzili" %}
+          </label>
+          <input 
+            type="email" 
+            name="email" 
+            placeholder="foydalanuvchi@gmail.com" 
+            class="form-control" 
+            required
+            autocomplete="email"
+          >
+        </div>
+
+        <button 
+          type="submit" 
+          class="btn btn-primary btn-lg" 
+          style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; font-weight: 600; margin-bottom: 0.75rem;"
+        >
+          <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.3-.4-3.5z"/>
+            <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+            <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.1-11.3-7.6l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
+            <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.5l6.2 5.2C41.9 35.6 44 30.2 44 24c0-1.3-.1-2.3-.4-3.5z"/>
+          </svg>
+          <span>{% translate "Google bilan davom etish" %}</span>
+        </button>
+      </form>
+
+      <div style="text-align: center; margin-top: 1rem;">
+        <a href="{% if next %}{{ next }}{% else %}{% url 'core:login' %}{% endif %}" style="font-size: 0.82rem; color: var(--muted); transition: color 0.15s ease;" onmouseover="this.style.color='var(--fg)'" onmouseout="this.style.color='var(--muted)'">
+          {% translate "Bekor qilish va orqaga qaytish" %}
+        </a>
+      </div>
+
+    </div>
+
+    <!-- Security Note -->
+    <div style="margin-top: 1rem; text-align: center; font-size: 0.78rem; color: var(--muted); line-height: 1.5;">
+      <i data-lucide="shield-check" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; color: var(--green);"></i>
+      {% translate "Google orqali ro'yxatdan o'tish avtomatik ravishda xavfsiz Google ID va avatar bilan hisob yaratadi." %}
+    </div>
+
+  </div>
+</div>
+
+<style>
+.google-acc-btn:hover {
+  background: var(--surface) !important;
+  border-color: var(--accent) !important;
+  transform: translateY(-1px);
+}
+</style>
+{% endblock %}
