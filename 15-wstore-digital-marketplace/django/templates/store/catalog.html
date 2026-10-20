@@ -172,7 +172,7 @@
               <!-- 5. Texnologiyalar (Tech Stack tag cloud) -->
               <div class="sidebar-section" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">
                 <div class="sidebar-sec-title">{% translate "Texnologiyalar" %}</div>
-                <div class="flex flex-wrap gap-1.5">
+                <div class="tech-tag-scroll flex flex-wrap gap-1.5">
                   {% for tech in tech_options %}
                     <label class="tech-tag-pill {% if tech in selected_tech %}active{% endif %}">
                       <input 
