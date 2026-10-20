@@ -167,11 +167,11 @@
           const icon = btn.querySelector("i, svg");
           if (icon) {
             if (data.wishlisted) {
-              icon.classList.add("fill-current", "text-red-500");
-              icon.style.fill = "#ef4444";
-              icon.style.color = "#ef4444";
+              icon.classList.add("fill-current");
+              icon.style.fill = "#8a7ef8";
+              icon.style.color = "#8a7ef8";
             } else {
-              icon.classList.remove("fill-current", "text-red-500");
+              icon.classList.remove("fill-current");
               icon.style.fill = "none";
               icon.style.color = "";
             }

@@ -23,10 +23,10 @@
           type="button"
           onclick="toggleWishlist(event, '{{ product.id }}')"
           data-product-id="{{ product.id }}"
-          class="wishlist-btn flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border-strong bg-bg/60 text-fg backdrop-blur transition hover:text-red-400 {% if product.id|stringformat:'s' in wishlist_ids %}wishlisted{% endif %}"
+          class="wishlist-btn flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bg/60 text-fg backdrop-blur transition {% if product.id|stringformat:'s' in wishlist_ids %}wishlisted{% endif %}"
           aria-label="{% translate "Sevimlilarga qo'shish" %}"
         >
-          <i data-lucide="heart" style="width: 15px; height: 15px;" class="heart-icon {% if product.id|stringformat:'s' in wishlist_ids %}fill-current text-red-500{% endif %}"></i>
+          <i data-lucide="heart" style="width: 15px; height: 15px;" class="heart-icon {% if product.id|stringformat:'s' in wishlist_ids %}fill-current{% endif %}"></i>
         </button>
       </div>
     </div>

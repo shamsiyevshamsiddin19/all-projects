@@ -493,27 +493,33 @@ input, select, textarea {
   justify-content: center;
   border-radius: 9999px;
   background: rgba(var(--bg), 0.6);
-  border: 1px solid rgb(var(--border-strong));
+  /* Atrofdagi halqa (border) olib tashlandi — endi faqat xira qorong'i
+     fon (blur bilan) yurakchani ajratib turadi, rangli chegara yo'q. */
+  border: none;
   backdrop-filter: blur(8px);
   color: rgb(var(--fg));
   transition: all 0.2s ease;
 }
 .wishlist-btn:hover {
-  color: #ef4444;
-  border-color: rgba(239, 68, 68, 0.4);
+  /* Qizil o'rniga saytning o'z (binafsha) rangi — bir oz yorqinroq nuance */
+  color: #8a7ef8;
 }
 .wishlist-btn.wishlisted,
 .wishlist-btn.active {
-  color: #ef4444 !important;
-  background: rgba(239, 68, 68, 0.15) !important;
-  border-color: rgba(239, 68, 68, 0.4) !important;
+  color: #8a7ef8 !important;
+  /* rgba(var(--accent), N) BU YERDA ISHLAMAYDI — --accent probel bilan
+     ajratilgan ("109 94 246"), vergulli eski rgba() sintaksisi esa
+     bunday qiymatni qabul qilmaydi va butun e'lon e'tiborsiz qoldiriladi
+     (fon shaffof bo'lib qolaveradi). Shu sabab "/" sintaksisi ishlatildi —
+     bu CSS Color 4 standarti, probelli o'zgaruvchi bilan to'g'ri ishlaydi. */
+  background: rgb(var(--accent) / 0.18) !important;
 }
 .wishlist-btn.wishlisted i,
 .wishlist-btn.wishlisted svg,
 .wishlist-btn.active i,
 .wishlist-btn.active svg {
-  fill: #ef4444 !important;
-  color: #ef4444 !important;
+  fill: #8a7ef8 !important;
+  color: #8a7ef8 !important;
 }
 
 /* --------------------------------------------------------------------------
