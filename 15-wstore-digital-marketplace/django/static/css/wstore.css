@@ -517,71 +517,27 @@ input, select, textarea {
 }
 
 /* --------------------------------------------------------------------------
-   Filter Sidebar Components — qatorlar orasi (asl 1rem/0.75rem) biroz
-   siqildi: mazmunga tegmasdan 29 ta texnologiya bilan birga butun
-   filtrning balandligini kamaytirib, tashqi scroll kamroq kerak bo'lishi
-   uchun.
+   Filter Sidebar Components
+
+   ATAYLAB hech qanday max-height / overflow YO'Q. Ikki marta sinab
+   ko'rilgan (avval butun filtrni, keyin faqat Texnologiyalar ro'yxatini
+   o'z ichki scrolliga sig'dirish) — ikkalasi ham noto'g'ri yechim bo'lib
+   chiqdi: foydalanuvchi filtrning HAR BIR qismi (jumladan barcha 29 ta
+   texnologiya belgisi) darhol, hech qanday ichki scroll qilmasdan to'liq
+   ko'rinishini xohlaydi. `position: sticky` filtrni sahifa boshida
+   tutib turadi (sahifa pastga scroll qilinganda ortda qolib ketmaydi),
+   lekin balandligi CHEKLANMAYDI — agar tarkib ekrandan uzunroq bo'lsa,
+   oddiy SAHIFA scrolli bilan (qo'shimcha "qayerni scroll qilish kerak"
+   deb o'ylashsiz) pastigacha ko'rinadi, xuddi mahsulotlar ro'yxati kabi.
    -------------------------------------------------------------------------- */
 .sidebar-sticky-wrap {
   position: sticky;
   top: 4.5rem;
-  /* Navbar (4.06rem) ostidan boshlanadi, pastda esa atigi 1rem bo'sh joy
-     qoldirib, iloji boricha ko'proq balandlikni filtrga beradi. */
-  max-height: calc(100vh - 5.5rem);
-  overflow-y: auto;
-  /* Ilgari scrollbar butunlay YASHIRIN edi (scrollbar-width: none +
-     ::-webkit-scrollbar{display:none}) — natijada filtr pastki qismi
-     (narx oralig'i, texnologiyalar) ko'rinmas scroll ortida qolib,
-     foydalanuvchiga "yo'qolgan" bo'lib tuyulardi. Endi ingichka, mavzuga
-     mos scrollbar ko'rinadi — kontent borligi aniq bo'ladi.
-     overscroll-behavior: contain — filtr ichida scroll chekkasiga
-     yetganda bu asosiy sahifaga "oqib o'tmaydi" (ikkalasi mustaqil). */
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: rgb(var(--border-strong)) transparent;
-}
-.sidebar-sticky-wrap::-webkit-scrollbar {
-  width: 6px;
-}
-.sidebar-sticky-wrap::-webkit-scrollbar-track {
-  background: transparent;
-}
-.sidebar-sticky-wrap::-webkit-scrollbar-thumb {
-  background-color: rgb(var(--border-strong));
-  border-radius: 999px;
-}
-.sidebar-sticky-wrap::-webkit-scrollbar-thumb:hover {
-  background-color: rgb(var(--muted));
-}
-
-/* Texnologiyalar — 29 ta belgi filtrning umumiy balandligini ~380px
-   shishirib, butun filtrni ekrandan kattaroq qilib qo'yardi. O'z ichida
-   kichik, aniq ko'rinadigan scroll qutichasiga ajratildi: endi Valyuta
-   dan Narx oralig'igacha bo'lgan qism DEYARLI HAR DOIM to'liq, scrollsiz
-   ko'rinadi, faqat eng uzun ro'yxatning o'zi o'z chegarasida scroll
-   qilinadi (ko'p onlayn-do'konlarda filtr belgilari shu uslubda bo'ladi). */
-.tech-tag-scroll {
-  max-height: 150px;
-  overflow-y: auto;
-  padding-right: 0.25rem;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: rgb(var(--border-strong)) transparent;
-}
-.tech-tag-scroll::-webkit-scrollbar {
-  width: 5px;
-}
-.tech-tag-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-.tech-tag-scroll::-webkit-scrollbar-thumb {
-  background-color: rgb(var(--border-strong));
-  border-radius: 999px;
 }
 
 .sidebar-section {
-  padding-top: 0.85rem;
-  margin-top: 0.85rem;
+  padding-top: 0.65rem;
+  margin-top: 0.65rem;
   border-top: 1px solid rgb(var(--border));
 }
 .sidebar-section:first-child {
@@ -598,7 +554,7 @@ input, select, textarea {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: rgb(var(--muted));
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
 }
 .sidebar-sec-title::before {
   content: "";
@@ -649,7 +605,7 @@ input, select, textarea {
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  padding: 0.3rem 0.5rem;
+  padding: 0.2rem 0.5rem;
   margin-left: -0.5rem;
   margin-right: -0.5rem;
   border-radius: 0.5rem;
@@ -725,12 +681,15 @@ input, select, textarea {
 .tech-tag-pill {
   display: inline-flex;
   align-items: center;
-  padding: 0.25rem 0.625rem;
+  /* Ixchamlashtirildi (asli 0.25rem 0.625rem / 0.75rem) — 29 ta belgi
+     butun filtrning 36%ini (443px) yeyotgan edi; bu yerda har bir
+     piksel filtrning scrollsiz sig'ishiga yordam beradi. */
+  padding: 0.2rem 0.5rem;
   border-radius: 0.375rem;
   background-color: rgb(var(--surface-2));
   border: 1px solid rgb(var(--border));
   color: rgb(var(--muted));
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;

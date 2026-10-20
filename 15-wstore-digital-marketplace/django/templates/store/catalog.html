@@ -38,7 +38,7 @@
     </div>
   </div>
 
-  <div class="flex flex-col gap-8 md:flex-row md:items-start">
+  <div class="flex flex-col gap-8 md:flex-row">
     
     <!-- Desktop sidebar — filtr chapda, fixed/sticky qimirlamaydi -->
     <div class="hidden md:block w-64 shrink-0">
@@ -88,7 +88,7 @@
               <!-- 2. Saralash (Sort) -->
               <div class="sidebar-section">
                 <div class="sidebar-sec-title">{% translate "Saralash" %}</div>
-                <div class="flex flex-col gap-1.5">
+                <div class="flex flex-col gap-1">
                   <label class="filter-radio-item">
                     <input type="radio" name="sort" value="popular" class="sr-only" onchange="this.form.submit()" {% if sort == 'popular' %}checked{% endif %}>
                     <span class="custom-radio-box"><span class="custom-radio-dot"></span></span>
@@ -115,7 +115,7 @@
               <!-- 3. Kategoriya (Category) -->
               <div class="sidebar-section">
                 <div class="sidebar-sec-title">{% translate "Kategoriya" %}</div>
-                <div class="flex flex-col gap-1.5">
+                <div class="flex flex-col gap-1">
                   {% for cat in categories %}
                     <label class="filter-checkbox-item">
                       <input 
@@ -147,7 +147,7 @@
               <!-- 4. Narx oralig'i (Price ranges) -->
               <div class="sidebar-section">
                 <div class="sidebar-sec-title">{% translate "Narx oralig'i" %}</div>
-                <div class="flex flex-col gap-1.5">
+                <div class="flex flex-col gap-1">
                   {% for pr in price_ranges %}
                     <label class="filter-radio-item">
                       <input 
@@ -172,7 +172,7 @@
               <!-- 5. Texnologiyalar (Tech Stack tag cloud) -->
               <div class="sidebar-section" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">
                 <div class="sidebar-sec-title">{% translate "Texnologiyalar" %}</div>
-                <div class="tech-tag-scroll flex flex-wrap gap-1.5">
+                <div class="flex flex-wrap gap-1">
                   {% for tech in tech_options %}
                     <label class="tech-tag-pill {% if tech in selected_tech %}active{% endif %}">
                       <input 
