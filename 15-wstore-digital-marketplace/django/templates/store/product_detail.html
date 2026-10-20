@@ -226,7 +226,7 @@
     </div>
   </div>
 
-  <!-- Mahsulot tanasi: Tavsif -> Xususiyatlar -> Izohlar -> Tavsiya etamiz -->
+  <!-- Mahsulot tanasi: Tavsif -> Xususiyatlar -> Skrinshotlar -> Izohlar -> Tavsiya etamiz -->
   <div class="mt-10 flex flex-col divide-y divide-border">
     
     <!-- 1. Tavsif -->
@@ -260,7 +260,23 @@
       </section>
     {% endif %}
 
-    <!-- 3. Izohlar -->
+    <!-- 3. Skrinshotlar -->
+    {% if product.screenshots %}
+      <section class="py-8 first:pt-0">
+        <h2 class="mb-3 text-lg font-semibold text-fg">
+          {% translate "Skrinshotlar" %}
+        </h2>
+        <div class="product-screens-row">
+          {% for screen in product.screenshots %}
+            <a href="{{ screen }}" target="_blank" rel="noopener" class="product-screens-item">
+              <img src="{{ screen }}" alt="{{ product.title }}" loading="lazy">
+            </a>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+
+    <!-- 4. Izohlar -->
     <section class="py-8 first:pt-0">
       <h2 class="mb-4 text-lg font-semibold text-fg">
         {% translate "Izohlar" %}
