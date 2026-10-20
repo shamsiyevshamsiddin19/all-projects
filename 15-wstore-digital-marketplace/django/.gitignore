@@ -13,8 +13,12 @@ db.sqlite3-journal
 staticfiles/
 *.log
 
-# Foydalanuvchi yuklagan fayllar (serverda qoladi)
-media/covers/
+# Foydalanuvchi yuklagan fayllar (serverda qoladi) — sotuvchilar o'zi
+# yuklaydigan tasodifiy mahsulot rasmlari. Rasmiy, qo'lda tayyorlangan
+# ikonka to'plami (quyida) BUNDAN MUSTASNO — ular zaxirasiz yo'qolmasligi
+# uchun ataylab kuzatiladi.
+media/covers/*
+!media/covers/*.png
 media/screenshots/
 media/products/
 
