@@ -1198,8 +1198,37 @@ a.stat-card:hover {
   color: inherit;
 }
 
+/* Texnologiya teglari — bitta qatorda. Nechta tegilganiga qarab
+   (3 ta, 4 ta, 10 ta — farqi yo'q) kartaga qancha sig'sa shuncha to'liq
+   ko'rinadi, keyingisi o'ngda xiralashib (fade) yo'qoladi. Ikkinchi
+   qatorga umuman bo'linmaydi, shuning uchun har bir kartaning balandligi
+   bir xil bo'lib qoladi. */
+.tech-tags-row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.25rem;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, #000 85%, transparent 100%);
+  mask-image: linear-gradient(to right, #000 85%, transparent 100%);
+}
+.tech-tags-row > span {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .product-price {
   letter-spacing: -0.01em;
+  /* Narx hech qachon o'z ichida ikkinchi qatorga bo'linib ketmasin —
+     bo'lmasa, o'ng tarafdagi yulduzcha reyting pastga surilib qolardi. */
+  white-space: nowrap;
+}
+/* Uzun valyuta qiymatlari uchun (masalan so'mda "1 260 000 so'm")
+   shrift biroz kichrayadi, shunda narx bitta qatorga sig'adi.
+   JS (applyCurrency) matn uzunligiga qarab shu klassni qo'shib/olib
+   tashlaydi — valyuta almashtirilganda avtomatik ishlaydi. */
+.product-price.is-long {
+  font-size: 0.8em;
+  letter-spacing: -0.015em;
 }
 
 .heart-icon {
@@ -1274,6 +1303,7 @@ a.stat-card:hover {
 .divide-border\/60 > :not([hidden]) ~ :not([hidden]) { border-color: rgba(var(--border), 0.6); }
 
 .placeholder\:text-muted\/70::placeholder { color: rgba(var(--muted), 0.7); }
+.placeholder\:text-muted\/60::placeholder { color: rgba(var(--muted), 0.6); }
 
 .first\:pt-0:first-child { padding-top: 0; }
 .last\:pb-0:last-child { padding-bottom: 0; }

@@ -27,7 +27,7 @@
     EUR: { code: "EUR", suffix: "EUR", decimals: 0 },
   };
 
-  function formatPrice(usd, currency) {
+  function formatPrice(usd, currency, withSuffix = true) {
     const meta = CURRENCY_META[currency] || CURRENCY_META.USD;
     const rate = RATES[currency] || 1;
     const val = usd * rate;
@@ -38,7 +38,7 @@
     const parts = rounded.split(".");
     const spaced = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
     const num = parts[1] ? spaced + "." + parts[1] : spaced;
-    return num + " " + meta.suffix;
+    return withSuffix ? num + " " + meta.suffix : num;
   }
 
   function getSavedCurrency() {
@@ -58,7 +58,14 @@
     document.querySelectorAll("[data-usd]").forEach((el) => {
       const usd = parseFloat(el.getAttribute("data-usd"));
       if (!isNaN(usd)) {
-        el.textContent = formatPrice(usd, currency);
+        const text = formatPrice(usd, currency);
+        el.textContent = text;
+        // so'mda narx tez-tez 1 mln+ bo'lib, uzun raqamga aylanadi
+        // (masalan "1 260 000 so'm") — karta torligida bu ikki qatorga
+        // bo'linib, yulduzcha reytingini pastga surib yuborardi. Uzun
+        // qiymatlarda shriftni biroz kichraytirib, bitta qatorda ushlab
+        // turamiz (CSS: .product-price.is-long).
+        el.classList.toggle("is-long", text.length > 9);
       }
     });
 
@@ -67,10 +74,14 @@
       const min = parseFloat(el.getAttribute("data-min"));
       const max = parseFloat(el.getAttribute("data-max"));
       if (!isNaN(min) && !isNaN(max)) {
+        // Valyuta birligi ilgari HAR BIR raqamda takrorlanardi
+        // ("126 000 so'm – 630 000 so'm") — natijada filtr panelida
+        // qator ikkiga bo'linib ketardi. Endi faqat oxirida bir marta
+        // ko'rsatiladi: "126 000 – 630 000 so'm".
         if (max >= 999999) {
           el.textContent = `${formatPrice(min, currency)} +`;
         } else {
-          el.textContent = `${formatPrice(min, currency)} – ${formatPrice(max, currency)}`;
+          el.textContent = `${formatPrice(min, currency, false)} – ${formatPrice(max, currency)}`;
         }
       }
     });

@@ -37,9 +37,12 @@
         {{ product.title }}
       </h3>
 
-      <!-- Texnologiya teglari — mobilda faqat 2-3 ta -->
-      <div class="mb-3 flex flex-wrap gap-1 sm:gap-1.5">
-        {% for tech in product.tech_stack|slice:":3" %}
+      <!-- Texnologiya teglari — bitta qatorda. 3 ta ham, 10 ta ham bo'lishi
+           mumkin: sondan qat'i nazar, kartaga qancha sig'sa shuncha ko'rinadi,
+           qolgani o'ngda xiralashib (fade) yo'qoladi — ikkinchi qatorga
+           tushib, karta balandligini buzmaydi. -->
+      <div class="tech-tags-row mb-3">
+        {% for tech in product.tech_stack|slice:":8" %}
           <span class="rounded border border-border px-1.5 py-0.5 text-[10px] text-muted sm:text-[11px]">
             {{ tech }}
           </span>
