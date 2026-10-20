@@ -175,7 +175,21 @@ class Product(models.Model):
     @property
     def cover_url(self):
         if self.cover_image_file:
-            return self.cover_image_file.url
+            url = self.cover_image_file.url
+            # nginx bu fayllarni 30 kunlik "immutable" kesh bilan beradi
+            # (Cache-Control: public, max-age=30d). Fayl mazmuni almashtirilsa
+            # (masalan, sotuvchi yangi muqova yuklasa) ham URL o'zi o'zgarmay
+            # qolardi — brauzer eski rasmni haftalab ko'rsatib yurardi.
+            # Fayl o'zgarish vaqtini ?v= sifatida qo'shib, URL ni ham
+            # o'zgartiramiz, shunda brauzer darhol yangisini so'raydi.
+            try:
+                mtime = int(self.cover_image_file.storage.get_modified_time(
+                    self.cover_image_file.name
+                ).timestamp())
+                url = f"{url}?v={mtime}"
+            except (OSError, FileNotFoundError, ValueError):
+                pass
+            return url
         if self.cover_image_url:
             return self.cover_image_url
         return "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80"
