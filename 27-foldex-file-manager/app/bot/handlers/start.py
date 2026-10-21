@@ -8,7 +8,7 @@ xavfsiz bir martalik kirish havolalarini generatsiya qiladi.
 
 from datetime import datetime, timedelta, timezone
 from aiogram import Router, F
-from aiogram.filters import Command, CommandStart
+from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
@@ -25,11 +25,13 @@ router = Router(name="start_router")
 
 
 @router.message(CommandStart())
+@router.message(Command("home"))
+@router.message(F.text == "🏠 Bosh menyu")
 async def handle_start(message: Message, state: FSMContext):
     """
-    /start buyrug'i:
+    /start yoki /home buyrug'i:
     Navigatsiya holatini asosiy (ildiz) papkaga qaytaradi va
-    asosiy papkalar ro'yxatini Reply Keyboard tugmalari sifatida chiqaradi.
+    asosiy papkalar ro'yxatini chiqaradi.
     """
     await state.clear()
     await state.update_data(current_folder_id=None)
@@ -43,7 +45,7 @@ async def handle_start(message: Message, state: FSMContext):
     if not root_folders and not root_files:
         hint = (
             "\n\n<i>💡 Hozircha hech qanday papka yaratilmagan.\n"
-            "Yangi papka ochish yoki fayllarni yuklash uchun quyidagi <b>🌐 Admin Panel</b> tugmasidan "
+            "Yangi papka ochish yoki fayllarni yuklash uchun <b>/admin</b> komandasidan "
             "foydalanishingiz yoki botga to'g'ridan-to'g'ri fayl yuborishingiz mumkin.</i>"
         )
     else:
@@ -61,6 +63,50 @@ async def handle_start(message: Message, state: FSMContext):
     )
 
     await message.answer(text, reply_markup=keyboard)
+
+
+@router.message(Command("search"))
+@router.message(F.text == "🔍 Qidiruv")
+async def handle_search(message: Message, command: CommandObject = None):
+    """
+    /search komandasi:
+    Fayl va papkalarni nom bo'yicha tezkor qidirish.
+    Foydalanish: /search darslik
+    """
+    query = command.args.strip() if (command and command.args) else ""
+
+    if not query:
+        text = (
+            "🔍 <b>Fayllarni qidirish</b>\n\n"
+            "Qidiruvdan foydalanish uchun:\n"
+            "1. <b>Komanda orqali:</b> <code>/search fayl_nomi</code>\n"
+            "2. <b>Chatda:</b> Shunchaki fayl yoki papka nomini yozib yuboring\n"
+            "3. <b>Inline rejimda:</b> Istalgan chatda <code>@bot_username fayl_nomi</code> deb yozing\n\n"
+            "<i>Masalan:</i> <code>/search kitob</code>"
+        )
+        return await message.answer(text)
+
+    async with async_session_maker() as db:
+        found_files = await FileService.search_all_files(db, query)
+
+    if not found_files:
+        return await message.answer(
+            f"🔍 <b>«{query}»</b> so'rovi bo'yicha hech qanday fayl topilmadi.\n"
+            "Bosh sahifaga qaytish uchun: /home"
+        )
+
+    text_lines = [
+        f"🔍 <b>«{query}» so'rovi bo'yicha {len(found_files)} ta fayl topildi:</b>\n"
+    ]
+    for idx, fl in enumerate(found_files[:10], 1):
+        size_kb = fl.file_size / 1024
+        size_str = f"{size_kb:.1f} KB" if size_kb < 1024 else f"{size_kb/1024:.1f} MB"
+        text_lines.append(f"{idx}. <b>{fl.name}</b> (<code>{size_str}</code>)")
+
+    text_lines.append("\n<i>Kerakli faylni jo'natish uchun quyidagi tugmalardan birini bosing:</i>")
+
+    keyboard = build_folder_reply_keyboard([], found_files[:6], has_parent=True)
+    await message.answer("\n".join(text_lines), reply_markup=keyboard)
 
 
 @router.message(Command("admin"))
@@ -148,12 +194,13 @@ async def handle_help(message: Message):
     text = (
         "💡 <b>Foldex Foydalanish Bo'yicha Qo'llanma</b>\n\n"
         "<b>Asosiy buyruqlar:</b>\n"
-        "• /start — Bosh sahifa va papkalar navigatsiyasi\n"
-        "• /admin — Veb-admin panel havolasi\n"
+        "• /start yoki /home — Bosh sahifa va papkalar navigatsiyasi\n"
+        "• /search [nomi] — Fayl va papkalarni tezkor qidirish\n"
+        "• /admin — Veb-admin panelga kirish\n"
         "• /login — Brauzer uchun bir martalik kirish havolasi\n"
         "• /help — Ushbu yordam xabari\n\n"
         "<b>Imkoniyatlar:</b>\n"
-        "📂 <i>Reply Keyboard:</i> Tugmalar orqali cheksiz ichki papkalarga kirish va qaytish.\n"
+        "📂 <i>Papkalar:</i> Klaviatura tugmalari orqali papkalar ichiga kirish va ⬅️ Orqaga qaytish.\n"
         "📤 <i>Hammasini yuborish:</i> Papkadagi barcha fayllarni bir zumda qabul qilish.\n"
         "⚡ <i>Inline Mode:</i> Istalgan guruh yoki chatda <code>@bot_username</code> deb yozib, "
         "papkalarni ko'rish va fayllarni to'g'ridan-to'g'ri jo'natish.\n"

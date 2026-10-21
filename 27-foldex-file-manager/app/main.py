@@ -68,10 +68,24 @@ async def lifespan(app: FastAPI):
     dp.include_router(inline.router)
     dp.include_router(file_upload.router)
 
-    # d) Telegram Bot Webhook sozlash
+    # d) Telegram Bot Webhook va Komandalar menyusini sozlash
     polling_task = None
     if settings.BOT_TOKEN:
         try:
+            from aiogram.types import BotCommand, BotCommandScopeDefault
+            await bot.set_my_commands(
+                commands=[
+                    BotCommand(command="start", description="📂 Bosh sahifa"),
+                    BotCommand(command="home", description="🏠 Bosh sahifaga qaytish"),
+                    BotCommand(command="search", description="🔍 Fayllarni qidirish"),
+                    BotCommand(command="admin", description="🌐 Veb-Admin Panel"),
+                    BotCommand(command="login", description="🔑 Bir martalik kirish havolasi"),
+                    BotCommand(command="help", description="💡 Yordam va qo'llanma"),
+                ],
+                scope=BotCommandScopeDefault(),
+            )
+            print("✅ Telegram bot buyruqlari muvaffaqiyatli ro'yxatdan o'tkazildi.")
+
             if settings.USE_WEBHOOK and settings.DOMAIN:
                 webhook_url = f"{settings.DOMAIN}/api/webhook/telegram"
                 print(f"📡 Webhook o'rnatilmoqda: {webhook_url}")

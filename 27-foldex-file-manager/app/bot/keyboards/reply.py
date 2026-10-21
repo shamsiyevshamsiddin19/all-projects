@@ -7,8 +7,8 @@ barcha fayllarni bir bosishda yuborish (📤 Hammasini yuborish)
 va veb-panelga o'tish tugmalarini shakllantiradi.
 """
 
-from typing import List
-from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
+from typing import List, Union
+from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 
 from app.models.file_item import FileItem
@@ -19,14 +19,17 @@ def build_folder_reply_keyboard(
     subfolders: List[Folder],
     files: List[FileItem],
     has_parent: bool = False
-) -> ReplyKeyboardMarkup:
+) -> Union[ReplyKeyboardMarkup, ReplyKeyboardRemove]:
     """
     Joriy papka holatiga mos Reply Keyboard yaratadi.
     - Ichki papkalar: 2 tadan qatorda
     - Fayllar: 1 tadan qatorda
-    - Boshqaruv tugmalari: Orqaga, Bosh menyu, Hammasini yuborish
+    - Amal tugmalari: Hammasini yuborish, Orqaga
+    - Eslatma: Admin panel, Bosh sahifa va Qidiruv tugmalari reply keyboarddan
+      olib tashlangan, ular komanda orqali (/admin, /home, /search) ishlaydi.
     """
     builder = ReplyKeyboardBuilder()
+    has_any_button = False
 
     # 1. Ichki papkalar tugmalari (har bir qatorda 2 tadan)
     folder_buttons = [
@@ -35,6 +38,7 @@ def build_folder_reply_keyboard(
     ]
     if folder_buttons:
         builder.row(*folder_buttons, width=2)
+        has_any_button = True
 
     # 2. Ushbu papkadagi fayllar tugmalari (har bir qatorda 1 tadan)
     file_buttons = [
@@ -43,27 +47,20 @@ def build_folder_reply_keyboard(
     ]
     if file_buttons:
         builder.row(*file_buttons, width=1)
+        has_any_button = True
 
     # 3. Fayllar mavjud bo'lsa "Hammasini yuborish" tugmasi
-    action_buttons = []
     if files:
-        action_buttons.append(KeyboardButton(text="📤 Hammasini yuborish"))
+        builder.row(KeyboardButton(text="📤 Hammasini yuborish"), width=1)
+        has_any_button = True
 
-    if action_buttons:
-        builder.row(*action_buttons, width=1)
-
-    # 4. Navigatsiya tugmalari (Orqaga, Bosh menyu)
-    nav_buttons = []
+    # 4. Agar ichki papkada bo'lsa "⬅️ Orqaga" navigatsiya tugmasi
     if has_parent:
-        nav_buttons.append(KeyboardButton(text="⬅️ Orqaga"))
-    nav_buttons.append(KeyboardButton(text="🏠 Bosh menyu"))
-    builder.row(*nav_buttons, width=len(nav_buttons))
+        builder.row(KeyboardButton(text="⬅️ Orqaga"), width=1)
+        has_any_button = True
 
-    # 5. Tezkor boshqaruv va veb-panel tugmalari
-    builder.row(
-        KeyboardButton(text="🌐 Admin Panel"),
-        KeyboardButton(text="🔍 Qidiruv"),
-        width=2
-    )
+    # Agar birorta ham tugma bo'lmasa, reply keyboardni olib tashlash
+    if not has_any_button:
+        return ReplyKeyboardRemove()
 
     return builder.as_markup(resize_keyboard=True)

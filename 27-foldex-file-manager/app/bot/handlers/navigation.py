@@ -22,25 +22,6 @@ from app.services.telegram_service import TelegramService
 router = Router(name="navigation_router")
 
 
-@router.message(F.text == "🏠 Bosh menyu")
-async def nav_home(message: Message, state: FSMContext):
-    """Bosh menyuga (Ildiz papkaga) qaytish."""
-    await state.update_data(current_folder_id=None)
-
-    async with async_session_maker() as db:
-        root_folders = await FolderService.get_root_folders(db)
-        root_files = await FileService.get_files_by_folder(db, None)
-
-    keyboard = build_folder_reply_keyboard(root_folders, root_files, has_parent=False)
-
-    text = (
-        "🏠 <b>Bosh menyu (Ildiz katalog)</b>\n\n"
-        f"📁 Papkalar soni: <b>{len(root_folders)}</b> ta\n"
-        f"📄 Fayllar soni: <b>{len(root_files)}</b> ta"
-    )
-    await message.answer(text, reply_markup=keyboard)
-
-
 @router.message(F.text == "⬅️ Orqaga")
 async def nav_back(message: Message, state: FSMContext):
     """Bir pog'ona yuqoridagi ota papkaga qaytish."""
@@ -48,7 +29,8 @@ async def nav_back(message: Message, state: FSMContext):
     current_folder_id = data.get("current_folder_id")
 
     if not current_folder_id:
-        return await nav_home(message, state)
+        from app.bot.handlers.start import handle_start
+        return await handle_start(message, state)
 
     async with async_session_maker() as db:
         current_folder = await FolderService.get_by_id(db, current_folder_id)
@@ -78,42 +60,6 @@ async def nav_back(message: Message, state: FSMContext):
             )
 
     await message.answer(text, reply_markup=keyboard)
-
-
-@router.message(F.text == "📤 Hammasini yuborish")
-async def nav_send_all(message: Message, state: FSMContext):
-    """Joriy papkadagi barcha fayllarni ketma-ket foydalanuvchiga jo'natish."""
-    data = await state.get_data()
-    current_folder_id = data.get("current_folder_id")
-
-    async with async_session_maker() as db:
-        files = await FileService.get_files_by_folder(db, current_folder_id)
-
-    if not files:
-        return await message.answer("ℹ️ Ushbu papkada hech qanday fayl mavjud emas.")
-
-    status_msg = await message.answer(f"⏳ <b>{len(files)}</b> ta fayl yuborilmoqda...")
-
-    sent_count = 0
-    for file_item in files:
-        success = await TelegramService.send_file_to_user(bot, message.chat.id, file_item)
-        if success:
-            sent_count += 1
-
-    await status_msg.edit_text(f"✅ Jami <b>{sent_count}</b> ta fayl muvaffaqiyatli jo'natildi!")
-
-
-@router.message(F.text == "🔍 Qidiruv")
-async def nav_search_prompt(message: Message):
-    """Qidiruv bo'yicha ko'rsatma berish."""
-    text = (
-        "🔍 <b>Fayllarni qidirish</b>\n\n"
-        "Qidirishning 2 xil usuli mavjud:\n\n"
-        "1. <b>Chatda:</b> Qidirmoqchi bo'lgan fayl nomini yozib yuboring (masalan: <code>darslik</code>).\n"
-        "2. <b>Inline rejimda:</b> Istalgan chatda <code>@bot_username fayl_nomi</code> deb yozing "
-        "va natijalar ro'yxatidan to'g'ridan-to'g'ri tanlang."
-    )
-    await message.answer(text)
 
 
 @router.message(F.text.startswith("📄 "))
