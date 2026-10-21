@@ -331,7 +331,7 @@ export default function GlobeMap({ countries, geojsonUrl, onUnsupported }: Globe
   const withStations = countries.filter((c) => c.radio_count > 0);
 
   return (
-    <div className="relative h-[min(72vh,620px)] min-h-[420px] w-full overflow-hidden bg-ink-950">
+    <div className="relative h-[60vh] min-h-[420px] xl:h-full w-full overflow-hidden bg-ink-950">
       <div ref={containerRef} className="h-full w-full" />
 
       {!ready ? (
