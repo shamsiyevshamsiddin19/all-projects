@@ -40,13 +40,24 @@ async def handle_start(message: Message, state: FSMContext):
 
     keyboard = build_folder_reply_keyboard(root_folders, root_files, has_parent=False)
 
+    if not root_folders and not root_files:
+        hint = (
+            "\n\n<i>💡 Hozircha hech qanday papka yaratilmagan.\n"
+            "Yangi papka ochish yoki fayllarni yuklash uchun quyidagi <b>🌐 Admin Panel</b> tugmasidan "
+            "foydalanishingiz yoki botga to'g'ridan-to'g'ri fayl yuborishingiz mumkin.</i>"
+        )
+    else:
+        hint = (
+            "\n\nKerakli papkani tanlash uchun quyidagi tugmalardan foydalaning "
+            "yoki istalgan chatda <code>@bot_username</code> orqali inline qidiring."
+        )
+
     text = (
         "📂 <b>Foldex — Shaxsiy Fayl Menejeri</b>\n\n"
         "🏠 <b>Joriy joylashuv:</b> <i>Bosh sahifa</i>\n\n"
         f"📁 Papkalar: <b>{len(root_folders)}</b> ta\n"
-        f"📄 Fayllar: <b>{len(root_files)}</b> ta\n\n"
-        "Kerakli papkani tanlash uchun quyidagi tugmalardan foydalaning "
-        "yoki istalgan chatda <code>@bot_username</code> orqali inline qidiring."
+        f"📄 Fayllar: <b>{len(root_files)}</b> ta"
+        f"{hint}"
     )
 
     await message.answer(text, reply_markup=keyboard)

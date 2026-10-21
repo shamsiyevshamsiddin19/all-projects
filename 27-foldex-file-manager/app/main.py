@@ -55,10 +55,6 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    # b) Standart papkalar (Rus tili, Dasturlash, Kitoblar) ni bazaga kiritish
-    async with async_session_maker() as session:
-        await FolderService.seed_default_folders_if_empty(session)
-
     # c) Telegram Bot Middleware va Handlerlarini ro'yxatdan o'tkazish
     # Qat'iy bitta foydalanuvchi tekshiruvi (TELEGRAM_ADMIN_ID: 7883409434)
     auth_middleware = AdminAuthMiddleware()
