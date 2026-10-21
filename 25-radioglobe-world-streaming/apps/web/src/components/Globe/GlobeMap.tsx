@@ -177,7 +177,28 @@ export default function GlobeMap({ countries, geojsonUrl, onUnsupported }: Globe
           katalogiga umuman yetib bormaydi. Zoom uchun +/− tugmalari bor.
         */
         scrollZoom: false,
+        /*
+          Sichqoncha bilan sudrab aylantirish — ANIQ yoqilgan (MapLibre
+          standarti ham yoqiq, lekin buni qasddan yozib qo'yamiz: kodni
+          o'qigan kishi "nega aylanmayapti" deb o'ylab tekshirmasin).
+
+          dragRotate (o'ng tugma yoki Ctrl+sudrash bilan kamera burchagini
+          — pitch/bearing — o'zgartirish) ATAYLAB o'chirilgan: bu globusni
+          "yon tomondan" yoki "teskari" qilib ko'rsatib yuborishi mumkin,
+          foydalanuvchi esa buni tasodifan bosib, globus "buzilib qoldi"
+          deb o'ylashi mumkin. Bizga faqat tekis aylanish (lng/lat bo'ylab
+          sudrash) kerak, uni dragPan allaqachon beradi.
+        */
+        dragPan: true,
+        dragRotate: false,
+        pitchWithRotate: false,
+        touchZoomRotate: true,
+        touchPitch: false,
       });
+
+      // touchZoomRotate'da ham burilish (bearing) o'chiriladi — ikki barmoq
+      // bilan burab yuborish mobil foydalanuvchini ham chalkashtiradi
+      map.touchZoomRotate.disableRotation();
     } catch (err) {
       // WebGL yo'q yoki GPU kontekst bermadi — ro'yxatga tushamiz
       console.error('[globe] MapLibre ishga tushmadi:', err);
@@ -200,6 +221,22 @@ export default function GlobeMap({ countries, geojsonUrl, onUnsupported }: Globe
 
     map.on('error', (e) => {
       console.error('[globe] xato:', e?.error?.message || e);
+    });
+
+    /*
+      Kursor: globus "ushlab sudrash mumkin" ekanini ko'rsatadi.
+
+      Boshlang'ich holat — "grab" (qo'l). Sudrash boshlanganda "grabbing"ga
+      o'tadi, tugaganda yana "grab"ga qaytadi. Davlat ustida esa "pointer"
+      (bosish mumkin). Busiz sichqoncha oddiy strelka bo'lib qolaveradi va
+      foydalanuvchi globusni sudrab bo'lishini sezmasligi mumkin edi.
+    */
+    map.getCanvas().style.cursor = 'grab';
+    map.on('dragstart', () => {
+      map.getCanvas().style.cursor = 'grabbing';
+    });
+    map.on('dragend', () => {
+      map.getCanvas().style.cursor = 'grab';
     });
 
     // ── Aylanish ──
@@ -248,7 +285,9 @@ export default function GlobeMap({ countries, geojsonUrl, onUnsupported }: Globe
 
       const props = feature.properties || {};
       const hasStations = Number(props.radio_count) > 0;
-      map.getCanvas().style.cursor = hasStations ? 'pointer' : 'default';
+      // Stansiyasi bor davlat — bosish mumkin (pointer). Qolgani — baribir
+      // sudrab aylantirish mumkin, shuning uchun 'default' emas 'grab'.
+      map.getCanvas().style.cursor = hasStations ? 'pointer' : 'grab';
 
       // React holatini har piksel harakatida emas, kadrga bir marta
       // yangilaymiz — aks holda render bo'roni bo'ladi
@@ -267,7 +306,7 @@ export default function GlobeMap({ countries, geojsonUrl, onUnsupported }: Globe
 
     map.on('mouseleave', 'countries-fill', () => {
       clearHover();
-      map.getCanvas().style.cursor = '';
+      map.getCanvas().style.cursor = 'grab';
       if (hoverRafRef.current !== null) cancelAnimationFrame(hoverRafRef.current);
       setHovered(null);
     });
