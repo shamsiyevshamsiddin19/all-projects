@@ -26,13 +26,11 @@ router = Router(name="start_router")
 
 
 @router.message(CommandStart())
-@router.message(Command("home"))
-@router.message(F.text == "🏠 Bosh menyu")
 async def handle_start(message: Message, state: FSMContext):
     """
-    /start yoki /home buyrug'i:
-    Navigatsiya holatini asosiy (ildiz) papkaga qaytaradi va
-    asosiy papkalar ro'yxatini chiqaradi.
+    /start buyrug'i:
+    Foydalanuvchi uchun boshlang'ich start xabari va navigatsiya klaviaturasini chiqaradi.
+    Bu xabar chatda saqlanib qoladi.
     """
     await state.clear()
     await state.update_data(current_folder_id=None)
@@ -64,6 +62,32 @@ async def handle_start(message: Message, state: FSMContext):
     )
 
     await message.answer(text, reply_markup=keyboard)
+
+
+@router.message(Command("home"))
+@router.message(F.text == "🏠 Bosh menyu")
+async def handle_home(message: Message, state: FSMContext):
+    """
+    /home yoki Bosh menyu buyrug'i:
+    Foydalanuvchi xabari o'chiriladi, bot yangi xabar yozmasdan klaviaturani
+    jimgina bosh sahifa holatiga qaytaradi.
+    """
+    try:
+        await message.delete()
+    except Exception:
+        pass
+
+    await state.clear()
+    await state.update_data(current_folder_id=None)
+
+    async with async_session_maker() as db:
+        root_folders = await FolderService.get_root_folders(db)
+        root_files = await FileService.get_files_by_folder(db, None)
+
+    keyboard = build_folder_reply_keyboard(root_folders, root_files, has_parent=False)
+
+    from app.bot.handlers.navigation import update_reply_keyboard_silently
+    await update_reply_keyboard_silently(message.chat.id, keyboard)
 
 
 @router.message(Command("search"))

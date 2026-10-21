@@ -1,13 +1,18 @@
 {% extends "base.html" %}
 {% block title %}whost.uz — AI yozgan kodni bir buyruq bilan joylashtiring{% endblock %}
 {% block content %}
-<div style="max-width:620px;margin:40px auto;text-align:center">
+<section class="hero-center">
   <div class="eyebrow">Control plane</div>
-  <h1 style="margin:10px 0 14px">AI kod yozdi.<br>Joylashtirishni biz hal qilamiz.</h1>
-  <p class="sub">Google yoki GitHub bilan kiring, serveringizga nom bering —
-     tizim sizga <code>nomingiz.{{ PLATFORM_DOMAIN }}</code> subdomenini va SSH kalitni beradi.</p>
-  <div style="margin-top:26px">
-    <a class="btn btn-primary" href="{% url 'account_login' %}">Boshlash</a>
+  <h1>AI kod yozdi.<br>Joylashtirishni biz hal qilamiz.</h1>
+  <p class="sub">Google yoki GitHub bilan kiring — <code>nomingiz.{{ PLATFORM_DOMAIN }}</code> subdomeningiz va SSH kalitingiz tayyor bo'ladi.</p>
+  <div class="hero-cta">
+    <a class="btn btn-primary btn-lg" href="{% url 'account_login' %}">Boshlash</a>
+    <span class="hero-cta-note">Google yoki GitHub — parol kerak emas</span>
   </div>
-</div>
+  <div class="hero-facts">
+    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Subdomen darhol</span>
+    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>SSH kalit avtomatik</span>
+    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Parolsiz kirish</span>
+  </div>
+</section>
 {% endblock %}

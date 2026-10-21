@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 """
 Foldex Reply Keyboard Navigatsiya Handleri.
-Foydalanuvchi tugmalarni bosganda papkalar bo'ylab ichma-ich harakatlanish,
-orqaga qaytish, fayllarni yuborish va ommaviy yuborish amallarini bajaradi.
+Foydalanuvchi talabi:
+- Foydalanuvchi tugmalarni (papka, orqaga) bosganda buyruqlar chatga tushmasin (o'chiriladi).
+- Bot ham javob xabarlari yubormasin (chat toza qoladi).
+- Reply klaviaturada bosib ketaveradi (klaviatura jimgina yangilanadi).
+- Faqat fayl tugmasi bosilganda o'sha fayl chatga yuboriladi.
 """
 
+import asyncio
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
@@ -14,7 +18,6 @@ from app.bot.keyboards.reply import build_folder_reply_keyboard
 from app.bot.loader import bot
 from app.core.database import async_session_maker
 from app.models.file_item import FileItem
-from app.models.folder import Folder
 from app.services.file_service import FileService
 from app.services.folder_service import FolderService
 from app.services.telegram_service import TelegramService
@@ -22,49 +25,75 @@ from app.services.telegram_service import TelegramService
 router = Router(name="navigation_router")
 
 
+async def delete_user_message_silently(message: Message) -> None:
+    """Foydalanuvchi bosgan xabarni chatda qolmasligi uchun darhol o'chirish."""
+    try:
+        await message.delete()
+    except Exception:
+        pass
+
+
+async def update_reply_keyboard_silently(chat_id: int, keyboard) -> None:
+    """
+    Chatda hech qanday xabar qoldirmasdan, Reply Keyboardni jimgina yangilaydi.
+    Vaqtinchalik xabar yuboriladi va darhol o'chiriladi.
+    """
+    try:
+        temp_msg = await bot.send_message(
+            chat_id=chat_id,
+            text="‌",  # Ko'rinmas belgi
+            reply_markup=keyboard,
+            disable_notification=True
+        )
+        await temp_msg.delete()
+    except Exception as e:
+        print(f"⚠️ Klaviaturani yangilashda ogohlantirish: {e}")
+
+
 @router.message(F.text == "⬅️ Orqaga")
 async def nav_back(message: Message, state: FSMContext):
     """Bir pog'ona yuqoridagi ota papkaga qaytish."""
+    # 1. Foydalanuvchi bosgan xabarni chatdan o'chirish
+    await delete_user_message_silently(message)
+
     data = await state.get_data()
     current_folder_id = data.get("current_folder_id")
 
     if not current_folder_id:
-        from app.bot.handlers.start import handle_start
-        return await handle_start(message, state)
+        parent_id = None
+    else:
+        async with async_session_maker() as db:
+            current_folder = await FolderService.get_by_id(db, current_folder_id)
+            parent_id = current_folder.parent_id if current_folder else None
+
+    await state.update_data(current_folder_id=parent_id)
 
     async with async_session_maker() as db:
-        current_folder = await FolderService.get_by_id(db, current_folder_id)
-        parent_id = current_folder.parent_id if current_folder else None
-
-        await state.update_data(current_folder_id=parent_id)
-
         if parent_id is None:
             # Ildizga qaytish
             root_folders = await FolderService.get_root_folders(db)
             root_files = await FileService.get_files_by_folder(db, None)
             keyboard = build_folder_reply_keyboard(root_folders, root_files, has_parent=False)
-            text = "🏠 <b>Bosh menyuga qaytildi</b>"
         else:
             parent_folder = await FolderService.get_by_id(db, parent_id)
             subfolders = await FolderService.get_subfolders(db, parent_id)
             files = await FileService.get_files_by_folder(db, parent_id)
-            crumbs = await FolderService.get_breadcrumbs(db, parent_id)
-            path_str = " / ".join([c.name for c in crumbs])
+            has_parent = (parent_folder.parent_id is not None) if parent_folder else False
+            keyboard = build_folder_reply_keyboard(subfolders, files, has_parent=has_parent)
 
-            keyboard = build_folder_reply_keyboard(subfolders, files, has_parent=(parent_folder.parent_id is not None))
-            text = (
-                f"{parent_folder.icon} <b>{parent_folder.name}</b>\n"
-                f"📍 <i>{path_str}</i>\n\n"
-                f"📁 Ichki papkalar: <b>{len(subfolders)}</b> ta\n"
-                f"📄 Fayllar: <b>{len(files)}</b> ta"
-            )
-
-    await message.answer(text, reply_markup=keyboard)
+    # Bot ham javob bermasin, faqat klaviatura yangilansin
+    await update_reply_keyboard_silently(message.chat.id, keyboard)
 
 
 @router.message(F.text.startswith("📄 "))
 async def nav_send_single_file(message: Message, state: FSMContext):
-    """Reply Keyboarddagi alohida fayl tugmasi bosilganda uni darhol yuborish."""
+    """
+    Reply Keyboarddagi alohida fayl tugmasi bosilganda:
+    Foydalanuvchi buyrug'i chatdan o'chiriladi va FAQAT o'sha fayl chatga yuboriladi!
+    """
+    # 1. Foydalanuvchi bosgan tugma xabarini chatdan o'chirish
+    await delete_user_message_silently(message)
+
     filename = message.text[2:].strip()  # "📄 " belgisini olib tashlash
     data = await state.get_data()
     current_folder_id = data.get("current_folder_id")
@@ -84,16 +113,42 @@ async def nav_send_single_file(message: Message, state: FSMContext):
             file_item = res2.scalar_one_or_none()
 
     if not file_item:
-        return await message.answer("❌ Fayl topilmadi yoki o'chirilgan!")
+        return
 
+    # Faqat faylni chatga yuborish!
     await TelegramService.send_file_to_user(bot, message.chat.id, file_item)
+
+
+@router.message(F.text == "📤 Hammasini yuborish")
+async def nav_send_all(message: Message, state: FSMContext):
+    """
+    Joriy papkadagi barcha fayllarni birin-ketin chatga jo'natish.
+    Buyruq xabari o'chiriladi, ortiqcha matnli xabarlarsiz faqat fayllar yuboriladi.
+    """
+    await delete_user_message_silently(message)
+
+    data = await state.get_data()
+    current_folder_id = data.get("current_folder_id")
+
+    async with async_session_maker() as db:
+        files = await FileService.get_files_by_folder(db, current_folder_id)
+
+    if not files:
+        return
+
+    for file_item in files:
+        await TelegramService.send_file_to_user(bot, message.chat.id, file_item)
+        await asyncio.sleep(0.3)
 
 
 @router.message(F.text)
 async def nav_folder_click_or_search(message: Message, state: FSMContext):
     """
-    Foydalanuvchi papka nomini bosganda ushbu papka ichiga kirish
-    yoki matn yuborganda qidiruv amalini bajarish.
+    Foydalanuvchi papka nomini bosganda:
+    - Foydalanuvchi buyrug'i chatga tushmasdan darhol o'chiriladi.
+    - Bot hech qanday matnli javob bermaydi.
+    - Faqat Reply klaviatura yangilanadi (ichki papkalar va fayllar chiqadi).
+    - Foydalanuvchi xohlagancha bosib ketaveradi.
     """
     raw_text = message.text.strip()
     data = await state.get_data()
@@ -105,7 +160,6 @@ async def nav_folder_click_or_search(message: Message, state: FSMContext):
 
         target_folder = None
         for sf in subfolders:
-            # Emoji bilan yoki emojisiz mos kelishini tekshirish
             if raw_text == f"{sf.icon} {sf.name}" or raw_text == sf.name:
                 target_folder = sf
                 break
@@ -120,50 +174,27 @@ async def nav_folder_click_or_search(message: Message, state: FSMContext):
 
         # 3. Agar papka topilsa — uning ichiga kirish!
         if target_folder:
+            # Foydalanuvchi bosgan xabarni o'chirish (chatga tushmasin!)
+            await delete_user_message_silently(message)
+
             await state.update_data(current_folder_id=target_folder.id)
 
             new_subfolders = await FolderService.get_subfolders(db, target_folder.id)
             new_files = await FileService.get_files_by_folder(db, target_folder.id)
-            crumbs = await FolderService.get_breadcrumbs(db, target_folder.id)
-            path_str = " / ".join([c.name for c in crumbs])
 
             keyboard = build_folder_reply_keyboard(new_subfolders, new_files, has_parent=True)
 
-            text_lines = [
-                f"{target_folder.icon} <b>{target_folder.name}</b>",
-                f"📍 <i>{path_str}</i>\n"
-            ]
-            if target_folder.description:
-                text_lines.append(f"ℹ️ {target_folder.description}\n")
-
-            text_lines.append(f"📁 Ichki papkalar: <b>{len(new_subfolders)}</b> ta")
-            text_lines.append(f"📄 Fayllar: <b>{len(new_files)}</b> ta")
-
-            if new_files:
-                text_lines.append("\n<b>Fayllar ro'yxati:</b>")
-                for idx, fl in enumerate(new_files[:15], 1):
-                    size_kb = fl.file_size / 1024
-                    size_str = f"{size_kb:.1f} KB" if size_kb < 1024 else f"{size_kb/1024:.1f} MB"
-                    text_lines.append(f"{idx}. {fl.name} (<code>{size_str}</code>)")
-                if len(new_files) > 15:
-                    text_lines.append(f"<i>...va yana {len(new_files) - 15} ta fayl</i>")
-
-            await message.answer("\n".join(text_lines), reply_markup=keyboard)
+            # Bot javob bermasin, faqat klaviatura yangilansin:
+            await update_reply_keyboard_silently(message.chat.id, keyboard)
             return
 
-        # 4. Agar papka topilmasa, bu foydalanuvchi yozgan qidiruv so'zi bo'lishi mumkin!
+        # 4. Agar papka topilmasa va bu oddiy matn bo'lsa (qidiruv):
         found_files = await FileService.search_all_files(db, raw_text)
         if found_files:
-            text = f"🔍 <b>«{raw_text}» so'rovi bo'yicha {len(found_files)} ta fayl topildi:</b>\n\n"
-            for f_item in found_files[:10]:
-                text += f"• <b>{f_item.name}</b> (<code>{f_item.file_size / 1024:.1f} KB</code>)\n"
-            text += "\n<i>Kerakli faylni jo'natish uchun quyidagi qidiruv natijalaridan foydalaning yoki inline rejimda chaqiring.</i>"
-
-            # Topilgan fayllarni tugma sifatida chiqarish
-            keyboard = build_folder_reply_keyboard([], found_files[:6], has_parent=True)
-            await message.answer(text, reply_markup=keyboard)
+            await delete_user_message_silently(message)
+            # Topilgan fayllarni Reply klaviaturada chiqarish (klaviatura yangilanadi)
+            keyboard = build_folder_reply_keyboard([], found_files[:10], has_parent=True)
+            await update_reply_keyboard_silently(message.chat.id, keyboard)
         else:
-            await message.answer(
-                f"❓ «{raw_text}» bo'yicha papka yoki fayl topilmadi.\n"
-                "Navigatsiya uchun klaviatura tugmalaridan foydalaning."
-            )
+            # Hech narsa topilmasa ham xabarni o'chirish
+            await delete_user_message_silently(message)

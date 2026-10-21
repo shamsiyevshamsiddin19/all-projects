@@ -69,18 +69,18 @@ export default async function HomePage() {
         canvas emas, matn.
       */}
       <section className="w-full xl:h-[calc(100dvh-3.5rem)] xl:overflow-hidden">
-        <div className="grid grid-cols-1 gap-6 xl:h-full xl:grid-cols-[420px_1fr] xl:items-center xl:gap-10">
+        <div className="grid grid-cols-1 gap-6 xl:h-full xl:grid-cols-[480px_1fr] 2xl:grid-cols-[560px_1fr] xl:items-center xl:gap-10">
           <div className="mx-auto w-full max-w-7xl px-4 pb-0 pt-8 lg:px-8 xl:mx-0 xl:w-auto xl:max-w-none xl:py-0 xl:pl-8 xl:pr-0">
             <p className="eyebrow flex items-center gap-2">
               <span className="live-dot" aria-hidden="true" />
               Jonli efir
             </p>
 
-            <h1 className="mt-2.5 font-display text-3xl font-semibold leading-[1.1] tracking-tight text-text-primary sm:text-5xl xl:text-4xl">
+            <h1 className="mt-2.5 font-display text-3xl font-semibold leading-[1.1] tracking-tight text-text-primary sm:text-5xl 2xl:text-6xl">
               Dunyoning istalgan nuqtasidagi radioni tinglang
             </h1>
 
-            <p className="mt-3 text-sm leading-relaxed text-text-secondary sm:text-base">
+            <p className="mt-3 text-sm leading-relaxed text-text-secondary sm:text-base 2xl:text-lg">
               Globusni aylantiring, davlatni tanlang va efirni bir bosishda oching.
               Ro'yxatdan o'tish ham, reklama ham yo'q.
             </p>
@@ -89,13 +89,13 @@ export default async function HomePage() {
               <div className="flex items-center gap-8 xl:gap-6">
                 <div>
                   <dt className="text-xs text-text-muted">Stansiyalar</dt>
-                  <dd className="font-display text-2xl font-semibold text-text-primary">
+                  <dd className="font-display text-2xl font-semibold text-text-primary 2xl:text-3xl">
                     {totalStations.toLocaleString('uz-UZ')}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-xs text-text-muted">Davlatlar</dt>
-                  <dd className="font-display text-2xl font-semibold text-text-primary">
+                  <dd className="font-display text-2xl font-semibold text-text-primary 2xl:text-3xl">
                     {totalCountries}
                   </dd>
                 </div>

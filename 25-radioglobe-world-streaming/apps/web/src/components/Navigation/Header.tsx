@@ -12,6 +12,95 @@ import type { Channel, Country } from '@/types';
 
 const DEBOUNCE_MS = 250;
 
+/**
+ * Qidiruv natijalari — ikkala ko'rinish (desktop dropdown va mobil panel)
+ * tomonidan baham ko'riladigan bitta blok.
+ */
+function SearchResults({
+  loading,
+  query,
+  countries,
+  stations,
+  onSelectCountry,
+  onSelectStation,
+}: {
+  loading: boolean;
+  query: string;
+  countries: Country[];
+  stations: Channel[];
+  onSelectCountry: (c: Country) => void;
+  onSelectStation: (s: Channel) => void;
+}) {
+  const hasResults = countries.length > 0 || stations.length > 0;
+  const term = query.trim();
+
+  if (term.length < 2) return null;
+
+  if (!loading && !hasResults) {
+    return (
+      <p className="px-3 py-6 text-center text-sm text-text-muted">
+        «{term}» bo'yicha hech narsa topilmadi
+      </p>
+    );
+  }
+
+  if (!hasResults) return null;
+
+  return (
+    <div className="max-h-[60vh] space-y-4 overflow-y-auto p-3">
+      {countries.length > 0 ? (
+        <div>
+          <p className="eyebrow mb-2 px-1">Davlatlar</p>
+          <div className="flex flex-wrap gap-2">
+            {countries.map((c) => (
+              <button
+                key={c.iso2}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => onSelectCountry(c)}
+                className="flex items-center gap-2 rounded-lg border border-ink-700
+                           bg-ink-900 px-3 py-2 text-sm text-text-secondary
+                           transition-colors hover:border-ink-600 hover:text-text-primary"
+              >
+                <span aria-hidden="true">{c.flag_emoji || '🌐'}</span>
+                {c.name_uz || c.name_en}
+                <span className="font-mono text-xs text-text-muted">{c.radio_count}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {stations.length > 0 ? (
+        <div>
+          <p className="eyebrow mb-2 px-1">Stansiyalar</p>
+          <ul className="space-y-1">
+            {stations.map((s) => (
+              <li key={s.id}>
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => onSelectStation(s)}
+                  className="flex w-full items-center gap-3 rounded-lg px-2 py-2
+                             text-left transition-colors hover:bg-ink-850"
+                >
+                  <StationLogo src={s.logo_url} alt={s.name} size={36} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm text-text-primary">{s.name}</span>
+                    <span className="block truncate text-xs text-text-muted">
+                      {s.tags.slice(0, 3).join(' · ') || 'Jonli efir'}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export default function Header() {
   const router = useRouter();
   const favorites = usePlayerStore((s) => s.favorites);
@@ -19,7 +108,11 @@ export default function Header() {
   const hydrate = usePlayerStore((s) => s.hydrate);
   const playStation = usePlayerStore((s) => s.playStation);
 
-  const [open, setOpen] = useState(false);
+  // Mobil: tugma bosilganda to'liq ekran paneli ochiladi
+  const [mobileOpen, setMobileOpen] = useState(false);
+  // Desktop: inputga fokus tushganda takliflar ro'yxati ko'rinadi
+  const [desktopFocused, setDesktopFocused] = useState(false);
+
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<{ countries: Country[]; stations: Channel[] }>({
     countries: [],
@@ -27,20 +120,29 @@ export default function Header() {
   });
   const [loading, setLoading] = useState(false);
 
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const desktopInputRef = useRef<HTMLInputElement | null>(null);
+  const mobileInputRef = useRef<HTMLInputElement | null>(null);
+  const desktopBoxRef = useRef<HTMLDivElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     hydrate();
   }, [hydrate]);
 
-  const close = useCallback(() => {
-    setOpen(false);
+  const closeMobile = useCallback(() => {
+    setMobileOpen(false);
     setQuery('');
     setResults({ countries: [], stations: [] });
   }, []);
 
-  // "/" — qidiruvni ochadi, Esc — yopadi. Klaviatura bilan ishlaydiganlar uchun.
+  const clearDesktop = useCallback(() => {
+    setQuery('');
+    setResults({ countries: [], stations: [] });
+    desktopInputRef.current?.blur();
+  }, []);
+
+  // "/" — fokusni qidiruvga o'tkazadi (desktopda inputga, mobilda panelni ochadi).
+  // Esc — yopadi/tozalaydi.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const typingElsewhere =
@@ -49,16 +151,36 @@ export default function Header() {
 
       if (e.key === '/' && !typingElsewhere) {
         e.preventDefault();
-        setOpen(true);
-        requestAnimationFrame(() => inputRef.current?.focus());
+        if (window.matchMedia('(min-width: 768px)').matches) {
+          desktopInputRef.current?.focus();
+        } else {
+          setMobileOpen(true);
+          requestAnimationFrame(() => mobileInputRef.current?.focus());
+        }
       }
-      if (e.key === 'Escape') close();
+      if (e.key === 'Escape') {
+        closeMobile();
+        clearDesktop();
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [close]);
+  }, [closeMobile, clearDesktop]);
 
-  // Har harfda so'rov yubormaymiz: debounce + oldingi so'rovni bekor qilish
+  // Desktop'da: tashqariga bosilganda takliflar yopiladi
+  useEffect(() => {
+    const onClickOutside = (e: MouseEvent) => {
+      if (desktopBoxRef.current && !desktopBoxRef.current.contains(e.target as Node)) {
+        setDesktopFocused(false);
+      }
+    };
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  // Har harfda so'rov yubormaymiz: debounce + oldingi so'rovni bekor qilish.
+  // Bu haqiqiy "autocomplete" — inputga yozilayotganda natijalar o'zi paydo bo'ladi,
+  // alohida qidiruv tugmasini bosish shart emas.
   useEffect(() => {
     const term = query.trim();
     if (term.length < 2) {
@@ -83,12 +205,31 @@ export default function Header() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  const hasResults = results.countries.length > 0 || results.stations.length > 0;
+  const selectCountry = (c: Country) => {
+    router.push(`/radio/${c.slug}`);
+    clearDesktop();
+    closeMobile();
+  };
+
+  const selectStation = (s: Channel) => {
+    playStation(s);
+    clearDesktop();
+    closeMobile();
+  };
+
+  const showDesktopDropdown = desktopFocused && query.trim().length >= 2;
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-ink-800 bg-ink-950/85 backdrop-blur-xl">
-      <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 lg:px-8">
-        <Link href="/" className="flex shrink-0 items-center gap-2.5" onClick={close}>
+      {/*
+        To'liq kenglikda (max-w bilan cheklanmagan) — bosh sahifadagi hero
+        bo'limi bilan bir xil falsafa: logo haqiqiy CHAP chekkada, sevimlilar
+        haqiqiy O'NG chekkada turadi. 3 ustunli grid: chap/markaz/o'ng — shu
+        bilan qidiruv ekran qanchalik keng bo'lishidan qat'i nazar aniq
+        MARKAZDA qoladi (faqat ikki yon ustun orasidagi bo'shliq emas).
+      */}
+      <div className="grid h-14 grid-cols-[auto_1fr_auto] items-center gap-3 px-4 lg:px-8">
+        <Link href="/" className="flex shrink-0 items-center gap-2.5" onClick={closeMobile}>
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-signal text-white">
             <Radio className="h-4 w-4" />
           </span>
@@ -97,54 +238,111 @@ export default function Header() {
           </span>
         </Link>
 
-        <div className="flex-1" />
+        {/* ── Markaz: desktopda doimiy ko'rinadigan qidiruv inputi ── */}
+        <div className="hidden justify-center md:flex">
+          <div ref={desktopBoxRef} className="relative w-full max-w-md">
+            <div
+              className={`flex h-9 items-center gap-2 rounded-lg border bg-ink-900 px-3
+                          transition-colors ${
+                            desktopFocused
+                              ? 'border-signal/50'
+                              : 'border-ink-700 hover:border-ink-600'
+                          }`}
+            >
+              <Search className="h-4 w-4 shrink-0 text-text-muted" />
+              <input
+                ref={desktopInputRef}
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => setDesktopFocused(true)}
+                placeholder="Stansiya yoki davlat qidirish…"
+                className="h-full min-w-0 flex-1 bg-transparent text-sm text-text-primary
+                           placeholder:text-text-muted focus:outline-none"
+                aria-label="Qidiruv so'rovi"
+                autoComplete="off"
+              />
+              {loading ? (
+                <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-text-muted" />
+              ) : query ? (
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={clearDesktop}
+                  className="shrink-0 text-text-muted transition-colors hover:text-text-primary"
+                  aria-label="Tozalash"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              ) : (
+                <kbd className="shrink-0 rounded border border-ink-700 px-1.5 font-mono text-[10px] text-text-muted">
+                  /
+                </kbd>
+              )}
+            </div>
 
-        <Link
-          href="/favorites"
-          className="relative flex h-9 items-center gap-2 rounded-lg px-3 text-sm
-                     text-text-secondary transition-colors hover:bg-ink-850 hover:text-text-primary"
-        >
-          <Heart className="h-4 w-4" />
-          <span className="hidden sm:inline">Sevimlilar</span>
-          {hydrated && favorites.length > 0 ? (
-            <span className="rounded-full bg-signal px-1.5 py-0.5 text-[10px] font-medium text-white">
-              {favorites.length}
-            </span>
-          ) : null}
-        </Link>
+            {/* ── Avtomatik takliflar — inputga qarab osilib tushadi ── */}
+            {showDesktopDropdown ? (
+              <div className="panel absolute left-0 right-0 top-full mt-2 overflow-hidden">
+                <SearchResults
+                  loading={loading}
+                  query={query}
+                  countries={results.countries}
+                  stations={results.stations}
+                  onSelectCountry={selectCountry}
+                  onSelectStation={selectStation}
+                />
+              </div>
+            ) : null}
+          </div>
+        </div>
 
-        <button
-          type="button"
-          onClick={() => {
-            setOpen(true);
-            requestAnimationFrame(() => inputRef.current?.focus());
-          }}
-          className="flex h-9 items-center gap-2 rounded-lg border border-ink-700 bg-ink-900 px-3
-                     text-sm text-text-muted transition-colors hover:border-ink-600 hover:text-text-secondary"
-          aria-label="Qidiruvni ochish"
-        >
-          <Search className="h-4 w-4" />
-          <span className="hidden sm:inline">Qidirish</span>
-          <kbd className="hidden rounded border border-ink-700 px-1.5 font-mono text-[10px] sm:inline">
-            /
-          </kbd>
-        </button>
+        {/* ── O'ng: sevimlilar + mobil qidiruv tugmasi ── */}
+        <div className="flex items-center justify-end gap-1.5">
+          <Link
+            href="/favorites"
+            className="relative flex h-9 items-center gap-2 rounded-lg px-3 text-sm
+                       text-text-secondary transition-colors hover:bg-ink-850 hover:text-text-primary"
+          >
+            <Heart className="h-4 w-4" />
+            <span className="hidden sm:inline">Sevimlilar</span>
+            {hydrated && favorites.length > 0 ? (
+              <span className="rounded-full bg-signal px-1.5 py-0.5 text-[10px] font-medium text-white">
+                {favorites.length}
+              </span>
+            ) : null}
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => {
+              setMobileOpen(true);
+              requestAnimationFrame(() => mobileInputRef.current?.focus());
+            }}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-ink-700
+                       bg-ink-900 text-text-muted transition-colors hover:border-ink-600
+                       hover:text-text-secondary md:hidden"
+            aria-label="Qidiruvni ochish"
+          >
+            <Search className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
-      {/* ── Qidiruv paneli ── */}
-      {open ? (
+      {/* ── Mobil qidiruv paneli (to'liq kenglikda, button orqali ochiladi) ── */}
+      {mobileOpen ? (
         <>
           <div
             className="fixed inset-0 -z-10 bg-ink-950/70"
-            onClick={close}
+            onClick={closeMobile}
             aria-hidden="true"
           />
-          <div className="border-t border-ink-800 bg-ink-950">
-            <div className="mx-auto max-w-3xl px-4 py-4">
+          <div className="border-t border-ink-800 bg-ink-950 md:hidden">
+            <div className="px-4 py-4">
               <div className="flex items-center gap-3 rounded-xl border border-ink-700 bg-ink-900 px-3.5">
                 <Search className="h-4 w-4 shrink-0 text-text-muted" />
                 <input
-                  ref={inputRef}
+                  ref={mobileInputRef}
                   type="search"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -152,13 +350,14 @@ export default function Header() {
                   className="h-12 flex-1 bg-transparent text-sm text-text-primary
                              placeholder:text-text-muted focus:outline-none"
                   aria-label="Qidiruv so'rovi"
+                  autoComplete="off"
                 />
                 {loading ? (
                   <Loader2 className="h-4 w-4 shrink-0 animate-spin text-text-muted" />
                 ) : null}
                 <button
                   type="button"
-                  onClick={close}
+                  onClick={closeMobile}
                   className="shrink-0 text-text-muted transition-colors hover:text-text-primary"
                   aria-label="Qidiruvni yopish"
                 >
@@ -166,73 +365,14 @@ export default function Header() {
                 </button>
               </div>
 
-              {query.trim().length >= 2 && !loading && !hasResults ? (
-                <p className="px-1 py-6 text-center text-sm text-text-muted">
-                  «{query.trim()}» bo'yicha hech narsa topilmadi
-                </p>
-              ) : null}
-
-              {hasResults ? (
-                <div className="mt-3 max-h-[60vh] space-y-4 overflow-y-auto pb-2">
-                  {results.countries.length > 0 ? (
-                    <div>
-                      <p className="eyebrow mb-2 px-1">Davlatlar</p>
-                      <div className="flex flex-wrap gap-2">
-                        {results.countries.map((c) => (
-                          <button
-                            key={c.iso2}
-                            type="button"
-                            onClick={() => {
-                              router.push(`/radio/${c.slug}`);
-                              close();
-                            }}
-                            className="flex items-center gap-2 rounded-lg border border-ink-700
-                                       bg-ink-900 px-3 py-2 text-sm text-text-secondary
-                                       transition-colors hover:border-ink-600 hover:text-text-primary"
-                          >
-                            <span aria-hidden="true">{c.flag_emoji || '🌐'}</span>
-                            {c.name_uz || c.name_en}
-                            <span className="font-mono text-xs text-text-muted">
-                              {c.radio_count}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {results.stations.length > 0 ? (
-                    <div>
-                      <p className="eyebrow mb-2 px-1">Stansiyalar</p>
-                      <ul className="space-y-1">
-                        {results.stations.map((s) => (
-                          <li key={s.id}>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                playStation(s);
-                                close();
-                              }}
-                              className="flex w-full items-center gap-3 rounded-lg px-2 py-2
-                                         text-left transition-colors hover:bg-ink-850"
-                            >
-                              <StationLogo src={s.logo_url} alt={s.name} size={36} />
-                              <span className="min-w-0 flex-1">
-                                <span className="block truncate text-sm text-text-primary">
-                                  {s.name}
-                                </span>
-                                <span className="block truncate text-xs text-text-muted">
-                                  {s.tags.slice(0, 3).join(' · ') || 'Jonli efir'}
-                                </span>
-                              </span>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
+              <SearchResults
+                loading={loading}
+                query={query}
+                countries={results.countries}
+                stations={results.stations}
+                onSelectCountry={selectCountry}
+                onSelectStation={selectStation}
+              />
             </div>
           </div>
         </>
