@@ -1,13 +1,96 @@
 {% extends "base.html" %}
-{% block title %}whost.uz — AI yozgan kodni bir buyruq bilan joylashtiring{% endblock %}
+{% block title %}whost.uz — loyihangiz uchun subdomen va SSH kalit{% endblock %}
 {% block content %}
-<div style="max-width:620px;margin:40px auto;text-align:center">
-  <div class="eyebrow">Control plane</div>
-  <h1 style="margin:10px 0 14px">AI kod yozdi.<br>Joylashtirishni biz hal qilamiz.</h1>
-  <p class="sub">Google yoki GitHub bilan kiring, serveringizga nom bering —
-     tizim sizga <code>nomingiz.{{ PLATFORM_DOMAIN }}</code> subdomenini va SSH kalitni beradi.</p>
-  <div style="margin-top:26px">
-    <a class="btn btn-primary" href="{% url 'account_login' %}">Boshlash</a>
+
+<section class="hero">
+  <div class="hero-grid">
+    <div>
+      <span class="stage-badge"><span class="dot"></span>Erta bosqich — ochiq qurilmoqda</span>
+      <h1>Loyihangiz laptopda ishlaydi.<br>Internetga chiqarish — <em>boshqa masala.</em></h1>
+      <p class="hero-lede">
+        VPS tanlash, SSH orqali ulanish, nginx sozlash, domen bog'lash, SSL
+        olish — buning barchasini AI yozib bergan kod uchun yana bir marta
+        qo'lda qilish shart emas.
+      </p>
+
+      <div class="hero-today">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        <p><b>Hozir ishlaydi:</b> hisob oching — <b>&lt;nomi&gt;.whost.uz</b> subdomeningiz
+          va unga mos Ed25519 SSH kalitingiz shu zahoti tayyor bo'ladi.</p>
+      </div>
+
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="{% url 'account_login' %}">Hisob ochish</a>
+        <span class="hero-cta-note">Google yoki GitHub — parol kerak emas</span>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="term">
+        <div class="term-bar"><span class="term-dot"></span><span class="term-dot"></span><span class="term-dot"></span><span class="term-title">whost.uz — birinchi server</span></div>
+        <div class="term-body">
+<div class="term-line"><span class="term-prompt">&gt;</span> <span class="term-cmd">Google bilan kirish</span></div>
+<div class="term-line term-indent"><span class="term-out">✓ hisob tayyor</span></div>
+<div class="term-divider"></div>
+<div class="term-line"><span class="term-prompt">&gt;</span> <span class="term-cmd">server nomi: aisayt</span></div>
+<div class="term-line term-indent"><span class="term-ok">✓</span> <span class="term-domain">aisayt.whost.uz</span> band qilindi</div>
+<div class="term-line term-indent"><span class="term-ok">✓</span> SSH kalit → <span class="term-cmd">aisayt_ed25519</span></div>
+<div class="term-divider"></div>
+<div class="term-line"><span class="term-prompt">$</span> <span class="term-cmd">mv aisayt_ed25519 ~/.ssh/</span></div>
+<div class="term-line"><span class="term-prompt">$</span> <span class="term-cmd">chmod 600 ~/.ssh/aisayt_ed25519</span></div>
+        </div>
+      </div>
+
+      <div class="roadmap">
+        <div class="roadmap-col">
+          <div class="roadmap-label">Hozir ishlaydi</div>
+          <ul>
+            <li>✓ Google / GitHub orqali kirish</li>
+            <li>✓ Har loyihaga alohida subdomen</li>
+            <li>✓ Bir martalik SSH kalit</li>
+          </ul>
+        </div>
+        <div class="roadmap-col">
+          <div class="roadmap-label">Navbatda</div>
+          <ul>
+            <li>→ <code>git push</code> orqali deploy</li>
+            <li>→ Build jarayoni avtomatik</li>
+            <li>→ Pulli tariflar</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
-</div>
+</section>
+
+<section class="why-section">
+  <h2 style="font-size:1.1rem">Nega shunday qurilgan</h2>
+  <div class="why-grid">
+    <div class="why-item">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        Subdomen darhol beriladi
+      </h3>
+      <p>Ro'yxatdan o'tgan zahoti <code>&lt;nomi&gt;.whost.uz</code> sizniki —
+        DNS kutish yoki domen sotib olish shart emas.</p>
+    </div>
+    <div class="why-item">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Maxfiy kalit faqat bir marta
+      </h3>
+      <p>SSH kalitingiz serverda saqlanmaydi. Ko'rsatilgan zahoti yuklab
+        oling — yo'qotsangiz, yangisini yaratasiz.</p>
+    </div>
+    <div class="why-item">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Band nomlar bloklangan
+      </h3>
+      <p><code>www</code>, <code>api</code>, <code>admin</code> kabi ~70 ta nom
+        himoyalangan — tasodifan platforma qismini egallab qo'ymaysiz.</p>
+    </div>
+  </div>
+</section>
+
 {% endblock %}
