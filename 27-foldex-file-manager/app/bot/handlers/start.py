@@ -6,6 +6,7 @@ Reply Keyboard navigatsiyasini ishga tushiradi va veb-panelga
 xavfsiz bir martalik kirish havolalarini generatsiya qiladi.
 """
 
+import asyncio
 from datetime import datetime, timedelta, timezone
 from aiogram import Router, F
 from aiogram.filters import Command, CommandObject, CommandStart
@@ -107,6 +108,32 @@ async def handle_search(message: Message, command: CommandObject = None):
 
     keyboard = build_folder_reply_keyboard([], found_files[:6], has_parent=True)
     await message.answer("\n".join(text_lines), reply_markup=keyboard)
+
+
+@router.message(Command("clear"))
+async def handle_clear(message: Message):
+    """
+    /clear komandasi:
+    Chatdagi barcha xabarlarni tozalaydi, faqat yuborilgan /start xabari saqlanadi.
+    """
+    from app.services.cleanup_service import CleanupService
+
+    status_msg = await message.answer("🧹 <i>Chat tozalanmoqda...</i>")
+    deleted_count = await CleanupService.cleanup_chat_messages(message.bot, message.chat.id)
+
+    report_msg = await message.answer(
+        f"🧹 <b>Chat tozalandi!</b>\n\n"
+        f"Jami <b>{deleted_count}</b> ta xabar o'chirildi.\n"
+        f"<i>Faqat /start xabari saqlab qolindi.</i>"
+    )
+    # Bildirishnoma xabarlarini ham tozalash
+    await asyncio.sleep(4)
+    try:
+        await status_msg.delete()
+        await report_msg.delete()
+        await message.delete()
+    except Exception:
+        pass
 
 
 @router.message(Command("admin"))

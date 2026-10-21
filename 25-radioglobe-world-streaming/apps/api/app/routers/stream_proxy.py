@@ -6,6 +6,7 @@ mixed-content va CORS cheklovlarini hal qiladi.
 """
 
 import logging
+from typing import Optional
 from urllib.parse import urljoin
 
 import httpx
@@ -32,7 +33,7 @@ _HOP_BY_HOP = {
 }
 
 
-def _allowed_origin(request: Request) -> str | None:
+def _allowed_origin(request: Request) -> Optional[str]:
     """So'rov ruxsat etilgan manzildan kelganmi? CORS header qiymatini qaytaradi."""
     origin = request.headers.get("origin")
     if origin and origin in settings.ALLOWED_ORIGINS:

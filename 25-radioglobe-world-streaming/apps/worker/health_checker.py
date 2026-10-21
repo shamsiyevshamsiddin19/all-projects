@@ -13,6 +13,7 @@ import asyncio
 import logging
 import os
 import sys
+from typing import Optional
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -105,7 +106,7 @@ async def check_one(stream_id: int, url: str, sem: asyncio.Semaphore) -> dict:
         return result
 
 
-async def run_health_check(batch_size: int | None = None) -> None:
+async def run_health_check(batch_size: Optional[int] = None) -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     limit = batch_size or int(os.getenv("HEALTH_CHECK_BATCH", "300"))
 

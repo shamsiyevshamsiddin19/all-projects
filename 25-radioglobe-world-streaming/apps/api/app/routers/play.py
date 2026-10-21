@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 import httpx
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
@@ -61,7 +62,7 @@ async def report_play(
     if not stream or not stream.is_active:
         raise HTTPException(status_code=404, detail="Oqim topilmadi yoki faol emas")
 
-    channel: Channel | None = stream.channel
+    channel: Optional[Channel] = stream.channel
     station_name = channel.name if channel else "Radio Stream"
 
     if redis is not None:

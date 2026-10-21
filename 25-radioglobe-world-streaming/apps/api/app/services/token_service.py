@@ -6,13 +6,14 @@ ishlamaydi.
 """
 
 import hashlib
+from typing import Optional
 import hmac
 import time
 
 from app.config import settings
 
 
-def generate_stream_token(stream_id: int, ttl_seconds: int | None = None) -> str:
+def generate_stream_token(stream_id: int, ttl_seconds: Optional[int] = None) -> str:
     ttl = ttl_seconds if ttl_seconds is not None else settings.STREAM_TOKEN_TTL
     expires_at = int(time.time()) + ttl
     message = f"{stream_id}:{expires_at}".encode("utf-8")

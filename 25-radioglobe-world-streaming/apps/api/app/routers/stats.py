@@ -8,6 +8,7 @@ qo'yardi.
 
 import logging
 import random
+from typing import Optional
 from collections import Counter
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
@@ -116,7 +117,7 @@ async def get_stats(
 @router.get("/random")
 async def random_station(
     response: Response,
-    tag: str | None = Query(None, max_length=50),
+    tag: Optional[str] = Query(None, max_length=50),
     db: AsyncSession = Depends(get_db),
 ):
     """Tasodifiy ishlaydigan stansiya.

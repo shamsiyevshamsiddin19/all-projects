@@ -13,6 +13,7 @@ import logging
 import os
 import re
 import sys
+from typing import Optional
 import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
@@ -111,7 +112,7 @@ async def fetch_all_stations(iso_codes: list[str]) -> list[dict]:
     return list(stations.values())
 
 
-def normalize(row: dict, valid_iso: set[str]) -> dict | None:
+def normalize(row: dict, valid_iso: set[str]) -> Optional[dict]:
     """Xom yozuvni bizning modelga moslaydi. Yaroqsiz bo'lsa None."""
     iso2 = (row.get("countrycode") or "").upper().strip()
     if iso2 not in valid_iso:

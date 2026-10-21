@@ -27,7 +27,7 @@ from app.core.config import settings, BASE_DIR
 from app.core.database import async_session_maker, engine, Base
 from app.core.security import create_access_token
 from app.models.auth_token import AdminAuthToken
-from app.services.folder_service import FolderService
+import app.models  # Barcha modellar Base.metadata ga to'liq ulanishi uchun
 
 # 1. Shablonlar (Jinja2 Templates) va Statik fayllar yo'llari
 TEMPLATES_DIR = BASE_DIR / "app" / "templates"
@@ -62,14 +62,26 @@ async def lifespan(app: FastAPI):
     dp.callback_query.middleware(auth_middleware)
     dp.inline_query.middleware(auth_middleware)
 
+    # Kiruvchi va chiquvchi xabarlarni kuzatish (kechki avtomatik tozalash uchun)
+    from app.bot.middlewares.tracker import (
+        IncomingMessageTrackerMiddleware,
+        OutgoingMessageTrackerMiddleware,
+    )
+    from app.services.cleanup_service import nightly_cleanup_loop
+
+    dp.message.outer_middleware(IncomingMessageTrackerMiddleware())
+    bot.session.middleware(OutgoingMessageTrackerMiddleware())
+
     # Handler routerlarini ulash
     dp.include_router(start.router)
     dp.include_router(navigation.router)
     dp.include_router(inline.router)
     dp.include_router(file_upload.router)
 
-    # d) Telegram Bot Webhook va Komandalar menyusini sozlash
+    # d) Telegram Bot Webhook, Komandalar menyusi va Foniy vazifalar
     polling_task = None
+    cleanup_task = None
+
     if settings.BOT_TOKEN:
         try:
             from aiogram.types import BotCommand, BotCommandScopeDefault
@@ -78,6 +90,7 @@ async def lifespan(app: FastAPI):
                     BotCommand(command="start", description="📂 Bosh sahifa"),
                     BotCommand(command="home", description="🏠 Bosh sahifaga qaytish"),
                     BotCommand(command="search", description="🔍 Fayllarni qidirish"),
+                    BotCommand(command="clear", description="🧹 Chatni tozalash"),
                     BotCommand(command="admin", description="🌐 Veb-Admin Panel"),
                     BotCommand(command="login", description="🔑 Bir martalik kirish havolasi"),
                     BotCommand(command="help", description="💡 Yordam va qo'llanma"),
@@ -85,6 +98,9 @@ async def lifespan(app: FastAPI):
                 scope=BotCommandScopeDefault(),
             )
             print("✅ Telegram bot buyruqlari muvaffaqiyatli ro'yxatdan o'tkazildi.")
+
+            # Har kuni kechqurun xabarlarni avtomatik tozalovchi fon vazifasini ishga tushirish
+            cleanup_task = asyncio.create_task(nightly_cleanup_loop(bot))
 
             if settings.USE_WEBHOOK and settings.DOMAIN:
                 webhook_url = f"{settings.DOMAIN}/api/webhook/telegram"
@@ -106,6 +122,8 @@ async def lifespan(app: FastAPI):
 
     # --- SHUTDOWN ---
     print("🛑 Foldex ilovasi to'xtatilmoqda...")
+    if cleanup_task:
+        cleanup_task.cancel()
     if polling_task:
         polling_task.cancel()
     if settings.BOT_TOKEN:

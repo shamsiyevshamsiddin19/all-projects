@@ -3,7 +3,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, Response
 from sqlalchemy import select
@@ -22,7 +22,7 @@ GEOJSON_PATH = Path(__file__).resolve().parents[2] / "data" / "countries.geojson
 # Oldin har so'rovda 200 KB fayl ochilib, json.load bilan parse qilinardi.
 # Bu async handler ichidagi bloklovchi I/O edi va butun event loop'ni
 # to'xtatib turardi.
-_geojson_cache: dict[str, Any] | None = None
+_geojson_cache: Optional[dict[str, Any]] = None
 
 
 def _load_geojson() -> dict[str, Any]:
