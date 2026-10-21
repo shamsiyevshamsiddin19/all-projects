@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Heart, Pause, Play } from 'lucide-react';
 
 import StationLogo from '@/components/Country/StationLogo';
+import AudioVisualizer from '@/components/Player/AudioVisualizer';
 import { usePlayerStore } from '@/stores/playerStore';
 import type { Channel } from '@/types';
 
@@ -33,8 +34,8 @@ export default function StationCard({ station, linkToStation = true }: StationCa
   // hydrated tekshiruvi SSR va mijoz HTML'i bir xil bo'lishi uchun
   const favorite = hydrated && favorites.some((s) => s.id === station.id);
 
-  // Ijro bosish hodisasining O'ZIDA boshlanadi — oldidan hech qanday
-  // tarmoq so'rovi yo'q, shuning uchun mobil autoplay siyosati buzilmaydi
+  // Ijro bosish hodisasining O'ZIDA boshlanadi — oldidan tarmoq so'rovi yo'q,
+  // shuning uchun mobil autoplay siyosati buzilmaydi
   const handlePlay = () => {
     if (isCurrent) togglePlay();
     else playStation(station);
@@ -44,67 +45,75 @@ export default function StationCard({ station, linkToStation = true }: StationCa
 
   return (
     <article
-      className={`group relative p-4 transition-all duration-300 border font-mono ${
+      className={`group flex items-center gap-3 rounded-xl border p-3 transition-colors ${
         isCurrent
-          ? 'bg-void-900 border-crimson shadow-crimson-glow'
-          : 'bg-void-900/80 border-void-800 hover:border-crimson/40 hover:bg-void-850'
+          ? 'border-signal/50 bg-signal/[0.06]'
+          : 'border-ink-700 bg-ink-900 hover:border-ink-600 hover:bg-ink-850'
       }`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3.5 min-w-0">
-          <StationLogo src={station.logo_url} alt={station.name} size={48} active={isCurrentPlaying} />
+      <StationLogo src={station.logo_url} alt={station.name} size={44} active={isCurrentPlaying} />
 
-          <div className="min-w-0">
-            <h3 className="text-sm font-bold text-white truncate uppercase tracking-tight">
-              {linkToStation ? (
-                <Link
-                  href={`/stansiya/${station.slug}`}
-                  className="hover:text-crimson-bright transition-colors"
-                >
-                  {station.name}
-                </Link>
-              ) : (
-                station.name
-              )}
-            </h3>
-            <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-400 flex-wrap">
-              {bitrate ? (
-                <span className="px-1.5 py-0.5 bg-void-950 border border-void-750 text-crimson-bright">
-                  {bitrate} kbps
-                </span>
-              ) : null}
-              <span className="truncate">
-                {station.tags.slice(0, 2).join(' • ') || 'Jonli efir'}
-              </span>
-            </div>
-          </div>
-        </div>
+      <div className="min-w-0 flex-1">
+        <h3 className="truncate text-sm font-medium text-text-primary">
+          {linkToStation ? (
+            <Link
+              href={`/stansiya/${station.slug}`}
+              className="transition-colors hover:text-signal-bright"
+            >
+              {station.name}
+            </Link>
+          ) : (
+            station.name
+          )}
+        </h3>
 
-        <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            type="button"
-            onClick={() => toggleFavorite(station)}
-            className="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-crimson transition-colors"
-            aria-label={favorite ? 'Sevimlilardan olib tashlash' : "Sevimlilarga qo'shish"}
-            aria-pressed={favorite}
-          >
-            <Heart className={`w-4 h-4 ${favorite ? 'fill-crimson text-crimson' : ''}`} />
-          </button>
-
-          <button
-            type="button"
-            onClick={handlePlay}
-            className="w-10 h-10 bg-crimson hover:bg-crimson-light text-white flex items-center justify-center transition-all duration-200 active:scale-95"
-            aria-label={isCurrentPlaying ? "To'xtatish" : `${station.name} ni tinglash`}
-          >
-            {isCurrentPlaying ? (
-              <Pause className="w-4 h-4 fill-white" />
-            ) : (
-              <Play className="w-4 h-4 fill-white ml-0.5" />
-            )}
-          </button>
+        <div className="mt-1 flex items-center gap-2 text-xs text-text-muted">
+          {isCurrentPlaying ? (
+            <>
+              <AudioVisualizer isPlaying bars={5} height={10} />
+              <span className="text-signal-bright">Efirda</span>
+            </>
+          ) : (
+            <span className="truncate">
+              {station.tags.slice(0, 2).join(' · ') || 'Jonli efir'}
+            </span>
+          )}
+          {bitrate ? (
+            <span className="shrink-0 font-mono text-[11px] text-text-muted">
+              {bitrate}k
+            </span>
+          ) : null}
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={() => toggleFavorite(station)}
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors
+                    ${favorite ? 'text-signal' : 'text-text-muted hover:text-text-secondary'}`}
+        aria-label={favorite ? 'Sevimlilardan olib tashlash' : "Sevimlilarga qo'shish"}
+        aria-pressed={favorite}
+      >
+        <Heart className={`h-4 w-4 ${favorite ? 'fill-current' : ''}`} />
+      </button>
+
+      <button
+        type="button"
+        onClick={handlePlay}
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all
+                    active:scale-95 ${
+                      isCurrentPlaying
+                        ? 'bg-signal text-white'
+                        : 'bg-ink-800 text-text-primary group-hover:bg-signal group-hover:text-white'
+                    }`}
+        aria-label={isCurrentPlaying ? "To'xtatish" : `${station.name} ni tinglash`}
+      >
+        {isCurrentPlaying ? (
+          <Pause className="h-4 w-4 fill-current" />
+        ) : (
+          <Play className="ml-0.5 h-4 w-4 fill-current" />
+        )}
+      </button>
     </article>
   );
 }

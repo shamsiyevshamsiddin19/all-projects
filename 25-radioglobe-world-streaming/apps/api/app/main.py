@@ -9,7 +9,9 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import settings
 from app.database import Base, close_redis, engine
-from app.routers import channels, countries, health, map, play, search, stream_proxy
+from app.routers import (
+    channels, countries, health, map, play, search, stats, stream_proxy,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -110,7 +112,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
     return _error(500, "internal_error", "Ichki xatolik yuz berdi")
 
 
-for router in (health, map, countries, channels, play, stream_proxy, search):
+for router in (health, map, countries, channels, play, stream_proxy, search, stats):
     app.include_router(router.router, prefix=settings.API_V1_STR)
 
 

@@ -67,3 +67,15 @@ export interface SearchResponse {
 }
 
 export type CountryCounts = Record<string, { radio: number; tv: number }>;
+
+export interface HomeStats {
+  stations: number;
+  countries: number;
+  top_genres: { tag: string; count: number }[];
+  top_countries: {
+    slug: string;
+    name_uz: string;
+    flag_emoji?: string;
+    radio_count: number;
+  }[];
+}

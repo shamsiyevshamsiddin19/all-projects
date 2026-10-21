@@ -3,6 +3,7 @@ import type {
   ChannelListResponse,
   Country,
   CountryCounts,
+  HomeStats,
   PlayResponse,
   SearchResponse,
 } from '@/types';
@@ -169,5 +170,37 @@ export function reportPlay(streamId: number): Promise<PlayResponse | null> {
         keepalive: true,
       }),
     null,
+  );
+}
+
+/** Bosh sahifadagi raqamlar uchun yagona manba — hammasi bazadan. */
+export function fetchStats(): Promise<HomeStats> {
+  return safe(
+    'fetchStats',
+    () => request<HomeStats>('/stats', { revalidate: 300 }),
+    { stations: 0, countries: 0, top_genres: [], top_countries: [] },
+  );
+}
+
+/** Tasodifiy stansiya. Javobda imzolangan play_url bor — keshlanmaydi. */
+export function fetchRandomStation(tag?: string): Promise<Channel | null> {
+  const query = tag ? `?tag=${encodeURIComponent(tag)}` : '';
+  return safe(
+    'fetchRandomStation',
+    () => request<Channel>(`/random${query}`, { revalidate: 0 }),
+    null,
+  );
+}
+
+/** Janr bo'yicha global ro'yxat (barcha davlatlar kesimida). */
+export function fetchChannelsByTag(tag: string, limit = 60): Promise<ChannelListResponse> {
+  return safe(
+    `fetchChannelsByTag(${tag})`,
+    () =>
+      request<ChannelListResponse>(
+        `/channels?tag=${encodeURIComponent(tag)}&limit=${limit}`,
+        { revalidate: 0 },
+      ),
+    { total: 0, items: [] },
   );
 }

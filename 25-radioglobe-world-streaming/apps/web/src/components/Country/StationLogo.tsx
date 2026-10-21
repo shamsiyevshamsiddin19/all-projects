@@ -28,7 +28,7 @@ export default function StationLogo({ src, alt, size = 48, active = false }: Sta
 
   return (
     <div
-      className="relative bg-void-900 border border-void-750 flex items-center justify-center overflow-hidden flex-shrink-0"
+      className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-lg border border-ink-700 bg-ink-850"
       style={{ width: size, height: size }}
     >
       {usable ? (
@@ -46,12 +46,12 @@ export default function StationLogo({ src, alt, size = 48, active = false }: Sta
           onError={() => setFailed(true)}
         />
       ) : (
-        <Radio className="text-crimson" style={{ width: size * 0.4, height: size * 0.4 }} />
+        <Radio className="text-text-muted" style={{ width: size * 0.4, height: size * 0.4 }} />
       )}
 
       {active ? (
         <span
-          className="absolute inset-0 bg-crimson/10 border border-crimson/50 pointer-events-none"
+          className="pointer-events-none absolute inset-0 rounded-lg ring-2 ring-inset ring-signal"
           aria-hidden="true"
         />
       ) : null}

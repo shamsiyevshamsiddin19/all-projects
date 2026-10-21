@@ -10,9 +10,9 @@ const GlobeMap = dynamic(() => import('@/components/Globe/GlobeMap'), {
   // WebGL serverda mavjud emas — globus faqat brauzerda yuklanadi
   ssr: false,
   loading: () => (
-    <div className="w-full h-[calc(100vh-7rem)] min-h-[560px] bg-void-950 flex flex-col items-center justify-center gap-4">
-      <div className="w-12 h-12 rounded-full border-2 border-crimson/20 border-t-crimson animate-spin" />
-      <p className="text-xs font-mono text-crimson/80 tracking-widest uppercase">
+    <div className="w-full h-[min(72vh,620px)] min-h-[420px] bg-ink-950 flex flex-col items-center justify-center gap-4">
+      <div className="w-12 h-12 rounded-full border-2 border-ink-700 border-t-signal animate-spin" />
+      <p className="text-xs font-mono text-text-muted tracking-widest uppercase">
         Globus yuklanmoqda…
       </p>
     </div>
@@ -98,14 +98,14 @@ export default function GlobeClientWrapper({ countries, geojsonUrl }: Props) {
   return (
     <div ref={probeRef} className="w-full">
       {decision === 'pending' ? (
-        <div className="w-full h-[320px] sm:h-[calc(100vh-7rem)] bg-void-950 flex items-center justify-center">
-          <div className="w-10 h-10 rounded-full border-2 border-crimson/20 border-t-crimson animate-spin" />
+        <div className="w-full h-[min(72vh,620px)] min-h-[420px] bg-ink-950 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full border-2 border-ink-700 border-t-signal animate-spin" />
         </div>
       ) : decision === 'list' ? (
         <FallbackCountryList
           countries={countries}
           heading="Davlatni tanlang"
-          note="Qurilmangizda 3D globus ko'rsatilmadi — quyidagi ro'yxatdan tanlashingiz mumkin."
+          note="Davlatni ro'yxatdan tanlang — 3D globus kengroq ekranlarda ochiladi."
         />
       ) : (
         <GlobeMap

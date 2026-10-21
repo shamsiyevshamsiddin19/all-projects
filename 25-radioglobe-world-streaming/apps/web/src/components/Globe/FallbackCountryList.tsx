@@ -1,6 +1,5 @@
 import React from 'react';
 import Link from 'next/link';
-import { Globe, Radio } from 'lucide-react';
 
 import type { Country } from '@/types';
 
@@ -13,72 +12,94 @@ interface Props {
 /**
  * Davlatlar katalogi — oddiy HTML havolalar.
  *
- * Bu komponent ikki vazifani bajaradi:
+ * Ikki vazifani bajaradi:
  *   1. WebGL ishlamaydigan qurilmalarda globus o'rnini bosadi;
  *   2. Qidiruv tizimlari uchun yagona kirish nuqtasi — globus WebGL canvas
- *      bo'lgani uchun Google uchun butunlay bo'sh, shuning uchun saytdagi
- *      barcha davlat sahifalariga shu yerdan havola bo'lishi SHART.
+ *      bo'lgani uchun Google uchun butunlay bo'sh, shuning uchun barcha davlat
+ *      sahifalariga shu yerdan havola bo'lishi shart.
  */
 export default function FallbackCountryList({ countries, heading, note }: Props) {
   const withStations = countries.filter((c) => c.radio_count > 0);
   const list = withStations.length > 0 ? withStations : countries;
 
+  // Qit'alar bo'yicha guruhlash — 240 ta havolani bir uyumda berish o'qib
+  // bo'lmaydigan devor hosil qiladi
+  const byContinent = list.reduce<Record<string, Country[]>>((acc, c) => {
+    const key = c.continent && c.continent !== '—' ? c.continent : 'Boshqa';
+    (acc[key] ||= []).push(c);
+    return acc;
+  }, {});
+
+  // Guruhlar hajmi bo'yicha, lekin "Boshqa" har doim oxirida — umumiy
+  // chelak ro'yxatning boshida turishi mantiqsiz ko'rinadi
+  const continents = Object.entries(byContinent).sort(([aName, a], [bName, b]) => {
+    if (aName === 'Boshqa') return 1;
+    if (bName === 'Boshqa') return -1;
+    return b.length - a.length;
+  });
+
   return (
-    <section className="bg-void-950 py-12 px-4 lg:px-8 border-t border-void-800 font-mono">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+    <section className="border-t border-ink-800 bg-ink-950 px-4 py-14 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2 text-crimson mb-2">
-              <Globe className="w-4 h-4" />
-              <span className="text-xs uppercase tracking-widest font-bold">
-                Davlatlar katalogi
-              </span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-wider uppercase">
+            <p className="eyebrow">Katalog</p>
+            <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight text-text-primary sm:text-3xl">
               {heading ?? 'Barcha davlatlar'}
             </h2>
-            <p className="text-xs text-slate-400 mt-1 max-w-2xl">
-              {note ?? "Globusdan tashqari to'g'ridan-to'g'ri istalgan davlat radiolarini oching."}
-            </p>
+            {note ? (
+              <p className="mt-2 max-w-2xl text-sm text-text-secondary">{note}</p>
+            ) : null}
           </div>
-          <div className="text-xs text-slate-400">
-            Davlatlar: <span className="text-crimson font-bold">{list.length}</span>
-          </div>
+          <p className="text-sm text-text-muted">
+            <span className="font-display text-lg font-semibold text-text-primary">
+              {list.length}
+            </span>{' '}
+            davlat
+          </p>
         </div>
 
         {list.length === 0 ? (
-          <div className="text-center py-12 bg-void-900 border border-void-800">
-            <Radio className="w-10 h-10 text-slate-700 mx-auto mb-3" />
-            <p className="text-sm text-slate-300 font-bold uppercase">Katalog yuklanmadi</p>
-            <p className="text-xs text-slate-500 mt-1">
+          <div className="surface px-6 py-12 text-center">
+            <p className="text-sm font-medium text-text-primary">Katalog yuklanmadi</p>
+            <p className="mt-1 text-sm text-text-muted">
               Server bilan bog'lanishda muammo bo'ldi. Sahifani yangilab ko'ring.
             </p>
           </div>
         ) : (
-          <nav
-            aria-label="Davlatlar katalogi"
-            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3"
-          >
-            {list.map((c) => (
-              <Link
-                key={c.iso2}
-                href={`/radio/${c.slug}`}
-                className="group flex items-center justify-between p-3 bg-void-900/90 border border-void-800 hover:border-crimson/50 hover:bg-void-850 transition-all duration-200"
-              >
-                <span className="flex items-center gap-2.5 min-w-0">
-                  <span className="text-lg flex-shrink-0" aria-hidden="true">
-                    {c.flag_emoji || '⌖'}
-                  </span>
-                  <span className="text-xs font-semibold text-slate-300 group-hover:text-white uppercase truncate transition-colors">
-                    {c.name_uz || c.name_en}
-                  </span>
-                </span>
-                <span className="text-[10px] px-1.5 py-0.5 bg-void-950 text-crimson-bright border border-void-750 flex-shrink-0 ml-1">
-                  {c.radio_count}
-                </span>
-              </Link>
+          <div className="space-y-9">
+            {continents.map(([continent, items]) => (
+              <div key={continent}>
+                <h3 className="eyebrow mb-3">{continent}</h3>
+                <nav
+                  aria-label={`${continent} davlatlari`}
+                  className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+                >
+                  {items.map((c) => (
+                    <Link
+                      key={c.iso2}
+                      href={`/radio/${c.slug}`}
+                      className="flex items-center justify-between gap-2 rounded-lg border border-ink-800
+                                 bg-ink-900 px-3 py-2.5 transition-colors
+                                 hover:border-ink-600 hover:bg-ink-850"
+                    >
+                      <span className="flex min-w-0 items-center gap-2.5">
+                        <span className="shrink-0 text-base" aria-hidden="true">
+                          {c.flag_emoji || '🌐'}
+                        </span>
+                        <span className="truncate text-sm text-text-secondary">
+                          {c.name_uz || c.name_en}
+                        </span>
+                      </span>
+                      <span className="shrink-0 font-mono text-xs text-text-muted">
+                        {c.radio_count}
+                      </span>
+                    </Link>
+                  ))}
+                </nav>
+              </div>
             ))}
-          </nav>
+          </div>
         )}
       </div>
     </section>

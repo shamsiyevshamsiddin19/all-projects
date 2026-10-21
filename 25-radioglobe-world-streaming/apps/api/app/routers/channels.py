@@ -92,6 +92,36 @@ _SORTS = {
 }
 
 
+def _apply_cursor(query, cursor: Optional[str], sort_column, direction: str):
+    """Keyset paginatsiya sharti.
+
+    OFFSET ishlatilmaydi: u katta ro'yxatlarda sekin va yangi yozuv
+    qo'shilganda sahifalar siljib, element takrorlanadi yoki tushib qoladi.
+    """
+    if not cursor:
+        return query
+    decoded = _decode_cursor(cursor)
+    if not decoded or "v" not in decoded or "id" not in decoded:
+        return query
+
+    last_value, last_id = decoded["v"], decoded["id"]
+    if last_value is None:
+        return query.where(Channel.id > last_id)
+    if direction == "desc":
+        return query.where(
+            or_(
+                sort_column < last_value,
+                and_(sort_column == last_value, Channel.id > last_id),
+            )
+        )
+    return query.where(
+        or_(
+            sort_column > last_value,
+            and_(sort_column == last_value, Channel.id > last_id),
+        )
+    )
+
+
 @router.get("/countries/{slug}/channels", response_model=ChannelListResponse)
 async def list_country_channels(
     slug: str,
@@ -162,28 +192,7 @@ async def list_country_channels(
         .order_by(*order)
     )
 
-    # Keyset paginatsiya — OFFSET emas. OFFSET katta ro'yxatlarda sekin ishlaydi
-    # va yangi yozuv qo'shilganda sahifalar siljib ketadi.
-    if cursor:
-        decoded = _decode_cursor(cursor)
-        if decoded and "v" in decoded and "id" in decoded:
-            last_value, last_id = decoded["v"], decoded["id"]
-            if last_value is None:
-                query = query.where(Channel.id > last_id)
-            elif direction == "desc":
-                query = query.where(
-                    or_(
-                        sort_column < last_value,
-                        and_(sort_column == last_value, Channel.id > last_id),
-                    )
-                )
-            else:
-                query = query.where(
-                    or_(
-                        sort_column > last_value,
-                        and_(sort_column == last_value, Channel.id > last_id),
-                    )
-                )
+    query = _apply_cursor(query, cursor, sort_column, direction)
 
     # Bitta ortiqcha qator — keyingi sahifa bor-yo'qligini bilish uchun
     rows = (await db.execute(query.limit(limit + 1))).scalars().unique().all()
@@ -199,6 +208,74 @@ async def list_country_channels(
             "v": getattr(last, sort_column.key),
             "id": last.id,
         })
+
+    return ChannelListResponse(total=total, items=items, next_cursor=next_cursor)
+
+
+@router.get("/channels", response_model=ChannelListResponse)
+async def list_channels_by_tag(
+    response: Response,
+    tag: str = Query(..., min_length=2, max_length=50, description="Janr (tag)"),
+    sort: str = Query("popular", pattern="^(popular|name|bitrate)$"),
+    limit: int = Query(60, ge=1, le=100),
+    cursor: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+):
+    """Janr bo'yicha global ro'yxat (barcha davlatlar kesimida).
+
+    Davlat sahifasidagi filtrdan farqi: bu yerda davlat cheklovi yo'q, shuning
+    uchun "jazz radio" kabi so'rovlar uchun alohida sahifa yasash mumkin.
+    """
+    response.headers["Cache-Control"] = "private, no-store"
+
+    has_playable = (
+        select(Stream.channel_id)
+        .where(
+            Stream.channel_id == Channel.id,
+            Stream.is_active.is_(True),
+            Stream.score > MIN_PLAYABLE_SCORE,
+            Stream.is_geo_blocked.is_(False),
+        )
+        .exists()
+    )
+
+    base_filters = [
+        Channel.type == "radio",
+        Channel.is_archived.is_(False),
+        Channel.tags.contains([tag.lower()]),
+        has_playable,
+    ]
+
+    total = (
+        await db.execute(
+            select(func.count(Channel.id)).where(and_(*base_filters))
+        )
+    ).scalar() or 0
+
+    sort_column, direction = _SORTS[sort]
+    order = [
+        desc(sort_column).nulls_last() if direction == "desc" else asc(sort_column),
+        asc(Channel.id),
+    ]
+
+    query = (
+        select(Channel)
+        .options(selectinload(Channel.streams))
+        .where(and_(*base_filters))
+        .order_by(*order)
+    )
+    query = _apply_cursor(query, cursor, sort_column, direction)
+
+    rows = (await db.execute(query.limit(limit + 1))).scalars().unique().all()
+    has_more = len(rows) > limit
+    rows = rows[:limit]
+
+    items = [simple for simple in (to_simple(ch) for ch in rows) if simple]
+
+    next_cursor = None
+    if has_more and rows:
+        last = rows[-1]
+        next_cursor = _encode_cursor({"v": getattr(last, sort_column.key), "id": last.id})
 
     return ChannelListResponse(total=total, items=items, next_cursor=next_cursor)
 

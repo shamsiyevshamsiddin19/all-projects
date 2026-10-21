@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { AlertCircle, Heart, Loader2, Pause, Play, Volume2, VolumeX, X } from 'lucide-react';
 
 import StationLogo from '@/components/Country/StationLogo';
@@ -127,12 +128,13 @@ export default function PersistentPlayer() {
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-40 bg-void-950/95 backdrop-blur-xl border-t border-void-800 px-4 py-3 shadow-tactical-glass"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-ink-800 bg-ink-950/95 backdrop-blur-xl"
       role="region"
       aria-label="Audio pleyer"
     >
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 font-mono">
-        <div className="flex items-center gap-3.5 min-w-0 flex-1">
+      <div className="mx-auto flex h-20 max-w-7xl items-center gap-4 px-4 lg:px-8">
+        {/* Stansiya */}
+        <div className="flex min-w-0 flex-1 items-center gap-3">
           <StationLogo
             src={currentStation.logo_url}
             alt={currentStation.name}
@@ -142,68 +144,77 @@ export default function PersistentPlayer() {
 
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h4 className="text-sm font-bold text-white truncate uppercase tracking-tight">
+              <Link
+                href={`/stansiya/${currentStation.slug}`}
+                className="truncate text-sm font-medium text-text-primary transition-colors hover:text-signal-bright"
+              >
                 {currentStation.name}
-              </h4>
+              </Link>
               <button
                 type="button"
                 onClick={() => toggleFavorite(currentStation)}
-                className="text-slate-400 hover:text-crimson transition-colors shrink-0"
+                className={`shrink-0 transition-colors ${
+                  favorite ? 'text-signal' : 'text-text-muted hover:text-text-secondary'
+                }`}
                 aria-label={favorite ? 'Sevimlilardan olib tashlash' : "Sevimlilarga qo'shish"}
                 aria-pressed={favorite}
               >
-                <Heart className={`w-4 h-4 ${favorite ? 'fill-crimson text-crimson' : ''}`} />
+                <Heart className={`h-3.5 w-3.5 ${favorite ? 'fill-current' : ''}`} />
               </button>
             </div>
-            <div className="flex items-center gap-2 mt-0.5">
-              <AudioVisualizer isPlaying={isPlaying && !isLoading} />
-              <span className="text-[11px] text-slate-400 truncate">
-                {currentStation.tags.slice(0, 2).join(' • ') || 'Live Frequency'}
-              </span>
-              {currentStream?.bitrate ? (
-                <span className="text-[9px] px-1.5 py-0.5 bg-void-850 text-crimson-bright border border-void-700 shrink-0">
-                  {currentStream.bitrate} kbps
+
+            <div className="mt-1 flex items-center gap-2">
+              {error ? (
+                <span className="flex items-center gap-1.5 text-xs text-warn" role="alert">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  {error}
                 </span>
-              ) : null}
+              ) : (
+                <>
+                  <AudioVisualizer isPlaying={isPlaying && !isLoading} bars={7} height={12} />
+                  <span className="truncate text-xs text-text-muted">
+                    {currentStation.tags.slice(0, 2).join(' · ') || 'Jonli efir'}
+                  </span>
+                  {currentStream?.bitrate ? (
+                    <span className="shrink-0 font-mono text-[11px] text-text-muted">
+                      {currentStream.bitrate}k
+                    </span>
+                  ) : null}
+                </>
+              )}
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col items-center gap-1 shrink-0">
-          <button
-            type="button"
-            onClick={togglePlay}
-            className="w-11 h-11 bg-crimson hover:bg-crimson-light text-white flex items-center justify-center shadow-crimson-glow hover:scale-105 active:scale-95 transition-all duration-200"
-            aria-label={isPlaying ? "To'xtatish" : 'Ijro etish'}
-          >
-            {isLoading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : isPlaying ? (
-              <Pause className="w-5 h-5 fill-white" />
-            ) : (
-              <Play className="w-5 h-5 fill-white ml-0.5" />
-            )}
-          </button>
+        {/* Ijro tugmasi */}
+        <button
+          type="button"
+          onClick={togglePlay}
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-signal
+                     text-white transition-transform active:scale-95"
+          aria-label={isPlaying ? "To'xtatish" : 'Ijro etish'}
+        >
+          {isLoading ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : isPlaying ? (
+            <Pause className="h-5 w-5 fill-current" />
+          ) : (
+            <Play className="ml-0.5 h-5 w-5 fill-current" />
+          )}
+        </button>
 
-          {error ? (
-            <div className="flex items-center gap-1 text-[10px] text-crimson-bright" role="alert">
-              <AlertCircle className="w-3 h-3" />
-              <span>{error}</span>
-            </div>
-          ) : null}
-        </div>
-
-        <div className="hidden sm:flex items-center gap-3 min-w-[160px] justify-end shrink-0">
+        {/* Ovoz */}
+        <div className="hidden w-40 shrink-0 items-center justify-end gap-2.5 sm:flex">
           <button
             type="button"
             onClick={toggleMute}
-            className="text-slate-400 hover:text-white transition-colors"
+            className="text-text-muted transition-colors hover:text-text-primary"
             aria-label={isMuted ? 'Ovozni yoqish' : "Ovozni o'chirish"}
           >
             {isMuted || volume === 0 ? (
-              <VolumeX className="w-4 h-4 text-crimson" />
+              <VolumeX className="h-4 w-4" />
             ) : (
-              <Volume2 className="w-4 h-4 text-crimson" />
+              <Volume2 className="h-4 w-4" />
             )}
           </button>
           <input
@@ -213,16 +224,16 @@ export default function PersistentPlayer() {
             step="0.01"
             value={isMuted ? 0 : volume}
             onChange={(e) => setVolume(parseFloat(e.target.value))}
-            className="w-20 h-1 bg-void-800 appearance-none cursor-pointer accent-crimson"
+            className="h-1 w-20 cursor-pointer appearance-none rounded-full bg-ink-700 accent-signal"
             aria-label="Ovoz balandligi"
           />
           <button
             type="button"
             onClick={stop}
-            className="text-slate-500 hover:text-white transition-colors"
+            className="text-text-muted transition-colors hover:text-text-primary"
             aria-label="Pleyerni yopish"
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" />
           </button>
         </div>
       </div>

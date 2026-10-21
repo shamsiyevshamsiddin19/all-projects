@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}whost.uz — loyihangiz uchun subdomen va SSH kalit{% endblock %}
 {% block content %}
 
@@ -20,15 +21,18 @@
       </div>
 
       <div class="hero-cta">
-        <a class="btn btn-primary" href="{% url 'account_login' %}">Hisob ochish</a>
+        <a class="btn btn-primary btn-hero" href="{% url 'account_login' %}">Hisob ochish</a>
         <span class="hero-cta-note">Google yoki GitHub — parol kerak emas</span>
       </div>
-    </div>
 
-    <div class="hero-visual">
-      <div class="term">
-        <div class="term-bar"><span class="term-dot"></span><span class="term-dot"></span><span class="term-dot"></span><span class="term-title">whost.uz — birinchi server</span></div>
-        <div class="term-body">
+      <details class="hero-term-note">
+        <summary>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          Terminalda qanday ko'rinishini ko'rish
+        </summary>
+        <div class="term">
+          <div class="term-bar"><span class="term-dot"></span><span class="term-dot"></span><span class="term-dot"></span><span class="term-title">whost.uz — birinchi server</span></div>
+          <div class="term-body">
 <div class="term-line"><span class="term-prompt">&gt;</span> <span class="term-cmd">Google bilan kirish</span></div>
 <div class="term-line term-indent"><span class="term-out">✓ hisob tayyor</span></div>
 <div class="term-divider"></div>
@@ -38,7 +42,24 @@
 <div class="term-divider"></div>
 <div class="term-line"><span class="term-prompt">$</span> <span class="term-cmd">mv aisayt_ed25519 ~/.ssh/</span></div>
 <div class="term-line"><span class="term-prompt">$</span> <span class="term-cmd">chmod 600 ~/.ssh/aisayt_ed25519</span></div>
+          </div>
         </div>
+      </details>
+    </div>
+
+    <div class="hero-visual">
+      <div class="hero-illustration"
+           style="background-image:url('{% static 'images/hero-3d.png' %}'),
+                  radial-gradient(60% 55% at 50% 38%, rgba(74,222,128,.22) 0%, rgba(74,222,128,0) 70%),
+                  linear-gradient(180deg,#0f172a 0%,#0b1220 100%);">
+        <div class="hero-illustration-placeholder">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+          <div class="hero-illustration-key">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5 18 10l3-3-2.5-2.5"/></svg>
+            <span>aisayt_ed25519</span>
+          </div>
+        </div>
+        <div class="hero-illustration-hint">hero-3d.png qo'yilgach bu yerda 3D rasm chiqadi</div>
       </div>
 
       <div class="roadmap">

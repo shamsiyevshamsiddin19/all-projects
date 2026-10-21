@@ -1,0 +1,1272 @@
+/* ==========================================================================
+   FOLDEX CLOUD FILE MANAGER — PREMIUM DESIGN SYSTEM (STYLE.CSS)
+   Muallif: Shamsiddin Shamsiyev
+   Standart: MY_SCILL/preferences/websites.md (Glassmorphism, Dark Mode, WOW)
+   ========================================================================== */
+
+/* --- 1. CSS O'ZGARUVCHILARI (DESIGN TOKENS) --- */
+:root {
+    --bg-main: #090d16;
+    --bg-surface: #111827;
+    --bg-surface-elevated: #1f2937;
+    --bg-glass: rgba(17, 24, 39, 0.75);
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-focus: rgba(99, 102, 241, 0.5);
+
+    --primary: #6366f1;
+    --primary-hover: #4f46e5;
+    --primary-light: rgba(99, 102, 241, 0.15);
+    --primary-gradient: linear-gradient(135deg, #6366f1 0%, #38bdf8 100%);
+
+    --accent-sky: #38bdf8;
+    --accent-emerald: #10b981;
+    --accent-rose: #f43f5e;
+    --accent-amber: #f59e0b;
+    --accent-purple: #a855f7;
+
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --text-faint: #64748b;
+
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+    --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.35);
+
+    --transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* --- 2. GLOBAL RESET & BASE --- */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+a {
+    color: var(--accent-sky);
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+button {
+    font-family: inherit;
+    border: none;
+    outline: none;
+    background: none;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+input, textarea, select {
+    font-family: inherit;
+    outline: none;
+}
+
+/* --- 3. ASOSIY ILOVA LAYOUTI --- */
+.app-container {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(56, 189, 248, 0.06) 0%, transparent 40%),
+                var(--bg-main);
+}
+
+/* --- 4. YON PANEL (SIDEBAR) --- */
+.sidebar {
+    width: 280px;
+    height: 100%;
+    background: var(--bg-surface);
+    border-right: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    z-index: 100;
+    transition: var(--transition);
+}
+
+.sidebar-header {
+    padding: 22px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo-icon {
+    width: 42px;
+    height: 42px;
+    background: var(--primary-gradient);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 1.25rem;
+    box-shadow: var(--shadow-glow);
+}
+
+.logo-text h2 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+    background: linear-gradient(to right, #ffffff, #cbd5e1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    background: var(--primary-light);
+    color: var(--primary);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.mobile-close-btn {
+    display: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+}
+
+/* Xotira vidjeti (Storage Widget) */
+.storage-widget {
+    margin: 16px 16px 8px;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+}
+
+.storage-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.progress-bar-bg {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: var(--primary-gradient);
+    border-radius: 10px;
+    transition: width 0.4s ease;
+}
+
+.storage-footer {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--text-faint);
+    margin-top: 6px;
+}
+
+/* Sidebar Navigatsiya */
+.sidebar-section {
+    padding: 12px 16px;
+}
+
+.section-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-faint);
+    margin-bottom: 8px;
+    padding-left: 6px;
+}
+
+.nav-links {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 12px;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-align: left;
+    width: 100%;
+}
+
+.nav-item:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-main);
+}
+
+.nav-item.active {
+    background: var(--primary-light);
+    color: #fff;
+    font-weight: 600;
+}
+
+.nav-item i {
+    width: 18px;
+    font-size: 1rem;
+    text-align: center;
+}
+
+.nav-item .count {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--text-faint);
+    background: rgba(255, 255, 255, 0.06);
+    padding: 1px 8px;
+    border-radius: 12px;
+}
+
+/* Papkalar daraxti (Folder Tree) */
+.folder-tree-section {
+    flex: 1;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-subtle) transparent;
+}
+
+.folder-tree-container {
+    padding: 4px 0;
+}
+
+.tree-loading {
+    font-size: 0.8rem;
+    color: var(--text-faint);
+    padding: 10px 8px;
+}
+
+.tree-node {
+    margin-bottom: 2px;
+}
+
+.tree-node-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.tree-node-content:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-main);
+}
+
+.tree-node-content.active {
+    background: rgba(99, 102, 241, 0.12);
+    color: var(--accent-sky);
+    font-weight: 600;
+}
+
+.tree-children {
+    padding-left: 18px;
+    border-left: 1px dashed rgba(255, 255, 255, 0.08);
+    margin-left: 10px;
+}
+
+/* Sidebar Footer (User profile) */
+.sidebar-footer {
+    padding: 14px 16px;
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.user-profile-compact {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-avatar {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    background: rgba(99, 102, 241, 0.2);
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    font-size: 1rem;
+}
+
+.online-dot {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 10px;
+    height: 10px;
+    background: var(--accent-emerald);
+    border: 2px solid var(--bg-surface);
+    border-radius: 50%;
+}
+
+.user-info .user-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.user-info .user-role {
+    font-size: 0.72rem;
+    color: var(--text-faint);
+}
+
+.logout-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-faint);
+}
+
+.logout-btn:hover {
+    background: rgba(244, 63, 94, 0.15);
+    color: var(--accent-rose);
+}
+
+/* --- 5. ASOSIY KONTENT MAYDONI --- */
+.main-content {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Topbar */
+.topbar {
+    height: 70px;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--bg-glass);
+    backdrop-filter: blur(12px);
+    z-index: 10;
+}
+
+.topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+    max-width: 500px;
+}
+
+.mobile-menu-btn {
+    display: none;
+    font-size: 1.25rem;
+    color: var(--text-main);
+}
+
+.search-box {
+    position: relative;
+    width: 100%;
+}
+
+.search-box .search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-faint);
+    font-size: 0.9rem;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 10px 38px 10px 40px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-subtle);
+    border-radius: 30px;
+    color: var(--text-main);
+    font-size: 0.9rem;
+    transition: var(--transition);
+}
+
+.search-box input:focus {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.clear-search-btn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-faint);
+    font-size: 0.85rem;
+}
+
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Tugmalar (Buttons) */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 0.88rem;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.btn-primary {
+    background: var(--primary-gradient);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-main);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.09);
+    transform: translateY(-1px);
+}
+
+.btn-danger {
+    background: var(--accent-rose);
+    color: #fff;
+}
+
+.btn-danger:hover {
+    background: #e11d48;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+}
+
+.view-toggle {
+    display: flex;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 3px;
+}
+
+.view-btn {
+    width: 32px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-faint);
+    border-radius: 6px;
+}
+
+.view-btn.active {
+    background: var(--bg-surface-elevated);
+    color: var(--text-main);
+}
+
+/* Breadcrumbs Navigatsiyasi */
+.breadcrumbs-container {
+    padding: 12px 24px;
+    background: rgba(17, 24, 39, 0.4);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.breadcrumbs::-webkit-scrollbar {
+    display: none;
+}
+
+.breadcrumb-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+}
+
+.breadcrumb-item:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.breadcrumb-item.active {
+    color: var(--accent-sky);
+    font-weight: 600;
+}
+
+.breadcrumb-separator {
+    color: var(--text-faint);
+    font-size: 0.75rem;
+}
+
+/* Scroll bo'luvchi asosiy kontent maydoni */
+.content-scrollable {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    position: relative;
+}
+
+.content-section {
+    margin-bottom: 30px;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.section-header h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* --- 6. PAPKALAR GRIDI (FOLDERS GRID) --- */
+.folders-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 16px;
+}
+
+.folder-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: var(--transition);
+    position: relative;
+}
+
+.folder-card:hover {
+    background: var(--bg-surface-elevated);
+    border-color: rgba(99, 102, 241, 0.3);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.folder-card-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.folder-card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.folder-card-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+}
+
+.folder-card-meta {
+    font-size: 0.75rem;
+    color: var(--text-faint);
+}
+
+.card-actions-dropdown {
+    position: absolute;
+    right: 12px;
+    top: 14px;
+}
+
+.dropdown-trigger {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-faint);
+}
+
+.dropdown-trigger:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-main);
+}
+
+.dropdown-menu {
+    position: absolute;
+    right: 0;
+    top: 32px;
+    background: #182234;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md);
+    padding: 6px;
+    min-width: 160px;
+    z-index: 50;
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.dropdown-menu.show {
+    display: flex;
+    animation: fadeIn 0.15s ease-out;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    text-align: left;
+    width: 100%;
+}
+
+.dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-main);
+}
+
+.dropdown-item.danger:hover {
+    background: rgba(244, 63, 94, 0.15);
+    color: var(--accent-rose);
+}
+
+/* --- 7. FAYLLAR MAYDONI (GRID VA LIST REJIMLARI) --- */
+/* Grid Rejimi */
+.files-container.grid-mode {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 16px;
+}
+
+.file-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    transition: var(--transition);
+    position: relative;
+}
+
+.file-card:hover {
+    background: var(--bg-surface-elevated);
+    border-color: rgba(56, 189, 248, 0.3);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.file-card-preview {
+    height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.8rem;
+    margin-bottom: 12px;
+    border-radius: var(--radius-sm);
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.file-card-details {
+    flex: 1;
+}
+
+.file-card-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 6px;
+}
+
+.file-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--text-faint);
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.tg-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    color: var(--accent-sky);
+}
+
+/* List Rejimi */
+.files-container.list-mode {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.files-container.list-mode .file-card {
+    flex-direction: row;
+    align-items: center;
+    padding: 12px 16px;
+    height: 56px;
+}
+
+.files-container.list-mode .file-card-preview {
+    height: 36px;
+    width: 36px;
+    font-size: 1.3rem;
+    margin-bottom: 0;
+    margin-right: 14px;
+    background: transparent;
+}
+
+.files-container.list-mode .file-card-details {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.files-container.list-mode .file-card-footer {
+    border-top: none;
+    margin-top: 0;
+    padding-top: 0;
+    gap: 20px;
+}
+
+/* Bo'sh holat (Empty State) */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-faint);
+}
+
+.empty-icon {
+    font-size: 3.5rem;
+    color: rgba(255, 255, 255, 0.1);
+    margin-bottom: 16px;
+}
+
+.empty-state h4 {
+    font-size: 1.15rem;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+}
+
+.empty-state p {
+    font-size: 0.88rem;
+    margin-bottom: 20px;
+}
+
+/* Drag and Drop qatlami */
+.drop-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 14, 23, 0.85);
+    backdrop-filter: blur(8px);
+    border: 2px dashed var(--primary);
+    border-radius: var(--radius-lg);
+    z-index: 90;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.drop-overlay.active {
+    display: flex;
+}
+
+.drop-overlay-content {
+    text-align: center;
+    color: var(--text-main);
+}
+
+.drop-overlay-content i {
+    font-size: 4rem;
+    color: var(--primary);
+    margin-bottom: 16px;
+}
+
+/* --- 8. MODAL OYNALAR --- */
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal.show {
+    display: flex;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(6px);
+}
+
+.modal-dialog {
+    position: relative;
+    width: 100%;
+    max-width: 520px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    z-index: 10;
+    animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-dialog.modal-sm {
+    max-width: 400px;
+}
+
+.modal-header {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-header h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.close-modal-btn {
+    font-size: 1.5rem;
+    color: var(--text-faint);
+    line-height: 1;
+}
+
+.close-modal-btn:hover {
+    color: var(--text-main);
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    background: rgba(0, 0, 0, 0.15);
+}
+
+/* Form elementlari */
+.form-group {
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    color: var(--text-main);
+    font-size: 0.9rem;
+    transition: var(--transition);
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.emoji-picker-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.quick-emojis {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.emoji-item {
+    font-size: 1.25rem;
+    padding: 4px 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-subtle);
+    transition: var(--transition);
+}
+
+.emoji-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.15);
+}
+
+/* Yuklash modali dropzone */
+.upload-dropzone {
+    border: 2px dashed rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-md);
+    padding: 30px 20px;
+    text-align: center;
+    transition: var(--transition);
+    background: rgba(255, 255, 255, 0.01);
+}
+
+.upload-dropzone.dragover {
+    border-color: var(--primary);
+    background: rgba(99, 102, 241, 0.08);
+}
+
+.upload-icon {
+    font-size: 3rem;
+    color: var(--primary);
+    margin-bottom: 12px;
+}
+
+.upload-dropzone h4 {
+    font-size: 1rem;
+    color: var(--text-main);
+    margin-bottom: 6px;
+}
+
+.upload-dropzone p {
+    font-size: 0.8rem;
+    color: var(--text-faint);
+    margin-bottom: 16px;
+}
+
+/* Tanlangan fayllar ro'yxati */
+.selected-files-list {
+    margin-top: 16px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    background: rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+.selected-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.files-preview-scroll {
+    max-height: 140px;
+    overflow-y: auto;
+    padding: 6px;
+}
+
+.preview-file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+.preview-file-item:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+/* Yuklash indikatori (Progress Bar) */
+.upload-progress-container {
+    margin-top: 18px;
+}
+
+.upload-progress-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+}
+
+/* Xatolik ogohlantirishlari */
+.alert {
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    margin-top: 12px;
+}
+
+.alert-warning {
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: #fbbf24;
+}
+
+/* --- 9. TOAST XABARNOMALAR --- */
+.toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    background: #1e293b;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    color: #fff;
+    font-size: 0.88rem;
+    box-shadow: var(--shadow-md);
+    pointer-events: auto;
+    animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    min-width: 280px;
+}
+
+.toast.success { border-left: 4px solid var(--accent-emerald); }
+.toast.error { border-left: 4px solid var(--accent-rose); }
+.toast.info { border-left: 4px solid var(--accent-sky); }
+
+/* --- 10. ANIMATSIYALAR --- */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(40px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* Yordamchi rang sinflari */
+.text-indigo { color: #818cf8 !important; }
+.text-emerald { color: #34d399 !important; }
+.text-rose { color: #fb7185 !important; }
+.text-amber { color: #fbbf24 !important; }
+.text-purple { color: #c084fc !important; }
+.text-sky { color: #38bdf8 !important; }
+.flex-between { display: flex; align-items: center; justify-content: space-between; }
+
+/* ==========================================================================
+   11. RESPONSIVE DIZAYN (MOBIL MOSLASHUVCHANLIK)
+   Talab bo'yicha: 2x2 ixcham grid, swipeable tabs, ixcham hero
+   ========================================================================== */
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        left: -290px;
+        top: 0;
+        bottom: 0;
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .sidebar.open {
+        left: 0;
+    }
+
+    .mobile-menu-btn, .mobile-close-btn {
+        display: flex;
+    }
+
+    .topbar {
+        padding: 0 16px;
+        height: 60px;
+    }
+
+    .topbar-right .btn-text {
+        display: none; /* Mobilda tugma matnini yashirish, faqat ikonka */
+    }
+
+    .topbar-right .btn {
+        padding: 8px 12px;
+    }
+
+    .content-scrollable {
+        padding: 16px;
+    }
+
+    /* Mobilda 2x2 ixcham grid (MY_SCILL/preferences/websites.md standarti!) */
+    .folders-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .folder-card {
+        padding: 12px 10px;
+        gap: 10px;
+    }
+
+    .folder-card-icon {
+        font-size: 1.6rem;
+    }
+
+    .folder-card-name {
+        font-size: 0.85rem;
+    }
+
+    .files-container.grid-mode {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .file-card {
+        padding: 12px 10px;
+    }
+
+    .file-card-preview {
+        height: 70px;
+        font-size: 2rem;
+    }
+
+    .file-card-name {
+        font-size: 0.82rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .breadcrumbs-container {
+        padding: 8px 16px;
+    }
+
+    .modal-dialog {
+        padding: 0;
+    }
+
+    .toast-container {
+        left: 16px;
+        right: 16px;
+        bottom: 16px;
+    }
+}

@@ -28,6 +28,7 @@ foydalanuvchilarga xizmat ko'rsatadigan tayyor mahsulotlar.
 | 📝 **[08-captionflow-video-bot](./08-captionflow-video-bot)** | Videoga avtomatik subtitr (tarjima) yaratib qo'shib beradi. | `Python` `Aiogram 3` `FFmpeg` |
 | 🎓 **[09-campusmate-lms-bot](./09-campusmate-lms-bot)** | TUIT LMS integratsiyasi — dars jadvali, baholar, deadline eslatmalari. | `Python` `Aiogram 3` `httpx/lxml` |
 | 🤖 **[26-telegram-userbot](./26-telegram-userbot)** | Telethon asosidagi ko'p akkauntli shaxsiy Telegram userbot + Instagram Gemini boti (autodraft, autoreply, web panel). | `Python` `Telethon` `Gemini AI` `aiohttp` |
+| 📂 **[27-foldex-file-manager](./27-foldex-file-manager)** | Foldex — Telegram File Manager Bot va Veb-Admin Panel (cheksiz ierarxik papkalar, Reply Keyboard & Inline Mode, WebApp). | `Python` `FastAPI` `Aiogram 3` `PostgreSQL` |
 
 ### 🌐 Web platformalar
 

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Foldex — Tizimga Kirish</title>
+    <meta name="description" content="Foldex shaxsiy fayl menejeri admin paneliga kirish.">
+    <meta name="theme-color" content="#0a0e17">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: radial-gradient(circle at 50% 20%, rgba(99, 102, 241, 0.15) 0%, rgba(10, 14, 23, 1) 70%);
+            padding: 20px;
+        }
+        .login-card {
+            width: 100%;
+            max-width: 440px;
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 36px 30px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+            text-align: center;
+            animation: fadeIn 0.4s ease-out;
+        }
+        .login-logo {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #6366f1, #38bdf8);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: #fff;
+            margin: 0 auto 20px;
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+        }
+        .login-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+        .login-subtitle {
+            font-size: 0.95rem;
+            color: #94a3b8;
+            margin-bottom: 28px;
+            line-height: 1.5;
+        }
+        .token-input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .token-input-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 30px;
+            font-size: 0.85rem;
+            color: #818cf8;
+            margin-bottom: 24px;
+        }
+        .bot-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 14px;
+            background: #2563eb;
+            color: #fff;
+            border-radius: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            margin-top: 15px;
+        }
+        .bot-button:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+        }
+    </style>
+</head>
+<body class="dark-theme">
+
+    <div class="login-card">
+        <div class="login-logo">
+            <i class="fa-solid fa-folder-closed"></i>
+        </div>
+        <h1 class="login-title">Foldex Admin</h1>
+        <p class="login-subtitle">Faqat <code>7883409434</code> ID ga ega Telegram administratori uchun shaxsiy bulutli fayl menejeri.</p>
+
+        <div class="status-badge" id="authStatusBadge">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span id="authStatusText">Telegram autentifikatsiyasi kutilmoqda...</span>
+        </div>
+
+        <form id="tokenLoginForm" style="display: none;">
+            <div class="token-input-group">
+                <label for="manualTokenInput">Bir martalik kirish tokeni:</label>
+                <input type="text" id="manualTokenInput" class="form-control" placeholder="Botdan olingan tokenni kiriting..." required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px;">
+                <i class="fa-solid fa-arrow-right-to-bracket"></i> Tizimga kirish
+            </button>
+        </form>
+
+        <div id="telegramHelpSection" style="margin-top: 25px;">
+            <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 12px;">
+                Agar brauzerda ochgan bo'lsangiz, Telegram botingizda <code>/login</code> buyrug'ini bosing va kirish havolasini oling:
+            </p>
+            <a href="https://t.me/" id="openTgBotBtn" class="bot-button" target="_blank">
+                <i class="fa-brands fa-telegram"></i> Telegram Botni ochish
+            </a>
+            <button type="button" class="btn btn-secondary btn-sm" id="toggleManualTokenBtn" style="margin-top: 15px; width: 100%;">
+                Tokenni qo'lda kiritish
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            const statusBadge = document.getElementById("authStatusBadge");
+            const statusText = document.getElementById("authStatusText");
+            const tokenForm = document.getElementById("tokenLoginForm");
+            const toggleBtn = document.getElementById("toggleManualTokenBtn");
+
+            toggleBtn.addEventListener("click", () => {
+                tokenForm.style.display = tokenForm.style.display === "none" ? "block" : "none";
+            });
+
+            // 1. URL parametrida token kelgan bo'lsa (masalan: ?token=xyz)
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlToken = urlParams.get("token");
+
+            if (urlToken) {
+                statusText.innerText = "Token tekshirilmoqda...";
+                try {
+                    const resp = await fetch("/api/auth/verify-token", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ token: urlToken })
+                    });
+                    if (resp.ok) {
+                        statusText.innerText = "Muvaffaqiyatli! Yo'naltirilmoqda...";
+                        window.location.href = "/";
+                        return;
+                    } else {
+                        const err = await resp.json();
+                        statusText.innerText = err.detail || "Token yaroqsiz!";
+                        statusBadge.style.background = "rgba(239, 68, 68, 0.15)";
+                        statusBadge.style.color = "#f87171";
+                    }
+                } catch (e) {
+                    statusText.innerText = "Ulanish xatosi!";
+                }
+            }
+
+            // 2. Telegram WebApp ichida ochilgan bo'lsa
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+                statusText.innerText = "Telegram hisobi tasdiqlanmoqda...";
+                try {
+                    const initData = window.Telegram.WebApp.initData;
+                    const resp = await fetch("/api/auth/webapp", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ init_data: initData })
+                    });
+                    if (resp.ok) {
+                        statusText.innerText = "Kirish tasdiqlandi! Yo'naltirilmoqda...";
+                        window.location.href = "/";
+                        return;
+                    } else {
+                        const err = await resp.json();
+                        statusText.innerText = err.detail || "Ruxsat berilmadi!";
+                        statusBadge.style.background = "rgba(239, 68, 68, 0.15)";
+                        statusBadge.style.color = "#f87171";
+                    }
+                } catch (e) {
+                    statusText.innerText = "Autentifikatsiyada xatolik!";
+                }
+            } else {
+                statusText.innerText = "Telegram orqali kirish talab qilinadi";
+            }
+
+            // 3. Qo'lda token kiritish formasi
+            tokenForm.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const manualToken = document.getElementById("manualTokenInput").value.trim();
+                if (!manualToken) return;
+
+                statusText.innerText = "Tekshirilmoqda...";
+                try {
+                    const resp = await fetch("/api/auth/verify-token", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ token: manualToken })
+                    });
+                    if (resp.ok) {
+                        statusText.innerText = "Muvaffaqiyatli! Yo'naltirilmoqda...";
+                        window.location.href = "/";
+                    } else {
+                        const err = await resp.json();
+                        alert("Xatolik: " + (err.detail || "Token noto'g'ri!"));
+                        statusText.innerText = "Token rad etildi!";
+                    }
+                } catch (err) {
+                    alert("Tarmoq xatosi!");
+                }
+            });
+        });
+    </script>
+</body>
+</html>

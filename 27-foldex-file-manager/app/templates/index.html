@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Foldex — Fayllarni Boshqarish Paneli</title>
+    <meta name="description" content="Foldex - Telegram File Manager Bot va Veb-Admin Paneli. Shaxsiy bulutli fayl boshqaruvi.">
+    <meta name="theme-color" content="#0a0e17">
+
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <!-- Asosiy uslublar -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="dark-theme">
+
+    <div class="app-container">
+        <!-- 1. YON PANEL (SIDEBAR) -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon"><i class="fa-solid fa-folder-closed"></i></div>
+                    <div class="logo-text">
+                        <h2>Foldex</h2>
+                        <span class="badge">Cloud Manager</span>
+                    </div>
+                </div>
+                <button class="icon-btn mobile-close-btn" id="closeSidebarBtn" aria-label="Yopish">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Xotira statusi (Storage meter) -->
+            <div class="storage-widget">
+                <div class="storage-header">
+                    <span><i class="fa-solid fa-database"></i> Xotira</span>
+                    <span id="storagePercentText">0%</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="storageProgressBar" style="width: 0%;"></div>
+                </div>
+                <div class="storage-footer">
+                    <span id="storageUsedText">0 MB</span>
+                    <span id="storageTotalText">500 MB</span>
+                </div>
+            </div>
+
+            <!-- Tezkor toifalar (Quick Navigation) -->
+            <div class="sidebar-section">
+                <div class="section-title">Bo'limlar</div>
+                <nav class="nav-links">
+                    <button class="nav-item active" data-type="all">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                        <span>Barcha fayllar</span>
+                        <span class="count" id="countAll">0</span>
+                    </button>
+                    <button class="nav-item" data-type="document">
+                        <i class="fa-solid fa-file-lines text-indigo"></i>
+                        <span>Hujjatlar</span>
+                        <span class="count" id="countDocs">0</span>
+                    </button>
+                    <button class="nav-item" data-type="photo">
+                        <i class="fa-solid fa-image text-emerald"></i>
+                        <span>Rasmlar</span>
+                        <span class="count" id="countPhotos">0</span>
+                    </button>
+                    <button class="nav-item" data-type="video">
+                        <i class="fa-solid fa-video text-rose"></i>
+                        <span>Videolar</span>
+                        <span class="count" id="countVideos">0</span>
+                    </button>
+                    <button class="nav-item" data-type="audio">
+                        <i class="fa-solid fa-music text-amber"></i>
+                        <span>Audiolar</span>
+                        <span class="count" id="countAudio">0</span>
+                    </button>
+                    <button class="nav-item" data-type="archive">
+                        <i class="fa-solid fa-file-zipper text-purple"></i>
+                        <span>Arxivlar</span>
+                        <span class="count" id="countArchives">0</span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Papkalar daraxti (Folder Tree) -->
+            <div class="sidebar-section folder-tree-section">
+                <div class="section-title flex-between">
+                    <span>Papkalar daraxti</span>
+                    <button class="text-btn" id="treeRefreshBtn" title="Yangilash">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                </div>
+                <div class="folder-tree-container" id="folderTreeContainer">
+                    <div class="tree-loading"><i class="fa-solid fa-circle-notch fa-spin"></i> Yuklanmoqda...</div>
+                </div>
+            </div>
+
+            <!-- Admin Foydalanuvchi profili -->
+            <div class="sidebar-footer">
+                <div class="user-profile-compact">
+                    <div class="user-avatar">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <span class="online-dot"></span>
+                    </div>
+                    <div class="user-info">
+                        <div class="user-name">Administrator</div>
+                        <div class="user-role">ID: <code>7883409434</code></div>
+                    </div>
+                </div>
+                <button class="icon-btn logout-btn" id="logoutBtn" title="Chiqish">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+        </aside>
+
+        <!-- 2. ASOSIY MAYDON (MAIN CONTENT) -->
+        <main class="main-content">
+            <!-- Yuqori boshqaruv paneli (Topbar) -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="icon-btn mobile-menu-btn" id="openSidebarBtn" aria-label="Menyu">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+
+                    <!-- Qidiruv maydoni -->
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                        <input type="text" id="searchInput" placeholder="Fayllar va papkalarni qidirish..." autocomplete="off">
+                        <button class="clear-search-btn" id="clearSearchBtn" style="display: none;">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="topbar-right">
+                    <!-- Yangi papka yaratish -->
+                    <button class="btn btn-secondary" id="openNewFolderModalBtn">
+                        <i class="fa-solid fa-folder-plus"></i>
+                        <span class="btn-text">Yangi papka</span>
+                    </button>
+
+                    <!-- Fayl yuklash -->
+                    <button class="btn btn-primary" id="openUploadModalBtn">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <span class="btn-text">Yuklash</span>
+                    </button>
+
+                    <!-- Ko'rinish rejimini almashtirish (Grid / List) -->
+                    <div class="view-toggle">
+                        <button class="view-btn active" id="viewGridBtn" title="Kataklar ko'rinishi">
+                            <i class="fa-solid fa-table-cells-large"></i>
+                        </button>
+                        <button class="view-btn" id="viewListBtn" title="Ro'yxat ko'rinishi">
+                            <i class="fa-solid fa-list-ul"></i>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Navigatsiya zanjiri (Breadcrumbs) -->
+            <div class="breadcrumbs-container">
+                <nav class="breadcrumbs" id="breadcrumbsNav">
+                    <!-- Dinamik ravishda JS orqali to'ldiriladi -->
+                    <div class="breadcrumb-item active">
+                        <i class="fa-solid fa-house"></i>
+                        <span>Bosh sahifa</span>
+                    </div>
+                </nav>
+            </div>
+
+            <!-- Asosiy kontent bo'limi -->
+            <div class="content-scrollable" id="dropZoneArea">
+                <!-- Drag and drop yopinchig'i -->
+                <div class="drop-overlay" id="dropOverlay">
+                    <div class="drop-overlay-content">
+                        <i class="fa-solid fa-cloud-arrow-up fa-bounce"></i>
+                        <h3>Fayllarni shu yerga tashlang</h3>
+                        <p>Ular avtomatik joriy papkaga yuklanadi</p>
+                    </div>
+                </div>
+
+                <!-- Papkalar bo'limi -->
+                <section class="content-section" id="foldersSection">
+                    <div class="section-header">
+                        <h3><i class="fa-solid fa-folder text-indigo"></i> Papkalar</h3>
+                        <span class="badge" id="subfoldersBadge">0 ta</span>
+                    </div>
+                    <div class="folders-grid" id="foldersGrid">
+                        <!-- Papkalar kartalari dinamik qo'shiladi -->
+                    </div>
+                </section>
+
+                <!-- Fayllar bo'limi -->
+                <section class="content-section" id="filesSection">
+                    <div class="section-header">
+                        <h3><i class="fa-solid fa-file text-sky"></i> Fayllar</h3>
+                        <span class="badge" id="filesBadge">0 ta</span>
+                    </div>
+                    <div class="files-container grid-mode" id="filesContainer">
+                        <!-- Fayllar kartalari dinamik qo'shiladi -->
+                    </div>
+                    <!-- Bo'sh papka holati -->
+                    <div class="empty-state" id="emptyState" style="display: none;">
+                        <div class="empty-icon"><i class="fa-regular fa-folder-open"></i></div>
+                        <h4>Ushbu papka bo'sh</h4>
+                        <p>Fayllarni kompyuter yoki telefoningizdan yuklang</p>
+                        <button class="btn btn-primary" id="emptyUploadBtn">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Fayl yuklash
+                        </button>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- ==================== MODAL OYNALAR ==================== -->
+
+    <!-- 1. Yangi papka ochish modali -->
+    <div class="modal" id="newFolderModal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-folder-plus text-indigo"></i> Yangi papka yaratish</h3>
+                <button class="close-modal-btn">&times;</button>
+            </div>
+            <form id="newFolderForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="folderNameInput">Papka nomi *</label>
+                        <input type="text" id="folderNameInput" required placeholder="Masalan: Rus tili, Dasturlash...">
+                    </div>
+                    <div class="form-group">
+                        <label>Ikonka (Emoji)</label>
+                        <div class="emoji-picker-row">
+                            <input type="text" id="folderIconInput" value="📁" maxlength="4" style="width: 60px; text-align: center; font-size: 1.3rem;">
+                            <div class="quick-emojis">
+                                <span class="emoji-item">📁</span>
+                                <span class="emoji-item">🇷🇺</span>
+                                <span class="emoji-item">💻</span>
+                                <span class="emoji-item">📚</span>
+                                <span class="emoji-item">🐍</span>
+                                <span class="emoji-item">🤖</span>
+                                <span class="emoji-item">🎵</span>
+                                <span class="emoji-item">🎬</span>
+                                <span class="emoji-item">📝</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="folderDescInput">Qisqacha tavsif (ixtiyoriy)</label>
+                        <textarea id="folderDescInput" rows="2" placeholder="Papka haqida qo'shimcha ma'lumot..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary close-modal-btn">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary">Yaratish</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. Fayllarni yuklash modali -->
+    <div class="modal" id="uploadModal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-cloud-arrow-up text-primary"></i> Fayllarni yuklash</h3>
+                <button class="close-modal-btn">&times;</button>
+            </div>
+            <form id="uploadForm">
+                <div class="modal-body">
+                    <div class="upload-dropzone" id="modalDropzone">
+                        <input type="file" id="fileInput" multiple style="display: none;">
+                        <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+                        <h4>Fayllarni tanlang yoki shu yerga tashlang</h4>
+                        <p>Bir vaqtning o'zida bir nechta fayl yuklash mumkin (maksimal 500 MB)</p>
+                        <button type="button" class="btn btn-secondary btn-sm" id="browseFilesBtn">
+                            <i class="fa-solid fa-folder-open"></i> Fayllarni tanlash
+                        </button>
+                    </div>
+
+                    <!-- Tanlangan fayllar ro'yxati -->
+                    <div class="selected-files-list" id="selectedFilesList" style="display: none;">
+                        <div class="selected-header">
+                            <span>Tanlangan fayllar:</span>
+                            <span id="selectedCountBadge">0 ta</span>
+                        </div>
+                        <div class="files-preview-scroll" id="filesPreviewScroll"></div>
+                    </div>
+
+                    <!-- Yuklash jarayoni indikatori (Progress Bar) -->
+                    <div class="upload-progress-container" id="uploadProgressContainer" style="display: none;">
+                        <div class="upload-progress-info">
+                            <span id="uploadStatusText">Yuklanmoqda...</span>
+                            <span id="uploadPercentText">0%</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" id="uploadProgressBar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary close-modal-btn" id="cancelUploadBtn">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary" id="startUploadBtn">
+                        <i class="fa-solid fa-arrow-up-from-bracket"></i> Yuklashni boshlash
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 3. Nomni o'zgartirish modali (Rename) -->
+    <div class="modal" id="renameModal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-pen-to-square text-indigo"></i> Qayta nomlash</h3>
+                <button class="close-modal-btn">&times;</button>
+            </div>
+            <form id="renameForm">
+                <div class="modal-body">
+                    <input type="hidden" id="renameItemId">
+                    <input type="hidden" id="renameItemType">
+                    <div class="form-group">
+                        <label for="renameInput">Yangi nom *</label>
+                        <input type="text" id="renameInput" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary close-modal-btn">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary">Saqlash</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 4. Ko'chirish modali (Move) -->
+    <div class="modal" id="moveModal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-folder-tree text-indigo"></i> Boshqa papkaga ko'chirish</h3>
+                <button class="close-modal-btn">&times;</button>
+            </div>
+            <form id="moveForm">
+                <div class="modal-body">
+                    <input type="hidden" id="moveItemId">
+                    <input type="hidden" id="moveItemType">
+                    <p id="moveItemDescription" class="mb-3 text-muted"></p>
+                    <div class="form-group">
+                        <label for="moveTargetFolderSelect">Maqsadli papkani tanlang:</label>
+                        <select id="moveTargetFolderSelect" class="form-control" required>
+                            <!-- Dinamik to'ldiriladi -->
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary close-modal-btn">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary">Ko'chirish</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 5. O'chirishni tasdiqlash modali (Delete Confirmation) -->
+    <div class="modal" id="deleteModal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-dialog modal-sm">
+            <div class="modal-header text-danger">
+                <h3><i class="fa-solid fa-triangle-exclamation"></i> O'chirishni tasdiqlang</h3>
+                <button class="close-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="deleteModalMessage">Ushbu elementni o'chirib tashlamoqchimisiz?</p>
+                <div class="alert alert-warning" id="deleteFolderWarning" style="display: none;">
+                    ⚠️ Papka ichidagi barcha ichki papkalar va fayllar ham butunlay o'chib ketadi!
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary close-modal-btn">Bekor qilish</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">O'chirish</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Xabarnomalar konteyneri -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Skriptlar -->
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

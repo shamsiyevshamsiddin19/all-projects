@@ -4,62 +4,69 @@ import React, { useEffect, useRef } from 'react';
 
 import { audioEngine } from '@/lib/audioEngine';
 
-const BAR_COUNT = 10;
+interface Props {
+  isPlaying: boolean;
+  /** Ustunlar soni */
+  bars?: number;
+  /** Balandligi (px) */
+  height?: number;
+  className?: string;
+}
 
 /**
  * Haqiqiy audio spektri.
  *
- * Oldin bu komponent qattiq yozilgan balandliklar bilan CSS animatsiya edi —
- * ya'ni ovozga hech qanday aloqasi yo'q bezak. Endi u `AnalyserNode` orqali
- * aynan eshitilayotgan oqimdan o'qiydi.
+ * Bu komponent bezak EMAS: u `AnalyserNode` orqali aynan hozir eshitilayotgan
+ * oqimdan chastota ma'lumotini o'qiydi. Oldin shu o'rinda qo'lda yozilgan
+ * balandliklar bilan CSS animatsiya turardi — u ovozga umuman bog'liq emasdi.
  *
- * Agar Web Audio ishlamasa (CORS yo'q, eski brauzer), komponent jim ravishda
- * oddiy animatsiyaga tushadi — ijro buzilmaydi.
+ * Web Audio ishlamasa (CORS yo'q, eski brauzer) ustunlar jim turadi —
+ * soxta harakat ko'rsatilmaydi.
  */
-export default function AudioVisualizer({ isPlaying }: { isPlaying: boolean }) {
+export default function AudioVisualizer({
+  isPlaying,
+  bars = 10,
+  height = 14,
+  className = '',
+}: Props) {
   const barsRef = useRef<(HTMLSpanElement | null)[]>([]);
   const frameRef = useRef<number | null>(null);
 
   useEffect(() => {
+    const reset = () => {
+      barsRef.current.forEach((bar) => {
+        if (bar) bar.style.height = '2px';
+      });
+    };
+
     if (!isPlaying) {
       if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
       frameRef.current = null;
-      barsRef.current.forEach((bar) => {
-        if (bar) bar.style.height = '3px';
-      });
+      reset();
       return;
     }
 
-    const reduceMotion =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduceMotion) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     audioEngine.resumeContext();
     const analyser = audioEngine.getAnalyser();
-
-    if (!analyser) {
-      // Zaxira: spektr o'qib bo'lmasa, ijro davom etayotganini bildiruvchi
-      // oddiy pulsatsiya
-      barsRef.current.forEach((bar, i) => {
-        if (bar) {
-          bar.style.height = `${30 + ((i * 37) % 60)}%`;
-          bar.style.transition = 'height 400ms ease-in-out';
-        }
-      });
-      return;
-    }
+    if (!analyser) return;
 
     const data = new Uint8Array(analyser.frequencyBinCount);
 
     const draw = () => {
       analyser.getByteFrequencyData(data);
-      const step = Math.max(1, Math.floor(data.length / BAR_COUNT));
-      for (let i = 0; i < BAR_COUNT; i += 1) {
+      // Past chastotalar eng ko'p energiyaga ega — spektrning faqat pastki
+      // uchdan ikki qismini olamiz, aks holda o'ng tomondagi ustunlar
+      // doim jim turadi
+      const usable = Math.floor(data.length * 0.66);
+      const step = Math.max(1, Math.floor(usable / bars));
+
+      for (let i = 0; i < bars; i += 1) {
         const bar = barsRef.current[i];
         if (!bar) continue;
         const value = data[i * step] ?? 0;
-        bar.style.height = `${Math.max(8, (value / 255) * 100)}%`;
+        bar.style.height = `${Math.max(2, (value / 255) * height)}px`;
       }
       frameRef.current = requestAnimationFrame(draw);
     };
@@ -70,21 +77,22 @@ export default function AudioVisualizer({ isPlaying }: { isPlaying: boolean }) {
       if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
       frameRef.current = null;
     };
-  }, [isPlaying]);
+  }, [isPlaying, bars, height]);
 
   return (
     <div
-      className="flex items-end gap-[2px] h-3.5 px-1"
+      className={`flex items-end gap-[2px] ${className}`}
+      style={{ height }}
       aria-hidden="true"
     >
-      {Array.from({ length: BAR_COUNT }).map((_, i) => (
+      {Array.from({ length: bars }).map((_, i) => (
         <span
           key={i}
           ref={(el) => {
             barsRef.current[i] = el;
           }}
-          className={`w-[3px] ${isPlaying ? 'bg-crimson' : 'bg-void-750'}`}
-          style={{ height: '3px', transition: 'height 90ms linear' }}
+          className={`w-[2px] rounded-full ${isPlaying ? 'bg-signal' : 'bg-ink-700'}`}
+          style={{ height: 2, transition: 'height 80ms linear' }}
         />
       ))}
     </div>

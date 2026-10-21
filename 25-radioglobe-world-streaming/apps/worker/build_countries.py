@@ -21,6 +21,7 @@ import pycountry
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from data.country_names_uz import (  # noqa: E402
+    CONTINENT_BY_ISO2,
     CONTINENT_UZ,
     COUNTRY_NAMES_UZ,
     NO_ISO_TERRITORIES_UZ,
@@ -186,7 +187,9 @@ def build():
             "name_en": name_en,
             "name_uz": name_uz,
             "slug": slug,
-            "continent": CONTINENT_UZ.get(continent_en, continent_en),
+            "continent": CONTINENT_UZ.get(continent_en)
+            or CONTINENT_BY_ISO2.get(iso2)
+            or continent_en,
             "flag_emoji": flag_emoji(iso2) if len(iso2) == 2 else "",
             "centroid_lat": centroid[1] if centroid else None,
             "centroid_lon": centroid[0] if centroid else None,
@@ -231,7 +234,9 @@ def build():
             "name_en": name_en,
             "name_uz": COUNTRY_NAMES_UZ.get(iso2, name_en),
             "slug": slug,
-            "continent": "—",
+            # Geometriyasi yo'q bo'lsa ham qit'a ma'lum — aks holda
+            # katalogda "Boshqa" guruhiga tushib qolardi
+            "continent": CONTINENT_BY_ISO2.get(iso2, "Boshqa"),
             "flag_emoji": flag_emoji(iso2),
             "centroid_lat": None,
             "centroid_lon": None,

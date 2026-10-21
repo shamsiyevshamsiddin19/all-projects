@@ -2,7 +2,7 @@ import React from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Globe2, Radio, Signal } from 'lucide-react';
+import { ArrowLeft, Globe2, Signal } from 'lucide-react';
 
 import StationCard from '@/components/Country/StationCard';
 import StationLogo from '@/components/Country/StationLogo';
@@ -59,85 +59,71 @@ export default async function StationPage({ params }: StationPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-void-950 py-8 px-4 lg:px-8 font-mono">
+    <div className="mx-auto max-w-3xl px-4 py-8 lg:px-8">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <div className="max-w-4xl mx-auto">
-        <nav className="mb-6" aria-label="Navigatsiya">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors py-1.5 px-3 bg-void-900 border border-void-750 hover:border-crimson"
-          >
-            <ArrowLeft className="w-3.5 h-3.5 text-crimson" />
-            <span>Globusga qaytish</span>
-          </Link>
-        </nav>
+      <Link
+        href="/"
+        className="inline-flex items-center gap-1.5 text-sm text-text-muted transition-colors hover:text-text-primary"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Globusga qaytish
+      </Link>
 
-        <header className="tactical-box p-6 sm:p-8 mb-6 shadow-tactical-glass">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-            <StationLogo src={data.logo_url} alt={data.name} size={88} />
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 text-crimson text-xs uppercase tracking-wider mb-1 font-bold">
-                <Radio className="w-3.5 h-3.5" />
-                <span>Jonli radio</span>
-              </div>
-              <h1 className="text-2xl sm:text-4xl font-black text-white tracking-wider uppercase break-words">
-                {data.name}
-              </h1>
-              <div className="flex items-center gap-3 mt-2 flex-wrap text-xs text-slate-400">
-                {data.primary_stream?.bitrate ? (
-                  <span className="flex items-center gap-1">
-                    <Signal className="w-3 h-3 text-crimson" />
-                    {data.primary_stream.bitrate} kbps
-                  </span>
-                ) : null}
-                {data.primary_stream?.format ? (
-                  <span className="uppercase">{data.primary_stream.format}</span>
-                ) : null}
-                {data.homepage ? (
-                  <a
-                    href={data.homepage}
-                    target="_blank"
-                    rel="noopener noreferrer nofollow"
-                    className="flex items-center gap-1 hover:text-white transition-colors"
-                  >
-                    <Globe2 className="w-3 h-3" />
-                    Rasmiy sayt
-                  </a>
-                ) : null}
-              </div>
-            </div>
+      <header className="mt-6 flex flex-col gap-5 border-b border-ink-800 pb-8 sm:flex-row sm:items-center">
+        <StationLogo src={data.logo_url} alt={data.name} size={80} />
+        <div className="min-w-0">
+          <p className="eyebrow">Jonli radio</p>
+          <h1 className="mt-1.5 break-words font-display text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">
+            {data.name}
+          </h1>
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-text-muted">
+            {data.primary_stream?.bitrate ? (
+              <span className="flex items-center gap-1.5">
+                <Signal className="h-3.5 w-3.5" />
+                {data.primary_stream.bitrate} kbps
+              </span>
+            ) : null}
+            {data.primary_stream?.format ? (
+              <span className="uppercase">{data.primary_stream.format}</span>
+            ) : null}
+            {data.homepage ? (
+              <a
+                href={data.homepage}
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                className="flex items-center gap-1.5 transition-colors hover:text-text-primary"
+              >
+                <Globe2 className="h-3.5 w-3.5" />
+                Rasmiy sayt
+              </a>
+            ) : null}
           </div>
+        </div>
+      </header>
 
-          {data.tags.length > 0 ? (
-            <div className="mt-6 pt-5 border-t border-void-800 flex items-center gap-2 flex-wrap">
-              {data.tags.map((t) => (
-                <span
-                  key={t}
-                  className="text-xs px-2.5 py-1 bg-void-900 text-slate-300 border border-void-750"
-                >
-                  #{t}
-                </span>
-              ))}
-            </div>
-          ) : null}
-        </header>
+      {data.tags.length > 0 ? (
+        <nav className="mt-6 flex flex-wrap gap-2" aria-label="Janrlar">
+          {data.tags.map((t) => (
+            <Link key={t} href={`/janr/${encodeURIComponent(t)}`} className="chip hover:border-ink-600">
+              {t}
+            </Link>
+          ))}
+        </nav>
+      ) : null}
 
-        <section>
-          <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-3">
-            Tinglash
-          </h2>
-          <StationCard station={data} />
-          <p className="text-xs text-slate-500 mt-4 leading-relaxed">
-            Oqim stansiyaning o'z serveridan keladi. RadioGlobe audio fayllarni
-            saqlamaydi — faqat ommaviy e'lon qilingan jonli efir manzillarini
-            katalog qiladi.
-          </p>
-        </section>
-      </div>
+      <section className="mt-6">
+        <h2 className="eyebrow mb-3">Tinglash</h2>
+        <StationCard station={data} linkToStation={false} />
+        <p className="mt-5 text-sm leading-relaxed text-text-muted">
+          Oqim stansiyaning o'z serveridan keladi. RadioGlobe audio fayllarni
+          saqlamaydi — faqat ommaviy e'lon qilingan jonli efir manzillarini
+          katalog qiladi.
+        </p>
+      </section>
     </div>
   );
 }

@@ -1,20 +1,24 @@
-import { Radio } from 'lucide-react';
+import Link from 'next/link';
 
-import GlobeClientWrapper from '@/components/Globe/GlobeClientWrapper';
 import FallbackCountryList from '@/components/Globe/FallbackCountryList';
-import { fetchCountries } from '@/lib/api';
+import GlobeClientWrapper from '@/components/Globe/GlobeClientWrapper';
+import { fetchCountries, fetchStats } from '@/lib/api';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://radio.shamsiyev.uz';
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
 
-// Sahifa har 10 daqiqada qayta generatsiya qilinadi. Oldin build paytida bir
-// marta prerender bo'lib muzlab qolgandi va "0 davlat" ko'rsatib turardi.
+// Sahifa har 10 daqiqada qayta generatsiya qilinadi
 export const revalidate = 600;
 
 export default async function HomePage() {
-  const countries = await fetchCountries(300, false);
+  const [countries, stats] = await Promise.all([fetchCountries(300, false), fetchStats()]);
   const withStations = countries.filter((c) => c.radio_count > 0);
-  const totalStations = countries.reduce((sum, c) => sum + c.radio_count, 0);
+
+  // Raqamlar yagona manbadan (API /stats). Agar API javob bermasa, mavjud
+  // ro'yxatdan hisoblaymiz — sahifada "0" turib qolmasligi uchun.
+  const totalStations =
+    stats.stations || withStations.reduce((sum, c) => sum + c.radio_count, 0);
+  const totalCountries = stats.countries || withStations.length;
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -22,43 +26,74 @@ export default async function HomePage() {
     name: 'RadioGlobe',
     url: SITE_URL,
     inLanguage: 'uz',
-    description: `${withStations.length} davlatdan ${totalStations} ta jonli radiostansiya.`,
+    description: `${totalCountries} davlatdan ${totalStations} ta jonli radiostansiya.`,
     potentialAction: {
       '@type': 'SearchAction',
-      target: { '@type': 'EntryPoint', urlTemplate: `${SITE_URL}/?q={search_term_string}` },
+      target: { '@type': 'EntryPoint', urlTemplate: `${SITE_URL}/qidiruv?q={search_term_string}` },
       'query-input': 'required name=search_term_string',
     },
   };
 
   return (
-    <div className="flex flex-col">
+    <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
       {/*
-        Sarlavha SSR HTML'da bo'lishi SHART: globus WebGL canvas, ya'ni qidiruv
-        tizimlari uchun butunlay bo'sh. Oldin sahifada bitta ham <h1> yo'q edi.
-        Bu blok shu bilan birga LCP elementi ham — canvas emas, matn.
+        Sarlavha SSR HTML'da bo'lishi shart: globus WebGL canvas, ya'ni qidiruv
+        tizimlari uchun butunlay bo'sh. Shu blok bir vaqtda LCP elementi ham —
+        canvas emas, matn.
       */}
-      <section className="px-4 lg:px-8 pt-8 pb-4 max-w-7xl mx-auto w-full">
-        <div className="flex items-center gap-2 text-crimson mb-2 font-mono">
-          <Radio className="w-4 h-4" />
-          <span className="text-xs uppercase tracking-widest font-bold">Jonli efir</span>
-        </div>
-        <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight uppercase font-mono">
-          Dunyo radiolari bir bosishda
-        </h1>
-        <p className="text-sm text-slate-400 mt-3 max-w-2xl">
-          Globusdan davlatni tanlang —{' '}
-          <strong className="text-slate-200">{withStations.length} davlatdan</strong>{' '}
-          <strong className="text-slate-200">{totalStations.toLocaleString('uz-UZ')} ta</strong>{' '}
-          jonli radiostansiya. Bepul, ro'yxatdan o'tmasdan.
+      <section className="mx-auto w-full max-w-7xl px-4 pb-4 pt-8 lg:px-8">
+        <p className="eyebrow flex items-center gap-2">
+          <span className="live-dot" aria-hidden="true" />
+          Jonli efir
         </p>
+
+        <h1 className="mt-2.5 max-w-2xl font-display text-3xl font-semibold leading-[1.1] tracking-tight text-text-primary sm:text-5xl">
+          Dunyoning istalgan nuqtasidagi radioni tinglang
+        </h1>
+
+        <p className="mt-3 max-w-xl text-sm leading-relaxed text-text-secondary sm:text-base">
+          Globusni aylantiring, davlatni tanlang va efirni bir bosishda oching.
+          Ro'yxatdan o'tish ham, reklama ham yo'q.
+        </p>
+
+        <dl className="mt-5 flex flex-wrap items-center gap-x-8 gap-y-3">
+          <div>
+            <dt className="text-xs text-text-muted">Stansiyalar</dt>
+            <dd className="font-display text-2xl font-semibold text-text-primary">
+              {totalStations.toLocaleString('uz-UZ')}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs text-text-muted">Davlatlar</dt>
+            <dd className="font-display text-2xl font-semibold text-text-primary">
+              {totalCountries}
+            </dd>
+          </div>
+          {stats.top_genres.length > 0 ? (
+            <div className="min-w-0">
+              <dt className="text-xs text-text-muted">Mashhur janrlar</dt>
+              <dd className="mt-1.5 flex flex-wrap gap-1.5">
+                {stats.top_genres.slice(0, 6).map((g) => (
+                  <Link
+                    key={g.tag}
+                    href={`/janr/${encodeURIComponent(g.tag)}`}
+                    className="chip transition-colors hover:border-signal/50 hover:text-signal-bright"
+                  >
+                    {g.tag}
+                  </Link>
+                ))}
+              </dd>
+            </div>
+          ) : null}
+        </dl>
       </section>
 
-      <section className="relative w-full">
+      <section className="w-full" aria-label="Interaktiv globus">
         <GlobeClientWrapper
           countries={countries}
           geojsonUrl={`${API_BASE}/map/countries.geojson`}
@@ -67,6 +102,6 @@ export default async function HomePage() {
 
       {/* Qidiruv tizimlari uchun asosiy kirish nuqtasi — haqiqiy <a> havolalar */}
       <FallbackCountryList countries={countries} />
-    </div>
+    </>
   );
 }
