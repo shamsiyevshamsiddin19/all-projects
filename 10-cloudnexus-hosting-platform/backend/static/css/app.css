@@ -151,20 +151,17 @@ pre{background:#0b1220;color:#e2e8f0;padding:16px;border-radius:12px;overflow-x:
 
 .hero-visual{position:relative}
 
-/* 3D illustration card — hero-3d.png joylashtirilgunga qadar CSS bilan
-   chizilgan bulut+kalit belgisi ko'rsatiladi (placeholder). */
+/* 3D illustration card — hero-3d.png (server+bulut rasmi) fon qilib qo'yiladi,
+   ustiga SSH kalit belgisi overlay sifatida chiqadi. */
 .hero-illustration{position:relative;aspect-ratio:4/5;max-height:420px;border-radius:20px;overflow:hidden;
   background-repeat:no-repeat,no-repeat,no-repeat;background-position:center,center,center;
   background-size:cover,auto,auto;
-  box-shadow:0 30px 60px -16px rgba(15,23,42,.4);display:flex;align-items:center;justify-content:center}
-.hero-illustration-placeholder{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px}
-.hero-illustration-placeholder svg{width:96px;height:96px;color:#4ade80;filter:drop-shadow(0 0 24px rgba(74,222,128,.45))}
+  box-shadow:0 30px 60px -16px rgba(15,23,42,.4)}
 .hero-illustration-key{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.08);
   border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:7px 14px;backdrop-filter:blur(6px)}
 .hero-illustration-key svg{width:14px;height:14px;color:#86efac;filter:none}
 .hero-illustration-key span{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.76rem;color:#cbd5e1}
-.hero-illustration-hint{position:absolute;bottom:14px;left:14px;right:14px;text-align:center;
-  font-size:.68rem;color:rgba(255,255,255,.3)}
+.hero-illustration-key-overlay{position:absolute;left:16px;bottom:16px;z-index:2}
 
 .hero-term-note{margin-top:22px}
 .hero-term-note summary{cursor:pointer;font-size:.84rem;font-weight:700;color:var(--green-dark);list-style:none;
