@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Heart, Loader2, Radio, Search, X } from 'lucide-react';
+import { Heart, Loader2, Search, X } from 'lucide-react';
 
 import StationLogo from '@/components/Country/StationLogo';
 import { searchStations } from '@/lib/api';
@@ -230,9 +231,16 @@ export default function Header() {
       */}
       <div className="grid h-14 grid-cols-[auto_1fr_auto] items-center gap-3 px-4 lg:px-8">
         <Link href="/" className="flex shrink-0 items-center gap-2.5" onClick={closeMobile}>
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-signal text-white">
-            <Radio className="h-4 w-4" />
-          </span>
+          {/* Brend belgisi — faviconda ishlatilgan xuddi shu rasm, shu bilan
+              header va brauzer tabidagi ikonka bir xil bo'ladi */}
+          <Image
+            src="/icon-192.png"
+            alt="RadioGlobe"
+            width={32}
+            height={32}
+            priority
+            className="h-8 w-8"
+          />
           <span className="font-display text-base font-semibold tracking-tight text-text-primary">
             RadioGlobe
           </span>

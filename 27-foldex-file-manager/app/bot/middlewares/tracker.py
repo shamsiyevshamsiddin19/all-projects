@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Foldex Xabarlarni Kuzatish Middleware-lari (Incoming va Outgoing Tracker).
-Chatdagi barcha kiruvchi va chiquvchi xabarlarning identifikatorlarini
-kuzatib boradi. Har kuni kechqurun tozalashda faqat foydalanuvchi yuborgan
-/start xabari saqlanib, qolgan barcha xabarlar o'chiriladi.
+- Chatdagi barcha xabarlarning ID sini ma'lumotlar bazasiga yozadi.
+- Foydalanuvchi har 5-marta buyruq/tugma bosganida oldingi barcha xabarlarni
+  avtomatik tozalaydi (/start xabari saqlanadi).
 """
 
 from typing import Any, Callable, Dict, Awaitable
@@ -15,11 +15,14 @@ from aiogram.types import Message, TelegramObject
 
 from app.services.cleanup_service import CleanupService
 
+# Har bir chat uchun bosilgan buyruqlar hisoblagichi
+_chat_click_counts: Dict[int, int] = {}
+
 
 class IncomingMessageTrackerMiddleware(BaseMiddleware):
     """
     Foydalanuvchi tomonidan yuborilgan barcha xabarlarni qayd qiladi.
-    Agar xabar /start bo'lsa, is_start=True deb belgilanadi.
+    Har 5-chi buyruq kelganda, oldingi to'plangan xabarlarni avtomatik o'chiradi.
     """
     async def __call__(
         self,
@@ -34,6 +37,22 @@ class IncomingMessageTrackerMiddleware(BaseMiddleware):
                 message_id=event.message_id,
                 is_start=is_start
             )
+
+            if is_start:
+                _chat_click_counts[event.chat.id] = 0
+            else:
+                # Har 5-chi buyruq bosilganda oldingi xabarlarni o'chirish
+                current_count = _chat_click_counts.get(event.chat.id, 0) + 1
+                if current_count >= 5:
+                    print(f"🧹 5-chi buyruq bosildi (chat {event.chat.id}): oldingi xabarlar tozalanmoqda...")
+                    await CleanupService.cleanup_previous_messages(
+                        bot=event.bot,
+                        chat_id=event.chat.id,
+                        exclude_message_ids=[event.message_id]
+                    )
+                    _chat_click_counts[event.chat.id] = 0
+                else:
+                    _chat_click_counts[event.chat.id] = current_count
 
         return await handler(event, data)
 

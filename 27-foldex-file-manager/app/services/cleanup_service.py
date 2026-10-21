@@ -103,6 +103,63 @@ class CleanupService:
             print(f"✅ Chat tozalash yakunlandi: {len(deleted_ids)} ta xabar o'chirildi.")
             return len(deleted_ids)
 
+    @staticmethod
+    async def cleanup_previous_messages(
+        bot: Bot,
+        chat_id: int,
+        exclude_message_ids: List[int] | None = None
+    ) -> int:
+        """
+        Foydalanuvchi har 5-marta buyruq bosganda oldingi to'plangan
+        barcha xabarlarni o'chiradi.
+        - is_start=True bo'lgan (/start) xabarlar saqlanadi.
+        - exclude_message_ids da berilgan (masalan, joriy eng oxirgi xabar) saqlanadi.
+        """
+        exclude_ids = set(exclude_message_ids or [])
+        async with async_session_maker() as db:
+            stmt = select(BotChatMessage).where(
+                BotChatMessage.chat_id == chat_id,
+                BotChatMessage.is_start == False
+            ).order_by(BotChatMessage.message_id.desc())
+
+            res = await db.execute(stmt)
+            messages = list(res.scalars().all())
+
+            # exclude_ids ga kirmaydigan xabarlarni ajratib olish
+            to_delete = [m for m in messages if m.message_id not in exclude_ids]
+            if not to_delete:
+                return 0
+
+            msg_ids = [m.message_id for m in to_delete]
+            deleted_ids = []
+
+            # Telegram API orqali to'p qilib o'chirish
+            batch_size = 100
+            for i in range(0, len(msg_ids), batch_size):
+                batch = msg_ids[i:i + batch_size]
+                try:
+                    await bot.delete_messages(chat_id=chat_id, message_ids=batch)
+                    deleted_ids.extend(batch)
+                except TelegramAPIError:
+                    for single_id in batch:
+                        try:
+                            await bot.delete_message(chat_id=chat_id, message_id=single_id)
+                            deleted_ids.append(single_id)
+                        except TelegramAPIError:
+                            deleted_ids.append(single_id)
+                await asyncio.sleep(0.05)
+
+            if deleted_ids:
+                del_stmt = delete(BotChatMessage).where(
+                    BotChatMessage.chat_id == chat_id,
+                    BotChatMessage.message_id.in_(deleted_ids)
+                )
+                await db.execute(del_stmt)
+                await db.commit()
+
+            print(f"🧹 Har 5-buyruq tozalashi: {len(deleted_ids)} ta oldingi xabar o'chirildi.")
+            return len(deleted_ids)
+
 
 async def nightly_cleanup_loop(bot: Bot) -> None:
     """

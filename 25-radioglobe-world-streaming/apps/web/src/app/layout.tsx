@@ -52,6 +52,19 @@ export const metadata: Metadata = {
     description: 'Globusdan davlat tanlang va radioni bir bosishda tinglang.',
   },
   robots: { index: true, follow: true },
+  // Favicon/ilova ikonkasi — bir nechta o'lcham, har xil qurilma va kontekst
+  // uchun (brauzer tabi, Android/iOS bosh ekrani, PWA).
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon-16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/icon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [{ url: '/apple-icon-180.png', sizes: '180x180', type: 'image/png' }],
+  },
+  manifest: '/manifest.webmanifest',
 };
 
 export const viewport: Viewport = {
