@@ -25,6 +25,7 @@ REPOS = {
     "24-blog": "https://github.com/shamsiyevshamsiddin19/blog.git",
     "25-radioglobe-world-streaming": "https://github.com/shamsiyevshamsiddin19/radio-world-streaming.git",
     "26-telegram-userbot": "https://github.com/shamsiyevshamsiddin19/userbot.git",
+    "27-foldex-file-manager": "https://github.com/shamsiyevshamsiddin19/Foldexs.git",
 }
 
 ROOT_DIR = Path(__file__).resolve().parent
@@ -71,12 +72,18 @@ def sync_standalone(rel_path, repo_url, commit_msg):
         run("git add -A", cwd=temp_dir)
         diff = run("git diff --staged --quiet", cwd=temp_dir, check=False)
         if diff.returncode != 0:
+            run('git config user.name "Shamsiddin Shamsiyev"', cwd=temp_dir)
+            run('git config user.email "shamsiyevshamsiddin19@gmail.com"', cwd=temp_dir)
             run(f'git commit -m "{commit_msg}"', cwd=temp_dir)
             push_res = run("git push origin HEAD", cwd=temp_dir, check=False)
             if push_res.returncode == 0:
                 print(f"✅ Muvaffaqiyatli yuklandi: {repo_url}")
             else:
-                print(f"⚠️  Push xatosi: {push_res.stderr.strip()}")
+                push_main = run("git push origin HEAD:main", cwd=temp_dir, check=False)
+                if push_main.returncode == 0:
+                    print(f"✅ Muvaffaqiyatli yuklandi (main): {repo_url}")
+                else:
+                    print(f"⚠️  Push xatosi: {push_res.stderr.strip() or push_main.stderr.strip()}")
         else:
             print(f"ℹ️  {repo_url} da o'zgarish yo'q, yangilanish shart emas.")
 
@@ -84,7 +91,23 @@ def sync_standalone(rel_path, repo_url, commit_msg):
         shutil.rmtree(temp_dir, ignore_errors=True)
 
 def main():
-    commit_msg = sys.argv[1] if len(sys.argv) > 1 else "feat: update projects and enhance codebase"
+    args = sys.argv[1:]
+    target_repo = None
+    force_all = False
+    clean_args = []
+    i = 0
+    while i < len(args):
+        if args[i] == "--repo" and i + 1 < len(args):
+            target_repo = args[i + 1]
+            i += 2
+        elif args[i] == "--all":
+            force_all = True
+            i += 1
+        else:
+            clean_args.append(args[i])
+            i += 1
+
+    commit_msg = " ".join(clean_args) if clean_args else "feat: update projects and enhance codebase"
     
     print("=" * 60)
     print("🚀 GIT ACTIVITY & AUTO-SYNC BOSHLANDI")
@@ -119,9 +142,13 @@ def main():
     # 2. Check each mapped standalone repo
     synced_any = False
     for rel_path, repo_url in REPOS.items():
-        # Match by root project directory prefix
+        # Match by root project directory prefix or target/force flags
         proj_prefix = rel_path.split("/")[0]
-        matched = any(f.startswith(proj_prefix) for f in changed_files)
+        matched = (
+            force_all or 
+            (target_repo and (target_repo in rel_path or rel_path.startswith(target_repo))) or 
+            any(f.startswith(proj_prefix) for f in changed_files)
+        )
         if matched:
             sync_standalone(rel_path, repo_url, commit_msg)
             synced_any = True

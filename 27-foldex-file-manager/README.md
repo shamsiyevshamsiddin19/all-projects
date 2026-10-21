@@ -11,7 +11,8 @@
 
 - 🌐 **Ishlab chiqarish domeni:** `https://foldex.shamsiyev.uz`
 - 👤 **Yagona administrator:** `TELEGRAM_ADMIN_ID = 7883409434`
-- 🖥️ **Asosiy ishlab chiqarish serveri:** `shamsiyev.uz` (Oracle Cloud Stockholm, `79.76.49.83`, user `opc`)
+- 🖥️ **Ishlab chiqarish serveri:** `yordamchi` (`82.70.41.85`, port `8027`)
+- 🔗 **GitHub Repozitoriyasi:** [shamsiyevshamsiddin19/Foldexs](https://github.com/shamsiyevshamsiddin19/Foldexs)
 
 ---
 

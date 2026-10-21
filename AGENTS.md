@@ -62,6 +62,7 @@ Agar `sync-git.sh` biror sabab bilan ishlamasa, AI qo'lda tegishli repolarga pus
 | `24-blog` | `https://github.com/shamsiyevshamsiddin19/blog.git` |
 | `25-radioglobe-world-streaming` | `https://github.com/shamsiyevshamsiddin19/radio-world-streaming.git` |
 | `26-telegram-userbot` | `https://github.com/shamsiyevshamsiddin19/userbot.git` |
+| `27-foldex-file-manager` | `https://github.com/shamsiyevshamsiddin19/Foldexs.git` |
 
 ---
 
