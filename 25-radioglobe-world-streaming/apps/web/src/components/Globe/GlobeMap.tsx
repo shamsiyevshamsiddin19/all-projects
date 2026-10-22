@@ -31,8 +31,10 @@ const ROTATION_DEG_PER_SEC = 2.5;
 // ~20 fps yetarli: 60 fps da butun xarita qayta chizilib, noutbuk ventilyatori
 // ishlab ketadi va mobil batareya tez tugaydi
 const ROTATION_FRAME_MS = 50;
-// Foydalanuvchi globusga tekkanidan keyin shuncha vaqt aylanmaydi
-const RESUME_AFTER_INTERACTION_MS = 5000;
+// Teginishdan keyin (touchend) aylanish darhol emas, bir oz keyin qaytadi —
+// aks holda bosish/qisqa sudrash tugashi bilan globus foydalanuvchi barmog'i
+// ostidayoq sirpanib keta boshlaydi
+const RESUME_AFTER_TOUCH_MS = 1200;
 
 export default function GlobeMap({ countries, geojsonUrl, onUnsupported }: GlobeMapProps) {
   const router = useRouter();
@@ -42,8 +44,23 @@ export default function GlobeMap({ countries, geojsonUrl, onUnsupported }: Globe
   const mapRef = useRef<maplibregl.Map | null>(null);
   const hoveredIdRef = useRef<string | number | null>(null);
   const rotatingRef = useRef(true);
-  const interactionUntilRef = useRef(0);
   const hoverRafRef = useRef<number | null>(null);
+  /*
+    Avtomatik aylanishni VAQTGA EMAS, SICHQONCHA/BARMOQ HOLATIGA qarab
+    to'xtatamiz: foydalanuvchi globus ustida ("pointerInside") yoki uni
+    sudrayotgan bo'lsa ("dragging"), aylanish darhol to'xtaydi va faqat
+    ikkisi ham yo'qolgandan keyin qayta boshlanadi.
+
+    Oldin bu "5 soniya kutish" (vaqt asosida) qilingan edi — bu ikkita
+    muammoga olib kelardi: (1) foydalanuvchi sudrab turganda ham interval
+    globusni O'ZINING joyiga surib, haqiqiy sudrash bilan "kurashardi";
+    (2) globus avtomatik aylanganda sichqoncha qimirlamagani uchun
+    hover tooltipi 'mousemove' kelmaguncha ESKI joyida qotib qolardi —
+    natijada davlat nomi globusdan "uzoqda osilib" qolgandek ko'rinardi.
+  */
+  const pointerInsideRef = useRef(false);
+  const draggingRef = useRef(false);
+  const touchResumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [isRotating, setIsRotating] = useState(true);
   const [hovered, setHovered] = useState<HoverInfo | null>(null);
@@ -232,43 +249,92 @@ export default function GlobeMap({ countries, geojsonUrl, onUnsupported }: Globe
       foydalanuvchi globusni sudrab bo'lishini sezmasligi mumkin edi.
     */
     map.getCanvas().style.cursor = 'grab';
-    map.on('dragstart', () => {
-      map.getCanvas().style.cursor = 'grabbing';
-    });
-    map.on('dragend', () => {
-      map.getCanvas().style.cursor = 'grab';
-    });
 
-    // ── Aylanish ──
-    let lastTick = performance.now();
-    const timer = setInterval(() => {
-      const now = performance.now();
-      const deltaSec = (now - lastTick) / 1000;
-      lastTick = now;
-
-      if (!rotatingRef.current || now < interactionUntilRef.current) return;
-      if (document.hidden) return;
-
-      const center = map.getCenter();
-      center.lng += ROTATION_DEG_PER_SEC * deltaSec;
-      map.setCenter(center);
-    }, ROTATION_FRAME_MS);
-
-    const pauseRotation = () => {
-      interactionUntilRef.current = performance.now() + RESUME_AFTER_INTERACTION_MS;
-    };
-    map.on('mousedown', pauseRotation);
-    map.on('touchstart', pauseRotation);
-    map.on('wheel', pauseRotation);
-    map.on('dragstart', pauseRotation);
-
-    // ── Hover ──
+    // ── Hover (aylanish/drag handlerlaridan OLDIN e'lon qilinadi — ular
+    //    sudrash boshlanganda tooltipni tozalash uchun shuni chaqiradi) ──
     const clearHover = () => {
       if (hoveredIdRef.current !== null) {
         map.setFeatureState({ source: 'countries', id: hoveredIdRef.current }, { hover: false });
         hoveredIdRef.current = null;
       }
     };
+
+    // ── Aylanish: faqat sichqoncha/barmoq globusda BO'LMAGANDA ishlaydi ──
+    const canRotateNow = () =>
+      rotatingRef.current &&
+      !pointerInsideRef.current &&
+      !draggingRef.current &&
+      !document.hidden;
+
+    let lastTick = performance.now();
+    const timer = setInterval(() => {
+      const now = performance.now();
+      const deltaSec = (now - lastTick) / 1000;
+      lastTick = now;
+
+      if (!canRotateNow()) return;
+
+      const center = map.getCenter();
+      center.lng += ROTATION_DEG_PER_SEC * deltaSec;
+      map.setCenter(center);
+    }, ROTATION_FRAME_MS);
+
+    const clearTouchResumeTimer = () => {
+      if (touchResumeTimerRef.current !== null) {
+        clearTimeout(touchResumeTimerRef.current);
+        touchResumeTimerRef.current = null;
+      }
+    };
+
+    // Sichqoncha: globusga kirganda aylanish to'xtaydi, chiqqanda qaytadi
+    const canvas = map.getCanvas();
+    const onPointerEnter = () => {
+      pointerInsideRef.current = true;
+    };
+    const onPointerLeave = () => {
+      pointerInsideRef.current = false;
+      if (!draggingRef.current) map.getCanvas().style.cursor = 'grab';
+    };
+    canvas.addEventListener('mouseenter', onPointerEnter);
+    canvas.addEventListener('mouseleave', onPointerLeave);
+
+    // Teginish: boshlanganda to'xtaydi, tugaganda BIROZDAN KEYIN qaytadi —
+    // aks holda bosish tugashi bilanoq globus barmoq ostida sirpanib ketadi
+    const onTouchStart = () => {
+      clearTouchResumeTimer();
+      pointerInsideRef.current = true;
+    };
+    const onTouchEnd = () => {
+      clearTouchResumeTimer();
+      touchResumeTimerRef.current = setTimeout(() => {
+        pointerInsideRef.current = false;
+      }, RESUME_AFTER_TOUCH_MS);
+    };
+    canvas.addEventListener('touchstart', onTouchStart, { passive: true });
+    canvas.addEventListener('touchend', onTouchEnd, { passive: true });
+    canvas.addEventListener('touchcancel', onTouchEnd, { passive: true });
+
+    map.on('dragstart', () => {
+      draggingRef.current = true;
+      map.getCanvas().style.cursor = 'grabbing';
+      /*
+        Sudrash boshlanishi bilan tooltip tozalanadi. Aks holda sudrash
+        tugaganda, agar yangi 'mousemove' hali kelmagan bo'lsa, tooltip
+        ESKI davlat nomi bilan YANGI (noto'g'ri) joyda osilib qolaveradi —
+        chunki globus siljidi, lekin ko'rsatilgan matn hali eski.
+      */
+      clearHover();
+      if (hoverRafRef.current !== null) cancelAnimationFrame(hoverRafRef.current);
+      setHovered(null);
+    });
+    map.on('dragend', () => {
+      draggingRef.current = false;
+      // Keyingi 'mousemove' cursor'ni (pointer/grab) to'g'ri hisoblab beradi;
+      // bu yerda faqat "grabbing"dan chiqib ketishni kafolatlaymiz
+      map.getCanvas().style.cursor = 'grab';
+    });
+
+    // ── Hover ──
 
     map.on('mousemove', 'countries-fill', (e) => {
       const feature = e.features?.[0];
@@ -322,6 +388,12 @@ export default function GlobeMap({ countries, geojsonUrl, onUnsupported }: Globe
     return () => {
       clearTimeout(revealTimer);
       clearInterval(timer);
+      clearTouchResumeTimer();
+      canvas.removeEventListener('mouseenter', onPointerEnter);
+      canvas.removeEventListener('mouseleave', onPointerLeave);
+      canvas.removeEventListener('touchstart', onTouchStart);
+      canvas.removeEventListener('touchend', onTouchEnd);
+      canvas.removeEventListener('touchcancel', onTouchEnd);
       if (hoverRafRef.current !== null) cancelAnimationFrame(hoverRafRef.current);
       map.remove();
       mapRef.current = null;
