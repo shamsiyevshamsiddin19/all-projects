@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}whost.uz — AI yozgan kodni bir buyruq bilan joylashtiring{% endblock %}
+{% block title %}whost.uz — statik saytlar uchun bepul server{% endblock %}
 {% block content %}
 <section class="hero-center">
-  <div class="eyebrow">Control plane</div>
-  <h1>AI kod yozdi.<br>Joylashtirishni biz hal qilamiz.</h1>
-  <p class="sub">Google yoki GitHub bilan kiring — <code>nomingiz.{{ PLATFORM_DOMAIN }}</code> subdomeningiz va SSH kalitingiz tayyor bo'ladi.</p>
+  <div class="eyebrow">Erta bosqich</div>
+  <h1>Statik saytlar uchun<br>bepul server.</h1>
+  <p class="sub">Google yoki GitHub bilan kiring — <code>nomingiz.{{ PLATFORM_DOMAIN }}</code> subdomeningiz va SSH kalitingiz shu zahoti tayyor bo'ladi.</p>
   <div class="hero-cta">
     <a class="btn btn-primary btn-lg" href="{% url 'account_login' %}">Boshlash</a>
     <span class="hero-cta-note">Google yoki GitHub — parol kerak emas</span>
