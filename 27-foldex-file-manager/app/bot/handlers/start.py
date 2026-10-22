@@ -69,14 +69,8 @@ async def handle_start(message: Message, state: FSMContext):
 async def handle_home(message: Message, state: FSMContext):
     """
     /home yoki Bosh menyu buyrug'i:
-    Foydalanuvchi xabari o'chiriladi, bot yangi xabar yozmasdan klaviaturani
-    jimgina bosh sahifa holatiga qaytaradi.
+    Bosh sahifaga (/) qaytaradi va reply keyboardni yangilaydi.
     """
-    try:
-        await message.delete()
-    except Exception:
-        pass
-
     await state.clear()
     await state.update_data(current_folder_id=None)
 
@@ -85,9 +79,7 @@ async def handle_home(message: Message, state: FSMContext):
         root_files = await FileService.get_files_by_folder(db, None)
 
     keyboard = build_folder_reply_keyboard(root_folders, root_files, has_parent=False)
-
-    from app.bot.handlers.navigation import update_reply_keyboard_silently
-    await update_reply_keyboard_silently(message.chat.id, keyboard)
+    await message.answer("📂 <code>/</code>", reply_markup=keyboard)
 
 
 @router.message(Command("search"))

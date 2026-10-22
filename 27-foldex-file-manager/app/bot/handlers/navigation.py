@@ -10,12 +10,13 @@ tracker middleware orqali avtomatik tarzda tozalanadi.
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.bot.keyboards.reply import build_folder_reply_keyboard
 from app.bot.loader import bot
 from app.core.database import async_session_maker
 from app.models.file_item import FileItem
+from app.models.folder import Folder
 from app.services.file_service import FileService
 from app.services.folder_service import FolderService
 from app.services.telegram_service import TelegramService
@@ -43,26 +44,16 @@ async def nav_back(message: Message, state: FSMContext):
             root_folders = await FolderService.get_root_folders(db)
             root_files = await FileService.get_files_by_folder(db, None)
             keyboard = build_folder_reply_keyboard(root_folders, root_files, has_parent=False)
-            text = (
-                "🏠 <b>Bosh sahifa</b>\n\n"
-                f"📁 Papkalar: <b>{len(root_folders)}</b> ta\n"
-                f"📄 Fayllar: <b>{len(root_files)}</b> ta"
-            )
+            text = "📂 <code>/</code>"
         else:
             parent_folder = await FolderService.get_by_id(db, parent_id)
             subfolders = await FolderService.get_subfolders(db, parent_id)
             files = await FileService.get_files_by_folder(db, parent_id)
-            crumbs = await FolderService.get_breadcrumbs(db, parent_id)
-            path_str = " / ".join([c.name for c in crumbs])
+            path_str = await FolderService.get_path_string(db, parent_id)
             has_parent = (parent_folder.parent_id is not None) if parent_folder else False
 
             keyboard = build_folder_reply_keyboard(subfolders, files, has_parent=has_parent)
-            text = (
-                f"{parent_folder.icon} <b>{parent_folder.name}</b>\n"
-                f"📍 <i>{path_str}</i>\n\n"
-                f"📁 Ichki papkalar: <b>{len(subfolders)}</b> ta\n"
-                f"📄 Fayllar: <b>{len(files)}</b> ta"
-            )
+            text = f"📂 <code>{path_str}</code>"
 
     await message.answer(text, reply_markup=keyboard)
 
@@ -118,22 +109,24 @@ async def nav_send_all(message: Message, state: FSMContext):
 @router.message(F.text)
 async def nav_folder_click_or_search(message: Message, state: FSMContext):
     """
-    Foydalanuvchi papka nomini bosganda ichiga kiradi yoki
-    qidiruv so'ziga mos fayllarni Reply klaviaturada chiqaradi.
+    Foydalanuvchi papka nomini bosganda yoki yo'lini kiritganda (/rus tili/kitob)
+    ichiga kirib uning yo'lini qaytaradi, aks holda qidiruv o'tkazadi.
     """
     raw_text = message.text.strip()
     data = await state.get_data()
     current_folder_id = data.get("current_folder_id")
 
     async with async_session_maker() as db:
-        subfolders = await FolderService.get_subfolders(db, current_folder_id)
-
         target_folder = None
+
+        # 1. Joriy papkaning bevosita ichki papkalari orasidan qidirish
+        subfolders = await FolderService.get_subfolders(db, current_folder_id)
         for sf in subfolders:
             if raw_text == f"{sf.icon} {sf.name}" or raw_text == sf.name:
                 target_folder = sf
                 break
 
+        # 2. Ildiz papkalar orasidan qidirish
         if not target_folder:
             all_root = await FolderService.get_root_folders(db)
             for rf in all_root:
@@ -141,30 +134,35 @@ async def nav_folder_click_or_search(message: Message, state: FSMContext):
                     target_folder = rf
                     break
 
+        # 3. Agar to'liq yoki nisbiy yo'l ko'rinishida yozilgan bo'lsa (masalan: "/rus tili/kitob")
+        if not target_folder and ("/" in raw_text or raw_text.startswith("/")):
+            target_folder = await FolderService.get_folder_by_path(db, raw_text)
+
+        # 4. Istalgan boshqa papka nomi bo'yicha qidirish
+        if not target_folder:
+            clean_name = raw_text.lstrip("📁 ").strip()
+            stmt = select(Folder).where(func.lower(Folder.name) == clean_name.lower())
+            res = await db.execute(stmt)
+            target_folder = res.scalars().first()
+
+        # Agar papka topilsa, o'sha papkaga o'tib yo'lini qaytaramiz
         if target_folder:
             await state.update_data(current_folder_id=target_folder.id)
 
             new_subfolders = await FolderService.get_subfolders(db, target_folder.id)
             new_files = await FileService.get_files_by_folder(db, target_folder.id)
-            crumbs = await FolderService.get_breadcrumbs(db, target_folder.id)
-            path_str = " / ".join([c.name for c in crumbs])
+            path_str = await FolderService.get_path_string(db, target_folder.id)
 
             keyboard = build_folder_reply_keyboard(new_subfolders, new_files, has_parent=True)
 
-            text_lines = [
-                f"{target_folder.icon} <b>{target_folder.name}</b>",
-                f"📍 <i>{path_str}</i>\n"
-            ]
+            text = f"📂 <code>{path_str}</code>"
             if target_folder.description:
-                text_lines.append(f"ℹ️ {target_folder.description}\n")
+                text += f"\n<i>ℹ️ {target_folder.description}</i>"
 
-            text_lines.append(f"📁 Ichki papkalar: <b>{len(new_subfolders)}</b> ta")
-            text_lines.append(f"📄 Fayllar: <b>{len(new_files)}</b> ta")
-
-            await message.answer("\n".join(text_lines), reply_markup=keyboard)
+            await message.answer(text, reply_markup=keyboard)
             return
 
-        # Agar papka topilmasa, bu qidiruv matni bo'lishi mumkin
+        # Agar papka topilmasa, bu qidiruv so'rovi bo'lishi mumkin
         found_files = await FileService.search_all_files(db, raw_text)
         if found_files:
             text = f"🔍 <b>«{raw_text}» bo'yicha {len(found_files)} ta fayl topildi:</b>\n"
@@ -175,5 +173,5 @@ async def nav_folder_click_or_search(message: Message, state: FSMContext):
         else:
             await message.answer(
                 f"❓ «{raw_text}» bo'yicha papka yoki fayl topilmadi.\n"
-                "Navigatsiya uchun klaviatura tugmalaridan foydalaning."
+                "Navigatsiya uchun klaviatura tugmalaridan foydalanishingiz yoki /home deb yozishingiz mumkin."
             )

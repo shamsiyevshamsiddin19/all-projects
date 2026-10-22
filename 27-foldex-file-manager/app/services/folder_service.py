@@ -166,6 +166,53 @@ class FolderService:
         return crumbs
 
     @staticmethod
+    async def get_path_string(db: AsyncSession, folder_id: Optional[int]) -> str:
+        """
+        Papkaning Unix-style to'liq yo'lini qaytaradi.
+        Masalan: '/rus tili/kitob' yoki '/'
+        """
+        if folder_id is None:
+            return "/"
+        crumbs = await FolderService.get_breadcrumbs(db, folder_id)
+        parts = [c.name for c in crumbs if c.id is not None]
+        return "/" + "/".join(parts) if parts else "/"
+
+    @staticmethod
+    async def get_folder_by_path(db: AsyncSession, path_str: str) -> Optional[Folder]:
+        """
+        Unix-style yo'l bo'yicha papkani topadi.
+        Masalan: '/rus tili/kitob' yoki 'rus tili/kitob'
+        """
+        cleaned = path_str.strip().strip("/")
+        if not cleaned:
+            return None
+        parts = [p.strip() for p in cleaned.split("/") if p.strip()]
+        if not parts:
+            return None
+
+        current_parent_id = None
+        current_folder = None
+
+        for part in parts:
+            if current_parent_id is None:
+                stmt = select(Folder).where(
+                    Folder.parent_id.is_(None),
+                    func.lower(Folder.name) == part.lower()
+                )
+            else:
+                stmt = select(Folder).where(
+                    Folder.parent_id == current_parent_id,
+                    func.lower(Folder.name) == part.lower()
+                )
+            res = await db.execute(stmt)
+            current_folder = res.scalar_one_or_none()
+            if not current_folder:
+                return None
+            current_parent_id = current_folder.id
+
+        return current_folder
+
+    @staticmethod
     async def get_folder_with_stats(db: AsyncSession, folder: Folder) -> FolderOut:
         """Papkadagi ichki papkalar soni, fayllar soni va umumiy hajmni hisoblab FolderOut sxemasiga o'giradi."""
         # 1. Ichki papkalar soni
