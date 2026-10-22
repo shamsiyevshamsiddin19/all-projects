@@ -1,0 +1,30 @@
+{% load static %}<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ slug }}.{{ PLATFORM_DOMAIN }}</title>
+  <meta name="robots" content="noindex">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=2">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2316a34a'><path d='M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z'/></svg>">
+</head>
+<body>
+<div class="container">
+  <section class="hero-center" style="min-height:100vh">
+    {% if server %}
+      <div class="eyebrow">{{ slug }}.{{ PLATFORM_DOMAIN }}</div>
+      <h1>Bu yerda hali kod yo'q.</h1>
+      <p class="sub">Egasi <code>{{ slug }}.{{ PLATFORM_DOMAIN }}</code> nomini band qilgan, lekin hali loyiha yuklanmagan.</p>
+    {% else %}
+      <div class="eyebrow">404</div>
+      <h1>Bunday subdomen mavjud emas.</h1>
+      <p class="sub"><code>{{ slug }}.{{ PLATFORM_DOMAIN }}</code> hech kim tomonidan band qilinmagan.</p>
+    {% endif %}
+    <div class="hero-cta">
+      <a class="btn btn-ghost" href="https://{{ PLATFORM_DOMAIN }}">whost.uz ga qaytish</a>
+    </div>
+  </section>
+</div>
+</body>
+</html>
