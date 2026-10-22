@@ -120,23 +120,39 @@
           
           <!-- Product Info -->
           <div style="display: flex; align-items: center; gap: 1.25rem; min-width: 280px;">
-            <img 
-              src="{{ order.product.cover_url }}" 
-              alt="{{ order.product.title }}" 
-              style="width: 72px; height: 50px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border);"
-            >
-            <div>
-              <a href="{% url 'store:product_detail' slug=order.product.slug %}" style="font-weight: 700; font-size: 1.02rem; color: var(--fg); display: block; margin-bottom: 0.25rem;">
-                {{ order.product.title }}
-              </a>
-              <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.82rem; color: var(--muted);">
-                <span style="color: var(--accent); font-weight: 600;" data-usd="{{ order.product.price }}">{{ order.product.price|floatformat:0 }} USD</span>
-                <span>•</span>
-                <span>{% blocktranslate with amount=order.amount|som %}{{ amount }} so'm{% endblocktranslate %}</span>
-                <span>•</span>
-                <span>{{ order.created_at|date:"d.m.Y, H:i" }}</span>
+            {% if order.product %}
+              <img
+                src="{{ order.product.cover_url }}"
+                alt="{{ order.product.title }}"
+                style="width: 72px; height: 50px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border);"
+              >
+              <div>
+                <a href="{% url 'store:product_detail' slug=order.product.slug %}" style="font-weight: 700; font-size: 1.02rem; color: var(--fg); display: block; margin-bottom: 0.25rem;">
+                  {{ order.product.title }}
+                </a>
+                <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.82rem; color: var(--muted);">
+                  <span style="color: var(--accent); font-weight: 600;" data-usd="{{ order.product.price }}">{{ order.product.price|floatformat:0 }} USD</span>
+                  <span>•</span>
+                  <span>{% blocktranslate with amount=order.amount|som %}{{ amount }} so'm{% endblocktranslate %}</span>
+                  <span>•</span>
+                  <span>{{ order.created_at|date:"d.m.Y, H:i" }}</span>
+                </div>
               </div>
-            </div>
+            {% else %}
+              <div style="width: 72px; height: 50px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface-2); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i data-lucide="file-x" style="width: 20px; height: 20px; color: var(--muted);"></i>
+              </div>
+              <div>
+                <span style="font-weight: 700; font-size: 1.02rem; color: var(--muted); display: block; margin-bottom: 0.25rem;">
+                  {% if order.product_title %}{{ order.product_title }}{% else %}{% translate "Mahsulot o'chirilgan" %}{% endif %}
+                </span>
+                <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.82rem; color: var(--muted);">
+                  <span>{% blocktranslate with amount=order.amount|som %}{{ amount }} so'm{% endblocktranslate %}</span>
+                  <span>•</span>
+                  <span>{{ order.created_at|date:"d.m.Y, H:i" }}</span>
+                </div>
+              </div>
+            {% endif %}
           </div>
 
           <!-- Status & Actions -->

@@ -123,10 +123,17 @@
         {% translate "To'lov jarayonida xatolik yuz berdi yoki bekor qilindi. Qayta urinib ko'rishingiz mumkin." %}
       </p>
 
+      {% if order.product %}
       <a href="{% url 'store:product_detail' slug=order.product.slug %}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem;">
         <i data-lucide="rotate-ccw" style="width: 16px; height: 16px;"></i>
         <span>{% translate "Qaytadan xarid qilish" %}</span>
       </a>
+      {% else %}
+      <a href="{% url 'store:catalog' %}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+        <i data-lucide="arrow-left" style="width: 16px; height: 16px;"></i>
+        <span>{% translate "Katalogga qaytish" %}</span>
+      </a>
+      {% endif %}
     {% endif %}
 
   </div>
