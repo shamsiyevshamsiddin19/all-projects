@@ -19,7 +19,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         subfolders: [],
         files: [],
         treeData: [],
-        allFlatFolders: []
+        allFlatFolders: [],
+        // Ko'p tanlash: tanlangan fayl id lari va Shift uchun oxirgi bosilgan indeks
+        selected: new Set(),
+        lastClickedIndex: null,
+        // Saralash (brauzerda eslab qolinadi)
+        sortBy: localStorage.getItem("foldex_sort_by") || "name",
+        sortDir: localStorage.getItem("foldex_sort_dir") || "asc"
     };
 
     // 3. DOM Elementlari
@@ -350,6 +356,30 @@ document.addEventListener("DOMContentLoaded", async () => {
                 openDeleteModal(folder.id, "folder", folder.name);
             });
 
+            // O'ng tugma menyusi
+            card.addEventListener("contextmenu", (e) => {
+                e.preventDefault();
+                openContextMenu(e.clientX, e.clientY, "folder", folder);
+            });
+
+            // Fayllarni shu papkaga sudrab tashlash
+            card.addEventListener("dragover", (e) => {
+                if (!e.dataTransfer.types.includes("application/x-foldex-files")) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+                card.classList.add("drop-target");
+            });
+            card.addEventListener("dragleave", () => card.classList.remove("drop-target"));
+            card.addEventListener("drop", async (e) => {
+                card.classList.remove("drop-target");
+                const raw = e.dataTransfer.getData("application/x-foldex-files");
+                if (!raw) return;
+                e.preventDefault();
+                let ids = [];
+                try { ids = JSON.parse(raw); } catch (_) { return; }
+                await moveFiles(ids, folder.id, folder.name);
+            });
+
             elements.foldersGrid.appendChild(card);
         });
     }
@@ -371,8 +401,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             const resp = await fetch(url);
             if (!resp.ok) return;
             const data = await resp.json();
-            state.files = data.items;
-            renderFiles(data.items);
+            state.files = sortFiles(data.items);
+            // Boshqa papkaga o'tilganda eski tanlov qolib ketmasin
+            state.selected.clear();
+            state.lastClickedIndex = null;
+            renderFiles(state.files);
+            updateSelectionBar();
             loadDashboardStats();
         } catch (e) {
             console.error("Files load error:", e);
@@ -393,9 +427,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         elements.emptyState.style.display = "none";
         elements.filesSection.style.display = "block";
 
-        files.forEach(file => {
+        files.forEach((file, index) => {
             const card = document.createElement("div");
-            card.className = "file-card";
+            card.className = "file-card" + (state.selected.has(file.id) ? " selected" : "");
+            card.dataset.fileId = file.id;
+            card.dataset.index = index;
+            card.draggable = true;
 
             const iconHtml = getFileIcon(file.file_type, file.name);
             const tgBadge = file.is_synced_with_telegram
@@ -403,6 +440,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                 : '';
 
             card.innerHTML = `
+                <label class="file-select-box" title="Tanlash">
+                    <input type="checkbox" class="file-select-cb" ${state.selected.has(file.id) ? "checked" : ""}>
+                </label>
                 <div class="file-card-preview">
                     ${iconHtml}
                 </div>
@@ -416,9 +456,18 @@ document.addEventListener("DOMContentLoaded", async () => {
                 <div class="card-actions-dropdown">
                     <button class="dropdown-trigger" title="Amallar"><i class="fa-solid fa-ellipsis-vertical"></i></button>
                     <div class="dropdown-menu">
+                        <button class="dropdown-item preview-file-btn">
+                            <i class="fa-solid fa-eye"></i> Ko'rish
+                        </button>
                         <a href="/api/files/${file.id}/download" class="dropdown-item" download>
                             <i class="fa-solid fa-download"></i> Yuklab olish
                         </a>
+                        <button class="dropdown-item copylink-file-btn">
+                            <i class="fa-solid fa-link"></i> Havolani nusxalash
+                        </button>
+                        <button class="dropdown-item telegram-file-btn">
+                            <i class="fa-brands fa-telegram"></i> Telegramga yuborish
+                        </button>
                         <button class="dropdown-item rename-file-btn" data-id="${file.id}" data-name="${file.name}">
                             <i class="fa-solid fa-pen"></i> Qayta nomlash
                         </button>
@@ -462,6 +511,72 @@ document.addEventListener("DOMContentLoaded", async () => {
                 menu.classList.remove("show");
                 openDeleteModal(file.id, "file", file.name);
             });
+
+            // Ko'rish / havola / Telegram
+            card.querySelector(".preview-file-btn").addEventListener("click", (e) => {
+                e.stopPropagation();
+                menu.classList.remove("show");
+                openPreview(file);
+            });
+            card.querySelector(".copylink-file-btn").addEventListener("click", (e) => {
+                e.stopPropagation();
+                menu.classList.remove("show");
+                copyFileLink(file);
+            });
+            card.querySelector(".telegram-file-btn").addEventListener("click", (e) => {
+                e.stopPropagation();
+                menu.classList.remove("show");
+                sendToTelegram([file.id]);
+            });
+
+            // Tanlash: katakcha, oddiy bosish, Ctrl/Cmd va Shift bilan bosish
+            const cb = card.querySelector(".file-select-cb");
+            cb.addEventListener("click", (e) => {
+                e.stopPropagation();
+                toggleSelect(file.id, index, { force: cb.checked });
+            });
+
+            card.addEventListener("click", (e) => {
+                if (e.target.closest(".card-actions-dropdown") || e.target.closest(".file-select-box")) return;
+                if (e.shiftKey) {
+                    selectRange(index);
+                } else if (e.ctrlKey || e.metaKey) {
+                    toggleSelect(file.id, index);
+                } else {
+                    // Oddiy bosish: faqat shu faylni tanlaydi
+                    state.selected.clear();
+                    toggleSelect(file.id, index, { force: true });
+                }
+            });
+
+            // Ikki marta bosish — ko'rish oynasi
+            card.addEventListener("dblclick", (e) => {
+                if (e.target.closest(".card-actions-dropdown")) return;
+                openPreview(file);
+            });
+
+            // O'ng tugma menyusi
+            card.addEventListener("contextmenu", (e) => {
+                e.preventDefault();
+                if (!state.selected.has(file.id)) {
+                    state.selected.clear();
+                    toggleSelect(file.id, index, { force: true });
+                }
+                openContextMenu(e.clientX, e.clientY, "file", file);
+            });
+
+            // Sudrab papkaga tashlash
+            card.addEventListener("dragstart", (e) => {
+                if (!state.selected.has(file.id)) {
+                    state.selected.clear();
+                    toggleSelect(file.id, index, { force: true });
+                }
+                e.dataTransfer.setData("application/x-foldex-files",
+                    JSON.stringify([...state.selected]));
+                e.dataTransfer.effectAllowed = "move";
+                card.classList.add("dragging");
+            });
+            card.addEventListener("dragend", () => card.classList.remove("dragging"));
 
             elements.filesContainer.appendChild(card);
         });
@@ -819,6 +934,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         const targetVal = document.getElementById("moveTargetFolderSelect").value;
         const targetFolderId = targetVal ? parseInt(targetVal) : null;
 
+        // Ommaviy ko'chirish: tanlangan barcha fayllar
+        if (type === "bulk") {
+            const sel = document.getElementById("moveTargetFolderSelect");
+            const targetName = targetFolderId
+                ? sel.options[sel.selectedIndex].text.replace(/^\S+\s/, "")
+                : null;
+            closeModal("moveModal");
+            await moveFiles([...state.selected], targetFolderId, targetName);
+            return;
+        }
+
         try {
             const url = type === "folder" ? `/api/folders/${id}` : `/api/files/${id}`;
             const body = type === "folder" ? { parent_id: targetFolderId } : { folder_id: targetFolderId };
@@ -877,8 +1003,437 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     // =========================================================================
-    // 18. BOSHLANG'ICH YUKLANISH
+    // 18. SARALASH (nom / hajm / sana / tur)
     // =========================================================================
+    const SORT_LABELS = {
+        name: "Nomi bo'yicha",
+        size: "Hajmi bo'yicha",
+        date: "Sanasi bo'yicha",
+        type: "Turi bo'yicha"
+    };
+
+    function sortFiles(files) {
+        const dir = state.sortDir === "desc" ? -1 : 1;
+        const arr = [...(files || [])];
+        arr.sort((a, b) => {
+            let r = 0;
+            switch (state.sortBy) {
+                case "size": r = (a.file_size || 0) - (b.file_size || 0); break;
+                case "date": r = String(a.created_at).localeCompare(String(b.created_at)); break;
+                case "type": r = String(a.file_type).localeCompare(String(b.file_type)); break;
+                default: r = a.name.localeCompare(b.name, "ru", { numeric: true });
+            }
+            // Teng bo'lsa nom bo'yicha barqaror tartib
+            if (r === 0) r = a.name.localeCompare(b.name, "ru", { numeric: true });
+            return r * dir;
+        });
+        return arr;
+    }
+
+    function buildSortControl() {
+        const header = elements.filesSection.querySelector(".section-header");
+        if (!header || header.querySelector(".sort-control")) return;
+
+        const wrap = document.createElement("div");
+        wrap.className = "sort-control";
+        wrap.innerHTML = `
+            <select class="sort-select" title="Saralash">
+                ${Object.entries(SORT_LABELS).map(([k, v]) =>
+                    `<option value="${k}" ${state.sortBy === k ? "selected" : ""}>${v}</option>`).join("")}
+            </select>
+            <button class="sort-dir-btn" title="Yo'nalishni almashtirish">
+                <i class="fa-solid ${state.sortDir === "asc" ? "fa-arrow-up-short-wide" : "fa-arrow-down-wide-short"}"></i>
+            </button>
+        `;
+
+        wrap.querySelector(".sort-select").addEventListener("change", (e) => {
+            state.sortBy = e.target.value;
+            localStorage.setItem("foldex_sort_by", state.sortBy);
+            state.files = sortFiles(state.files);
+            renderFiles(state.files);
+        });
+
+        wrap.querySelector(".sort-dir-btn").addEventListener("click", (e) => {
+            state.sortDir = state.sortDir === "asc" ? "desc" : "asc";
+            localStorage.setItem("foldex_sort_dir", state.sortDir);
+            e.currentTarget.innerHTML =
+                `<i class="fa-solid ${state.sortDir === "asc" ? "fa-arrow-up-short-wide" : "fa-arrow-down-wide-short"}"></i>`;
+            state.files = sortFiles(state.files);
+            renderFiles(state.files);
+        });
+
+        header.appendChild(wrap);
+    }
+
+    // =========================================================================
+    // 19. KO'P TANLASH VA OMMAVIY AMALLAR
+    // =========================================================================
+    function toggleSelect(fileId, index, opts = {}) {
+        const want = opts.force !== undefined ? opts.force : !state.selected.has(fileId);
+        if (want) state.selected.add(fileId); else state.selected.delete(fileId);
+        state.lastClickedIndex = index;
+        refreshSelectionUI();
+    }
+
+    function selectRange(index) {
+        if (state.lastClickedIndex === null) return toggleSelect(state.files[index].id, index, { force: true });
+        const [a, b] = [state.lastClickedIndex, index].sort((x, y) => x - y);
+        for (let i = a; i <= b; i++) {
+            if (state.files[i]) state.selected.add(state.files[i].id);
+        }
+        refreshSelectionUI();
+    }
+
+    function selectAllFiles() {
+        state.files.forEach(f => state.selected.add(f.id));
+        refreshSelectionUI();
+    }
+
+    function clearSelection() {
+        state.selected.clear();
+        state.lastClickedIndex = null;
+        refreshSelectionUI();
+    }
+
+    /** Qayta chizmasdan faqat tanlov ko'rinishini yangilaydi (tez va silliq) */
+    function refreshSelectionUI() {
+        elements.filesContainer.querySelectorAll(".file-card").forEach(card => {
+            const id = parseInt(card.dataset.fileId);
+            const on = state.selected.has(id);
+            card.classList.toggle("selected", on);
+            const cb = card.querySelector(".file-select-cb");
+            if (cb) cb.checked = on;
+        });
+        updateSelectionBar();
+    }
+
+    function getSelectionBar() {
+        let bar = document.getElementById("selectionBar");
+        if (bar) return bar;
+
+        bar = document.createElement("div");
+        bar.id = "selectionBar";
+        bar.className = "selection-bar";
+        bar.innerHTML = `
+            <span class="sel-count"><b id="selCountNum">0</b> ta tanlandi</span>
+            <div class="sel-actions">
+                <button class="sel-btn" id="selDownloadBtn"><i class="fa-solid fa-download"></i> Yuklab olish</button>
+                <button class="sel-btn" id="selTelegramBtn"><i class="fa-brands fa-telegram"></i> Telegramga</button>
+                <button class="sel-btn" id="selMoveBtn"><i class="fa-solid fa-arrow-right-arrow-left"></i> Ko'chirish</button>
+                <button class="sel-btn danger" id="selDeleteBtn"><i class="fa-solid fa-trash"></i> O'chirish</button>
+                <button class="sel-btn ghost" id="selClearBtn"><i class="fa-solid fa-xmark"></i> Bekor</button>
+            </div>
+        `;
+        document.body.appendChild(bar);
+
+        bar.querySelector("#selClearBtn").addEventListener("click", clearSelection);
+        bar.querySelector("#selDeleteBtn").addEventListener("click", bulkDelete);
+        bar.querySelector("#selMoveBtn").addEventListener("click", openBulkMoveModal);
+        bar.querySelector("#selDownloadBtn").addEventListener("click", bulkDownload);
+        bar.querySelector("#selTelegramBtn").addEventListener("click", () => sendToTelegram([...state.selected]));
+        return bar;
+    }
+
+    function updateSelectionBar() {
+        const bar = getSelectionBar();
+        const n = state.selected.size;
+        bar.querySelector("#selCountNum").innerText = n;
+        bar.classList.toggle("show", n > 0);
+    }
+
+    async function bulkDelete() {
+        const ids = [...state.selected];
+        if (ids.length === 0) return;
+        if (!confirm(`${ids.length} ta faylni butunlay o'chirmoqchimisiz? Bu amalni qaytarib bo'lmaydi.`)) return;
+
+        let ok = 0, fail = 0;
+        for (const id of ids) {
+            try {
+                const resp = await fetch(`/api/files/${id}`, { method: "DELETE" });
+                resp.ok ? ok++ : fail++;
+            } catch (_) { fail++; }
+        }
+        clearSelection();
+        showToast(fail ? `${ok} ta o'chirildi, ${fail} tasida xatolik` : `${ok} ta fayl o'chirildi`,
+                  fail ? "error" : "success");
+        loadFiles(state.currentFolderId);
+    }
+
+    /** Fayllarni boshqa papkaga ko'chiradi (sudrab tashlash va ommaviy ko'chirish uchun) */
+    async function moveFiles(ids, targetFolderId, targetName) {
+        if (!ids || ids.length === 0) return;
+        let ok = 0, fail = 0;
+        for (const id of ids) {
+            try {
+                const resp = await fetch(`/api/files/${id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ folder_id: targetFolderId })
+                });
+                resp.ok ? ok++ : fail++;
+            } catch (_) { fail++; }
+        }
+        clearSelection();
+        const where = targetName ? `«${targetName}» papkasiga` : "Bosh sahifaga";
+        showToast(fail ? `${ok} ta ko'chirildi, ${fail} tasida xatolik` : `${ok} ta fayl ${where} ko'chirildi`,
+                  fail ? "error" : "success");
+        navigateToFolder(state.currentFolderId);
+    }
+
+    async function openBulkMoveModal() {
+        if (state.selected.size === 0) return;
+        document.getElementById("moveItemType").value = "bulk";
+        document.getElementById("moveItemId").value = "";
+        document.getElementById("moveItemDescription").innerText =
+            `${state.selected.size} ta faylni qaysi papkaga ko'chirmoqchisiz?`;
+
+        const select = document.getElementById("moveTargetFolderSelect");
+        select.innerHTML = '<option value="">🏠 Bosh sahifa (Ildiz katalog)</option>';
+        try {
+            const resp = await fetch("/api/folders/");
+            const folders = await resp.json();
+            folders.forEach(f => {
+                select.innerHTML += `<option value="${f.id}">${f.icon || "📁"} ${f.name}</option>`;
+            });
+        } catch (_) {}
+        openModal("moveModal");
+    }
+
+    function bulkDownload() {
+        const ids = [...state.selected];
+        if (ids.length === 0) return;
+        // Brauzer ketma-ket yuklashni bloklamasligi uchun kichik oraliq bilan
+        ids.forEach((id, i) => {
+            setTimeout(() => {
+                const a = document.createElement("a");
+                a.href = `/api/files/${id}/download`;
+                a.download = "";
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            }, i * 400);
+        });
+        showToast(`${ids.length} ta fayl yuklab olinmoqda...`, "info");
+    }
+
+    async function sendToTelegram(ids) {
+        if (!ids || ids.length === 0) return;
+        showToast(`${ids.length} ta fayl Telegramga jo'natilmoqda...`, "info");
+        let ok = 0, fail = 0;
+        for (const id of ids) {
+            try {
+                const resp = await fetch(`/api/files/${id}/send-telegram`, { method: "POST" });
+                resp.ok ? ok++ : fail++;
+            } catch (_) { fail++; }
+        }
+        showToast(fail ? `${ok} ta jo'natildi, ${fail} tasida xatolik` : `${ok} ta fayl Telegramga jo'natildi`,
+                  fail ? "error" : "success");
+        if (ok) loadFiles(state.currentFolderId);
+    }
+
+    async function copyFileLink(file) {
+        const url = `${location.origin}/api/files/${file.id}/download`;
+        try {
+            await navigator.clipboard.writeText(url);
+            showToast("Havola nusxalandi");
+        } catch (_) {
+            // clipboard API ishlamasa (HTTP yoki ruxsat yo'q) — zaxira usul
+            const ta = document.createElement("textarea");
+            ta.value = url;
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand("copy"); showToast("Havola nusxalandi"); }
+            catch (_) { showToast("Nusxalab bo'lmadi", "error"); }
+            ta.remove();
+        }
+    }
+
+    // =========================================================================
+    // 20. FAYLNI KO'RISH OYNASI (PDF, rasm, video, audio)
+    // =========================================================================
+    function getPreviewModal() {
+        let modal = document.getElementById("previewModal");
+        if (modal) return modal;
+
+        modal = document.createElement("div");
+        modal.id = "previewModal";
+        modal.className = "modal preview-modal";
+        modal.innerHTML = `
+            <div class="modal-backdrop"></div>
+            <div class="modal-dialog preview-dialog">
+                <div class="modal-header">
+                    <h3 id="previewTitle">Ko'rish</h3>
+                    <div class="preview-head-actions">
+                        <a id="previewDownload" class="text-btn" download><i class="fa-solid fa-download"></i></a>
+                        <button class="close-modal-btn"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                </div>
+                <div class="modal-body preview-body" id="previewBody"></div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.querySelector(".close-modal-btn").addEventListener("click", closePreview);
+        modal.querySelector(".modal-backdrop").addEventListener("click", closePreview);
+        return modal;
+    }
+
+    function openPreview(file) {
+        const modal = getPreviewModal();
+        const body = modal.querySelector("#previewBody");
+        modal.querySelector("#previewTitle").innerText = file.name;
+        modal.querySelector("#previewDownload").href = `/api/files/${file.id}/download`;
+
+        // inline=1 — brauzer faylni yuklab olmasdan o'zida ochadi
+        const src = `/api/files/${file.id}/download?inline=1`;
+        const ext = (file.name.split(".").pop() || "").toLowerCase();
+
+        if (file.file_type === "photo") {
+            body.innerHTML = `<img src="${src}" alt="${file.name}" class="preview-img">`;
+        } else if (file.file_type === "video") {
+            body.innerHTML = `<video src="${src}" controls class="preview-video"></video>`;
+        } else if (file.file_type === "audio") {
+            body.innerHTML = `<audio src="${src}" controls class="preview-audio"></audio>`;
+        } else if (ext === "pdf") {
+            body.innerHTML = `<iframe src="${src}" class="preview-frame" title="${file.name}"></iframe>`;
+        } else if (["txt", "md", "json", "csv", "log", "xml", "yml", "yaml"].includes(ext)) {
+            body.innerHTML = `<iframe src="${src}" class="preview-frame" title="${file.name}"></iframe>`;
+        } else {
+            body.innerHTML = `
+                <div class="preview-unsupported">
+                    <i class="fa-solid fa-file-circle-question"></i>
+                    <p>Bu turdagi faylni brauzerda ko'rib bo'lmaydi.</p>
+                    <a class="btn-primary" href="/api/files/${file.id}/download" download>
+                        <i class="fa-solid fa-download"></i> Yuklab olish
+                    </a>
+                </div>`;
+        }
+        modal.classList.add("show");
+    }
+
+    function closePreview() {
+        const modal = document.getElementById("previewModal");
+        if (!modal) return;
+        modal.classList.remove("show");
+        // Video/audio fonda ijro etilib qolmasligi uchun tozalaymiz
+        modal.querySelector("#previewBody").innerHTML = "";
+    }
+
+    // =========================================================================
+    // 21. O'NG TUGMA (KONTEKST) MENYUSI
+    // =========================================================================
+    function closeContextMenu() {
+        const m = document.getElementById("ctxMenu");
+        if (m) m.remove();
+    }
+
+    function openContextMenu(x, y, type, item) {
+        closeContextMenu();
+        const menu = document.createElement("div");
+        menu.id = "ctxMenu";
+        menu.className = "ctx-menu";
+
+        const many = type === "file" && state.selected.size > 1;
+        const rows = type === "folder"
+            ? [
+                ["fa-folder-open", "Ochish", () => navigateToFolder(item.id)],
+                ["fa-pen", "Qayta nomlash", () => openRenameModal(item.id, "folder", item.name)],
+                ["fa-arrow-right-arrow-left", "Ko'chirish", () => openMoveModal(item.id, "folder", item.name)],
+                ["fa-trash", "O'chirish", () => openDeleteModal(item.id, "folder", item.name), true]
+              ]
+            : many
+            ? [
+                ["fa-download", `Yuklab olish (${state.selected.size})`, bulkDownload],
+                ["fa-telegram", `Telegramga (${state.selected.size})`, () => sendToTelegram([...state.selected])],
+                ["fa-arrow-right-arrow-left", `Ko'chirish (${state.selected.size})`, openBulkMoveModal],
+                ["fa-trash", `O'chirish (${state.selected.size})`, bulkDelete, true]
+              ]
+            : [
+                ["fa-eye", "Ko'rish", () => openPreview(item)],
+                ["fa-download", "Yuklab olish", () => bulkDownload()],
+                ["fa-link", "Havolani nusxalash", () => copyFileLink(item)],
+                ["fa-telegram", "Telegramga yuborish", () => sendToTelegram([item.id])],
+                ["fa-pen", "Qayta nomlash", () => openRenameModal(item.id, "file", item.name)],
+                ["fa-arrow-right-arrow-left", "Ko'chirish", () => openMoveModal(item.id, "file", item.name)],
+                ["fa-trash", "O'chirish", () => openDeleteModal(item.id, "file", item.name), true]
+              ];
+
+        rows.forEach(([icon, label, fn, danger]) => {
+            const b = document.createElement("button");
+            b.className = "ctx-item" + (danger ? " danger" : "");
+            const fam = icon === "fa-telegram" ? "fa-brands" : "fa-solid";
+            b.innerHTML = `<i class="${fam} ${icon}"></i> ${label}`;
+            b.addEventListener("click", () => { closeContextMenu(); fn(); });
+            menu.appendChild(b);
+        });
+
+        document.body.appendChild(menu);
+        // Ekran chetidan chiqib ketmasligi uchun joyini to'g'rilaymiz
+        const r = menu.getBoundingClientRect();
+        menu.style.left = Math.min(x, window.innerWidth - r.width - 8) + "px";
+        menu.style.top = Math.min(y, window.innerHeight - r.height - 8) + "px";
+    }
+
+    document.addEventListener("click", closeContextMenu);
+    document.addEventListener("scroll", closeContextMenu, true);
+
+    // Bo'sh joyga o'ng tugma bosilsa menyuni yopamiz
+    elements.filesContainer.addEventListener("contextmenu", (e) => {
+        if (!e.target.closest(".file-card")) closeContextMenu();
+    });
+
+    // =========================================================================
+    // 22. KLAVIATURA QISQA YO'LLARI
+    // =========================================================================
+    document.addEventListener("keydown", (e) => {
+        const typing = ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName);
+        const modalOpen = document.querySelector(".modal.show");
+
+        if (e.key === "Escape") {
+            if (document.getElementById("ctxMenu")) return closeContextMenu();
+            if (modalOpen) {
+                document.querySelectorAll(".modal.show").forEach(m => m.classList.remove("show"));
+                closePreview();
+                return;
+            }
+            if (state.selected.size) clearSelection();
+            return;
+        }
+
+        if (typing || modalOpen) return;
+
+        // Ctrl/Cmd + A — hammasini tanlash
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
+            e.preventDefault();
+            selectAllFiles();
+            return;
+        }
+        // Delete — tanlanganlarni o'chirish
+        if (e.key === "Delete" && state.selected.size) {
+            e.preventDefault();
+            bulkDelete();
+            return;
+        }
+        // F2 — bitta tanlangan faylni qayta nomlash
+        if (e.key === "F2" && state.selected.size === 1) {
+            e.preventDefault();
+            const id = [...state.selected][0];
+            const f = state.files.find(x => x.id === id);
+            if (f) openRenameModal(f.id, "file", f.name);
+            return;
+        }
+        // Enter yoki probel — ko'rish oynasi
+        if ((e.key === "Enter" || e.key === " ") && state.selected.size === 1) {
+            e.preventDefault();
+            const id = [...state.selected][0];
+            const f = state.files.find(x => x.id === id);
+            if (f) openPreview(f);
+        }
+    });
+
+    // =========================================================================
+    // 23. BOSHLANG'ICH YUKLANISH
+    // =========================================================================
+    buildSortControl();
     navigateToFolder(null);
     loadDashboardStats();
 });
