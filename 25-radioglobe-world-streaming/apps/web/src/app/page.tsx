@@ -70,14 +70,21 @@ export default async function HomePage() {
       */}
       <section className="w-full xl:h-[calc(100dvh-3.5rem)] xl:overflow-hidden">
         <div className="grid grid-cols-1 gap-6 xl:h-full xl:grid-cols-[480px_1fr] 2xl:grid-cols-[560px_1fr] xl:items-center xl:gap-10">
-          <div className="mx-auto w-full max-w-7xl px-4 pb-0 pt-8 lg:px-8 xl:mx-0 xl:w-auto xl:max-w-none xl:py-0 xl:pl-8 xl:pr-0">
+          <div className="mx-auto w-full max-w-7xl px-4 pb-0 pt-8 lg:px-8 xl:mx-0 xl:w-auto xl:max-w-none xl:self-start xl:py-16 xl:pl-8 xl:pr-0">
             <p className="eyebrow flex items-center gap-2">
               <span className="live-dot" aria-hidden="true" />
               Jonli efir
             </p>
 
-            <h1 className="mt-2.5 font-display text-3xl font-semibold leading-[1.1] tracking-tight text-text-primary sm:text-5xl 2xl:text-6xl">
-              Dunyoning istalgan nuqtasidagi radioni tinglang
+            {/*
+              "Dunyoning" va "istalgan" orasida ODDIY bo'shliq EMAS —
+              (sinmaydigan bo'shliq). Katta o'lchamlarda (2xl:text-6xl) tor
+              ustunda bu ikki so'z ALOHIDA qatorlarga bo'linib ketgandi
+              ("Dunyoning" / "istalgan" / "nuqtasidagi..."), bu bilan ular
+              DOIM BIR QATORDA qoladi, qolgan matn esa erkin oqadi.
+            */}
+            <h1 className="mt-2.5 font-display text-3xl font-semibold leading-[1.1] tracking-tight text-text-primary sm:text-5xl 2xl:text-5xl">
+              Dunyoning istalgan nuqtasidagi radioni tinglang
             </h1>
 
             <p className="mt-3 text-sm leading-relaxed text-text-secondary sm:text-base 2xl:text-lg">

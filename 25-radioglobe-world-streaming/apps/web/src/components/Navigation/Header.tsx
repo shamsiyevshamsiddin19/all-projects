@@ -266,7 +266,8 @@ export default function Header() {
                 onFocus={() => setDesktopFocused(true)}
                 placeholder="Stansiya yoki davlat qidirish…"
                 className="h-full min-w-0 flex-1 bg-transparent text-sm text-text-primary
-                           placeholder:text-text-muted focus:outline-none"
+                           placeholder:text-text-muted focus:outline-none
+                           focus-visible:ring-0 focus-visible:ring-offset-0"
                 aria-label="Qidiruv so'rovi"
                 autoComplete="off"
               />
@@ -356,7 +357,8 @@ export default function Header() {
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Stansiya yoki davlat nomi…"
                   className="h-12 flex-1 bg-transparent text-sm text-text-primary
-                             placeholder:text-text-muted focus:outline-none"
+                             placeholder:text-text-muted focus:outline-none
+                             focus-visible:ring-0 focus-visible:ring-offset-0"
                   aria-label="Qidiruv so'rovi"
                   autoComplete="off"
                 />
