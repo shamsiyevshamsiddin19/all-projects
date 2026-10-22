@@ -14,7 +14,8 @@ a{color:inherit}
 /* header */
 .site-header{background:rgba(255,255,255,.96);backdrop-filter:blur(12px);
   border-bottom:1px solid var(--line);position:sticky;top:0;z-index:50}
-.site-header .container{display:flex;align-items:center;justify-content:space-between;height:64px;gap:12px}
+.site-header-inner{display:flex;align-items:center;justify-content:space-between;height:64px;gap:12px;
+  padding:0 24px}
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:800;
   font-size:1.25rem;color:var(--ink);letter-spacing:-.02em;flex-shrink:0}
 .brand svg{width:28px;height:28px;color:var(--green);flex-shrink:0}
@@ -135,6 +136,7 @@ pre{background:#0b1220;color:#e2e8f0;padding:16px;border-radius:12px;overflow-x:
 
 @media(max-width:640px){
   .container{padding:0 16px}
+  .site-header-inner{padding:0 16px}
   h1{font-size:1.5rem}
   .kv{grid-template-columns:1fr;gap:4px 0}
   .kv dd{margin-bottom:10px}
