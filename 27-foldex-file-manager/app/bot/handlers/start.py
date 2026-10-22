@@ -79,7 +79,7 @@ async def handle_home(message: Message, state: FSMContext):
         root_files = await FileService.get_files_by_folder(db, None)
 
     keyboard = build_folder_reply_keyboard(root_folders, root_files, has_parent=False)
-    await message.answer("📂 <code>/</code>", reply_markup=keyboard)
+    await message.answer("<code>/</code>", reply_markup=keyboard)
 
 
 @router.message(Command("search"))

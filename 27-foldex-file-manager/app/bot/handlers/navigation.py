@@ -44,7 +44,7 @@ async def nav_back(message: Message, state: FSMContext):
             root_folders = await FolderService.get_root_folders(db)
             root_files = await FileService.get_files_by_folder(db, None)
             keyboard = build_folder_reply_keyboard(root_folders, root_files, has_parent=False)
-            text = "📂 <code>/</code>"
+            text = "<code>/</code>"
         else:
             parent_folder = await FolderService.get_by_id(db, parent_id)
             subfolders = await FolderService.get_subfolders(db, parent_id)
@@ -53,7 +53,7 @@ async def nav_back(message: Message, state: FSMContext):
             has_parent = (parent_folder.parent_id is not None) if parent_folder else False
 
             keyboard = build_folder_reply_keyboard(subfolders, files, has_parent=has_parent)
-            text = f"📂 <code>{path_str}</code>"
+            text = f"<code>{path_str}</code>"
 
     await message.answer(text, reply_markup=keyboard)
 
@@ -155,9 +155,7 @@ async def nav_folder_click_or_search(message: Message, state: FSMContext):
 
             keyboard = build_folder_reply_keyboard(new_subfolders, new_files, has_parent=True)
 
-            text = f"📂 <code>{path_str}</code>"
-            if target_folder.description:
-                text += f"\n<i>ℹ️ {target_folder.description}</i>"
+            text = f"<code>{path_str}</code>"
 
             await message.answer(text, reply_markup=keyboard)
             return
