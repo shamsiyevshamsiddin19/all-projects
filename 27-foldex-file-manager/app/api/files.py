@@ -84,10 +84,11 @@ async def upload_files(
 @router.get("/{file_id}/download")
 async def download_file(
     file_id: int,
+    inline: bool = Query(False, description="true bo'lsa brauzerda ochiladi (ko'rish oynasi uchun)"),
     admin_id: int = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db)
 ):
-    """Faylni original nomi bilan brauzerda yuklab olish."""
+    """Faylni original nomi bilan yuklab olish yoki brauzerda ochish."""
     file_item = await FileService.get_by_id(db, file_id)
     if not file_item:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fayl topilmadi!")
@@ -96,15 +97,56 @@ async def download_file(
     if not disk_path.exists():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fayl server diskida topilmadi!")
 
-    # UTF-8 belgilarni (o'zbekcha harflar) to'g'ri uzatish
+    # UTF-8 belgilarni (o'zbekcha harflar) to'g'ri uzatish.
+    # inline=true bo'lganda brauzer faylni yuklab olmasdan o'zida ochadi —
+    # PDF va rasmlarni ko'rish oynasi shunga tayanadi.
     encoded_filename = quote(file_item.name)
-    content_disposition = f"attachment; filename*=UTF-8''{encoded_filename}"
+    disposition_type = "inline" if inline else "attachment"
+    content_disposition = f"{disposition_type}; filename*=UTF-8''{encoded_filename}"
 
     return FileResponse(
         path=str(disk_path),
         media_type=file_item.mime_type,
         headers={"Content-Disposition": content_disposition}
     )
+
+
+@router.post("/{file_id}/send-telegram")
+async def send_file_to_telegram(
+    file_id: int,
+    admin_id: int = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Faylni administratorning Telegram chatiga jo'natadi.
+    Fayl avval yuborilgan bo'lsa, Telegram keshidagi file_id orqali
+    lahzalik ketadi — server diskidan qayta yuklanmaydi.
+    """
+    file_item = await FileService.get_by_id(db, file_id)
+    if not file_item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fayl topilmadi!")
+
+    from app.bot.loader import bot
+    from app.services.telegram_service import TelegramService
+
+    try:
+        sent = await TelegramService.send_file_to_user(
+            bot=bot, chat_id=settings.TELEGRAM_ADMIN_ID, file_item=file_item
+        )
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Telegramga jo'natishda xatolik: {str(e)[:150]}"
+        )
+
+    if not sent:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Fayl jo'natilmadi (diskda topilmadi yoki bot javob bermadi)."
+        )
+
+    await db.commit()
+    return {"ok": True, "detail": f"«{file_item.name}» Telegramga jo'natildi."}
 
 
 @router.put("/{file_id}", response_model=FileItemOut)
