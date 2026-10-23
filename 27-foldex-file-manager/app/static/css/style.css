@@ -1464,3 +1464,6 @@ input, textarea, select {
     .sel-actions { flex-wrap: wrap; justify-content: center; }
     .sort-control { margin-left: 0; }
 }
+
+/* --- Logo belgisi (Font Awesome o'rniga SVG) --- */
+.logo-icon img { width: 24px; height: 24px; display: block; }

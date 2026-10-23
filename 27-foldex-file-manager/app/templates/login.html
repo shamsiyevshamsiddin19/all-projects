@@ -7,6 +7,10 @@
     <meta name="description" content="Foldex shaxsiy fayl menejeri admin paneliga kirish.">
     <meta name="theme-color" content="#0a0e17">
 
+    <!-- Logo va brauzer yorlig'i belgisi -->
+    <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/static/img/favicon.svg">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -35,6 +39,7 @@
             text-align: center;
             animation: fadeIn 0.4s ease-out;
         }
+        .login-logo img { width: 40px; height: 40px; display: block; }
         .login-logo {
             width: 70px;
             height: 70px;
@@ -46,6 +51,7 @@
             font-size: 2rem;
             color: #fff;
             margin: 0 auto 20px;
+            overflow: hidden;
             box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
         }
         .login-title {
@@ -109,7 +115,7 @@
 
     <div class="login-card">
         <div class="login-logo">
-            <i class="fa-solid fa-folder-closed"></i>
+            <img src="/static/img/logo-mark.svg" alt="Foldex">
         </div>
         <h1 class="login-title">Foldex Admin</h1>
         <p class="login-subtitle">Faqat <code>7883409434</code> ID ga ega Telegram administratori uchun shaxsiy bulutli fayl menejeri.</p>
