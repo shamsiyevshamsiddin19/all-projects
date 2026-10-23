@@ -34,10 +34,10 @@ export default function DmcaPage() {
       <div className="mt-8 space-y-8 text-sm leading-relaxed text-text-secondary">
         <div className="surface border-l-2 border-l-signal p-5">
           <p>
-            <strong className="text-text-primary">RadioGlobe audio fayllarni saqlamaydi</strong>{' '}
-            va ularni qayta uzatmaydi. Platforma — ommaviy ravishda e&apos;lon qilingan
-            jonli efir havolalarining katalogi. Oqim har doim stansiyaning o&apos;z
-            serveridan keladi.
+            <strong className="text-text-primary">RadioGlobe audio fayllarni saqlamaydi.</strong>{' '}
+            Platforma ommaviy jonli efir havolalarining katalogidir. Brauzerning
+            HTTPS va CORS cheklovlari sabab ayrim oqimlar texnik proxy orqali real
+            vaqtda uzatiladi; audio serverda arxivlanmaydi.
           </p>
         </div>
 

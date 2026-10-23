@@ -12,7 +12,8 @@ export const dynamic = 'force-dynamic';
  * qoladi. Deploy skripti shu endpointni chaqirib, sahifani darhol yangilaydi.
  *
  * Chaqirish:
- *   curl -X POST "https://radio.shamsiyev.uz/api/revalidate?secret=$REVALIDATE_SECRET"
+ *   curl -X POST -H "X-Revalidate-Secret: $REVALIDATE_SECRET" \
+ *     "https://radio.shamsiyev.uz/api/revalidate"
  */
 export async function POST(request: Request) {
   const secret = process.env.REVALIDATE_SECRET;
@@ -23,7 +24,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const provided = new URL(request.url).searchParams.get('secret');
+  // Sir query stringda bo'lsa nginx access logiga tushadi. Maxsus header esa
+  // URL/log tarixida ko'rinmaydi.
+  const provided = request.headers.get('x-revalidate-secret');
   if (provided !== secret) {
     return NextResponse.json({ error: 'Ruxsat yo\'q' }, { status: 401 });
   }

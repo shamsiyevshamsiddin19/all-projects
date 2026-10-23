@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useRouter } from 'next/navigation';
 
@@ -35,6 +35,13 @@ const ROTATION_FRAME_MS = 50;
 // aks holda bosish/qisqa sudrash tugashi bilan globus foydalanuvchi barmog'i
 // ostidayoq sirpanib keta boshlaydi
 const RESUME_AFTER_TOUCH_MS = 1200;
+
+// MapLibre 6 worker faylini `import.meta.url` yonidan izlaydi. Next.js
+// bundlerida paket kodi chunk ichiga ko'chirilgani uchun avtomatik manzil
+// mavjud bo'lmay qoladi. Worker public papkada o'zimizdan beriladi: bu CSP'ga
+// mos, versiyasi lockfile bilan birga yangilanadi va davlat qatlamlari doim
+// ishonchli yuklanadi.
+maplibregl.setWorkerUrl('/maplibre-gl-worker.mjs');
 
 export default function GlobeMap({ countries, geojsonUrl, onUnsupported }: GlobeMapProps) {
   const router = useRouter();
@@ -293,6 +300,9 @@ export default function GlobeMap({ countries, geojsonUrl, onUnsupported }: Globe
     };
     const onPointerLeave = () => {
       pointerInsideRef.current = false;
+      clearHover();
+      if (hoverRafRef.current !== null) cancelAnimationFrame(hoverRafRef.current);
+      setHovered(null);
       if (!draggingRef.current) map.getCanvas().style.cursor = 'grab';
     };
     canvas.addEventListener('mouseenter', onPointerEnter);
@@ -337,6 +347,10 @@ export default function GlobeMap({ countries, geojsonUrl, onUnsupported }: Globe
     // ── Hover ──
 
     map.on('mousemove', 'countries-fill', (e) => {
+      // Drag davomida MapLibre layer mousemove hodisasini ham chiqaradi.
+      // Tooltipni qayta yaratmasak, u globusdan uzilib eski joyda qolmaydi.
+      if (draggingRef.current) return;
+
       const feature = e.features?.[0];
       if (!feature) return;
 

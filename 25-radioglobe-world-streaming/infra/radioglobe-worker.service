@@ -1,0 +1,29 @@
+[Unit]
+Description=RadioGlobe station ingest and health-check worker
+After=network-online.target postgresql.service redis.service radioglobe-api.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=opc
+Group=opc
+WorkingDirectory=/opt/radioglobe/apps/worker
+EnvironmentFile=/opt/radioglobe/.env
+Environment=PYTHONUNBUFFERED=1
+Environment=HOME=/run/radioglobe-worker
+RuntimeDirectory=radioglobe-worker
+ExecStart=/opt/radioglobe/.venv/bin/python scheduler.py
+Restart=always
+RestartSec=10
+TimeoutStopSec=30
+
+# Worker tashqi radio manzillariga ulanadi, lekin tizimning boshqa qismlarini
+# o'zgartirishga muhtoj emas. Systemd himoyasi xato ta'sirini cheklaydi.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/radioglobe
+
+[Install]
+WantedBy=multi-user.target
