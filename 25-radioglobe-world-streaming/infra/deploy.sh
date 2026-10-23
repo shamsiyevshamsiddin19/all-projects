@@ -44,7 +44,8 @@ done
 SECRET="$(grep -E '^REVALIDATE_SECRET=' .env | cut -d= -f2-)"
 SITE="$(grep -E '^PUBLIC_SITE_URL=' .env | cut -d= -f2- || echo 'https://radio.shamsiyev.uz')"
 echo "♻️  Bosh sahifa keshi yangilanmoqda..."
-curl -fsS -X POST "${SITE}/api/revalidate?secret=${SECRET}" && echo || echo "⚠️  revalidate chaqiruvi o'tmadi"
+curl -fsS -X POST -H "X-Revalidate-Secret: ${SECRET}" \
+  "${SITE}/api/revalidate" && echo || echo "⚠️  revalidate chaqiruvi o'tmadi"
 
 echo
 echo "📊 Holat:"

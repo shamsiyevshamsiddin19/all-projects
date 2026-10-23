@@ -1,6 +1,7 @@
 """Redis asosidagi oddiy rate limiter va parallel oqim hisoblagichi."""
 
 import logging
+import ipaddress
 from typing import Optional
 
 from fastapi import Request
@@ -15,15 +16,29 @@ def client_ip(request: Request) -> str:
     reverse proxy IP'si bo'ladi. Shuning uchun X-Forwarded-For ning BIRINCHI
     qiymati olinadi (uni bizning reverse proxy qo'yadi).
     """
-    xff = request.headers.get("x-forwarded-for")
-    if xff:
-        first = xff.split(",")[0].strip()
-        if first:
-            return first
-    real = request.headers.get("x-real-ip")
-    if real:
-        return real.strip()
-    return request.client.host if request.client else "unknown"
+    direct_peer = request.client.host if request.client else "unknown"
+
+    # Forwarded headerlarni faqat ishonchli lokal reverse-proxy orqali kelgan
+    # so'rovda qabul qilamiz. Aks holda mijoz X-Forwarded-For ni o'zi yozib,
+    # rate limitni har so'rovda boshqa IP bilan chetlab o'tishi mumkin.
+    try:
+        peer_ip = ipaddress.ip_address(direct_peer)
+        trusted_proxy = peer_ip.is_loopback
+    except ValueError:
+        trusted_proxy = False
+
+    if trusted_proxy:
+        candidate = request.headers.get("x-real-ip")
+        if not candidate:
+            xff = request.headers.get("x-forwarded-for", "")
+            candidate = xff.split(",")[0].strip() if xff else ""
+        if candidate:
+            try:
+                return str(ipaddress.ip_address(candidate.strip()))
+            except ValueError:
+                logger.warning("Noto'g'ri forwarded IP rad etildi: %r", candidate)
+
+    return direct_peer
 
 
 async def check_rate_limit(

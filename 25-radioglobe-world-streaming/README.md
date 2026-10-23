@@ -35,7 +35,7 @@ Arxitektura muhokamasida uchta tamal qaror qabul qilindi:
 | Qaror | Tanlov | Sabab |
 | :--- | :--- | :--- |
 | **MVP qamrovi** | 🎙 **Faqat radio** | Bandwidth 20 barobar arzon, legal jihatdan toza, 2-3 haftada tirik mahsulot. TV — 3-bosqichda, bir xil arxitekturaga qo'shiladi. |
-| **Frontend** | **Next.js 15** (App Router) | Har bir davlat/stansiya uchun SSR sahifa. Bu turdagi saytga organik qidiruv trafigi asosiy o'sish kanali. |
+| **Frontend** | **Next.js 16** (App Router) | Har bir davlat/stansiya uchun SSR sahifa. Bu turdagi saytga organik qidiruv trafigi asosiy o'sish kanali. |
 | **Xarita** | **MapLibre GL v5** globe projection | Haqiqiy 3D globus, zoomda tekis xaritaga silliq o'tish, basemap/API key kerak emas. |
 
 ---

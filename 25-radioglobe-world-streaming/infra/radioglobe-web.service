@@ -1,0 +1,19 @@
+[Unit]
+Description=RadioGlobe Next.js web application
+After=network.target radioglobe-api.service
+
+[Service]
+Type=simple
+User=opc
+Group=opc
+WorkingDirectory=/opt/radioglobe/apps/web
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=INTERNAL_API_URL=http://127.0.0.1:8001/api/v1
+EnvironmentFile=/opt/radioglobe/web.env
+ExecStart=/usr/bin/npm start -- -p 3000
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

@@ -27,11 +27,6 @@ export default async function HomePage() {
     url: SITE_URL,
     inLanguage: 'uz',
     description: `${totalCountries} davlatdan ${totalStations} ta jonli radiostansiya.`,
-    potentialAction: {
-      '@type': 'SearchAction',
-      target: { '@type': 'EntryPoint', urlTemplate: `${SITE_URL}/qidiruv?q={search_term_string}` },
-      'query-input': 'required name=search_term_string',
-    },
   };
 
   return (

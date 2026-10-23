@@ -7,7 +7,7 @@ mixed-content va CORS cheklovlarini hal qiladi.
 
 import logging
 from typing import Optional
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -52,7 +52,15 @@ def _referer_allowed(request: Request) -> bool:
 
     referer = request.headers.get("referer")
     if referer:
-        return any(referer.startswith(o) for o in settings.ALLOWED_ORIGINS)
+        # `startswith` xavfsiz emas: masalan `https://radio.shamsiyev.uz.evil.tld`
+        # ham ruxsat etilgan domen bilan boshlanadi. Referer'dan faqat origin
+        # (scheme + host + port) olinib, oq ro'yxat bilan aniq solishtiriladi.
+        try:
+            parsed = urlsplit(referer)
+            referer_origin = f"{parsed.scheme}://{parsed.netloc}"
+        except ValueError:
+            return False
+        return referer_origin in settings.ALLOWED_ORIGINS
 
     # <audio src="..."> ba'zi brauzerlarda Origin ham, Referer ham yubormaydi.
     # Token baribir tekshirilgani uchun bunday so'rovga ruxsat beramiz.
@@ -84,7 +92,10 @@ async def _open_upstream(url: str) -> tuple[httpx.AsyncClient, httpx.Response]:
             req = client.build_request(
                 "GET",
                 current_url,
-                headers={"User-Agent": settings.USER_AGENT, "Icy-MetaData": "1"},
+                # Proxy ICY metadata bloklarini ajratib/parslab bermaydi. Uni
+                # so'rash xom metadata baytlarini audio ichiga qo'shib, ayrim
+                # stansiyalarda ovozni buzadi. Faqat sof audio so'raymiz.
+                headers={"User-Agent": settings.USER_AGENT, "Icy-MetaData": "0"},
             )
             res = await client.send(req, stream=True)
 

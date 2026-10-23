@@ -29,6 +29,11 @@ from seed_countries import seed_countries  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s [worker] %(message)s")
 logger = logging.getLogger("scheduler")
+# httpx INFO logi to'liq radio URL'larini (ba'zan vaqtinchalik tokenlari bilan)
+# journald'ga yozadi. Worker uchun faqat xatolar kerak; URL va log hajmini
+# keraksiz oshkor qilmaymiz.
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 HEALTH_INTERVAL = int(os.getenv("HEALTH_CHECK_INTERVAL_MINUTES", "10")) * 60
 INGEST_INTERVAL = int(os.getenv("INGEST_INTERVAL_HOURS", "24")) * 3600
