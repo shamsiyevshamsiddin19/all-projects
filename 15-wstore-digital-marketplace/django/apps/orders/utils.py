@@ -2,6 +2,7 @@ import secrets
 import hmac
 import re
 import urllib.parse
+from decimal import Decimal, InvalidOperation
 from django.conf import settings
 
 CLICK_PREFIX_PURCHASE = "WSTP"
@@ -45,7 +46,11 @@ def extract_click_payload(request):
         return request.POST.dict()
     try:
         if request.body:
-            return json.loads(request.body.decode("utf-8"))
+            data = json.loads(request.body.decode("utf-8"))
+            if isinstance(data, dict) and all(
+                isinstance(value, (str, int, float, type(None))) for value in data.values()
+            ):
+                return data
     except Exception:
         pass
     return {}
@@ -54,50 +59,57 @@ def check_click_auth(data, action):
     """
     Validates either direct Click MD5 signature (sign_string) or bridge secret.
     """
-    # 1. Direct Click MD5 signature check
+    if not isinstance(data, dict):
+        return False
+    # Imzo mavjud bo'lsa noto'g'ri imzoni ko'prik kaliti bilan chetlab o'tib bo'lmaydi.
     sign_string = data.get("sign_string")
     if sign_string:
+        secret_key = getattr(settings, "CLICK_SECRET_KEY", "")
+        if not _usable_secret(secret_key):
+            return False
+        if str(data.get("service_id")) != str(settings.CLICK_SERVICE_ID):
+            return False
+        if str(data.get("action")) != str(action):
+            return False
+        if not isinstance(sign_string, str) or len(sign_string) != 32:
+            return False
         click_trans_id = data.get("click_trans_id", "")
-        service_id = data.get("service_id", getattr(settings, "CLICK_SERVICE_ID", "99657"))
-        secret_key = os.getenv("CLICK_SECRET_KEY", getattr(settings, "CLICK_BRIDGE_SECRET", "wstore_secret_bridge_key"))
+        service_id = data.get("service_id", "")
         merchant_trans_id = data.get("merchant_trans_id", "")
         amount = data.get("amount", "")
         sign_time = data.get("sign_time", "")
-
-        # Format amount as clean string if float
-        try:
-            amount_str = f"{float(amount):.2f}".rstrip("0").rstrip(".") if "." in str(amount) else str(amount)
-        except (ValueError, TypeError):
-            amount_str = str(amount)
-
-        raw_str = f"{click_trans_id}{service_id}{secret_key}{merchant_trans_id}{amount_str}{action}{sign_time}"
+        prepare_id = data.get("merchant_prepare_id", "") if action == 1 else ""
+        if not click_trans_id or not merchant_trans_id or not sign_time or (action == 1 and not prepare_id):
+            return False
+        raw_str = f"{click_trans_id}{service_id}{secret_key}{merchant_trans_id}{prepare_id}{amount}{action}{sign_time}"
         calc_sign = hashlib.md5(raw_str.encode("utf-8")).hexdigest()
-
-        # Also try raw amount without decimal formatting
-        raw_str_alt = f"{click_trans_id}{service_id}{secret_key}{merchant_trans_id}{amount}{action}{sign_time}"
-        calc_sign_alt = hashlib.md5(raw_str_alt.encode("utf-8")).hexdigest()
-
-        if sign_string.lower() in (calc_sign.lower(), calc_sign_alt.lower()):
-            return True
+        return hmac.compare_digest(sign_string.lower(), calc_sign)
 
     # 2. Bridge secret fallback
     received_secret = data.get("secret")
-    expected_secret = getattr(settings, "CLICK_BRIDGE_SECRET", "wstore_secret_bridge_key")
-    if received_secret and expected_secret:
-        return hmac.compare_digest(str(received_secret), str(expected_secret))
+    return check_bridge_secret(received_secret)
 
-    return False
+
+def _usable_secret(secret):
+    return bool(secret) and secret != "wstore_secret_bridge_key"
+
+
+def payments_configured():
+    return bool(settings.CLICK_SERVICE_ID and settings.CLICK_MERCHANT_ID) and (
+        _usable_secret(getattr(settings, "CLICK_SECRET_KEY", ""))
+        or _usable_secret(getattr(settings, "CLICK_BRIDGE_SECRET", ""))
+    )
 
 def check_bridge_secret(received_secret):
-    expected_secret = getattr(settings, "CLICK_BRIDGE_SECRET", "wstore_secret_bridge_key")
-    if not received_secret or not expected_secret:
+    expected_secret = getattr(settings, "CLICK_BRIDGE_SECRET", "")
+    if not isinstance(received_secret, str) or not _usable_secret(expected_secret):
         return False
     return hmac.compare_digest(str(received_secret), str(expected_secret))
 
 def amounts_match(a, b):
     try:
-        x = float(a)
-        y = float(b)
-        return abs(x - y) < 0.01
-    except (TypeError, ValueError):
+        x = Decimal(str(a))
+        y = Decimal(str(b))
+        return x.is_finite() and y.is_finite() and x == y
+    except (TypeError, ValueError, InvalidOperation):
         return False

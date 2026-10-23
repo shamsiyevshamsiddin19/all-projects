@@ -330,9 +330,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             trigger.addEventListener("click", (e) => {
                 e.stopPropagation();
-                // Boshqa ochiq menyularni yopish
-                document.querySelectorAll(".dropdown-menu.show").forEach(m => m !== menu && m.classList.remove("show"));
-                menu.classList.toggle("show");
+                const willShow = !menu.classList.contains("show");
+                document.querySelectorAll(".dropdown-menu.show").forEach(m => {
+                    m.classList.remove("show");
+                    const p = m.closest(".folder-card, .file-card");
+                    if (p) p.classList.remove("menu-open");
+                });
+                if (willShow) {
+                    menu.classList.add("show");
+                    card.classList.add("menu-open");
+                }
             });
 
             // Rename
@@ -487,8 +494,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             trigger.addEventListener("click", (e) => {
                 e.stopPropagation();
-                document.querySelectorAll(".dropdown-menu.show").forEach(m => m !== menu && m.classList.remove("show"));
-                menu.classList.toggle("show");
+                const willShow = !menu.classList.contains("show");
+                document.querySelectorAll(".dropdown-menu.show").forEach(m => {
+                    m.classList.remove("show");
+                    const p = m.closest(".folder-card, .file-card");
+                    if (p) p.classList.remove("menu-open");
+                });
+                if (willShow) {
+                    menu.classList.add("show");
+                    card.classList.add("menu-open");
+                }
             });
 
             // Rename
@@ -638,14 +653,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     setViewMode(state.viewMode);
 
     // 16. Boshqaruv tugmalari va Sidebar ochish/yopish
-    elements.openSidebarBtn.addEventListener("click", () => elements.sidebar.classList.add("open"));
-    elements.closeSidebarBtn.addEventListener("click", () => elements.sidebar.classList.remove("open"));
+    const sidebarBackdrop = document.getElementById("sidebarBackdrop");
+    elements.openSidebarBtn.addEventListener("click", () => {
+        elements.sidebar.classList.add("open");
+        if (sidebarBackdrop) sidebarBackdrop.classList.add("active");
+    });
+    const closeMobileSidebar = () => {
+        elements.sidebar.classList.remove("open");
+        if (sidebarBackdrop) sidebarBackdrop.classList.remove("active");
+    };
+    elements.closeSidebarBtn.addEventListener("click", closeMobileSidebar);
+    if (sidebarBackdrop) sidebarBackdrop.addEventListener("click", closeMobileSidebar);
+
     elements.logoutBtn.addEventListener("click", () => window.Auth.logout());
     elements.treeRefreshBtn.addEventListener("click", () => loadFolderTree());
 
     // Sahifaning boshqa joyiga bosilganda ochiq dropdown menyularni yopish
     document.addEventListener("click", () => {
         document.querySelectorAll(".dropdown-menu.show").forEach(m => m.classList.remove("show"));
+        document.querySelectorAll(".menu-open").forEach(c => c.classList.remove("menu-open"));
     });
 
     // =========================================================================

@@ -33,6 +33,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('core', '0002_user_google_id'),
+        ('store', '0001_initial'),
     ]
 
     operations = [

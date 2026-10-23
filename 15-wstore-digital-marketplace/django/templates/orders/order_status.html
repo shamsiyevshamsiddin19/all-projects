@@ -8,18 +8,18 @@
 <div class="container" style="max-width: 640px; padding-top: 3.5rem; padding-bottom: 5rem;">
   
   {% if order.product %}
-  <a href="{% url 'store:product_detail' slug=order.product.slug %}" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; color: var(--muted); margin-bottom: 1.5rem;">
+  <a href="{% url 'store:product_detail' slug=order.product.slug %}" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; color: rgb(var(--muted)); margin-bottom: 1.5rem;">
     <i data-lucide="arrow-left" style="width: 15px; height: 15px;"></i>
     {% translate "Loyiha sahifasiga qaytish" %}
   </a>
   {% else %}
-  <a href="{% url 'store:catalog' %}" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; color: var(--muted); margin-bottom: 1.5rem;">
+  <a href="{% url 'store:catalog' %}" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; color: rgb(var(--muted)); margin-bottom: 1.5rem;">
     <i data-lucide="arrow-left" style="width: 15px; height: 15px;"></i>
     {% translate "Katalogga qaytish" %}
   </a>
   {% endif %}
 
-  <div class="card" style="text-align: center; padding: 2.5rem 2rem; box-shadow: 0 16px 40px rgba(0,0,0,0.45); border-color: var(--border-strong);">
+  <div class="card" style="text-align: center; padding: 2.5rem 2rem; box-shadow: 0 16px 40px rgba(0,0,0,0.45); border-color: rgb(var(--border-strong));">
     
     {% if order.status == 'PAID' %}
       <!-- PAID SUCCESS STATE -->
@@ -27,28 +27,32 @@
         <i data-lucide="check-circle" style="width: 36px; height: 36px;"></i>
       </div>
 
-      <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--fg); margin-bottom: 0.5rem;">
+      <h1 style="font-size: 1.5rem; font-weight: 800; color: rgb(var(--fg)); margin-bottom: 0.5rem;">
         {% translate "To'lov muvaffaqiyatli qabul qilindi!" %}
       </h1>
-      <p style="font-size: 0.92rem; color: var(--muted); margin-bottom: 1.5rem;">
-        {% blocktranslate with title=order.product_title|default:order.product.title %}«<strong style="color: var(--fg);">{{ title }}</strong>» loyihasining to'liq manba kodi siz uchun tayyor.{% endblocktranslate %}
+      <p style="font-size: 0.92rem; color: rgb(var(--muted)); margin-bottom: 1.5rem;">
+        {% if order.product.archive_available %}
+        {% blocktranslate with title=order.product_title|default:order.product.title %}«<strong style="color: rgb(var(--fg));">{{ title }}</strong>» loyihasining to'liq manba kodi siz uchun tayyor.{% endblocktranslate %}
+        {% else %}
+          {% translate "Loyiha fayli hozircha mavjud emas. Sotuvchi bilan bog'laning." %}
+        {% endif %}
       </p>
 
-      <div style="background: var(--surface-2); border-radius: var(--radius-sm); border: 1px solid var(--border); padding: 1.25rem; margin-bottom: 1.75rem; display: flex; justify-content: space-between; align-items: center;">
+      <div style="background: rgb(var(--surface-2)); border-radius: var(--radius-sm); border: 1px solid rgb(var(--border)); padding: 1.25rem; margin-bottom: 1.75rem; display: flex; justify-content: space-between; align-items: center;">
         <div style="text-align: left;">
-          <div style="font-size: 0.8rem; color: var(--muted);">{% translate "Buyurtma raqami:" %}</div>
-          <div style="font-family: monospace; font-size: 0.9rem; font-weight: 700; color: var(--fg);">#{{ order.id|stringformat:'s'|slice:':12' }}</div>
+          <div style="font-size: 0.8rem; color: rgb(var(--muted));">{% translate "Buyurtma raqami:" %}</div>
+          <div style="font-family: monospace; font-size: 0.9rem; font-weight: 700; color: rgb(var(--fg));">#{{ order.id|stringformat:'s'|slice:':12' }}</div>
         </div>
         <div style="text-align: right;">
-          <div style="font-size: 0.8rem; color: var(--muted);">{% translate "To'langan summa:" %}</div>
-          <div style="font-size: 1.15rem; font-weight: 800; color: var(--gold);">{% blocktranslate with amount=order.amount|som %}{{ amount }} so'm{% endblocktranslate %}</div>
+          <div style="font-size: 0.8rem; color: rgb(var(--muted));">{% translate "To'langan summa:" %}</div>
+          <div style="font-size: 1.15rem; font-weight: 800; color: rgb(var(--gold));">{% blocktranslate with amount=order.amount|som %}{{ amount }} so'm{% endblocktranslate %}</div>
         </div>
       </div>
 
-      {% if order.download_token %}
+      {% if order.download_token and order.product.archive_available %}
         <a href="{% url 'orders:download_file' token=order.download_token %}" class="btn btn-primary btn-lg" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 1rem;">
           <i data-lucide="download" style="width: 18px; height: 18px;"></i>
-          <span>{% translate "Kodni yuklab olish (.ZIP)" %}</span>
+          <span>{% translate "Kodni yuklab olish" %}</span>
         </a>
       {% endif %}
 
@@ -64,25 +68,25 @@
 
     {% elif order.status == 'PENDING' %}
       <!-- PENDING PAYMENT STATE -->
-      <div style="width: 70px; height: 70px; border-radius: 50%; background: rgba(230, 180, 80, 0.15); border: 2px solid rgba(230, 180, 80, 0.4); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; color: var(--gold);">
+      <div style="width: 70px; height: 70px; border-radius: 50%; background: rgba(230, 180, 80, 0.15); border: 2px solid rgba(230, 180, 80, 0.4); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; color: rgb(var(--gold));">
         <i data-lucide="clock" style="width: 36px; height: 36px; animation: pulse 2s infinite;"></i>
       </div>
 
-      <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--fg); margin-bottom: 0.5rem;">
+      <h1 style="font-size: 1.5rem; font-weight: 800; color: rgb(var(--fg)); margin-bottom: 0.5rem;">
         {% translate "To'lov kutilmoqda" %}
       </h1>
-      <p style="font-size: 0.92rem; color: var(--muted); margin-bottom: 1.5rem;">
+      <p style="font-size: 0.92rem; color: rgb(var(--muted)); margin-bottom: 1.5rem;">
         {% translate "Click orqali to'lovni tasdiqlang. Tizim to'lovni avtomatik ravishda tekshirib boradi." %}
       </p>
 
-      <div style="background: var(--surface-2); border-radius: var(--radius-sm); border: 1px solid var(--border); padding: 1.25rem; margin-bottom: 1.75rem; text-align: left;">
+      <div style="background: rgb(var(--surface-2)); border-radius: var(--radius-sm); border: 1px solid rgb(var(--border)); padding: 1.25rem; margin-bottom: 1.75rem; text-align: left;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-          <span style="font-size: 0.85rem; color: var(--muted);">{% translate "Loyiha:" %}</span>
-          <span style="font-weight: 600; color: var(--fg);">{{ order.product_title|default:order.product.title }}</span>
+          <span style="font-size: 0.85rem; color: rgb(var(--muted));">{% translate "Loyiha:" %}</span>
+          <span style="font-weight: 600; color: rgb(var(--fg));">{{ order.product_title|default:order.product.title }}</span>
         </div>
         <div style="display: flex; justify-content: space-between;">
-          <span style="font-size: 0.85rem; color: var(--muted);">{% translate "To'lov summasi:" %}</span>
-          <span style="font-weight: 800; color: var(--gold);">{% blocktranslate with amount=order.amount|som %}{{ amount }} so'm{% endblocktranslate %}</span>
+          <span style="font-size: 0.85rem; color: rgb(var(--muted));">{% translate "To'lov summasi:" %}</span>
+          <span style="font-weight: 800; color: rgb(var(--gold));">{% blocktranslate with amount=order.amount|som %}{{ amount }} so'm{% endblocktranslate %}</span>
         </div>
       </div>
 
@@ -105,8 +109,8 @@
         </form>
       {% endif %}
 
-      <div style="font-size: 0.82rem; color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 0.4rem; margin-top: 1rem;">
-        <div class="loader-spinner" style="width: 14px; height: 14px; border: 2px solid var(--border-strong); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+      <div style="font-size: 0.82rem; color: rgb(var(--muted)); display: flex; align-items: center; justify-content: center; gap: 0.4rem; margin-top: 1rem;">
+        <div class="loader-spinner" style="width: 14px; height: 14px; border: 2px solid rgb(var(--border-strong)); border-top-color: rgb(var(--accent)); border-radius: 50%; animation: spin 1s linear infinite;"></div>
         <span>{% translate "To'lov holati avtomatik yangilanmoqda..." %}</span>
       </div>
 
@@ -116,10 +120,10 @@
         <i data-lucide="x-circle" style="width: 36px; height: 36px;"></i>
       </div>
 
-      <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--fg); margin-bottom: 0.5rem;">
+      <h1 style="font-size: 1.5rem; font-weight: 800; color: rgb(var(--fg)); margin-bottom: 0.5rem;">
         {% translate "To'lov amalga oshmadi" %}
       </h1>
-      <p style="font-size: 0.92rem; color: var(--muted); margin-bottom: 1.75rem;">
+      <p style="font-size: 0.92rem; color: rgb(var(--muted)); margin-bottom: 1.75rem;">
         {% translate "To'lov jarayonida xatolik yuz berdi yoki bekor qilindi. Qayta urinib ko'rishingiz mumkin." %}
       </p>
 

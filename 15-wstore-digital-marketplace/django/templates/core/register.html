@@ -10,14 +10,14 @@
   <div style="width: 100%; max-width: 460px;">
 
     <!-- Auth Card -->
-    <div class="card" style="box-shadow: 0 20px 50px rgba(0,0,0,0.5); border-color: var(--border-strong); padding: 2rem 1.75rem;">
+    <div class="card" style="box-shadow: 0 20px 50px rgba(0,0,0,0.5); border-color: rgb(var(--border-strong)); padding: 2rem 1.75rem;">
       <div style="text-align: center; margin-bottom: 1.5rem;">
         <a href="{% url 'store:catalog' %}" class="nav-brand" style="justify-content: center; margin-bottom: 1.25rem;">
           <span style="font-size: 1.7rem;">wstore</span>
           <span class="brand-badge" style="font-size: 0.8rem;">uz</span>
         </a>
-        <h1 style="font-size: 1.45rem; font-weight: 800; color: var(--fg); margin-bottom: 0.4rem;">{% translate "Yangi hisob yaratish" %}</h1>
-        <p style="font-size: 0.88rem; color: var(--muted); line-height: 1.5;">
+        <h1 style="font-size: 1.45rem; font-weight: 800; color: rgb(var(--fg)); margin-bottom: 0.4rem;">{% translate "Yangi hisob yaratish" %}</h1>
+        <p style="font-size: 0.88rem; color: rgb(var(--muted)); line-height: 1.5;">
           {% translate "Raqamli mahsulotlar xarid qiling yoki o'z loyihalaringizni soting" %}
         </p>
       </div>
@@ -33,10 +33,10 @@
           <span>{% translate "Google bilan tezkor ro'yxatdan o'tish" %}</span>
         </a>
 
-        <div style="display: flex; align-items: center; margin: 1.25rem 0; color: var(--muted); font-size: 0.78rem;">
-          <div style="flex: 1; height: 1px; background: var(--border);"></div>
+        <div style="display: flex; align-items: center; margin: 1.25rem 0; color: rgb(var(--muted)); font-size: 0.78rem;">
+          <div style="flex: 1; height: 1px; background: rgb(var(--border));"></div>
           <span style="padding: 0 0.75rem;">{% translate "yoki forma orqali" %}</span>
-          <div style="flex: 1; height: 1px; background: var(--border);"></div>
+          <div style="flex: 1; height: 1px; background: rgb(var(--border));"></div>
         </div>
       {% endif %}
 
@@ -46,7 +46,7 @@
         <input type="hidden" name="next" value="{{ next }}">
 
         <div class="form-group" style="margin-bottom: 1rem;">
-          <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: var(--fg); margin-bottom: 0.35rem; display: block;">
+          <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: rgb(var(--fg)); margin-bottom: 0.35rem; display: block;">
             {% translate "Foydalanuvchi nomi (Username) *" %}
           </label>
           {{ form.username }}
@@ -56,7 +56,7 @@
         </div>
 
         <div class="form-group" style="margin-bottom: 1rem;">
-          <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: var(--fg); margin-bottom: 0.35rem; display: block;">
+          <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: rgb(var(--fg)); margin-bottom: 0.35rem; display: block;">
             {% translate "Email manzili *" %}
           </label>
           {{ form.email }}
@@ -66,7 +66,7 @@
         </div>
 
         <div class="form-group" style="margin-bottom: 1rem;">
-          <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: var(--fg); margin-bottom: 0.35rem; display: block;">
+          <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: rgb(var(--fg)); margin-bottom: 0.35rem; display: block;">
             {% translate "Maqsadingiz (Rol)" %}
           </label>
           {{ form.role }}
@@ -76,7 +76,7 @@
         </div>
 
         <div class="form-group" style="margin-bottom: 1rem;">
-          <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: var(--fg); margin-bottom: 0.35rem; display: block;">
+          <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: rgb(var(--fg)); margin-bottom: 0.35rem; display: block;">
             {% translate "Parol *" %}
           </label>
           {{ form.password }}
@@ -86,7 +86,7 @@
         </div>
 
         <div class="form-group" style="margin-bottom: 1.25rem;">
-          <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: var(--fg); margin-bottom: 0.35rem; display: block;">
+          <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: rgb(var(--fg)); margin-bottom: 0.35rem; display: block;">
             {% translate "Parolni tasdiqlang *" %}
           </label>
           {{ form.password_confirm }}
@@ -101,17 +101,17 @@
         </button>
       </form>
 
-      <div style="margin-top: 1.25rem; text-align: center; font-size: 0.84rem; color: var(--muted);">
+      <div style="margin-top: 1.25rem; text-align: center; font-size: 0.84rem; color: rgb(var(--muted));">
         {% translate "Allaqachon akkauntingiz bormi?" %}
-        <a href="{% url 'core:login' %}{% if next %}?next={{ next|urlencode }}{% endif %}" style="color: var(--accent); font-weight: 600; margin-left: 0.25rem;">
+        <a href="{% url 'core:login' %}{% if next %}?next={{ next|urlencode }}{% endif %}" style="color: rgb(var(--accent)); font-weight: 600; margin-left: 0.25rem;">
           {% translate "Kirish" %}
         </a>
       </div>
 
     </div>
 
-    <p style="margin-top: 1.25rem; text-align: center; font-size: 0.82rem; color: var(--muted);">
-      <a href="{% url 'store:catalog' %}" style="color: var(--muted);">&larr; {% translate "Katalogga qaytish" %}</a>
+    <p style="margin-top: 1.25rem; text-align: center; font-size: 0.82rem; color: rgb(var(--muted));">
+      <a href="{% url 'store:catalog' %}" style="color: rgb(var(--muted));">&larr; {% translate "Katalogga qaytish" %}</a>
     </p>
 
   </div>

@@ -142,23 +142,6 @@ def google_callback_view(request):
         )
         return redirect("core:login")
 
-    if request.GET.get("error"):
-        # Foydalanuvchi "Bekor qilish" bosgan holat ham shu yerga tushadi.
-        messages.info(request, _("Google orqali kirish bekor qilindi."))
-        return redirect("core:login")
-
-    state = request.GET.get("state", "")
-    if not expected_state or not constant_time_compare(expected_state, state):
-        # CSRF yoki eskirgan havola: boshqa saytdan yuborilgan callback
-        # bo'lishi mumkin, shuning uchun hech qanday hisobga kirmaymiz.
-        messages.error(request, _("Kirish so'rovi eskirgan. Qaytadan urinib ko'ring."))
-        return redirect("core:login")
-
-    code = request.GET.get("code")
-    if not code:
-        messages.error(request, _("Google'dan kod qaytmadi. Qaytadan urinib ko'ring."))
-        return redirect("core:login")
-
     try:
         token_resp = requests.post(
             GOOGLE_TOKEN_URL,
@@ -197,7 +180,7 @@ def google_callback_view(request):
 
     # Tasdiqlanmagan email bilan bog'lash xavfli: begona odam o'sha emailga
     # hisob ochib, shu yerdagi mavjud hisobni egallab olishi mumkin edi.
-    if not info.get("email_verified"):
+    if info.get("email_verified") is not True:
         messages.error(request, _("Google hisobingizdagi email tasdiqlanmagan."))
         return redirect("core:login")
 
@@ -208,6 +191,9 @@ def google_callback_view(request):
         messages.error(request, _("Hisob yaratishda xatolik yuz berdi."))
         return redirect("core:login")
 
+    if not user.is_active:
+        messages.error(request, _("Hisob faol emas."))
+        return redirect("core:login")
     login(request, user)
     if created:
         messages.success(request, _("Xush kelibsiz, %(name)s! Hisobingiz Google orqali yaratildi.") % {"name": user.display_name})
@@ -234,6 +220,8 @@ def _get_or_create_user(request, info, google_id, email):
 
     user = User.objects.filter(email__iexact=email).first()
     if user:
+        if user.google_id and user.google_id != google_id:
+            raise IntegrityError("Email boshqa Google hisobiga bog'langan")
         # Mavjud hisobni Google bilan bog'laymiz — email Google tomonidan
         # tasdiqlangani yuqorida tekshirildi.
         user.google_id = google_id
@@ -386,4 +374,3 @@ def google_dev_mock_view(request):
     return render(request, "core/google_dev_mock.html", {
         "next": next_url,
     })
-

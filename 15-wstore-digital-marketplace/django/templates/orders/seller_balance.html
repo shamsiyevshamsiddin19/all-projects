@@ -8,26 +8,26 @@
 {% block content %}
 <div class="container" style="max-width: 780px; padding-top: 2.5rem; padding-bottom: 5rem;">
   
-  <a href="{% url 'orders:seller_dashboard' %}" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; color: var(--muted); margin-bottom: 1.5rem;">
+  <a href="{% url 'orders:seller_dashboard' %}" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; color: rgb(var(--muted)); margin-bottom: 1.5rem;">
     <i data-lucide="arrow-left" style="width: 15px; height: 15px;"></i>
     {% translate "Sotuvchi paneliga qaytish" %}
   </a>
 
   <!-- Header -->
   <div style="margin-bottom: 2rem;">
-    <h1 style="font-size: 1.85rem; font-weight: 800; color: var(--fg); letter-spacing: -0.02em;">{% translate "Mening balansim" %}</h1>
-    <p style="font-size: 0.92rem; color: var(--muted); margin-top: 0.25rem;">
+    <h1 style="font-size: 1.85rem; font-weight: 800; color: rgb(var(--fg)); letter-spacing: -0.02em;">{% translate "Mening balansim" %}</h1>
+    <p style="font-size: 0.92rem; color: rgb(var(--muted)); margin-top: 0.25rem;">
       {% translate "Sotilgan loyihalardan tushgan mablag'ni kartangizga yechib oling." %}
     </p>
   </div>
 
   {% if not user.is_authenticated %}
     <div class="card" style="box-shadow: 0 16px 40px rgba(0,0,0,0.3); text-align: center; padding: 3.5rem 1.5rem;">
-      <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(230, 180, 80, 0.15); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; color: var(--gold);">
+      <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(230, 180, 80, 0.15); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; color: rgb(var(--gold));">
         <i data-lucide="wallet" style="width: 28px; height: 28px;"></i>
       </div>
-      <h2 style="font-size: 1.3rem; font-weight: 700; color: var(--fg); margin-bottom: 0.5rem;">{% translate "Balansni ko'rish uchun tizimga kiring" %}</h2>
-      <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 1.5rem; max-width: 440px; margin-left: auto; margin-right: auto;">
+      <h2 style="font-size: 1.3rem; font-weight: 700; color: rgb(var(--fg)); margin-bottom: 0.5rem;">{% translate "Balansni ko'rish uchun tizimga kiring" %}</h2>
+      <p style="font-size: 0.9rem; color: rgb(var(--muted)); margin-bottom: 1.5rem; max-width: 440px; margin-left: auto; margin-right: auto;">
         {% translate "Mablag'ni kartaga yechib olish va so'rovlar tarixini ko'rish uchun hisobingizga kiring." %}
       </p>
       <a href="{% url 'core:login' %}?next={{ request.path }}" class="btn btn-primary btn-lg" style="display: inline-flex; align-items: center; gap: 0.5rem;">
@@ -41,31 +41,31 @@
   <div class="card" style="margin-bottom: 2rem; background: linear-gradient(135deg, rgba(230, 180, 80, 0.12) 0%, rgba(21, 21, 28, 0.95) 100%); border-color: rgba(230, 180, 80, 0.35); padding: 1.75rem 2rem;">
     <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
       <div style="display: flex; align-items: center; gap: 1.25rem;">
-        <div style="width: 54px; height: 54px; border-radius: var(--radius-md); background: rgba(230, 180, 80, 0.2); border: 1px solid rgba(230, 180, 80, 0.4); display: flex; align-items: center; justify-content: center; color: var(--gold);">
+        <div style="width: 54px; height: 54px; border-radius: var(--radius-md); background: rgba(230, 180, 80, 0.2); border: 1px solid rgba(230, 180, 80, 0.4); display: flex; align-items: center; justify-content: center; color: rgb(var(--gold));">
           <i data-lucide="wallet" style="width: 26px; height: 26px;"></i>
         </div>
         <div>
-          <div style="font-size: 0.85rem; color: var(--muted); font-weight: 600;">{% translate "Mavjud balans:" %}</div>
-          <div style="font-size: 2.2rem; font-weight: 800; color: var(--gold); line-height: 1.15;">
+          <div style="font-size: 0.85rem; color: rgb(var(--muted)); font-weight: 600;">{% translate "Mavjud balans:" %}</div>
+          <div style="font-size: 2.2rem; font-weight: 800; color: rgb(var(--gold)); line-height: 1.15;">
             {{ balance|som }} <span style="font-size: 1.15rem; font-weight: 700;">{% translate "so'm" %}</span>
           </div>
         </div>
       </div>
 
-      <div style="font-size: 0.82rem; color: var(--muted); text-align: right;">
+      <div style="font-size: 0.82rem; color: rgb(var(--muted)); text-align: right;">
         <div>{% blocktranslate with amount=MIN_WITHDRAWAL_SOM|som %}Minimal yechish: <strong>{{ amount }} so'm</strong>{% endblocktranslate %}</div>
-        <div style="color: var(--green); margin-top: 2px;">{% translate "Komissiya" %}: 0%</div>
+        <div style="color: rgb(var(--green)); margin-top: 2px;">{% translate "Komissiya" %}: 0%</div>
       </div>
     </div>
   </div>
 
   <!-- Withdrawal Form Card -->
   <div class="card" style="margin-bottom: 2.5rem;">
-    <h2 style="font-size: 1.2rem; font-weight: 700; color: var(--fg); margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.5rem;">
-      <i data-lucide="arrow-down-to-dot" style="width: 18px; height: 18px; color: var(--accent);"></i>
+    <h2 style="font-size: 1.2rem; font-weight: 700; color: rgb(var(--fg)); margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.5rem;">
+      <i data-lucide="arrow-down-to-dot" style="width: 18px; height: 18px; color: rgb(var(--accent));"></i>
       {% translate "Mablag'ni kartaga yechib olish" %}
     </h2>
-    <p style="font-size: 0.86rem; color: var(--muted); margin-bottom: 1.5rem;">
+    <p style="font-size: 0.86rem; color: rgb(var(--muted)); margin-bottom: 1.5rem;">
       {% translate "Uzcard yoki Humo plastik kartangiz raqamini kiriting. Mablag' 24 soat ichida o'tkazib beriladi." %}
     </p>
 
@@ -95,7 +95,7 @@
             required
             value="{{ form.amount.value|default:'' }}"
           >
-          <span style="font-size: 0.78rem; color: var(--muted); margin-top: 3px; display: block;">
+          <span style="font-size: 0.78rem; color: rgb(var(--muted)); margin-top: 3px; display: block;">
             {% blocktranslate with amount=MIN_WITHDRAWAL_SOM|som %}Minimal: {{ amount }} so'm{% endblocktranslate %}
           </span>
           {% if form.amount.errors %}
@@ -117,7 +117,7 @@
             required
             value="{{ form.card_number.value|default:'' }}"
           >
-          <span style="font-size: 0.78rem; color: var(--muted); margin-top: 3px; display: block;">
+          <span style="font-size: 0.78rem; color: rgb(var(--muted)); margin-top: 3px; display: block;">
             {% translate "16 xonali Uzcard yoki Humo karta raqami" %}
           </span>
           {% if form.card_number.errors %}
@@ -135,8 +135,8 @@
 
   <!-- Withdrawal History -->
   <div style="margin-bottom: 1.25rem;">
-    <h2 style="font-size: 1.2rem; font-weight: 700; color: var(--fg); display: flex; align-items: center; gap: 0.5rem;">
-      <i data-lucide="history" style="width: 18px; height: 18px; color: var(--gold);"></i>
+    <h2 style="font-size: 1.2rem; font-weight: 700; color: rgb(var(--fg)); display: flex; align-items: center; gap: 0.5rem;">
+      <i data-lucide="history" style="width: 18px; height: 18px; color: rgb(var(--gold));"></i>
       {% translate "So'rovlar tarixi" %}
     </h2>
   </div>
@@ -146,10 +146,10 @@
       {% for w in withdrawals %}
         <div class="card" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 1rem 1.4rem;">
           <div>
-            <div style="font-size: 1.1rem; font-weight: 800; color: var(--fg);">
+            <div style="font-size: 1.1rem; font-weight: 800; color: rgb(var(--fg));">
               {% blocktranslate with amount=w.amount|som %}{{ amount }} so'm{% endblocktranslate %}
             </div>
-            <div style="font-size: 0.82rem; color: var(--muted); margin-top: 2px;">
+            <div style="font-size: 0.82rem; color: rgb(var(--muted)); margin-top: 2px;">
               {{ w.masked_card }} • {{ w.created_at|date:"d.m.Y, H:i" }}
             </div>
           </div>
@@ -175,7 +175,7 @@
       {% endfor %}
     </div>
   {% else %}
-    <div style="text-align: center; padding: 3rem 1rem; background: var(--surface); border: 1px dashed var(--border); border-radius: var(--radius-card); color: var(--muted); font-size: 0.9rem;">
+    <div style="text-align: center; padding: 3rem 1rem; background: rgb(var(--surface)); border: 1px dashed rgb(var(--border)); border-radius: var(--radius-card); color: rgb(var(--muted)); font-size: 0.9rem;">
       {% translate "Hozircha pul yechib olish so'rovlari mavjud emas." %}
     </div>
   {% endif %}

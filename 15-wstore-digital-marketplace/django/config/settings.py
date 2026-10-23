@@ -173,6 +173,7 @@ STATIC_VERSION = _static_version()
 STATIC_VERSION_FN = _static_version
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+TEST_RUNNER = "config.test_runner.AppTestRunner"
 
 # Auth redirection
 LOGIN_URL = "core:login"
@@ -208,7 +209,8 @@ PLATFORM_COMMISSION_PERCENT = int(os.getenv("PLATFORM_COMMISSION_PERCENT", "0"))
 CLICK_SERVICE_ID = os.getenv("CLICK_SERVICE_ID", "99657")
 CLICK_MERCHANT_ID = os.getenv("CLICK_MERCHANT_ID", "59136")
 CLICK_MERCHANT_USER_ID = os.getenv("CLICK_MERCHANT_USER_ID", "81435")
-CLICK_BRIDGE_SECRET = os.getenv("CLICK_BRIDGE_SECRET", "wstore_secret_bridge_key")
+CLICK_BRIDGE_SECRET = os.getenv("CLICK_BRIDGE_SECRET", "").strip()
+CLICK_SECRET_KEY = os.getenv("CLICK_SECRET_KEY", "").strip()
 CLICK_BASE_URL = "https://my.click.uz/services/pay"
 
 # ---- Google OAuth ("Google bilan kirish") ----

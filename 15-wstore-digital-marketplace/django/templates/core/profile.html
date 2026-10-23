@@ -10,15 +10,15 @@
   <!-- Profil boshi -->
   <div class="card" style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
     {% if user.avatar %}
-      <img src="{{ user.avatar }}" alt="" style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-strong);">
+      <img src="{{ user.avatar }}" alt="" style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid rgb(var(--border-strong));">
     {% else %}
-      <div style="width: 72px; height: 72px; border-radius: 50%; background: var(--surface-2); border: 2px solid var(--border-strong); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: 700; color: var(--muted);">
+      <div style="width: 72px; height: 72px; border-radius: 50%; background: rgb(var(--surface-2)); border: 2px solid rgb(var(--border-strong)); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: 700; color: rgb(var(--muted));">
         {{ user.initials }}
       </div>
     {% endif %}
     <div style="flex: 1; min-width: 220px;">
-      <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--fg);">{{ user.display_name }}</h1>
-      <div style="font-size: 0.88rem; color: var(--muted); margin-top: 0.2rem;">{{ user.email }}</div>
+      <h1 style="font-size: 1.5rem; font-weight: 800; color: rgb(var(--fg));">{{ user.display_name }}</h1>
+      <div style="font-size: 0.88rem; color: rgb(var(--muted)); margin-top: 0.2rem;">{{ user.email }}</div>
       <div style="margin-top: 0.6rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
         <span class="badge-tech">{{ user.get_role_display }}</span>
         {% if user.seller_onboarded %}
@@ -33,7 +33,7 @@
   <!-- Statistika -->
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
     <div class="stat-card">
-      <div class="stat-icon-wrap" style="color: var(--accent);"><i data-lucide="shopping-bag" style="width:20px;height:20px;"></i></div>
+      <div class="stat-icon-wrap" style="color: rgb(var(--accent));"><i data-lucide="shopping-bag" style="width:20px;height:20px;"></i></div>
       <div><div class="stat-val">{{ stats.orders }}</div><div class="stat-lbl">{% translate "Xaridlar" %}</div></div>
     </div>
     <div class="stat-card">
@@ -41,7 +41,7 @@
       <div><div class="stat-val">{{ stats.wishlist }}</div><div class="stat-lbl">{% translate "Sevimlilar" %}</div></div>
     </div>
     <div class="stat-card">
-      <div class="stat-icon-wrap" style="color: var(--gold);"><i data-lucide="gift" style="width:20px;height:20px;"></i></div>
+      <div class="stat-icon-wrap" style="color: rgb(var(--gold));"><i data-lucide="gift" style="width:20px;height:20px;"></i></div>
       <div><div class="stat-val">{{ stats.referrals }}</div><div class="stat-lbl">{% translate "Taklif qilinganlar" %}</div></div>
     </div>
   </div>
@@ -50,8 +50,8 @@
   {% if user.seller_onboarded %}
     <div class="card" style="margin-bottom: 2rem; border-color: rgba(109,94,246,0.4);">
       <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
-        <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--fg); display: flex; align-items: center; gap: 0.5rem;">
-          <i data-lucide="store" style="width:18px;height:18px;color:var(--accent);"></i>
+        <h2 style="font-size: 1.15rem; font-weight: 700; color: rgb(var(--fg)); display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="store" style="width:18px;height:18px;color:rgb(var(--accent));"></i>
           {% translate "Sotuvchi bo'limi" %}
         </h2>
         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
@@ -66,16 +66,16 @@
         </div>
       </div>
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem;">
-        <div class="stat-card" style="background: var(--surface-2);">
+        <div class="stat-card" style="background: rgb(var(--surface-2));">
           <div><div class="stat-val">{{ seller_stats.products }}</div><div class="stat-lbl">{% translate "Loyihalar" %}</div></div>
         </div>
-        <div class="stat-card" style="background: var(--surface-2);">
+        <div class="stat-card" style="background: rgb(var(--surface-2));">
           <div><div class="stat-val">{{ seller_stats.sales }}</div><div class="stat-lbl">{% translate "Sotuvlar" %}</div></div>
         </div>
-        <div class="stat-card" style="background: var(--surface-2);">
-          <div><div class="stat-val" style="color: var(--gold);">{{ seller_stats.balance|som }}</div><div class="stat-lbl">{% translate "Balans (so'm)" %}</div></div>
+        <div class="stat-card" style="background: rgb(var(--surface-2));">
+          <div><div class="stat-val" style="color: rgb(var(--gold));">{{ seller_stats.balance|som }}</div><div class="stat-lbl">{% translate "Balans (so'm)" %}</div></div>
         </div>
-        <div class="stat-card" style="background: var(--surface-2);">
+        <div class="stat-card" style="background: rgb(var(--surface-2));">
           <div><div class="stat-val">{{ seller_stats.active_tokens }}</div><div class="stat-lbl">{% translate "Faol API kalit" %}</div></div>
         </div>
       </div>
@@ -85,11 +85,11 @@
     <div class="card" style="margin-bottom: 2rem; border-color: rgba(109,94,246,0.45); background: linear-gradient(135deg, rgba(109,94,246,0.10) 0%, rgba(21,21,28,0.9) 100%);">
       <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.25rem;">
         <div style="max-width: 560px;">
-          <h2 style="font-size: 1.2rem; font-weight: 700; color: var(--fg); margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.5rem;">
-            <i data-lucide="store" style="width:18px;height:18px;color:var(--accent);"></i>
+          <h2 style="font-size: 1.2rem; font-weight: 700; color: rgb(var(--fg)); margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i data-lucide="store" style="width:18px;height:18px;color:rgb(var(--accent));"></i>
             {% translate "Mahsulot sotish" %}
           </h2>
-          <p style="font-size: 0.9rem; color: var(--muted); line-height: 1.6;">
+          <p style="font-size: 0.9rem; color: rgb(var(--muted)); line-height: 1.6;">
             {% translate "O'zingiz yaratgan bot, sayt yoki kod blokini sotuvga qo'ying. Qo'shimcha ma'lumotlarni to'ldirgach, sotuvchi paneli va avtomatik yuklash uchun API kaliti ochiladi." %}
           </p>
         </div>
@@ -103,8 +103,8 @@
 
   <!-- Shaxsiy ma'lumotlar -->
   <div class="card">
-    <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--fg); margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
-      <i data-lucide="user" style="width:18px;height:18px;color:var(--accent);"></i>
+    <h2 style="font-size: 1.15rem; font-weight: 700; color: rgb(var(--fg)); margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+      <i data-lucide="user" style="width:18px;height:18px;color:rgb(var(--accent));"></i>
       {% translate "Shaxsiy ma'lumotlar" %}
     </h2>
 

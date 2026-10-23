@@ -1249,10 +1249,10 @@ msgstr "Добро пожаловать, %(name)s! Ваш аккаунт соз�
 
 #: templates/orders/dashboard.html
 msgid ""
-"Xush kelibsiz, <strong style=\"color: var(--fg);\">%(name)s</strong>. Barcha"
+"Xush kelibsiz, <strong style=\"color: rgb(var(--fg));\">%(name)s</strong>. Barcha"
 " xaridlaringiz va yuklab olish havolalari shu yerda."
 msgstr ""
-"Добро пожаловать, <strong style=\"color: var(--fg);\">%(name)s</strong>. Все"
+"Добро пожаловать, <strong style=\"color: rgb(var(--fg));\">%(name)s</strong>. Все"
 " ваши покупки и ссылки для скачивания здесь."
 
 #: templates/store/product_detail.html
@@ -1389,11 +1389,11 @@ msgstr "«%(title)s» временно приостановлен."
 
 #: templates/orders/order_status.html
 msgid ""
-"«<strong style=\"color: var(--fg);\">%(title)s</strong>» loyihasining to'liq"
+"«<strong style=\"color: rgb(var(--fg));\">%(title)s</strong>» loyihasining to'liq"
 " manba kodi siz uchun tayyor."
 msgstr ""
 "Полный исходный код проекта «<strong style=\"color: "
-"var(--fg);\">%(title)s</strong>» готов для вас."
+"rgb(var(--fg));\">%(title)s</strong>» готов для вас."
 
 #: templates/navbar.html
 msgid "— tayyor kod, botlar, saytlar va ilovalar bozori"
@@ -1897,3 +1897,30 @@ msgid "«@» belgisiz yozing. Xaridorlar loyiha sahifasidan shu orqali yozadi."
 msgstr ""
 "Укажите без символа «@». Покупатели будут писать вам через него со страницы "
 "проекта."
+
+msgid "Onlayn xarid hozircha mavjud emas. Sotuvchi bilan bog'laning."
+msgstr "Онлайн-покупка пока недоступна. Свяжитесь с продавцом."
+
+msgid "Loyiha fayli hozircha mavjud emas. Sotuvchi bilan bog'laning."
+msgstr "Файл проекта пока недоступен. Свяжитесь с продавцом."
+
+msgid "Onlayn to'lov vaqtincha mavjud emas."
+msgstr "Онлайн-оплата временно недоступна."
+
+msgid "Narx musbat son bo'lishi kerak."
+msgstr "Цена должна быть больше нуля."
+
+msgid "Faqat ZIP, TAR.GZ yoki RAR arxivini yuklang."
+msgstr "Загрузите архив ZIP, TAR.GZ или RAR."
+
+msgid "Fayl hajmi %(limit)s baytdan oshmasligi kerak."
+msgstr "Размер файла не должен превышать %(limit)s байт."
+
+msgid "Baho 1 dan 5 gacha bo'lishi kerak."
+msgstr "Оценка должна быть от 1 до 5."
+
+msgid "Kodni yuklab olish"
+msgstr "Скачать исходный код"
+
+msgid "Hisob faol emas."
+msgstr "Эта учётная запись неактивна."

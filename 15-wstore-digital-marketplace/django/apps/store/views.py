@@ -1,9 +1,10 @@
 import urllib.parse
+from decimal import Decimal, InvalidOperation
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils.translation import gettext as _
-from django.db.models import Q
+from django.db.models import Q, Exists, OuterRef
 from django.http import JsonResponse, HttpResponseForbidden
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
@@ -14,6 +15,7 @@ from core.decorators import seller_required
 from .models import Category, Product, Review, Wishlist, Report
 from .forms import ProductForm, ReviewForm, ReportForm, TECH_CHOICES, SUBCAT_CHOICES
 from core.telegram import send_telegram_notification
+from orders.utils import payments_configured
 
 PRICE_RANGES = [
     {"label": "0 – 10 USD", "min": 0, "max": 10},
@@ -64,13 +66,17 @@ def catalog_view(request):
     price_max = request.GET.get("max_price")
     if price_min:
         try:
-            products = products.filter(price__gte=float(price_min))
-        except ValueError:
+            value = Decimal(price_min)
+            if value.is_finite() and 0 <= value <= Decimal("9999999999.99"):
+                products = products.filter(price__gte=value)
+        except InvalidOperation:
             pass
     if price_max:
         try:
-            products = products.filter(price__lte=float(price_max))
-        except ValueError:
+            value = Decimal(price_max)
+            if value.is_finite() and 0 <= value <= Decimal("9999999999.99"):
+                products = products.filter(price__lte=value)
+        except InvalidOperation:
             pass
 
     # Sorting
@@ -151,7 +157,7 @@ def catalog_view(request):
 def product_detail_view(request, slug):
     product = get_object_or_404(
         Product.objects.select_related("category", "seller"),
-        slug=slug
+        slug=slug, is_deleted=False
     )
 
     # Non-active products are only visible to the seller or staff
@@ -159,11 +165,17 @@ def product_detail_view(request, slug):
         if not request.user.is_authenticated or (request.user != product.seller and not request.user.is_staff):
             return HttpResponseForbidden("Ushbu mahsulot hozircha faol emas.")
 
-    reviews = product.reviews.select_related("user").order_by("-created_at")
+    from orders.models import Order
+    reviews = product.reviews.select_related("user").annotate(
+        verified_purchase=Exists(Order.objects.filter(
+            buyer_id=OuterRef("user_id"), product_id=product.pk, status=Order.PayStatus.PAID
+        ))
+    ).order_by("-created_at")
     # select_related — kartochkalar seller/category ga murojaat qiladi,
     # bunsiz har bir tavsiya uchun qo'shimcha so'rov ketardi
     recommended = Product.objects.filter(
         status=Product.Status.ACTIVE,
+        is_deleted=False,
         category=product.category
     ).exclude(pk=product.pk).select_related("category", "seller")[:4]
 
@@ -171,9 +183,12 @@ def product_detail_view(request, slug):
     is_wishlisted = False
     has_purchased = False
     user_review = None
+    purchase_order = None
     if request.user.is_authenticated:
         is_wishlisted = Wishlist.objects.filter(user=request.user, product=product).exists()
-        from orders.models import Order
+        purchase_order = Order.objects.filter(
+            buyer=request.user, product=product, status=Order.PayStatus.PAID
+        ).first()
         has_purchased = Order.objects.filter(
             buyer=request.user, product=product, status=Order.PayStatus.PAID
         ).exists() or request.user.is_staff
@@ -200,6 +215,13 @@ def product_detail_view(request, slug):
         "user_review": user_review,
         "report_form": report_form,
         "telegram_link": telegram_link,
+        "purchase_order": purchase_order,
+        "can_checkout": (
+            product.status == Product.Status.ACTIVE
+            and product.seller_id != request.user.pk
+            and product.archive_available
+            and payments_configured()
+        ),
     })
 
 
@@ -263,7 +285,7 @@ def product_edit_view(request, slug=None, product_id=None):
 @seller_required
 @require_POST
 def product_toggle_pause_view(request, slug):
-    product = get_object_or_404(Product, slug=slug)
+    product = get_object_or_404(Product, slug=slug, is_deleted=False)
     if product.seller != request.user and not request.user.is_staff:
         return HttpResponseForbidden("Ruxsat berilmagan.")
 
@@ -303,15 +325,10 @@ def product_delete_view(request, slug):
 @login_required
 @require_POST
 def wishlist_toggle_view(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
-    item = Wishlist.objects.filter(user=request.user, product=product).first()
-    
-    if item:
+    product = get_object_or_404(Product, id=product_id, status=Product.Status.ACTIVE, is_deleted=False)
+    item, wishlisted = Wishlist.objects.get_or_create(user=request.user, product=product)
+    if not wishlisted:
         item.delete()
-        wishlisted = False
-    else:
-        Wishlist.objects.create(user=request.user, product=product)
-        wishlisted = True
 
     if request.headers.get("x-requested-with") == "XMLHttpRequest" or request.GET.get("format") == "json":
         return JsonResponse({"wishlisted": wishlisted, "count": Wishlist.objects.filter(user=request.user).count()})
@@ -339,7 +356,9 @@ def wishlist_list_view(request):
             "products": [],
             "wishlist_ids": set(),
         })
-    wishlist_items = Wishlist.objects.filter(user=request.user).select_related("product", "product__category", "product__seller")
+    wishlist_items = Wishlist.objects.filter(
+        user=request.user, product__status=Product.Status.ACTIVE, product__is_deleted=False
+    ).select_related("product", "product__category", "product__seller")
     products = [w.product for w in wishlist_items]
     wishlist_ids = {str(p.id) for p in products}
     return render(request, "store/wishlist.html", {
@@ -351,7 +370,7 @@ def wishlist_list_view(request):
 @login_required
 @require_POST
 def add_review_view(request, slug):
-    product = get_object_or_404(Product, slug=slug)
+    product = get_object_or_404(Product, slug=slug, status=Product.Status.ACTIVE, is_deleted=False)
     form = ReviewForm(request.POST)
     if form.is_valid():
         Review.objects.update_or_create(
@@ -372,7 +391,7 @@ def add_review_view(request, slug):
 @login_required
 @require_POST
 def report_product_view(request, slug):
-    product = get_object_or_404(Product, slug=slug)
+    product = get_object_or_404(Product, slug=slug, status=Product.Status.ACTIVE, is_deleted=False)
     form = ReportForm(request.POST)
     if form.is_valid():
         report = form.save(commit=False)

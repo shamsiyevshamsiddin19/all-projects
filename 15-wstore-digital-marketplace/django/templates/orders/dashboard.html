@@ -11,10 +11,10 @@
   <!-- Header -->
   <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
     <div>
-      <h1 style="font-size: 1.85rem; font-weight: 800; color: var(--fg); letter-spacing: -0.02em;">{% translate "Mening kabinetim" %}</h1>
-      <p style="font-size: 0.92rem; color: var(--muted); margin-top: 0.25rem;">
+      <h1 style="font-size: 1.85rem; font-weight: 800; color: rgb(var(--fg)); letter-spacing: -0.02em;">{% translate "Mening kabinetim" %}</h1>
+      <p style="font-size: 0.92rem; color: rgb(var(--muted)); margin-top: 0.25rem;">
         {% if user.is_authenticated %}
-          {% blocktranslate with name=user.display_name %}Xush kelibsiz, <strong style="color: var(--fg);">{{ name }}</strong>. Barcha xaridlaringiz va yuklab olish havolalari shu yerda.{% endblocktranslate %}
+          {% blocktranslate with name=user.display_name %}Xush kelibsiz, <strong style="color: rgb(var(--fg));">{{ name }}</strong>. Barcha xaridlaringiz va yuklab olish havolalari shu yerda.{% endblocktranslate %}
         {% else %}
           {% translate "Xarid qilingan loyihalar va manba kodlari." %}
         {% endif %}
@@ -36,11 +36,11 @@
 
   {% if not user.is_authenticated %}
     <div class="card" style="box-shadow: 0 16px 40px rgba(0,0,0,0.3); text-align: center; padding: 3.5rem 1.5rem;">
-      <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(109, 94, 246, 0.15); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; color: var(--accent);">
+      <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(109, 94, 246, 0.15); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; color: rgb(var(--accent));">
         <i data-lucide="user" style="width: 28px; height: 28px;"></i>
       </div>
-      <h2 style="font-size: 1.3rem; font-weight: 700; color: var(--fg); margin-bottom: 0.5rem;">{% translate "Kabinetni ko'rish uchun tizimga kiring" %}</h2>
-      <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 1.5rem; max-width: 440px; margin-left: auto; margin-right: auto;">
+      <h2 style="font-size: 1.3rem; font-weight: 700; color: rgb(var(--fg)); margin-bottom: 0.5rem;">{% translate "Kabinetni ko'rish uchun tizimga kiring" %}</h2>
+      <p style="font-size: 0.9rem; color: rgb(var(--muted)); margin-bottom: 1.5rem; max-width: 440px; margin-left: auto; margin-right: auto;">
         {% translate "Xaridlaringiz, yuklab olish tokenlari va referal havolangizni ko'rish uchun hisobingizga kiring." %}
       </p>
       <a href="{% url 'core:login' %}?next={{ request.path }}" class="btn btn-primary btn-lg" style="display: inline-flex; align-items: center; gap: 0.5rem;">
@@ -55,13 +55,13 @@
     <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem;">
       <div style="max-width: 580px;">
         <div style="display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(109, 94, 246, 0.15); border: 1px solid rgba(109, 94, 246, 0.3); padding: 3px 10px; border-radius: 20px; font-size: 0.76rem; font-weight: 700; color: #c7d2fe; text-transform: uppercase; margin-bottom: 0.75rem;">
-          <i data-lucide="gift" style="width: 13px; height: 13px; color: var(--gold);"></i>
+          <i data-lucide="gift" style="width: 13px; height: 13px; color: rgb(var(--gold));"></i>
           {% translate "Referal Dasturi" %}
         </div>
-        <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--fg); margin-bottom: 0.4rem;">
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: rgb(var(--fg)); margin-bottom: 0.4rem;">
           {% blocktranslate with bonus=REFERRAL_BONUS_SOM|som %}Do'stlaringizni taklif qiling va har bir xarid uchun {{ bonus }} so'm oling!{% endblocktranslate %}
         </h3>
-        <p style="font-size: 0.88rem; color: var(--muted); margin-bottom: 1.25rem;">
+        <p style="font-size: 0.88rem; color: rgb(var(--muted)); margin-bottom: 1.25rem;">
           {% blocktranslate with bonus=REFERRAL_BONUS_SOM|som %}Quyidagi shaxsiy havolangiz orqali ro'yxatdan o'tgan foydalanuvchi birinchi xaridni amalga oshirganda hisobingizga avtomatik tarzda {{ bonus }} so'm qo'shiladi.{% endblocktranslate %}
         </p>
 
@@ -72,7 +72,7 @@
             readonly 
             value="{{ referral_link }}" 
             class="form-control" 
-            style="font-family: monospace; font-size: 0.85rem; background: var(--bg); cursor: text;"
+            style="font-family: monospace; font-size: 0.85rem; background: rgb(var(--bg)); cursor: text;"
             id="referralInput"
           >
           <button 
@@ -89,16 +89,16 @@
 
       <!-- Referral Stats -->
       <div style="display: flex; gap: 1rem; align-self: center;">
-        <div class="stat-card" style="padding: 1rem 1.25rem; min-width: 140px; background: var(--surface-2);">
+        <div class="stat-card" style="padding: 1rem 1.25rem; min-width: 140px; background: rgb(var(--surface-2));">
           <div style="display: flex; flex-direction: column;">
-            <div style="font-size: 1.5rem; font-weight: 800; color: var(--fg);">{{ referrals_count }}</div>
-            <div style="font-size: 0.78rem; color: var(--muted);">{% translate "Taklif qilinganlar" %}</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: rgb(var(--fg));">{{ referrals_count }}</div>
+            <div style="font-size: 0.78rem; color: rgb(var(--muted));">{% translate "Taklif qilinganlar" %}</div>
           </div>
         </div>
-        <div class="stat-card" style="padding: 1rem 1.25rem; min-width: 150px; background: var(--surface-2);">
+        <div class="stat-card" style="padding: 1rem 1.25rem; min-width: 150px; background: rgb(var(--surface-2));">
           <div style="display: flex; flex-direction: column;">
-            <div style="font-size: 1.5rem; font-weight: 800; color: var(--gold);">{{ bonus_earned|som }}</div>
-            <div style="font-size: 0.78rem; color: var(--muted);">{% translate "Ishlangan bonus (so'm)" %}</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: rgb(var(--gold));">{{ bonus_earned|som }}</div>
+            <div style="font-size: 0.78rem; color: rgb(var(--muted));">{% translate "Ishlangan bonus (so'm)" %}</div>
           </div>
         </div>
       </div>
@@ -107,8 +107,8 @@
 
   <!-- Orders Section -->
   <div style="margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between;">
-    <h2 style="font-size: 1.2rem; font-weight: 700; color: var(--fg); display: flex; align-items: center; gap: 0.5rem;">
-      <i data-lucide="package-check" style="width: 20px; height: 20px; color: var(--accent);"></i>
+    <h2 style="font-size: 1.2rem; font-weight: 700; color: rgb(var(--fg)); display: flex; align-items: center; gap: 0.5rem;">
+      <i data-lucide="package-check" style="width: 20px; height: 20px; color: rgb(var(--accent));"></i>
       {% blocktranslate with n=orders.count %}Xarid qilingan loyihalar ({{ n }}){% endblocktranslate %}
     </h2>
   </div>
@@ -124,14 +124,14 @@
               <img
                 src="{{ order.product.cover_url }}"
                 alt="{{ order.product.title }}"
-                style="width: 72px; height: 50px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border);"
+                style="width: 72px; height: 50px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid rgb(var(--border));"
               >
               <div>
-                <a href="{% url 'store:product_detail' slug=order.product.slug %}" style="font-weight: 700; font-size: 1.02rem; color: var(--fg); display: block; margin-bottom: 0.25rem;">
+                <a href="{% url 'store:product_detail' slug=order.product.slug %}" style="font-weight: 700; font-size: 1.02rem; color: rgb(var(--fg)); display: block; margin-bottom: 0.25rem;">
                   {{ order.product.title }}
                 </a>
-                <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.82rem; color: var(--muted);">
-                  <span style="color: var(--accent); font-weight: 600;" data-usd="{{ order.product.price }}">{{ order.product.price|floatformat:0 }} USD</span>
+                <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.82rem; color: rgb(var(--muted));">
+                  <span style="color: rgb(var(--accent)); font-weight: 600;">{{ order.amount|som }} so'm</span>
                   <span>•</span>
                   <span>{% blocktranslate with amount=order.amount|som %}{{ amount }} so'm{% endblocktranslate %}</span>
                   <span>•</span>
@@ -139,14 +139,14 @@
                 </div>
               </div>
             {% else %}
-              <div style="width: 72px; height: 50px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface-2); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <i data-lucide="file-x" style="width: 20px; height: 20px; color: var(--muted);"></i>
+              <div style="width: 72px; height: 50px; border-radius: var(--radius-sm); border: 1px solid rgb(var(--border)); background: rgb(var(--surface-2)); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i data-lucide="file-x" style="width: 20px; height: 20px; color: rgb(var(--muted));"></i>
               </div>
               <div>
-                <span style="font-weight: 700; font-size: 1.02rem; color: var(--muted); display: block; margin-bottom: 0.25rem;">
+                <span style="font-weight: 700; font-size: 1.02rem; color: rgb(var(--muted)); display: block; margin-bottom: 0.25rem;">
                   {% if order.product_title %}{{ order.product_title }}{% else %}{% translate "Mahsulot o'chirilgan" %}{% endif %}
                 </span>
-                <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.82rem; color: var(--muted);">
+                <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.82rem; color: rgb(var(--muted));">
                   <span>{% blocktranslate with amount=order.amount|som %}{{ amount }} so'm{% endblocktranslate %}</span>
                   <span>•</span>
                   <span>{{ order.created_at|date:"d.m.Y, H:i" }}</span>
@@ -191,12 +191,12 @@
       {% endfor %}
     </div>
   {% else %}
-    <div style="text-align: center; padding: 4.5rem 1rem; background: var(--surface); border: 1px dashed var(--border); border-radius: var(--radius-card);">
-      <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--surface-2); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; color: var(--muted);">
+    <div style="text-align: center; padding: 4.5rem 1rem; background: rgb(var(--surface)); border: 1px dashed rgb(var(--border)); border-radius: var(--radius-card);">
+      <div style="width: 60px; height: 60px; border-radius: 50%; background: rgb(var(--surface-2)); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; color: rgb(var(--muted));">
         <i data-lucide="shopping-cart" style="width: 28px; height: 28px;"></i>
       </div>
-      <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--fg); margin-bottom: 0.5rem;">{% translate "Hozircha xaridlar mavjud emas" %}</h3>
-      <p style="color: var(--muted); font-size: 0.9rem; max-width: 440px; margin: 0 auto 1.5rem;">
+      <h3 style="font-size: 1.2rem; font-weight: 700; color: rgb(var(--fg)); margin-bottom: 0.5rem;">{% translate "Hozircha xaridlar mavjud emas" %}</h3>
+      <p style="color: rgb(var(--muted)); font-size: 0.9rem; max-width: 440px; margin: 0 auto 1.5rem;">
         {% translate "Katalogdagi tayyor loyihalar, botlar va shablonlar bilan tanishib, o'zingizga kerakli kodni xarid qiling." %}
       </p>
       <a href="{% url 'store:catalog' %}" class="btn btn-primary btn-sm">

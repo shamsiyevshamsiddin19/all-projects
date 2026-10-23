@@ -195,6 +195,15 @@ class Product(models.Model):
         return "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80"
 
     @property
+    def archive_available(self):
+        if not self.file_archive:
+            return False
+        try:
+            return self.file_archive.storage.exists(self.file_archive.name)
+        except OSError:
+            return False
+
+    @property
     def price_som(self):
         return int(self.price * settings.PRODUCT_UZS_RATE)
 
@@ -241,6 +250,8 @@ class Review(models.Model):
 
     @property
     def is_verified_buyer(self):
+        if hasattr(self, "verified_purchase"):
+            return self.verified_purchase
         from orders.models import Order
         return Order.objects.filter(buyer=self.user, product=self.product, status=Order.PayStatus.PAID).exists()
 

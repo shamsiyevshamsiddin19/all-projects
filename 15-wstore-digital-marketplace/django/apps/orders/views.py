@@ -7,7 +7,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse, FileResponse, Http404, HttpResponseForbidden
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F, Sum
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils import timezone
@@ -19,6 +19,7 @@ from .models import Order, ClickTransaction, Withdrawal
 from .forms import WithdrawalForm
 from core.telegram import send_telegram_notification
 from .utils import (
+    payments_configured,
     build_click_payment_url,
     parse_click_transaction_id,
     check_click_auth,
@@ -48,7 +49,7 @@ def _simulation_requested(request):
 @login_required
 @require_POST
 def checkout_view(request, product_id):
-    product = get_object_or_404(Product, id=product_id, status=Product.Status.ACTIVE)
+    product = get_object_or_404(Product, id=product_id, status=Product.Status.ACTIVE, is_deleted=False)
 
     # O'z mahsulotini sotib olish balansni o'z-o'ziga to'ldirish halqasi
     # bo'lardi (pul sotuvchi balansiga qaytadi) — to'sib qo'yamiz.
@@ -64,6 +65,10 @@ def checkout_view(request, product_id):
     if existing_paid:
         messages.info(request, _("«%(title)s» allaqachon xarid qilingan.") % {"title": product.title})
         return redirect("orders:order_status", order_id=existing_paid.id)
+
+    if not _simulation_requested(request) and (not product.archive_available or not payments_configured()):
+        messages.error(request, _("Onlayn xarid hozircha mavjud emas. Sotuvchi bilan bog'laning."))
+        return redirect("store:product_detail", slug=product.slug)
 
     # Calculate amount in UZS
     amount_som = product.price_som
@@ -134,7 +139,12 @@ def checkout_view(request, product_id):
 @seller_required
 @require_POST
 def listing_pay_view(request, product_id):
-    product = get_object_or_404(Product, id=product_id, seller=request.user)
+    product = get_object_or_404(Product, id=product_id, seller=request.user, is_deleted=False)
+    if product.status != Product.Status.DRAFT:
+        return redirect("orders:seller_dashboard")
+    if not _simulation_requested(request) and not payments_configured():
+        messages.error(request, _("Onlayn to'lov vaqtincha mavjud emas."))
+        return redirect("orders:seller_dashboard")
     fee = getattr(settings, "LISTING_FEE_SOM", 5000)
 
     with transaction.atomic():
@@ -173,7 +183,9 @@ def order_status_view(request, order_id):
         return HttpResponseForbidden("Ruxsat berilmagan.")
 
     click_url = None
-    if order.status == Order.PayStatus.PENDING:
+    if (order.status == Order.PayStatus.PENDING and order.product
+            and not order.product.is_deleted and order.product.status == Product.Status.ACTIVE
+            and order.product.archive_available and payments_configured()):
         ct = order.click_transactions.filter(status=Order.PayStatus.PENDING).order_by("-id").first()
         if not ct and order.product:
             ct = ClickTransaction.objects.create(
@@ -267,30 +279,21 @@ def download_file_view(request, token):
     if order.buyer != request.user and not request.user.is_staff:
         return HttpResponseForbidden("Faqat xarid qilgan foydalanuvchi yuklab olishi mumkin.")
 
-    # Increment download stats
-    Order.objects.filter(pk=order.pk).update(download_count=F("download_count") + 1)
-
     product = order.product
     if not product:
         raise Http404("Ushbu mahsulot arxivdan olib tashlangan.")
 
     # Check if a file_archive exists
-    if product.file_archive and os.path.exists(product.file_archive.path):
-        return FileResponse(
-            open(product.file_archive.path, "rb"),
-            as_attachment=True,
-            filename=f"{product.slug}.zip"
-        )
-
-    # Fallback placeholder demo archive response
-    import io
-    import zipfile
-    mem_zip = io.BytesIO()
-    with zipfile.ZipFile(mem_zip, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr("README.md", f"# {product.title}\n\nwstore.uz dan xarid qilingan manba kodi.\nMuallif: {product.seller.username}\n")
-        zf.writestr("index.html", f"<!DOCTYPE html><html><head><title>{product.title}</title></head><body><h1>{product.title}</h1><p>wstore.uz loyihasi</p></body></html>")
-    mem_zip.seek(0)
-    return FileResponse(mem_zip, as_attachment=True, filename=f"{product.slug}.zip")
+    if not product.archive_available:
+        raise Http404("Loyiha fayli hozircha mavjud emas. Sotuvchi bilan bog'laning.")
+    try:
+        archive = product.file_archive.open("rb")
+    except OSError:
+        raise Http404("Loyiha fayli hozircha mavjud emas.")
+    Order.objects.filter(pk=order.pk).update(download_count=F("download_count") + 1)
+    response = FileResponse(archive, as_attachment=True, filename=os.path.basename(product.file_archive.name))
+    response["Cache-Control"] = "private, no-store"
+    return response
 
 
 def dashboard_view(request):
@@ -339,8 +342,9 @@ def seller_dashboard_view(request):
         })
 
     products = Product.objects.filter(seller=request.user, is_deleted=False).order_by("-created_at")
-    total_sales = sum(p.sales_count for p in products)
-    revenue = sum(float(p.price) * p.sales_count for p in products)
+    paid = Order.objects.filter(product__seller=request.user, status=Order.PayStatus.PAID)
+    total_sales = paid.count()
+    revenue = paid.aggregate(total=Sum("amount"))["total"] or 0
 
     return render(request, "orders/seller_dashboard.html", {
         "products": products,
@@ -371,19 +375,20 @@ def seller_balance_view(request):
                 withdrawal = form.save(commit=False)
                 withdrawal.seller = request.user
                 withdrawal.status = Withdrawal.WithdrawalStatus.PENDING
-                withdrawal.save()
-
-                # Deduct from user balance (F() — atomik ayirish)
-                User.objects.filter(pk=request.user.pk).update(
+                deducted = User.objects.filter(pk=request.user.pk, balance__gte=withdrawal.amount).update(
                     balance=F("balance") - withdrawal.amount
                 )
+                if not deducted:
+                    messages.error(request, _("Balansingizda yetarli mablag' mavjud emas."))
+                    return redirect("orders:seller_balance")
+                withdrawal.save()
                 request.user.refresh_from_db(fields=["balance"])
 
             send_telegram_notification(
                 f"💸 <b>Yangi pul yechish so'rovi!</b>\n\n"
                 f"👤 Sotuvchi: {request.user.username} ({request.user.email})\n"
                 f"💰 Summa: {withdrawal.amount:,.0f} so'm\n"
-                f"💳 Karta: {withdrawal.card_number} ({withdrawal.card_holder})"
+                f"💳 Karta: {withdrawal.masked_card}"
             )
 
             messages.success(request, _("%(amount)s so'm yechib olish uchun so'rov qabul qilindi. Tez orada ko'rib chiqiladi.") % {
@@ -484,31 +489,52 @@ def click_complete_webhook(request):
     if ct.status in [Order.PayStatus.FAILED, Order.PayStatus.REFUNDED]:
         return JsonResponse({"error": -9, "prepare_id": ct.id, "error_note": "Tranzaksiya bekor qilingan"})
 
-    click_error = int(body.get("click_error") or body.get("error") or 0)
-    if click_error != 0 and click_error != ct.id:
-        ct.status = Order.PayStatus.FAILED
-        ct.click_trans_id = str(body.get("click_trans_id") or "")
-        ct.save(update_fields=["status", "click_trans_id"])
+    if body.get("sign_string") and str(body.get("merchant_prepare_id")) != str(ct.pk):
+        return JsonResponse({"error": -6, "prepare_id": ct.id, "error_note": "Prepare ID noto'g'ri"})
+    try:
+        click_error = int(body.get("click_error") or body.get("error") or 0)
+    except (TypeError, ValueError):
+        return JsonResponse({"error": -8, "prepare_id": ct.id, "error_note": "So'rov noto'g'ri"})
+    if click_error != 0:
+        ClickTransaction.objects.filter(pk=ct.pk, status=Order.PayStatus.PENDING).update(
+            status=Order.PayStatus.FAILED, click_trans_id=str(body.get("click_trans_id") or "")
+        )
         return JsonResponse({"error": -9, "prepare_id": ct.id, "error_note": "Click to'lov xatosi"})
 
     try:
         with transaction.atomic():
-            ct.status = Order.PayStatus.PAID
-            ct.click_trans_id = str(body.get("click_trans_id") or "")
-            ct.paid_at = timezone.now()
-            ct.save()
+            # Shartli UPDATE SQLite va PostgreSQL'da takror kreditni to'sadi.
+            claimed = ClickTransaction.objects.filter(pk=ct.pk, status=Order.PayStatus.PENDING).update(
+                status=Order.PayStatus.PAID,
+                click_trans_id=str(body.get("click_trans_id") or ""), paid_at=timezone.now()
+            )
+            if not claimed:
+                ct.refresh_from_db()
+                return JsonResponse({
+                    "error": 0 if ct.status == Order.PayStatus.PAID else -9,
+                    "click_trans_id": body.get("click_trans_id"),
+                    "merchant_trans_id": merchant_trans_id,
+                    "merchant_confirm_id": ct.pk, "prepare_id": ct.pk,
+                })
 
             if ct.kind == ClickTransaction.ClickKind.PURCHASE and ct.order:
                 order = ct.order
-                order.status = Order.PayStatus.PAID
-                order.provider = "click"
-                order.download_token = generate_secure_download_token()
-                order.save()
+                paid = Order.objects.filter(pk=order.pk, status=Order.PayStatus.PENDING).update(
+                    status=Order.PayStatus.PAID, provider="click",
+                    download_token=generate_secure_download_token()
+                )
+                if not paid:
+                    if order.status != Order.PayStatus.PAID:
+                        raise ValueError("Buyurtma to'lovni qabul qiladigan holatda emas")
+                    return JsonResponse({
+                        "error": 0, "click_trans_id": body.get("click_trans_id"),
+                        "merchant_trans_id": merchant_trans_id,
+                        "merchant_confirm_id": ct.pk, "prepare_id": ct.pk,
+                    })
 
                 product = order.product
                 if product:
-                    product.sales_count += 1
-                    product.save(update_fields=["sales_count"])
+                    Product.objects.filter(pk=product.pk).update(sales_count=F("sales_count") + 1)
 
                     # Credit seller balance
                     credit = amount_after_commission(ct.amount)
@@ -518,22 +544,23 @@ def click_complete_webhook(request):
 
                 # Check referral bonus
                 buyer = order.buyer
-                if buyer.referred_by and not buyer.referral_bonus_paid:
-                    buyer.referral_bonus_paid = True
-                    buyer.save(update_fields=["referral_bonus_paid"])
+                if buyer.referred_by_id and User.objects.filter(
+                    pk=buyer.pk, referral_bonus_paid=False
+                ).update(referral_bonus_paid=True):
                     User.objects.filter(pk=buyer.referred_by_id).update(
                         balance=F("balance") + getattr(settings, "REFERRAL_BONUS_SOM", 10000)
                     )
 
                 title = order.product_title or (product.title if product else "")
                 seller_name = product.seller.username if product else "Nomalum"
-                send_telegram_notification(
+                notification = (
                     f"🎉 <b>Yangi xarid (Click)!</b>\n\n"
                     f"📦 Mahsulot: {title}\n"
                     f"💰 Summa: {ct.amount:,.0f} so'm\n"
                     f"👤 Xaridor: {buyer.username} ({buyer.email})\n"
                     f"🏪 Sotuvchi: {seller_name}"
                 )
+                transaction.on_commit(lambda: send_telegram_notification(notification))
 
             elif ct.kind == ClickTransaction.ClickKind.LISTING and ct.product:
                 product = ct.product
@@ -541,12 +568,13 @@ def click_complete_webhook(request):
                     product.status = Product.Status.PENDING
                     product.save(update_fields=["status"])
 
-                send_telegram_notification(
+                notification = (
                     f"📦 <b>E'lon to'lovi qabul qilindi (Click)!</b>\n\n"
                     f"🏷 Mahsulot: {product.title}\n"
                     f"💰 Summa: {ct.amount:,.0f} so'm\n"
                     f"👤 Sotuvchi: {product.seller.username}"
                 )
+                transaction.on_commit(lambda: send_telegram_notification(notification))
 
     except Exception as exc:
         log_error(exc, context=f"click_complete merchant_trans_id={merchant_trans_id}")

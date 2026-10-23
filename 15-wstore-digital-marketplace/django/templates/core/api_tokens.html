@@ -7,16 +7,16 @@
 {% block content %}
 <div class="container" style="max-width: 860px; padding-top: 2.5rem; padding-bottom: 5rem;">
 
-  <a href="{% url 'core:profile' %}" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; color: var(--muted); margin-bottom: 1.5rem;">
+  <a href="{% url 'core:profile' %}" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; color: rgb(var(--muted)); margin-bottom: 1.5rem;">
     <i data-lucide="arrow-left" style="width:15px;height:15px;"></i>
     {% translate "Profilga qaytish" %}
   </a>
 
   <div style="margin-bottom: 1.75rem;">
-    <h1 style="font-size: 1.75rem; font-weight: 800; color: var(--fg); letter-spacing: -0.02em;">
+    <h1 style="font-size: 1.75rem; font-weight: 800; color: rgb(var(--fg)); letter-spacing: -0.02em;">
       {% translate "API kalitlari" %}
     </h1>
-    <p style="font-size: 0.92rem; color: var(--muted); margin-top: 0.4rem; line-height: 1.6;">
+    <p style="font-size: 0.92rem; color: rgb(var(--muted)); margin-top: 0.4rem; line-height: 1.6;">
       {% translate "Skript yoki AI agent sizning nomingizdan mahsulot qo'shishi, tahrirlashi va sotuv statistikasini o'qishi uchun." %}
     </p>
   </div>
@@ -28,12 +28,12 @@
         <i data-lucide="check-circle" style="width:17px;height:17px;"></i>
         {% translate "Kalit yaratildi — hozir nusxalab oling" %}
       </h2>
-      <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 0.85rem;">
+      <p style="font-size: 0.85rem; color: rgb(var(--muted)); margin-bottom: 0.85rem;">
         {% translate "Bu qiymat boshqa ko'rsatilmaydi. Yo'qotsangiz, yangisini yaratishingiz kerak bo'ladi." %}
       </p>
       <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
         <input type="text" readonly value="{{ new_token }}" id="newTokenInput"
-               class="form-control" style="font-family: monospace; font-size: 0.85rem; background: var(--bg); flex: 1; min-width: 260px;">
+               class="form-control" style="font-family: monospace; font-size: 0.85rem; background: rgb(var(--bg)); flex: 1; min-width: 260px;">
         <button type="button" class="btn btn-primary btn-sm" data-copy="{{ new_token }}" style="white-space: nowrap;">
           <i data-lucide="copy" style="width:14px;height:14px;"></i>
           <span>{% translate "Nusxa olish" %}</span>
@@ -44,7 +44,7 @@
 
   <!-- Yangi kalit yaratish -->
   <div class="card" style="margin-bottom: 1.5rem;">
-    <h2 style="font-size: 1.05rem; font-weight: 700; color: var(--fg); margin-bottom: 1rem;">
+    <h2 style="font-size: 1.05rem; font-weight: 700; color: rgb(var(--fg)); margin-bottom: 1rem;">
       {% translate "Yangi kalit yaratish" %}
     </h2>
     <form method="POST" action="{% url 'core:api_tokens' %}" style="display: flex; gap: 0.6rem; align-items: flex-start; flex-wrap: wrap;">
@@ -62,19 +62,19 @@
 
   <!-- Mavjud kalitlar -->
   <div class="card" style="margin-bottom: 2rem;">
-    <h2 style="font-size: 1.05rem; font-weight: 700; color: var(--fg); margin-bottom: 1rem;">
+    <h2 style="font-size: 1.05rem; font-weight: 700; color: rgb(var(--fg)); margin-bottom: 1rem;">
       {% translate "Mening kalitlarim" %}
     </h2>
 
     {% if tokens %}
       <div style="display: flex; flex-direction: column; gap: 0.6rem;">
         {% for t in tokens %}
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding: 0.85rem 1rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); {% if not t.is_active %}opacity: 0.55;{% endif %}">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding: 0.85rem 1rem; background: rgb(var(--surface-2)); border: 1px solid rgb(var(--border)); border-radius: var(--radius-sm); {% if not t.is_active %}opacity: 0.55;{% endif %}">
             <div style="min-width: 200px;">
-              <div style="font-weight: 600; color: var(--fg); font-size: 0.92rem;">{{ t.name }}</div>
-              <div style="font-family: monospace; font-size: 0.8rem; color: var(--muted); margin-top: 2px;">{{ t.token_prefix }}…</div>
+              <div style="font-weight: 600; color: rgb(var(--fg)); font-size: 0.92rem;">{{ t.name }}</div>
+              <div style="font-family: monospace; font-size: 0.8rem; color: rgb(var(--muted)); margin-top: 2px;">{{ t.token_prefix }}…</div>
             </div>
-            <div style="font-size: 0.78rem; color: var(--muted); min-width: 150px;">
+            <div style="font-size: 0.78rem; color: rgb(var(--muted)); min-width: 150px;">
               <div>{% translate "Yaratilgan" %}: {{ t.created_at|date:"d.m.Y" }}</div>
               <div>{% translate "Oxirgi ishlatilgan" %}:
                 {% if t.last_used_at %}{{ t.last_used_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}
@@ -98,20 +98,20 @@
         {% endfor %}
       </div>
     {% else %}
-      <p style="color: var(--muted); font-size: 0.9rem;">{% translate "Hozircha kalit yaratilmagan." %}</p>
+      <p style="color: rgb(var(--muted)); font-size: 0.9rem;">{% translate "Hozircha kalit yaratilmagan." %}</p>
     {% endif %}
   </div>
 
   <!-- Qisqa qo'llanma -->
   <div class="card">
-    <h2 style="font-size: 1.05rem; font-weight: 700; color: var(--fg); margin-bottom: 0.4rem;">
+    <h2 style="font-size: 1.05rem; font-weight: 700; color: rgb(var(--fg)); margin-bottom: 0.4rem;">
       {% translate "Qanday ishlatiladi" %}
     </h2>
-    <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem;">
+    <p style="font-size: 0.85rem; color: rgb(var(--muted)); margin-bottom: 1rem;">
       {% translate "Har bir so'rovga kalitni sarlavhada qo'shing. Kalit faqat sizning mahsulotlaringizga yo'l ochadi." %}
     </p>
 
-    <pre style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; overflow-x: auto; font-size: 0.8rem; line-height: 1.6; color: var(--fg);"><code># {% translate "Mahsulotlar ro'yxati" %}
+    <pre style="background: rgb(var(--bg)); border: 1px solid rgb(var(--border)); border-radius: var(--radius-sm); padding: 1rem; overflow-x: auto; font-size: 0.8rem; line-height: 1.6; color: rgb(var(--fg));"><code># {% translate "Mahsulotlar ro'yxati" %}
 curl -H "Authorization: Bearer wst_..." \
   {{ api_base }}/products
 
@@ -125,7 +125,7 @@ curl -X POST -H "Authorization: Bearer wst_..." \
 curl -H "Authorization: Bearer wst_..." \
   {{ api_base }}/stats</code></pre>
 
-    <div style="margin-top: 1rem; font-size: 0.82rem; color: var(--muted); line-height: 1.7;">
+    <div style="margin-top: 1rem; font-size: 0.82rem; color: rgb(var(--muted)); line-height: 1.7;">
       <div><code>GET&nbsp;&nbsp; /me</code> — {% translate "kalit egasi" %}</div>
       <div><code>GET&nbsp;&nbsp; /categories</code> — {% translate "kategoriyalar ro'yxati" %}</div>
       <div><code>GET&nbsp;&nbsp; /products</code> · <code>POST /products</code></div>

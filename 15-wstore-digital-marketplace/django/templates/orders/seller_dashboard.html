@@ -11,15 +11,15 @@
   <!-- Header -->
   <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
     <div>
-      <h1 style="font-size: 1.85rem; font-weight: 800; color: var(--fg); letter-spacing: -0.02em;">{% translate "Sotuvchi boshqaruv paneli" %}</h1>
-      <p style="font-size: 0.92rem; color: var(--muted); margin-top: 0.25rem;">
+      <h1 style="font-size: 1.85rem; font-weight: 800; color: rgb(var(--fg)); letter-spacing: -0.02em;">{% translate "Sotuvchi boshqaruv paneli" %}</h1>
+      <p style="font-size: 0.92rem; color: rgb(var(--muted)); margin-top: 0.25rem;">
         {% translate "Mahsulotlaringizni boshqaring, sotuvlar statistikasini kuzating va yangi loyihalar qo'shing." %}
       </p>
     </div>
     {% if user.is_authenticated %}
       <div style="display: flex; gap: 0.75rem;">
         <a href="{% url 'orders:seller_balance' %}" class="btn btn-secondary btn-sm">
-          <i data-lucide="wallet" style="width: 15px; height: 15px; color: var(--gold);"></i>
+          <i data-lucide="wallet" style="width: 15px; height: 15px; color: rgb(var(--gold));"></i>
           <span>{% blocktranslate with amount=balance|som %}Balans: {{ amount }} so'm{% endblocktranslate %}</span>
         </a>
         <a href="{% url 'store:product_create' %}" class="btn btn-primary btn-sm">
@@ -32,11 +32,11 @@
 
   {% if not user.is_authenticated %}
     <div class="card" style="box-shadow: 0 16px 40px rgba(0,0,0,0.3); text-align: center; padding: 3.5rem 1.5rem;">
-      <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(109, 94, 246, 0.15); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; color: var(--accent);">
+      <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(109, 94, 246, 0.15); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; color: rgb(var(--accent));">
         <i data-lucide="store" style="width: 28px; height: 28px;"></i>
       </div>
-      <h2 style="font-size: 1.3rem; font-weight: 700; color: var(--fg); margin-bottom: 0.5rem;">{% translate "Sotuvchi panelini ko'rish uchun tizimga kiring" %}</h2>
-      <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 1.5rem; max-width: 440px; margin-left: auto; margin-right: auto;">
+      <h2 style="font-size: 1.3rem; font-weight: 700; color: rgb(var(--fg)); margin-bottom: 0.5rem;">{% translate "Sotuvchi panelini ko'rish uchun tizimga kiring" %}</h2>
+      <p style="font-size: 0.9rem; color: rgb(var(--muted)); margin-bottom: 1.5rem; max-width: 440px; margin-left: auto; margin-right: auto;">
         {% translate "Loyihalaringiz, sotuvlar statistikasi va balansingizni boshqarish uchun hisobingizga kiring." %}
       </p>
       <a href="{% url 'core:login' %}?next={{ request.path }}" class="btn btn-primary btn-lg" style="display: inline-flex; align-items: center; gap: 0.5rem;">
@@ -49,7 +49,7 @@
   <!-- Stats Grid -->
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 2.5rem;">
     <div class="stat-card">
-      <div class="stat-icon-wrap" style="color: var(--accent);">
+      <div class="stat-icon-wrap" style="color: rgb(var(--accent));">
         <i data-lucide="package" style="width: 22px; height: 22px;"></i>
       </div>
       <div>
@@ -59,7 +59,7 @@
     </div>
 
     <div class="stat-card">
-      <div class="stat-icon-wrap" style="color: var(--green);">
+      <div class="stat-icon-wrap" style="color: rgb(var(--green));">
         <i data-lucide="shopping-cart" style="width: 22px; height: 22px;"></i>
       </div>
       <div>
@@ -73,26 +73,26 @@
         <i data-lucide="trending-up" style="width: 22px; height: 22px;"></i>
       </div>
       <div>
-        <div class="stat-val"><span data-usd="{{ revenue }}">{{ revenue|som }} USD</span></div>
+        <div class="stat-val"><span>{{ revenue|som }} so'm</span></div>
         <div class="stat-lbl">{% translate "Jami tushum" %}</div>
       </div>
     </div>
 
     <a href="{% url 'orders:seller_balance' %}" class="stat-card" style="border-color: rgba(230, 180, 80, 0.4); background: rgba(230, 180, 80, 0.05); transition: border-color 0.2s;">
-      <div class="stat-icon-wrap" style="background: rgba(230, 180, 80, 0.15); color: var(--gold); border-color: rgba(230, 180, 80, 0.3);">
+      <div class="stat-icon-wrap" style="background: rgba(230, 180, 80, 0.15); color: rgb(var(--gold)); border-color: rgba(230, 180, 80, 0.3);">
         <i data-lucide="wallet" style="width: 22px; height: 22px;"></i>
       </div>
       <div>
-        <div class="stat-val" style="color: var(--gold);">{{ balance|som }}</div>
-        <div class="stat-lbl" style="color: var(--gold);">{% translate "Balans (so'm)" %} &rarr;</div>
+        <div class="stat-val" style="color: rgb(var(--gold));">{{ balance|som }}</div>
+        <div class="stat-lbl" style="color: rgb(var(--gold));">{% translate "Balans (so'm)" %} &rarr;</div>
       </div>
     </a>
   </div>
 
   <!-- Products List Table / Section -->
   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
-    <h2 style="font-size: 1.2rem; font-weight: 700; color: var(--fg); display: flex; align-items: center; gap: 0.5rem;">
-      <i data-lucide="list" style="width: 18px; height: 18px; color: var(--accent);"></i>
+    <h2 style="font-size: 1.2rem; font-weight: 700; color: rgb(var(--fg)); display: flex; align-items: center; gap: 0.5rem;">
+      <i data-lucide="list" style="width: 18px; height: 18px; color: rgb(var(--accent));"></i>
       {% translate "Loyihalar ro'yxati" %}
     </h2>
   </div>
@@ -107,14 +107,14 @@
             <img 
               src="{{ p.cover_url }}" 
               alt="{{ p.title }}" 
-              style="width: 72px; height: 50px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border);"
+              style="width: 72px; height: 50px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid rgb(var(--border));"
             >
             <div>
-              <a href="{% url 'store:product_detail' slug=p.slug %}" style="font-weight: 700; font-size: 1.02rem; color: var(--fg); display: block; margin-bottom: 0.25rem;">
+              <a href="{% url 'store:product_detail' slug=p.slug %}" style="font-weight: 700; font-size: 1.02rem; color: rgb(var(--fg)); display: block; margin-bottom: 0.25rem;">
                 {{ p.title }}
               </a>
-              <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.82rem; color: var(--muted); flex-wrap: wrap;">
-                <span style="color: var(--accent); font-weight: 600;" data-usd="{{ p.price }}">{{ p.price|floatformat:0 }} USD</span>
+              <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.82rem; color: rgb(var(--muted)); flex-wrap: wrap;">
+                <span style="color: rgb(var(--accent)); font-weight: 600;" data-usd="{{ p.price|plain }}">{{ p.price|floatformat:2 }} USD</span>
                 <span>•</span>
                 <span>{% blocktranslate with n=p.sales_count %}{{ n }} sotuv{% endblocktranslate %}</span>
                 <span>•</span>
@@ -136,11 +136,11 @@
                 {% translate "Moderatsiyada" %}
               </span>
             {% elif p.status == 'DRAFT' %}
-              <span class="badge-tech" style="background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); font-size: 0.8rem; padding: 4px 10px;">
+              <span class="badge-tech" style="background: rgb(var(--surface-2)); color: rgb(var(--muted)); border: 1px solid rgb(var(--border)); font-size: 0.8rem; padding: 4px 10px;">
                 {% translate "Qoralama (To'lanmagan)" %}
               </span>
             {% elif p.status == 'PAUSED' %}
-              <span class="badge-tech" style="background: rgba(148, 148, 165, 0.15); color: #cbd5e1; border: 1px solid var(--border); font-size: 0.8rem; padding: 4px 10px;">
+              <span class="badge-tech" style="background: rgba(148, 148, 165, 0.15); color: #cbd5e1; border: 1px solid rgb(var(--border)); font-size: 0.8rem; padding: 4px 10px;">
                 {% translate "Vaqtincha to'xtatilgan" %}
               </span>
             {% elif p.status == 'REJECTED' %}
@@ -175,9 +175,9 @@
                 {% csrf_token %}
                 <button type="submit" class="btn btn-outline btn-sm" title="{% if p.status == 'ACTIVE' %}Vaqtincha to'xtatish{% else %}Faollashtirish{% endif %}">
                   {% if p.status == 'ACTIVE' %}
-                    <i data-lucide="pause" style="width: 14px; height: 14px; color: var(--gold);"></i>
+                    <i data-lucide="pause" style="width: 14px; height: 14px; color: rgb(var(--gold));"></i>
                   {% else %}
-                    <i data-lucide="play" style="width: 14px; height: 14px; color: var(--green);"></i>
+                    <i data-lucide="play" style="width: 14px; height: 14px; color: rgb(var(--green));"></i>
                   {% endif %}
                 </button>
               </form>
@@ -196,12 +196,12 @@
       {% endfor %}
     </div>
   {% else %}
-    <div style="text-align: center; padding: 4.5rem 1rem; background: var(--surface); border: 1px dashed var(--border); border-radius: var(--radius-card);">
-      <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--surface-2); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; color: var(--accent);">
+    <div style="text-align: center; padding: 4.5rem 1rem; background: rgb(var(--surface)); border: 1px dashed rgb(var(--border)); border-radius: var(--radius-card);">
+      <div style="width: 60px; height: 60px; border-radius: 50%; background: rgb(var(--surface-2)); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; color: rgb(var(--accent));">
         <i data-lucide="plus-circle" style="width: 28px; height: 28px;"></i>
       </div>
-      <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--fg); margin-bottom: 0.5rem;">{% translate "Sizda hali loyihalar mavjud emas" %}</h3>
-      <p style="color: var(--muted); font-size: 0.9rem; max-width: 440px; margin: 0 auto 1.5rem;">
+      <h3 style="font-size: 1.2rem; font-weight: 700; color: rgb(var(--fg)); margin-bottom: 0.5rem;">{% translate "Sizda hali loyihalar mavjud emas" %}</h3>
+      <p style="color: rgb(var(--muted)); font-size: 0.9rem; max-width: 440px; margin: 0 auto 1.5rem;">
         {% translate "O'zingiz yaratgan bot, sayt yoki kod blokini sotuvga qo'ying va daromad olishni boshlang." %}
       </p>
       <a href="{% url 'store:product_create' %}" class="btn btn-primary btn-sm">

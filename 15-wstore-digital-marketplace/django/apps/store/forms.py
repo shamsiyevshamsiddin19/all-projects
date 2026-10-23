@@ -1,4 +1,7 @@
 from django import forms
+from django.conf import settings
+from django.core.files.uploadedfile import UploadedFile
+from django.core.validators import URLValidator
 from django.utils.translation import gettext_lazy as _
 from .models import Product, Review, Report, Category
 
@@ -19,6 +22,17 @@ SUBCAT_CHOICES = [
     ("restaurant", _("Restoran / Kafe")),
     ("other", _("Boshqa")),
 ]
+
+
+def _validate_upload_size(upload, limit):
+    # Saqlangan faylni tahrirlash paytida qayta ochmaymiz; yangi yuklamani tekshiramiz.
+    if isinstance(upload, UploadedFile) and upload.size > limit:
+        raise forms.ValidationError(
+            _("Fayl hajmi %(limit)s baytdan oshmasligi kerak."),
+            params={"limit": limit},
+        )
+    return upload
+
 
 class ProductForm(forms.ModelForm):
     tech_stack_selection = forms.MultipleChoiceField(
@@ -67,8 +81,8 @@ class ProductForm(forms.ModelForm):
             "price": forms.NumberInput(attrs={
                 "class": "form-control",
                 "placeholder": "29.00",
-                "step": "1",
-                "min": "1",
+                "step": "0.01",
+                "min": "0.01",
             }),
             "description": forms.Textarea(attrs={
                 "class": "form-control",
@@ -105,12 +119,44 @@ class ProductForm(forms.ModelForm):
         # sahifasida buning oldi `category.display_name` bilan olingan edi,
         # lekin mahsulot qo'shish formasi bu yerdan chetda qolgan ekan.
         self.fields["category"].label_from_instance = lambda c: c.display_name
+        for name in ("cover_image_url", "demo_url"):
+            self.fields[name].validators.append(URLValidator(schemes=["http", "https"]))
         if self.instance and self.instance.pk:
             self.fields["tech_stack_selection"].initial = self.instance.tech_stack or []
             if self.instance.features:
                 self.fields["features_raw"].initial = "\n".join(self.instance.features)
             if self.instance.screenshots:
                 self.fields["screenshots_raw"].initial = "\n".join(self.instance.screenshots)
+
+    def clean_price(self):
+        price = self.cleaned_data["price"]
+        if price <= 0:
+            raise forms.ValidationError(_("Narx musbat son bo'lishi kerak."))
+        return price
+
+    def clean_screenshots_raw(self):
+        value = self.cleaned_data.get("screenshots_raw", "")
+        validate_url = URLValidator(schemes=["http", "https"])
+        for line in value.splitlines():
+            if line.strip():
+                validate_url(line.strip())
+        return value
+
+    def clean_file_archive(self):
+        upload = self.cleaned_data.get("file_archive")
+        if isinstance(upload, UploadedFile):
+            if not upload.name.lower().endswith((".zip", ".tar.gz", ".rar")):
+                raise forms.ValidationError(_("Faqat ZIP, TAR.GZ yoki RAR arxivini yuklang."))
+            _validate_upload_size(
+                upload, getattr(settings, "PRODUCT_ARCHIVE_MAX_SIZE", 40 * 1024 * 1024)
+            )
+        return upload
+
+    def clean_cover_image_file(self):
+        return _validate_upload_size(
+            self.cleaned_data.get("cover_image_file"),
+            getattr(settings, "PRODUCT_IMAGE_MAX_SIZE", 10 * 1024 * 1024),
+        )
 
     def save(self, commit=True):
         product = super().save(commit=False)
@@ -128,6 +174,12 @@ class ProductForm(forms.ModelForm):
 
 
 class ReviewForm(forms.ModelForm):
+    def clean_rating(self):
+        rating = self.cleaned_data["rating"]
+        if not 1 <= rating <= 5:
+            raise forms.ValidationError(_("Baho 1 dan 5 gacha bo'lishi kerak."))
+        return rating
+
     class Meta:
         model = Review
         fields = ["rating", "comment"]

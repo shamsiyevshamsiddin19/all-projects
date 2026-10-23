@@ -7,10 +7,10 @@
 ## 🚀 Texnologiyalar to'plami
 
 - **Backend:** Python 3.12, Django 5.x
-- **Ma'lumotlar bazasi:** PostgreSQL (ishlab chiqarish) / SQLite (lokal test)
+- **Ma'lumotlar bazasi:** SQLite (joriy server) yoki `DATABASE_URL` orqali PostgreSQL
 - **Frontend & Stil:** HTML5, Modern CSS3 (Dark Theme dizayn), Vanilla JavaScript
 - **To'lov integratsiyasi:** Click Merchant API & to'lov ko'prigi
-- **Autentifikatsiya:** Google OAuth 2.0 (yagona xavfsiz kirish)
+- **Autentifikatsiya:** Google OAuth 2.0 va mavjud email/parol oqimi
 - **Ko'p tillilik (i18n):** O'zbekcha (asosiy), Ruscha, Inglizcha
 
 ---
@@ -23,7 +23,7 @@
    - Jonli qidiruv tizimi
 
 2. **Google OAuth orqali kirish:**
-   - Parolsiz, xavfsiz va bir bosqichli Google autentifikatsiyasi
+   - Google hisobiga bog'langan, tasdiqlangan email bilan kirish
    - Yangi foydalanuvchilar uchun avtomatik profil yaratish
 
 3. **Sotuvchi va Xaridor Paneli:**

@@ -5,6 +5,22 @@
 
 (function () {
   "use strict";
+  const messages = {
+    uz: { emptySearch: "Ushbu so'rov bo'yicha mahsulot topilmadi.", copied: "Nusxa olindi!" },
+    en: { emptySearch: "No projects found.", copied: "Copied!" },
+    ru: { emptySearch: "Проекты не найдены.", copied: "Скопировано!" },
+  }[document.documentElement.lang] || { emptySearch: "No projects found.", copied: "Copied!" };
+
+  // Faqat HTTP(S) yoki shu protokollarga yechiladigan nisbiy URL'lar.
+  function safeWebUrl(value) {
+    if (typeof value !== "string" || !value.trim()) return null;
+    try {
+      const url = new URL(value, window.location.href);
+      return ["http:", "https:"].includes(url.protocol) ? url.href : null;
+    } catch (err) {
+      return null;
+    }
+  }
 
   // -------------------------------------------------------------------------
   // 1. Currency Conversion & Formatting
@@ -21,10 +37,10 @@
   };
 
   const CURRENCY_META = {
-    USD: { code: "USD", suffix: "USD", decimals: 0 },
+    USD: { code: "USD", suffix: "USD", decimals: 2 },
     UZS: { code: "UZS", suffix: "so'm", decimals: 0 },
-    RUB: { code: "RUB", suffix: "RUB", decimals: 0 },
-    EUR: { code: "EUR", suffix: "EUR", decimals: 0 },
+    RUB: { code: "RUB", suffix: "RUB", decimals: 2 },
+    EUR: { code: "EUR", suffix: "EUR", decimals: 2 },
   };
 
   function formatPrice(usd, currency, withSuffix = true) {
@@ -33,7 +49,7 @@
     const val = usd * rate;
     const rounded =
       meta.decimals > 0
-        ? val.toFixed(meta.decimals)
+        ? String(Number(val.toFixed(meta.decimals)))
         : String(Math.round(val));
     const parts = rounded.split(".");
     const spaced = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
@@ -44,6 +60,16 @@
   function getSavedCurrency() {
     const c = localStorage.getItem("cur");
     return c && RATES[c] ? c : "USD";
+  }
+
+  function fitPrice(el) {
+    if (!el.matches(".product-price, .detail-price") || !el.clientWidth) return;
+    el.style.fontSize = "";
+    if (el.scrollWidth > el.clientWidth) {
+      const base = parseFloat(getComputedStyle(el).fontSize);
+      el.style.fontSize = `${Math.max(9, base * el.clientWidth / el.scrollWidth - 0.2)}px`;
+    }
+    el.title = el.textContent;
   }
 
   function applyCurrency(currency) {
@@ -66,6 +92,7 @@
         // qiymatlarda shriftni biroz kichraytirib, bitta qatorda ushlab
         // turamiz (CSS: .product-price.is-long).
         el.classList.toggle("is-long", text.length > 9);
+        fitPrice(el);
       }
     });
 
@@ -197,6 +224,32 @@
   // 5. DOM Initialization
   // -------------------------------------------------------------------------
   document.addEventListener("DOMContentLoaded", () => {
+    // Butun teglar sig'ganicha ko'rinadi; qolganlari ellipsis sarlavhasida.
+    const techRows = document.querySelectorAll(".tech-tags-row");
+    function fitTechRow(row) {
+      const tags = Array.from(row.querySelectorAll("[data-tech-tag]"));
+      const more = row.querySelector(".tech-overflow");
+      if (!more || !row.clientWidth) return;
+      tags.forEach((tag) => { tag.hidden = false; });
+      more.hidden = true;
+      if (row.scrollWidth <= row.clientWidth) return;
+      more.hidden = false;
+      const hidden = [];
+      for (let i = tags.length - 1; i >= 0 && row.scrollWidth > row.clientWidth; i--) {
+        tags[i].hidden = true;
+        hidden.unshift(tags[i].textContent.trim());
+      }
+      more.title = hidden.join(", ");
+    }
+    const resizeTech = () => techRows.forEach(fitTechRow);
+    resizeTech();
+    if (window.ResizeObserver) {
+      const observer = new ResizeObserver((entries) => entries.forEach(({ target }) => fitTechRow(target)));
+      techRows.forEach((row) => observer.observe(row));
+    } else {
+      window.addEventListener("resize", resizeTech);
+    }
+    if (document.fonts) document.fonts.ready.then(resizeTech);
     // 5.1 Initialize Lucide Icons
     if (window.lucide && typeof window.lucide.createIcons === "function") {
       window.lucide.createIcons();
@@ -214,12 +267,18 @@
     // 5.3 Apply Currency
     const activeCur = getSavedCurrency();
     applyCurrency(activeCur);
+    const prices = document.querySelectorAll(".product-price, .detail-price");
+    const fitPrices = () => prices.forEach(fitPrice);
+    window.addEventListener("resize", fitPrices);
+    if (document.fonts) document.fonts.ready.then(fitPrices);
 
-    document.querySelectorAll(".currency-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const curr = btn.getAttribute("data-curr");
-        if (curr) applyCurrency(curr);
-      });
+    // Mobil filtr keyinroq klonlanadi; delegatsiya yangi tugmalarni ham qamraydi.
+    document.addEventListener("click", (event) => {
+      const btn = event.target.closest(".currency-btn");
+      if (!btn) return;
+      event.preventDefault();
+      const curr = btn.dataset.curr;
+      if (Object.hasOwn(RATES, curr)) applyCurrency(curr);
     });
 
     // 5.4 Lang Dropdown
@@ -353,7 +412,10 @@
     let searchIndex = [];
     if (searchIndexScript) {
       try {
-        searchIndex = JSON.parse(searchIndexScript.textContent);
+        const parsed = JSON.parse(searchIndexScript.textContent);
+        searchIndex = Array.isArray(parsed)
+          ? parsed.filter((item) => item && typeof item.slug === "string" && item.slug)
+          : [];
       } catch (e) {
         console.error("Failed to parse searchIndex", e);
       }
@@ -368,41 +430,57 @@
         const q = input.value.trim().toLowerCase();
         if (!q) {
           dropdown.style.display = "none";
-          dropdown.innerHTML = "";
+          dropdown.replaceChildren();
           return;
         }
 
         const matches = searchIndex.filter((item) => {
-          const title = (item.title || "").toLowerCase();
+          const title = String(item.title || "").toLowerCase();
           const tech = Array.isArray(item.tech) ? item.tech.join(" ").toLowerCase() : "";
-          const cat = (item.category || "").toLowerCase();
+          const cat = String(item.category || "").toLowerCase();
           return title.includes(q) || tech.includes(q) || cat.includes(q);
         });
 
         if (matches.length === 0) {
-          dropdown.innerHTML = `<div class="p-3 text-center text-xs text-muted">Ushbu so'rov bo'yicha mahsulot topilmadi.</div>`;
+          const empty = document.createElement("div");
+          empty.className = "p-3 text-center text-xs text-muted";
+          empty.textContent = messages.emptySearch;
+          dropdown.replaceChildren(empty);
           dropdown.style.display = "block";
           return;
         }
 
-        const html = matches.slice(0, 5).map((item) => {
+        const suggestions = matches.slice(0, 5).map((item) => {
           const techBadges = Array.isArray(item.tech)
             ? item.tech.slice(0, 3).join(", ")
             : "";
-          return `
-            <a href="/product/${item.slug}/" class="search-suggestion-item">
-              <div class="h-10 w-10 shrink-0 overflow-hidden rounded bg-surface-2">
-                <img src="${item.cover_url || ''}" alt="" class="h-full w-full object-cover">
-              </div>
-              <div class="min-w-0 flex-1">
-                <div class="truncate text-sm font-medium text-fg">${item.title}</div>
-                <div class="truncate text-xs text-muted">${techBadges || item.category || ''}</div>
-              </div>
-            </a>
-          `;
-        }).join("");
+          const link = document.createElement("a");
+          link.href = `/product/${encodeURIComponent(item.slug)}/`;
+          link.className = "search-suggestion-item";
+          const thumbnail = document.createElement("div");
+          thumbnail.className = "h-10 w-10 shrink-0 overflow-hidden rounded bg-surface-2";
+          const coverUrl = safeWebUrl(item.cover_url);
+          if (coverUrl) {
+            const img = document.createElement("img");
+            img.src = coverUrl;
+            img.alt = "";
+            img.className = "h-full w-full object-cover";
+            thumbnail.appendChild(img);
+          }
+          const details = document.createElement("div");
+          details.className = "min-w-0 flex-1";
+          const title = document.createElement("div");
+          title.className = "truncate text-sm font-medium text-fg";
+          title.textContent = item.title || "";
+          const tech = document.createElement("div");
+          tech.className = "truncate text-xs text-muted";
+          tech.textContent = techBadges || item.category || "";
+          details.append(title, tech);
+          link.append(thumbnail, details);
+          return link;
+        });
 
-        dropdown.innerHTML = html;
+        dropdown.replaceChildren(...suggestions);
         dropdown.style.display = "block";
       });
 
@@ -426,6 +504,24 @@
     setupSearchAutocomplete("desktopSearchInput", "desktopSearchDropdown");
     setupSearchAutocomplete("mobileSearchInput", "mobileSearchDropdown");
 
+    // URL HTML atributidan olinadi, JavaScript kodi sifatida bajarilmaydi.
+    document.querySelectorAll(".gallery-thumb-btn[data-gallery-src]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const src = safeWebUrl(btn.dataset.gallerySrc);
+        const mainImg = document.getElementById("mainGalleryImg");
+        if (!src || !mainImg) return;
+        mainImg.src = src;
+        document.querySelectorAll(".gallery-thumb-btn").forEach((thumb) => {
+          const active = thumb === btn;
+          thumb.classList.toggle("active", active);
+          thumb.classList.toggle("border-accent", active);
+          thumb.classList.toggle("border-transparent", !active);
+          thumb.classList.toggle("opacity-70", !active);
+          thumb.setAttribute("aria-pressed", String(active));
+        });
+      });
+    });
+
     // 5.9 Slayder chetidagi solishtirish maskasi — oxirigacha surilganda
     //     o'ng chetdagi xiralashish kerak emas, boshida esa kerak.
     document.querySelectorAll(".highlight-scroller").forEach((sc) => {
@@ -445,7 +541,7 @@
         const text = el.dataset.copy;
         navigator.clipboard.writeText(text).then(() => {
           const orig = el.innerHTML;
-          el.innerHTML = "<span>Nusxa olindi! ✅</span>";
+          el.textContent = messages.copied;
           setTimeout(() => {
             el.innerHTML = orig;
             if (window.lucide) window.lucide.createIcons();

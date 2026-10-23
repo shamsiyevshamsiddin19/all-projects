@@ -16,7 +16,7 @@
       </button>
 
       <!-- Logo -->
-      <a href="{% url 'store:catalog' %}" class="flex items-center gap-2">
+      <a href="{% url 'store:catalog' %}" class="navbar-brand flex items-center gap-2">
         <img 
           src="{% static 'img/logo-icon.png' %}" 
           alt="wstore.uz" 
@@ -106,7 +106,7 @@
             <span class="hidden max-w-[130px] truncate text-sm text-fg sm:inline">
               {{ user.display_name }}
             </span>
-            <i data-lucide="chevron-down" style="width: 14px; height: 14px; color: var(--muted);" id="userChevron"></i>
+            <i data-lucide="chevron-down" style="width: 14px; height: 14px; color: rgb(var(--muted));" id="userChevron"></i>
           </button>
 
           <!-- Dropdown menu -->
@@ -168,17 +168,21 @@
 
             <div class="dropdown-divider"></div>
 
-            <a href="{% url 'core:logout' %}" class="account-menu-item text-red-400">
+            <form method="post" action="{% url 'core:logout' %}">
+              {% csrf_token %}
+              <button type="submit" class="account-menu-item text-red-400 w-full" style="background:transparent; border:0; cursor:pointer; font:inherit;">
               <i data-lucide="log-out" style="width: 15px; height: 15px;"></i>
               <span>{% translate "Chiqish" %}</span>
-            </a>
+              </button>
+            </form>
           </div>
         </div>
       {% else %}
         <!-- AuthButton (Kirish) -->
         <a 
           href="{% url 'core:login' %}{% if request.path != '/login/' and request.path != '/register/' %}?next={{ request.get_full_path|urlencode }}{% endif %}" 
-          class="flex items-center gap-2 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white transition hover:bg-accent-hover sm:px-4"
+          aria-label="{% translate "Kirish" %}"
+          class="navbar-auth flex items-center gap-2 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white transition hover:bg-accent-hover sm:px-4"
         >
           <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true" style="flex-shrink: 0;">
             <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.3-.4-3.5z"/>

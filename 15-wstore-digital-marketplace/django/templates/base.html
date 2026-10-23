@@ -1,7 +1,8 @@
 {% load static %}
 {% load i18n %}
+{% get_current_language as current_language %}
 <!DOCTYPE html>
-<html lang="uz" data-uzs-rate="{{ UZS_RATE|stringformat:'d' }}">
+<html lang="{{ current_language }}" data-uzs-rate="{{ UZS_RATE|stringformat:'d' }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">

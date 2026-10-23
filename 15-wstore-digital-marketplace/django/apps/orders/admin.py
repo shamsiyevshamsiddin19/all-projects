@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.db.models import F
+from django.db import transaction
 from django.utils import timezone
 from .models import Order, ClickTransaction, Withdrawal
 
@@ -35,6 +36,13 @@ class WithdrawalAdmin(admin.ModelAdmin):
     list_filter = ("status", "created_at")
     search_fields = ("seller__username", "seller__email", "card_number")
     actions = ["mark_paid", "mark_rejected"]
+    readonly_fields = ("seller", "amount", "card_number", "status", "created_at", "paid_at")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
     def id_short(self, obj):
         return f"#{str(obj.id)[:8]}"
@@ -46,18 +54,20 @@ class WithdrawalAdmin(admin.ModelAdmin):
 
     @admin.action(description="Tanlangan so'rovlarni to'langan (PAID) deb belgilash")
     def mark_paid(self, request, queryset):
-        count = queryset.update(status=Withdrawal.WithdrawalStatus.PAID, paid_at=timezone.now())
+        count = queryset.filter(status=Withdrawal.WithdrawalStatus.PENDING).update(
+            status=Withdrawal.WithdrawalStatus.PAID, paid_at=timezone.now()
+        )
         self.message_user(request, f"{count} ta pul yechish so'rovi to'landi deb belgilandi.")
 
     @admin.action(description="Tanlangan so'rovlarni rad etish (REJECTED) va mablag'ni balansga qaytarish")
     def mark_rejected(self, request, queryset):
         count = 0
         for w in queryset.filter(status=Withdrawal.WithdrawalStatus.PENDING):
-            w.status = Withdrawal.WithdrawalStatus.REJECTED
-            w.save(update_fields=["status"])
-            # refund balance to seller (F() — atomik)
-            type(w.seller).objects.filter(pk=w.seller_id).update(
-                balance=F("balance") + w.amount
-            )
-            count += 1
+            with transaction.atomic():
+                changed = Withdrawal.objects.filter(pk=w.pk, status=Withdrawal.WithdrawalStatus.PENDING).update(
+                    status=Withdrawal.WithdrawalStatus.REJECTED
+                )
+                if changed:
+                    type(w.seller).objects.filter(pk=w.seller_id).update(balance=F("balance") + w.amount)
+                    count += 1
         self.message_user(request, f"{count} ta so'rov rad etildi va mablag' sotuvchilar balansiga qaytarildi.")

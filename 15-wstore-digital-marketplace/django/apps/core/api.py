@@ -13,8 +13,12 @@ o'zgartirmasligi kerak — shuning uchun hamma joyda `seller=request.api_user`
 sharti bor va u hech qachon so'rov parametridan olinmaydi.
 """
 import json
+from decimal import Decimal, InvalidOperation
 from functools import wraps
 
+from django.core.exceptions import RequestDataTooBig, ValidationError
+from django.core.validators import URLValidator
+from django.db import transaction
 from django.db.models import Count, Sum
 from django.http import JsonResponse
 from django.utils.text import slugify
@@ -53,6 +57,8 @@ def api_token_required(view):
             return _err("Token yaroqsiz yoki bekor qilingan", 401)
         if not token.user.is_active:
             return _err("Hisob faol emas", 403)
+        if not token.user.is_seller:
+            return _err("API faqat sotuvchilar uchun", 403)
 
         request.api_token = token
         request.api_user = token.user
@@ -64,15 +70,88 @@ def api_token_required(view):
 
 def _json_body(request):
     """So'rov tanasini JSON sifatida o'qiydi. (ma'lumot, xato) qaytaradi."""
-    if len(request.body) > MAX_BODY:
-        return None, _err("So'rov tanasi juda katta", 413)
     try:
-        data = json.loads(request.body or b"{}")
-    except ValueError:
+        body = request.body
+        if len(body) > MAX_BODY:
+            return None, _err("So'rov tanasi juda katta", 413)
+        data = json.loads(body or b"{}", parse_float=Decimal,
+                          parse_constant=_reject_json_constant)
+    except RequestDataTooBig:
+        return None, _err("So'rov tanasi juda katta", 413)
+    except (ValueError, RecursionError, InvalidOperation):
         return None, _err("JSON noto'g'ri")
     if not isinstance(data, dict):
         return None, _err("JSON obyekt bo'lishi kerak")
     return data, None
+
+
+def _reject_json_constant(value):
+    raise ValueError("JSON soni chekli bo'lishi kerak")
+
+
+def _product_data(data, *, creating=False):
+    """POST/PATCH uchun bir xil tur, uzunlik va qiymat chegaralari."""
+    cleaned = {}
+    text_fields = {
+        "title": "title", "description": "description",
+        "subcategory": "subcategory", "cover_url": "cover_image_url",
+        "demo_url": "demo_url", "category": "category", "status": "status",
+    }
+    for name, field_name in text_fields.items():
+        if name not in data:
+            continue
+        value = data[name]
+        field = Product._meta.get_field(field_name)
+        if value is None and field.null:
+            value = ""
+        if not isinstance(value, str):
+            raise ValidationError(f"«{name}» matn bo'lishi kerak")
+        value = value.strip()
+        max_length = (Category._meta.get_field("slug").max_length
+                      if name == "category" else field.max_length)
+        if max_length and len(value) > max_length:
+            raise ValidationError(f"«{name}» ko'pi bilan {max_length} belgi bo'lishi kerak")
+        if name == "title" and not value:
+            raise ValidationError("«title» majburiy")
+        if name in ("cover_url", "demo_url") and value:
+            URLValidator(schemes=["http", "https"])(value)
+        if name == "category":
+            value = Category.objects.filter(slug=value).first()
+            if value is None:
+                raise ValidationError("«category» topilmadi")
+        elif name == "status":
+            value = value.upper()
+        elif not value and field.null:
+            value = None
+        cleaned[field_name] = value
+
+    if "price" in data:
+        value = data["price"]
+        if isinstance(value, bool) or not isinstance(value, (str, int, Decimal)):
+            raise ValidationError("«price» musbat son bo'lishi kerak")
+        try:
+            price = Decimal(value)
+        except (InvalidOperation, ValueError):
+            raise ValidationError("«price» musbat son bo'lishi kerak")
+        if not price.is_finite() or price <= 0:
+            raise ValidationError("«price» musbat va chekli son bo'lishi kerak")
+        # DecimalField bazaga sig'maydigan yoki ortiqcha kasrli narxni rad etadi.
+        cleaned["price"] = Product._meta.get_field("price").clean(price, None)
+
+    for name in ("tech_stack", "features"):
+        if name in data:
+            value = data[name]
+            if not isinstance(value, list) or any(
+                not isinstance(item, str) or not item.strip() for item in value
+            ):
+                raise ValidationError(f"«{name}» bo'sh bo'lmagan matnlar ro'yxati bo'lishi kerak")
+            cleaned[name] = [item.strip() for item in value]
+
+    if creating:
+        for name in ("title", "price", "category"):
+            if name not in cleaned:
+                raise ValidationError(f"«{name}» majburiy")
+    return cleaned
 
 
 def _product_json(p, request=None):
@@ -129,7 +208,7 @@ def products_view(request):
     user = request.api_user
 
     if request.method == "GET":
-        qs = Product.objects.filter(seller=user).select_related("category").order_by("-created_at")
+        qs = Product.objects.filter(seller=user, is_deleted=False).select_related("category").order_by("-created_at")
         status = request.GET.get("status")
         if status:
             qs = qs.filter(status=status.upper())
@@ -146,52 +225,43 @@ def products_view(request):
     if err:
         return err
 
-    title = (data.get("title") or "").strip()
-    if not title:
-        return _err("«title» majburiy")
-
     try:
-        price = float(data.get("price"))
-        if price <= 0:
-            raise ValueError
-    except (TypeError, ValueError):
-        return _err("«price» musbat son bo'lishi kerak")
-
-    category = Category.objects.filter(slug=(data.get("category") or "").strip()).first()
-    if not category:
-        return _err(
-            "«category» topilmadi",
-            categories=list(Category.objects.values_list("slug", flat=True)),
-        )
+        values = _product_data(data, creating=True)
+    except ValidationError as exc:
+        return _err("; ".join(exc.messages))
+    values.pop("status", None)
 
     product = Product(
-        title=title[:255],
-        description=(data.get("description") or "").strip(),
-        price=price,
-        category=category,
-        subcategory=(data.get("subcategory") or "").strip() or None,
-        tech_stack=data.get("tech_stack") or [],
-        features=data.get("features") or [],
-        cover_image_url=(data.get("cover_url") or "").strip() or None,
-        demo_url=(data.get("demo_url") or "").strip() or None,
+        **values,
         telegram_username=user.telegram_username,
         seller=user,
         # Yangi mahsulot har doim DRAFT: e'lon to'lovi va moderatsiya
         # saytdagi oqim orqali o'tadi — API buni chetlab o'tolmaydi.
         status=Product.Status.DRAFT,
     )
+    # Uzun sarlavhalar takrorlansa ham slug ustuni chegarasidan chiqmasin.
+    base_slug = slugify(product.title) or "product"
+    product.slug = base_slug
+    suffix = 1
+    while Product.objects.filter(slug=product.slug).exists():
+        tail = f"-{suffix}"
+        product.slug = base_slug[:255 - len(tail)] + tail
+        suffix += 1
     product.save()
     return JsonResponse({"ok": True, "product": _product_json(product, request)}, status=201)
 
 
 @api_token_required
+@transaction.atomic
 def product_detail_view(request, product_id):
     """
     GET    /api/v1/products/<id>
     PATCH  /api/v1/products/<id>
     DELETE /api/v1/products/<id>
     """
-    product = Product.objects.filter(id=product_id, seller=request.api_user).first()
+    product = Product.objects.select_for_update().filter(
+        id=product_id, seller=request.api_user, is_deleted=False
+    ).first()
     if not product:
         return _err("Mahsulot topilmadi", 404)
 
@@ -199,9 +269,11 @@ def product_detail_view(request, product_id):
         return JsonResponse({"ok": True, "product": _product_json(product, request)})
 
     if request.method == "DELETE":
-        if product.sales_count:
+        if product.sales_count or product.orders.filter(status=Order.PayStatus.PAID).exists():
             return _err("Sotilgan mahsulotni o'chirib bo'lmaydi — uni to'xtatib qo'ying", 409)
-        product.delete()
+        product.is_deleted = True
+        product.status = Product.Status.PAUSED
+        product.save(update_fields=["is_deleted", "status", "updated_at"])
         return JsonResponse({"ok": True, "deleted": True})
 
     if request.method != "PATCH":
@@ -211,56 +283,28 @@ def product_detail_view(request, product_id):
     if err:
         return err
 
-    changed = []
-    for field in ("title", "description", "subcategory", "demo_url"):
-        if field in data:
-            setattr(product, field, (data[field] or "").strip() or None)
-            changed.append(field)
-
-    if "price" in data:
-        try:
-            price = float(data["price"])
-            if price <= 0:
-                raise ValueError
-        except (TypeError, ValueError):
-            return _err("«price» musbat son bo'lishi kerak")
-        product.price = price
-        changed.append("price")
-
-    for field in ("tech_stack", "features"):
-        if field in data:
-            if not isinstance(data[field], list):
-                return _err(f"«{field}» ro'yxat bo'lishi kerak")
-            setattr(product, field, data[field])
-            changed.append(field)
-
-    if "cover_url" in data:
-        product.cover_image_url = (data["cover_url"] or "").strip() or None
-        changed.append("cover_image_url")
-
-    if "category" in data:
-        category = Category.objects.filter(slug=(data["category"] or "").strip()).first()
-        if not category:
-            return _err("«category» topilmadi")
-        product.category = category
-        changed.append("category")
+    try:
+        values = _product_data(data)
+    except ValidationError as exc:
+        return _err("; ".join(exc.messages))
 
     # Holatni API orqali faqat ACTIVE <-> PAUSED oralig'ida o'zgartirish mumkin.
     # DRAFT/PENDING/REJECTED — moderatsiya hal qiladigan holatlar, ularga
     # sotuvchi o'zi o'tolmaydi (aks holda e'lon to'lovi chetlab o'tilardi).
     if "status" in data:
-        wanted = (data["status"] or "").upper()
+        wanted = values["status"]
         allowed = {Product.Status.ACTIVE, Product.Status.PAUSED}
         if wanted not in allowed:
             return _err("«status» faqat ACTIVE yoki PAUSED bo'lishi mumkin")
         if product.status not in allowed:
             return _err("Bu mahsulot hali moderatsiyadan o'tmagan", 409)
-        product.status = wanted
-        changed.append("status")
 
-    if not changed:
+    if not values:
         return _err("O'zgartirish uchun maydon berilmadi")
 
+    for field, value in values.items():
+        setattr(product, field, value)
+    changed = list(values)
     product.save()
     return JsonResponse({"ok": True, "updated": changed, "product": _product_json(product, request)})
 
@@ -270,7 +314,7 @@ def stats_view(request):
     """GET /api/v1/stats — sotuv tahlili."""
     user = request.api_user
 
-    products = Product.objects.filter(seller=user)
+    products = Product.objects.filter(seller=user, is_deleted=False)
     agg = products.aggregate(total=Count("id"), sales=Sum("sales_count"))
 
     paid = Order.objects.filter(

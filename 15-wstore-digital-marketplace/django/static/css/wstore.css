@@ -399,10 +399,10 @@ input, select, textarea {
 /* Backdrop, Shadows & Transitions */
 .backdrop-blur { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 .backdrop-blur-sm { backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
-.bg-bg\/70 { background-color: rgba(var(--bg), 0.7); }
-.bg-bg\/80 { background-color: rgba(var(--bg), 0.8); }
-.bg-bg\/90 { background-color: rgba(var(--bg), 0.9); }
-.bg-bg\/95 { background-color: rgba(var(--bg), 0.95); }
+.bg-bg\/70 { background-color: rgb(var(--bg) / 0.7); }
+.bg-bg\/80 { background-color: rgb(var(--bg) / 0.8); }
+.bg-bg\/90 { background-color: rgb(var(--bg) / 0.9); }
+.bg-bg\/95 { background-color: rgb(var(--bg) / 0.95); }
 .bg-black\/60 { background-color: rgba(0, 0, 0, 0.6); }
 .bg-black\/70 { background-color: rgba(0, 0, 0, 0.7); }
 
@@ -490,7 +490,7 @@ input, select, textarea {
 }
 
 .product-cat-pill {
-  background-color: rgba(var(--bg), 0.7);
+  background-color: rgb(var(--bg) / 0.7);
   border: 1px solid rgb(var(--border-strong));
   backdrop-filter: blur(8px);
   color: rgb(var(--muted));
@@ -501,7 +501,7 @@ input, select, textarea {
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  background: rgba(var(--bg), 0.6);
+  background: rgb(var(--bg) / 0.6);
   /* Atrofdagi halqa (border) olib tashlandi — endi faqat xira qorong'i
      fon (blur bilan) yurakchani ajratib turadi, rangli chegara yo'q. */
   border: none;
@@ -577,7 +577,7 @@ input, select, textarea {
   width: 3px;
   height: 12px;
   border-radius: 2px;
-  background-color: rgba(var(--accent), 0.6);
+  background-color: rgb(var(--accent) / 0.6);
 }
 
 .currency-btn {
@@ -599,7 +599,7 @@ input, select, textarea {
   background-color: rgb(var(--accent)) !important;
   border-color: rgb(var(--accent)) !important;
   color: #ffffff !important;
-  box-shadow: 0 2px 8px rgba(var(--accent), 0.35);
+  box-shadow: 0 2px 8px rgb(var(--accent) / 0.35);
 }
 
 .sr-only {
@@ -655,7 +655,7 @@ input, select, textarea {
 .filter-checkbox-item input:checked ~ .custom-check-box {
   background-color: rgb(var(--accent));
   border-color: rgb(var(--accent));
-  box-shadow: 0 0 0 2px rgba(var(--accent), 0.25);
+  box-shadow: 0 0 0 2px rgb(var(--accent) / 0.25);
 }
 .filter-checkbox-item input:checked ~ .custom-check-box .check-icon {
   display: block;
@@ -675,7 +675,7 @@ input, select, textarea {
 }
 .filter-radio-item input:checked ~ .custom-radio-box {
   border-color: rgb(var(--accent));
-  box-shadow: 0 0 0 2px rgba(var(--accent), 0.25);
+  box-shadow: 0 0 0 2px rgb(var(--accent) / 0.25);
 }
 .custom-radio-dot {
   width: 0.5rem;
@@ -1223,11 +1223,15 @@ a.stat-card:hover {
   flex-wrap: nowrap;
   gap: 0.25rem;
   overflow: hidden;
-  -webkit-mask-image: linear-gradient(to right, #000 85%, transparent 100%);
-  mask-image: linear-gradient(to right, #000 85%, transparent 100%);
 }
+.tech-tags-row [hidden] { display: none; }
+.tech-overflow { flex-shrink: 0; align-self: center; }
 .tech-tags-row > span {
   flex-shrink: 0;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -1267,6 +1271,9 @@ a.stat-card:hover {
 
 .product-price {
   letter-spacing: -0.01em;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
   /* Narx hech qachon o'z ichida ikkinchi qatorga bo'linib ketmasin —
      bo'lmasa, o'ng tarafdagi yulduzcha reyting pastga surilib qolardi. */
   white-space: nowrap;
@@ -1278,6 +1285,28 @@ a.stat-card:hover {
 .product-price.is-long {
   font-size: 0.8em;
   letter-spacing: -0.015em;
+}
+.product-price::-webkit-scrollbar { display: none; }
+
+.detail-tech-tag {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.detail-price-row > div { max-width: 100%; }
+.detail-price { white-space: nowrap; overflow-x: auto; max-width: 100%; scrollbar-width: none; }
+.detail-price.is-long { font-size: clamp(1.5rem, 4vw, 2rem); }
+.navbar-auth { flex-shrink: 0; white-space: nowrap; }
+@media (max-width: 639px) {
+  .navbar-brand { gap: 6px; }
+  .navbar-brand > img { width: 28px; height: 28px; }
+  .navbar-brand > span { font-size: 16px; white-space: nowrap; }
+}
+@media (max-width: 399px) {
+  .navbar-auth > span { display: none; }
+  .navbar-brand > span > span { display: none; }
 }
 
 .heart-icon {
@@ -1331,12 +1360,12 @@ a.stat-card:hover {
 .text-red-400 { color: #f87171; }
 .text-red-500 { color: #ef4444; }
 .text-border-strong { color: rgb(var(--border-strong)); }
-.text-fg\/70 { color: rgba(var(--fg), 0.7); }
-.text-fg\/90 { color: rgba(var(--fg), 0.9); }
+.text-fg\/70 { color: rgb(var(--fg) / 0.7); }
+.text-fg\/90 { color: rgb(var(--fg) / 0.9); }
 
-.bg-bg\/60 { background-color: rgba(var(--bg), 0.6); }
-.bg-accent\/15 { background-color: rgba(var(--accent), 0.15); }
-.bg-gold\/10 { background-color: rgba(var(--gold), 0.1); }
+.bg-bg\/60 { background-color: rgb(var(--bg) / 0.6); }
+.bg-accent\/15 { background-color: rgb(var(--accent) / 0.15); }
+.bg-gold\/10 { background-color: rgb(var(--gold) / 0.1); }
 .bg-border-strong { background-color: rgb(var(--border-strong)); }
 .bg-red-600 { background-color: #dc2626; }
 .hover\:bg-red-700:hover { background-color: #b91c1c; }
@@ -1346,13 +1375,13 @@ a.stat-card:hover {
 
 .shadow-black\/10 { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
 .shadow-black\/20 { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); }
-.shadow-accent\/25 { box-shadow: 0 10px 15px -3px rgba(var(--accent), 0.25); }
+.shadow-accent\/25 { box-shadow: 0 10px 15px -3px rgb(var(--accent) / 0.25); }
 .shadow-\[0_-8px_24px_rgba\(0\,0\,0\,0\.35\)\] { box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35); }
 
-.divide-border\/60 > :not([hidden]) ~ :not([hidden]) { border-color: rgba(var(--border), 0.6); }
+.divide-border\/60 > :not([hidden]) ~ :not([hidden]) { border-color: rgb(var(--border) / 0.6); }
 
-.placeholder\:text-muted\/70::placeholder { color: rgba(var(--muted), 0.7); }
-.placeholder\:text-muted\/60::placeholder { color: rgba(var(--muted), 0.6); }
+.placeholder\:text-muted\/70::placeholder { color: rgb(var(--muted) / 0.7); }
+.placeholder\:text-muted\/60::placeholder { color: rgb(var(--muted) / 0.6); }
 
 .first\:pt-0:first-child { padding-top: 0; }
 .last\:pb-0:last-child { padding-bottom: 0; }

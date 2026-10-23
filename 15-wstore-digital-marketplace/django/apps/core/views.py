@@ -5,6 +5,7 @@ from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.contrib import messages
 from django.utils.translation import gettext as _
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
 
 from .forms import LoginForm, RegisterForm
 
@@ -102,6 +103,7 @@ def register_view(request):
     })
 
 
+@require_POST
 def logout_view(request):
     logout(request)
     messages.info(request, _("Tizimdan muvaffaqiyatli chiqdingiz."))

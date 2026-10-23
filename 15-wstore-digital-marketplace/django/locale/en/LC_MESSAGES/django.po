@@ -1247,10 +1247,10 @@ msgstr "Welcome, %(name)s! Your account was created with Google."
 
 #: templates/orders/dashboard.html
 msgid ""
-"Xush kelibsiz, <strong style=\"color: var(--fg);\">%(name)s</strong>. Barcha"
+"Xush kelibsiz, <strong style=\"color: rgb(var(--fg));\">%(name)s</strong>. Barcha"
 " xaridlaringiz va yuklab olish havolalari shu yerda."
 msgstr ""
-"Welcome, <strong style=\"color: var(--fg);\">%(name)s</strong>. All your "
+"Welcome, <strong style=\"color: rgb(var(--fg));\">%(name)s</strong>. All your "
 "purchases and download links are here."
 
 #: templates/store/product_detail.html
@@ -1389,11 +1389,11 @@ msgstr "«%(title)s» has been paused."
 
 #: templates/orders/order_status.html
 msgid ""
-"«<strong style=\"color: var(--fg);\">%(title)s</strong>» loyihasining to'liq"
+"«<strong style=\"color: rgb(var(--fg));\">%(title)s</strong>» loyihasining to'liq"
 " manba kodi siz uchun tayyor."
 msgstr ""
 "The full source code of «<strong style=\"color: "
-"var(--fg);\">%(title)s</strong>» is ready for you."
+"rgb(var(--fg));\">%(title)s</strong>» is ready for you."
 
 #: templates/navbar.html
 msgid "— tayyor kod, botlar, saytlar va ilovalar bozori"
@@ -1892,3 +1892,30 @@ msgid "«@» belgisiz yozing. Xaridorlar loyiha sahifasidan shu orqali yozadi."
 msgstr ""
 "Enter without the «@» symbol. Buyers will message you through it from the "
 "project page."
+
+msgid "Onlayn xarid hozircha mavjud emas. Sotuvchi bilan bog'laning."
+msgstr "Online purchasing is not available yet. Contact the seller."
+
+msgid "Loyiha fayli hozircha mavjud emas. Sotuvchi bilan bog'laning."
+msgstr "The project file is currently unavailable. Contact the seller."
+
+msgid "Onlayn to'lov vaqtincha mavjud emas."
+msgstr "Online payment is temporarily unavailable."
+
+msgid "Narx musbat son bo'lishi kerak."
+msgstr "The price must be greater than zero."
+
+msgid "Faqat ZIP, TAR.GZ yoki RAR arxivini yuklang."
+msgstr "Upload a ZIP, TAR.GZ or RAR archive."
+
+msgid "Fayl hajmi %(limit)s baytdan oshmasligi kerak."
+msgstr "File size must not exceed %(limit)s bytes."
+
+msgid "Baho 1 dan 5 gacha bo'lishi kerak."
+msgstr "The rating must be between 1 and 5."
+
+msgid "Kodni yuklab olish"
+msgstr "Download source code"
+
+msgid "Hisob faol emas."
+msgstr "This account is inactive."

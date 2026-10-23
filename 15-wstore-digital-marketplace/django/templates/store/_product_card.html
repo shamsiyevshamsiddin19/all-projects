@@ -42,11 +42,12 @@
            qolgani o'ngda xiralashib (fade) yo'qoladi — ikkinchi qatorga
            tushib, karta balandligini buzmaydi. -->
       <div class="tech-tags-row mb-3">
-        {% for tech in product.tech_stack|slice:":8" %}
-          <span class="rounded border border-border px-1.5 py-0.5 text-[10px] text-muted sm:text-[11px]">
+        {% for tech in product.tech_stack %}
+          <span data-tech-tag class="rounded border border-border px-1.5 py-0.5 text-[10px] text-muted sm:text-[11px]" title="{{ tech }}">
             {{ tech }}
           </span>
         {% endfor %}
+        <span class="tech-overflow text-xs text-muted" hidden aria-hidden="true">…</span>
       </div>
 
       <div class="mt-auto flex items-center justify-between gap-1">
@@ -59,7 +60,7 @@
           </div>
         </div>
         <div class="flex shrink-0 items-center gap-1 text-sm">
-          <i data-lucide="star" style="width: 14px; height: 14px; fill: var(--gold); color: var(--gold);"></i>
+          <i data-lucide="star" style="width: 14px; height: 14px; fill: rgb(var(--gold)); color: rgb(var(--gold));"></i>
           <span class="text-fg font-medium">{{ product.rating|floatformat:1 }}</span>
         </div>
       </div>

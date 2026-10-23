@@ -82,6 +82,9 @@ input, textarea, select {
     display: flex;
     width: 100vw;
     height: 100vh;
+    max-width: 100%;
+    overflow: hidden;
+    overflow-x: hidden;
     background: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
                 radial-gradient(circle at 90% 80%, rgba(56, 189, 248, 0.06) 0%, transparent 40%),
                 var(--bg-main);
@@ -90,14 +93,36 @@ input, textarea, select {
 /* --- 4. YON PANEL (SIDEBAR) --- */
 .sidebar {
     width: 280px;
+    max-width: 85vw;
     height: 100%;
     background: var(--bg-surface);
     border-right: 1px solid var(--border-subtle);
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
-    z-index: 100;
+    z-index: 1000;
     transition: var(--transition);
+}
+
+/* Mobil parda (Backdrop) */
+.sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 8, 15, 0.75);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 990;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+}
+
+.sidebar-backdrop.active,
+.sidebar.open ~ .sidebar-backdrop {
+    display: block;
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .sidebar-header {
@@ -377,6 +402,8 @@ input, textarea, select {
 /* --- 5. ASOSIY KONTENT MAYDONI --- */
 .main-content {
     flex: 1;
+    min-width: 0;
+    max-width: 100%;
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -391,29 +418,44 @@ input, textarea, select {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 16px;
     border-bottom: 1px solid var(--border-subtle);
     background: var(--bg-glass);
     backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     z-index: 10;
+    min-width: 0;
 }
 
 .topbar-left {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
     flex: 1;
-    max-width: 500px;
+    min-width: 0;
+    max-width: 520px;
 }
 
 .mobile-menu-btn {
     display: none;
     font-size: 1.25rem;
     color: var(--text-main);
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+}
+
+.mobile-menu-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
 }
 
 .search-box {
     position: relative;
     width: 100%;
+    min-width: 0;
 }
 
 .search-box .search-icon {
@@ -423,16 +465,19 @@ input, textarea, select {
     transform: translateY(-50%);
     color: var(--text-faint);
     font-size: 0.9rem;
+    pointer-events: none;
 }
 
 .search-box input {
     width: 100%;
+    min-width: 0;
     padding: 10px 38px 10px 40px;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid var(--border-subtle);
     border-radius: 30px;
     color: var(--text-main);
-    font-size: 0.9rem;
+    font-size: 0.88rem;
+    text-overflow: ellipsis;
     transition: var(--transition);
 }
 
@@ -454,7 +499,8 @@ input, textarea, select {
 .topbar-right {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+    flex-shrink: 0;
 }
 
 /* Tugmalar (Buttons) */
@@ -615,13 +661,15 @@ input, textarea, select {
     background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
-    padding: 16px;
+    padding: 14px 14px;
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
     cursor: pointer;
     transition: var(--transition);
     position: relative;
+    min-width: 0;
+    overflow: visible;
 }
 
 .folder-card:hover {
@@ -631,8 +679,15 @@ input, textarea, select {
     box-shadow: var(--shadow-sm);
 }
 
+.folder-card.menu-open,
+.file-card.menu-open,
+.folder-card:has(.dropdown-menu.show),
+.file-card:has(.dropdown-menu.show) {
+    z-index: 30;
+}
+
 .folder-card-icon {
-    font-size: 2rem;
+    font-size: 1.85rem;
     flex-shrink: 0;
     line-height: 1;
 }
@@ -640,27 +695,36 @@ input, textarea, select {
 .folder-card-info {
     flex: 1;
     min-width: 0;
+    overflow: hidden;
+    padding-right: 28px; /* 3-nuqta tugmasi ustiga matn chiqib ketmasligi uchun kafolatlangan masofa */
 }
 
 .folder-card-name {
-    font-size: 0.95rem;
+    font-size: 0.92rem;
     font-weight: 600;
     color: var(--text-main);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    margin-bottom: 4px;
+    display: block;
+    width: 100%;
+    margin-bottom: 3px;
 }
 
 .folder-card-meta {
-    font-size: 0.75rem;
+    font-size: 0.74rem;
     color: var(--text-faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .card-actions-dropdown {
     position: absolute;
-    right: 12px;
-    top: 14px;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 5;
 }
 
 .dropdown-trigger {
@@ -688,6 +752,7 @@ input, textarea, select {
     box-shadow: var(--shadow-md);
     padding: 6px;
     min-width: 160px;
+    max-width: calc(100vw - 24px);
     z-index: 50;
     display: none;
     flex-direction: column;
@@ -733,11 +798,13 @@ input, textarea, select {
     background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
-    padding: 16px;
+    padding: 14px;
     display: flex;
     flex-direction: column;
     transition: var(--transition);
     position: relative;
+    min-width: 0;
+    overflow: visible;
 }
 
 .file-card:hover {
@@ -745,6 +812,23 @@ input, textarea, select {
     border-color: rgba(56, 189, 248, 0.3);
     transform: translateY(-2px);
     box-shadow: var(--shadow-sm);
+}
+
+/* Grid rejimida 3-nuqta tugmasi yuqori o'ng burchakda qulay joylashadi */
+.files-container.grid-mode .file-card .card-actions-dropdown {
+    top: 8px;
+    right: 8px;
+    transform: none;
+}
+
+.files-container.grid-mode .file-card .dropdown-trigger {
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(4px);
+}
+
+.files-container.grid-mode .file-card .dropdown-trigger:hover {
+    background: rgba(15, 23, 42, 0.9);
+    color: #fff;
 }
 
 .file-card-preview {
@@ -756,19 +840,25 @@ input, textarea, select {
     margin-bottom: 12px;
     border-radius: var(--radius-sm);
     background: rgba(0, 0, 0, 0.15);
+    overflow: hidden;
 }
 
 .file-card-details {
     flex: 1;
+    min-width: 0;
+    width: 100%;
+    overflow: hidden;
 }
 
 .file-card-name {
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     font-weight: 600;
     color: var(--text-main);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: block;
+    width: 100%;
     margin-bottom: 6px;
 }
 
@@ -776,19 +866,29 @@ input, textarea, select {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 0.75rem;
+    gap: 6px;
+    font-size: 0.74rem;
     color: var(--text-faint);
     margin-top: 8px;
     padding-top: 8px;
     border-top: 1px solid rgba(255, 255, 255, 0.04);
+    min-width: 0;
+}
+
+.file-card-footer span {
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .tg-badge {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     color: var(--accent-sky);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* List Rejimi */
@@ -801,31 +901,58 @@ input, textarea, select {
 .files-container.list-mode .file-card {
     flex-direction: row;
     align-items: center;
-    padding: 12px 16px;
-    height: 56px;
+    padding: 10px 42px 10px 40px;
+    min-height: 54px;
+    height: auto;
+    gap: 12px;
 }
 
 .files-container.list-mode .file-card-preview {
-    height: 36px;
-    width: 36px;
-    font-size: 1.3rem;
+    height: 34px;
+    width: 34px;
+    font-size: 1.25rem;
     margin-bottom: 0;
-    margin-right: 14px;
+    margin-right: 0;
     background: transparent;
+    flex-shrink: 0;
 }
 
 .files-container.list-mode .file-card-details {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 16px;
     width: 100%;
+    min-width: 0;
+}
+
+.files-container.list-mode .file-card-name {
+    flex: 1;
+    min-width: 0;
+    margin-bottom: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .files-container.list-mode .file-card-footer {
     border-top: none;
     margin-top: 0;
     padding-top: 0;
-    gap: 20px;
+    gap: 16px;
+    flex-shrink: 0;
+}
+
+.files-container.list-mode .card-actions-dropdown {
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.files-container.list-mode .file-select-box {
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
 }
 
 /* Bo'sh holat (Empty State) */
@@ -1180,16 +1307,47 @@ input, textarea, select {
 .flex-between { display: flex; align-items: center; justify-content: space-between; }
 
 /* ==========================================================================
-   11. RESPONSIVE DIZAYN (MOBIL MOSLASHUVCHANLIK)
-   Talab bo'yicha: 2x2 ixcham grid, swipeable tabs, ixcham hero
+   11. RESPONSIVE DIZAYN (MOBIL VA PLANSHET MOSLASHUVCHANLIGI)
+   Standart: MY_SCILL/preferences/websites.md
+   - Yozuvlar ustma-ust tushmaydi (text-overflow: ellipsis, min-width: 0)
+   - Komponentlar to'qnashmaydi (flex-shrink, padding-right, gap)
+   - 2x2 ixcham grid, gorizontal scroll breadcrumbs, to'liq moslashuvchan modal
    ========================================================================== */
+
+/* --- 1024px: Kichik noutbuklar va katta planshetlar --- */
+@media (max-width: 1024px) {
+    .topbar {
+        padding: 0 18px;
+    }
+    .folders-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+    .files-container.grid-mode {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    }
+}
+
+/* --- 880px: Planshetlar gorizontal --- */
+@media (max-width: 880px) {
+    .topbar-right .btn-text {
+        display: none; /* Tugma matnini yashirish, faqat piktogramma */
+    }
+    .topbar-right .btn {
+        padding: 8px 12px;
+    }
+}
+
+/* --- 768px: Planshetlar vertikal va Mobil qurilmalar --- */
 @media (max-width: 768px) {
     .sidebar {
         position: fixed;
-        left: -290px;
+        left: -310px;
         top: 0;
         bottom: 0;
-        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+        width: 280px;
+        max-width: 82vw;
+        box-shadow: 12px 0 35px rgba(0, 0, 0, 0.7);
+        z-index: 1000;
     }
 
     .sidebar.open {
@@ -1201,73 +1359,340 @@ input, textarea, select {
     }
 
     .topbar {
-        padding: 0 16px;
-        height: 60px;
+        padding: 0 12px;
+        height: 58px;
+        gap: 10px;
     }
 
-    .topbar-right .btn-text {
-        display: none; /* Mobilda tugma matnini yashirish, faqat ikonka */
+    .topbar-left {
+        gap: 10px;
     }
 
-    .topbar-right .btn {
-        padding: 8px 12px;
+    .search-box input {
+        font-size: 0.82rem;
+        padding: 8px 32px 8px 34px;
+    }
+
+    .search-box .search-icon {
+        left: 11px;
+        font-size: 0.8rem;
     }
 
     .content-scrollable {
-        padding: 16px;
+        padding: 14px 12px;
     }
 
-    /* Mobilda 2x2 ixcham grid (MY_SCILL/preferences/websites.md standarti!) */
+    /* Mobilda 2x2 ixcham grid */
     .folders-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
     }
 
     .folder-card {
-        padding: 12px 10px;
-        gap: 10px;
+        padding: 10px 8px;
+        gap: 8px;
+        min-width: 0;
     }
 
     .folder-card-icon {
-        font-size: 1.6rem;
+        font-size: 1.5rem;
+    }
+
+    .folder-card-info {
+        padding-right: 24px;
+        min-width: 0;
     }
 
     .folder-card-name {
-        font-size: 0.85rem;
+        font-size: 0.82rem;
+        line-height: 1.25;
+        margin-bottom: 2px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        width: 100%;
+        display: block;
+    }
+
+    .folder-card-meta {
+        font-size: 0.68rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        width: 100%;
+        display: block;
+    }
+
+    .folder-card .card-actions-dropdown {
+        right: 4px;
+        top: 50%;
+        transform: translateY(-50%);
     }
 
     .files-container.grid-mode {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
     }
 
     .file-card {
-        padding: 12px 10px;
+        padding: 10px 8px;
+        min-width: 0;
     }
 
     .file-card-preview {
-        height: 70px;
-        font-size: 2rem;
+        height: 68px;
+        font-size: 1.9rem;
+        margin-bottom: 8px;
     }
 
     .file-card-name {
-        font-size: 0.82rem;
+        font-size: 0.8rem;
+        margin-bottom: 4px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        width: 100%;
+        display: block;
     }
-}
 
-@media (max-width: 480px) {
+    .file-card-footer {
+        font-size: 0.68rem;
+        gap: 4px;
+        margin-top: 6px;
+        padding-top: 6px;
+        min-width: 0;
+    }
+
+    .tg-badge {
+        font-size: 0.64rem;
+        max-width: 65px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* List rejimi mobilda ustma-ust tushmasligi uchun 2 qatorga moslashadi */
+    .files-container.list-mode .file-card {
+        padding: 8px 34px 8px 32px;
+        min-height: 48px;
+        gap: 10px;
+    }
+
+    .files-container.list-mode .file-card-preview {
+        width: 30px;
+        height: 30px;
+        font-size: 1.1rem;
+    }
+
+    .files-container.list-mode .file-card-details {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    .files-container.list-mode .file-card-name {
+        font-size: 0.82rem;
+        width: 100%;
+    }
+
+    .files-container.list-mode .file-card-footer {
+        gap: 8px;
+        font-size: 0.68rem;
+    }
+
     .breadcrumbs-container {
-        padding: 8px 16px;
+        padding: 8px 12px;
+    }
+
+    .breadcrumb-item {
+        font-size: 0.78rem;
+        padding: 3px 6px;
+        max-width: 130px;
+    }
+
+    .breadcrumb-item span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .section-header {
+        gap: 8px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+    }
+
+    .section-header h3 {
+        font-size: 0.95rem;
+    }
+
+    .sort-control {
+        margin-left: auto;
+    }
+
+    .sort-select {
+        font-size: 11px;
+        padding: 4px 8px;
+    }
+
+    .modal {
+        padding: 10px;
     }
 
     .modal-dialog {
-        padding: 0;
+        width: 100%;
+        max-height: calc(100dvh - 20px);
+        display: flex;
+        flex-direction: column;
+        border-radius: var(--radius-md);
+    }
+
+    .modal-header {
+        padding: 12px 16px;
+        flex-shrink: 0;
+    }
+
+    .modal-header h3 {
+        font-size: 1rem;
+    }
+
+    .modal-body {
+        padding: 14px 16px;
+        overflow-y: auto;
+        flex: 1;
+        min-height: 0;
+    }
+
+    .modal-footer {
+        padding: 10px 16px;
+        flex-shrink: 0;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .selection-bar {
+        left: 10px;
+        right: 10px;
+        bottom: 12px;
+        padding: 10px 12px;
+        transform: translate(0, 140%);
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        border-radius: var(--radius-md);
+    }
+
+    .selection-bar.show {
+        transform: translate(0, 0);
+    }
+
+    .sel-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
+        width: 100%;
+    }
+
+    .sel-btn {
+        padding: 6px 10px;
+        font-size: 11.5px;
+        flex: 1 1 auto;
+        justify-content: center;
     }
 
     .toast-container {
-        left: 16px;
-        right: 16px;
-        bottom: 16px;
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        max-width: calc(100vw - 24px);
+    }
+
+    .toast {
+        min-width: 0;
+        width: 100%;
+        font-size: 0.82rem;
+        padding: 10px 14px;
+    }
+}
+
+/* --- 480px: Kichik mobil ekranlar --- */
+@media (max-width: 480px) {
+    .topbar {
+        padding: 0 8px;
+        height: 54px;
+        gap: 6px;
+    }
+
+    .mobile-menu-btn {
+        font-size: 1rem;
+        width: 32px;
+        height: 32px;
+    }
+
+    .topbar-right {
+        gap: 5px;
+    }
+
+    .topbar-right .btn {
+        padding: 6px 9px;
+        font-size: 0.78rem;
+    }
+
+    .view-btn {
+        width: 26px;
+        height: 24px;
+        font-size: 0.7rem;
+    }
+
+    .folders-grid {
+        gap: 8px;
+    }
+
+    .files-container.grid-mode {
+        gap: 8px;
+    }
+
+    .content-scrollable {
+        padding: 10px 8px;
+    }
+}
+
+/* --- 360px: O'ta kichik mobil ekranlar --- */
+@media (max-width: 360px) {
+    .folders-grid {
+        gap: 6px;
+    }
+
+    .files-container.grid-mode {
+        gap: 6px;
+    }
+
+    .folder-card {
+        padding: 8px 6px;
+        gap: 6px;
+    }
+
+    .folder-card-icon {
+        font-size: 1.3rem;
+    }
+
+    .folder-card-name {
+        font-size: 0.76rem;
+    }
+
+    .file-card {
+        padding: 8px 6px;
+    }
+
+    .file-card-preview {
+        height: 56px;
+        font-size: 1.6rem;
+    }
+
+    .file-card-name {
+        font-size: 0.76rem;
     }
 }
 
@@ -1458,12 +1883,7 @@ input, textarea, select {
 .ctx-item.danger:hover { background: rgba(244, 63, 94, 0.12); }
 .ctx-item.danger i { color: var(--accent-rose); }
 
-@media (max-width: 900px) {
-    .selection-bar { left: 12px; right: 12px; transform: translate(0, 140%); flex-direction: column; align-items: stretch; }
-    .selection-bar.show { transform: translate(0, 0); }
-    .sel-actions { flex-wrap: wrap; justify-content: center; }
-    .sort-control { margin-left: 0; }
-}
+
 
 /* --- Logo belgisi (Font Awesome o'rniga SVG) --- */
 .logo-icon img { width: 24px; height: 24px; display: block; }
