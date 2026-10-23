@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" role="img" aria-label="Foldex">
+  <!-- Papka orqa paneli (tabi bilan) -->
+  <path d="M5 13.5A3.5 3.5 0 0 1 8.5 10h8.2a3.5 3.5 0 0 1 2.5 1l2.6 2.6a1.5 1.5 0 0 0 1.1.4H39.5A3.5 3.5 0 0 1 43 17.5V24H5V13.5z"
+        fill="#fff" fill-opacity=".45"/>
+  <!-- Varaq — old panel tepasidan chiqib turadi -->
+  <rect x="15" y="12.5" width="18" height="15" rx="2.2" fill="#fff"/>
+  <rect x="18.4" y="16.2" width="11.2" height="1.9" rx=".95" fill="#4f46e5" fill-opacity=".85"/>
+  <rect x="18.4" y="19.8" width="7.4" height="1.9" rx=".95" fill="#4f46e5" fill-opacity=".6"/>
+  <!-- Papka old paneli -->
+  <path d="M3.9 25.4A2.8 2.8 0 0 1 6.7 22.2h34.6a2.8 2.8 0 0 1 2.8 3.2l-2 12.9A4 4 0 0 1 38.2 41.7H9.8a4 4 0 0 1-3.9-3.4l-2-12.9z"
+        fill="#fff"/>
+</svg>
