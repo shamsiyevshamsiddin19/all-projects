@@ -68,6 +68,13 @@ async def test_folder_crud_flow(client: AsyncClient, admin_headers: dict):
     sub_id = sub_data["id"]
     assert sub_data["parent_id"] == folder_id
 
+    # Papka kartochkasi uchun API bevosita ichidagi papka va fayl sonini qaytaradi.
+    folders_res = await client.get("/api/folders/", headers=admin_headers)
+    assert folders_res.status_code == 200
+    root_folder = next(item for item in folders_res.json() if item["id"] == folder_id)
+    assert root_folder["subfolders_count"] == 1
+    assert root_folder["files_count"] == 0
+
     # 4. Get folder tree
     tree_res = await client.get("/api/folders/tree", headers=admin_headers)
     assert tree_res.status_code == 200
