@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Foldex — Fayllarni Boshqarish Paneli</title>
     <meta name="description" content="Foldex - Telegram File Manager Bot va Veb-Admin Paneli. Shaxsiy bulutli fayl boshqaruvi.">
-    <meta name="theme-color" content="#0a0e17">
+    <meta name="theme-color" content="#0d0d0e">
 
     <!-- Logo va brauzer yorlig'i belgisi -->
     <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
@@ -23,7 +23,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
     <!-- Asosiy uslublar -->
-    <link rel="stylesheet" href="/static/css/style.css?v=2.2">
+    <link rel="stylesheet" href="/static/css/style.css?v=2.3">
 </head>
 <body class="dark-theme">
 
@@ -35,7 +35,6 @@
                     <div class="logo-icon"><img src="/static/img/logo-mark.svg" alt="Foldex"></div>
                     <div class="logo-text">
                         <h2>Foldex</h2>
-                        <span class="badge">Cloud Manager</span>
                     </div>
                 </div>
                 <button class="icon-btn mobile-close-btn" id="closeSidebarBtn" aria-label="Yopish">
@@ -43,18 +42,19 @@
                 </button>
             </div>
 
-            <!-- Xotira statusi (Storage meter) -->
-            <div class="storage-widget">
+            <!-- Xotira sarfi: faqat real hajm va foiz ko'rsatiladi -->
+            <div class="storage-widget" title="Xotira sarfi">
                 <div class="storage-header">
-                    <span><i class="fa-solid fa-database"></i> Xotira</span>
+                    <span class="storage-usage">
+                        <i class="fa-solid fa-database" aria-hidden="true"></i>
+                        <span id="storageUsedText">0 MB</span>
+                        <span class="storage-separator">/</span>
+                        <span id="storageTotalText">500 MB</span>
+                    </span>
                     <span id="storagePercentText">0%</span>
                 </div>
                 <div class="progress-bar-bg">
                     <div class="progress-bar-fill" id="storageProgressBar" style="width: 0%;"></div>
-                </div>
-                <div class="storage-footer">
-                    <span id="storageUsedText">0 MB</span>
-                    <span id="storageTotalText">500 MB</span>
                 </div>
             </div>
 
@@ -97,10 +97,10 @@
 
             <!-- Papkalar daraxti (Folder Tree) -->
             <div class="sidebar-section folder-tree-section">
-                <div class="section-title flex-between">
+                <div class="tree-heading">
                     <span>Papkalar daraxti</span>
-                    <button class="text-btn" id="treeRefreshBtn" title="Yangilash">
-                        <i class="fa-solid fa-rotate-right"></i>
+                    <button class="icon-btn tree-refresh-btn" id="treeRefreshBtn" title="Papka daraxtini yangilash" aria-label="Papka daraxtini yangilash">
+                        <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
                     </button>
                 </div>
                 <div class="folder-tree-container" id="folderTreeContainer">
@@ -110,17 +110,7 @@
 
             <!-- Admin Foydalanuvchi profili -->
             <div class="sidebar-footer">
-                <div class="user-profile-compact">
-                    <div class="user-avatar">
-                        <i class="fa-solid fa-shield-halved"></i>
-                        <span class="online-dot"></span>
-                    </div>
-                    <div class="user-info">
-                        <div class="user-name">Administrator</div>
-                        <div class="user-role">ID: <code>7883409434</code></div>
-                    </div>
-                </div>
-                <button class="icon-btn logout-btn" id="logoutBtn" title="Chiqish">
+                <button class="icon-btn logout-btn" id="logoutBtn" title="Chiqish" aria-label="Chiqish">
                     <i class="fa-solid fa-right-from-bracket"></i>
                 </button>
             </div>
@@ -198,8 +188,8 @@
                 <!-- Papkalar bo'limi -->
                 <section class="content-section" id="foldersSection">
                     <div class="section-header">
-                        <h3><i class="fa-solid fa-folder text-indigo"></i> Papkalar</h3>
-                        <span class="badge" id="subfoldersBadge">0 ta</span>
+                        <h3><i class="fa-solid fa-folder" aria-hidden="true"></i> Papkalar</h3>
+                        <span class="section-count" id="subfoldersBadge" aria-live="polite" aria-label="0 ta papka">0</span>
                     </div>
                     <div class="folders-grid" id="foldersGrid">
                         <!-- Papkalar kartalari dinamik qo'shiladi -->
@@ -209,8 +199,8 @@
                 <!-- Fayllar bo'limi -->
                 <section class="content-section" id="filesSection">
                     <div class="section-header">
-                        <h3><i class="fa-solid fa-file text-sky"></i> Fayllar</h3>
-                        <span class="badge" id="filesBadge">0 ta</span>
+                        <h3><i class="fa-solid fa-file" aria-hidden="true"></i> Fayllar</h3>
+                        <span class="section-count" id="filesBadge" aria-live="polite" aria-label="0 ta fayl">0</span>
                     </div>
                     <div class="files-container grid-mode" id="filesContainer">
                         <!-- Fayllar kartalari dinamik qo'shiladi -->
@@ -404,6 +394,6 @@
 
     <!-- Skriptlar -->
     <script src="/static/js/auth.js?v=2.2"></script>
-    <script src="/static/js/app.js?v=2.3"></script>
+    <script src="/static/js/app.js?v=2.4"></script>
 </body>
 </html>

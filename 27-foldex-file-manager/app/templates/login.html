@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Foldex — Tizimga Kirish</title>
     <meta name="description" content="Foldex shaxsiy fayl menejeri admin paneliga kirish.">
-    <meta name="theme-color" content="#0a0e17">
+    <meta name="theme-color" content="#0d0d0e">
 
     <!-- Logo va brauzer yorlig'i belgisi -->
     <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
@@ -16,7 +16,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/style.css?v=2.3">
 
     <style>
         body {
@@ -24,13 +24,13 @@
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            background: radial-gradient(circle at 50% 20%, rgba(99, 102, 241, 0.15) 0%, rgba(10, 14, 23, 1) 70%);
+            background: radial-gradient(circle at 50% 18%, rgba(16, 163, 127, 0.12) 0%, #0d0d0e 70%);
             padding: 20px;
         }
         .login-card {
             width: 100%;
             max-width: 440px;
-            background: rgba(17, 24, 39, 0.85);
+            background: rgba(21, 21, 22, 0.88);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 20px;
@@ -43,7 +43,8 @@
         .login-logo {
             width: 70px;
             height: 70px;
-            background: linear-gradient(135deg, #6366f1, #38bdf8);
+            background: #202123;
+            border: 1px solid rgba(255, 255, 255, 0.09);
             border-radius: 18px;
             display: flex;
             align-items: center;
@@ -52,7 +53,7 @@
             color: #fff;
             margin: 0 auto 20px;
             overflow: hidden;
-            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.32);
         }
         .login-title {
             font-size: 1.6rem;
@@ -62,7 +63,7 @@
         }
         .login-subtitle {
             font-size: 0.95rem;
-            color: #94a3b8;
+            color: #b0b4b1;
             margin-bottom: 28px;
             line-height: 1.5;
         }
@@ -74,7 +75,7 @@
             display: block;
             font-size: 0.85rem;
             font-weight: 600;
-            color: #cbd5e1;
+            color: #d5d8d5;
             margin-bottom: 8px;
         }
         .status-badge {
@@ -82,11 +83,11 @@
             align-items: center;
             gap: 8px;
             padding: 8px 16px;
-            background: rgba(99, 102, 241, 0.15);
-            border: 1px solid rgba(99, 102, 241, 0.3);
+            background: rgba(16, 163, 127, 0.11);
+            border: 1px solid rgba(16, 163, 127, 0.24);
             border-radius: 30px;
             font-size: 0.85rem;
-            color: #818cf8;
+            color: #10a37f;
             margin-bottom: 24px;
         }
         .bot-button {
@@ -96,7 +97,7 @@
             gap: 10px;
             width: 100%;
             padding: 14px;
-            background: #2563eb;
+            background: #10a37f;
             color: #fff;
             border-radius: 12px;
             font-weight: 600;
@@ -105,9 +106,9 @@
             margin-top: 15px;
         }
         .bot-button:hover {
-            background: #1d4ed8;
+            background: #0c8b6b;
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+            box-shadow: 0 8px 20px rgba(16, 163, 127, 0.24);
         }
         @media (max-width: 480px) {
             body { padding: 12px; }
@@ -126,8 +127,8 @@
         <div class="login-logo">
             <img src="/static/img/logo-mark.svg" alt="Foldex">
         </div>
-        <h1 class="login-title">Foldex Admin</h1>
-        <p class="login-subtitle">Faqat <code>7883409434</code> ID ga ega Telegram administratori uchun shaxsiy bulutli fayl menejeri.</p>
+        <h1 class="login-title">Foldex</h1>
+        <p class="login-subtitle">Telegram orqali xavfsiz kirish.</p>
 
         <div class="status-badge" id="authStatusBadge">
             <i class="fa-solid fa-shield-halved"></i>
@@ -145,11 +146,11 @@
         </form>
 
         <div id="telegramHelpSection" style="margin-top: 25px;">
-            <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 12px;">
-                Agar brauzerda ochgan bo'lsangiz, Telegram botingizda <code>/login</code> buyrug'ini bosing va kirish havolasini oling:
+            <p style="font-size: 0.85rem; color: #777c79; margin-bottom: 12px;">
+                Botdan <code>/login</code> havolasini oling.
             </p>
             <a href="https://t.me/" id="openTgBotBtn" class="bot-button" target="_blank">
-                <i class="fa-brands fa-telegram"></i> Telegram Botni ochish
+                <i class="fa-brands fa-telegram"></i> Telegramda ochish
             </a>
             <button type="button" class="btn btn-secondary btn-sm" id="toggleManualTokenBtn" style="margin-top: 15px; width: 100%;">
                 Tokenni qo'lda kiritish

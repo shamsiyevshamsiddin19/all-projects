@@ -6,27 +6,27 @@
 
 /* --- 1. CSS O'ZGARUVCHILARI (DESIGN TOKENS) --- */
 :root {
-    --bg-main: #090d16;
-    --bg-surface: #111827;
-    --bg-surface-elevated: #1f2937;
-    --bg-glass: rgba(17, 24, 39, 0.75);
-    --border-subtle: rgba(255, 255, 255, 0.08);
-    --border-focus: rgba(99, 102, 241, 0.5);
+    --bg-main: #0d0d0e;
+    --bg-surface: #151516;
+    --bg-surface-elevated: #1d1d1f;
+    --bg-glass: rgba(21, 21, 22, 0.86);
+    --border-subtle: rgba(255, 255, 255, 0.075);
+    --border-focus: rgba(16, 163, 127, 0.56);
 
-    --primary: #6366f1;
-    --primary-hover: #4f46e5;
-    --primary-light: rgba(99, 102, 241, 0.15);
-    --primary-gradient: linear-gradient(135deg, #6366f1 0%, #38bdf8 100%);
+    --primary: #10a37f;
+    --primary-hover: #0c8b6b;
+    --primary-light: rgba(16, 163, 127, 0.14);
+    --primary-gradient: linear-gradient(135deg, #10a37f 0%, #087a60 100%);
 
-    --accent-sky: #38bdf8;
-    --accent-emerald: #10b981;
-    --accent-rose: #f43f5e;
-    --accent-amber: #f59e0b;
-    --accent-purple: #a855f7;
+    --accent-sky: #86cdbd;
+    --accent-emerald: #20c997;
+    --accent-rose: #f26d78;
+    --accent-amber: #dfaf62;
+    --accent-purple: #b3a5ef;
 
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --text-faint: #64748b;
+    --text-main: #f3f4f2;
+    --text-muted: #b0b4b1;
+    --text-faint: #777c79;
 
     --radius-sm: 8px;
     --radius-md: 12px;
@@ -35,7 +35,7 @@
 
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
-    --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.35);
+    --shadow-glow: 0 0 20px rgba(16, 163, 127, 0.22);
 
     --transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -85,8 +85,8 @@ input, textarea, select {
     max-width: 100%;
     overflow: hidden;
     overflow-x: hidden;
-    background: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(56, 189, 248, 0.06) 0%, transparent 40%),
+    background: radial-gradient(circle at 12% 15%, rgba(16, 163, 127, 0.07) 0%, transparent 34%),
+                radial-gradient(circle at 88% 86%, rgba(255, 255, 255, 0.025) 0%, transparent 36%),
                 var(--bg-main);
 }
 
@@ -142,14 +142,15 @@ input, textarea, select {
 .logo-icon {
     width: 42px;
     height: 42px;
-    background: var(--primary-gradient);
+    background: #202123;
+    border: 1px solid rgba(255, 255, 255, 0.09);
     border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
     color: #fff;
     font-size: 1.25rem;
-    box-shadow: var(--shadow-glow);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
 .logo-text h2 {
@@ -157,21 +158,7 @@ input, textarea, select {
     font-weight: 800;
     letter-spacing: -0.5px;
     line-height: 1.1;
-    background: linear-gradient(to right, #ffffff, #cbd5e1);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-.badge {
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 2px 7px;
-    border-radius: 20px;
-    background: var(--primary-light);
-    color: var(--primary);
-    border: 1px solid rgba(99, 102, 241, 0.3);
+    color: var(--text-main);
 }
 
 .mobile-close-btn {
@@ -182,20 +169,36 @@ input, textarea, select {
 
 /* Xotira vidjeti (Storage Widget) */
 .storage-widget {
-    margin: 16px 16px 8px;
-    padding: 14px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md);
+    margin: 14px 16px 10px;
+    padding: 11px 12px;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.055);
+    border-radius: 10px;
 }
 
 .storage-header {
     display: flex;
     justify-content: space-between;
-    font-size: 0.8rem;
+    font-size: 0.76rem;
     font-weight: 600;
     color: var(--text-muted);
-    margin-bottom: 8px;
+    margin-bottom: 7px;
+}
+
+.storage-usage {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-muted);
+}
+
+.storage-usage i,
+#storagePercentText {
+    color: var(--primary);
+}
+
+.storage-separator {
+    color: var(--text-faint);
 }
 
 .progress-bar-bg {
@@ -213,25 +216,21 @@ input, textarea, select {
     transition: width 0.4s ease;
 }
 
-.storage-footer {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.75rem;
-    color: var(--text-faint);
-    margin-top: 6px;
-}
-
 /* Sidebar Navigatsiya */
 .sidebar-section {
-    padding: 12px 16px;
+    padding: 10px 16px;
 }
 
-.section-title {
+.section-title,
+.tree-heading > span {
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.8px;
     color: var(--text-faint);
+}
+
+.section-title {
     margin-bottom: 8px;
     padding-left: 6px;
 }
@@ -262,7 +261,7 @@ input, textarea, select {
 
 .nav-item.active {
     background: var(--primary-light);
-    color: #fff;
+    color: var(--text-main);
     font-weight: 600;
 }
 
@@ -276,9 +275,16 @@ input, textarea, select {
     margin-left: auto;
     font-size: 0.75rem;
     color: var(--text-faint);
-    background: rgba(255, 255, 255, 0.06);
-    padding: 1px 8px;
-    border-radius: 12px;
+    padding: 1px 4px;
+}
+
+.nav-item:not(.active) i {
+    color: var(--text-faint) !important;
+}
+
+.nav-item.active i,
+.nav-item.active .count {
+    color: var(--primary) !important;
 }
 
 /* Papkalar daraxti (Folder Tree) */
@@ -287,6 +293,27 @@ input, textarea, select {
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--border-subtle) transparent;
+}
+
+.tree-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 26px;
+    margin-bottom: 2px;
+    padding-left: 6px;
+}
+
+.tree-refresh-btn {
+    width: 26px;
+    height: 26px;
+    color: var(--text-faint);
+    border-radius: 7px;
+}
+
+.tree-refresh-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-main);
 }
 
 .folder-tree-container {
@@ -321,8 +348,8 @@ input, textarea, select {
 }
 
 .tree-node-content.active {
-    background: rgba(99, 102, 241, 0.12);
-    color: var(--accent-sky);
+    background: var(--primary-light);
+    color: var(--primary);
     font-weight: 600;
 }
 
@@ -338,50 +365,8 @@ input, textarea, select {
     border-top: 1px solid var(--border-subtle);
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     background: rgba(0, 0, 0, 0.2);
-}
-
-.user-profile-compact {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.user-avatar {
-    position: relative;
-    width: 38px;
-    height: 38px;
-    background: rgba(99, 102, 241, 0.2);
-    border: 1px solid rgba(99, 102, 241, 0.4);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--primary);
-    font-size: 1rem;
-}
-
-.online-dot {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 10px;
-    height: 10px;
-    background: var(--accent-emerald);
-    border: 2px solid var(--bg-surface);
-    border-radius: 50%;
-}
-
-.user-info .user-name {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--text-main);
-}
-
-.user-info .user-role {
-    font-size: 0.72rem;
-    color: var(--text-faint);
 }
 
 .logout-btn {
@@ -484,7 +469,7 @@ input, textarea, select {
 .search-box input:focus {
     background: rgba(255, 255, 255, 0.07);
     border-color: var(--border-focus);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.12);
 }
 
 .clear-search-btn {
@@ -516,14 +501,15 @@ input, textarea, select {
 }
 
 .btn-primary {
-    background: var(--primary-gradient);
+    background: var(--primary);
     color: #fff;
-    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 4px 14px rgba(16, 163, 127, 0.2);
 }
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+    background: var(--primary-hover);
+    box-shadow: 0 6px 20px rgba(16, 163, 127, 0.28);
 }
 
 .btn-secondary {
@@ -577,7 +563,7 @@ input, textarea, select {
 /* Breadcrumbs Navigatsiyasi */
 .breadcrumbs-container {
     padding: 12px 24px;
-    background: rgba(17, 24, 39, 0.4);
+    background: rgba(21, 21, 22, 0.55);
     border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -613,7 +599,7 @@ input, textarea, select {
 }
 
 .breadcrumb-item.active {
-    color: var(--accent-sky);
+    color: var(--primary);
     font-weight: 600;
 }
 
@@ -650,6 +636,25 @@ input, textarea, select {
     gap: 8px;
 }
 
+.section-header h3 i {
+    color: var(--primary);
+}
+
+.section-count {
+    min-width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 7px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.055);
+    color: var(--text-muted);
+    font-size: 0.73rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
 /* --- 6. PAPKALAR GRIDI (FOLDERS GRID) --- */
 .folders-grid {
     display: grid;
@@ -674,7 +679,7 @@ input, textarea, select {
 
 .folder-card:hover {
     background: var(--bg-surface-elevated);
-    border-color: rgba(99, 102, 241, 0.3);
+    border-color: rgba(16, 163, 127, 0.32);
     transform: translateY(-2px);
     box-shadow: var(--shadow-sm);
 }
@@ -746,7 +751,7 @@ input, textarea, select {
     position: absolute;
     right: 0;
     top: 32px;
-    background: #182234;
+    background: #202022;
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-sm);
     box-shadow: var(--shadow-md);
@@ -809,7 +814,7 @@ input, textarea, select {
 
 .file-card:hover {
     background: var(--bg-surface-elevated);
-    border-color: rgba(56, 189, 248, 0.3);
+    border-color: rgba(16, 163, 127, 0.26);
     transform: translateY(-2px);
     box-shadow: var(--shadow-sm);
 }
@@ -822,12 +827,12 @@ input, textarea, select {
 }
 
 .files-container.grid-mode .file-card .dropdown-trigger {
-    background: rgba(15, 23, 42, 0.65);
+    background: rgba(19, 19, 20, 0.72);
     backdrop-filter: blur(4px);
 }
 
 .files-container.grid-mode .file-card .dropdown-trigger:hover {
-    background: rgba(15, 23, 42, 0.9);
+    background: rgba(30, 30, 32, 0.96);
     color: #fff;
 }
 
@@ -1120,7 +1125,7 @@ input, textarea, select {
 .form-group select:focus {
     background: rgba(255, 255, 255, 0.08);
     border-color: var(--border-focus);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.12);
 }
 
 .emoji-picker-row {
@@ -1162,7 +1167,7 @@ input, textarea, select {
 
 .upload-dropzone.dragover {
     border-color: var(--primary);
-    background: rgba(99, 102, 241, 0.08);
+    background: rgba(16, 163, 127, 0.08);
 }
 
 .upload-icon {
@@ -1266,7 +1271,7 @@ input, textarea, select {
     align-items: center;
     gap: 12px;
     padding: 12px 18px;
-    background: #1e293b;
+    background: #202022;
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
     color: #fff;
@@ -1297,15 +1302,11 @@ input, textarea, select {
     to { opacity: 1; transform: translateX(0); }
 }
 
-/* Yordamchi rang sinflari */
-.text-indigo { color: #818cf8 !important; }
-.text-emerald { color: #34d399 !important; }
-.text-rose { color: #fb7185 !important; }
-.text-amber { color: #fbbf24 !important; }
-.text-purple { color: #c084fc !important; }
-.text-sky { color: #38bdf8 !important; }
-.flex-between { display: flex; align-items: center; justify-content: space-between; }
-
+/* Ranglar faqat holat va fayl turini farqlash uchun ishlatiladi. */
+.text-indigo, .text-purple, .text-sky { color: var(--text-muted) !important; }
+.text-emerald { color: var(--primary) !important; }
+.text-rose { color: var(--accent-rose) !important; }
+.text-amber { color: var(--accent-amber) !important; }
 /* ==========================================================================
    11. RESPONSIVE DIZAYN (MOBIL VA PLANSHET MOSLASHUVCHANLIGI)
    Standart: MY_SCILL/preferences/websites.md

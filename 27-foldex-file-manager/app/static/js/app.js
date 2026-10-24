@@ -280,9 +280,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
+    // Sarlavhadagi son faqat tegishli kontent miqdorini bildiradi.
+    function setSectionCount(element, count, unit) {
+        element.textContent = String(count);
+        element.setAttribute("aria-label", `${count} ta ${unit}`);
+        element.title = `${count} ta ${unit}`;
+    }
+
     // 10. Papkalar kartalarini chizish
     function renderFolders(folders) {
-        elements.subfoldersBadge.innerText = `${folders.length} ta`;
+        setSectionCount(elements.subfoldersBadge, folders.length, "papka");
         elements.foldersGrid.innerHTML = "";
 
         if (folders.length === 0) {
@@ -425,7 +432,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // 12. Fayllar kartalari/ro'yxatini chizish
     function renderFiles(files) {
-        elements.filesBadge.innerText = `${files.length} ta`;
+        setSectionCount(elements.filesBadge, files.length, "fayl");
         elements.filesContainer.innerHTML = "";
 
         if (files.length === 0 && state.subfolders.length === 0) {
