@@ -295,12 +295,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         folders.forEach(folder => {
             const card = document.createElement("div");
             card.className = "folder-card";
+            // API bevosita ichidagi fayl va ichki papkalar sonini qaytaradi.
+            const filesCount = folder.files_count ?? 0;
+            const subfoldersCount = folder.subfolders_count ?? 0;
 
             card.innerHTML = `
                 <div class="folder-card-icon">${folder.icon || "📁"}</div>
                 <div class="folder-card-info">
                     <div class="folder-card-name" title="${folder.name}">${folder.name}</div>
-                    <div class="folder-card-meta">${folder.files_count} ta fayl</div>
+                    <div class="folder-card-meta">${filesCount} ta fayl · ${subfoldersCount} ta papka</div>
                 </div>
                 <div class="card-actions-dropdown">
                     <button class="dropdown-trigger" title="Amallar"><i class="fa-solid fa-ellipsis-vertical"></i></button>
