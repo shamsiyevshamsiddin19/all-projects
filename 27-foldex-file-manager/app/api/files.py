@@ -28,11 +28,14 @@ async def list_files(
     folder_id: Optional[int] = Query(None, description="Papka ID si"),
     search: Optional[str] = Query(None, description="Qidiruv so'zi"),
     file_type: Optional[str] = Query(None, description="Fayl turi filtri (photo, video, document, etc.)"),
+    scope: Optional[str] = Query(None, description="all bo'lsa barcha papkalardagi fayllarni qidiradi"),
     admin_id: int = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db)
 ):
     """Tanlangan papkadagi fayllar ro'yxatini filtrlar bilan qaytaradi."""
-    if search and folder_id is None:
+    if scope == "all":
+        files = await FileService.get_all_files(db, search, file_type)
+    elif search and folder_id is None:
         # Butun baza bo'ylab global qidiruv
         files = await FileService.search_all_files(db, search)
     else:

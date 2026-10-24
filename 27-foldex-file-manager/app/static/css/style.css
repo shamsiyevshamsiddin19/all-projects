@@ -271,19 +271,11 @@ input, textarea, select {
     text-align: center;
 }
 
-.nav-item .count {
-    margin-left: auto;
-    font-size: 0.75rem;
-    color: var(--text-faint);
-    padding: 1px 4px;
-}
-
 .nav-item:not(.active) i {
     color: var(--text-faint) !important;
 }
 
-.nav-item.active i,
-.nav-item.active .count {
+.nav-item.active i {
     color: var(--primary) !important;
 }
 
@@ -640,21 +632,6 @@ input, textarea, select {
     color: var(--primary);
 }
 
-.section-count {
-    min-width: 22px;
-    height: 22px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 7px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.055);
-    color: var(--text-muted);
-    font-size: 0.73rem;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-}
-
 /* --- 6. PAPKALAR GRIDI (FOLDERS GRID) --- */
 .folders-grid {
     display: grid;
@@ -713,15 +690,7 @@ input, textarea, select {
     text-overflow: ellipsis;
     display: block;
     width: 100%;
-    margin-bottom: 3px;
-}
-
-.folder-card-meta {
-    font-size: 0.74rem;
-    color: var(--text-faint);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    margin-bottom: 0;
 }
 
 .card-actions-dropdown {
@@ -1408,15 +1377,6 @@ input, textarea, select {
         font-size: 0.82rem;
         line-height: 1.25;
         margin-bottom: 2px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        width: 100%;
-        display: block;
-    }
-
-    .folder-card-meta {
-        font-size: 0.68rem;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;

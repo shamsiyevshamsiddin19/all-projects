@@ -126,6 +126,14 @@ async def test_file_upload_list_delete(client: AsyncClient, admin_headers: dict)
     assert file_info["name"] == "test_doc.txt"
     assert file_info["file_size"] == len(file_content)
 
+    # Toifalar butun saytdagi fayllarni, qaysi papkada bo'lishidan qat'i nazar, qaytaradi.
+    global_docs_res = await client.get(
+        "/api/files/?scope=all&file_type=document",
+        headers=admin_headers,
+    )
+    assert global_docs_res.status_code == 200
+    assert any(item["id"] == file_id for item in global_docs_res.json()["items"])
+
     # List files in folder
     list_res = await client.get(f"/api/files/?folder_id={f_id}", headers=admin_headers)
     assert list_res.status_code == 200

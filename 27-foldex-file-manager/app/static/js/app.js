@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         currentFolderId: null,
         currentFolderName: "Bosh sahifa",
         activeFilter: "all",
+        globalFileView: false,
         searchQuery: "",
         viewMode: localStorage.getItem("foldex_view_mode") || "grid",
         subfolders: [],
@@ -41,10 +42,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         breadcrumbsNav: document.getElementById("breadcrumbsNav"),
         foldersSection: document.getElementById("foldersSection"),
         foldersGrid: document.getElementById("foldersGrid"),
-        subfoldersBadge: document.getElementById("subfoldersBadge"),
         filesSection: document.getElementById("filesSection"),
         filesContainer: document.getElementById("filesContainer"),
-        filesBadge: document.getElementById("filesBadge"),
         emptyState: document.getElementById("emptyState"),
         folderTreeContainer: document.getElementById("folderTreeContainer"),
         treeRefreshBtn: document.getElementById("treeRefreshBtn"),
@@ -54,12 +53,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         storageProgressBar: document.getElementById("storageProgressBar"),
         storageUsedText: document.getElementById("storageUsedText"),
         storageTotalText: document.getElementById("storageTotalText"),
-        countAll: document.getElementById("countAll"),
-        countDocs: document.getElementById("countDocs"),
-        countPhotos: document.getElementById("countPhotos"),
-        countVideos: document.getElementById("countVideos"),
-        countAudio: document.getElementById("countAudio"),
-        countArchives: document.getElementById("countArchives"),
         toastContainer: document.getElementById("toastContainer")
     };
 
@@ -126,12 +119,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             elements.storageUsedText.innerText = data.total_size_formatted;
             elements.storageTotalText.innerText = data.storage_limit_formatted;
 
-            elements.countAll.innerText = data.total_files;
-            elements.countDocs.innerText = data.categories.document || 0;
-            elements.countPhotos.innerText = data.categories.photo || 0;
-            elements.countVideos.innerText = data.categories.video || 0;
-            elements.countAudio.innerText = data.categories.audio || 0;
-            elements.countArchives.innerText = data.categories.archive || 0;
         } catch (e) {
             console.error("Dashboard stats error:", e);
         }
@@ -207,6 +194,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // 8. Joriy papkani yuklash (Load Folder Contents)
     async function navigateToFolder(folderId) {
+        // Papka bo'ylab yurish doimo shu papkaning o'z mazmunini ko'rsatadi.
+        if (state.globalFileView) {
+            state.globalFileView = false;
+            state.activeFilter = "all";
+            document.querySelectorAll(".nav-item").forEach(item => {
+                item.classList.toggle("active", item.getAttribute("data-type") === "all");
+            });
+        }
         state.currentFolderId = folderId;
 
         // Qidiruvni tozalash
@@ -280,16 +275,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    // Sarlavhadagi son faqat tegishli kontent miqdorini bildiradi.
-    function setSectionCount(element, count, unit) {
-        element.textContent = String(count);
-        element.setAttribute("aria-label", `${count} ta ${unit}`);
-        element.title = `${count} ta ${unit}`;
-    }
-
     // 10. Papkalar kartalarini chizish
     function renderFolders(folders) {
-        setSectionCount(elements.subfoldersBadge, folders.length, "papka");
         elements.foldersGrid.innerHTML = "";
 
         if (folders.length === 0) {
@@ -302,15 +289,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         folders.forEach(folder => {
             const card = document.createElement("div");
             card.className = "folder-card";
-            // API bevosita ichidagi fayl va ichki papkalar sonini qaytaradi.
-            const filesCount = folder.files_count ?? 0;
-            const subfoldersCount = folder.subfolders_count ?? 0;
 
             card.innerHTML = `
                 <div class="folder-card-icon">${folder.icon || "📁"}</div>
                 <div class="folder-card-info">
                     <div class="folder-card-name" title="${folder.name}">${folder.name}</div>
-                    <div class="folder-card-meta">${filesCount} ta fayl · ${subfoldersCount} ta papka</div>
                 </div>
                 <div class="card-actions-dropdown">
                     <button class="dropdown-trigger" title="Amallar"><i class="fa-solid fa-ellipsis-vertical"></i></button>
@@ -404,7 +387,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     // 11. Fayllarni yuklash (Filtirlar va qidiruv bilan)
     async function loadFiles(folderId) {
         let url = `/api/files/?`;
-        if (folderId !== null) {
+        if (state.globalFileView) {
+            url += "scope=all&";
+        } else if (folderId !== null) {
             url += `folder_id=${folderId}&`;
         }
         if (state.activeFilter && state.activeFilter !== "all") {
@@ -432,7 +417,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // 12. Fayllar kartalari/ro'yxatini chizish
     function renderFiles(files) {
-        setSectionCount(elements.filesBadge, files.length, "fayl");
         elements.filesContainer.innerHTML = "";
 
         if (files.length === 0 && state.subfolders.length === 0) {
@@ -633,7 +617,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
             item.classList.add("active");
             state.activeFilter = item.getAttribute("data-type");
-            loadFiles(state.currentFolderId);
+            state.globalFileView = true;
+            loadFiles(null);
 
             if (window.innerWidth <= 768) {
                 elements.sidebar.classList.remove("open");

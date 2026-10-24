@@ -23,7 +23,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
     <!-- Asosiy uslublar -->
-    <link rel="stylesheet" href="/static/css/style.css?v=2.3">
+    <link rel="stylesheet" href="/static/css/style.css?v=2.4">
 </head>
 <body class="dark-theme">
 
@@ -65,32 +65,26 @@
                     <button class="nav-item active" data-type="all">
                         <i class="fa-solid fa-boxes-stacked"></i>
                         <span>Barcha fayllar</span>
-                        <span class="count" id="countAll">0</span>
                     </button>
                     <button class="nav-item" data-type="document">
                         <i class="fa-solid fa-file-lines text-indigo"></i>
                         <span>Hujjatlar</span>
-                        <span class="count" id="countDocs">0</span>
                     </button>
                     <button class="nav-item" data-type="photo">
                         <i class="fa-solid fa-image text-emerald"></i>
                         <span>Rasmlar</span>
-                        <span class="count" id="countPhotos">0</span>
                     </button>
                     <button class="nav-item" data-type="video">
                         <i class="fa-solid fa-video text-rose"></i>
                         <span>Videolar</span>
-                        <span class="count" id="countVideos">0</span>
                     </button>
                     <button class="nav-item" data-type="audio">
                         <i class="fa-solid fa-music text-amber"></i>
                         <span>Audiolar</span>
-                        <span class="count" id="countAudio">0</span>
                     </button>
                     <button class="nav-item" data-type="archive">
                         <i class="fa-solid fa-file-zipper text-purple"></i>
                         <span>Arxivlar</span>
-                        <span class="count" id="countArchives">0</span>
                     </button>
                 </nav>
             </div>
@@ -189,7 +183,6 @@
                 <section class="content-section" id="foldersSection">
                     <div class="section-header">
                         <h3><i class="fa-solid fa-folder" aria-hidden="true"></i> Papkalar</h3>
-                        <span class="section-count" id="subfoldersBadge" aria-live="polite" aria-label="0 ta papka">0</span>
                     </div>
                     <div class="folders-grid" id="foldersGrid">
                         <!-- Papkalar kartalari dinamik qo'shiladi -->
@@ -200,7 +193,6 @@
                 <section class="content-section" id="filesSection">
                     <div class="section-header">
                         <h3><i class="fa-solid fa-file" aria-hidden="true"></i> Fayllar</h3>
-                        <span class="section-count" id="filesBadge" aria-live="polite" aria-label="0 ta fayl">0</span>
                     </div>
                     <div class="files-container grid-mode" id="filesContainer">
                         <!-- Fayllar kartalari dinamik qo'shiladi -->
@@ -394,6 +386,6 @@
 
     <!-- Skriptlar -->
     <script src="/static/js/auth.js?v=2.2"></script>
-    <script src="/static/js/app.js?v=2.4"></script>
+    <script src="/static/js/app.js?v=2.5"></script>
 </body>
 </html>
