@@ -105,6 +105,31 @@ class FileService:
         return list(res.scalars().all())
 
     @staticmethod
+    async def get_all_files(
+        db: AsyncSession,
+        search: Optional[str] = None,
+        file_type: Optional[str] = None
+    ) -> List[FileItem]:
+        """Papka joylashuvidan qat'i nazar barcha fayllarni filtrlab qaytaradi."""
+        stmt = select(FileItem)
+
+        if search and search.strip():
+            query = search.strip()
+            stmt = stmt.where(
+                or_(
+                    FileItem.name.ilike(f"%{query}%"),
+                    FileItem.description.ilike(f"%{query}%")
+                )
+            )
+
+        if file_type and file_type != "all":
+            stmt = stmt.where(FileItem.file_type == file_type)
+
+        stmt = stmt.order_by(FileItem.created_at.desc())
+        res = await db.execute(stmt)
+        return list(res.scalars().all())
+
+    @staticmethod
     async def search_all_files(db: AsyncSession, query: str) -> List[FileItem]:
         """Barcha papkalar bo'yicha global qidiruv."""
         stmt = (
