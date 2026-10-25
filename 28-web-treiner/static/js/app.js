@@ -270,7 +270,7 @@ function render() {
               </div>
               <span class="exercise-count">${String(exercises.length).padStart(2, "0")} mashq</span>
             </div>
-            ${exercises.length ? `<div class="exercise-grid">${exercises.map(exerciseCard).join("")}</div>` : '<p class="empty-state">Bu yo'nalishda hozircha mashq yo'q.</p>'}
+            ${exercises.length ? `<div class="exercise-grid">${exercises.map(exerciseCard).join("")}</div>` : "<p class=\"empty-state\">Bu yo'nalishda hozircha mashq yo'q.</p>"}
             ${current ? practicePanel(current) : ""}
           </section>
         </div>
@@ -435,7 +435,7 @@ async function initialize() {
     loadCompleted();
     render();
   } catch {
-    appRoot.innerHTML = '<div class="app-shell"><div class="error-state">Mashqlarni yuklab bo'lmadi. Sahifani yangilab ko'ring.</div></div>';
+    appRoot.innerHTML = "<div class=\"app-shell\"><div class=\"error-state\">Mashqlarni yuklab bo'lmadi. Sahifani yangilab ko'ring.</div></div>";
   }
 }
 
