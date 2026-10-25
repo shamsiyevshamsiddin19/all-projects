@@ -226,40 +226,16 @@ function render() {
   const exercises = filteredExercises();
   const current = activeExercise();
   const title = state.activeTrack === "all" ? "Mashqlar" : trackFor(state.activeTrack)?.title || "Mashqlar";
-  const completed = state.completed.size;
-  const progress = state.exercises.length ? Math.round((completed / state.exercises.length) * 100) : 0;
 
   appRoot.innerHTML = `
     <div class="app-shell">
       <header class="topbar">
-        <div class="topbar-main">
-          <a class="wordmark" href="/" aria-label="Bosh sahifa">train<span class="wordmark-dot">.</span></a>
-          <div class="topbar-status"><span class="status-pulse"></span>Mustaqil mashq</div>
-        </div>
         <nav class="top-trackbar" aria-label="Yo'nalishlar">${topTrackButtons()}</nav>
       </header>
       <main id="main-content">
-        <section class="hero" aria-labelledby="page-title">
-          <div>
-            <p class="eyebrow">Har kuni aniq mashq</p>
-            <h1 id="page-title">Diqqatni mashqqa yo'naltiring.</h1>
-            <p class="hero-copy">Til va backend ko'nikmalarini qisqa sikllarda mustahkamlang. Bir mashq, bitta maqsad, aniq natija.</p>
-          </div>
-          <div class="daily-card" aria-label="Bugungi bajarilish holati">
-            <div>
-              <p class="daily-card-kicker">Bugungi natija</p>
-              <strong>${completed} ta mashq bajarildi</strong>
-              <p>Natija shu brauzerda saqlanadi.</p>
-            </div>
-            <div class="progress-ring" style="--progress: ${progress}%"><span>${progress}%</span></div>
-          </div>
-        </section>
         <section class="exercise-zone" aria-labelledby="exercise-list-title">
           <div class="section-heading">
-            <div>
-              <p class="section-kicker">Tanlang va boshlang</p>
-              <h2 id="exercise-list-title">${escapeHtml(title)}</h2>
-            </div>
+            <h1 id="exercise-list-title">${escapeHtml(title)}</h1>
             <span class="exercise-count">${String(exercises.length).padStart(2, "0")} mashq</span>
           </div>
           ${exercises.length ? `<div class="exercise-grid">${exercises.map(exerciseCard).join("")}</div>` : "<p class=\"empty-state\">Bu yo'nalishda hozircha mashq yo'q.</p>"}
