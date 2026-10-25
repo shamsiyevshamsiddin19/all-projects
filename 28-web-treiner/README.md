@@ -28,11 +28,6 @@ Yangi, mutlaqo boshqa tur kerak bo'lsa `ExerciseKind` ga tur qo'shiladi va `stat
 
 ## Production va AWS EC2
 
-`deploy/Caddyfile` `train.shamsiyev.uz` uchun HTTPS sertifikatini avtomatik olishga tayyor. EC2 instansga Docker va Docker Compose o'rnatilgach, DNS'dagi `train.shamsiyev.uz` A yozuvini instansning ommaviy IP manziliga yo'naltiring, so'ng:
+AWS serverda ilova `/opt/train-shamsiyev-uz` ichida ishlaydi. `deploy/systemd/train-shamsiyev-uz.service` FastAPI jarayonini faqat ichki `8011` portida ishga tushiradi, `deploy/nginx/train.shamsiyev.uz.conf` esa domen so'rovlarini unga uzatadi. Nginx statik fayllarni to'g'ridan-to'g'ri beradi.
 
-```bash
-cp .env.example .env
-docker compose -f docker-compose.production.yml up -d --build
-```
-
-Caddy 80 va 443 portlarini qabul qiladi, FastAPI esa faqat ichki Docker tarmog'ida `8000` portida ishlaydi. `.env` faylida maxfiy ma'lumot bo'lmaydi; u faqat ish muhiti sozlamalari uchun ajratilgan.
+DNS'da `train.shamsiyev.uz` A yozuvi AWS server IP manziliga yo'naltirilgandan so'ng, Let's Encrypt sertifikati Nginx orqali olinadi. `.env` Git'dan chetda qoladi va faqat ish muhiti sozlamalarini saqlaydi.

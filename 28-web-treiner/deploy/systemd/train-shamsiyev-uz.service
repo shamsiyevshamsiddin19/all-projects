@@ -1,0 +1,19 @@
+[Unit]
+Description=train.shamsiyev.uz FastAPI service
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=www-data
+WorkingDirectory=/opt/train-shamsiyev-uz
+EnvironmentFile=/opt/train-shamsiyev-uz/.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/train-shamsiyev-uz/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8011 --proxy-headers
+Restart=always
+RestartSec=4
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
