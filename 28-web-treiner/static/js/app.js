@@ -87,22 +87,18 @@ function saveCompleted() {
   localStorage.setItem(storageKey, JSON.stringify([...state.completed]));
 }
 
-function trackButtons() {
+function topTrackButtons() {
   const allButton = {
     id: "all",
-    title: "Barcha mashqlar",
-    description: "Barcha yo'nalishlar",
+    title: "Barchasi",
     accent: "",
   };
   return [allButton, ...state.tracks]
     .map(
       (track) => `
-        <button class="track-button ${state.activeTrack === track.id ? "active" : ""}" data-action="select-track" data-track="${track.id}" type="button">
-          <span class="track-marker ${track.accent || ""}"></span>
-          <span>
-            <span class="track-name">${escapeHtml(track.title)}</span>
-            <span class="track-caption">${escapeHtml(track.description)}</span>
-          </span>
+        <button class="top-track-button ${state.activeTrack === track.id ? "active" : ""}" data-action="select-track" data-track="${track.id}" type="button">
+          <span class="top-track-marker ${track.accent || ""}"></span>
+          <span class="top-track-label">${escapeHtml(track.title)}</span>
         </button>
       `,
     )
@@ -236,8 +232,11 @@ function render() {
   appRoot.innerHTML = `
     <div class="app-shell">
       <header class="topbar">
-        <a class="wordmark" href="/" aria-label="Bosh sahifa">train<span class="wordmark-dot">.</span></a>
-        <div class="topbar-status"><span class="status-pulse"></span>Mustaqil mashq</div>
+        <div class="topbar-main">
+          <a class="wordmark" href="/" aria-label="Bosh sahifa">train<span class="wordmark-dot">.</span></a>
+          <div class="topbar-status"><span class="status-pulse"></span>Mustaqil mashq</div>
+        </div>
+        <nav class="top-trackbar" aria-label="Yo'nalishlar">${topTrackButtons()}</nav>
       </header>
       <main id="main-content">
         <section class="hero" aria-labelledby="page-title">
@@ -255,25 +254,17 @@ function render() {
             <div class="progress-ring" style="--progress: ${progress}%"><span>${progress}%</span></div>
           </div>
         </section>
-        <div class="workspace">
-          <aside class="track-panel" aria-label="Yo'nalishlar">
-            <p class="section-kicker">Yo'nalishlar</p>
-            <nav class="track-list">${trackButtons()}</nav>
-            <div class="track-divider"></div>
-            <p class="method-note">Qisqa siklni tugating, keyin keyingi mashqqa o'ting. Tezlikdan oldin aniqlik muhim.</p>
-          </aside>
-          <section class="exercise-zone" aria-labelledby="exercise-list-title">
-            <div class="section-heading">
-              <div>
-                <p class="section-kicker">Tanlang va boshlang</p>
-                <h2 id="exercise-list-title">${escapeHtml(title)}</h2>
-              </div>
-              <span class="exercise-count">${String(exercises.length).padStart(2, "0")} mashq</span>
+        <section class="exercise-zone" aria-labelledby="exercise-list-title">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Tanlang va boshlang</p>
+              <h2 id="exercise-list-title">${escapeHtml(title)}</h2>
             </div>
-            ${exercises.length ? `<div class="exercise-grid">${exercises.map(exerciseCard).join("")}</div>` : "<p class=\"empty-state\">Bu yo'nalishda hozircha mashq yo'q.</p>"}
-            ${current ? practicePanel(current) : ""}
-          </section>
-        </div>
+            <span class="exercise-count">${String(exercises.length).padStart(2, "0")} mashq</span>
+          </div>
+          ${exercises.length ? `<div class="exercise-grid">${exercises.map(exerciseCard).join("")}</div>` : "<p class=\"empty-state\">Bu yo'nalishda hozircha mashq yo'q.</p>"}
+          ${current ? practicePanel(current) : ""}
+        </section>
       </main>
     </div>
   `;
