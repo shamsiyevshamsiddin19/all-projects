@@ -1,0 +1,2 @@
+"""train.shamsiyev.uz ilovasi."""
+

@@ -1,0 +1,2 @@
+"""Kengaytiriladigan mashqlar katalogi."""
+
