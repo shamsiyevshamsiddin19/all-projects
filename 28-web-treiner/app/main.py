@@ -39,7 +39,18 @@ app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="stat
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 async def home(request: Request) -> HTMLResponse:
-    """Mashqlar ilovasining yagona, tez yuklanuvchi interfeysini qaytaradi."""
+    """Mashqlar katalogining bosh sahifasini qaytaradi."""
 
     return templates.TemplateResponse(request=request, name="index.html", context={"host": settings.app_host})
 
+
+@app.get("/mashq/{exercise_id}", response_class=HTMLResponse, include_in_schema=False)
+async def exercise_page(request: Request, exercise_id: str) -> HTMLResponse:
+    """Mashq uchun alohida, to'g'ridan-to'g'ri ochiladigan sahifani qaytaradi."""
+
+    exercise = get_catalog().exercise(exercise_id).public()
+    return templates.TemplateResponse(
+        request=request,
+        name="exercise.html",
+        context={"host": settings.app_host, "exercise": exercise},
+    )

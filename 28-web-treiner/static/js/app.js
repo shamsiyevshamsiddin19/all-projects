@@ -1,5 +1,6 @@
 const appRoot = document.querySelector("#app");
 const storageKey = "train.shamsiyev.uz.completed.v1";
+const isExercisePage = appRoot.dataset.page === "exercise";
 
 const state = {
   tracks: [],
@@ -24,7 +25,9 @@ const icons = {
   play:
     '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 10 7-10 7V5Z"></path></svg>',
   arrow:
-    '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M14 7l5 5-5 5"></path></svg>',
+    '<svg class="icon icon-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M14 7l5 5-5 5"></path></svg>',
+  back:
+    '<svg class="icon icon-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H6M10 7l-5 5 5 5"></path></svg>',
 };
 
 function escapeHtml(value = "") {
@@ -45,10 +48,12 @@ function activeExercise() {
 }
 
 function filteredExercises() {
-  if (state.activeTrack === "all") {
-    return state.exercises;
-  }
+  if (state.activeTrack === "all") return state.exercises;
   return state.exercises.filter((exercise) => exercise.track_id === state.activeTrack);
+}
+
+function exerciseUrl(exerciseId) {
+  return `/mashq/${encodeURIComponent(exerciseId)}`;
 }
 
 function typeLabel(kind) {
@@ -75,9 +80,7 @@ function formatTimer(seconds) {
 function loadCompleted() {
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey) || "[]");
-    if (Array.isArray(saved)) {
-      state.completed = new Set(saved);
-    }
+    if (Array.isArray(saved)) state.completed = new Set(saved);
   } catch {
     state.completed = new Set();
   }
@@ -88,15 +91,11 @@ function saveCompleted() {
 }
 
 function topTrackButtons() {
-  const allButton = {
-    id: "all",
-    title: "Barchasi",
-    accent: "",
-  };
+  const allButton = { id: "all", title: "Barchasi", accent: "" };
   return [allButton, ...state.tracks]
     .map(
       (track) => `
-        <button class="top-track-button ${state.activeTrack === track.id ? "active" : ""}" data-action="select-track" data-track="${track.id}" type="button">
+        <button class="top-track-button ${state.activeTrack === track.id ? "active" : ""}" data-action="select-track" data-track="${track.id}" type="button" aria-pressed="${state.activeTrack === track.id}">
           <span class="top-track-marker ${track.accent || ""}"></span>
           <span class="top-track-label">${escapeHtml(track.title)}</span>
         </button>
@@ -108,20 +107,20 @@ function topTrackButtons() {
 function exerciseCard(exercise, index) {
   const track = trackFor(exercise.track_id);
   const accent = track?.accent || "mint";
-  const isCompleted = state.completed.has(exercise.id);
+  const completed = state.completed.has(exercise.id);
   return `
-    <button class="exercise-card ${exercise.id === state.activeId ? "active" : ""}" data-action="open-exercise" data-exercise="${exercise.id}" type="button">
+    <a class="exercise-card" href="${exerciseUrl(exercise.id)}">
       <span class="card-topline">
         <span class="exercise-number">${String(index + 1).padStart(2, "0")}</span>
         <span class="exercise-kind-icon ${accent}">${typeIcon(exercise.kind)}</span>
       </span>
-      <h3>${escapeHtml(exercise.title)}</h3>
+      <h2>${escapeHtml(exercise.title)}</h2>
       <p>${escapeHtml(exercise.description)}</p>
       <span class="card-meta">
         <span>${exercise.duration_minutes} daqiqa</span>
-        <span>${isCompleted ? '<span class="completed-mark">Bajarildi</span>' : escapeHtml(typeLabel(exercise.kind))}</span>
+        <span class="card-action">${completed ? "Bajarildi" : "Ochish"} ${icons.arrow}</span>
       </span>
-    </button>
+    </a>
   `;
 }
 
@@ -191,27 +190,29 @@ function practiceBody(exercise) {
   `;
 }
 
-function practicePanel(exercise) {
+function practicePanel(exercise, showOverview = true) {
   const remaining = state.remainingSeconds[exercise.id] ?? exercise.duration_minutes * 60;
   return `
-    <section class="practice-panel" id="practice-panel" aria-labelledby="practice-title">
+    <section class="practice-panel" id="practice-panel" aria-labelledby="${showOverview ? "practice-title" : "exercise-title"}">
       <div class="practice-content">
-        <p class="panel-kicker">${escapeHtml(typeLabel(exercise.kind))} / ${escapeHtml(exercise.level)}</p>
-        <div class="practice-title-row">
-          <h2 id="practice-title">${escapeHtml(exercise.title)}</h2>
-          <time class="timer" id="exercise-timer" datetime="PT${remaining}S">${formatTimer(remaining)}</time>
-        </div>
-        <p class="instruction">${escapeHtml(exercise.instruction)}</p>
+        ${
+          showOverview
+            ? `
+              <p class="panel-kicker">${escapeHtml(typeLabel(exercise.kind))} / ${escapeHtml(exercise.level)}</p>
+              <div class="practice-title-row">
+                <h2 id="practice-title">${escapeHtml(exercise.title)}</h2>
+                <time class="timer" id="exercise-timer" datetime="PT${remaining}S">${formatTimer(remaining)}</time>
+              </div>
+              <p class="instruction">${escapeHtml(exercise.instruction)}</p>
+            `
+            : ""
+        }
         <div class="practice-body">${practiceBody(exercise)}</div>
       </div>
       <aside class="practice-aside" aria-label="Mashq yo'riqnomasi">
         <div>
           <p class="aside-description">${escapeHtml(exercise.description)}</p>
-          ${
-            exercise.hint
-              ? `<p class="hint"><strong>Diqqat nuqtasi</strong>${escapeHtml(exercise.hint)}</p>`
-              : ""
-          }
+          ${exercise.hint ? `<p class="hint"><strong>Diqqat nuqtasi</strong>${escapeHtml(exercise.hint)}</p>` : ""}
         </div>
         <button class="button button-secondary timer-start" data-action="start-timer" data-exercise="${exercise.id}" type="button">
           ${icons.play}
@@ -222,9 +223,8 @@ function practicePanel(exercise) {
   `;
 }
 
-function render() {
+function renderCatalog() {
   const exercises = filteredExercises();
-  const current = activeExercise();
   const title = state.activeTrack === "all" ? "Mashqlar" : trackFor(state.activeTrack)?.title || "Mashqlar";
 
   appRoot.innerHTML = `
@@ -238,22 +238,60 @@ function render() {
             <h1 id="exercise-list-title">${escapeHtml(title)}</h1>
             <span class="exercise-count">${String(exercises.length).padStart(2, "0")} mashq</span>
           </div>
-          ${exercises.length ? `<div class="exercise-grid">${exercises.map(exerciseCard).join("")}</div>` : "<p class=\"empty-state\">Bu yo'nalishda hozircha mashq yo'q.</p>"}
-          ${current ? practicePanel(current) : ""}
+          ${exercises.length ? `<div class="exercise-grid">${exercises.map(exerciseCard).join("")}</div>` : '<p class="empty-state">Bu yo\'nalishda hozircha mashq yo\'q.</p>'}
         </section>
       </main>
     </div>
   `;
 }
 
+function renderExercisePage() {
+  const exercise = activeExercise();
+  if (!exercise) {
+    renderError("Mashq topilmadi.");
+    return;
+  }
+
+  const track = trackFor(exercise.track_id);
+  const remaining = state.remainingSeconds[exercise.id] ?? exercise.duration_minutes * 60;
+  appRoot.innerHTML = `
+    <div class="app-shell">
+      <header class="topbar detail-topbar">
+        <a class="back-link" href="/">${icons.back}<span>Barcha mashqlar</span></a>
+        <span class="detail-track">${escapeHtml(track?.title || typeLabel(exercise.kind))}</span>
+      </header>
+      <main id="main-content">
+        <section class="exercise-zone exercise-detail-zone" aria-labelledby="exercise-title">
+          <p class="panel-kicker">${escapeHtml(typeLabel(exercise.kind))} / ${escapeHtml(exercise.level)}</p>
+          <div class="detail-title-row">
+            <h1 id="exercise-title">${escapeHtml(exercise.title)}</h1>
+            <time class="timer" id="exercise-timer" datetime="PT${remaining}S">${formatTimer(remaining)}</time>
+          </div>
+          <p class="instruction detail-instruction">${escapeHtml(exercise.instruction)}</p>
+          ${practicePanel(exercise, false)}
+        </section>
+      </main>
+    </div>
+  `;
+}
+
+function renderError(message) {
+  appRoot.innerHTML = `<div class="app-shell"><main id="main-content"><div class="error-state">${escapeHtml(message)}</div></main></div>`;
+}
+
+function renderCurrentPage() {
+  if (isExercisePage) renderExercisePage();
+  else renderCatalog();
+}
+
 function updateTimer() {
   const exercise = activeExercise();
   const timer = document.querySelector("#exercise-timer");
-  if (exercise && timer) {
-    const seconds = state.remainingSeconds[exercise.id] ?? exercise.duration_minutes * 60;
-    timer.textContent = formatTimer(seconds);
-    timer.dateTime = `PT${seconds}S`;
-  }
+  if (!exercise || !timer) return;
+
+  const seconds = state.remainingSeconds[exercise.id] ?? exercise.duration_minutes * 60;
+  timer.textContent = formatTimer(seconds);
+  timer.dateTime = `PT${seconds}S`;
 }
 
 function startTimer(exerciseId) {
@@ -269,7 +307,7 @@ function startTimer(exerciseId) {
       window.clearInterval(state.timerId);
       state.timerId = null;
       state.feedback[exerciseId] = { type: "info", message: "Sikl tugadi. Natijani tekshirib, keyingi mashqqa o'ting." };
-      render();
+      renderCurrentPage();
     }
   }, 1000);
 }
@@ -277,7 +315,7 @@ function startTimer(exerciseId) {
 function speak(exercise) {
   if (!("speechSynthesis" in window) || !exercise.audio_text) {
     state.feedback[exercise.id] = { type: "error", message: "Bu brauzerda ovozli tinglash mavjud emas." };
-    render();
+    renderCurrentPage();
     return;
   }
 
@@ -291,11 +329,8 @@ function speak(exercise) {
 function recordPronunciation(exercise) {
   const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!Recognition) {
-    state.feedback[exercise.id] = {
-      type: "error",
-      message: "Ovozli yozuv bu brauzerda yo'q. Matnni qo'lda kiriting.",
-    };
-    render();
+    state.feedback[exercise.id] = { type: "error", message: "Ovozli yozuv bu brauzerda yo'q. Matnni qo'lda kiriting." };
+    renderCurrentPage();
     return;
   }
 
@@ -304,22 +339,22 @@ function recordPronunciation(exercise) {
   recognition.interimResults = false;
   recognition.maxAlternatives = 1;
   state.recordingId = exercise.id;
-  render();
+  renderCurrentPage();
 
   recognition.onresult = (event) => {
     state.answers[exercise.id] = event.results[0][0].transcript;
     state.recordingId = null;
-    render();
+    renderCurrentPage();
   };
   recognition.onerror = () => {
     state.recordingId = null;
     state.feedback[exercise.id] = { type: "error", message: "Ovoz aniqlanmadi. Yana urinib ko'ring yoki matnni kiriting." };
-    render();
+    renderCurrentPage();
   };
   recognition.onend = () => {
     if (state.recordingId === exercise.id) {
       state.recordingId = null;
-      render();
+      renderCurrentPage();
     }
   };
   recognition.start();
@@ -329,7 +364,7 @@ async function submitAnswer(exercise) {
   const answer = state.answers[exercise.id]?.trim();
   if (!answer) {
     state.feedback[exercise.id] = { type: "info", message: "Avval javobni kiriting yoki variantni tanlang." };
-    render();
+    renderCurrentPage();
     return;
   }
 
@@ -350,7 +385,7 @@ async function submitAnswer(exercise) {
   } catch {
     state.feedback[exercise.id] = { type: "error", message: "Tekshiruvni yakunlab bo'lmadi. Ulanishni tekshiring." };
   }
-  render();
+  renderCurrentPage();
 }
 
 appRoot.addEventListener("input", (event) => {
@@ -365,23 +400,16 @@ appRoot.addEventListener("click", (event) => {
   const action = button.dataset.action;
   if (action === "select-track") {
     state.activeTrack = button.dataset.track;
-    const next = filteredExercises()[0];
-    if (next) state.activeId = next.id;
-    render();
+    renderCatalog();
     return;
   }
 
   const exercise = state.exercises.find((item) => item.id === button.dataset.exercise);
   if (!exercise) return;
 
-  if (action === "open-exercise") {
-    state.activeId = exercise.id;
-    render();
-    window.requestAnimationFrame(() => document.querySelector("#practice-panel")?.scrollIntoView({ behavior: "smooth", block: "start" }));
-  }
   if (action === "select-choice") {
     state.answers[exercise.id] = button.dataset.value;
-    render();
+    renderCurrentPage();
   }
   if (action === "submit-answer") submitAnswer(exercise);
   if (action === "start-timer") startTimer(exercise.id);
@@ -391,18 +419,27 @@ appRoot.addEventListener("click", (event) => {
 
 async function initialize() {
   try {
-    const [tracksResponse, exercisesResponse] = await Promise.all([
-      fetch("/api/tracks"),
-      fetch("/api/exercises"),
-    ]);
-    if (!tracksResponse.ok || !exercisesResponse.ok) throw new Error("catalog unavailable");
+    const tracksResponse = await fetch("/api/tracks");
+    if (!tracksResponse.ok) throw new Error("catalog unavailable");
     state.tracks = await tracksResponse.json();
-    state.exercises = await exercisesResponse.json();
-    state.activeId = state.exercises[0]?.id || null;
+
+    if (isExercisePage) {
+      const exerciseId = appRoot.dataset.exerciseId;
+      const exerciseResponse = await fetch(`/api/exercises/${encodeURIComponent(exerciseId)}`);
+      if (!exerciseResponse.ok) throw new Error("exercise unavailable");
+      const exercise = await exerciseResponse.json();
+      state.exercises = [exercise];
+      state.activeId = exercise.id;
+    } else {
+      const exercisesResponse = await fetch("/api/exercises");
+      if (!exercisesResponse.ok) throw new Error("catalog unavailable");
+      state.exercises = await exercisesResponse.json();
+    }
+
     loadCompleted();
-    render();
+    renderCurrentPage();
   } catch {
-    appRoot.innerHTML = "<div class=\"app-shell\"><div class=\"error-state\">Mashqlarni yuklab bo'lmadi. Sahifani yangilab ko'ring.</div></div>";
+    renderError(isExercisePage ? "Mashqni yuklab bo'lmadi. Sahifani yangilab ko'ring." : "Mashqlarni yuklab bo'lmadi. Sahifani yangilab ko'ring.");
   }
 }
 

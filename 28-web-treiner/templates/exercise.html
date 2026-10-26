@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="uz">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0d0d0d" />
+    <meta
+      name="description"
+      content="{{ exercise.title }} — train.shamsiyev.uz mashqi."
+    />
+    <meta property="og:title" content="{{ exercise.title }} — train.shamsiyev.uz" />
+    <meta property="og:description" content="{{ exercise.description }}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://{{ host }}/mashq/{{ exercise.id }}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/css/style.css?v=1.0.5" />
+    <title>{{ exercise.title }} — train.shamsiyev.uz</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Asosiy mazmunga o'tish</a>
+    <div id="app" data-page="exercise" data-exercise-id="{{ exercise.id }}" aria-live="polite">
+      <div class="app-loading" aria-label="Mashq yuklanmoqda">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+    <noscript>Ushbu mashq uchun brauzerda JavaScript yoqilgan bo'lishi kerak.</noscript>
+    <script src="/static/js/app.js?v=1.0.5" defer></script>
+  </body>
+</html>
