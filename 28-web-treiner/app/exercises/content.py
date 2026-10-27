@@ -243,10 +243,11 @@ EXERCISES = (
             ExerciseChoice(value="HTTP_200_OK", label="HTTP_200_OK"),
             ExerciseChoice(value="HTTP_201_CREATED", label="HTTP_201_CREATED"),
             ExerciseChoice(value="HTTP_204_NO_CONTENT", label="HTTP_204_NO_CONTENT"),
-            ExerciseChoice(value="HTTP_422_UNPROCESSABLE_ENTITY", label="HTTP_422_UNPROCESSABLE_ENTITY"),
+            ExerciseChoice(
+                value="HTTP_422_UNPROCESSABLE_ENTITY", label="HTTP_422_UNPROCESSABLE_ENTITY"
+            ),
         ),
         hint="POST so'rovi yangi resursni yaratsa, muvaffaqiyat kodi 201 bo'ladi.",
         expected_answers=("HTTP_201_CREATED",),
     ),
 )
-
