@@ -3,35 +3,37 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#0d0d0d" />
+    <meta name="theme-color" content="#08090d" />
     <meta
       name="description"
       content="Til va backend ko'nikmalarini qisqa, takrorlanuvchi mashqlar orqali mustahkamlang."
     />
-    <meta property="og:title" content="train.shamsiyev.uz" />
+    <meta property="og:title" content="train.shamsiyev.uz — Amaliy trenajyor" />
     <meta
       property="og:description"
       content="Til va backend ko'nikmalarini qisqa, takrorlanuvchi mashqlar orqali mustahkamlang."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://{{ host }}" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2308090d'/><path d='M18 4L7 17h8l-1 11 11-13h-8l1-11z' fill='%2310b981'/></svg>" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Manrope:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/static/css/style.css?v=1.0.5" />
-    <title>train.shamsiyev.uz</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=1.1.0" />
+    <title>train.shamsiyev.uz — Amaliy trenajyor</title>
   </head>
   <body>
     <a class="skip-link" href="#main-content">Asosiy mazmunga o'tish</a>
     <div id="app" aria-live="polite">
       <div class="app-loading" aria-label="Mashqlar yuklanmoqda">
-        <span></span><span></span><span></span>
+        <div class="loading-spinner"></div>
+        <span class="loading-label">Mashqlar yuklanmoqda...</span>
       </div>
     </div>
     <noscript>Ushbu mashqlar uchun brauzerda JavaScript yoqilgan bo'lishi kerak.</noscript>
-    <script src="/static/js/app.js?v=1.0.5" defer></script>
+    <script src="/static/js/app.js?v=1.1.0" defer></script>
   </body>
 </html>
