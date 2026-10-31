@@ -1070,8 +1070,19 @@ class DesktopProcessorService {
     // The processor (desktop_processor.exe/.py) ships next to the app. Search
     // from the running executable's own directory first so we do not depend on
     // the shortcut's working directory, then fall back to the current dir (dev).
+    final executableDirectory = File(Platform.resolvedExecutable).parent;
+    // macOS paketi Python qatlamini `.app/Contents/Resources` ichida olib
+    // yuradi. Bu release DMG'ni mustaqil qiladi: `.app` yonidagi tashqi
+    // fayllar tasodifan o'chib ketsa ham protsessor topiladi.
+    final macRuntime = Platform.isMacOS
+        ? Directory(
+            '${executableDirectory.parent.path}${Platform.pathSeparator}'
+            'Resources${Platform.pathSeparator}SubtitrRuntime',
+          )
+        : null;
     final starts = <Directory>[
-      File(Platform.resolvedExecutable).parent,
+      ?macRuntime,
+      executableDirectory,
       Directory.current.absolute,
     ];
     for (final start in starts) {

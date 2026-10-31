@@ -153,8 +153,11 @@ chmod +x "$DIST/install.sh" "$DIST/subtitr-desktop" "$DIST/subtitr_app" "$DIST/t
 
 say "5/5 Arxiv"
 (cd "$ROOT/dist" && tar czf SubtitrDesktop-linux-x64.tar.gz SubtitrDesktop)
+(cd "$ROOT/dist" && sha256sum SubtitrDesktop-linux-x64.tar.gz > SubtitrDesktop-linux-x64.tar.gz.sha256)
+(cd "$ROOT/dist" && sha256sum --check SubtitrDesktop-linux-x64.tar.gz.sha256 >/dev/null)
 
 printf '\n\033[1;32mTayyor:\033[0m %s\n' "$DIST"
 printf '        %s (%s)\n' "$ROOT/dist/SubtitrDesktop-linux-x64.tar.gz" \
   "$(du -h "$ROOT/dist/SubtitrDesktop-linux-x64.tar.gz" | cut -f1)"
+printf '        SHA256: %s\n' "$ROOT/dist/SubtitrDesktop-linux-x64.tar.gz.sha256"
 printf '\nO'"'"'rnatish:  %s\n' "$DIST/install.sh"

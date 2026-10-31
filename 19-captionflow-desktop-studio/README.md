@@ -15,7 +15,7 @@ Platformangizni tanlang — har birida to'liq qo'llanma bor:
 |---|---|---|
 | **Linux** | [`linux/README.md`](linux/README.md) | sinalgan (Ubuntu 24.04) |
 | **Windows** | [`windows/README.md`](windows/README.md) | sinalgan (Win 10/11) |
-| **macOS** | [`macos/README.md`](macos/README.md) | **sinalmagan** — skriptlar bor, Mac'da tekshirilmagan |
+| **macOS** | [`macos/README.md`](macos/README.md) | GitHub Actions native `.dmg` build; haqiqiy qurilma sinovi alohida kerak |
 
 Qisqacha (Linux):
 
@@ -25,10 +25,11 @@ cd vibe-coding/subtitr-desktop
 ./linux/build.sh && ./dist/SubtitrDesktop/install.sh
 ```
 
-Uchala platformada ham ilova **manbadan yig'iladi**: Flutter GUI va Python
-protsessor bir papkaga yig'ilib, keyin o'rnatiladi. Tayyor o'rnatuvchi
-fayllar repoda saqlanmaydi (Linux arxivi ~220 MB, GitHub chegarasi 100 MB) —
-ular bo'lsa [Releases](https://github.com/shamsiyevshamsiddin19/vibe-coding/releases)
+Uchala platformada ham ilova **manbadan yig'iladi**. GitHub Actions Linux
+arxivi va macOS `.dmg`ni native muhitda yaratib artifact qiladi; release tag
+uchun ular checksum bilan GitHub Release'ga ham qo'yiladi. Tayyor
+o'rnatuvchilar repoda saqlanmaydi (hajmi katta) — ular bo'lsa
+[Releases](https://github.com/shamsiyevshamsiddin19/vibe-coding/releases)
 sahifasida bo'ladi.
 
 ## Nima qila oladi

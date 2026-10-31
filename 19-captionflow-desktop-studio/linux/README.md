@@ -34,8 +34,16 @@ Natija:
 
 - `dist/SubtitrDesktop/` — tayyor papka
 - `dist/SubtitrDesktop-linux-x64.tar.gz` — arxiv (~220 MB)
+- `dist/SubtitrDesktop-linux-x64.tar.gz.sha256` — arxivning SHA256 nazorat summasi
 
 Birinchi yig'ish 5-15 daqiqa oladi (Flutter va pip yuklab oladi).
+
+Yuklab olingan release faylini tekshirish:
+
+```bash
+cd dist
+sha256sum --check SubtitrDesktop-linux-x64.tar.gz.sha256
+```
 
 ## 3. O'rnatish
 

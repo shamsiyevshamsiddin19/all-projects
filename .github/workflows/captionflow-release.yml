@@ -1,0 +1,90 @@
+name: Captionflow Desktop packages
+
+on:
+  push:
+    paths:
+      - '19-captionflow-desktop-studio/**'
+      - '.github/workflows/captionflow-release.yml'
+    tags:
+      - 'subtitr-v*'
+  pull_request:
+    paths:
+      - '19-captionflow-desktop-studio/**'
+      - '.github/workflows/captionflow-release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: 19-captionflow-desktop-studio
+
+jobs:
+  linux-package:
+    name: Linux x64 package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux desktop dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libmpv-dev mpv python3-venv
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Build distributable archive
+        run: ./linux/build.sh
+      - name: Verify SHA256 manifest
+        run: |
+          cd dist
+          sha256sum --check SubtitrDesktop-linux-x64.tar.gz.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SubtitrDesktop-linux-x64
+          path: |
+            19-captionflow-desktop-studio/dist/SubtitrDesktop-linux-x64.tar.gz
+            19-captionflow-desktop-studio/dist/SubtitrDesktop-linux-x64.tar.gz.sha256
+          if-no-files-found: error
+
+  macos-package:
+    name: macOS native DMG package
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Build and verify DMG
+        run: |
+          ./macos/build.sh
+          shasum -a 256 -c dist/*.dmg.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SubtitrDesktop-macos
+          path: |
+            19-captionflow-desktop-studio/dist/*.dmg
+            19-captionflow-desktop-studio/dist/*.dmg.sha256
+          if-no-files-found: error
+
+  github-release:
+    name: Publish tag assets
+    if: startsWith(github.ref, 'refs/tags/subtitr-v')
+    needs: [linux-package, macos-package]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+      - name: Publish verified package files
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: release-assets/*

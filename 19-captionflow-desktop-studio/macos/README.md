@@ -1,8 +1,8 @@
 # Subtitr Desktop — macOS
 
-> **Bu platformada sinalmagan.** Muallifda Mac yo'q. Skriptlar Linux
-> variantidan ko'chirilgan va macOS farqlariga moslangan, lekin hech kim
-> ularni haqiqiy Mac'da ishlatib ko'rmagan. Muammo chiqsa —
+> macOS release'i GitHub Actions'ning `macos-latest` muhitida native tarzda
+> yig'iladi va `.dmg` artifact sifatida tekshiriladi. Haqiqiy Mac qurilmasida
+> foydalanuvchi oqimi sinovi hali alohida kerak; muammo bo'lsa
 > [issue oching](https://github.com/shamsiyevshamsiddin19/vibe-coding/issues).
 >
 > Linux va Windows variantlari sinalgan va ishlaydi.
@@ -32,16 +32,21 @@ cd vibe-coding/subtitr-desktop
 
 Natija:
 
-- `dist/SubtitrDesktop/` — `.app` va uning yonida Python protsessor
-- `dist/SubtitrDesktop-macos-<arch>.tar.gz` — arxiv
+- `dist/SubtitrDesktop-<versiya>-macos-<arch>.dmg` — o'rnatuvchi disk obrazi
+- shu nomdagi `.dmg.sha256` — yuklamaning nazorat summasi
 
 Apple Silicon (`arm64`) va Intel (`x86_64`) uchun alohida yig'iladi —
 skript o'zi aniqlaydi.
 
+Release ichidagi Python protsessor PyInstaller bilan binarga qotirilgan:
+tayyor DMG'ni ishlatadigan foydalanuvchiga Python yoki Flutter o'rnatish
+kerak emas. Lokal, model asosidagi transkripsiya manbadan yig'iladigan
+variantda mavjud; release binari cloud API kalitlari bilan ishlaydi.
+
 ## 3. O'rnatish
 
 ```bash
-./dist/SubtitrDesktop/install.sh
+ochilgan DMG ichidagi `install.sh` faylini ishga tushiring
 ```
 
 Dastur `~/Applications/SubtitrDesktop` ga tushadi. Ishga tushirish:
