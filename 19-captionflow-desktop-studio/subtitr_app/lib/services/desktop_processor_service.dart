@@ -56,6 +56,13 @@ class ProcessorOutput {
       name: json['name'] as String? ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'kind': kind,
+        'label': label,
+        'path': path,
+        'name': name,
+      };
 }
 
 class ProcessorResult {
@@ -106,6 +113,16 @@ class ProcessorResult {
       },
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'outputs': outputs.map((o) => o.toJson()).toList(),
+        'transcriber': transcriber,
+        'translator': translator,
+        'sourceLang': sourceLang,
+        'targetLang': targetLang,
+        'outDir': outDir,
+        'usage': usage,
+      };
 }
 
 /// One subtitle line — the original text plus its (editable) translation.

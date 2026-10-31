@@ -209,15 +209,20 @@ def write_ass(
                 # Sariq quti faqat asl matnni o'rashi kerak, shuning uchun asl
                 # va tarjima alohida hodisa bo'lib yoziladi va MarginV bilan
                 # ustma-ust qo'yiladi (quti tarjima qatorini ham yutmasin).
+                # Quti BorderStyle=3 bo'lgani uchun box_pad (~7px) uning matndan
+                # tashqariga chiqadigan fon-panjarasi — oddiy `gap` buni hisobga
+                # olmagani uchun quti pastki (yoki tepada: yuqori) chekkasi
+                # tarjima qatoriga bir necha piksel kirib ketar edi.
+                gap_box = gap + layout["box_pad"]
                 if alignment == 8:  # tepada: asl yuqorida
                     orig_v = layout["margin_v"]
                     trans_v = orig_v + (
-                        len(orig_lines) * line_h + gap if orig_lines else 0
+                        len(orig_lines) * line_h + gap_box if orig_lines else 0
                     )
                 else:               # pastda: tarjima eng pastda
                     trans_v = layout["margin_v"]
                     orig_v = trans_v + (
-                        len(trans_lines) * line_h + gap if trans_lines else 0
+                        len(trans_lines) * line_h + gap_box if trans_lines else 0
                     )
                 if orig_lines:
                     body = r"\N".join(ass_escape(x) for x in orig_lines)

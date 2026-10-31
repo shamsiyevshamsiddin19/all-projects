@@ -1,4 +1,8 @@
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'desktop_processor_service.dart';
 
 /// Persists user-supplied API keys and optional model overrides.
 ///
@@ -218,5 +222,26 @@ class SettingsStore {
     await prefs.setString('sub_orig_style', a.origStyle);
     await prefs.setString('sub_quality', a.quality);
     await prefs.setBool('sub_upscale', a.upscale);
+  }
+
+  static const _kLastResult = 'last_processor_result';
+
+  /// Remembers the most recently finished job's result so it is still shown
+  /// when the app is reopened (instead of starting from an empty screen).
+  Future<void> saveLastResult(ProcessorResult result) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kLastResult, jsonEncode(result.toJson()));
+  }
+
+  /// Returns `null` when nothing was saved yet or the saved JSON is corrupt.
+  Future<ProcessorResult?> loadLastResult() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_kLastResult);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      return ProcessorResult.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } catch (_) {
+      return null;
+    }
   }
 }

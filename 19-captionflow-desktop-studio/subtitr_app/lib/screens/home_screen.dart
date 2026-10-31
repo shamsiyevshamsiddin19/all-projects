@@ -1,5 +1,8 @@
 import 'dart:async';
-import 'dart:io';import 'package:file_picker/file_picker.dart';
+import 'dart:io';
+import 'dart:ui' show AppExitResponse;
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../services/desktop_processor_service.dart';
@@ -19,7 +22,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final DesktopProcessorService _service = DesktopProcessorService();
   final SettingsStore _settingsStore = SettingsStore();
   AppSettings _settings = const AppSettings();
@@ -110,6 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadSettings();
     if (widget.autoScan) {
       // autoScan also gates background startup work (skipped under widget tests,
@@ -136,6 +140,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final settings = await _settingsStore.load();
     final appearance = await _settingsStore.loadAppearance();
     final job = await _settingsStore.loadJobPrefs();
+    final lastResult = await _settingsStore.loadLastResult();
     _service.processEnvironment = settings.toEnvironment();
     if (mounted) {
       setState(() {
@@ -144,6 +149,13 @@ class _HomeScreenState extends State<HomeScreen> {
         _mode = job['mode'] ?? _mode;
         _sourceLang = job['source'] ?? _sourceLang;
         _targetLang = job['target'] ?? _targetLang;
+        // Ilova qayta ochilganda oldingi videoning natijasi bo'sh ekrandan
+        // ko'ra ko'proq foydali — foydalanuvchi so'nggi yakunlangan ishni
+        // darhol ko'radi, qayta ishga tushirishga hojat qolmaydi.
+        if (lastResult != null) {
+          _result = lastResult;
+          _outDir = lastResult.outDir;
+        }
       });
     }
   }
@@ -309,8 +321,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
     super.dispose();
+  }
+
+  /// Ilova yopilayotganda joriy jarayonni (va u ishga tushirgan ffmpeg/yt-dlp
+  /// "bolalarini") to'xtatadi — aks holda ular fonda ishlab qolaverardi.
+  /// `didRequestAppExit` — oynaning X tugmasi orqali yopilishi (desktop uchun
+  /// Flutterning rasmiy yo'li); `detached` holati qo'shimcha ehtiyot chorasi.
+  @override
+  Future<AppExitResponse> didRequestAppExit() async {
+    await _service.cancel();
+    return AppExitResponse.exit;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached) {
+      _service.cancel();
+    }
   }
 
   Future<void> _startProcessing() async {
@@ -356,6 +386,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _status = 'Yakunlandi';
         _progress = 1;
       });
+      _settingsStore.saveLastResult(result);
     } on ProcessorCancelled {
       if (mounted) {
         setState(() {
@@ -471,6 +502,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _status = 'Yakunlandi';
         _progress = 1;
       });
+      _settingsStore.saveLastResult(result);
     } on ProcessorCancelled {
       if (mounted) {
         setState(() {
@@ -549,6 +581,7 @@ class _HomeScreenState extends State<HomeScreen> {
           );
           done++;
           if (mounted) setState(() => _result = result);
+          _settingsStore.saveLastResult(result);
         } on ProcessorCancelled {
           break;
         } catch (_) {
