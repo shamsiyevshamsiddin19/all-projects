@@ -1142,9 +1142,10 @@ class PreviewFrameTests(unittest.TestCase):
         )
         # Ikkalasi ham `_render_data()` dan foydalanishi shart; aks holda
         # ko'rinish (shrift, quti, kartochka) ajralib ketadi.
-        body = source[source.index("def preview_frame("):source.index("def _session_path_for(")]
+        body = source[source.index("def preview_frame("):]
+        body = body[:body.index("\ndef ", 10)]
         self.assertIn("_render_data(job)", body)
-        self.assertIn("write_ass(", body)
+        self.assertIn("_write_mode_ass(", body)
 
     def test_preview_keeps_timestamps_for_the_ass_filter(self):
         """`-ss` kirishdan oldin qo'yilganda ffmpeg vaqtlarni 0 ga qaytaradi
@@ -1182,6 +1183,62 @@ class PreviewFrameTests(unittest.TestCase):
             with self.assertRaises(RuntimeError) as ctx:
                 preview_frame(str(path), 0.5, str(Path(tmp) / "out.jpg"))
         self.assertIn("eski", str(ctx.exception))
+
+
+class LivePlayerTests(unittest.TestCase):
+    """Tahrirlashdagi pleyer uchun ASS fayli.
+
+    mpv ASS ni libass bilan chizadi — ffmpeg bilan BIR XIL kutubxona,
+    shuning uchun jonli ko'rish kuydiriladiganiga aynan mos keladi.
+    Haqiqiy mpv bilan tekshirilgan: kadr ffmpeg chiqargani bilan bir xil
+    (sariq quti va ikkala lug'at kartochkasi o'z joyida)."""
+
+    def test_player_and_frame_share_one_ass_writer(self):
+        """Ikki ko'rinish kodi bo'lsa ular vaqt o'tib ajralib ketadi."""
+        source = (Path(__file__).resolve().parent.parent / "subtitr" / "pipeline.py").read_text(
+            encoding="utf-8"
+        )
+        # `write_ass(` faqat umumiy yordamchida chaqirilishi kerak.
+        self.assertEqual(source.count("    write_ass("), 1, "write_ass bir nechta joyda")
+        for name in ("def subtitle_file(", "def preview_frame("):
+            body = source[source.index(name):]
+            body = body[:body.index("\ndef ", 10)]
+            self.assertIn("_write_mode_ass(", body, f"{name} umumiy yozuvchini ishlatmaydi")
+
+    def test_document_modes_fall_back_for_the_player_too(self):
+        from subtitr.pipeline import RenderData, _visual_mode
+
+        def fake(mode: str) -> RenderData:
+            return RenderData(
+                video=Path("/yoq.mp4"), stem="x", mode=mode, source_lang="en",
+                target_lang="uz", transcriber="", translator="", width=1920,
+                height=1080, display_original=[], translated=None,
+                reading_source=[], reading_translated=None, words=[],
+                entries=[], vocab_map={},
+            )
+
+        self.assertEqual(_visual_mode(fake("srt"), None), "dual_vocab")
+        self.assertEqual(_visual_mode(fake("reading"), None), "dual_vocab")
+        self.assertEqual(_visual_mode(fake("all"), None), "dual_vocab")
+        self.assertEqual(_visual_mode(fake("translated"), None), "translated")
+        self.assertEqual(_visual_mode(fake("dual"), "original"), "original")
+
+    def test_build_script_checks_for_libmpv(self):
+        """Usiz `flutter build linux` tushunarsiz CMake xatosi beradi."""
+        script = (Path(__file__).resolve().parent.parent / "linux" / "build.sh").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("pkg-config --exists mpv", script)
+        self.assertIn("libmpv-dev", script)
+
+    def test_installer_only_warns_about_libmpv(self):
+        """Ilova usiz ham ishlaydi (kadr ko'rish) — o'rnatish to'xtamasin."""
+        script = (Path(__file__).resolve().parent.parent / "linux" / "install.sh").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("libmpv", script)
+        warn = script[script.index("libmpv"):]
+        self.assertNotIn("exit 1", warn[:600], "libmpv yo'qligi o'rnatishni to'xtatyapti")
 
 
 class DialogueWrapTests(unittest.TestCase):

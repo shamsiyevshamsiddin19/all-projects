@@ -414,12 +414,10 @@ def _render_outputs(
         emit("progress", message=f"ASS tayyorlanmoqda: {render_mode}", progress=0.66)
         ass = job_out_dir / f"{stem}_{render_mode}.ass"
         out = job_out_dir / f"{stem}_{render_mode}.mp4"
-        use_trans = translated if render_mode in {"dual", "dual_vocab", "translated"} else None
-        use_words = words if render_mode in {"original_vocab", "dual_vocab"} else None
-        write_ass(
-            ass, display_original, use_trans, use_words, vocab_map, width, height,
-            font_scale=font_scale, position=position, trans_color=sub_color,
-            orig_style=orig_style, show_original=render_mode != "translated",
+        # Render, kadr ko'rish va pleyer UCHALASI ham shu yozuvchidan
+        # o'tadi — ko'rinish ajralib ketishi mumkin emas.
+        _write_mode_ass(
+            ass, data, render_mode, font_scale, position, sub_color, orig_style
         )
         add_output("ass", f"{render_mode} ASS", ass)
         # Render progressini bir necha video orasida bo'lib ko'rsatamiz.
@@ -483,6 +481,70 @@ def _load_session(session_path: str, segments_path: str | None = None) -> dict[s
     return data
 
 
+def _visual_mode(data: "RenderData", render_mode: str | None) -> str:
+    """Kuydiriladigan ko'rinish rejimini tanlaydi.
+
+    Hujjat rejimlarida ("srt", "reading") kuydirilgan subtitr yo'q —
+    ko'rish uchun eng to'liq ko'rinishni olamiz."""
+    mode = render_mode or data.mode
+    if mode == "all":
+        return next((m for m in modes_for("all") if m in VIDEO_MODES), "dual_vocab")
+    return mode if mode in VIDEO_MODES else "dual_vocab"
+
+
+def _write_mode_ass(
+    path: Path,
+    data: "RenderData",
+    mode: str,
+    font_scale: float,
+    position: str,
+    sub_color: str,
+    orig_style: str,
+) -> Path:
+    """Berilgan rejim uchun ASS yozadi — render, kadr ko'rish va pleyer
+    UCHALASI ham shu funksiyadan o'tadi, shuning uchun ko'rinish bir xil."""
+    write_ass(
+        path,
+        data.display_original,
+        data.translated if mode in {"dual", "dual_vocab", "translated"} else None,
+        data.words if mode in {"original_vocab", "dual_vocab"} else None,
+        data.vocab_map,
+        data.width,
+        data.height,
+        font_scale=font_scale,
+        position=position,
+        trans_color=sub_color,
+        orig_style=orig_style,
+        show_original=mode != "translated",
+    )
+    return path
+
+
+def subtitle_file(
+    session_path: str,
+    out_path: str,
+    segments_path: str | None = None,
+    render_mode: str | None = None,
+    font_scale: float = 1.0,
+    position: str = "bottom",
+    sub_color: str = "#FFE680",
+    orig_style: str = "box",
+) -> dict[str, Any]:
+    """Seans uchun ASS faylini yozadi va yo'lini qaytaradi.
+
+    Tahrirlash oynasidagi pleyer uchun: mpv ASS ni libass bilan O'ZI
+    chizadi, shuning uchun jonli ko'rishda subtitr aynan kuydirilgandek
+    chiqadi — alohida ko'rinish kodi yozish kerak emas."""
+    ensure_dirs()
+    job = _load_session(session_path, segments_path)
+    data = _render_data(job)
+    out = Path(out_path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    mode = _visual_mode(data, render_mode)
+    _write_mode_ass(out, data, mode, font_scale, position, sub_color, orig_style)
+    return {"path": str(out), "mode": mode, "video": str(data.video)}
+
+
 def preview_frame(
     session_path: str,
     at: float,
@@ -507,32 +569,15 @@ def preview_frame(
     job = _load_session(session_path, segments_path)
     data = _render_data(job)
 
-    mode = render_mode or data.mode
-    if mode == "all":
-        mode = next((m for m in modes_for("all") if m in VIDEO_MODES), "dual_vocab")
-    if mode not in VIDEO_MODES:
-        # Hujjat rejimlarida kuydirilgan subtitr yo'q — ko'rish uchun eng
-        # to'liq ko'rinishni olamiz.
-        mode = "dual_vocab"
+    mode = _visual_mode(data, render_mode)
 
     out = Path(out_path)
     out.parent.mkdir(parents=True, exist_ok=True)
     tmp_dir = Path(tempfile.mkdtemp(prefix="preview_", dir=str(TMP_DIR)))
     try:
         ass = tmp_dir / "preview.ass"
-        write_ass(
-            ass,
-            data.display_original,
-            data.translated if mode in {"dual", "dual_vocab", "translated"} else None,
-            data.words if mode in {"original_vocab", "dual_vocab"} else None,
-            data.vocab_map,
-            data.width,
-            data.height,
-            font_scale=font_scale,
-            position=position,
-            trans_color=sub_color,
-            orig_style=orig_style,
-            show_original=mode != "translated",
+        _write_mode_ass(
+            ass, data, mode, font_scale, position, sub_color, orig_style
         )
         # `-ss` kirishdan OLDIN — tez qidirish. `-copyts` SHART: usiz ffmpeg
         # vaqtlarni 0 ga qaytaradi va `ass` filtri o'sha daqiqadagi subtitrni

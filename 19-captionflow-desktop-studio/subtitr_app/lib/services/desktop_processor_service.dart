@@ -434,6 +434,51 @@ class DesktopProcessorService {
     return PreparedSession.fromJson(payload);
   }
 
+  /// Writes the session's ASS subtitle file and returns it together with the
+  /// video path.
+  ///
+  /// mpv draws ASS with libass itself, so handing it this file makes the
+  /// in-editor player show subtitles exactly as they will be burned — no
+  /// separate rendering path to keep in sync.
+  Future<({String subtitles, String video})> subtitleFile({
+    required String sessionPath,
+    required List<SubtitleSegment> segments,
+    required String mode,
+    double fontScale = 1.0,
+    String position = 'bottom',
+    String subColor = '#FFE680',
+    String origStyle = 'box',
+  }) async {
+    final stamp = DateTime.now().microsecondsSinceEpoch;
+    final sep = Platform.pathSeparator;
+    final edits = File('${Directory.systemTemp.path}${sep}subtitr_edits_$stamp.json');
+    final out = File('${Directory.systemTemp.path}${sep}subtitr_live_$stamp.ass');
+    await edits.writeAsString(
+      jsonEncode(segments.map((s) => s.toJson()).toList()),
+    );
+    try {
+      final payload = await _runJson([
+        'subtitle-file',
+        '--session', sessionPath,
+        '--segments', edits.path,
+        '--out', out.path,
+        '--render-mode', mode,
+        '--font-scale', fontScale.toString(),
+        '--position', position,
+        '--sub-color', subColor,
+        '--orig-style', origStyle,
+      ]);
+      return (
+        subtitles: payload['path'] as String? ?? out.path,
+        video: payload['video'] as String? ?? '',
+      );
+    } finally {
+      try {
+        await edits.delete();
+      } catch (_) {}
+    }
+  }
+
   /// Renders ONE frame at [at] seconds with the real subtitle drawn on it,
   /// and returns the image path.
   ///

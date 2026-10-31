@@ -41,8 +41,10 @@ sahifasida bo'ladi.
 - Subtitr kuydirish (ffmpeg, apparat kodlash: NVENC/QSV/AMF) — asl matn,
   ikki qator, yoki faqat tarjima
 - YouTube/Instagram va boshqa saytlardan video yuklash (yt-dlp)
-- Tahrirlashda kadr ko'rish: qatorni bosganda subtitr o'sha joyda qanday
-  chiqishini kuydirishni kutmasdan ko'rsatadi
+- Tahrirlashda jonli ko'rish: qatorni bosganda video o'sha joydan
+  ovozi bilan o'ynaydi, subtitr esa aynan kuydiriladiganidek chiqadi
+  (mpv ASS ni libass bilan chizadi — ffmpeg bilan bir xil kutubxona).
+  libmpv bo'lmasa o'rniga kadr ko'rsatiladi
 - Chrome kengaytmasi (`chrome-extension/`) — sahifadagi video oqim havolasini topib beradi
 
 ## Tuzilma
@@ -245,6 +247,12 @@ qaytadan pul turadi, shuning uchun uni faqat atayin so'raganda o'chiradi.
 | Flutter | 3.27+ |
 | Python | 3.10+ |
 | ffmpeg | Linux/macOS — tizimdan; Windows — `tools/` ga qo'lda |
+| libmpv | **Linux'da yig'ish uchun shart**: `sudo apt install libmpv-dev mpv`. Windows/macOS'da paket ichida keladi |
+
+`libmpv` faqat tahrirlash oynasidagi **jonli pleyer** uchun kerak. U
+bo'lmasa ilova ishlaydi, lekin pleyer o'rniga kadr ko'rsatiladi (kadr
+faqat ffmpeg talab qiladi). Yig'ish paytida esa `libmpv-dev` shart —
+`linux/build.sh` buni oldindan tekshiradi.
 
 Testlar (yangi bog'liqliksiz, standart `unittest`):
 

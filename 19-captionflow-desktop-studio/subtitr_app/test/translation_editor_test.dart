@@ -17,6 +17,21 @@ class _FakeProcessor extends DesktopProcessorService {
   final List<double> askedAt = [];
   String? appearanceMode;
 
+  /// Widget testida haqiqiy jarayon ishga tushmasligi uchun: pleyer
+  /// yo'li darhol tushadi va tahrirlash oynasi kadr ko'rishga qaytadi.
+  @override
+  Future<({String subtitles, String video})> subtitleFile({
+    required String sessionPath,
+    required List<SubtitleSegment> segments,
+    required String mode,
+    double fontScale = 1.0,
+    String position = 'bottom',
+    String subColor = '#FFE680',
+    String origStyle = 'box',
+  }) async {
+    throw StateError('test: pleyer ishlatilmaydi');
+  }
+
   @override
   Future<String> previewFrame({
     required String sessionPath,

@@ -17,6 +17,11 @@ die() { printf '\n\033[1;31mXATO: %s\033[0m\n' "$*" >&2; exit 1; }
 
 command -v flutter >/dev/null || die "flutter topilmadi (PATH ga qo'shing)"
 command -v python3 >/dev/null || die "python3 topilmadi"
+# Tahrirlash oynasidagi pleyer (media_kit) Linux'da TIZIMDAGI libmpv ni
+# ishlatadi va u build vaqtida pkg-config orqali talab qilinadi. Usiz
+# `flutter build linux` tushunarsiz CMake xatosi bilan to'xtaydi.
+pkg-config --exists mpv 2>/dev/null \
+  || die "libmpv topilmadi — 'sudo apt install libmpv-dev mpv' bajaring"
 
 say "1/5 Flutter Linux release yig'ilmoqda"
 (cd "$APP_DIR" && flutter pub get && flutter build linux --release)

@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'screens/home_screen.dart';
 
 void main() {
+  // media_kit (libmpv) ni ishga tushiradi — tahrirlash oynasidagi pleyer
+  // uchun. Linux'da tizimdagi libmpv ishlatiladi.
+  WidgetsFlutterBinding.ensureInitialized();
+  MediaKit.ensureInitialized();
   runApp(const SubtitleApp());
 }
 

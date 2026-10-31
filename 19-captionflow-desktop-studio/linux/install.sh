@@ -12,6 +12,15 @@ say() { printf '\033[1;36m==> %s\033[0m\n' "$*"; }
 
 [ -x "$SRC/subtitr_app" ] || { echo "XATO: subtitr_app topilmadi ($SRC)" >&2; exit 1; }
 
+# Pleyer libmpv ga tayanadi. YO'Q bo'lsa ilova baribir ishlaydi — tahrirlash
+# oynasi jonli pleyer o'rniga kadr ko'rsatadi (u faqat ffmpeg talab qiladi).
+# Shuning uchun bu ogohlantirish, to'xtatuvchi xato emas.
+if ! ldconfig -p 2>/dev/null | grep -q libmpv; then
+  printf '\033[1;33m==> Eslatma: libmpv topilmadi.\033[0m\n'
+  printf '    Tahrirlashda jonli video pleyer o\x27rniga kadr ko\x27rinadi.\n'
+  printf '    Pleyer uchun: sudo apt install libmpv2\n\n'
+fi
+
 if [ "$SRC" != "$TARGET" ]; then
   say "Fayllar ko'chirilmoqda -> $TARGET"
   mkdir -p "$TARGET"

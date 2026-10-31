@@ -7,7 +7,7 @@ import traceback
 from .cache import cache_usage, clear_cache
 from .core import KINO_DIR, LOG_DIR, OUT_DIR, clean_orphan_tmp, current_log_file, emit, ensure_dirs, install_signal_handlers, log, redact, setup_logging
 from .media import DEFAULT_QUALITY, QUALITY_HEIGHTS, download_video, scan, update_ytdlp
-from .pipeline import install_deps, prepare_session, preview_frame, process, render_session
+from .pipeline import install_deps, prepare_session, preview_frame, process, render_session, subtitle_file
 
 
 def main() -> int:
@@ -84,6 +84,17 @@ def main() -> int:
     p_prev.add_argument("--orig-style", default="box", choices=["box", "plain"])
     p_prev.add_argument("--preview-height", type=int, default=540)
 
+    # Tahrirlash oynasidagi pleyer uchun: mpv shu ASS ni o'zi chizadi.
+    p_sub = sub.add_parser("subtitle-file")
+    p_sub.add_argument("--session", required=True)
+    p_sub.add_argument("--segments", default=None)
+    p_sub.add_argument("--out", required=True)
+    p_sub.add_argument("--render-mode", default=None)
+    p_sub.add_argument("--font-scale", type=float, default=1.0)
+    p_sub.add_argument("--position", default="bottom", choices=["bottom", "top"])
+    p_sub.add_argument("--sub-color", default="#FFE680")
+    p_sub.add_argument("--orig-style", default="box", choices=["box", "plain"])
+
     p_render = sub.add_parser("render")
     p_render.add_argument("--session", required=True)
     p_render.add_argument("--segments", default=None)
@@ -131,6 +142,13 @@ def main() -> int:
                 font_scale=args.font_scale, position=args.position,
                 sub_color=args.sub_color, orig_style=args.orig_style,
                 preview_height=args.preview_height,
+            ))
+        elif args.command == "subtitle-file":
+            emit("done", **subtitle_file(
+                args.session, args.out, segments_path=args.segments,
+                render_mode=args.render_mode, font_scale=args.font_scale,
+                position=args.position, sub_color=args.sub_color,
+                orig_style=args.orig_style,
             ))
         elif args.command == "render":
             result = render_session(

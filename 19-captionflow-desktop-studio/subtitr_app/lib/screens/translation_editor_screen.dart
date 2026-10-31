@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../services/desktop_processor_service.dart';
 import '../services/settings_store.dart';
+import '../widgets/subtitle_player.dart';
 
 /// Review-and-edit screen shown between the `prepare` and `render` phases.
 ///
@@ -49,6 +50,18 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
   /// Guards against a slow preview landing after a newer one was requested.
   int _previewRun = 0;
 
+  // Pleyer: mpv subtitrni o'zi chizadi, shuning uchun jonli ko'rish
+  // kuydiriladiganiga aynan mos keladi. Ishga tushmasa (libmpv yo'q,
+  // kodek qo'llanmaydi) kadr ko'rishga qaytamiz — u faqat ffmpeg talab
+  // qiladi va har doim ishlaydi.
+  final SubtitlePlayerController _playerControl = SubtitlePlayerController();
+  String? _playerVideo;
+  String? _playerSubtitles;
+  bool _playerFailed = false;
+
+  bool get _usePlayer =>
+      playerAvailable && !_playerFailed && _playerVideo != null;
+
   @override
   void initState() {
     super.initState();
@@ -56,6 +69,29 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
     _controllers = _segments
         .map((s) => TextEditingController(text: s.translated))
         .toList();
+    if (playerAvailable) _loadPlayer();
+  }
+
+  /// Writes the ASS once and points the player at it.
+  Future<void> _loadPlayer() async {
+    try {
+      final files = await _service.subtitleFile(
+        sessionPath: widget.session.sessionPath,
+        segments: _collect(),
+        mode: widget.session.mode,
+        fontScale: widget.appearance.fontScale,
+        position: widget.appearance.position,
+        subColor: widget.appearance.subColor,
+        origStyle: widget.appearance.origStyle,
+      );
+      if (!mounted || files.video.isEmpty) return;
+      setState(() {
+        _playerVideo = files.video;
+        _playerSubtitles = files.subtitles;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _playerFailed = true);
+    }
   }
 
   @override
@@ -66,11 +102,29 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
     super.dispose();
   }
 
+  @override
+  void deactivate() {
+    // Oynadan chiqilganda ovoz davom etmasin.
+    _playerControl.pause();
+    super.deactivate();
+  }
+
   /// Renders the frame for [index] with the real subtitle on it.
   ///
   /// Mid-segment, so the line is definitely on screen: at the exact start
   /// the previous subtitle may still be showing.
   Future<void> _preview(int index) async {
+    final segment0 = _segments[index];
+    if (_usePlayer) {
+      setState(() => _previewIndex = index);
+      // O'rtasiga sakraymiz: boshida oldingi subtitr hali turgan bo'lishi
+      // mumkin.
+      final middle = (segment0.start + segment0.end) / 2;
+      await _playerControl.seek(
+        Duration(milliseconds: (middle * 1000).round()),
+      );
+      return;
+    }
     final run = ++_previewRun;
     setState(() {
       _previewIndex = index;
@@ -105,6 +159,24 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
 
   Widget _previewPanel() {
     final theme = Theme.of(context);
+    if (_usePlayer) {
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFF222222)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: SubtitlePlayer(
+          videoPath: _playerVideo!,
+          subtitlePath: _playerSubtitles!,
+          controller: _playerControl,
+          onUnavailable: (_) {
+            if (mounted) setState(() => _playerFailed = true);
+          },
+        ),
+      );
+    }
     Widget body;
     if (_previewError != null) {
       body = Padding(
@@ -394,7 +466,7 @@ class _SegmentTile extends StatelessWidget {
               const Spacer(),
               if (onPreview != null)
                 IconButton(
-                  tooltip: 'Shu joyda qanday chiqishini ko\'rish',
+                  tooltip: 'Shu joydan ko\'rish',
                   onPressed: onPreview,
                   visualDensity: VisualDensity.compact,
                   padding: EdgeInsets.zero,
