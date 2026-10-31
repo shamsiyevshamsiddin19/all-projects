@@ -71,6 +71,13 @@ sahifasida bo'ladi.
     bo'lsa, "o'ng"; `light` → "yorug'lik" bo'lsa, "yengil".
     Kesh `vocab_v3_*` — versiya oshirilmasa eski (kontekstsiz) lug'at
     qaytarilaverardi
+  - `core.dialogue_parts()` — "- Salom. - Salom." ko'rinishidagi dialog
+    har so'zlovchi O'Z QATORIDAN boshlanadi. Shart: matn chiziqcha bilan
+    boshlanishi va kamida ikkitasi bo'lishi — shunda "shunday - deb
+    aytdi" yoki "o'z-o'zidan" xato aniqlanmaydi. **Haqiqiy diarization
+    (kim gapirayotganini audiodan aniqlash) YO'Q** — u `pyannote`/`torch`
+    (~2 GB) talab qiladi; bu faqat manbada mavjud belgilarni to'g'ri
+    ko'rsatadi
   - `Segment.confidence` — model bo'lakka qanchalik ishonadi (0..1) yoki
     `None` (tayyor `.srt` da ishonch yo'q). Whisper `avg_logprob` dan
     `exp()` bilan olinadi. Ilgari bu qiymat faqat filtr uchun ishlatilib
@@ -234,7 +241,7 @@ qaytadan pul turadi, shuning uchun uni faqat atayin so'raganda o'chiradi.
 Testlar (yangi bog'liqliksiz, standart `unittest`):
 
 ```bash
-.venv/bin/python -m unittest discover -s tests   # 157 ta
+.venv/bin/python -m unittest discover -s tests   # 167 ta
 cd subtitr_app && flutter test                   # 22 ta
 ```
 

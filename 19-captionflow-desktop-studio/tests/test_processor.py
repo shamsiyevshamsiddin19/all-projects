@@ -1132,6 +1132,72 @@ class VocabContextTests(unittest.TestCase):
         self.assertNotIn("vocab_v2_", source)
 
 
+class DialogueWrapTests(unittest.TestCase):
+    """Dialog chiziqchasi qator BOSHIDA turishi kerak.
+
+    `parse_srt` bitta cue ichidagi qatorlarni probel bilan qo'shadi, ya'ni
+    "- Salom.\n- Salom." bitta satrga aylanadi. Keyin `wrap_lines` uni
+    tasodifiy joydan bo'lar va ikkinchi chiziqcha qator o'rtasida qolardi:
+      '- Privet, qalaysan? - Yaxshi,' / "rahmat, o'zingiz qalaysiz?"
+    """
+
+    def test_two_speakers_get_a_line_each(self):
+        text = "- Privet, qalaysan? - Yaxshi, rahmat, o'zingiz qalaysiz?"
+        self.assertEqual(
+            dp.core.wrap_lines(text, 36, 2),
+            ["- Privet, qalaysan?", "- Yaxshi, rahmat, o'zingiz qalaysiz?"],
+        )
+
+    def test_en_dash_and_em_dash_also_count(self):
+        for dash in ("\u2013", "\u2014"):
+            parts = dp.core.dialogue_parts(f"{dash} Ha. {dash} Yo'q.")
+            self.assertEqual(parts, [f"{dash} Ha.", f"{dash} Yo'q."], dash)
+
+    def test_more_speakers_than_lines_falls_back(self):
+        """Matn yo'qolmasligi chiziqcha joyidan muhimroq."""
+        text = "- Ha. - Yo'q. - Balki."
+        lines = dp.core.wrap_lines(text, 36, 2)
+        self.assertLessEqual(len(lines), 2)
+        self.assertEqual(" ".join(lines), text)
+
+    def test_punctuation_dash_is_not_dialogue(self):
+        self.assertIsNone(dp.core.dialogue_parts("shunday - deb aytdi u"))
+
+    def test_hyphenated_word_is_not_dialogue(self):
+        self.assertIsNone(dp.core.dialogue_parts("o'z-o'zidan tushunarli"))
+
+    def test_single_dash_is_not_dialogue(self):
+        """Bitta chiziqcha — bu bir so'zlovchining qatori, dialog emas."""
+        self.assertIsNone(dp.core.dialogue_parts("- Faqat bitta so'zlovchi"))
+
+    def test_dash_must_start_the_text(self):
+        """Gap o'rtasidagi chiziqchalar dialog deb hisoblanmasin."""
+        self.assertIsNone(dp.core.dialogue_parts("Ha - u keldi - va ketdi"))
+
+    def test_plain_text_is_unchanged(self):
+        """Whisper matni dialog chiziqchasi bermaydi — natija o'zgarmasin.
+
+        Haqiqiy 291 bo'lakda tekshirilgan: farq 0."""
+        text = "Bu oddiy uzun gap bo'lib, u albatta ikki qatorga bo'linadi"
+        lines = dp.core.wrap_lines(text, 30, 2)
+        self.assertEqual(len(lines), 2)
+        self.assertEqual(" ".join(lines), text)
+
+    def test_empty_and_none_are_safe(self):
+        self.assertIsNone(dp.core.dialogue_parts(""))
+        self.assertIsNone(dp.core.dialogue_parts("   "))
+
+    def test_srt_output_keeps_the_dashes_at_line_starts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "a.srt"
+            m_media.write_srt(
+                out, [seg(0.0, 4.0, "- Salom, qalaysan? - Yaxshi, rahmat sizga")]
+            )
+            body = out.read_text(encoding="utf-8-sig").strip().splitlines()
+        for line in body[2:]:
+            self.assertTrue(line.startswith("-"), f"chiziqcha qator boshida emas: {line!r}")
+
+
 class ConfidenceTests(unittest.TestCase):
     """Model bo'lakka qanchalik ishonganini SAQLAYMIZ.
 

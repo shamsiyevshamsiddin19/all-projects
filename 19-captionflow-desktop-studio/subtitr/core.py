@@ -995,11 +995,49 @@ def normalize_word(word: str) -> str:
     return word.lower().strip("`'\".,!?;:()[]{}")
 
 
+# Dialog chiziqchasi: "- Salom.  - Salom." Bu subtitrlarda ikki so'zlovchini
+# ajratishning standart usuli va fansub fayllarida juda keng tarqalgan.
+#
+# Shart: matn chiziqcha bilan BOSHLANISHI va kamida ikkita chiziqcha bo'lishi
+# kerak. Shunda "shunday - deb aytdi" kabi tinish belgisi yoki "o'z-o'zidan"
+# kabi qo'shma so'z xato aniqlanmaydi.
+_DIALOGUE_MARK = re.compile(r"(?:^|\s)([-\u2013\u2014])\s+")
+
+
+def dialogue_parts(text: str) -> list[str] | None:
+    """Dialogni so'zlovchilar bo'yicha bo'laklarga ajratadi, yoki None.
+
+    `parse_srt` bir cue ichidagi qatorlarni probel bilan qo'shib yuboradi,
+    shuning uchun "- Salom.\n- Salom." bitta satrga aylanadi va keyin
+    `wrap_lines` uni tasodifiy joydan bo'lib, ikkinchi chiziqchani qator
+    O'RTASIDA qoldirardi."""
+    body = " ".join((text or "").split())
+    if not body or not _DIALOGUE_MARK.match(body):
+        return None
+    marks = [m.start(1) for m in _DIALOGUE_MARK.finditer(body)]
+    if len(marks) < 2:
+        return None
+    parts: list[str] = []
+    for i, pos in enumerate(marks):
+        end = marks[i + 1] if i + 1 < len(marks) else len(body)
+        piece = body[pos:end].strip()
+        if piece:
+            parts.append(piece)
+    return parts if len(parts) >= 2 else None
+
+
 def wrap_lines(text: str, limit: int, max_lines: int = 2) -> list[str]:
     if isinstance(text, list):
         text = " ".join(str(x) for x in text)
     if not isinstance(text, str):
         text = str(text)
+    # Dialog bo'lsa, har so'zlovchi O'Z QATORIDAN boshlanadi — chiziqcha
+    # qator o'rtasida qolib ketmaydi. Bo'laklar soni sig'maganda oddiy
+    # bo'lishga qaytamiz (matn yo'qolmasligi muhimroq).
+    parts = dialogue_parts(text)
+    if parts is not None and len(parts) <= max_lines:
+        return parts
+
     words = " ".join((text or "").split()).split()
     if not words:
         return []
