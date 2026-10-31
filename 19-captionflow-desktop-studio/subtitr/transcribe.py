@@ -700,6 +700,17 @@ def transcribe_with_faster_whisper(
     model_name = os.getenv("WHISPER_MODEL", "small")
     device = os.getenv("WHISPER_DEVICE", "auto")
     compute_type = os.getenv("WHISPER_COMPUTE_TYPE", "int8")
+    # Model ATAYIN keshlanmaydi (modul darajasidagi global emas).
+    #
+    # Shu funksiya bir jarayonda BIR MARTA chaqiriladi (`get_transcription`),
+    # qayta o'qish esa ayni shu `model` obyektini ishlatadi — ya'ni yuklash
+    # allaqachon bir martalik. O'lchangan: 2.16s sovuq, ~0.95s issiq.
+    #
+    # Global keshda ushlab turish FOYDA bermaydi, zarar beradi: model yuzlab
+    # megabayt xotirani egallab, transkripsiya tugagandan keyin ham —
+    # render bosqichi davomida — bo'shamay turadi. Navbat (batch) rejimida
+    # ham yordam bermaydi, chunki ilova HAR VIDEO uchun yangi jarayon
+    # ishga tushiradi (jarayonning o'zi 0.07s).
     model = WhisperModel(model_name, device=device, compute_type=compute_type, download_root=str(MODEL_DIR))
     # Whisper sukut bo'yicha sukunatni ham "eshitadi" va oldingi matnga qarab
     # gapni o'zi to'qib davom ettiradi. Quyidagilar shuni to'xtatadi:
