@@ -15,6 +15,17 @@ BUNDLE="$APP_DIR/build/linux/x64/release/bundle"
 say() { printf '\n\033[1;36m==> %s\033[0m\n' "$*"; }
 die() { printf '\n\033[1;31mXATO: %s\033[0m\n' "$*" >&2; exit 1; }
 
+# SHA256 xesh tekshiruvi.
+# Nima uchun: tashqi manbadan yuklab olinayotgan binar va shrift fayllarining
+# yaxlitligini (integrity) va xavfsizligini kafolatlash uchun. Tarmoqdagi uzilishlar,
+# chala yuklanishlar yoki fayl buzilishlarining oldi olinadi.
+verify_sha256() {
+  local target="$1"
+  local expected="$2"
+  [ -f "$target" ] || return 1
+  printf '%s  %s\n' "$expected" "$target" | sha256sum -c --status 2>/dev/null
+}
+
 command -v flutter >/dev/null || die "flutter topilmadi (PATH ga qo'shing)"
 command -v python3 >/dev/null || die "python3 topilmadi"
 # Tahrirlash oynasidagi pleyer (media_kit) Linux'da TIZIMDAGI libmpv ni
@@ -39,20 +50,72 @@ fi
 
 say "3/5 yt-dlp tekshirilmoqda"
 mkdir -p "$ROOT/tools"
-if [ ! -x "$ROOT/tools/yt-dlp" ]; then
-  curl -fL --retry 3 -o "$ROOT/tools/yt-dlp" \
-    https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux
-  chmod +x "$ROOT/tools/yt-dlp"
+YTDLP_BIN="$ROOT/tools/yt-dlp"
+# Versiya qat'iy belgilangan: latest doim o'zgaradi va SHA256 nazorat summasini buzadi.
+# Shu sababli aniq barqaror versiya va uning rasmiy SHA256 xeshi ko'rsatiladi.
+YTDLP_URL="https://github.com/yt-dlp/yt-dlp/releases/download/2026.10.26/yt-dlp_linux"
+YTDLP_SHA256="767ba9dce7052aa196f8b12652f433d76de128ba168966fa84b6394d5e6c6795"
+
+if [ -f "$YTDLP_BIN" ]; then
+  # Agar fayl avval yuklangan bo'lsa, yaxlitligini xesh orqali tekshiramiz.
+  if verify_sha256 "$YTDLP_BIN" "$YTDLP_SHA256"; then
+    chmod +x "$YTDLP_BIN"
+  else
+    say "Ogohlantirish: Mavjud yt-dlp nazorat summasi (SHA256) mos kelmadi, qayta yuklanadi..."
+    rm -f "$YTDLP_BIN"
+  fi
+fi
+
+if [ ! -f "$YTDLP_BIN" ]; then
+  say "yt-dlp yuklab olinmoqda ($YTDLP_URL)..."
+  # Vaqtinchalik faylga yuklaymiz — agar tarmoq uzilsa chala fayl tools/ papkasida qolib ketmaydi.
+  TMP_YTDLP="$YTDLP_BIN.tmp.$$"
+  if ! curl -fL --connect-timeout 15 --max-time 180 --retry 3 --retry-delay 2 -o "$TMP_YTDLP" "$YTDLP_URL"; then
+    rm -f "$TMP_YTDLP"
+    die "Internetga ulanib bo'lmadi yoki tarmoq xatosi yuz berdi: yt-dlp yuklanmadi. Internet aloqasini tekshiring."
+  fi
+
+  # Yaxlitlikni tekshiramiz
+  if ! verify_sha256 "$TMP_YTDLP" "$YTDLP_SHA256"; then
+    rm -f "$TMP_YTDLP"
+    die "yt-dlp faylining SHA256 nazorat summasi mos kelmadi! Fayl to'liq yuklanmagan yoki shikastlangan bo'lishi mumkin."
+  fi
+
+  mv "$TMP_YTDLP" "$YTDLP_BIN"
+  chmod +x "$YTDLP_BIN"
 fi
 
 say "3.5/5 Subtitr shrifti tekshirilmoqda"
 # Tizimdagi Noto Sans faqat Bold (700) gacha — kuydirilgan subtitr kuchsiz
 # ko'rinadi. Montserrat Black (OFL, kirill + o'zbek harflari bor) qo'shiladi.
 mkdir -p "$ROOT/fonts"
-if [ ! -s "$ROOT/fonts/Montserrat-Black.ttf" ]; then
-  curl -fsSL --retry 3 -o "$ROOT/fonts/Montserrat-Black.ttf" \
-    https://github.com/google/fonts/raw/main/ofl/montserrat/static/Montserrat-Black.ttf \
-    || echo "Shrift yuklanmadi — Noto Sans bilan ishlaydi"
+FONT_FILE="$ROOT/fonts/Montserrat-Black.ttf"
+# Montserrat rasmiy mualliflik (Julieta Ulanovsky) repozitoriyasidan olinadi
+FONT_URL="https://raw.githubusercontent.com/JulietaUla/Montserrat/master/fonts/ttf/Montserrat-Black.ttf"
+FONT_SHA256="ea67b37f8776eebea135cd1fe9adeaf6f9427683e8dc11ab8398b6be5f102c60"
+
+if [ -f "$FONT_FILE" ]; then
+  # Agar shrift fayli mavjud bo'lsa, xeshini tekshiramiz.
+  if ! verify_sha256 "$FONT_FILE" "$FONT_SHA256"; then
+    say "Ogohlantirish: Mavjud Montserrat-Black.ttf nazorat summasi mos kelmadi, qayta yuklanadi..."
+    rm -f "$FONT_FILE"
+  fi
+fi
+
+if [ ! -f "$FONT_FILE" ]; then
+  say "Montserrat-Black.ttf shrifti yuklab olinmoqda..."
+  TMP_FONT="$FONT_FILE.tmp.$$"
+  if curl -fsSL --connect-timeout 15 --max-time 60 --retry 3 --retry-delay 2 -o "$TMP_FONT" "$FONT_URL"; then
+    if verify_sha256 "$TMP_FONT" "$FONT_SHA256"; then
+      mv "$TMP_FONT" "$FONT_FILE"
+    else
+      rm -f "$TMP_FONT"
+      say "Ogohlantirish: Yuklangan shriftning SHA256 summasi mos kelmadi — Noto Sans bilan ishlaydi."
+    fi
+  else
+    rm -f "$TMP_FONT"
+    say "Ogohlantirish: Tarmoq yo'qligi sababli shrift yuklanmadi — tizimdagi Noto Sans ishlatiladi."
+  fi
 fi
 
 # "O'qish uchun matn" rejimining PDF'i uchun kirill harflari bor serif shrift
