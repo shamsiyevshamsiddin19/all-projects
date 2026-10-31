@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from .core import AI_MIN_SPLIT_BATCH, COMMON_WORDS, PHRASES, SOURCE_LANG_NAMES, Segment, TARGET_LANG_NAMES, WORD_RE, _count, _env_float, ai_retry_backoff, ai_throttle, emit, model_candidates, normalize_word
+from .core import AI_DISABLED, AI_MIN_SPLIT_BATCH, COMMON_WORDS, PHRASES, SOURCE_LANG_NAMES, Segment, TARGET_LANG_NAMES, WORD_RE, _count, _env_float, ai_retry_backoff, ai_throttle, disable_provider, emit, error_kind, log, model_candidates, normalize_word
 from .cache import _cache_enabled, _load_json, _save_json
 
 
@@ -49,6 +49,77 @@ def indexed_values(data: dict[str, Any], count: int, fallback: list[str]) -> tup
         out_pos.append(pos)
         out_lemma.append(lemma)
     return out_tr, out_pos, out_lemma
+
+
+# Hamma AI so'rovi uchun bitta provayder ro'yxati. Ilgari u ikki joyda
+# (`ai_translate_batch` va `translate_word_list`) so'zma-so'z takrorlangan edi.
+def ai_providers() -> list[tuple[str, Any]]:
+    """Kaliti bor va ish davomida o'chirilmagan provayderlar."""
+    all_providers = [
+        ("openai", "OPENAI_API_KEY", translate_openai),
+        ("claude", "ANTHROPIC_API_KEY", translate_claude),
+        ("gemini", "GEMINI_API_KEY", translate_gemini),
+        ("groq", "GROQ_API_KEY", translate_groq),
+    ]
+    return [
+        (name, fn)
+        for name, env_key, fn in all_providers
+        if os.getenv(env_key) and name not in AI_DISABLED
+    ]
+
+
+# Urinishlar soni. 5 ta ko'p edi: har urinish 4 provayderni aylanib chiqadi,
+# ya'ni bitta to'plam uchun 20 ta chaqiruv. Muvaffaqiyatsizlikdan keyin
+# to'plam baribir ikkiga bo'linib qayta so'raladi, shuning uchun 3 yetarli.
+def ai_attempts() -> int:
+    try:
+        return max(1, int(os.getenv("AI_MAX_ATTEMPTS", "3")))
+    except (TypeError, ValueError):
+        return 3
+
+
+def try_providers(prompt: str, payload: str, accept: Any, label: str) -> tuple[Any, str] | None:
+    """Provayderlarni navbat bilan sinaydi; `accept(javob)` natijani qabul
+    qilsa (yoki `None` qaytarsa — yaramaydi) to'xtaydi.
+
+    Qaytaradi: (natija, provayder nomi) yoki hammasi tushsa `None`.
+
+    Muhim: faqat QAYTA URINISHGA ARZIYDIGAN xatolar takrorlanadi. Yaroqsiz
+    kalit ("auth") provayderni butun ish davomiga o'chiradi — ilgari uzun
+    kinoda har bir to'plam uchun qaytadan urinilar va har biri 6 soniya
+    kutardi."""
+    attempts = ai_attempts()
+    # Shu CHAQIRUV ichida chetlab o'tiladigan provayderlar. `bad_request`
+    # (model eskirgan, so'rov yaroqsiz) ikkinchi urinishda ham o'zgarmaydi,
+    # lekin provayderni butun ish davomiga o'chirib qo'ymaymiz: 400 ba'zan
+    # "matn juda uzun" degani bo'ladi va to'plam ikkiga bo'lingandan keyin
+    # o'sha provayder yana ishlaydi.
+    skip: set[str] = set()
+    for attempt in range(attempts):
+        providers = [(n, f) for n, f in ai_providers() if n not in skip]
+        if not providers:
+            return None
+        for name, fn in providers:
+            try:
+                result = accept(fn(prompt, payload))
+            except Exception as exc:
+                kind = error_kind(exc)
+                if kind == "auth":
+                    # Yaroqsiz kalit — butun ish davomiga o'chiramiz.
+                    disable_provider(name, str(exc))
+                elif kind == "bad_request":
+                    skip.add(name)
+                    log.info("%s: qayta urinilmaydi — %s", name, str(exc)[:160])
+                else:
+                    log.info("%s: %s urinish %d/%d — %s",
+                             name, label, attempt + 1, attempts, str(exc)[:160])
+                continue
+            if result is not None:
+                ai_throttle()
+                return result, name
+        if attempt + 1 < attempts and [n for n, _ in ai_providers() if n not in skip]:
+            ai_retry_backoff(attempt)
+    return None
 
 
 def subtitle_prompt(target_lang: str, source_lang: str, glossary: dict[str, str] | None = None) -> str:
@@ -98,39 +169,25 @@ def ai_translate_batch(
         ensure_ascii=False,
     )
 
-    providers = [
-        ("openai", bool(os.getenv("OPENAI_API_KEY")), translate_openai),
-        ("claude", bool(os.getenv("ANTHROPIC_API_KEY")), translate_claude),
-        ("gemini", bool(os.getenv("GEMINI_API_KEY")), translate_gemini),
-        ("groq", bool(os.getenv("GROQ_API_KEY")), translate_groq),
-    ]
     # Umuman kalit yo'q bo'lsa — kutish va qayta urinishning ma'nosi yo'q
     # (ilgari har bir to'plam uchun 30 soniya behuda kutilardi).
-    if not any(enabled for _, enabled, _ in providers):
+    if not ai_providers():
         return [offline_translate_text(text) for text in texts], "offline_dictionary"
 
-    errors: list[str] = []
+    def accept(data: str) -> list[str] | None:
+        parsed = json_object_from_text(data)
+        out_tr, _, _ = indexed_values(parsed, len(texts), texts)
+        matched = sum(1 for i, value in enumerate(out_tr) if value and value != texts[i])
+        # Javob to'liq bo'lmasa qolgan qatorlar asl matn bilan qoladi —
+        # to'plamni bo'lib qayta so'raganimiz ma'qul.
+        need = max(1, int(len(texts) * _env_float("TRANSLATE_MIN_COVERAGE", 0.8)))
+        if matched < need:
+            raise RuntimeError(f"AI javobida tarjima kam ({matched}/{len(texts)})")
+        return out_tr
 
-    for attempt in range(5):
-        for name, enabled, fn in providers:
-            if not enabled:
-                continue
-            try:
-                data = fn(prompt, payload)
-                parsed = json_object_from_text(data)
-                out_tr, _, _ = indexed_values(parsed, len(texts), texts)
-                matched = sum(1 for i, value in enumerate(out_tr) if value and value != texts[i])
-                # Javob to'liq bo'lmasa qolgan qatorlar asl matn bilan qoladi —
-                # to'plamni bo'lib qayta so'raganimiz ma'qul.
-                need = max(1, int(len(texts) * _env_float("TRANSLATE_MIN_COVERAGE", 0.8)))
-                if matched < need:
-                    raise RuntimeError(f"AI javobida tarjima kam ({matched}/{len(texts)})")
-                ai_throttle()
-                return out_tr, name
-            except Exception as exc:
-                errors.append(f"{name}: {exc}")
-                continue
-        ai_retry_backoff()
+    got = try_providers(prompt, payload, accept, f"tarjima ({len(texts)} qator)")
+    if got is not None:
+        return got
 
     # Katta to'plam bir marta ishlamasligi ko'pincha vaqtinchalik (limit yoki
     # javob uzunligi) — ikkiga bo'lib qayta urinamiz. Aks holda 50 ta qator
@@ -250,11 +307,15 @@ def translate_gemini(prompt: str, payload: str) -> str:
 
     client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
     last_error: Exception | None = None
+    # DIQQAT: bu standart `.env.example` dagi GEMINI_MODEL bilan BIR XIL
+    # bo'lishi kerak. Ilgari kodda "gemini-2.5-pro", namunada esa
+    # "gemini-2.5-flash" turardi — `.env` ni o'qigan foydalanuvchi o'zi
+    # kutganidan ancha qimmat modelga tushib qolardi.
     for model in model_candidates(
         "GEMINI_MODEL",
-        "gemini-2.5-pro",
+        "gemini-2.5-flash",
         "GEMINI_FALLBACK_MODELS",
-        ["gemini-2.5-flash", "gemini-2.5-flash-lite"],
+        ["gemini-2.5-flash-lite"],
     ):
         try:
             resp = client.models.generate_content(
@@ -517,49 +578,40 @@ def translate_word_list(words: list[str], target_lang: str) -> tuple[list[str], 
     lemma_list: list[str] = []
     provider = ""
 
-    providers = [
-        ("openai", bool(os.getenv("OPENAI_API_KEY")), translate_openai),
-        ("claude", bool(os.getenv("ANTHROPIC_API_KEY")), translate_claude),
-        ("gemini", bool(os.getenv("GEMINI_API_KEY")), translate_gemini),
-        ("groq", bool(os.getenv("GROQ_API_KEY")), translate_groq),
-    ]
-    if not any(enabled for _, enabled, _ in providers):
+    if not ai_providers():
         return ([offline_translate_word(w) for w in words], [""] * len(words),
                 [""] * len(words), "offline_dictionary")
 
     def translate_chunk(chunk: list[str]) -> tuple[list[str], list[str], list[str], str]:
         """Bitta to'plamni tarjima qiladi; ishlamasa ikkiga bo'lib qayta uradi."""
         payload = json.dumps({str(i): w for i, w in enumerate(chunk)}, ensure_ascii=False)
-        for _attempt in range(3):
-            for name, enabled, fn in providers:
-                if not enabled:
-                    continue
-                try:
-                    parsed = json_object_from_text(fn(prompt, payload))
-                    c_tr, c_pos, c_lemma = indexed_values(
-                        parsed, len(chunk), [offline_translate_word(w) for w in chunk]
-                    )
-                    matched = sum(
-                        1 for i, tr in enumerate(c_tr)
-                        if tr and tr.lower() != chunk[i].lower()
-                        and tr != offline_translate_word(chunk[i])
-                    )
-                    # Model to'plamning bir qismiga javob bermasligi mumkin —
-                    # o'shanda qolgan so'zlar o'z-o'ziga "tarjima" bo'lib
-                    # qoladi va lug'atdan tushib ketadi (ekranda o'sha
-                    # daqiqalarda kartochka chiqmaydi). Shuning uchun javob
-                    # deyarli to'liq bo'lishini talab qilamiz; bo'lmasa
-                    # to'plam ikkiga bo'linib qayta so'raladi.
-                    need = max(1, int(len(chunk) * _env_float("VOCAB_MIN_COVERAGE", 0.8)))
-                    if matched < need:
-                        raise RuntimeError(
-                            f"Lug'atda yetarli tarjima qilinmadi ({matched}/{len(chunk)})"
-                        )
-                    ai_throttle()
-                    return c_tr, c_pos, c_lemma, name
-                except Exception:
-                    continue
-            ai_retry_backoff()
+
+        def accept(data: str) -> tuple[list[str], list[str], list[str]] | None:
+            c_tr, c_pos, c_lemma = indexed_values(
+                json_object_from_text(data), len(chunk),
+                [offline_translate_word(w) for w in chunk],
+            )
+            matched = sum(
+                1 for i, tr in enumerate(c_tr)
+                if tr and tr.lower() != chunk[i].lower()
+                and tr != offline_translate_word(chunk[i])
+            )
+            # Model to'plamning bir qismiga javob bermasligi mumkin —
+            # o'shanda qolgan so'zlar o'z-o'ziga "tarjima" bo'lib qoladi va
+            # lug'atdan tushib ketadi (ekranda o'sha daqiqalarda kartochka
+            # chiqmaydi). Shuning uchun javob deyarli to'liq bo'lishini
+            # talab qilamiz; bo'lmasa to'plam ikkiga bo'linib qayta so'raladi.
+            need = max(1, int(len(chunk) * _env_float("VOCAB_MIN_COVERAGE", 0.8)))
+            if matched < need:
+                raise RuntimeError(
+                    f"Lug'atda yetarli tarjima qilinmadi ({matched}/{len(chunk)})"
+                )
+            return c_tr, c_pos, c_lemma
+
+        got = try_providers(prompt, payload, accept, f"lug'at ({len(chunk)} so'z)")
+        if got is not None:
+            (c_tr, c_pos, c_lemma), name = got
+            return c_tr, c_pos, c_lemma, name
 
         # Katta to'plam bir marta ishlamasligi ko'pincha vaqtinchalik. Ikkiga
         # bo'lib qayta urinamiz — aks holda butun bir bo'lak so'z tarjimasiz

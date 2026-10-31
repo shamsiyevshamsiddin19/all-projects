@@ -7,7 +7,7 @@ import threading
 from pathlib import Path
 from typing import NamedTuple
 
-from .core import FFMPEG, ROOT, Segment, Word, _env_float, emit, normalize_word, require_tool, run, wrap_lines
+from .core import FFMPEG, ROOT, Segment, Word, _env_float, emit, log, normalize_word, require_tool, run, stop_child, wrap_lines
 from .media import probe_duration_seconds, probe_resolution, seconds_to_ass_time
 
 
@@ -460,38 +460,61 @@ def burn_subtitles(
         stderr_thread.start()
         last_pct = -1
         assert proc.stdout is not None
-        for line in proc.stdout:
-            line = line.strip()
-            if line.startswith("out_time_us=") and total > 0:
-                try:
-                    secs = int(line.split("=", 1)[1]) / 1_000_000.0
-                except ValueError:
-                    continue
-                frac = max(0.0, min(1.0, secs / total))
-                pct = round(frac * 100)
-                if pct != last_pct:
-                    last_pct = pct
-                    emit(
-                        "progress",
-                        message=f"Video render ({enc_name}){suffix} {pct}%",
-                        progress=progress_lo + (progress_hi - progress_lo) * frac,
-                    )
-        proc.wait()
+        try:
+            for line in proc.stdout:
+                line = line.strip()
+                if line.startswith("out_time_us=") and total > 0:
+                    try:
+                        secs = int(line.split("=", 1)[1]) / 1_000_000.0
+                    except ValueError:
+                        continue
+                    frac = max(0.0, min(1.0, secs / total))
+                    pct = round(frac * 100)
+                    if pct != last_pct:
+                        last_pct = pct
+                        emit(
+                            "progress",
+                            message=f"Video render ({enc_name}){suffix} {pct}%",
+                            progress=progress_lo + (progress_hi - progress_lo) * frac,
+                        )
+            proc.wait()
+        except BaseException:
+            # "Bekor qilish" (KeyboardInterrupt) — ffmpeg'ni o'zimiz
+            # to'xtatamiz, aks holda u yetim bo'lib render'ni davom ettiradi.
+            stop_child(proc, "ffmpeg (render)")
+            raise
         stderr_thread.join(timeout=5)
         return proc.returncode, "".join(stderr_chunks)
 
-    choice = pick_video_encoder()
-    code, err = _run(choice)
-    if code != 0 and choice.codec != "libx264":
-        # Apparat kodlash uzildi (drayver/format) — libx264 (CPU) ga qaytamiz.
-        global _HW_ENCODER_CACHE
-        _HW_ENCODER_CACHE = "x264"
-        code, err = _run(
-            EncoderChoice(
-                "libx264",
-                ["-preset", os.getenv("SUB_PRESET", "veryfast"), "-crf", os.getenv("SUB_CRF", "20")],
-                "libx264 (CPU)",
+    # Yarim yozilgan `.mp4` natijalar papkasida qolmasligi kerak: u ochilmaydi,
+    # lekin foydalanuvchi uni tayyor fayl deb o'ylaydi. Shuning uchun render
+    # muvaffaqiyatsiz tugasa (yoki "Bekor qilish" bosilsa) fayl o'chiriladi.
+    def discard_partial() -> None:
+        try:
+            if out_path.exists():
+                out_path.unlink()
+                log.info("yarim render o'chirildi: %s", out_path.name)
+        except OSError:
+            pass
+
+    try:
+        choice = pick_video_encoder()
+        code, err = _run(choice)
+        if code != 0 and choice.codec != "libx264":
+            # Apparat kodlash uzildi (drayver/format) — libx264 (CPU) ga qaytamiz.
+            global _HW_ENCODER_CACHE
+            _HW_ENCODER_CACHE = "x264"
+            code, err = _run(
+                EncoderChoice(
+                    "libx264",
+                    ["-preset", os.getenv("SUB_PRESET", "veryfast"), "-crf", os.getenv("SUB_CRF", "20")],
+                    "libx264 (CPU)",
+                )
             )
-        )
+    except BaseException:
+        # KeyboardInterrupt ham shu yerga tushadi (SIGTERM -> to'xtatish).
+        discard_partial()
+        raise
     if code != 0:
+        discard_partial()
         raise RuntimeError("Video render xato: " + (err[-900:] or "noma'lum"))

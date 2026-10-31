@@ -203,6 +203,64 @@ class PreparedSession {
   }
 }
 
+/// One section of the on-disk cache, as reported by `cache-info`.
+class CacheSection {
+  const CacheSection({
+    required this.name,
+    required this.label,
+    required this.path,
+    required this.bytes,
+  });
+
+  final String name;
+  final String label;
+  final String path;
+  final int bytes;
+
+  factory CacheSection.fromJson(Map<String, dynamic> json) => CacheSection(
+        name: json['name'] as String? ?? '',
+        label: json['label'] as String? ?? '',
+        path: json['path'] as String? ?? '',
+        bytes: (json['bytes'] as num?)?.toInt() ?? 0,
+      );
+}
+
+/// How much disk the app's hidden working folders use. Shown in settings so
+/// the download cache cannot quietly grow to tens of gigabytes unnoticed.
+class CacheUsage {
+  const CacheUsage({required this.sections, required this.total, this.freed = 0});
+
+  final List<CacheSection> sections;
+  final int total;
+
+  /// Bytes reclaimed by the call that produced this snapshot (0 for a read).
+  final int freed;
+
+  static const empty = CacheUsage(sections: [], total: 0);
+
+  factory CacheUsage.fromJson(Map<String, dynamic> json) {
+    final raw = json['sections'];
+    return CacheUsage(
+      sections: raw is List
+          ? raw
+              .whereType<Map>()
+              .map((e) => CacheSection.fromJson(Map<String, dynamic>.from(e)))
+              .toList()
+          : const [],
+      total: (json['total'] as num?)?.toInt() ?? 0,
+      freed: (json['freed'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  /// "1.4 GB" / "830 MB" / "0 MB" — always a round, readable figure.
+  static String format(int bytes) {
+    if (bytes >= 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+    }
+    return '${(bytes / (1024 * 1024)).round()} MB';
+  }
+}
+
 class ScanResult {
   const ScanResult({
     required this.videos,
@@ -277,6 +335,28 @@ class DesktopProcessorService {
     } catch (_) {
       return false;
     }
+  }
+
+  /// Reads how much disk the hidden cache folders use (downloads, work files,
+  /// finished transcripts, Whisper models).
+  Future<CacheUsage> cacheInfo() async {
+    return CacheUsage.fromJson(await _runJson(['cache-info']));
+  }
+
+  /// Deletes a cache section and returns the usage afterwards. Defaults to
+  /// `downloads` — the section that grows fastest and costs nothing but a
+  /// re-download. `transcripts` is never part of `all`: throwing away finished
+  /// translations means paying the AI for them again.
+  Future<CacheUsage> clearCache({String what = 'downloads'}) async {
+    return CacheUsage.fromJson(await _runJson(['clear-cache', '--what', what]));
+  }
+
+  /// Where the processor writes its daily log. Used by the settings screen so
+  /// the user (or a bug report) can get at the full traceback — the GUI only
+  /// ever shows a one-line error.
+  Future<String> logDir() async {
+    final payload = await _runJson(['log-path']);
+    return payload['dir'] as String? ?? '';
   }
 
   Future<ProcessorResult> process({
@@ -452,8 +532,21 @@ class DesktopProcessorService {
     await Process.run('xdg-open', [path]);
   }
 
-  Map<String, String>? get _env =>
-      processEnvironment.isEmpty ? null : processEnvironment;
+  /// Environment for the processor. Dart merges this over the parent
+  /// environment, so PATH and friends are still inherited.
+  ///
+  /// [ownGroup] is set for long-running jobs only: it tells the processor to
+  /// put itself in its own process group so [cancel] can stop the whole tree
+  /// (python + ffmpeg + yt-dlp) with one signal. It is deliberately NOT set
+  /// for short commands, and never for plain CLI use, where it would stop
+  /// Ctrl+C from reaching the process.
+  Map<String, String>? _envFor({bool ownGroup = false}) {
+    if (processEnvironment.isEmpty && !ownGroup) return null;
+    return {
+      ...processEnvironment,
+      if (ownGroup) 'SUBTITR_OWN_PROCESS_GROUP': '1',
+    };
+  }
 
   /// The frozen (PyInstaller) processor shipped next to the app, or null when
   /// only the `.py` source is present. Windows builds carry the `.exe`
@@ -474,7 +567,7 @@ class DesktopProcessorService {
         args,
         workingDirectory: root.path,
         runInShell: false,
-        environment: _env,
+        environment: _envFor(),
         // The processor prints UTF-8 JSON; decode as UTF-8 so non-ASCII
         // folder/file names (Cyrillic, etc.) are not mangled by the OS ANSI
         // code page (the Process.run default).
@@ -488,7 +581,7 @@ class DesktopProcessorService {
       [script.path, ...args],
       workingDirectory: root.path,
       runInShell: Platform.isWindows,
-      environment: _env,
+      environment: _envFor(),
       stdoutEncoding: utf8,
       stderrEncoding: utf8,
     );
@@ -502,7 +595,7 @@ class DesktopProcessorService {
         args,
         workingDirectory: root.path,
         runInShell: false,
-        environment: _env,
+        environment: _envFor(ownGroup: true),
       );
     }
     final executable = await _pythonExecutable();
@@ -511,7 +604,7 @@ class DesktopProcessorService {
       [script.path, ...args],
       workingDirectory: root.path,
       runInShell: Platform.isWindows,
-      environment: _env,
+      environment: _envFor(ownGroup: true),
     );
   }
 
@@ -542,27 +635,64 @@ class DesktopProcessorService {
 
   /// Aborts the currently running job (kills the processor and its ffmpeg
   /// children). Safe to call when nothing is running.
+  /// How long the processor gets to shut down cleanly before it is killed.
+  static const _gracePeriod = Duration(seconds: 4);
+
   Future<void> cancel() async {
     final process = _active;
     if (process == null) return;
     _cancelled = true;
+
     if (Platform.isWindows) {
-      // Kill the whole process tree — Process.kill() alone leaves ffmpeg running.
+      // Windows has no graceful equivalent for a console-less child, so the
+      // tree is killed outright. /T covers grandchildren (ffmpeg, yt-dlp).
       try {
         await Process.run('taskkill', ['/PID', '${process.pid}', '/T', '/F']);
       } catch (_) {
         process.kill(ProcessSignal.sigkill);
       }
-    } else {
-      // Linux/macOS: Process.kill() faqat Python'ni o'ldiradi, u ishga
-      // tushirgan ffmpeg/yt-dlp esa "yetim" bo'lib fonda ishlab qolaveradi
-      // va protsessorni band qilib turadi. Avval bolalarini o'ldiramiz.
-      try {
-        await Process.run('pkill', ['-9', '-P', '${process.pid}']);
-      } catch (_) {
-        // pkill yo'q bo'lsa ham asosiy jarayonni to'xtatamiz.
-      }
-      process.kill(ProcessSignal.sigkill);
+      return;
+    }
+
+    // POSIX: SIGKILL cannot be caught, so it used to skip the processor's own
+    // cleanup — a half-written .mp4 stayed in the output folder and the job's
+    // temp dir (up to ~1 GB of WAV) stayed in the cache. Ask politely first:
+    // the processor turns SIGTERM into KeyboardInterrupt, so its `finally`
+    // blocks run. Only if it is still alive after the grace period do we kill.
+    //
+    // The signal goes to the whole process GROUP (negative pid) because
+    // `pkill -P` reached direct children only — ffmpeg spawned by yt-dlp
+    // survived as an orphan and kept burning CPU. The processor puts itself
+    // in its own group when SUBTITR_OWN_PROCESS_GROUP is set (see
+    // `core.install_signal_handlers`).
+    final exited = process.exitCode;
+    var stopped = false;
+    exited.whenComplete(() => stopped = true);
+
+    await _signal('-TERM', process.pid);
+    await Future.any([
+      exited,
+      Future<void>.delayed(_gracePeriod),
+    ]);
+    if (stopped) return;
+
+    await _signal('-KILL', process.pid);
+    process.kill(ProcessSignal.sigkill);
+  }
+
+  /// Sends a signal to the processor's process group, falling back to the
+  /// single process when the group send is not permitted.
+  Future<void> _signal(String signal, int pid) async {
+    try {
+      final group = await Process.run('kill', [signal, '-$pid']);
+      if (group.exitCode == 0) return;
+    } catch (_) {
+      // `kill` missing — fall through to the single-process path.
+    }
+    try {
+      await Process.run('kill', [signal, '$pid']);
+    } catch (_) {
+      if (signal == '-KILL') _active?.kill(ProcessSignal.sigkill);
     }
   }
 
@@ -573,7 +703,20 @@ class DesktopProcessorService {
     final process = await _executeStart(args);
     _active = process;
     _cancelled = false;
+    try {
+      return await _consume(process, onProgress);
+    } finally {
+      // Ilgari `_active = null` faqat muvaffaqiyatli yo'lda bajarilardi:
+      // oqimda xato chiqsa o'lgan jarayon "faol" bo'lib qolar va keyingi
+      // `cancel()` yo'q pid'ga signal yuborardi.
+      _active = null;
+    }
+  }
 
+  Future<Map<String, dynamic>> _consume(
+    Process process,
+    void Function(ProcessorProgress progress) onProgress,
+  ) async {
     Map<String, dynamic>? donePayload;
     String? errorMessage;
 
@@ -608,7 +751,6 @@ class DesktopProcessorService {
 
     final stderr = await stderrFuture;
     final code = await process.exitCode;
-    _active = null;
     if (_cancelled) {
       throw const _CancelledException();
     }

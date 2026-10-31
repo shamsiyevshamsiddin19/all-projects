@@ -685,15 +685,27 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     return (_videoDuration * factor).round();
   }
 
+  /// Tarjima qiladigan rejimlar — Python tarafdagi `pipeline._prepare_data`
+  /// ichidagi `needs_translation` to'plami bilan AYNAN bir xil bo'lishi kerak.
+  /// Ilgari bu yerda `const needsTr = true` turardi va "Original" rejimlarida
+  /// ham tarjima tokeni va'da qilinardi — aslida hech qanday tarjima
+  /// so'rovi ketmasdi.
+  static const _translatingModes = {
+    'dual', 'dual_vocab', 'translated', 'srt', 'transcript', 'reading', 'all',
+  };
+
+  /// Lug'at tuzadigan rejimlar — `pipeline._prepare_data` dagi `VOCAB_MODES`.
+  static const _vocabModes = {
+    'vocabulary', 'original_vocab', 'dual_vocab', 'all',
+  };
+
   /// Rough token estimate so the user knows about how much they'll spend.
   String get _estimateText {
     if (_videoDuration <= 0) return '';
     final segs = (_videoDuration / 3.5).round();
-    const needsTr = true; // deyarli barcha rejimlar tarjima qiladi
-    final needsVocab = _mode.contains('vocab') || _mode == 'vocabulary' || _mode == 'all';
     var tokens = 0;
-    if (needsTr && _mode != 'vocabulary') tokens += segs * 45;
-    if (needsVocab) tokens += segs * 25;
+    if (_translatingModes.contains(_mode)) tokens += segs * 45;
+    if (_vocabModes.contains(_mode)) tokens += segs * 25;
     if (tokens <= 0) return '~$segs subtitr';
     final k = (tokens / 1000).round();
     return '~$segs subtitr · ~$k ming token';

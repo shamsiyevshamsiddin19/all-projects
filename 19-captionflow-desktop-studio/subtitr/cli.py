@@ -2,14 +2,21 @@
 from __future__ import annotations
 
 import argparse
+import traceback
 
-from .core import KINO_DIR, OUT_DIR, emit, ensure_dirs
+from .cache import cache_usage, clear_cache
+from .core import KINO_DIR, LOG_DIR, OUT_DIR, clean_orphan_tmp, current_log_file, emit, ensure_dirs, install_signal_handlers, log, redact, setup_logging
 from .media import DEFAULT_QUALITY, QUALITY_HEIGHTS, download_video, scan, update_ytdlp
 from .pipeline import install_deps, prepare_session, process, render_session
 
 
 def main() -> int:
     ensure_dirs()
+    setup_logging()
+    install_signal_handlers()
+    # Oldingi uzilgan ishlardan qolgan papkalar (SIGKILL yoki dastur tushishi)
+    # shu yerda tozalanadi — ular keshda yuzlab megabayt egallab turardi.
+    clean_orphan_tmp()
     parser = argparse.ArgumentParser(description="Subtitr desktop local processor")
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -41,6 +48,16 @@ def main() -> int:
 
     sub.add_parser("update-ytdlp")
 
+    # Kesh ko'rinmas joyda (XDG kesh papkasi) o'sadi — ilovaga uni ko'rsatish
+    # va tozalash imkonini beramiz.
+    sub.add_parser("cache-info")
+    sub.add_parser("log-path")
+    p_clear = sub.add_parser("clear-cache")
+    p_clear.add_argument(
+        "--what", default="downloads",
+        choices=["downloads", "work", "models", "transcripts", "all"],
+    )
+
     # #1 — ikki bosqichli oqim: transkripsiya+tarjima (prepare) → tahrir → render.
     p_prepare = sub.add_parser("prepare")
     p_prepare.add_argument("--video", required=True)
@@ -65,6 +82,9 @@ def main() -> int:
     p_render.add_argument("--upscale", action="store_true")
 
     args = parser.parse_args()
+    # Hech qanday argument qiymati logga tushmaydi (`--video` yo'li tushadi,
+    # lekin kalitlar faqat muhit o'zgaruvchilarida — ularga tegmaymiz).
+    log.info("--- buyruq: %s ---", args.command)
     try:
         if args.command == "scan":
             emit("done", videos=scan(args.dir), kinoDir=str(KINO_DIR), outDir=str(OUT_DIR))
@@ -79,6 +99,12 @@ def main() -> int:
             emit("done", path=str(path), name=path.name, dir=str(dest))
         elif args.command == "update-ytdlp":
             emit("done", **update_ytdlp())
+        elif args.command == "cache-info":
+            emit("done", **cache_usage())
+        elif args.command == "log-path":
+            emit("done", dir=str(LOG_DIR), file=str(current_log_file()))
+        elif args.command == "clear-cache":
+            emit("done", **clear_cache(args.what))
         elif args.command == "prepare":
             result = prepare_session(
                 args.video, args.mode, args.source_lang, args.target_lang,
@@ -102,8 +128,16 @@ def main() -> int:
             )
             emit("done", **result)
         return 0
+    except KeyboardInterrupt:
+        # Ilova "Bekor qilish" bosganda SIGINT yuboradi — bu xato emas.
+        log.info("foydalanuvchi bekor qildi")
+        emit("error", message="Bekor qilindi")
+        return 130
     except Exception as exc:
-        emit("error", message=str(exc))
+        # Traceback ilgari butunlay yo'qolardi: GUI faqat `str(exc)` ni
+        # ko'rsatar, xato qaysi qatordan kelganini bilish imkoni yo'q edi.
+        log.error("tushdi (%s):\n%s", args.command, redact(traceback.format_exc()))
+        emit("error", message=str(exc), log=str(current_log_file()))
         return 1
 
 

@@ -4,10 +4,11 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shutil
 from pathlib import Path
 from typing import Any
 
-from .core import CACHE_DIR, Segment, Word, safe_stem
+from .core import CACHE_DIR, MODEL_DIR, Segment, TMP_DIR, Word, safe_stem
 
 
 # ---------------------------------------------------------------------------
@@ -97,3 +98,99 @@ def save_transcription(cdir: Path, segs: list[Segment], words: list[Word], lang:
         "lang": lang,
         "transcriber": transcriber,
     })
+
+
+# ---------------------------------------------------------------------------
+# Kesh hajmi va tozalash
+#
+# Ishchi fayllar ko'rinmas joyda (XDG kesh papkasi) yotadi, shuning uchun
+# foydalanuvchi ularning o'sib ketganini sezmaydi. Bu yerdagi ikki funksiya
+# ilovaga "qancha joy band" va "tozalash" imkonini beradi.
+# ---------------------------------------------------------------------------
+
+def _dir_size(path: Path) -> int:
+    total = 0
+    if not path.is_dir():
+        return 0
+    for item in path.rglob("*"):
+        try:
+            if item.is_file():
+                total += item.stat().st_size
+        except OSError:
+            continue
+    return total
+
+
+# Tozalanadigan bo'limlar: nom -> (papka, tushuntirish).
+# "downloads" — havoladan yuklangan videolar (eng ko'p joy shu yerda ketadi);
+# "work"      — tugamay qolgan ishlardan qolgan vaqtinchalik papkalar;
+# "transcripts" — tayyor transkripsiya/tarjima/lug'at (o'chirilsa AI'ga
+#                 qayta pul ketadi, shuning uchun "all" ga kirmaydi);
+# "models"    — yuklab olingan Whisper modellari (qaytadan yuklab olinadi).
+def _sections() -> dict[str, tuple[Path, str]]:
+    return {
+        "downloads": (TMP_DIR / "yuklamalar", "Yuklab olingan videolar"),
+        "work": (TMP_DIR, "Ishchi fayllar"),
+        "transcripts": (CACHE_DIR, "Tayyor matn va tarjimalar"),
+        "models": (MODEL_DIR, "AI modellar"),
+    }
+
+
+def cache_usage() -> dict[str, Any]:
+    """Har bir kesh bo'limining hajmi (bayt)."""
+    sections = _sections()
+    sizes = {name: _dir_size(path) for name, (path, _label) in sections.items()}
+    # "work" ichida "downloads" ham bor — qo'shib yubormaslik uchun ayiramiz.
+    sizes["work"] = max(0, sizes["work"] - sizes["downloads"])
+    return {
+        "sections": [
+            {
+                "name": name,
+                "label": sections[name][1],
+                "path": str(sections[name][0]),
+                "bytes": sizes[name],
+            }
+            for name in sections
+        ],
+        "total": sum(sizes.values()),
+    }
+
+
+def clear_cache(what: str = "downloads") -> dict[str, Any]:
+    """Keshni tozalaydi va bo'shagan joyni qaytaradi.
+
+    `what`: "downloads" (sukut — xavfsiz, faqat qayta yuklash kerak bo'ladi),
+    "work", "models", "transcripts" yoki "all".
+
+    DIQQAT: "all" ichiga "transcripts" KIRMAYDI — tayyor tarjimani o'chirish
+    foydalanuvchiga qaytadan pul turadi, shuning uchun uni faqat atayin
+    so'raganda o'chiramiz."""
+    sections = _sections()
+    if what == "all":
+        names = ["downloads", "work", "models"]
+    elif what in sections:
+        names = [what]
+    else:
+        raise RuntimeError(f"Noma'lum kesh bo'limi: {what}")
+
+    freed = 0
+    for name in names:
+        path = sections[name][0]
+        if not path.is_dir():
+            continue
+        if name == "work":
+            # TMP_DIR ning o'zini o'chirmaymiz: ichidagi "yuklamalar"
+            # alohida bo'lim, qolgani — tashlandiq ish papkalari.
+            for item in path.iterdir():
+                if item == sections["downloads"][0]:
+                    continue
+                freed += _dir_size(item) if item.is_dir() else item.stat().st_size
+                if item.is_dir():
+                    shutil.rmtree(item, ignore_errors=True)
+                else:
+                    item.unlink(missing_ok=True)
+            continue
+        freed += _dir_size(path)
+        shutil.rmtree(path, ignore_errors=True)
+        path.mkdir(parents=True, exist_ok=True)
+    return {"freed": freed, "cleared": names, **cache_usage()}

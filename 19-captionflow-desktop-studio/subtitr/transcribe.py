@@ -106,6 +106,12 @@ RESCAN_GAP_SPEECH = 1.5    # bo'shliqda shuncha soniya nutq bo'lsa qayta o'qilad
 RESCAN_GAP_MAX_CHECKS = 25 # nechta bo'shliqni tekshirishga arziydi
 
 
+def _mmss(seconds: float) -> str:
+    """Soniyani "mm:ss" ko'rinishiga o'giradi (ogohlantirish matnlari uchun)."""
+    total = max(0, int(seconds))
+    return f"{total // 60:02d}:{total % 60:02d}"
+
+
 def seg_density(seg: Segment) -> float:
     """Segment matn zichligi (belgi/sek). Haqiqiy nutq ~10-20, soxta qator <1."""
     return len((seg.text or "").strip()) / max(0.01, seg.end - seg.start)
@@ -422,10 +428,19 @@ def rescan_swallowed_speech(
         key=lambda s: s.start,
     )
     # Qayta o'qilgan oyna qo'shni segmentga tegib ketishi mumkin — ekranda
-    # ikkita subtitr bir vaqtda chiqmasin
-    for cur, nxt in zip(merged, merged[1:]):
-        if cur.end > nxt.start:
-            cur.end = max(cur.start + 0.2, nxt.start)
+    # ikkita subtitr bir vaqtda chiqmasin.
+    #
+    # `Segment` o'zgarmas (frozen), shuning uchun joyida tuzatish emas —
+    # ustma-ust tushgan bo'lak yangi obyekt bilan almashtiriladi. Ilgari
+    # bu yerda `cur.end = ...` turardi: obyekt kesh orqali ham, sessiya
+    # fayli orqali ham o'tgani uchun uni kim o'zgartirganini kuzatish
+    # qiyin edi.
+    trimmed: list[Segment] = []
+    for i, cur in enumerate(merged):
+        if i + 1 < len(merged) and cur.end > merged[i + 1].start:
+            cur = Segment(cur.start, max(cur.start + 0.2, merged[i + 1].start), cur.text)
+        trimmed.append(cur)
+    merged = trimmed
     merged_words = sorted(
         [w for w in words if outside(w.start, w.end)] + kept_new_words,
         key=lambda w: w.start,
@@ -500,10 +515,15 @@ def transcribe_with_groq(
     segments_all: list[Segment] = []
     words_all: list[Word] = []
     detected = ""
+    # Tushib qolgan bo'laklar. Ilgari bo'lak ffmpeg xatosi bilan kesilmasa
+    # `if` jimgina o'tib ketardi — 20 daqiqalik nutq hech qanday ogohlantirishsiz
+    # yo'qolardi. Endi har bir tushgan bo'lak sanaladi va oxirida aytiladi.
+    failed: list[tuple[float, float]] = []
     idx = 0
     start = 0.0
     while start < duration - 0.05:
         chunk_path = audio_path.parent / f"chunk_{idx:03d}.ogg"
+        span = (start, min(duration, start + chunk_sec))
         # -ss so'rovdan oldin: tez qidirish, audio uchun aniqligi yetarli.
         proc = run(
             [
@@ -514,22 +534,55 @@ def transcribe_with_groq(
                 str(chunk_path),
             ]
         )
-        if proc.returncode == 0 and chunk_path.exists() and chunk_path.stat().st_size > 0:
-            emit(
-                "progress",
-                message=f"Groq transkripsiya (qism {idx + 1}/{total_chunks})",
-                progress=0.30,
-            )
-            segs, wds, det = _groq_transcribe_file(client, models, chunk_path, language, start)
-            segments_all.extend(segs)
-            words_all.extend(wds)
-            detected = detected or det
+        try:
+            if proc.returncode != 0 or not chunk_path.exists() or chunk_path.stat().st_size == 0:
+                failed.append(span)
+                emit(
+                    "progress",
+                    message=f"Diqqat: {idx + 1}-qism audiosi kesilmadi "
+                            f"({_mmss(span[0])}-{_mmss(span[1])}) — o'sha joy subtitrsiz qoladi",
+                    progress=0.30,
+                )
+            else:
+                emit(
+                    "progress",
+                    message=f"Groq transkripsiya (qism {idx + 1}/{total_chunks})",
+                    progress=0.30,
+                )
+                # Bitta bo'lak tushsa ham butun kino yo'qolmasin: xato
+                # ushlanadi, qolgan bo'laklar o'qilaveradi.
+                try:
+                    segs, wds, det = _groq_transcribe_file(
+                        client, models, chunk_path, language, start
+                    )
+                except Exception as exc:
+                    failed.append(span)
+                    emit(
+                        "progress",
+                        message=f"Diqqat: {idx + 1}-qism o'qilmadi "
+                                f"({_mmss(span[0])}-{_mmss(span[1])}): {exc}",
+                        progress=0.30,
+                    )
+                else:
+                    segments_all.extend(segs)
+                    words_all.extend(wds)
+                    detected = detected or det
+        finally:
             chunk_path.unlink(missing_ok=True)
         idx += 1
         start += chunk_sec
 
     if not segments_all:
         raise RuntimeError("Groq Whisper bo'laklab transkripsiya qila olmadi")
+    if failed:
+        joined = ", ".join(f"{_mmss(a)}-{_mmss(b)}" for a, b in failed[:5])
+        more = f" (+{len(failed) - 5} ta)" if len(failed) > 5 else ""
+        emit(
+            "progress",
+            message=f"Diqqat: {len(failed)} qism o'qilmadi — {joined}{more}. "
+                    "Shu oraliqlar subtitrsiz qoladi.",
+            progress=0.31,
+        )
     segments_all, words_all = rescan_swallowed_speech(
         _groq_window_transcriber(client, models),
         audio_path, language, segments_all, words_all, source_media,

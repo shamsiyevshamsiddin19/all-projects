@@ -10,7 +10,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from .core import CACHE_DIR, OUT_DIR, Segment, TMP_DIR, USAGE, VENV_DIR, Word, emit, ensure_dirs, normalize_lang_code, require_tool, reset_usage, run, safe_stem, venv_python
+from .core import CACHE_DIR, OUT_DIR, REQUIREMENTS_FILE, Segment, TMP_DIR, USAGE, VENV_DIR, Word, emit, ensure_dirs, normalize_lang_code, require_disk_space, require_tool, reset_usage, run, safe_stem, venv_python
 from .media import normalize_video_path, probe_resolution, quality_height, write_srt
 from .transcribe import get_transcription
 from .cache import _cache_enabled, _load_json, _save_json, cache_dir_for, load_transcription, save_transcription
@@ -27,7 +27,6 @@ def _prepare_data(
     source_lang: str,
     target_lang: str,
     quality: str | None = None,
-    upscale: bool = False,
 ) -> dict[str, Any]:
     """Transkripsiya + (kerak bo'lsa) tarjima + lug'at. Renderlashga kerak
     bo'lgan hamma narsani lug'at (dict) qilib qaytaradi. `process()` (bir-martalik
@@ -38,6 +37,10 @@ def _prepare_data(
     require_tool("ffmpeg")
     require_tool("ffprobe")
     video = normalize_video_path(video_value, quality=quality)
+    # Transkripsiya uchun siqilmagan WAV ajratiladi (~1 GB/soat) — joy
+    # yetmasa buni HOZIR aytish kerak, ffmpeg tushunarsiz xato berganidan
+    # ko'ra yaxshiroq.
+    require_disk_space(video, TMP_DIR, factor=1.6)
     stem = safe_stem(video.name)
     job_tmp = Path(tempfile.mkdtemp(prefix=stem + "_", dir=str(TMP_DIR)))
 
@@ -183,6 +186,8 @@ def _render_outputs(
     require_tool("ffmpeg")
     require_tool("ffprobe")
     video = normalize_video_path(str(job["video"]))
+    # Render chiqishi manbaga yaqin hajmda bo'ladi; "all" rejimida ikkita.
+    require_disk_space(video, OUT_DIR, factor=2.2)
     stem = safe_stem(str(job.get("stem") or video.name))
     mode = str(job["mode"])
     effective_lang = str(job.get("sourceLang") or "en")
@@ -367,6 +372,16 @@ def _render_outputs(
     }
 
 
+# Sessiya fayli ("prepare" natijasi) versiyasi. `_prepare_data` qaytargan
+# tuzilma o'zgarganda SHUNI OSHIRING: eski fayl jimgina yarim ishlashdan
+# ko'ra (masalan "rawEnd" yo'qligi sababli abzatslar noto'g'ri bo'linishi)
+# tushunarli xato berib, foydalanuvchini qaytadan tayyorlashga yuborgani
+# yaxshi.
+#   1 — birinchi versiya (versiya raqami yo'q edi)
+#   2 — segmentlarda "rawEnd" paydo bo'ldi
+SESSION_VERSION = 2
+
+
 def _session_path_for(job: dict[str, Any]) -> Path:
     d = CACHE_DIR / "sessions"
     d.mkdir(parents=True, exist_ok=True)
@@ -379,6 +394,7 @@ def prepare_session(video_value: str, mode: str, source_lang: str, target_lang: 
     """Renderlashdan OLDIN transkripsiya+tarjimani tayyorlab, seans faylига saqlaydi.
     Foydalanuvchi tarjimalarni ko'rib/tahrirlab, keyin `render` bilan yakunlaydi."""
     job = _prepare_data(video_value, mode, source_lang, target_lang, quality=quality)
+    job["sessionVersion"] = SESSION_VERSION
     session_path = _session_path_for(job)
     session_path.write_text(json.dumps(job, ensure_ascii=False), encoding="utf-8")
     return {
@@ -409,6 +425,13 @@ def render_session(
     data = _load_json(Path(session_path))
     if not isinstance(data, dict) or not data.get("segments"):
         raise RuntimeError("Seans fayli topilmadi yoki buzilgan.")
+    version = int(data.get("sessionVersion", 1) or 1)
+    if version != SESSION_VERSION:
+        raise RuntimeError(
+            f"Seans fayli eski ({version}-versiya, hozir {SESSION_VERSION}). "
+            "Videoni qaytadan tayyorlang — matn va tarjima keshdan olinadi, "
+            "AI'ga qayta so'rov ketmaydi."
+        )
     if segments_path:
         edited = _load_json(Path(segments_path))
         if isinstance(edited, list) and edited:
@@ -441,20 +464,53 @@ def process(
     )
 
 
+# Zaxira ro'yxat — `desktop_requirements.txt` topilmaganda (masalan ilova
+# faqat `subtitr/` paketi bilan ko'chirilgan bo'lsa) ishlatiladi.
+FALLBACK_PACKAGES = [
+    "python-dotenv>=1.0.0",
+    "groq>=0.11.0",
+    "openai>=1.40.0",
+    "google-genai>=1.0.0",
+    "anthropic>=0.40.0",
+    "python-docx>=1.1.2",
+    "reportlab>=4.0.0",
+    # Lokal transkripsiya zaxirasi SHU paketdan keladi. Undan ham muhimi:
+    # Groq yo'lidagi nutq tekshiruvi (`transcribe.speech_regions`,
+    # `_speech_seconds_vad`) ham `faster_whisper.vad` ni import qiladi va
+    # paket bo'lmasa jimgina `except` ga tushadi — ya'ni to'qilgan matnga
+    # qarshi himoya butunlay o'chib qoladi, foydalanuvchi esa buni bilmaydi.
+    "faster-whisper>=1.1.0",
+]
+
+
+def required_packages() -> list[str]:
+    """O'rnatiladigan paketlar ro'yxati — `desktop_requirements.txt` dan.
+
+    Build skripti ham aynan shu faylni ishlatadi (`linux/build.sh`), shuning
+    uchun ro'yxat bitta joyda turadi. Ilgari u shu funksiya ichida qo'lda
+    takrorlangan edi va `faster-whisper` o'sha nusxadan tushib qolgan edi."""
+    try:
+        raw = REQUIREMENTS_FILE.read_text(encoding="utf-8")
+    except OSError:
+        return list(FALLBACK_PACKAGES)
+    packages: list[str] = []
+    for line in raw.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        # Qator oxiridagi izoh ("paket>=1.0  # nima uchun") kesiladi.
+        line = line.split(" #", 1)[0].strip()
+        if line:
+            packages.append(line)
+    return packages or list(FALLBACK_PACKAGES)
+
+
 def install_deps() -> None:
     if getattr(sys, 'frozen', False):
         emit("done", message="Dastur qadoqlangan, paketlar ichida mavjud")
         return
-        
-    packages = [
-        "python-dotenv>=1.0.0",
-        "groq>=0.11.0",
-        "openai>=1.40.0",
-        "google-genai>=1.0.0",
-        "anthropic>=0.40.0",
-        "python-docx>=1.1.2",
-        "reportlab>=4.0.0",
-    ]
+
+    packages = required_packages()
     # Debian/Ubuntu (PEP 668) tizim Python'iga `pip install --user` ni bloklaydi,
     # shuning uchun paketlar dastur yonidagi virtual muhitga o'rnatiladi.
     python = venv_python()

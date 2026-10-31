@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../services/desktop_processor_service.dart';
 import '../services/settings_store.dart';
 
 /// Screen where the user enters their own AI provider API keys. Nothing is
 /// bundled with the app; each user pastes their own keys here.
 class ApiKeysScreen extends StatefulWidget {
-  const ApiKeysScreen({super.key, required this.initial});
+  const ApiKeysScreen({super.key, required this.initial, this.loadCache = true});
 
   final AppSettings initial;
+
+  /// Reading the cache size spawns the Python processor. Widget tests pass
+  /// false so they do not depend on a real child process (same reason
+  /// [HomeScreen.autoScan] exists).
+  final bool loadCache;
 
   @override
   State<ApiKeysScreen> createState() => _ApiKeysScreenState();
@@ -83,7 +89,7 @@ class _ApiKeysScreenState extends State<ApiKeysScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('API kalitlar'),
+        title: const Text('Sozlamalar'),
         titleTextStyle: theme.textTheme.titleLarge?.copyWith(
           fontWeight: FontWeight.w800,
           letterSpacing: -0.5,
@@ -172,6 +178,8 @@ class _ApiKeysScreenState extends State<ApiKeysScreen> {
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
+                const Divider(height: 40),
+                _CacheSection(autoLoad: widget.loadCache),
               ],
             ),
           ),
@@ -278,7 +286,10 @@ class _AdvancedSection extends StatelessWidget {
               children: [
                 Icon(expanded ? Icons.expand_less : Icons.expand_more),
                 const SizedBox(width: 8),
-                const Text('Qo\'shimcha: model sozlamalari (ixtiyoriy)'),
+                // Expanded: tor oynada sarlavha qatori toshib ketmasin.
+                const Expanded(
+                  child: Text('Qo\'shimcha: model sozlamalari (ixtiyoriy)'),
+                ),
               ],
             ),
           ),
@@ -314,6 +325,219 @@ class _ModelField extends StatelessWidget {
         hintText: hint,
         prefixIcon: const Icon(Icons.tune_rounded),
       ),
+    );
+  }
+}
+
+
+/// Disk cache panel.
+///
+/// The download cache lives under the XDG cache folder, where the user never
+/// looks — it had quietly grown to 830 MB of already-watched clips. This shows
+/// the figure and offers a one-click clear.
+class _CacheSection extends StatefulWidget {
+  const _CacheSection({this.autoLoad = true});
+
+  final bool autoLoad;
+
+  @override
+  State<_CacheSection> createState() => _CacheSectionState();
+}
+
+class _CacheSectionState extends State<_CacheSection> {
+  final DesktopProcessorService _service = DesktopProcessorService();
+  CacheUsage? _usage;
+  String? _error;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.autoLoad) _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _busy = true);
+    try {
+      final usage = await _service.cacheInfo();
+      if (mounted) setState(() => _usage = usage);
+    } catch (error) {
+      if (mounted) setState(() => _error = error.toString());
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _clear(String what, String label) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.delete_sweep_rounded),
+        title: Text('$label o\'chirilsinmi?'),
+        content: Text(
+          what == 'transcripts'
+              ? 'Tayyor matn va tarjimalar o\'chadi. Shu videolarni qayta '
+                  'ishlaganda AI\'ga QAYTADAN pul ketadi.'
+              : 'Bu fayllar kerak bo\'lganda qaytadan yuklanadi. '
+                  'Tayyor natijalaringizga tegilmaydi.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Bekor qilish'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('O\'chirish'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      final usage = await _service.clearCache(what: what);
+      if (!mounted) return;
+      setState(() => _usage = usage);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${CacheUsage.format(usage.freed)} bo\'shatildi'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (error) {
+      if (mounted) setState(() => _error = error.toString());
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _openLogs() async {
+    setState(() => _busy = true);
+    try {
+      final dir = await _service.logDir();
+      if (dir.isNotEmpty) await _service.openPath(dir);
+    } catch (error) {
+      if (mounted) setState(() => _error = error.toString());
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final usage = _usage;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.save_rounded, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Disk keshi',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ),
+            if (usage != null)
+              Text(
+                CacheUsage.format(usage.total),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            if (_busy) ...[
+              const SizedBox(width: 10),
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Yuklangan videolar va ishchi fayllar ko\'rinmas papkada saqlanadi. '
+          'Yuklamalar keshi 5 GB dan oshsa eng eskilari o\'zi o\'chadi.',
+          style: theme.textTheme.bodySmall
+              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        ),
+        if (_error != null) ...[
+          const SizedBox(height: 10),
+          Text(
+            _error!,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.error),
+          ),
+        ],
+        if (usage != null) ...[
+          const SizedBox(height: 14),
+          for (final section in usage.sections)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      section.label,
+                      style: theme.textTheme.bodyMedium,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Text(
+                    CacheUsage.format(section.bytes),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  TextButton(
+                    onPressed: _busy || section.bytes == 0
+                        ? null
+                        : () => _clear(section.name, section.label),
+                    child: const Text('Tozalash'),
+                  ),
+                ],
+              ),
+            ),
+        ],
+        const Divider(height: 32),
+        Row(
+          children: [
+            const Icon(Icons.article_outlined, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Xato hisoboti',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: _busy ? null : _openLogs,
+              icon: const Icon(Icons.folder_open_rounded, size: 18),
+              label: const Text('Loglarni ochish'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Biror narsa ishlamasa, to\'liq xato izi (traceback) kunlik log '
+          'faylida bo\'ladi — ekranda faqat bitta qator ko\'rinadi. '
+          'Loglar 14 kundan keyin o\'zi o\'chadi, API kalitlar yozilmaydi.',
+          style: theme.textTheme.bodySmall
+              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        ),
+      ],
     );
   }
 }

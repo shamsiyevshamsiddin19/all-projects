@@ -9,8 +9,9 @@ import shutil
 import subprocess
 from pathlib import Path
 from typing import Any, Iterable
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
-from .core import FFMPEG, FFPROBE, KINO_DIR, ROOT, SUB_EXTS, Segment, TMP_DIR, VIDEO_EXTS, YTDLP, emit, ensure_dirs, is_url, require_tool, run, wrap_text
+from .core import FFMPEG, FFPROBE, KINO_DIR, ROOT, SUB_EXTS, Segment, TMP_DIR, VIDEO_EXTS, YTDLP, emit, ensure_dirs, is_url, require_tool, run, stop_child, wrap_lines
 
 
 # Video sifati: foydalanuvchi tanlaydigan maksimal balandlik.
@@ -73,6 +74,125 @@ def update_ytdlp() -> dict[str, Any]:
         return {"updated": False, "message": f"Yangilab bo'lmadi: {exc}"}
 
 
+# --- Yuklangan videolar keshi ------------------------------------------------
+#
+# Bir xil havola ikki marta yuklanmasin deb yuklangan video `TMP_DIR/yuklamalar`
+# da saqlanadi. Ilgari bu papka HECH QACHON tozalanmasdi va ko'rinmas joyda
+# (keshda) o'nlab gigabaytgacha o'sib ketardi.
+
+# Havoladagi mazmunga ta'sir qilmaydigan ("kuzatuv") parametrlar. Ular kesh
+# kalitiga kirsa, bitta videoning `&t=42` li va `&t=0` li varianti ikkita
+# alohida nusxa bo'lib yotib qoladi.
+_CACHE_IGNORED_PARAMS = {
+    "t", "start", "end", "si", "feature", "app", "ab_channel", "pp",
+    "start_radio", "index", "spm", "fbclid", "gclid", "igshid",
+    "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
+}
+
+
+def normalize_url_for_cache(url: str) -> str:
+    """Havolani kesh kaliti uchun soddalashtiradi.
+
+    YouTube uchun faqat video ID qoladi — `youtu.be/ID`, `watch?v=ID&t=90`,
+    `shorts/ID` va `embed/ID` bitta faylga olib keladi."""
+    raw = (url or "").strip()
+    try:
+        parsed = urlsplit(raw)
+    except ValueError:
+        return raw
+    host = (parsed.hostname or "").lower()
+    for prefix in ("www.", "m."):
+        if host.startswith(prefix):
+            host = host[len(prefix):]
+    path = parsed.path.rstrip("/")
+    query = parse_qsl(parsed.query, keep_blank_values=False)
+
+    if host in {"youtube.com", "youtu.be", "music.youtube.com"}:
+        video_id = ""
+        if host == "youtu.be":
+            video_id = path.lstrip("/").split("/")[0]
+        else:
+            video_id = dict(query).get("v", "")
+            for marker in ("/shorts/", "/embed/", "/live/"):
+                if not video_id and path.startswith(marker):
+                    video_id = path.split(marker, 1)[1].split("/")[0]
+        if video_id:
+            return f"youtube:{video_id}"
+
+    # Boshqa saytlar: faqat kuzatuv parametrlari tashlanadi. Yo'l (path)
+    # pastki registrga TUSHIRILMAYDI — ko'p saytlarda ID registrga sezgir.
+    kept = sorted((k, v) for k, v in query if k.lower() not in _CACHE_IGNORED_PARAMS)
+    return urlunsplit(("", host, path, urlencode(kept), ""))
+
+
+def download_cache_key(url: str) -> str:
+    return hashlib.sha1(
+        normalize_url_for_cache(url).encode("utf-8", "replace")
+    ).hexdigest()[:10]
+
+
+def human_bytes(size: int) -> str:
+    """Baytni o'qiladigan ko'rinishga o'giradi ("1.4 GB", "390 MB")."""
+    if size >= 1024 ** 3:
+        return f"{size / 1024 ** 3:.1f} GB"
+    if size >= 1024 ** 2:
+        return f"{round(size / 1024 ** 2)} MB"
+    return f"{round(size / 1024)} KB"
+
+
+def _cache_limit_bytes() -> int:
+    """Yuklamalar keshining chegarasi (GB). 0 yoki manfiy — cheklanmaydi."""
+    try:
+        gb = float(os.getenv("SUBTITR_DL_CACHE_GB", "5"))
+    except (TypeError, ValueError):
+        gb = 5.0
+    return int(gb * 1024 ** 3) if gb > 0 else 0
+
+
+def prune_download_cache(dl_dir: Path, keep: Path | None = None) -> int:
+    """Kesh hajmini chegara ostiga tushiradi; o'chirilgan baytlarni qaytaradi.
+
+    Eng ESKI yuklanganlar birinchi o'chiriladi. Faylga "oxirgi ishlatilgan"
+    vaqtini yozib qo'yish mumkin emas: `cache.cache_dir_for()` transkripsiya
+    kesh kalitiga faylning `st_mtime` ini kiritadi, ya'ni `touch()` qilsak
+    o'sha videoning tayyor transkripsiyasi yo'qoladi.
+    """
+    limit = _cache_limit_bytes()
+    if limit <= 0 or not dl_dir.is_dir():
+        return 0
+    files: list[tuple[float, int, Path]] = []
+    total = 0
+    for path in dl_dir.iterdir():
+        if not path.is_file() or path.suffix.lower() not in VIDEO_EXTS:
+            continue
+        try:
+            st = path.stat()
+        except OSError:
+            continue
+        files.append((st.st_mtime, st.st_size, path))
+        total += st.st_size
+    if total <= limit:
+        return 0
+    freed = 0
+    for _mtime, size, path in sorted(files):
+        if total - freed <= limit:
+            break
+        if keep is not None and path == keep:
+            continue
+        try:
+            path.unlink()
+        except OSError:
+            continue
+        freed += size
+    if freed:
+        emit(
+            "progress",
+            message=f"Keshdan {human_bytes(freed)} eski video o'chirildi",
+            progress=0.0,
+        )
+    return freed
+
+
 def download_video(
     url: str,
     dest_dir: Path | None = None,
@@ -94,7 +214,7 @@ def download_video(
 
     dl_dir = dest_dir or (TMP_DIR / "yuklamalar")
     dl_dir.mkdir(parents=True, exist_ok=True)
-    key = hashlib.sha1(url.encode("utf-8", "replace")).hexdigest()[:10]
+    key = download_cache_key(url)
     span = max(0.0, progress_hi - progress_lo)
 
     if use_cache:
@@ -136,26 +256,31 @@ def download_video(
         found: Path | None = None
         last_pct = -1
         assert proc.stdout is not None
-        for line in proc.stdout:
-            line = line.rstrip("\r\n")
-            tail.append(line)
-            if len(tail) > 40:
-                tail.pop(0)
-            m = re.search(r"\[download\]\s+([\d.]+)%", line)
-            if m:
-                try:
-                    pct = int(float(m.group(1)))
-                except ValueError:
-                    pct = last_pct
-                if pct != last_pct:
-                    last_pct = pct
-                    emit("progress", message=f"Video yuklab olinmoqda {pct}%",
-                         progress=progress_lo + span * (pct / 100.0))
-            elif line.strip() and not line.lstrip().startswith("[") and (
-                line.strip().lower().endswith((".mp4", ".mkv", ".webm", ".mov", ".m4v", ".avi"))
-            ):
-                found = Path(line.strip())
-        proc.wait()
+        try:
+            for line in proc.stdout:
+                line = line.rstrip("\r\n")
+                tail.append(line)
+                if len(tail) > 40:
+                    tail.pop(0)
+                m = re.search(r"\[download\]\s+([\d.]+)%", line)
+                if m:
+                    try:
+                        pct = int(float(m.group(1)))
+                    except ValueError:
+                        pct = last_pct
+                    if pct != last_pct:
+                        last_pct = pct
+                        emit("progress", message=f"Video yuklab olinmoqda {pct}%",
+                             progress=progress_lo + span * (pct / 100.0))
+                elif line.strip() and not line.lstrip().startswith("[") and (
+                    line.strip().lower().endswith((".mp4", ".mkv", ".webm", ".mov", ".m4v", ".avi"))
+                ):
+                    found = Path(line.strip())
+            proc.wait()
+        except BaseException:
+            # "Bekor qilish" — yt-dlp (va u ishga tushirgan ffmpeg) to'xtaydi.
+            stop_child(proc, "yt-dlp")
+            raise
 
         if found is None or not found.exists():
             # Zaxira: papkadagi eng yangi mos faylni topamiz.
@@ -186,6 +311,10 @@ def download_video(
         err = "\n".join(tail)[-600:] or "noma'lum"
         raise RuntimeError("Videoni yuklab bo'lmadi: " + err)
     emit("progress", message="Video yuklandi", progress=progress_hi)
+    if use_cache:
+        # Yangi fayl qo'shildi — kesh chegaradan oshgan bo'lsa, eng eskilarini
+        # o'chiramiz (hozirgina yuklanganiga tegmaymiz).
+        prune_download_cache(dl_dir, keep=final_path)
     return final_path
 
 
@@ -307,8 +436,11 @@ def read_subtitle_text(path: Path) -> str:
     return data.decode("latin-1", errors="replace")
 
 
-def parse_srt(path: Path) -> list[Segment]:
-    raw = read_subtitle_text(path)
+def parse_srt_text(raw: str) -> list[Segment]:
+    """SRT MATNINI bo'laklarga ajratadi (faylga bog'lanmagan).
+
+    Alohida ajratilgan, chunki VTT ham shu orqali o'qiladi — ilgari u avval
+    vaqtinchalik `.srt` fayl yozib, keyin shuni qayta o'qirdi."""
     raw = raw.replace("\r\n", "\n").replace("\r", "\n")
     blocks = re.split(r"\n\s*\n", raw.strip())
     segments: list[Segment] = []
@@ -328,6 +460,10 @@ def parse_srt(path: Path) -> list[Segment]:
     return segments
 
 
+def parse_srt(path: Path) -> list[Segment]:
+    return parse_srt_text(read_subtitle_text(path))
+
+
 def parse_vtt(path: Path) -> list[Segment]:
     raw = read_subtitle_text(path)
     raw = raw.replace("WEBVTT", "", 1)
@@ -337,9 +473,10 @@ def parse_vtt(path: Path) -> list[Segment]:
         return match.group(0).replace(".", ",")
 
     raw = re.sub(r"\d{1,2}:\d{2}:\d{2}\.\d{3}|\d{2}:\d{2}\.\d{3}", _fix_timestamps, raw)
-    tmp = TMP_DIR / (path.stem + "_from_vtt.srt")
-    tmp.write_text(raw, encoding="utf-8")
-    return parse_srt(tmp)
+    # Vaqtinchalik fayl YO'Q. Ilgari bu yerda `TMP_DIR/<stem>_from_vtt.srt`
+    # yozilar, hech qachon o'chirilmasdi va nom faqat `stem` dan olingani
+    # uchun bir xil nomli ikki video bir-birining faylini bosib ketardi.
+    return parse_srt_text(raw)
 
 
 def write_srt(path: Path, segments: Iterable[Segment]) -> None:
@@ -347,7 +484,11 @@ def write_srt(path: Path, segments: Iterable[Segment]) -> None:
         for i, seg in enumerate(segments, 1):
             f.write(f"{i}\n")
             f.write(f"{seconds_to_srt_time(seg.start)} --> {seconds_to_srt_time(seg.end)}\n")
-            f.write(wrap_text(seg.text, 48) + "\n\n")
+            # Ikki qator — SRT me'yori (pleyerlar shunga mo'ljallangan).
+            # `wrap_text` uchtagacha chiqarardi: uzun tarjima qatori
+            # ekranning yarmini egallab qolardi. Matn yo'qolmaydi —
+            # sig'magani ikkinchi qatorga qo'shiladi.
+            f.write("\n".join(wrap_lines(seg.text, 48, max_lines=2)) + "\n\n")
 
 
 def probe_resolution(video: Path) -> tuple[int, int]:

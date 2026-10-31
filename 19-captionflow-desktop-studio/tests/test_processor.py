@@ -26,6 +26,9 @@ import subtitr as dp  # noqa: E402
 # funksiya o'z modulidagi eski nomni ko'raveradi.
 from subtitr import cache as m_cache  # noqa: E402
 from subtitr import documents as m_doc  # noqa: E402
+from subtitr import media as m_media  # noqa: E402
+from subtitr import translate as m_tx  # noqa: E402
+from subtitr import pipeline as m_pipe  # noqa: E402
 from subtitr import transcribe as m_tr  # noqa: E402
 
 
@@ -555,6 +558,458 @@ class TitleTests(unittest.TestCase):
 
     def test_empty_falls_back(self):
         self.assertEqual(dp.reading_title(""), "Matn")
+
+
+class RequirementsTests(unittest.TestCase):
+    """O'rnatiladigan paketlar ro'yxati bitta manbadan kelishi kerak.
+
+    Ilgari ro'yxat `install_deps()` ichida qo'lda takrorlangan edi va
+    `faster-whisper` o'sha nusxadan tushib qolgandi. U bilan birga Groq
+    yo'lidagi VAD ham (`faster_whisper.vad`) jimgina ishlamay qolardi."""
+
+    def test_requirements_file_is_the_source(self):
+        packages = m_pipe.required_packages()
+        from_file = [
+            line.split(" #", 1)[0].strip()
+            for line in dp.core.REQUIREMENTS_FILE.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.strip().startswith("#")
+        ]
+        self.assertEqual(packages, from_file)
+
+    def test_faster_whisper_is_installed_by_the_button(self):
+        self.assertTrue(
+            any("faster-whisper" in pkg for pkg in m_pipe.required_packages()),
+            "faster-whisper ro'yxatda yo'q — VAD va lokal transkripsiya o'chadi",
+        )
+
+    def test_fallback_covers_every_requirement(self):
+        """Fayl topilmasa ham zaxira ro'yxat to'liq bo'lsin."""
+        def name(spec: str) -> str:
+            return spec.split(">=")[0].split("==")[0].strip()
+
+        fallback = {name(p) for p in m_pipe.FALLBACK_PACKAGES}
+        for spec in m_pipe.required_packages():
+            self.assertIn(name(spec), fallback)
+
+
+class DownloadCacheTests(unittest.TestCase):
+    """Bitta video ikki marta yuklanmasin, kesh esa cheksiz o'smasin."""
+
+    def test_youtube_variants_share_one_key(self):
+        urls = [
+            "https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=42s&si=abc",
+            "https://youtu.be/dQw4w9WgXcQ?t=0",
+            "https://m.youtube.com/watch?v=dQw4w9WgXcQ&feature=share",
+            "https://www.youtube.com/shorts/dQw4w9WgXcQ",
+            "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        ]
+        keys = {m_media.download_cache_key(u) for u in urls}
+        self.assertEqual(len(keys), 1, f"bir xil video uchun {len(keys)} ta kalit")
+
+    def test_different_videos_keep_different_keys(self):
+        self.assertNotEqual(
+            m_media.download_cache_key("https://youtu.be/aaaaaaaaaaa"),
+            m_media.download_cache_key("https://youtu.be/bbbbbbbbbbb"),
+        )
+
+    def test_case_sensitive_ids_survive_on_other_sites(self):
+        """Ko'p saytlarda ID registrga sezgir — pastki registrga tushirilmasin."""
+        self.assertNotEqual(
+            m_media.download_cache_key("https://example.com/v/AbC"),
+            m_media.download_cache_key("https://example.com/v/abc"),
+        )
+
+    def test_prune_removes_oldest_and_spares_the_new_file(self):
+        import os
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            for i, nom in enumerate(["eski.mp4", "orta.mp4", "yangi.mp4"]):
+                f = d / nom
+                f.write_bytes(b"x" * 200)
+                os.utime(f, (1000 + i * 100, 1000 + i * 100))
+            (d / "hujjat.txt").write_bytes(b"y" * 500)
+            old_env = os.environ.get("SUBTITR_DL_CACHE_GB")
+            # 3 x 200 bayt = 600; chegara 450 -> faqat eng eskisi o'chadi.
+            os.environ["SUBTITR_DL_CACHE_GB"] = str(450 / 1024 ** 3)
+            try:
+                freed = m_media.prune_download_cache(d, keep=d / "yangi.mp4")
+            finally:
+                if old_env is None:
+                    os.environ.pop("SUBTITR_DL_CACHE_GB", None)
+                else:
+                    os.environ["SUBTITR_DL_CACHE_GB"] = old_env
+            left = {p.name for p in d.iterdir()}
+            self.assertEqual(freed, 200)
+            self.assertNotIn("eski.mp4", left)
+            self.assertIn("yangi.mp4", left)
+            self.assertIn("hujjat.txt", left, "video bo'lmagan fayl o'chirilmasin")
+
+    def test_prune_disabled_by_zero_limit(self):
+        import os
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            (d / "a.mp4").write_bytes(b"x" * 1000)
+            old_env = os.environ.get("SUBTITR_DL_CACHE_GB")
+            os.environ["SUBTITR_DL_CACHE_GB"] = "0"
+            try:
+                self.assertEqual(m_media.prune_download_cache(d), 0)
+            finally:
+                if old_env is None:
+                    os.environ.pop("SUBTITR_DL_CACHE_GB", None)
+                else:
+                    os.environ["SUBTITR_DL_CACHE_GB"] = old_env
+            self.assertTrue((d / "a.mp4").exists())
+
+
+class SubtitleFileTests(unittest.TestCase):
+    """SRT/VTT o'qish-yozishdagi tuzatishlar."""
+
+    def test_vtt_leaves_no_temp_file(self):
+        """Ilgari har VTT uchun TMP_DIR ga `.srt` yozilar va qolib ketardi."""
+        dp.core.TMP_DIR.mkdir(parents=True, exist_ok=True)
+        before = set(dp.core.TMP_DIR.rglob("*"))
+        with tempfile.TemporaryDirectory() as tmp:
+            vtt = Path(tmp) / "kino.vtt"
+            vtt.write_text(
+                "WEBVTT\n\n00:00:01.000 --> 00:00:03.500\nSalom, Mr. Smith.\n",
+                encoding="utf-8",
+            )
+            segments = m_media.parse_vtt(vtt)
+        self.assertEqual(set(dp.core.TMP_DIR.rglob("*")), before)
+        self.assertEqual(len(segments), 1)
+        self.assertEqual(segments[0].text, "Salom, Mr. Smith.")
+        self.assertAlmostEqual(segments[0].end, 3.5)
+
+    def test_srt_never_writes_three_lines(self):
+        """SRT me'yori — 2 qator; `wrap_text` uchtagacha chiqarardi."""
+        long_text = (
+            "Bu juda uzun tarjima qatori bo'lib, u albatta bir nechta qatorga "
+            "bo'linishi kerak va hech qanday so'z yo'qolmasligi shart"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "a.srt"
+            m_media.write_srt(out, [seg(0.0, 4.0, long_text)])
+            body = out.read_text(encoding="utf-8-sig").strip().splitlines()
+        text_lines = body[2:]
+        self.assertEqual(len(text_lines), 2)
+        self.assertEqual(" ".join(" ".join(text_lines).split()), long_text)
+
+
+class ModelDefaultTests(unittest.TestCase):
+    """Kod ichidagi standart modellar `.env.example` bilan mos kelsin.
+
+    Mos kelmasa foydalanuvchi namunani o'qib bir modelni kutadi-yu,
+    boshqasini (ba'zan ancha qimmatini) oladi."""
+
+    ENV_TO_CODE = {
+        "GEMINI_MODEL": "gemini",
+        "OPENAI_MODEL": "openai",
+        "ANTHROPIC_MODEL": "anthropic",
+        "GROQ_TEXT_MODEL": "groq",
+    }
+
+    def _env_example(self) -> dict[str, str]:
+        raw = (Path(__file__).resolve().parent.parent / ".env.example").read_text(
+            encoding="utf-8"
+        )
+        return {
+            k.strip(): v.strip()
+            for k, _, v in (line.partition("=") for line in raw.splitlines())
+            if k.strip() and not k.strip().startswith("#")
+        }
+
+    def test_defaults_match_env_example(self):
+        import re
+
+        src = (Path(__file__).resolve().parent.parent / "subtitr" / "translate.py").read_text(
+            encoding="utf-8"
+        )
+        env = self._env_example()
+        for var in self.ENV_TO_CODE:
+            match = re.search(rf'"{var}",\s*\n\s*"([^"]+)"', src)
+            self.assertIsNotNone(match, f"{var} uchun standart topilmadi")
+            self.assertEqual(
+                match.group(1), env[var],
+                f"{var}: kodda {match.group(1)!r}, .env.example da {env[var]!r}",
+            )
+
+
+class ImmutabilityTests(unittest.TestCase):
+    """Bo'lak (Segment) kesh va sessiya fayli orqali o'tadi — uni joyida
+    o'zgartirish kim qachon o'zgartirganini kuzatishni imkonsiz qiladi."""
+
+    def test_segment_cannot_be_mutated(self):
+        import dataclasses
+
+        item = seg(0.0, 1.0, "salom")
+        with self.assertRaises(dataclasses.FrozenInstanceError):
+            item.end = 5.0  # type: ignore[misc]
+
+    def test_word_cannot_be_mutated(self):
+        import dataclasses
+
+        word = dp.Word(0.0, 1.0, "salom")
+        with self.assertRaises(dataclasses.FrozenInstanceError):
+            word.word = "boshqa"  # type: ignore[misc]
+
+    def test_frozen_segments_are_hashable(self):
+        """Muzlatish bonusi: endi to'plam/lug'at kaliti bo'la oladi."""
+        self.assertEqual(len({seg(0.0, 1.0, "a"), seg(0.0, 1.0, "a")}), 1)
+
+    def test_overlap_trimming_still_works(self):
+        """`frozen` dan keyin ustma-ust bo'laklar baribir kesilishi kerak."""
+        a, b = seg(0.0, 5.0, "birinchi"), seg(3.0, 6.0, "ikkinchi")
+        merged = sorted([a, b], key=lambda x: x.start)
+        trimmed = []
+        for i, cur in enumerate(merged):
+            if i + 1 < len(merged) and cur.end > merged[i + 1].start:
+                cur = dp.Segment(cur.start, max(cur.start + 0.2, merged[i + 1].start), cur.text)
+            trimmed.append(cur)
+        self.assertEqual(trimmed[0].end, 3.0)
+        self.assertEqual(trimmed[0].text, "birinchi")
+        self.assertEqual(trimmed[1].start, 3.0)
+
+
+class SessionVersionTests(unittest.TestCase):
+    """Eski sessiya fayli jimgina yarim ishlamasligi kerak."""
+
+    def test_old_session_is_rejected_with_a_clear_message(self):
+        import json
+
+        from subtitr.pipeline import SESSION_VERSION, render_session
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "s.json"
+            path.write_text(json.dumps({
+                "segments": [{"start": 0, "end": 1, "original": "a", "translated": "b"}],
+                "video": "/yoq", "mode": "srt",
+            }), encoding="utf-8")
+            with self.assertRaises(RuntimeError) as ctx:
+                render_session(str(path))
+        message = str(ctx.exception)
+        self.assertIn("eski", message)
+        self.assertIn(str(SESSION_VERSION), message)
+        # Foydalanuvchiga nima qilish kerakligi va pul ketmasligi aytilsin.
+        self.assertIn("qaytadan tayyorlang", message)
+
+
+class DiskSpaceTests(unittest.TestCase):
+    """Joy tugaganda ffmpeg tushunarsiz xato beradi — oldindan aytamiz."""
+
+    def test_enough_space_passes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            video = Path(tmp) / "kino.mp4"
+            video.write_bytes(b"x" * 1024)
+            dp.core.require_disk_space(video, Path(tmp))  # xato bo'lmasligi kerak
+
+    def test_not_enough_space_explains_how_much(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            video = Path(tmp) / "kino.mp4"
+            video.write_bytes(b"x" * 1024)
+            with self.assertRaises(RuntimeError) as ctx:
+                dp.core.require_disk_space(video, Path(tmp), factor=10 ** 12)
+        message = str(ctx.exception)
+        self.assertIn("GB bo'sh", message)
+        self.assertIn("GB kerak", message)
+
+    def test_unmeasurable_path_does_not_block_the_job(self):
+        """O'lchab bo'lmasa ish to'xtamasin — bu faqat ogohlantirish."""
+        dp.core.require_disk_space(Path("/yoq/bunday/fayl.mp4"), Path("/yoq/bunday"))
+
+
+class LoggingTests(unittest.TestCase):
+    """Log — xatoni topishning yagona yo'li, lekin kalit sizdirmasligi shart."""
+
+    def test_api_keys_are_redacted(self):
+        samples = {
+            "gsk_aBcDeFgH1234567890xyzQ": "Groq",
+            "sk-ant-api03-AbCdEf1234567890": "Claude",
+            "sk-proj-AbCdEf1234567890xyz": "OpenAI",
+            "AIzaSyAbCdEf1234567890xyz": "Gemini (eski format)",
+            "AQ.Ab8RN6JxyzAbCdEfGh": "Gemini (yangi format)",
+        }
+        for secret, label in samples.items():
+            masked = dp.core.redact(f"xato: invalid key {secret} provided")
+            self.assertNotIn(secret, masked, f"{label} kaliti logga tushib ketdi")
+
+    def test_plain_text_is_untouched(self):
+        message = "ffmpeg topilmadi. Uni dastur papkasiga qo'shing."
+        self.assertEqual(dp.core.redact(message), message)
+
+    def test_importing_the_package_writes_no_log_file(self):
+        """Faqat import qilish (test, kutubxona) disk fayl yaratmasin."""
+        self.assertTrue(
+            all(isinstance(h, __import__("logging").NullHandler)
+                for h in dp.core.log.handlers),
+            "setup_logging() chaqirilmagan holda ham handler ulangan",
+        )
+
+    def test_emit_mirrors_messages_into_the_log(self):
+        import io
+        import logging
+
+        stream = io.StringIO()
+        handler = logging.StreamHandler(stream)
+        dp.core.log.addHandler(handler)
+        dp.core.log.setLevel(logging.INFO)
+        try:
+            dp.emit("progress", message="Tarjima 10/38", progress=0.42)
+            dp.emit("error", message="kalit yaroqsiz gsk_aBcDeFgH1234567890xyz")
+        finally:
+            dp.core.log.removeHandler(handler)
+            dp.core.log.setLevel(logging.NOTSET)
+        written = stream.getvalue()
+        self.assertIn("Tarjima 10/38", written)
+        self.assertIn("42%", written)
+        self.assertNotIn("gsk_aBcDeFgH1234567890xyz", written)
+
+    def test_log_dir_follows_the_data_dir(self):
+        """LOG_DIR boshqa ishchi papkalar bilan bir joyda bo'lsin."""
+        self.assertEqual(dp.core.LOG_DIR.parent, dp.core.CACHE_DIR.parent)
+        self.assertEqual(dp.core.LOG_DIR.name, "logs")
+
+
+class ProviderRetryTests(unittest.TestCase):
+    """Qayta urinish siyosati — bu bevosita vaqt va pulga ta'sir qiladi.
+
+    Ilgari sikl 5 marta x 4 provayder = bitta to'plam uchun 20 ta chaqiruv
+    edi va har aylanishda 6 soniya kutilardi, hatto kalit yaroqsiz bo'lsa
+    ham (ikkinchi urinish ham aynan o'sha "401" ni qaytaradi)."""
+
+    def setUp(self):
+        import os
+
+        self._env = {
+            k: os.environ.get(k)
+            for k in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY", "GROQ_API_KEY")
+        }
+        for k in self._env:
+            os.environ[k] = "test-key"
+        self._real = {
+            name: getattr(m_tx, f"translate_{name}")
+            for name in ("openai", "claude", "gemini", "groq")
+        }
+        self._backoff = m_tx.ai_retry_backoff
+        self._throttle = m_tx.ai_throttle
+        # Testda kutmaymiz.
+        m_tx.ai_retry_backoff = lambda attempt=0: None
+        m_tx.ai_throttle = lambda: None
+        dp.core.AI_DISABLED.clear()
+        self.calls: dict[str, int] = {}
+
+    def tearDown(self):
+        import os
+
+        for k, v in self._env.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+        for name, fn in self._real.items():
+            setattr(m_tx, f"translate_{name}", fn)
+        m_tx.ai_retry_backoff = self._backoff
+        m_tx.ai_throttle = self._throttle
+        dp.core.AI_DISABLED.clear()
+
+    def _stub(self, name: str, error: Exception | None = None, reply: str | None = None):
+        def fake(_prompt: str, _payload: str) -> str:
+            self.calls[name] = self.calls.get(name, 0) + 1
+            if error is not None:
+                raise error
+            return reply or "{}"
+
+        setattr(m_tx, f"translate_{name}", fake)
+
+    def test_bad_key_is_tried_once_not_twenty_times(self):
+        class AuthError(Exception):
+            status_code = 401
+
+        for name in ("openai", "claude", "gemini", "groq"):
+            self._stub(name, AuthError("Incorrect API key provided"))
+        out, provider = m_tx.ai_translate_batch(["Hello"], "uz", "en")
+        self.assertEqual(provider, "offline_dictionary")
+        for name, count in self.calls.items():
+            self.assertEqual(count, 1, f"{name} {count} marta chaqirildi (1 bo'lishi kerak)")
+
+    def test_disabled_provider_is_skipped_by_later_batches(self):
+        class AuthError(Exception):
+            status_code = 401
+
+        for name in ("openai", "claude", "gemini", "groq"):
+            self._stub(name, AuthError("invalid api key"))
+        m_tx.ai_translate_batch(["Hello"], "uz", "en")
+        first = dict(self.calls)
+        m_tx.ai_translate_batch(["World"], "uz", "en")
+        self.assertEqual(self.calls, first, "o'chirilgan provayder yana chaqirildi")
+        self.assertEqual(len(dp.core.AI_DISABLED), 4)
+
+    def test_rate_limit_is_retried(self):
+        class RateLimit(Exception):
+            status_code = 429
+
+        for name in ("openai", "claude", "gemini", "groq"):
+            self._stub(name, RateLimit("rate limit exceeded"))
+        m_tx.ai_translate_batch(["Hello"], "uz", "en")
+        # 3 urinish x 4 provayder, lekin hech biri o'chirilmaydi.
+        self.assertEqual(self.calls["openai"], m_tx.ai_attempts())
+        self.assertEqual(dp.core.AI_DISABLED, {})
+
+    def test_decommissioned_model_is_not_retried(self):
+        for name in ("openai", "claude", "gemini", "groq"):
+            self._stub(name, Exception("llama-3.1-8b has been decommissioned"))
+        m_tx.ai_translate_batch(["Hello"], "uz", "en")
+        self.assertEqual(self.calls["openai"], 1)
+
+    def test_bad_request_provider_returns_for_the_next_smaller_batch(self):
+        """400 ba'zan "matn juda uzun" degani — to'plam bo'lingach yana ishlaydi.
+
+        Shuning uchun `bad_request` provayderni butun ish davomiga EMAS,
+        faqat shu chaqiruv ichida chetlab o'tadi."""
+        for name in ("openai", "claude", "gemini", "groq"):
+            self._stub(name, Exception("400 invalid request: context too long"))
+        m_tx.ai_translate_batch(["Hello"], "uz", "en")
+        self.assertEqual(dp.core.AI_DISABLED, {}, "provayder butunlay o'chirildi")
+        before = self.calls["openai"]
+        m_tx.ai_translate_batch(["World"], "uz", "en")
+        self.assertGreater(
+            self.calls["openai"], before,
+            "keyingi (kichikroq) to'plamda provayder qayta sinalmadi",
+        )
+
+    def test_first_working_provider_wins_and_stops_the_loop(self):
+        self._stub("openai", Exception("rate limit exceeded"))
+        self._stub("claude", reply='{"0": "Salom"}')
+        self._stub("gemini", reply='{"0": "XATO"}')
+        out, provider = m_tx.ai_translate_batch(["Hello"], "uz", "en")
+        self.assertEqual(out, ["Salom"])
+        self.assertEqual(provider, "claude")
+        self.assertNotIn("gemini", self.calls, "g'olib topilgandan keyin ham davom etdi")
+
+    def test_backoff_grows_and_is_capped(self):
+        import os
+
+        slept: list[float] = []
+        real_sleep = __import__("time").sleep
+        __import__("time").sleep = lambda s: slept.append(s)
+        old = {k: os.environ.get(k) for k in ("AI_RETRY_BACKOFF_SEC", "AI_RETRY_MAX_SEC")}
+        os.environ["AI_RETRY_BACKOFF_SEC"] = "6"
+        os.environ["AI_RETRY_MAX_SEC"] = "30"
+        try:
+            for attempt in range(4):
+                dp.core.ai_retry_backoff(attempt)
+        finally:
+            __import__("time").sleep = real_sleep
+            for k, v in old.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
+        # 6 -> 12 -> 24 -> 30 (chegara), ustiga kichik tasodifiy qo'shimcha
+        self.assertAlmostEqual(slept[0], 6, delta=1.0)
+        self.assertAlmostEqual(slept[1], 12, delta=1.5)
+        self.assertAlmostEqual(slept[2], 24, delta=2.5)
+        self.assertLessEqual(slept[3], 33)
+        self.assertGreater(slept[1], slept[0], "backoff o'smadi")
 
 
 if __name__ == "__main__":

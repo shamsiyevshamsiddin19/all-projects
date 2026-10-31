@@ -66,6 +66,16 @@ sahifasida bo'ladi.
   - `documents.write_pdf_reading()` — A4 o'qish maketi (plain/parallel/split)
   - `documents.build_sentence_pairs()` + `write_md_reading()` — Yordamchi
     saytining "O'qish" formati (`:: tarjima`, `{so'z|tarjima}`)
+  - `translate.try_providers()` — AI chaqiruvlarining yagona qayta urinish
+    joyi. Xato turkumlanadi (`core.error_kind()`): yaroqsiz kalit
+    ("auth") provayderni butun ish davomiga o'chiradi, yaroqsiz so'rov
+    ("bad_request") faqat shu chaqiruvda chetlab o'tiladi, qolgani
+    (429/5xx) eksponensial kutish bilan qayta urinadi. Sozlash:
+    `AI_MAX_ATTEMPTS` (3), `AI_RETRY_BACKOFF_SEC` (6),
+    `AI_RETRY_MAX_SEC` (30)
+- `desktop_requirements.txt` — Python paketlar ro'yxati. **Yagona manba**:
+  `linux/build.sh` ham, ilovadagi "Paketlarni o'rnatish" tugmasi ham
+  (`pipeline.required_packages()`) aynan shu fayldan o'qiydi.
 - `tests/` — regressiya testlari (yangi bog'liqliksiz):
   `.venv/bin/python -m unittest discover -s tests`
 - `subtitr_app/` — Flutter desktop GUI (Linux, Windows, macOS)
@@ -75,6 +85,56 @@ sahifasida bo'ladi.
   bo'yicha nusxalanmaydi, faqat yig'ish tartibi farq qiladi.
 - `ISHLATISH_LINUX.txt`, `ISHLATISH_DESKTOP.txt` — foydalanuvchi qo'llanmalari
   (ilova bilan birga yuboriladi)
+
+## Xato hisoboti (log)
+
+Har bir ish `logs/subtitr-YYYY-MM-DD.log` ga yoziladi (kesh papkasida;
+**Sozlamalar → Xato hisoboti → Loglarni ochish**). Ekranda xatoning faqat
+bitta qatori ko'rinadi, to'liq izi (traceback) esa shu faylda bo'ladi.
+
+- API kalitlar logga **tushmaydi** — `core.redact()` ularni maskalaydi.
+- Loglar 14 kundan keyin o'zi o'chadi, fayl 2 MB dan oshsa aylantiriladi.
+- `SUBTITR_DEBUG=1` — batafsil (ishga tushgan buyruqlar ham).
+- `SUBTITR_NO_LOG=1` — butunlay o'chiradi.
+
+## To'xtatish (Bekor qilish)
+
+"Bekor qilish" bosilganda ilova avval **SIGTERM** yuboradi: protsessor uni
+`KeyboardInterrupt` ga aylantiradi, shuning uchun hamma `finally` bloki
+ishlaydi — vaqtinchalik papka (uzun kinoda ~1 GB WAV) va yarim yozilgan
+`.mp4` o'chadi. Faqat 4 soniyadan keyin ham tirik bo'lsa SIGKILL keladi.
+
+Signal butun **process guruhiga** ketadi, shuning uchun `ffmpeg` va `yt-dlp`
+ham to'xtaydi. Protsessor o'zini alohida guruhga faqat
+`SUBTITR_OWN_PROCESS_GROUP=1` berilganda qo'yadi — buni Flutter ilovasi
+qo'yadi; buyruq qatorida u yoqilmaydi, aks holda terminaldagi Ctrl+C
+jarayonga yetib bormay qoladi.
+
+Tugamay qolgan ishlardan qolgan papkalar har ishga tushishda tozalanadi
+(12 soatdan eskilari — `core.clean_orphan_tmp()`).
+
+## Disk keshi
+
+Yuklab olingan videolar, ishchi fayllar, tayyor transkripsiyalar va Whisper
+modellari ko'rinmas papkada (`SUBTITR_DATA_DIR`, Linux'da
+`~/.cache/SubtitrDesktop`) saqlanadi.
+
+Yuklamalar keshi **5 GB** dan oshsa, eng eski videolar o'zi o'chadi
+(`SUBTITR_DL_CACHE_GB` bilan sozlanadi; `0` — cheklamaslik). Hajmni ko'rish
+va qo'lda tozalash ilovadagi **Sozlamalar → Disk keshi** bo'limida, yoki
+buyruq qatoridan:
+
+```bash
+.venv/bin/python desktop_processor.py cache-info
+```
+
+```bash
+.venv/bin/python desktop_processor.py clear-cache --what downloads
+```
+
+`--what`: `downloads` (sukut), `work`, `models`, `transcripts`, `all`.
+`all` ichiga `transcripts` **kirmaydi** — tayyor tarjimani o'chirish AI'ga
+qaytadan pul turadi, shuning uchun uni faqat atayin so'raganda o'chiradi.
 
 ## Talablar (qisqacha)
 
@@ -87,8 +147,8 @@ sahifasida bo'ladi.
 Testlar (yangi bog'liqliksiz, standart `unittest`):
 
 ```bash
-.venv/bin/python -m unittest discover -s tests   # 56 ta
-cd subtitr_app && flutter test                   # 10 ta
+.venv/bin/python -m unittest discover -s tests   # 91 ta
+cd subtitr_app && flutter test                   # 16 ta
 ```
 
 ## Eslatma
