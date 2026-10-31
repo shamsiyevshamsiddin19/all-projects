@@ -7,7 +7,7 @@ import 'package:subtitr_app/services/desktop_processor_service.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('InAppVideoPlayerDialog renders title, badges and actions', (tester) async {
+  testWidgets('InAppVideoPlayerDialog renders title and actions', (tester) async {
     tester.view.physicalSize = const Size(1200, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);

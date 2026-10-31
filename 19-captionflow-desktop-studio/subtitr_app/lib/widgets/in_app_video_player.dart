@@ -7,9 +7,7 @@ import 'package:media_kit_video/media_kit_video.dart';
 
 import 'subtitle_player.dart' show playerAvailable;
 
-/// Tayyor yoki tanlangan videolarni tashqi ilovalarsiz (VLC, mpv va h.k.)
-/// to'g'ridan-to'g'ri ilovaning o'zida tomosha qilish uchun zamonaviy
-/// o'rnatilgan video pleyer modali.
+/// Tayyor yoki tanlangan videolarni alohida modal dialogda ko'rish oynasi.
 class InAppVideoPlayerDialog extends StatefulWidget {
   const InAppVideoPlayerDialog({
     super.key,
@@ -24,7 +22,6 @@ class InAppVideoPlayerDialog extends StatefulWidget {
   final String? title;
   final VoidCallback? onOpenExternal;
 
-  /// Pleyer mavjud bo'lsa modal oynada ochadi, aks holda tashqi ochishga yo'naltiradi.
   static Future<void> show(
     BuildContext context, {
     required String videoPath,
@@ -61,6 +58,7 @@ class _InAppVideoPlayerDialogState extends State<InAppVideoPlayerDialog> {
   VideoController? _video;
   bool _ready = false;
   String? _error;
+  bool _subtitlesEnabled = true;
 
   String get _displayName {
     if (widget.title != null && widget.title!.isNotEmpty) {
@@ -74,9 +72,15 @@ class _InAppVideoPlayerDialogState extends State<InAppVideoPlayerDialog> {
     return sub != null && sub.isNotEmpty && File(sub).existsSync();
   }
 
+  bool get _isBurnedVideo {
+    final lower = widget.videoPath.toLowerCase();
+    return lower.contains('_dual.') || lower.contains('_single.');
+  }
+
   @override
   void initState() {
     super.initState();
+    _subtitlesEnabled = !_isBurnedVideo;
     _initPlayer();
   }
 
@@ -90,10 +94,12 @@ class _InAppVideoPlayerDialogState extends State<InAppVideoPlayerDialog> {
         play: true,
       );
 
-      if (_hasSubtitles) {
+      if (_hasSubtitles && _subtitlesEnabled) {
         await player.setSubtitleTrack(
           SubtitleTrack.uri(Uri.file(widget.subtitlePath!).toString()),
         );
+      } else {
+        await player.setSubtitleTrack(SubtitleTrack.no());
       }
 
       if (!mounted) {
@@ -113,6 +119,22 @@ class _InAppVideoPlayerDialogState extends State<InAppVideoPlayerDialog> {
         });
       }
     }
+  }
+
+  Future<void> _toggleSubtitles() async {
+    final player = _player;
+    if (player == null || !_hasSubtitles) return;
+    final nextState = !_subtitlesEnabled;
+    setState(() => _subtitlesEnabled = nextState);
+    try {
+      if (nextState) {
+        await player.setSubtitleTrack(
+          SubtitleTrack.uri(Uri.file(widget.subtitlePath!).toString()),
+        );
+      } else {
+        await player.setSubtitleTrack(SubtitleTrack.no());
+      }
+    } catch (_) {}
   }
 
   @override
@@ -179,36 +201,56 @@ class _InAppVideoPlayerDialogState extends State<InAppVideoPlayerDialog> {
                       ),
                       if (_hasSubtitles) ...[
                         const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.2),
-                            ),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.subtitles_rounded,
-                                size: 14,
-                                color: Colors.amberAccent,
+                        Tooltip(
+                          message: _subtitlesEnabled
+                              ? "Subtitrni o'chirish (ustidagi qatlamni yashirish)"
+                              : "Subtitrni yoqish",
+                          child: InkWell(
+                            onTap: _toggleSubtitles,
+                            borderRadius: BorderRadius.circular(8),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
                               ),
-                              SizedBox(width: 4),
-                              Text(
-                                "Subtitr ulangan",
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.amberAccent,
+                              decoration: BoxDecoration(
+                                color: _subtitlesEnabled
+                                    ? Colors.amberAccent.withValues(alpha: 0.18)
+                                    : Colors.white.withValues(alpha: 0.05),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: _subtitlesEnabled
+                                      ? Colors.amberAccent.withValues(alpha: 0.5)
+                                      : Colors.white.withValues(alpha: 0.15),
                                 ),
                               ),
-                            ],
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _subtitlesEnabled
+                                        ? Icons.subtitles_rounded
+                                        : Icons.subtitles_off_rounded,
+                                    size: 14,
+                                    color: _subtitlesEnabled
+                                        ? Colors.amberAccent
+                                        : Colors.grey,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _subtitlesEnabled ? "Subtitr: Yoqiq" : "Subtitr: O'chiq",
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: _subtitlesEnabled
+                                          ? Colors.amberAccent
+                                          : Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -300,7 +342,6 @@ class _InAppVideoPlayerDialogState extends State<InAppVideoPlayerDialog> {
   }
 }
 
-
 /// Asosiy oynaning o'ng tomonida to'g'ridan-to'g'ri integratsiya qilingan
 /// video pleyer paneli (chap tomondagi sozlamalar paneli joyida qoladi).
 class EmbeddedVideoPlayer extends StatefulWidget {
@@ -328,6 +369,7 @@ class _EmbeddedVideoPlayerState extends State<EmbeddedVideoPlayer> {
   VideoController? _video;
   bool _ready = false;
   String? _error;
+  bool _subtitlesEnabled = true;
 
   String get _displayName {
     if (widget.title != null && widget.title!.isNotEmpty) {
@@ -341,9 +383,18 @@ class _EmbeddedVideoPlayerState extends State<EmbeddedVideoPlayer> {
     return sub != null && sub.isNotEmpty && File(sub).existsSync();
   }
 
+  bool get _isBurnedVideo {
+    final lower = widget.videoPath.toLowerCase();
+    return lower.contains('_dual.') || lower.contains('_single.');
+  }
+
   @override
   void initState() {
     super.initState();
+    // Agar video faylning o'ziga allaqachon subtitr kuydirilgan bo'lsa (masalan, _dual.mp4),
+    // tashqi subtitrni ustiga qayta chizib ikkita qilib yubormaslik uchun
+    // boshlang'ich holatda o'chirilgan bo'ladi. Foydalanuvchi tugmani bosib yoqishi/o'chirishi mumkin.
+    _subtitlesEnabled = !_isBurnedVideo;
     _initPlayer();
   }
 
@@ -352,6 +403,7 @@ class _EmbeddedVideoPlayerState extends State<EmbeddedVideoPlayer> {
     super.didUpdateWidget(oldWidget);
     if (widget.videoPath != oldWidget.videoPath ||
         widget.subtitlePath != oldWidget.subtitlePath) {
+      _subtitlesEnabled = !_isBurnedVideo;
       _loadMedia();
     }
   }
@@ -386,10 +438,12 @@ class _EmbeddedVideoPlayerState extends State<EmbeddedVideoPlayer> {
         Media(Uri.file(widget.videoPath).toString()),
         play: true,
       );
-      if (_hasSubtitles) {
+      if (_hasSubtitles && _subtitlesEnabled) {
         await player.setSubtitleTrack(
           SubtitleTrack.uri(Uri.file(widget.subtitlePath!).toString()),
         );
+      } else {
+        await player.setSubtitleTrack(SubtitleTrack.no());
       }
       if (mounted) {
         setState(() {
@@ -404,6 +458,22 @@ class _EmbeddedVideoPlayerState extends State<EmbeddedVideoPlayer> {
         });
       }
     }
+  }
+
+  Future<void> _toggleSubtitles() async {
+    final player = _player;
+    if (player == null || !_hasSubtitles) return;
+    final nextState = !_subtitlesEnabled;
+    setState(() => _subtitlesEnabled = nextState);
+    try {
+      if (nextState) {
+        await player.setSubtitleTrack(
+          SubtitleTrack.uri(Uri.file(widget.subtitlePath!).toString()),
+        );
+      } else {
+        await player.setSubtitleTrack(SubtitleTrack.no());
+      }
+    } catch (_) {}
   }
 
   @override
@@ -477,36 +547,56 @@ class _EmbeddedVideoPlayerState extends State<EmbeddedVideoPlayer> {
                     ),
                     if (_hasSubtitles) ...[
                       const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.amberAccent.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: Colors.amberAccent.withValues(alpha: 0.3),
-                          ),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.subtitles_rounded,
-                              size: 13,
-                              color: Colors.amberAccent,
+                      Tooltip(
+                        message: _subtitlesEnabled
+                            ? "Subtitrni o'chirish (ustidagi qatlamni yashirish)"
+                            : "Subtitrni yoqish",
+                        child: InkWell(
+                          onTap: _toggleSubtitles,
+                          borderRadius: BorderRadius.circular(8),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
                             ),
-                            SizedBox(width: 4),
-                            Text(
-                              "Subtitr ulangan",
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.amberAccent,
+                            decoration: BoxDecoration(
+                              color: _subtitlesEnabled
+                                  ? Colors.amberAccent.withValues(alpha: 0.18)
+                                  : Colors.white.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: _subtitlesEnabled
+                                    ? Colors.amberAccent.withValues(alpha: 0.5)
+                                    : Colors.white.withValues(alpha: 0.15),
                               ),
                             ),
-                          ],
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _subtitlesEnabled
+                                      ? Icons.subtitles_rounded
+                                      : Icons.subtitles_off_rounded,
+                                  size: 14,
+                                  color: _subtitlesEnabled
+                                      ? Colors.amberAccent
+                                      : Colors.grey,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _subtitlesEnabled ? "Subtitr: Yoqiq" : "Subtitr: O'chiq",
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: _subtitlesEnabled
+                                        ? Colors.amberAccent
+                                        : Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ],
