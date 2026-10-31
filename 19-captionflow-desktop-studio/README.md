@@ -71,6 +71,12 @@ sahifasida bo'ladi.
     bo'lsa, "o'ng"; `light` → "yorug'lik" bo'lsa, "yengil".
     Kesh `vocab_v3_*` — versiya oshirilmasa eski (kontekstsiz) lug'at
     qaytarilaverardi
+  - `translate.build_glossary()` — film bo'ylab ism izchilligi. Ism
+    mezoni — token GAP O'RTASIDA bosh harf bilan kelishi (gap boshida
+    har qanday so'z bosh harfli). Kelishik shakllari AI qaytargan
+    lemma bo'yicha guruhlanadi, shuning uchun "Иван" ham, "Ивану" ham
+    BITTA nishon shaklga ishora qiladi. Olmosh/fe'l/sifat `pos` bo'yicha
+    chiqarib tashlanadi — ularni majburlash tarjimani buzadi
   - `transcribe.swallowed_gap_ranges()` — transkripsiya butunlay o'tkazib
     yuborgan parchalarni topadi (lokal VAD bilan tekshirib, qayta o'qitadi)
   - `documents.build_reading_blocks()` — subtitr bo'laklaridan o'qiladigan
@@ -204,7 +210,7 @@ qaytadan pul turadi, shuning uchun uni faqat atayin so'raganda o'chiradi.
 Testlar (yangi bog'liqliksiz, standart `unittest`):
 
 ```bash
-.venv/bin/python -m unittest discover -s tests   # 117 ta
+.venv/bin/python -m unittest discover -s tests   # 123 ta
 cd subtitr_app && flutter test                   # 16 ta
 ```
 

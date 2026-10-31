@@ -575,31 +575,123 @@ def _text_key(text: str) -> str:
     return hashlib.sha1(norm.encode("utf-8", "replace")).hexdigest()[:16]
 
 
+# Bitta ism glossariyga tushishi uchun JAMI shuncha marta uchrashi kerak
+# (barcha kelishik shakllari qo'shilib).
+GLOSSARY_MIN_COUNT = 3
+# Nechta ism glossariyga tushadi.
+GLOSSARY_MAX_NAMES = 40
+# AI'ga yuboriladigan shakllar soni chegarasi (bitta to'plamga sig'sin).
+GLOSSARY_MAX_FORMS = 80
+
+# Glossariy ISMLAR va atamalar uchun. Olmosh, fe'l, sifat gap boshida bosh
+# harf bilan kelgani uchun nomzodlikka tushadi, lekin ularni "har doim
+# shunday tarjima qil" deb majburlash tarjimani buzadi.
+_GLOSSARY_SKIP_POS = (
+    "pronoun", "verb", "adjective", "adverb", "preposition",
+    "conjunction", "article", "particle", "interjection", "numeral",
+)
+
+
+def name_frequencies(segments: list[Segment]) -> tuple[dict[str, int], set[str]]:
+    """Bosh harfli tokenlar chastotasi va ulardan ISM bo'lganlari.
+
+    Ism mezoni — token GAP O'RTASIDA bosh harf bilan kelishi. Gap boshida
+    har qanday so'z bosh harf bilan yoziladi, shuning uchun faqat
+    boshda uchraydigan token ism emas (rus matnida "Но", "Он", "Это",
+    "Куда" shunday glossariyga tushib, tarjimonga "bu so'zni DOIM shunday
+    tarjima qil" deb majburlardi).
+
+    Shu mezon `documents.reading_proper_nouns()` da ham ishlatiladi, lekin
+    u yerdan import qilib bo'lmaydi: `documents` qatlam bo'yicha pastda
+    (`documents` -> `vocab` -> `translate`), ya'ni halqa paydo bo'lardi."""
+    freq: dict[str, int] = {}
+    names: set[str] = set()
+    for seg in segments:
+        for n, tok in enumerate(WORD_RE.findall(seg.text)):
+            if len(tok) < 2 or not tok[:1].isupper() or tok.isupper():
+                continue
+            freq[tok] = freq.get(tok, 0) + 1
+            if n:
+                names.add(tok)
+    return freq, names
+
+
+def group_name_forms(
+    forms: list[str], counts: dict[str, int], lemmas: list[str]
+) -> dict[str, list[str]]:
+    """Bir ismning turli shakllarini lemma bo'yicha bitta guruhga yig'adi.
+
+    Rus tilida ism kelishikda o'zgaradi: "Гена", "Гены", "Гене", "Геной" —
+    to'rt xil token, lekin bitta ism. Ilgari ular alohida hisoblanar va
+    har biri alohida tarjima olardi, ya'ni glossariy izchillikni ta'minlash
+    o'rniga o'zi izchilsizlik manbasi bo'lardi."""
+    groups: dict[str, list[str]] = {}
+    for form, lemma in zip(forms, lemmas):
+        key = (lemma or form).strip().lower() or form.lower()
+        groups.setdefault(key, []).append(form)
+    # Guruh ichida eng ko'p uchragan shakl birinchi bo'lsin — tarjima
+    # o'shanisidan olinadi.
+    for key in groups:
+        groups[key].sort(key=lambda f: -counts.get(f, 0))
+    return groups
+
+
 def build_glossary(segments: list[Segment], target_lang: str, source_lang: str) -> dict[str, str]:
     """Film davomida izchillik uchun tez-tez uchraydigan ismlar/atamalarni
     bir marta tarjima qilib, {manba: nishon} lug'atini qaytaradi. AI kaliti
-    bo'lmasa yoki ism topilmasa — bo'sh (izchillik faqat AI bilan mazmunli)."""
-    has_ai = any(os.getenv(k) for k in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY", "GROQ_API_KEY"))
-    if not has_ai:
+    bo'lmasa yoki ism topilmasa — bo'sh (izchillik faqat AI bilan mazmunli).
+
+    Ismning HAR BIR shakli bitta nishon shaklga olib keladi, shuning uchun
+    tarjimon "Гена" ni ham, "Гене" ni ham bir xil yozadi."""
+    if not ai_providers():
         return {}
-    # Bosh harfli (ism/atama nomzodi) tokenlarni chastota bo'yicha yig'amiz.
-    freq: dict[str, int] = {}
-    for seg in segments:
-        for tok in WORD_RE.findall(seg.text):
-            if len(tok) >= 2 and tok[:1].isupper() and not tok.isupper():
-                freq[tok] = freq.get(tok, 0) + 1
-    candidates = [w for w, c in sorted(freq.items(), key=lambda x: -x[1]) if c >= 3][:40]
-    if not candidates:
+    counts, proper = name_frequencies(segments)
+    if not counts or not proper:
+        return {}
+    # Shakl darajasida chastota chegarasi QO'YILMAYDI. "Иван" 5 marta,
+    # "Ивану" esa 1 marta uchrashi mumkin — oldin shunday kam uchraydigan
+    # kelishik shakllari tushib qolar va tarjimon ularni izchilsiz
+    # yozaverardi. "Jami 3 marta" sharti guruh yig'ilgandan keyin,
+    # barcha shakllar qo'shilib qo'yiladi.
+    #
+    # Faqat gap o'rtasida ham uchragan tokenlar olinadi (ism mezoni).
+    forms = [
+        w for w, _c in sorted(counts.items(), key=lambda x: -x[1])
+        if w in proper
+    ]
+    forms = forms[:GLOSSARY_MAX_FORMS]
+    if not forms:
         return {}
     try:
-        translations, _pos, _lemma, _prov = translate_word_list(candidates, target_lang)
+        translations, pos_list, lemmas, _prov = translate_word_list(forms, target_lang)
     except Exception:
         return {}
+
+    by_form_tr = dict(zip(forms, translations))
+    by_form_pos = dict(zip(forms, pos_list))
+    groups = group_name_forms(forms, counts, lemmas)
+
+    # Guruhlarni jami chastota bo'yicha tartiblaymiz: `subtitle_prompt`
+    # glossariyni kesadi, shuning uchun eng muhim ismlar oldinda bo'lsin.
+    ranked = sorted(
+        groups.items(),
+        key=lambda item: -sum(counts.get(f, 0) for f in item[1]),
+    )
+
     glossary: dict[str, str] = {}
-    for src, tgt in zip(candidates, translations):
-        tgt = (tgt or "").strip()
-        if tgt and tgt.lower() != src.lower():
-            glossary[src] = tgt
+    for _lemma, group in ranked[:GLOSSARY_MAX_NAMES]:
+        if sum(counts.get(f, 0) for f in group) < GLOSSARY_MIN_COUNT:
+            continue
+        head = group[0]
+        pos = str(by_form_pos.get(head, "")).lower()
+        if any(skip in pos for skip in _GLOSSARY_SKIP_POS):
+            continue  # olmosh/fe'l/sifat — ism emas
+        target = (by_form_tr.get(head) or "").strip()
+        if not target or target.lower() == head.lower():
+            continue
+        # Guruhning HAMMA shakli bitta nishon shaklga ishora qiladi.
+        for form in group:
+            glossary[form] = target
     return glossary
 
 

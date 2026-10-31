@@ -1131,6 +1131,115 @@ class VocabContextTests(unittest.TestCase):
         self.assertNotIn("vocab_v2_", source)
 
 
+class GlossaryTests(unittest.TestCase):
+    """Glossariy film bo'ylab ISM izchilligini ta'minlashi kerak.
+
+    Haqiqiy rus matnida (60 bo'lak) o'lchangan:
+      oldin:  Вася, Бабушka, Иван   ("Бабушка" -> "buva" — xato tarjima,
+                                     ustiga u ism ham emas)
+      hozir:  Вася, Иван / Ивану    (kelishik shakllari birlashtirilgan)
+    """
+
+    def setUp(self):
+        import os
+
+        self._env = {k: os.environ.get(k) for k in ("GROQ_API_KEY",)}
+        os.environ["GROQ_API_KEY"] = "test-key"
+        self._real = m_tx.translate_word_list
+
+    def tearDown(self):
+        import os
+
+        m_tx.translate_word_list = self._real
+        for k, v in self._env.items():
+            os.environ.pop(k, None) if v is None else os.environ.__setitem__(k, v)
+
+    def test_sentence_initial_words_are_not_names(self):
+        """Gap boshidagi har qanday so'z bosh harfli — bu ism degani emas."""
+        segments = [
+            seg(0.0, 2.0, "Но Вася ushlab oldi."),
+            seg(2.0, 4.0, "Он Vasyani ko'rdi."),
+            seg(4.0, 6.0, "Мальчик Вася keldi."),
+        ]
+        freq, proper = m_tx.name_frequencies(segments)
+        self.assertIn("Вася", proper)
+        for word in ("Но", "Он", "Мальчик"):
+            self.assertNotIn(word, proper, f"{word} ism deb hisoblandi")
+            self.assertIn(word, freq, "chastota baribir sanalishi kerak")
+
+    def test_case_forms_share_one_target(self):
+        """Rus ismi kelishikda o'zgaradi — hammasi bitta tarjimaga ketsin."""
+        def fake(words, target_lang, contexts=None):
+            # Model lemmani qaytaradi; shu bilan shakllar guruhlanadi.
+            lemmas = ["иван" if w.startswith("Иван") else w.lower() for w in words]
+            return (["Ivan" if w.startswith("Иван") else "X" for w in words],
+                    ["noun"] * len(words), lemmas, "claude")
+
+        m_tx.translate_word_list = fake
+        segments = [
+            seg(0.0, 2.0, "Men Иван bilan keldim."),
+            seg(2.0, 4.0, "Kitobni Ивану berdim."),
+            seg(4.0, 6.0, "U Ивана ko'rdi."),
+        ]
+        glossary = m_tx.build_glossary(segments, "uz", "ru")
+        self.assertEqual(
+            {k: v for k, v in glossary.items() if k.startswith("Иван")},
+            {"Иван": "Ivan", "Ивану": "Ivan", "Ивана": "Ivan"},
+        )
+
+    def test_rare_case_forms_are_kept(self):
+        """"Иван" 5 marta, "Ивану" 1 marta — ikkinchisi tushib qolmasin."""
+        def fake(words, target_lang, contexts=None):
+            return (["Ivan"] * len(words), ["noun"] * len(words),
+                    ["иван"] * len(words), "claude")
+
+        m_tx.translate_word_list = fake
+        segments = [seg(float(i), i + 1.0, "Men Иван bilan keldim.") for i in range(5)]
+        segments.append(seg(10.0, 11.0, "Kitobni Ивану berdim."))
+        glossary = m_tx.build_glossary(segments, "uz", "ru")
+        self.assertIn("Ивану", glossary)
+
+    def test_pronouns_and_verbs_are_excluded(self):
+        """Olmosh/fe'lni "doim shunday tarjima qil" deb majburlash zarar."""
+        def fake(words, target_lang, contexts=None):
+            pos = {"Он": "pronoun", "Купила": "verb", "Красивый": "adjective",
+                   "Вася": "noun"}
+            return (["X"] * len(words), [pos.get(w, "noun") for w in words],
+                    [w.lower() for w in words], "claude")
+
+        m_tx.translate_word_list = fake
+        segments = [
+            seg(float(i), i + 1.0, f"Men {w} bilan keldim.")
+            for i in range(3) for w in ("Он",)
+        ] + [
+            seg(10.0 + i, 11.0 + i, f"Men {w} bilan keldim.")
+            for i, w in enumerate(["Купила"] * 3)
+        ] + [
+            seg(20.0 + i, 21.0 + i, "Men Вася bilan keldim.") for i in range(3)
+        ]
+        glossary = m_tx.build_glossary(segments, "uz", "ru")
+        self.assertIn("Вася", glossary)
+        self.assertNotIn("Он", glossary)
+        self.assertNotIn("Купила", glossary)
+
+    def test_group_needs_three_mentions_in_total(self):
+        def fake(words, target_lang, contexts=None):
+            return (["X"] * len(words), ["noun"] * len(words),
+                    [w.lower() for w in words], "claude")
+
+        m_tx.translate_word_list = fake
+        # Ikki marta — chegaradan past.
+        segments = [seg(float(i), i + 1.0, "Men Петя bilan keldim.") for i in range(2)]
+        self.assertEqual(m_tx.build_glossary(segments, "uz", "ru"), {})
+        # Uchinchisi qo'shilsa tushadi.
+        segments.append(seg(9.0, 10.0, "Men Петя bilan keldim."))
+        self.assertIn("Петя", m_tx.build_glossary(segments, "uz", "ru"))
+
+    def test_no_names_means_empty_glossary(self):
+        segments = [seg(0.0, 2.0, "Но он keldi."), seg(2.0, 4.0, "Это yaxshi.")]
+        self.assertEqual(m_tx.build_glossary(segments, "uz", "ru"), {})
+
+
 class AllModeTests(unittest.TestCase):
     """"Hammasi" rejimi BITTA video berishi kerak.
 
