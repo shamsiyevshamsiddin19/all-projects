@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 // ignore: depend_on_referenced_packages
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:subtitr_app/screens/api_keys_screen.dart';
+import 'package:subtitr_app/screens/home_screen.dart';
+import 'package:subtitr_app/screens/translation_editor_screen.dart';
 import 'package:subtitr_app/screens/translation_editor_screen.dart';
 import 'package:subtitr_app/services/desktop_processor_service.dart';
 import 'package:subtitr_app/services/settings_store.dart';
@@ -208,5 +210,54 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Versiya 1.0.0+1'), findsOneWidget);
+  });
+  testWidgets('subtitr vaqtini (start va end) tahrirlash renderga saqlanadi', (
+    tester,
+  ) async {
+    final segments = [_segment()];
+    final handle = await _openEditor(tester, segments);
+
+    // Vaqt ko'rsatkichini bosamiz
+    await tester.tap(find.byKey(const ValueKey('timing-tile-1')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Vaqtni sozlash (#1)'), findsOneWidget);
+
+    // +0.5s ikkalasi tugmasini bosamiz (0..2s -> 0.5..2.5s)
+    await tester.tap(find.text('+0.5s ikkalasi'));
+    await tester.pump();
+
+    // Saqlash tugmasini bosamiz
+    await tester.tap(find.byKey(const ValueKey('save-timing-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('00:00.5 → 00:02.5'), findsOneWidget);
+
+    // Render tugmasini bosamiz
+    await tester.tap(find.text('Videoni render qilish'));
+    await tester.pumpAndSettle();
+
+    final rendered = await handle.result!;
+    expect(rendered, isNotNull);
+    expect(rendered!.single.start, 0.5);
+    expect(rendered.single.end, 2.5);
+  });
+
+  testWidgets('asosiy ekranda versiya nishoni ko‘rinadi', (tester) async {
+    PackageInfo.setMockInitialValues(
+      appName: 'Subtitr Desktop',
+      packageName: 'uz.shamsiddin.subtitr',
+      version: '1.2.3',
+      buildNumber: '4',
+      buildSignature: '',
+    );
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HomeScreen(autoScan: false),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('v1.2.3+4'), findsOneWidget);
   });
 }

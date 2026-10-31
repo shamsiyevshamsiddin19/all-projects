@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../services/desktop_processor_service.dart';
 import '../services/settings_store.dart';
@@ -36,7 +37,7 @@ class TranslationEditorScreen extends StatefulWidget {
 
 class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
   late final List<SubtitleSegment> _segments;
-  late final List<({String original, String translated})> _initialTexts;
+  late final List<({String original, String translated, double start, double end})> _initialState;
   late final bool _showsTranslation;
   String _search = '';
   bool _onlyUncertain = false;
@@ -75,10 +76,14 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
   void initState() {
     super.initState();
     _segments = widget.session.segments;
-    _initialTexts = _segments
+    _initialState = _segments
         .map(
-          (segment) =>
-              (original: segment.original, translated: segment.translated),
+          (segment) => (
+            original: segment.original,
+            translated: segment.translated,
+            start: segment.start,
+            end: segment.end,
+          ),
         )
         .toList(growable: false);
     // Tarjima rejimi ish boshlanishidagi tanlovga bog'liq. Foydalanuvchi
@@ -91,10 +96,12 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
 
   void _onSegmentTextChanged() {
     final changed = _segments.indexed.any((entry) {
-      final initial = _initialTexts[entry.$1];
+      final initial = _initialState[entry.$1];
       final segment = entry.$2;
       return segment.original != initial.original ||
-          segment.translated != initial.translated;
+          segment.translated != initial.translated ||
+          (segment.start - initial.start).abs() > 0.001 ||
+          (segment.end - initial.end).abs() > 0.001;
     });
     // PopScope faqat tahrir holati o'zgarganda qayta qurilishi kerak;
     // har bir harfda butun, katta ro'yxatni qurish sezilarli sekinlashtiradi.
@@ -130,9 +137,11 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
     if (discard != true || !mounted) return;
 
     for (final entry in _segments.indexed) {
-      final initial = _initialTexts[entry.$1];
+      final initial = _initialState[entry.$1];
       entry.$2.original = initial.original;
       entry.$2.translated = initial.translated;
+      entry.$2.start = initial.start;
+      entry.$2.end = initial.end;
     }
     // Segmentlar session bilan bir obyektni bo'lishadi. Bekor qilishdan
     // keyin ularni qaytarib qo'yamiz, aks holda `null` natijaga qaramay
@@ -364,7 +373,15 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
         if (_matches(i)) i,
     ];
 
-    return PopScope(
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        const SingleActivator(LogicalKeyboardKey.enter, control: true): _submitEdits,
+        const SingleActivator(LogicalKeyboardKey.enter, meta: true): _submitEdits,
+        const SingleActivator(LogicalKeyboardKey.escape): _requestExit,
+      },
+      child: Focus(
+        autofocus: true,
+        child: PopScope(
       canPop: _exitApproved || !_hasUnsavedChanges,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop && _hasUnsavedChanges) _requestExit();
@@ -505,6 +522,8 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
           ),
         ),
       ),
+    ),
+    ),
     );
   }
 }
@@ -575,10 +594,186 @@ class _SegmentTileState extends State<_SegmentTile> {
     super.dispose();
   }
 
+  static String _formatSeconds(double seconds) {
+    if (seconds < 0) seconds = 0;
+    final total = seconds.floor();
+    final m = (total ~/ 60).toString().padLeft(2, '0');
+    final s = (total % 60).toString().padLeft(2, '0');
+    final ms = ((seconds - total) * 10).floor().toString();
+    return '$m:$s.$ms';
+  }
+
+  static double? _parseTime(String input) {
+    final s = input.trim();
+    if (s.isEmpty) return null;
+    if (s.contains(':')) {
+      final parts = s.split(':');
+      if (parts.length == 2) {
+        final m = double.tryParse(parts[0]);
+        final sec = double.tryParse(parts[1]);
+        if (m != null && sec != null) return m * 60 + sec;
+      } else if (parts.length == 3) {
+        final h = double.tryParse(parts[0]);
+        final m = double.tryParse(parts[1]);
+        final sec = double.tryParse(parts[2]);
+        if (h != null && m != null && sec != null) return h * 3600 + m * 60 + sec;
+      }
+    }
+    return double.tryParse(s);
+  }
+
+  Future<void> _editTiming() async {
+    final startController = TextEditingController(
+      text: _formatSeconds(widget.segment.start),
+    );
+    final endController = TextEditingController(
+      text: _formatSeconds(widget.segment.end),
+    );
+
+    double currentStart = widget.segment.start;
+    double currentEnd = widget.segment.end;
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          void updateFields(double newStart, double newEnd) {
+            if (newStart < 0) newStart = 0;
+            if (newEnd <= newStart) newEnd = newStart + 0.1;
+            currentStart = double.parse(newStart.toStringAsFixed(3));
+            currentEnd = double.parse(newEnd.toStringAsFixed(3));
+            startController.text = _formatSeconds(currentStart);
+            endController.text = _formatSeconds(currentEnd);
+            setDialogState(() {});
+          }
+
+          void shiftBoth(double delta) {
+            final duration = currentEnd - currentStart;
+            var newStart = currentStart + delta;
+            if (newStart < 0) newStart = 0;
+            final newEnd = newStart + duration;
+            updateFields(newStart, newEnd);
+          }
+
+          return AlertDialog(
+            icon: const Icon(Icons.access_time_rounded),
+            title: Text('Vaqtni sozlash (#${widget.index})'),
+            content: SizedBox(
+              width: 380,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          key: const ValueKey('start-time-field'),
+                          controller: startController,
+                          decoration: const InputDecoration(
+                            labelText: 'Boshlanish',
+                            hintText: '00:00.0',
+                            isDense: true,
+                          ),
+                          onChanged: (val) {
+                            final p = _parseTime(val);
+                            if (p != null) currentStart = p;
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          key: const ValueKey('end-time-field'),
+                          controller: endController,
+                          decoration: const InputDecoration(
+                            labelText: 'Tugash',
+                            hintText: '00:00.0',
+                            isDense: true,
+                          ),
+                          onChanged: (val) {
+                            final p = _parseTime(val);
+                            if (p != null) currentEnd = p;
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Tezkor sozlash (surish):',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF888888)),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      ActionChip(
+                        label: const Text('-0.5s ikkalasi'),
+                        onPressed: () => shiftBoth(-0.5),
+                      ),
+                      ActionChip(
+                        label: const Text('+0.5s ikkalasi'),
+                        onPressed: () => shiftBoth(0.5),
+                      ),
+                      ActionChip(
+                        label: const Text('-0.2s start'),
+                        onPressed: () => updateFields(currentStart - 0.2, currentEnd),
+                      ),
+                      ActionChip(
+                        label: const Text('+0.2s start'),
+                        onPressed: () => updateFields(currentStart + 0.2, currentEnd),
+                      ),
+                      ActionChip(
+                        label: const Text('-0.2s end'),
+                        onPressed: () => updateFields(currentStart, currentEnd - 0.2),
+                      ),
+                      ActionChip(
+                        label: const Text('+0.2s end'),
+                        onPressed: () => updateFields(currentStart, currentEnd + 0.2),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Bekor qilish'),
+              ),
+              FilledButton(
+                key: const ValueKey('save-timing-button'),
+                onPressed: () {
+                  final pStart = _parseTime(startController.text) ?? currentStart;
+                  final pEnd = _parseTime(endController.text) ?? currentEnd;
+                  if (pEnd > pStart && pStart >= 0) {
+                    currentStart = double.parse(pStart.toStringAsFixed(3));
+                    currentEnd = double.parse(pEnd.toStringAsFixed(3));
+                    Navigator.of(ctx).pop(true);
+                  }
+                },
+                child: const Text('Saqlash'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (saved == true && mounted) {
+      widget.segment.start = currentStart;
+      widget.segment.end = currentEnd;
+      widget.onTextChanged();
+      setState(() {});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final index = widget.index;
-    final timecode = widget.timecode;
+    // timecode dinamik hisoblanadi
     final editable = widget.editable;
     final uncertain = widget.uncertain;
     final selected = widget.selected;
@@ -609,10 +804,42 @@ class _SegmentTileState extends State<_SegmentTile> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(width: 10),
-              Text(
-                timecode,
-                style: const TextStyle(color: Color(0xFF666666), fontSize: 12),
+              const SizedBox(width: 8),
+              Tooltip(
+                message: "Vaqtni o'zgartirish (boshlanish va tugash)",
+                child: InkWell(
+                  key: ValueKey('timing-tile-${widget.index}'),
+                  onTap: _editTiming,
+                  borderRadius: BorderRadius.circular(6),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.access_time_rounded,
+                          size: 13,
+                          color: Color(0xFF888888),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${_formatSeconds(widget.segment.start)} → ${_formatSeconds(widget.segment.end)}',
+                          style: const TextStyle(
+                            color: Color(0xFFAAAAAA),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.edit_outlined,
+                          size: 12,
+                          color: Color(0xFF666666),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
               const Spacer(),
               if (onPreview != null)

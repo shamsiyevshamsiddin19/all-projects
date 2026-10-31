@@ -5,6 +5,8 @@ import 'dart:ui' show AppExitResponse;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+// ignore: depend_on_referenced_packages
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../services/desktop_processor_service.dart';
 import '../services/settings_store.dart';
@@ -24,6 +26,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+  String? _appVersion;
   final DesktopProcessorService _service = DesktopProcessorService();
   final SettingsStore _settingsStore = SettingsStore();
   AppSettings _settings = const AppSettings();
@@ -117,6 +120,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _loadSettings();
+    _loadAppVersion();
     if (widget.autoScan) {
       // autoScan also gates background startup work (skipped under widget tests,
       // which launch with autoScan: false to avoid spawning the processor).
@@ -215,31 +219,36 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   /// Faqat videoni yuklab oladi (subtitrsiz) va papkani ochadi.
-  Future<void> _downloadOnly(String url) async {
+  Future<void> _loadAppVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (!mounted) return;
+      final build = info.buildNumber.isEmpty ? '' : '+${info.buildNumber}';
+      setState(() => _appVersion = '${info.version}$build');
+    } catch (_) {}
+  }
+
+  /// Yagona ish yurituvchi: taymer, holat, bekor qilish va xatolarni
+  /// barcha jarayonlar (_downloadOnly, _startProcessing, _reviewAndRender)
+  /// uchun markazlashtirilgan holda boshqaradi.
+  Future<void> _runJob(
+    String initialStatus,
+    Future<void> Function() action,
+  ) async {
     setState(() {
       _running = true;
       _result = null;
       _progress = 0;
-      _status = 'Video yuklab olinmoqda';
+      _status = initialStatus;
       _startTime = DateTime.now();
+      _lastProgressUpdate = DateTime.now();
     });
+    _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
     });
     try {
-      final res = await _service.downloadUrl(
-        url: url,
-        onProgress: _applyProgress,
-        quality: _appearance.quality,
-      );
-      if (!mounted) return;
-      final dir = res['dir'] as String? ?? '';
-      final name = res['name'] as String? ?? 'video';
-      setState(() {
-        _status = 'Yuklandi: $name';
-        _progress = 1;
-      });
-      if (dir.isNotEmpty) await _openPath(dir);
+      await action();
     } on ProcessorCancelled {
       if (mounted) {
         setState(() {
@@ -258,6 +267,24 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         });
       }
     }
+  }
+
+  Future<void> _downloadOnly(String url) async {
+    await _runJob('Video yuklab olinmoqda', () async {
+      final res = await _service.downloadUrl(
+        url: url,
+        onProgress: _applyProgress,
+        quality: _appearance.quality,
+      );
+      if (!mounted) return;
+      final dir = res['dir'] as String? ?? '';
+      final name = res['name'] as String? ?? 'video';
+      setState(() {
+        _status = 'Yuklandi: $name';
+        _progress = 1;
+      });
+      if (dir.isNotEmpty) await _openPath(dir);
+    });
   }
 
   Future<void> _scanVideos({String? path}) async {
@@ -373,17 +400,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         return;
       }
     }
-    setState(() {
-      _running = true;
-      _result = null;
-      _progress = 0;
-      _status = 'Boshlanmoqda';
-      _startTime = DateTime.now();
-    });
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() {});
-    });
-    try {
+    await _runJob('Boshlanmoqda', () async {
       final result = await _service.process(
         videoPath: path,
         mode: _mode,
@@ -404,24 +421,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _progress = 1;
       });
       _settingsStore.saveLastResult(result);
-    } on ProcessorCancelled {
-      if (mounted) {
-        setState(() {
-          _status = 'Bekor qilindi';
-          _progress = 0;
-        });
-      }
-    } catch (error) {
-      _showError(error.toString());
-    } finally {
-      _timer?.cancel();
-      if (mounted) {
-        setState(() {
-          _running = false;
-          _startTime = null;
-        });
-      }
-    }
+    });
   }
 
   /// Two-phase flow (#1): transcribe+translate, let the user review/edit the
@@ -439,19 +439,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         return;
       }
     }
-    setState(() {
-      _running = true;
-      _result = null;
-      _progress = 0;
-      _status = 'Matn tayyorlanmoqda';
-      _startTime = DateTime.now();
-    });
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() {});
-    });
 
     PreparedSession? session;
-    try {
+    await _runJob('Matn tayyorlanmoqda', () async {
       session = await _service.prepare(
         videoPath: path,
         mode: _mode,
@@ -459,24 +449,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         targetLang: _targetLang,
         onProgress: _applyProgress,
       );
-    } on ProcessorCancelled {
-      if (mounted) {
-        setState(() {
-          _status = 'Bekor qilindi';
-          _progress = 0;
-        });
-      }
-    } catch (error) {
-      _showError(error.toString());
-    } finally {
-      _timer?.cancel();
-      if (mounted) {
-        setState(() {
-          _running = false;
-          _startTime = null;
-        });
-      }
-    }
+    });
     if (session == null || !mounted) return;
 
     // Review/edit screen — returns edited segments, or null if cancelled.
@@ -484,8 +457,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       MaterialPageRoute(
         builder: (_) => TranslationEditorScreen(
           session: session!,
-          // Kadr ko'rish kuydiriladigan ko'rinishni AYNAN takrorlashi uchun.
           appearance: _appearance,
+          service: _service,
         ),
       ),
     );
@@ -495,19 +468,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
 
     // Phase 2 — render the edited translation.
-    setState(() {
-      _running = true;
-      _result = null;
-      _progress = 0;
-      _status = 'Render qilinmoqda';
-      _startTime = DateTime.now();
-    });
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() {});
-    });
-    try {
+    await _runJob('Render qilinmoqda', () async {
       final result = await _service.render(
-        sessionPath: session.sessionPath,
+        sessionPath: session!.sessionPath,
         segments: edited,
         onProgress: _applyProgress,
         fontScale: _appearance.fontScale,
@@ -524,24 +487,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _progress = 1;
       });
       _settingsStore.saveLastResult(result);
-    } on ProcessorCancelled {
-      if (mounted) {
-        setState(() {
-          _status = 'Bekor qilindi';
-          _progress = 0;
-        });
-      }
-    } catch (error) {
-      _showError(error.toString());
-    } finally {
-      _timer?.cancel();
-      if (mounted) {
-        setState(() {
-          _running = false;
-          _startTime = null;
-        });
-      }
-    }
+    });
   }
 
   Future<void> _cancelProcessing() async {
@@ -819,7 +765,27 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        const SingleActivator(LogicalKeyboardKey.keyO, control: true): () {
+          if (!_running) _pickExternalVideo();
+        },
+        const SingleActivator(LogicalKeyboardKey.keyO, meta: true): () {
+          if (!_running) _pickExternalVideo();
+        },
+        const SingleActivator(LogicalKeyboardKey.enter, control: true): () {
+          if (!_running) _startProcessing();
+        },
+        const SingleActivator(LogicalKeyboardKey.enter, meta: true): () {
+          if (!_running) _startProcessing();
+        },
+        const SingleActivator(LogicalKeyboardKey.escape): () {
+          if (_running) _cancelProcessing();
+        },
+      },
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
       appBar: AppBar(
         titleSpacing: 24,
         toolbarHeight: 70,
@@ -842,6 +808,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 letterSpacing: -0.5,
               ),
             ),
+            if (_appVersion != null) ...[
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'v$_appVersion',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
         actions: [
@@ -1013,6 +996,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           },
         ),
       ),
+    ),
+    ),
     );
   }
 }

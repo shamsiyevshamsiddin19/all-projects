@@ -343,6 +343,7 @@ def _render_outputs(
             add_output("srt", "Tarjima SRT", srt_uz)
 
     if "transcript" in modes_to_render:
+        emit("progress", message="Matnli transkript yozilmoqda", progress=0.61)
         txt = job_out_dir / f"{stem}_matn.txt"
         docx = job_out_dir / f"{stem}_matn.docx"
         write_txt_transcript(txt, display_original, translated)
@@ -351,7 +352,7 @@ def _render_outputs(
         add_output("docx", "Matn DOCX", docx)
 
     if "reading" in modes_to_render:
-        emit("progress", message="O'qish uchun matn tayyorlanmoqda", progress=0.63)
+        emit("progress", message="O'qish uchun PDF tayyorlanmoqda", progress=0.63)
         blocks = build_reading_blocks(reading_source)
         title = reading_title(stem)
         meta = reading_meta(blocks, effective_lang)
@@ -368,6 +369,7 @@ def _render_outputs(
         add_output("txt", "Matn TXT", txt)
 
         if translated:
+            emit("progress", message="Tarjimali kitob (PDF) shakllantirilmoqda", progress=0.65)
             tr_blocks = build_reading_blocks(reading_translated or translated)
 
             pdf_par = job_out_dir / f"{stem}_oqish_tarjimali.pdf"
@@ -402,6 +404,7 @@ def _render_outputs(
             add_output("md", "Yordamchi uchun MD", md)
 
     if "vocabulary" in modes_to_render:
+        emit("progress", message="Lug'at fayllari (DOCX, CSV) yozilmoqda", progress=0.67)
         txt = job_out_dir / f"{stem}_lugat.txt"
         docx = job_out_dir / f"{stem}_lugat.docx"
         csv = job_out_dir / f"{stem}_lugat.csv"
@@ -415,7 +418,7 @@ def _render_outputs(
     render_modes = [m for m in modes_to_render if m in VIDEO_MODES]
     n_render = max(1, len(render_modes))
     for i, render_mode in enumerate(render_modes):
-        emit("progress", message=f"ASS tayyorlanmoqda: {render_mode}", progress=0.66)
+        emit("progress", message=f"ASS tayyorlanmoqda: {render_mode}", progress=0.69)
         ass = job_out_dir / f"{stem}_{render_mode}.ass"
         # MKV ASS uslubini o'zgartirmay saqlay oladi; MP4 esa mos keluvchi
         # `mov_text` trek talab qiladi. Shu sabab manba MKV bo'lsa konteynerni

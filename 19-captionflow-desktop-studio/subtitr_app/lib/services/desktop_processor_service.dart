@@ -135,8 +135,8 @@ class SubtitleSegment {
     this.confidence,
   });
 
-  final double start;
-  final double end;
+  double start;
+  double end;
   String original;
   String translated;
 
