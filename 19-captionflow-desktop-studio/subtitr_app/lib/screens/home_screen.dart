@@ -4,6 +4,7 @@ import 'dart:ui' show AppExitResponse;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../services/desktop_processor_service.dart';
 import '../services/settings_store.dart';
@@ -658,6 +659,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
+  /// Test uchun: xato oqimini tashqaridan ishga tushirish.
+  @visibleForTesting
+  void showErrorForTest(String message) => _showError(message);
+
   void _showError(String message) {
     if (!mounted) return;
     setState(() {
@@ -668,6 +673,70 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       SnackBar(
         content: Text(message, maxLines: 3, overflow: TextOverflow.ellipsis),
         behavior: SnackBarBehavior.floating,
+        // ffmpeg va provayder xatolari uzun bo'ladi va uch qatordan
+        // keyin kesiladi — aynan kerakli qismi shu yerda yo'qolardi.
+        action: SnackBarAction(
+          label: 'Batafsil',
+          onPressed: () => _showErrorDetail(message),
+        ),
+        duration: const Duration(seconds: 8),
+      ),
+    );
+  }
+
+  /// Shows the full error with a copy button.
+  ///
+  /// The snackbar truncates at three lines, and an ffmpeg or provider
+  /// failure puts the useful part at the end. Without this the user could
+  /// only see the beginning of a message they then could not report.
+  Future<void> _showErrorDetail(String message) async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.error_outline_rounded),
+        title: const Text('Xato tafsiloti'),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560, maxHeight: 420),
+          child: SingleChildScrollView(
+            child: SelectableText(
+              message,
+              style: const TextStyle(fontSize: 13, height: 1.4),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton.icon(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: message));
+              if (!context.mounted) return;
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Nusxa olindi'),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            icon: const Icon(Icons.copy_rounded, size: 18),
+            label: const Text('Nusxa olish'),
+          ),
+          TextButton.icon(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              try {
+                final dir = await _service.logDir();
+                if (dir.isNotEmpty) await _openPath(dir);
+              } catch (_) {}
+            },
+            icon: const Icon(Icons.folder_open_rounded, size: 18),
+            // To'liq iz (traceback) faqat logda bo'ladi.
+            label: const Text('Loglarni ochish'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Yopish'),
+          ),
+        ],
       ),
     );
   }
