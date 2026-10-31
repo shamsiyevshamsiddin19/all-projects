@@ -167,6 +167,24 @@ sahifasida bo'ladi.
 - `ISHLATISH_LINUX.txt`, `ISHLATISH_DESKTOP.txt` — foydalanuvchi qo'llanmalari
   (ilova bilan birga yuboriladi)
 
+## API kalitlar qayerda saqlanadi
+
+Kalitlar `api_keys.json` da, ilovaning ma'lumot papkasida, **faqat egasi
+o'qiydigan** ruxsat bilan (`0600`). Model nomlari sir emas — ular
+`SharedPreferences` da qoladi.
+
+Ilgari kalitlar ham `SharedPreferences` da edi, uning fayli esa
+`-rw-rw-r--` bilan yaratiladi: **kompyuterdagi har qanday foydalanuvchi
+va jarayon** pullik API kalitni diskdan o'qiy olardi, zaxira va sinxron
+dasturlar ham uni olib ketardi. Yangilangandan keyin birinchi ochilishda
+eski kalitlar avtomatik ko'chiriladi va eskisidan o'chiriladi.
+
+Bu **shifrlash emas**. Keyingi qadam — tizim kalit omboriga o'tish
+(`flutter_secure_storage` → libsecret), lekin u Linux'da yana bitta
+tizim sharti qo'shadi. `0600` esa bog'liqliksiz va ish stoli uchun
+haqiqiy xavfni — boshqa hisoblar, tasodifiy zaxira, ulashib yuborilgan
+sozlama papkasi — yopadi.
+
 ## Xato hisoboti (log)
 
 Har bir ish `logs/subtitr-YYYY-MM-DD.log` ga yoziladi (kesh papkasida;
@@ -258,7 +276,7 @@ Testlar (yangi bog'liqliksiz, standart `unittest`):
 
 ```bash
 .venv/bin/python -m unittest discover -s tests   # 171 ta
-cd subtitr_app && flutter test                   # 24 ta
+cd subtitr_app && flutter test                   # 31 ta
 ```
 
 ## Eslatma

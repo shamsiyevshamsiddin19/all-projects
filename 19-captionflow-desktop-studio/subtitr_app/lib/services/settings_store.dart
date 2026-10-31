@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'desktop_processor_service.dart';
+import 'key_store.dart';
 
 /// Persists user-supplied API keys and optional model overrides.
 ///
@@ -139,6 +140,12 @@ class AppearanceSettings {
 }
 
 class SettingsStore {
+  SettingsStore({KeyStore? keyStore}) : _keys = keyStore ?? KeyStore();
+
+  /// API kalitlar SharedPreferences da EMAS — uning JSON fayli hamma
+  /// o'qiydigan ruxsat bilan yaratiladi. `KeyStore` ni ko'ring.
+  final KeyStore _keys;
+
   static const _kGroq = 'groq_api_key';
   static const _kOpenai = 'openai_api_key';
   static const _kGemini = 'gemini_api_key';
@@ -148,13 +155,29 @@ class SettingsStore {
   static const _kGeminiModel = 'gemini_model';
   static const _kAnthropicModel = 'anthropic_model';
 
+  static const _keyNames = [_kGroq, _kOpenai, _kGemini, _kAnthropic];
+
   Future<AppSettings> load() async {
     final prefs = await SharedPreferences.getInstance();
+    var keys = await _keys.read();
+    if (keys.isEmpty) {
+      // Yangilanishdan oldin kiritilgan kalitlar hali eski (hamma
+      // o'qiydigan) faylda — bir marta ko'chirib, eskisini tozalaymiz.
+      final migrated = await _keys.migrateFrom({
+        for (final name in _keyNames) name: prefs.getString(name),
+      });
+      if (migrated.isNotEmpty) {
+        for (final name in _keyNames) {
+          await prefs.remove(name);
+        }
+        keys = migrated;
+      }
+    }
     return AppSettings(
-      groqApiKey: prefs.getString(_kGroq) ?? '',
-      openaiApiKey: prefs.getString(_kOpenai) ?? '',
-      geminiApiKey: prefs.getString(_kGemini) ?? '',
-      anthropicApiKey: prefs.getString(_kAnthropic) ?? '',
+      groqApiKey: keys[_kGroq] ?? '',
+      openaiApiKey: keys[_kOpenai] ?? '',
+      geminiApiKey: keys[_kGemini] ?? '',
+      anthropicApiKey: keys[_kAnthropic] ?? '',
       groqWhisperModel: prefs.getString(_kGroqModel) ?? '',
       openaiModel: prefs.getString(_kOpenaiModel) ?? '',
       geminiModel: prefs.getString(_kGeminiModel) ?? '',
@@ -164,10 +187,17 @@ class SettingsStore {
 
   Future<void> save(AppSettings settings) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kGroq, settings.groqApiKey.trim());
-    await prefs.setString(_kOpenai, settings.openaiApiKey.trim());
-    await prefs.setString(_kGemini, settings.geminiApiKey.trim());
-    await prefs.setString(_kAnthropic, settings.anthropicApiKey.trim());
+    // Kalitlar faqat egasi o'qiydigan alohida faylga; model nomlari sir
+    // emas, ular SharedPreferences da qolaveradi.
+    await _keys.write({
+      _kGroq: settings.groqApiKey,
+      _kOpenai: settings.openaiApiKey,
+      _kGemini: settings.geminiApiKey,
+      _kAnthropic: settings.anthropicApiKey,
+    });
+    for (final name in _keyNames) {
+      await prefs.remove(name);
+    }
     await prefs.setString(_kGroqModel, settings.groqWhisperModel.trim());
     await prefs.setString(_kOpenaiModel, settings.openaiModel.trim());
     await prefs.setString(_kGeminiModel, settings.geminiModel.trim());
