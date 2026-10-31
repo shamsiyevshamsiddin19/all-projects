@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -37,6 +38,11 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
   late final List<SubtitleSegment> _segments;
   String _search = '';
   bool _onlyUncertain = false;
+
+  /// Qidiruvni kechiktirish taymeri. Har bosilgan harf butun ro'yxatni
+  /// qayta quradi — 2000 qatorli kinoda "qidirish" so'zini yozish 8 marta
+  /// to'liq qayta qurish degani.
+  Timer? _searchDebounce;
 
   late final DesktopProcessorService _service =
       widget.service ?? DesktopProcessorService();
@@ -90,8 +96,18 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
     }
   }
 
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    // Yozish tugaguncha kutamiz; 180 ms — tez yozganda ham sezilmaydi,
+    // lekin har harfdagi qayta qurishni to'xtatadi.
+    _searchDebounce = Timer(const Duration(milliseconds: 180), () {
+      if (mounted) setState(() => _search = value);
+    });
+  }
+
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     // Kontrollerlar endi har qatorning O'ZIDA — `_SegmentTile` ularni
     // o'zi yaratadi va o'zi tozalaydi.
     super.dispose();
@@ -302,7 +318,7 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
                       hintText: 'Qatorlardan qidirish...',
                       isDense: true,
                     ),
-                    onChanged: (v) => setState(() => _search = v),
+                    onChanged: _onSearchChanged,
                   ),
                 ),
                 if (uncertain > 0) ...[
