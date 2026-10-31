@@ -50,7 +50,7 @@ def build_vocabulary(
         starts = [x.start for x in ordered]
         contexts = [sentence_for(first[k], ordered, starts) for k in keys]
     translations, pos_list, lemma_list, provider = translate_word_list(
-        keys, target_lang, contexts=contexts
+        keys, target_lang, contexts=contexts, source_lang=source_lang
     )
     entries: list[dict[str, Any]] = []
     for key, tr, pos, lemma in zip(keys, translations, pos_list, lemma_list):

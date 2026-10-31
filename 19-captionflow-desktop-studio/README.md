@@ -71,6 +71,11 @@ sahifasida bo'ladi.
     bo'lsa, "o'ng"; `light` → "yorug'lik" bo'lsa, "yengil".
     Kesh `vocab_v3_*` — versiya oshirilmasa eski (kontekstsiz) lug'at
     qaytarilaverardi
+  - `core.OFFLINE_WORDS` / `OFFLINE_PHRASES` — kalitsiz rejimdagi zaxira
+    lug'at, **(manba, nishon)** juftligi bo'yicha kalitlangan:
+    ingliz→o'zbek 98 so'z, rus→o'zbek 174 so'z. Juftlik yo'q bo'lsa bo'sh
+    satr qaytadi — ilgari nishon til hisobga olinmas va rus tiliga
+    so'ralganda ham o'zbekcha qaytarardi
   - `subtitles.write_ass()` lug'at kartochkalari — davomiylik
     (`SUBTITR_VOCAB_DURATION`, 4.0) minimal oraliqni ham belgilaydi:
     4.0 da sekundda ~3.2 kartochka sig'adi, 3.0 da ~4.2. Tez nutqda
@@ -222,7 +227,7 @@ qaytadan pul turadi, shuning uchun uni faqat atayin so'raganda o'chiradi.
 Testlar (yangi bog'liqliksiz, standart `unittest`):
 
 ```bash
-.venv/bin/python -m unittest discover -s tests   # 136 ta
+.venv/bin/python -m unittest discover -s tests   # 145 ta
 cd subtitr_app && flutter test                   # 16 ta
 ```
 

@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
-from .core import AI_DISABLED, AI_MIN_SPLIT_BATCH, COMMON_WORDS, PHRASES, SOURCE_LANG_NAMES, Segment, TARGET_LANG_NAMES, WORD_RE, _count, _env_float, ai_retry_backoff, ai_throttle, disable_provider, emit, error_kind, log, model_candidates, normalize_word
+from .core import AI_DISABLED, AI_MIN_SPLIT_BATCH, SOURCE_LANG_NAMES, Segment, TARGET_LANG_NAMES, WORD_RE, _count, _env_float, ai_retry_backoff, ai_throttle, disable_provider, emit, error_kind, log, model_candidates, normalize_word, offline_phrases, offline_words
 from .cache import _cache_enabled, _load_json, _save_json
 
 
@@ -173,7 +173,10 @@ def ai_translate_batch(
     # Umuman kalit yo'q bo'lsa — kutish va qayta urinishning ma'nosi yo'q
     # (ilgari har bir to'plam uchun 30 soniya behuda kutilardi).
     if not ai_providers():
-        return [offline_translate_text(text) for text in texts], "offline_dictionary"
+        return (
+            [offline_translate_text(t, source_lang, target_lang) for t in texts],
+            "offline_dictionary",
+        )
 
     def accept(data: str) -> list[str] | None:
         parsed = json_object_from_text(data)
@@ -209,7 +212,10 @@ def ai_translate_batch(
         message=f"Diqqat: {len(texts)} qator tarjima qilinmadi (AI javob bermadi)",
         progress=0.5,
     )
-    return [offline_translate_text(text) for text in texts], "offline_dictionary"
+    return (
+        [offline_translate_text(t, source_lang, target_lang) for t in texts],
+        "offline_dictionary",
+    )
 
 
 def translate_openai(prompt: str, payload: str) -> str:
@@ -410,8 +416,12 @@ def translate_groq(prompt: str, payload: str) -> str:
     raise RuntimeError(f"Groq tarjima ishlamadi: {last_error}")
 
 
-def offline_translate_text(text: str) -> str:
+def offline_translate_text(text: str, source_lang: str = "en", target_lang: str = "uz") -> str:
     """Kalitsiz ishlaydigan zaxira tarjima — faqat ichki lug'at asosida.
+
+    Til juftligi uchun lug'at bo'lmasa bo'sh satr qaytaradi. Ilgari lug'at
+    bitta tekis to'plam edi va NISHON til hisobga olinmas — rus tiliga
+    tarjima so'ralganda ham o'zbekcha qaytarardi.
 
     Lug'at qamrovi past bo'lsa bo'sh satr qaytaradi: yarim tarjima qilingan
     aralash matn ekranda aytilmagan so'zlar bo'lib ko'rinadi, bo'sh satr esa
@@ -419,11 +429,14 @@ def offline_translate_text(text: str) -> str:
     source = " ".join(text.split())
     if not source:
         return ""
+    words = offline_words(source_lang, target_lang)
+    if not words:
+        return ""   # bu til juftligi uchun lug'at yo'q
 
     # Avval ko'p so'zli iboralar ("thank you" -> "rahmat"), keyin alohida so'zlar.
     working = source
     phrase_hits = 0
-    for phrase, translation in PHRASES.items():
+    for phrase, translation in offline_phrases(source_lang, target_lang).items():
         working, n = re.subn(r"\b" + re.escape(phrase) + r"\b", translation, working, flags=re.I)
         if n:
             phrase_hits += n * len(phrase.split())
@@ -436,7 +449,7 @@ def offline_translate_text(text: str) -> str:
             parts.append(token)
             continue
         key = token.lower().strip("'")
-        translated = COMMON_WORDS.get(key)
+        translated = words.get(key)
         if translated is None:
             translated = token
         else:
@@ -663,7 +676,9 @@ def build_glossary(segments: list[Segment], target_lang: str, source_lang: str) 
     if not forms:
         return {}
     try:
-        translations, pos_list, lemmas, _prov = translate_word_list(forms, target_lang)
+        translations, pos_list, lemmas, _prov = translate_word_list(
+            forms, target_lang, source_lang=source_lang
+        )
     except Exception:
         return {}
 
@@ -704,6 +719,7 @@ def translate_word_list(
     words: list[str],
     target_lang: str,
     contexts: list[str] | None = None,
+    source_lang: str = "en",
 ) -> tuple[list[str], list[str], list[str], str]:
     """So'zlarni tarjima qiladi; `contexts` berilsa har so'z o'zi uchragan
     gap bilan birga yuboriladi.
@@ -738,8 +754,8 @@ def translate_word_list(
     provider = ""
 
     if not ai_providers():
-        return ([offline_translate_word(w) for w in words], [""] * len(words),
-                [""] * len(words), "offline_dictionary")
+        return ([offline_translate_word(w, source_lang, target_lang) for w in words],
+                [""] * len(words), [""] * len(words), "offline_dictionary")
 
     # So'z -> kontekst. Xarita ishlatiladi (indeks emas), chunki to'plam
     # muvaffaqiyatsizlikda ikkiga bo'linib qayta so'raladi va indekslar
@@ -767,12 +783,12 @@ def translate_word_list(
         def accept(data: str) -> tuple[list[str], list[str], list[str]] | None:
             c_tr, c_pos, c_lemma = indexed_values(
                 json_object_from_text(data), len(chunk),
-                [offline_translate_word(w) for w in chunk],
+                [offline_translate_word(w, source_lang, target_lang) for w in chunk],
             )
             matched = sum(
                 1 for i, tr in enumerate(c_tr)
                 if tr and tr.lower() != chunk[i].lower()
-                and tr != offline_translate_word(chunk[i])
+                and tr != offline_translate_word(chunk[i], source_lang, target_lang)
             )
             # Model to'plamning bir qismiga javob bermasligi mumkin —
             # o'shanda qolgan so'zlar o'z-o'ziga "tarjima" bo'lib qoladi va
@@ -807,8 +823,8 @@ def translate_word_list(
             message=f"Diqqat: {len(chunk)} so'z lug'atga tarjima qilinmadi",
             progress=0.58,
         )
-        return ([offline_translate_word(w) for w in chunk], [""] * len(chunk),
-                [""] * len(chunk), "offline_dictionary")
+        return ([offline_translate_word(w, source_lang, target_lang) for w in chunk],
+                [""] * len(chunk), [""] * len(chunk), "offline_dictionary")
 
     batch_size = max(20, int(os.getenv("VOCAB_BATCH", "80")))
     for start in range(0, len(words), batch_size):
@@ -822,5 +838,5 @@ def translate_word_list(
     return tr_list, pos_list, lemma_list, provider
 
 
-def offline_translate_word(word: str) -> str:
-    return COMMON_WORDS.get(normalize_word(word), word)
+def offline_translate_word(word: str, source_lang: str = "en", target_lang: str = "uz") -> str:
+    return offline_words(source_lang, target_lang).get(normalize_word(word), word)

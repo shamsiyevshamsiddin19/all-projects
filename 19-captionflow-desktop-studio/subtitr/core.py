@@ -219,7 +219,14 @@ HELPERS = {
     },
 }
 
-COMMON_WORDS = {
+# Oflayn lug'at — AI kaliti BO'LMAGANDA ishlatiladigan zaxira.
+#
+# Kalit: (manba tili, nishon tili). Ilgari bu bitta tekis lug'at edi:
+# faqat ingliz->o'zbek, ya'ni rus tilidagi kontent uchun (asosiy foydalanish)
+# hech narsa yo'q edi, ustiga nishon til hisobga olinmas — rus tiliga
+# tarjima so'ralganda ham o'zbekcha qaytarardi.
+OFFLINE_WORDS: dict[tuple[str, str], dict[str, str]] = {
+    ("en", "uz"): {
     "hello": "salom",
     "hi": "salom",
     "yes": "ha",
@@ -318,9 +325,78 @@ COMMON_WORDS = {
     "the": "",
     "a": "",
     "an": "",
+    },
+    ("ru", "uz"): {
+        # Olmoshlar
+        "я": "men", "ты": "sen", "вы": "siz", "он": "u", "она": "u",
+        "оно": "u", "мы": "biz", "они": "ular",
+        "меня": "meni", "тебя": "seni", "его": "uni", "её": "uni",
+        "нас": "bizni", "вас": "sizni", "их": "ularni",
+        "мне": "menga", "тебе": "senga", "ему": "unga", "ей": "unga",
+        "нам": "bizga", "вам": "sizga", "им": "ularga",
+        "мой": "mening", "моя": "mening", "твой": "sening",
+        "ваш": "sizning", "наш": "bizning", "свой": "o'z",
+        "это": "bu", "этот": "bu", "эта": "bu", "тот": "o'sha",
+        # So'roq
+        "что": "nima", "кто": "kim", "где": "qayerda", "когда": "qachon",
+        "как": "qanday", "почему": "nega", "зачем": "nega",
+        "сколько": "qancha", "какой": "qanday", "куда": "qayerga",
+        # Inkor va tasdiq
+        "да": "ha", "нет": "yo'q", "не": "emas", "ничего": "hech narsa",
+        "никто": "hech kim", "никогда": "hech qachon",
+        # Fe'llar
+        "быть": "bo'lmoq", "есть": "bor", "был": "edi", "была": "edi",
+        "было": "edi", "были": "edi", "будет": "bo'ladi",
+        "идти": "bormoq", "пойти": "bormoq", "прийти": "kelmoq",
+        "пришёл": "keldi", "пришел": "keldi",
+        "сказать": "aytmoq", "сказал": "aytdi", "говорить": "gapirmoq",
+        "говорит": "gapiryapti", "знать": "bilmoq", "знаю": "bilaman",
+        "знает": "biladi", "думать": "o'ylamoq", "думаю": "o'ylayman",
+        "хотеть": "xohlamoq", "хочу": "xohlayman", "хочешь": "xohlaysan",
+        "могу": "qila olaman", "можно": "mumkin",
+        "нужно": "kerak", "надо": "kerak",
+        "делать": "qilmoq", "делаю": "qilaman",
+        "видеть": "ko'rmoq", "вижу": "ko'raman", "смотреть": "qaramoq",
+        "слушать": "tinglamoq", "слышать": "eshitmoq",
+        "дать": "bermoq", "взять": "olmoq", "брать": "olmoq",
+        # Otlar
+        "человек": "odam", "люди": "odamlar", "друг": "do'st",
+        "дом": "uy", "время": "vaqt", "день": "kun", "ночь": "tun",
+        "утро": "tong", "вечер": "kech", "год": "yil",
+        "жизнь": "hayot", "мир": "dunyo", "вода": "suv", "еда": "ovqat",
+        "деньги": "pul", "работа": "ish", "мама": "ona", "папа": "ota",
+        "сын": "o'g'il", "дочь": "qiz", "женщина": "ayol",
+        "мужчина": "erkak", "ребёнок": "bola", "ребенок": "bola",
+        "дети": "bolalar", "город": "shahar", "страна": "davlat",
+        "книга": "kitob", "слово": "so'z", "рука": "qo'l",
+        "голова": "bosh", "глаза": "ko'zlar",
+        # Sifat va ravishlar
+        "хороший": "yaxshi", "хорошо": "yaxshi", "плохой": "yomon",
+        "плохо": "yomon", "большой": "katta", "маленький": "kichik",
+        "новый": "yangi", "старый": "eski", "молодой": "yosh",
+        "красивый": "chiroyli", "быстро": "tez", "медленно": "sekin",
+        "сейчас": "hozir", "потом": "keyin", "уже": "allaqachon",
+        "ещё": "hali", "еще": "hali", "всегда": "doim", "иногда": "ba'zan",
+        "очень": "juda", "тоже": "ham", "только": "faqat",
+        "всё": "hammasi", "все": "hammasi", "много": "ko'p", "мало": "kam",
+        "вместе": "birga", "снова": "yana", "опять": "yana",
+        "сегодня": "bugun", "вчера": "kecha", "завтра": "ertaga",
+        "здесь": "bu yerda", "тут": "bu yerda", "там": "u yerda",
+        # Bog'lovchi va ko'makchilar
+        "и": "va", "но": "lekin", "или": "yoki", "если": "agar",
+        "чтобы": "uchun", "потому": "chunki",
+        "для": "uchun", "от": "dan", "до": "gacha", "без": "siz",
+        "через": "orqali", "после": "keyin", "перед": "oldin",
+        # Xushmuomalalik
+        "спасибо": "rahmat", "пожалуйста": "iltimos",
+        "здравствуйте": "salom", "привет": "salom", "пока": "xayr",
+        "извините": "kechirasiz", "простите": "kechirasiz",
+        "конечно": "albatta",
+    },
 }
 
-PHRASES = {
+OFFLINE_PHRASES: dict[tuple[str, str], dict[str, str]] = {
+    ("en", "uz"): {
     "you know": "bilasizmi",
     "i mean": "aytmoqchimanki",
     "thank you": "rahmat",
@@ -330,7 +406,30 @@ PHRASES = {
     "how are you": "qalaysiz",
     "what are you doing": "nima qilyapsiz",
     "let's go": "ketdik",
+    },
+    ("ru", "uz"): {
+        "спасибо большое": "katta rahmat",
+        "большое спасибо": "katta rahmat",
+        "как дела": "qalaysiz",
+        "доброе утро": "xayrli tong",
+        "добрый день": "xayrli kun",
+        "добрый вечер": "xayrli kech",
+        "до свидания": "xayr",
+        "всё хорошо": "hammasi yaxshi",
+        "все хорошо": "hammasi yaxshi",
+        "не знаю": "bilmayman",
+        "может быть": "balki",
+    },
 }
+
+
+def offline_words(source_lang: str, target_lang: str) -> dict[str, str]:
+    """Shu til juftligi uchun oflayn so'z lug'ati (yo'q bo'lsa — bo'sh)."""
+    return OFFLINE_WORDS.get(((source_lang or "").lower(), (target_lang or "").lower()), {})
+
+
+def offline_phrases(source_lang: str, target_lang: str) -> dict[str, str]:
+    return OFFLINE_PHRASES.get(((source_lang or "").lower(), (target_lang or "").lower()), {})
 
 WORD_RE = re.compile(r"[^\W\d_]+(?:['`][^\W\d_]+)*", re.UNICODE)
 

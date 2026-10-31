@@ -1032,7 +1032,7 @@ class VocabContextTests(unittest.TestCase):
     def test_build_vocabulary_passes_the_sentence_along(self):
         captured = {}
 
-        def fake(words, target_lang, contexts=None):
+        def fake(words, target_lang, contexts=None, source_lang="en"):
             captured["words"] = list(words)
             captured["contexts"] = list(contexts) if contexts else None
             return (["tarjima"] * len(words), [""] * len(words),
@@ -1055,7 +1055,7 @@ class VocabContextTests(unittest.TestCase):
         """Eski chaqiruvlar (segmentsiz) ishlashda davom etsin."""
         captured = {}
 
-        def fake(words, target_lang, contexts=None):
+        def fake(words, target_lang, contexts=None, source_lang="en"):
             captured["contexts"] = contexts
             return (["t"] * len(words), [""] * len(words),
                     [""] * len(words), "claude")
@@ -1130,6 +1130,80 @@ class VocabContextTests(unittest.TestCase):
         )
         self.assertIn("vocab_v3_", source)
         self.assertNotIn("vocab_v2_", source)
+
+
+class OfflineDictionaryTests(unittest.TestCase):
+    """Kalitsiz rejimdagi zaxira lug'at.
+
+    Ilgari u bitta tekis to'plam edi: 98 so'z, faqat ingliz->o'zbek.
+    Rus tilidagi kontent (asosiy foydalanish) uchun hech narsa yo'q edi,
+    ustiga NISHON til hisobga olinmas — rus tiliga tarjima so'ralganda
+    ham o'zbekcha qaytarardi."""
+
+    def test_russian_words_translate(self):
+        for word, expected in (("привет", "salom"), ("спасибо", "rahmat"),
+                               ("вчера", "kecha"), ("дети", "bolalar")):
+            self.assertEqual(m_tx.offline_translate_word(word, "ru", "uz"), expected)
+
+    def test_russian_phrases_translate(self):
+        for text, expected in (("Не знаю", "bilmayman"),
+                               ("Доброе утро", "xayrli tong"),
+                               ("Как дела?", "qalaysiz?")):
+            self.assertEqual(m_tx.offline_translate_text(text, "ru", "uz"), expected)
+
+    def test_english_pair_still_works(self):
+        self.assertEqual(m_tx.offline_translate_text("Thank you", "en", "uz"), "rahmat")
+        self.assertEqual(m_tx.offline_translate_word("hello", "en", "uz"), "salom")
+
+    def test_target_language_is_respected(self):
+        """Ilgari rus tiliga so'ralganda ham o'zbekcha qaytarardi."""
+        self.assertEqual(m_tx.offline_translate_text("hello", "en", "ru"), "")
+        self.assertEqual(m_tx.offline_translate_word("hello", "en", "ru"), "hello")
+
+    def test_unknown_pair_returns_nothing(self):
+        self.assertEqual(m_tx.offline_translate_text("hallo", "de", "uz"), "")
+        self.assertEqual(m_tx.offline_translate_word("hallo", "de", "uz"), "hallo")
+
+    def test_capitalisation_is_preserved(self):
+        self.assertEqual(m_tx.offline_translate_text("Привет", "ru", "uz"), "Salom")
+
+    def test_no_duplicate_keys_in_any_dictionary(self):
+        """Dict literal takroriy kalitni JIMGINA yutadi — ikkinchisi g'olib
+        chiqadi va birinchi tarjima yo'qoladi. Shuning uchun manba kod
+        AST darajasida tekshiriladi."""
+        import ast
+        import collections
+
+        tree = ast.parse(
+            (Path(__file__).resolve().parent.parent / "subtitr" / "core.py")
+            .read_text(encoding="utf-8")
+        )
+        checked = 0
+        for node in ast.walk(tree):
+            if isinstance(node, ast.AnnAssign):
+                name = getattr(node.target, "id", "")
+            elif isinstance(node, ast.Assign):
+                name = getattr(node.targets[0], "id", "")
+            else:
+                continue
+            if name not in ("OFFLINE_WORDS", "OFFLINE_PHRASES"):
+                continue
+            for pair_key, inner in zip(node.value.keys, node.value.values):
+                langs = tuple(e.value for e in pair_key.elts)
+                keys = [k.value for k in inner.keys]
+                dupes = [k for k, c in collections.Counter(keys).items() if c > 1]
+                self.assertEqual(dupes, [], f"{name} {langs} da takroriy kalit")
+                checked += 1
+        self.assertGreaterEqual(checked, 4, "lug'atlar topilmadi")
+
+    def test_every_dictionary_has_a_matching_phrase_table(self):
+        """Har til juftligi uchun ikkala jadval ham bo'lsin."""
+        self.assertEqual(
+            set(dp.core.OFFLINE_WORDS), set(dp.core.OFFLINE_PHRASES)
+        )
+
+    def test_russian_dictionary_is_meaningfully_larger_than_before(self):
+        self.assertGreaterEqual(len(dp.core.offline_words("ru", "uz")), 150)
 
 
 class VocabCardTests(unittest.TestCase):
@@ -1319,7 +1393,7 @@ class GlossaryTests(unittest.TestCase):
 
     def test_case_forms_share_one_target(self):
         """Rus ismi kelishikda o'zgaradi — hammasi bitta tarjimaga ketsin."""
-        def fake(words, target_lang, contexts=None):
+        def fake(words, target_lang, contexts=None, source_lang="en"):
             # Model lemmani qaytaradi; shu bilan shakllar guruhlanadi.
             lemmas = ["иван" if w.startswith("Иван") else w.lower() for w in words]
             return (["Ivan" if w.startswith("Иван") else "X" for w in words],
@@ -1339,7 +1413,7 @@ class GlossaryTests(unittest.TestCase):
 
     def test_rare_case_forms_are_kept(self):
         """"Иван" 5 marta, "Ивану" 1 marta — ikkinchisi tushib qolmasin."""
-        def fake(words, target_lang, contexts=None):
+        def fake(words, target_lang, contexts=None, source_lang="en"):
             return (["Ivan"] * len(words), ["noun"] * len(words),
                     ["иван"] * len(words), "claude")
 
@@ -1351,7 +1425,7 @@ class GlossaryTests(unittest.TestCase):
 
     def test_pronouns_and_verbs_are_excluded(self):
         """Olmosh/fe'lni "doim shunday tarjima qil" deb majburlash zarar."""
-        def fake(words, target_lang, contexts=None):
+        def fake(words, target_lang, contexts=None, source_lang="en"):
             pos = {"Он": "pronoun", "Купила": "verb", "Красивый": "adjective",
                    "Вася": "noun"}
             return (["X"] * len(words), [pos.get(w, "noun") for w in words],
@@ -1373,7 +1447,7 @@ class GlossaryTests(unittest.TestCase):
         self.assertNotIn("Купила", glossary)
 
     def test_group_needs_three_mentions_in_total(self):
-        def fake(words, target_lang, contexts=None):
+        def fake(words, target_lang, contexts=None, source_lang="en"):
             return (["X"] * len(words), ["noun"] * len(words),
                     [w.lower() for w in words], "claude")
 
