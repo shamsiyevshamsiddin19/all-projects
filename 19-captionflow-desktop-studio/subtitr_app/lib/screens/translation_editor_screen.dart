@@ -22,6 +22,7 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
   late final List<TextEditingController> _controllers;
   late final List<SubtitleSegment> _segments;
   String _search = '';
+  bool _onlyUncertain = false;
 
   @override
   void initState() {
@@ -55,6 +56,7 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
   }
 
   bool _matches(int i) {
+    if (_onlyUncertain && !_segments[i].isUncertain) return false;
     if (_search.isEmpty) return true;
     final q = _search.toLowerCase();
     return _segments[i].original.toLowerCase().contains(q) ||
@@ -64,6 +66,7 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
   @override
   Widget build(BuildContext context) {
     final hasTranslation = _segments.any((s) => s.translated.trim().isNotEmpty);
+    final uncertain = _segments.where((s) => s.isUncertain).length;
     final visible = <int>[
       for (var i = 0; i < _segments.length; i++)
         if (_matches(i)) i,
@@ -98,13 +101,35 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
             ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: TextField(
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search, size: 20),
-                hintText: 'Qatorlardan qidirish...',
-                isDense: true,
-              ),
-              onChanged: (v) => setState(() => _search = v),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.search, size: 20),
+                      hintText: 'Qatorlardan qidirish...',
+                      isDense: true,
+                    ),
+                    onChanged: (v) => setState(() => _search = v),
+                  ),
+                ),
+                if (uncertain > 0) ...[
+                  const SizedBox(width: 12),
+                  // Model ishonmagan qatorlar — noto'g'ri eshitilgan ism
+                  // yoki so'z odatda aynan shu joylarda bo'ladi.
+                  FilterChip(
+                    avatar: Icon(
+                      Icons.help_outline_rounded,
+                      size: 18,
+                      color: _onlyUncertain ? Colors.black : Colors.amber,
+                    ),
+                    label: Text('Shubhali $uncertain'),
+                    selected: _onlyUncertain,
+                    selectedColor: Colors.amber,
+                    onSelected: (v) => setState(() => _onlyUncertain = v),
+                  ),
+                ],
+              ],
             ),
           ),
           Expanded(
@@ -120,6 +145,7 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
                   original: _segments[i].original,
                   controller: _controllers[i],
                   editable: hasTranslation,
+                  uncertain: _segments[i].isUncertain,
                 );
               },
             ),
@@ -161,6 +187,7 @@ class _SegmentTile extends StatelessWidget {
     required this.original,
     required this.controller,
     required this.editable,
+    this.uncertain = false,
   });
 
   final int index;
@@ -168,6 +195,9 @@ class _SegmentTile extends StatelessWidget {
   final String original;
   final TextEditingController controller;
   final bool editable;
+
+  /// The model was unsure of this line — worth reading before rendering.
+  final bool uncertain;
 
   @override
   Widget build(BuildContext context) {
@@ -177,7 +207,10 @@ class _SegmentTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF0A0A0A),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF222222)),
+        border: Border.all(
+          color: uncertain ? Colors.amber.withValues(alpha: 0.6)
+                           : const Color(0xFF222222),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -197,6 +230,20 @@ class _SegmentTile extends StatelessWidget {
                 timecode,
                 style: const TextStyle(color: Color(0xFF666666), fontSize: 12),
               ),
+              if (uncertain) ...[
+                const Spacer(),
+                Icon(Icons.help_outline_rounded,
+                     size: 15, color: Colors.amber.withValues(alpha: 0.9)),
+                const SizedBox(width: 5),
+                Text(
+                  'tekshiring',
+                  style: TextStyle(
+                    color: Colors.amber.withValues(alpha: 0.9),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 8),

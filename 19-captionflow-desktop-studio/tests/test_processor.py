@@ -1132,6 +1132,106 @@ class VocabContextTests(unittest.TestCase):
         self.assertNotIn("vocab_v2_", source)
 
 
+class ConfidenceTests(unittest.TestCase):
+    """Model bo'lakka qanchalik ishonganini SAQLAYMIZ.
+
+    Ilgari `avg_logprob` faqat filtr uchun ishlatilib tashlanardi (Groq
+    yo'lida esa umuman o'qilmas edi). Saqlangani tufayli tahrirlash
+    oynasi "tekshiring" deb belgilaydi — noto'g'ri eshitilgan ismni
+    har bir qatorni o'qib qidirib yurish kerak emas."""
+
+    def test_logprob_becomes_a_readable_probability(self):
+        import math
+
+        for logprob, expected in ((-0.2, 0.819), (-1.0, 0.368), (-1.2, 0.301)):
+            got = dp.core.whisper_confidence({"avg_logprob": logprob})
+            self.assertAlmostEqual(got, math.exp(logprob), places=6)
+            self.assertAlmostEqual(got, expected, places=3)
+
+    def test_missing_logprob_is_unknown_not_zero(self):
+        """Tayyor `.srt` da ishonch YO'Q — 0 emas, noma'lum."""
+        self.assertIsNone(dp.core.whisper_confidence({}))
+        self.assertIsNone(dp.core.whisper_confidence(object()))
+        self.assertFalse(dp.core.low_confidence(None))
+
+    def test_threshold_flags_the_unsure_lines(self):
+        self.assertTrue(dp.core.low_confidence(0.3))
+        self.assertFalse(dp.core.low_confidence(0.8))
+
+    def test_threshold_is_configurable(self):
+        import os
+
+        old = os.environ.get("SUBTITR_LOW_CONFIDENCE")
+        os.environ["SUBTITR_LOW_CONFIDENCE"] = "0.9"
+        try:
+            self.assertTrue(dp.core.low_confidence(0.8))
+        finally:
+            os.environ.pop("SUBTITR_LOW_CONFIDENCE", None) if old is None \
+                else os.environ.__setitem__("SUBTITR_LOW_CONFIDENCE", old)
+
+    def test_confidence_survives_cleaning(self):
+        """9 joyda `Segment` qayta yasaladi — hech birida yo'qolmasligi kerak."""
+        segments = [dp.Segment(0.0, 3.0, "Bu yetarlicha uzun bir gap.", 0.31)]
+        cleaned = m_clean.clean_transcription(segments)
+        self.assertEqual(cleaned[0].confidence, 0.31)
+        polished = m_clean.polish_segments(cleaned)
+        self.assertEqual(polished[0].confidence, 0.31)
+        timed = m_clean.enforce_reading_speed(polished)
+        self.assertEqual(timed[0].confidence, 0.31)
+
+    def test_merged_segments_take_the_lowest_confidence(self):
+        """Qo'shilgan shubhali matn ishonchli bo'lak ichida yashirinmasin."""
+        self.assertEqual(m_clean._merge_confidence(0.9, 0.2), 0.2)
+        self.assertEqual(m_clean._merge_confidence(None, 0.4), 0.4)
+        self.assertIsNone(m_clean._merge_confidence(None, None))
+
+    def test_short_segments_merge_and_keep_the_worst_score(self):
+        segments = [
+            dp.Segment(0.0, 0.4, "Ha", 0.95),
+            dp.Segment(0.5, 2.0, "shunday bo'ldi", 0.22),
+        ]
+        merged = m_clean.polish_segments(segments)
+        self.assertEqual(len(merged), 1, "qisqa bo'lak birlashmadi")
+        self.assertAlmostEqual(merged[0].confidence, 0.22)
+
+    def test_split_segments_inherit_the_score(self):
+        long_text = "gap " * 60
+        out = m_clean.polish_segments([dp.Segment(0.0, 30.0, long_text.strip(), 0.44)])
+        self.assertGreater(len(out), 1, "uzun bo'lak bo'linmadi")
+        for item in out:
+            self.assertAlmostEqual(item.confidence, 0.44)
+
+    def test_cache_round_trip_keeps_confidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cdir = Path(tmp)
+            segments = [dp.Segment(0.0, 1.0, "bir", 0.42),
+                        dp.Segment(1.0, 2.0, "ikki", None)]
+            m_cache.save_transcription(cdir, segments, [], "ru", "groq")
+            loaded = m_cache.load_transcription(cdir)
+        self.assertIsNotNone(loaded)
+        self.assertAlmostEqual(loaded[0][0].confidence, 0.42)
+        self.assertIsNone(loaded[0][1].confidence)
+
+    def test_old_cache_files_are_rejected_by_version(self):
+        """3-versiyadagi keshda ishonch yo'q — qayta o'qilishi kerak."""
+        self.assertEqual(m_cache.TRANSCRIPTION_CACHE_VERSION, 4)
+
+    def test_session_json_carries_confidence(self):
+        """Ishonch sessiya fayli orqali Flutter'ga yetib borishi kerak."""
+        source = (Path(__file__).resolve().parent.parent / "subtitr" / "pipeline.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('"confidence"', source)
+
+    def test_flutter_model_reads_the_same_field(self):
+        service = (
+            Path(__file__).resolve().parent.parent
+            / "subtitr_app" / "lib" / "services" / "desktop_processor_service.dart"
+        ).read_text(encoding="utf-8")
+        self.assertIn("json['confidence']", service)
+        self.assertIn("isUncertain", service)
+
+
 class OfflineDictionaryTests(unittest.TestCase):
     """Kalitsiz rejimdagi zaxira lug'at.
 

@@ -98,7 +98,7 @@ def clean_transcription(segments: list[Segment]) -> list[Segment]:
             continue
         times.append(seg.start)
         recent[norm] = times
-        out.append(Segment(seg.start, seg.end, text))
+        out.append(Segment(seg.start, seg.end, text, seg.confidence))
     return out
 
 
@@ -129,6 +129,12 @@ def filter_words(words: list[Word], segments: list[Segment]) -> list[Word]:
 
 
 # --- #3: subtitrlarni aqlli birlashtirish/bo'lish ---------------------------
+
+def _merge_confidence(a: float | None, b: float | None) -> float | None:
+    """Birlashtirilgan bo'lak ishonchi — mavjudlaridan eng pasti."""
+    known = [x for x in (a, b) if x is not None]
+    return min(known) if known else None
+
 
 def _split_text(text: str, limit: int) -> list[str]:
     """Uzun matnni gap/vergul/probel chegarasida <= limit bo'laklarga bo'ladi."""
@@ -180,7 +186,13 @@ def polish_segments(segments: list[Segment]) -> list[Segment]:
             close = (nxt.start - seg.end) < merge_gap
             fits = len(seg.text) + 1 + len(nxt.text) <= max_chars
             if tiny and close and fits:
-                seg = Segment(seg.start, nxt.end, (seg.text.rstrip() + " " + nxt.text.lstrip()).strip())
+                # Birlashtirilgan bo'lakning ishonchi — ikkisidan ENG
+                # PASTI: qo'shilgan shubhali matn yashirinib qolmasin.
+                seg = Segment(
+                    seg.start, nxt.end,
+                    (seg.text.rstrip() + " " + nxt.text.lstrip()).strip(),
+                    _merge_confidence(seg.confidence, nxt.confidence),
+                )
                 i += 1
             else:
                 break
@@ -210,7 +222,9 @@ def polish_segments(segments: list[Segment]) -> list[Segment]:
             f0 = acc / total
             acc += len(p)
             f1 = acc / total
-            out.append(Segment(seg.start + dur * f0, seg.start + dur * f1, p))
+            # Bo'lingan qismlar asl bo'lakning ishonchini oladi.
+            out.append(Segment(seg.start + dur * f0, seg.start + dur * f1, p,
+                               seg.confidence))
     return out
 
 
@@ -261,5 +275,5 @@ def enforce_reading_speed(segments: list[Segment]) -> list[Segment]:
                 end = target
         if end < start:
             end = start
-        out.append(Segment(start, end, seg.text))
+        out.append(Segment(start, end, seg.text, seg.confidence))
     return out

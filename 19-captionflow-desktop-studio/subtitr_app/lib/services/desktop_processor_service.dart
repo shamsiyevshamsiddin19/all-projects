@@ -132,6 +132,7 @@ class SubtitleSegment {
     required this.end,
     required this.original,
     required this.translated,
+    this.confidence,
   });
 
   final double start;
@@ -139,12 +140,24 @@ class SubtitleSegment {
   String original;
   String translated;
 
+  /// How sure the model was about this line (0..1), or null when unknown —
+  /// a ready-made .srt or an embedded subtitle track carries no score.
+  final double? confidence;
+
+  /// Lines the model was unsure of. These are where a misheard name or a
+  /// wrong word tends to be, so the editor flags them instead of leaving
+  /// the user to hunt through every line.
+  static const lowConfidence = 0.5;
+
+  bool get isUncertain => confidence != null && confidence! < lowConfidence;
+
   factory SubtitleSegment.fromJson(Map<String, dynamic> json) {
     return SubtitleSegment(
       start: (json['start'] as num?)?.toDouble() ?? 0.0,
       end: (json['end'] as num?)?.toDouble() ?? 0.0,
       original: json['original'] as String? ?? '',
       translated: json['translated'] as String? ?? '',
+      confidence: (json['confidence'] as num?)?.toDouble(),
     );
   }
 
@@ -153,6 +166,7 @@ class SubtitleSegment {
         'end': end,
         'original': original,
         'translated': translated,
+        if (confidence != null) 'confidence': confidence,
       };
 }
 

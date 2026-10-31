@@ -145,6 +145,11 @@ def _prepare_data(
             segments.append({
                 "start": round(seg.start, 3),
                 "end": round(seg.end, 3),
+                # Model shu qatorga qanchalik ishonadi (0..1) yoki null.
+                # Tahrirlash oynasi shu bilan "shubhali qator" ni belgilaydi.
+                "confidence": (
+                    round(seg.confidence, 3) if seg.confidence is not None else None
+                ),
                 # Cho'zilmagan oxir: `enforce_reading_speed` subtitr oxirini
                 # keyingisiga tegguncha uzaytiradi, shuning uchun "end" dan
                 # nutqdagi jimlikni bilib bo'lmaydi. "O'qish uchun matn"
@@ -197,6 +202,14 @@ def modes_for(mode: str) -> list[str]:
     return list(ALL_MODE_OUTPUTS) if mode == "all" else [mode]
 
 
+def _opt_float(value: Any) -> float | None:
+    """Sessiya JSON'idan ixtiyoriy son (null yoki yaroqsiz bo'lsa None)."""
+    try:
+        return float(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
 def _render_outputs(
     job: dict[str, Any],
     font_scale: float = 1.0,
@@ -225,7 +238,8 @@ def _render_outputs(
 
     seg_data = job.get("segments") or []
     display_original = [
-        Segment(float(s["start"]), float(s["end"]), str(s.get("original", "")))
+        Segment(float(s["start"]), float(s["end"]), str(s.get("original", "")),
+                _opt_float(s.get("confidence")))
         for s in seg_data
     ]
     has_tr = any((str(s.get("translated") or "")).strip() for s in seg_data)

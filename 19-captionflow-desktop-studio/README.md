@@ -71,6 +71,13 @@ sahifasida bo'ladi.
     bo'lsa, "o'ng"; `light` → "yorug'lik" bo'lsa, "yengil".
     Kesh `vocab_v3_*` — versiya oshirilmasa eski (kontekstsiz) lug'at
     qaytarilaverardi
+  - `Segment.confidence` — model bo'lakka qanchalik ishonadi (0..1) yoki
+    `None` (tayyor `.srt` da ishonch yo'q). Whisper `avg_logprob` dan
+    `exp()` bilan olinadi. Ilgari bu qiymat faqat filtr uchun ishlatilib
+    tashlanardi, Groq yo'lida esa umuman o'qilmas edi. Endi kesh va
+    sessiya orqali tahrirlash oynasiga yetib boradi va u shubhali
+    qatorlarni "tekshiring" deb belgilaydi (`SUBTITR_LOW_CONFIDENCE`,
+    0.5). Birlashtirilgan bo'lak ENG PAST ishonchni oladi
   - `core.OFFLINE_WORDS` / `OFFLINE_PHRASES` — kalitsiz rejimdagi zaxira
     lug'at, **(manba, nishon)** juftligi bo'yicha kalitlangan:
     ingliz→o'zbek 98 so'z, rus→o'zbek 174 so'z. Juftlik yo'q bo'lsa bo'sh
@@ -227,8 +234,8 @@ qaytadan pul turadi, shuning uchun uni faqat atayin so'raganda o'chiradi.
 Testlar (yangi bog'liqliksiz, standart `unittest`):
 
 ```bash
-.venv/bin/python -m unittest discover -s tests   # 145 ta
-cd subtitr_app && flutter test                   # 16 ta
+.venv/bin/python -m unittest discover -s tests   # 157 ta
+cd subtitr_app && flutter test                   # 22 ta
 ```
 
 ## Eslatma

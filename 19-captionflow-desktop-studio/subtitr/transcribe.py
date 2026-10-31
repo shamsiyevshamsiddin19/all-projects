@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Callable
 
-from .core import FFMPEG, MODEL_DIR, Segment, Word, _count, _env_float, emit, model_candidates, normalize_lang_code, run, words_from_segments
+from .core import FFMPEG, MODEL_DIR, Segment, Word, _count, _env_float, emit, model_candidates, normalize_lang_code, run, whisper_confidence, words_from_segments
 from .media import extract_audio, extract_embedded_subtitle, find_sidecar_subtitle, parse_srt, parse_vtt, probe_duration_seconds, strip_tags
 from .clean import is_hallucination
 
@@ -64,6 +64,9 @@ def _groq_transcribe_file(
                     offset + float(value(seg, "start", 0.0) or 0.0),
                     offset + float(value(seg, "end", 0.0) or 0.0),
                     text,
+                    # Groq `verbose_json` da `avg_logprob` qaytaradi, lekin
+                    # u ilgari umuman o'qilmas edi.
+                    whisper_confidence(seg),
                 )
             )
     words: list[Word] = []
@@ -440,7 +443,8 @@ def rescan_swallowed_speech(
     trimmed: list[Segment] = []
     for i, cur in enumerate(merged):
         if i + 1 < len(merged) and cur.end > merged[i + 1].start:
-            cur = Segment(cur.start, max(cur.start + 0.2, merged[i + 1].start), cur.text)
+            cur = Segment(cur.start, max(cur.start + 0.2, merged[i + 1].start),
+                          cur.text, cur.confidence)
         trimmed.append(cur)
     merged = trimmed
     merged_words = sorted(
@@ -473,7 +477,8 @@ def _local_window_transcriber(model: Any, fallback_lang: str) -> "WindowTranscri
         for seg in seg_iter:
             text = (seg.text or "").strip()
             if text:
-                segs.append(Segment(start + seg.start, start + seg.end, text))
+                segs.append(Segment(start + seg.start, start + seg.end, text,
+                                    whisper_confidence(seg)))
             for w in (getattr(seg, "words", None) or []):
                 wds.append(Word(start + w.start, start + w.end, w.word))
         return segs, wds, getattr(info, "language", "") or ""
@@ -687,7 +692,7 @@ def gate_by_speech(
         span = clamp_to_speech(seg.start, seg.end, regions)
         if span is None:
             continue  # nutq yo'q joyda paydo bo'lgan matn — to'qilgan
-        out_segments.append(Segment(span[0], span[1], seg.text))
+        out_segments.append(Segment(span[0], span[1], seg.text, seg.confidence))
     out_words = [w for w in words if clamp_to_speech(w.start, w.end, regions) is not None]
     return out_segments, out_words
 
@@ -806,7 +811,8 @@ def transcribe_with_faster_whisper(
             end = seg_words[-1].end if seg_words else seg_end
             start = min(max(start, seg_start), seg_end)
             end = max(min(end, seg_end), seg_start)
-            segments.append(Segment(min(start, end), max(start, end), text))
+            segments.append(Segment(min(start, end), max(start, end), text,
+                                    whisper_confidence(seg)))
         words.extend(seg_words)
     if not segments:
         # Barcha bo'laklar ishonchsizligi uchun chiqarib tashlandi — bu "model

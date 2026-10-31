@@ -464,6 +464,15 @@ class Segment:
     start: float
     end: float
     text: str
+    # Model shu bo'lakka qanchalik ishonadi (0..1) yoki None (noma'lum:
+    # tayyor `.srt`, ichki subtitr). Whisper `avg_logprob` qaytaradi —
+    # tokenlar log-ehtimolligining o'rtachasi; `exp()` uni o'qiladigan
+    # ehtimollikka aylantiradi.
+    #
+    # Ilgari bu qiymat FAQAT filtr uchun ishlatilib tashlanardi. Saqlangani
+    # tufayli tahrirlash oynasida "shubhali qator" deb belgilash mumkin:
+    # noto'g'ri eshitilgan joyni qo'lda qidirib yurish kerak emas.
+    confidence: float | None = None
 
 
 @dataclass(frozen=True)
@@ -691,6 +700,30 @@ def clean_orphan_tmp(max_age_hours: float = ORPHAN_TMP_HOURS) -> int:
     if freed:
         log.info("tashlandiq ishchi fayllar o'chirildi: %d bayt", freed)
     return freed
+
+
+def whisper_confidence(obj: Any) -> float | None:
+    """Whisper bo'lagidan ishonchni oladi (0..1) yoki None.
+
+    `avg_logprob` — tokenlar log-ehtimolligi o'rtachasi; `exp()` uni
+    geometrik o'rtacha ehtimollikka aylantiradi (-0.2 -> 0.82 yaxshi,
+    -1.0 -> 0.37 shubhali)."""
+    import math
+
+    raw = obj.get("avg_logprob") if isinstance(obj, dict) else getattr(obj, "avg_logprob", None)
+    if raw is None:
+        return None
+    try:
+        return max(0.0, min(1.0, math.exp(float(raw))))
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
+def low_confidence(value: float | None) -> bool:
+    """Bo'lak "shubhali" deb belgilanadimi."""
+    if value is None:
+        return False
+    return value < _env_float("SUBTITR_LOW_CONFIDENCE", 0.5)
 
 
 def ensure_dirs() -> None:
