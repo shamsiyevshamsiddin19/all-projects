@@ -64,6 +64,13 @@ sahifasida bo'ladi.
   | `cli` | buyruq qatori |
 
   Diqqat qilinadigan joylar:
+  - `vocab.build_vocabulary()` + `translate.translate_word_list()` —
+    lug'at tarjimasiga so'z uchragan GAP ham yuboriladi. Kontekstsiz ko'p
+    ma'noli so'z tasodifiy ma'noda tarjima bo'ladi; Groq bilan o'lchangan:
+    `bank` → "bank" bo'lsa, kontekst bilan "qirg'oq"; `right` → "to'g'ri"
+    bo'lsa, "o'ng"; `light` → "yorug'lik" bo'lsa, "yengil".
+    Kesh `vocab_v3_*` — versiya oshirilmasa eski (kontekstsiz) lug'at
+    qaytarilaverardi
   - `transcribe.swallowed_gap_ranges()` — transkripsiya butunlay o'tkazib
     yuborgan parchalarni topadi (lokal VAD bilan tekshirib, qayta o'qitadi)
   - `documents.build_reading_blocks()` — subtitr bo'laklaridan o'qiladigan
@@ -197,7 +204,7 @@ qaytadan pul turadi, shuning uchun uni faqat atayin so'raganda o'chiradi.
 Testlar (yangi bog'liqliksiz, standart `unittest`):
 
 ```bash
-.venv/bin/python -m unittest discover -s tests   # 109 ta
+.venv/bin/python -m unittest discover -s tests   # 117 ta
 cd subtitr_app && flutter test                   # 16 ta
 ```
 

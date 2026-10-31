@@ -1,13 +1,36 @@
 """Lug'at tuzish: chastota, lemma, yordamchi so'zlar."""
 from __future__ import annotations
 
+import bisect
 from typing import Any
 
-from .core import HELPERS, Word, normalize_word
+from .core import HELPERS, Segment, Word, normalize_word
 from .translate import translate_word_list
 
 
-def build_vocabulary(words: list[Word], source_lang: str, target_lang: str) -> list[dict[str, Any]]:
+def sentence_for(word: Word, segments: list[Segment], starts: list[float]) -> str:
+    """So'z uchragan subtitr bo'lagining matni (topilmasa bo'sh satr).
+
+    So'z vaqti bo'yicha qidiradi: bo'laklar tartiblangan, shuning uchun
+    ikkilik qidiruv yetarli."""
+    if not segments:
+        return ""
+    i = bisect.bisect_right(starts, word.start) - 1
+    if i < 0:
+        i = 0
+    # So'z chegarada bo'lsa qo'shni bo'lakka tushib qolishi mumkin.
+    for j in (i, i + 1):
+        if 0 <= j < len(segments) and segments[j].start - 0.2 <= word.start <= segments[j].end + 0.2:
+            return segments[j].text
+    return segments[i].text if 0 <= i < len(segments) else ""
+
+
+def build_vocabulary(
+    words: list[Word],
+    source_lang: str,
+    target_lang: str,
+    segments: list[Segment] | None = None,
+) -> list[dict[str, Any]]:
     # Chastota (#4) — har bir so'z necha marta uchraydi.
     freq: dict[str, int] = {}
     first: dict[str, Word] = {}
@@ -18,7 +41,17 @@ def build_vocabulary(words: list[Word], source_lang: str, target_lang: str) -> l
         freq[key] = freq.get(key, 0) + 1
         first.setdefault(key, item)
     keys = list(first.keys())
-    translations, pos_list, lemma_list, provider = translate_word_list(keys, target_lang)
+    # Har so'z BIRINCHI uchragan gapini olib beramiz — kontekstsiz ko'p
+    # ma'noli so'z tasodifiy ma'noda tarjima bo'ladi ("bank" — qirg'oqmi
+    # yoki bankmi, "коса" — soch o'rimimi yoki o'roqmi).
+    contexts: list[str] | None = None
+    if segments:
+        ordered = sorted(segments, key=lambda x: x.start)
+        starts = [x.start for x in ordered]
+        contexts = [sentence_for(first[k], ordered, starts) for k in keys]
+    translations, pos_list, lemma_list, provider = translate_word_list(
+        keys, target_lang, contexts=contexts
+    )
     entries: list[dict[str, Any]] = []
     for key, tr, pos, lemma in zip(keys, translations, pos_list, lemma_list):
         # Tarjima topilmagan so'z ("brought - brought") lug'atda ham, ekrandagi

@@ -109,7 +109,10 @@ def _prepare_data(
         entries: list[dict[str, Any]] = []
         # Nom ichidagi versiya: lug'at tuzish mantig'i o'zgarganda eski
         # (yarim bo'sh) lug'at qaytarilib turmasin.
-        vocab_cache = cdir / f"vocab_v2_{effective_lang}_{target_lang}.json"
+        # v3 — lug'at tarjimasiga kontekst gapi qo'shildi. Versiya
+        # oshirilmasa eski (kontekstsiz, shuning uchun yomonroq) lug'at
+        # keshdan qaytarilaverardi va tuzatish ko'rinmasdi.
+        vocab_cache = cdir / f"vocab_v3_{effective_lang}_{target_lang}.json"
         cached_vocab = _load_json(vocab_cache) if _cache_enabled() else None
         if isinstance(cached_vocab, list) and cached_vocab:
             # Tayyor lug'at bo'lsa, uni HAR QANDAY rejim ishlatadi — tekin.
@@ -119,7 +122,9 @@ def _prepare_data(
             entries = cached_vocab
         elif needs_vocab:
             emit("progress", message="Lug'at tuzilmoqda", progress=0.58)
-            entries = build_vocabulary(words, effective_lang, target_lang)
+            entries = build_vocabulary(
+                words, effective_lang, target_lang, segments=original
+            )
             if _cache_enabled():
                 _save_json(vocab_cache, entries)
         # "Yordamchi so'z" belgisi — so'z va tildan kelib chiqadigan sof

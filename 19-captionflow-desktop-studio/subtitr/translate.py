@@ -603,17 +603,40 @@ def build_glossary(segments: list[Segment], target_lang: str, source_lang: str) 
     return glossary
 
 
-def translate_word_list(words: list[str], target_lang: str) -> tuple[list[str], list[str], list[str], str]:
+# Kontekst gapining uzunlik chegarasi. Butun gapni yuborish token yeydi,
+# juda qisqa bo'lak esa ma'noni ochmaydi.
+VOCAB_CONTEXT_CHARS = 140
+
+
+def translate_word_list(
+    words: list[str],
+    target_lang: str,
+    contexts: list[str] | None = None,
+) -> tuple[list[str], list[str], list[str], str]:
+    """So'zlarni tarjima qiladi; `contexts` berilsa har so'z o'zi uchragan
+    gap bilan birga yuboriladi.
+
+    Kontekstsiz ko'p ma'noli so'z tasodifiy ma'noda tarjima bo'ladi:
+    ingliz "bank" (qirg'oq / bank), rus "коса" (soch o'rimi / o'roq / tilsimoq).
+    Gap berilganda model to'g'ri ma'noni tanlaydi."""
     if not words:
         return [], [], [], ""
 
+    has_ctx = bool(contexts) and any((c or "").strip() for c in contexts)
     prompt = (
         "Translate each single word to "
         f"{TARGET_LANG_NAMES.get(target_lang, target_lang)}. Use the most common short meaning, "
         "1-3 words. For each word also give: 'pos' = part of speech in English "
         "(pronoun, noun, verb, adjective, adverb, article, preposition, conjunction, numeral, interjection); "
         "'lemma' = the dictionary/base form of the SOURCE word (e.g. plural/inflected -> base form). "
-        "Return a JSON object where keys are the numeric indices and values are objects with 't', 'pos', 'lemma'. "
+        + (
+            "Each item has 'w' (the word to translate) and 'ctx' (the sentence it "
+            "appeared in). Use 'ctx' ONLY to pick the right sense of an ambiguous "
+            "word. Translate 'w' alone — never the sentence — and keep the result "
+            "to 1-3 words in dictionary form. "
+            if has_ctx else ""
+        )
+        + "Return a JSON object where keys are the numeric indices and values are objects with 't', 'pos', 'lemma'. "
         "Example: {\"0\": {\"t\": \"olma\", \"pos\": \"noun\", \"lemma\": \"apple\"}}"
     )
 
@@ -626,9 +649,28 @@ def translate_word_list(words: list[str], target_lang: str) -> tuple[list[str], 
         return ([offline_translate_word(w) for w in words], [""] * len(words),
                 [""] * len(words), "offline_dictionary")
 
+    # So'z -> kontekst. Xarita ishlatiladi (indeks emas), chunki to'plam
+    # muvaffaqiyatsizlikda ikkiga bo'linib qayta so'raladi va indekslar
+    # o'zgaradi.
+    ctx_by_word: dict[str, str] = {}
+    if has_ctx:
+        for word, ctx in zip(words, contexts or []):
+            text = " ".join((ctx or "").split())[:VOCAB_CONTEXT_CHARS]
+            if text:
+                ctx_by_word[word] = text
+
     def translate_chunk(chunk: list[str]) -> tuple[list[str], list[str], list[str], str]:
         """Bitta to'plamni tarjima qiladi; ishlamasa ikkiga bo'lib qayta uradi."""
-        payload = json.dumps({str(i): w for i, w in enumerate(chunk)}, ensure_ascii=False)
+        if has_ctx:
+            payload = json.dumps(
+                {
+                    str(i): {"w": w, "ctx": ctx_by_word.get(w, "")}
+                    for i, w in enumerate(chunk)
+                },
+                ensure_ascii=False,
+            )
+        else:
+            payload = json.dumps({str(i): w for i, w in enumerate(chunk)}, ensure_ascii=False)
 
         def accept(data: str) -> tuple[list[str], list[str], list[str]] | None:
             c_tr, c_pos, c_lemma = indexed_values(

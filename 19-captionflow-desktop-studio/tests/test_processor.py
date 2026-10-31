@@ -28,6 +28,7 @@ from subtitr import cache as m_cache  # noqa: E402
 from subtitr import documents as m_doc  # noqa: E402
 from subtitr import media as m_media  # noqa: E402
 from subtitr import translate as m_tx  # noqa: E402
+from subtitr import vocab as m_vocab  # noqa: E402
 from subtitr import pipeline as m_pipe  # noqa: E402
 from subtitr import subtitles as m_sub  # noqa: E402
 from subtitr import transcribe as m_tr  # noqa: E402
@@ -995,6 +996,139 @@ class ParallelTranslationTests(unittest.TestCase):
             for k, v in zip(("TRANSLATE_BATCH", "TRANSLATE_WORKERS"), old):
                 os.environ.pop(k, None) if v is None else os.environ.__setitem__(k, v)
         self.assertEqual(results["1"], results["4"])
+
+
+class VocabContextTests(unittest.TestCase):
+    """Lug'at tarjimasiga so'z uchragan GAP ham yuboriladi.
+
+    Kontekstsiz ko'p ma'noli so'z tasodifiy ma'noda tarjima bo'ladi.
+    Haqiqiy Groq bilan o'lchangan (5 so'zdan 3 tasi to'g'rilandi):
+      bank  -> "bank"      => "qirg'oq"   (daryo qirg'og'i)
+      right -> "to'g'ri"   => "o'ng"      (yo'nalish)
+      light -> "yorug'lik" => "yengil"    (vazn)
+    """
+
+    def test_sentence_is_found_by_word_timestamp(self):
+        segments = [
+            seg(0.0, 3.0, "Biz daryo qirg'og'ida o'tirdik."),
+            seg(3.0, 6.0, "Chiroq yonida o'ngga buriling."),
+            seg(6.0, 9.0, "Qutini ko'tarish oson edi."),
+        ]
+        starts = [x.start for x in segments]
+        for when, expected in ((1.0, 0), (4.5, 1), (7.0, 2)):
+            found = m_vocab.sentence_for(dp.Word(when, when + 0.3, "x"), segments, starts)
+            self.assertEqual(found, segments[expected].text, f"{when}s")
+
+    def test_word_on_a_boundary_still_gets_a_sentence(self):
+        segments = [seg(0.0, 3.0, "birinchi"), seg(3.0, 6.0, "ikkinchi")]
+        starts = [x.start for x in segments]
+        found = m_vocab.sentence_for(dp.Word(3.0, 3.4, "x"), segments, starts)
+        self.assertIn(found, {"birinchi", "ikkinchi"})
+
+    def test_no_segments_means_no_context(self):
+        self.assertEqual(m_vocab.sentence_for(dp.Word(1.0, 2.0, "x"), [], []), "")
+
+    def test_build_vocabulary_passes_the_sentence_along(self):
+        captured = {}
+
+        def fake(words, target_lang, contexts=None):
+            captured["words"] = list(words)
+            captured["contexts"] = list(contexts) if contexts else None
+            return (["tarjima"] * len(words), [""] * len(words),
+                    [""] * len(words), "claude")
+
+        real = m_vocab.translate_word_list
+        m_vocab.translate_word_list = fake
+        try:
+            m_vocab.build_vocabulary(
+                [dp.Word(1.0, 1.5, "qirgoq")],
+                "en", "uz",
+                segments=[seg(0.0, 3.0, "Biz daryo qirg'og'ida o'tirdik.")],
+            )
+        finally:
+            m_vocab.translate_word_list = real
+        self.assertEqual(captured["words"], ["qirgoq"])
+        self.assertEqual(captured["contexts"], ["Biz daryo qirg'og'ida o'tirdik."])
+
+    def test_without_segments_context_is_omitted(self):
+        """Eski chaqiruvlar (segmentsiz) ishlashda davom etsin."""
+        captured = {}
+
+        def fake(words, target_lang, contexts=None):
+            captured["contexts"] = contexts
+            return (["t"] * len(words), [""] * len(words),
+                    [""] * len(words), "claude")
+
+        real = m_vocab.translate_word_list
+        m_vocab.translate_word_list = fake
+        try:
+            m_vocab.build_vocabulary([dp.Word(1.0, 1.5, "soz")], "en", "uz")
+        finally:
+            m_vocab.translate_word_list = real
+        self.assertIsNone(captured["contexts"])
+
+    def test_payload_carries_ctx_only_when_given(self):
+        import os
+
+        seen = []
+
+        def capture(_prompt, payload):
+            seen.append(payload)
+            raise RuntimeError("to'xtatamiz — faqat payload kerak")
+
+        env = {k: os.environ.get(k) for k in ("GROQ_API_KEY", "AI_MAX_ATTEMPTS")}
+        os.environ["GROQ_API_KEY"] = "test"
+        os.environ["AI_MAX_ATTEMPTS"] = "1"
+        real_groq, real_backoff = m_tx.translate_groq, m_tx.ai_retry_backoff
+        m_tx.translate_groq = capture
+        m_tx.ai_retry_backoff = lambda attempt=0: None
+        dp.core.AI_DISABLED.clear()
+        try:
+            m_tx.translate_word_list(["bank"], "uz")
+            m_tx.translate_word_list(["bank"], "uz", contexts=["We sat on the river bank."])
+        finally:
+            m_tx.translate_groq, m_tx.ai_retry_backoff = real_groq, real_backoff
+            dp.core.AI_DISABLED.clear()
+            for k, v in env.items():
+                os.environ.pop(k, None) if v is None else os.environ.__setitem__(k, v)
+
+        self.assertNotIn('"ctx"', seen[0], "kontekst berilmaganda ham yuborildi")
+        self.assertIn('"ctx"', seen[-1], "kontekst berilgan, lekin yuborilmadi")
+        self.assertIn("river bank", seen[-1])
+
+    def test_long_context_is_trimmed(self):
+        import os
+
+        seen = []
+
+        def capture(_prompt, payload):
+            seen.append(payload)
+            raise RuntimeError("to'xtatamiz")
+
+        env = {k: os.environ.get(k) for k in ("GROQ_API_KEY", "AI_MAX_ATTEMPTS")}
+        os.environ["GROQ_API_KEY"] = "test"
+        os.environ["AI_MAX_ATTEMPTS"] = "1"
+        real_groq, real_backoff = m_tx.translate_groq, m_tx.ai_retry_backoff
+        m_tx.translate_groq = capture
+        m_tx.ai_retry_backoff = lambda attempt=0: None
+        dp.core.AI_DISABLED.clear()
+        try:
+            m_tx.translate_word_list(["soz"], "uz", contexts=["juda uzun gap " * 50])
+        finally:
+            m_tx.translate_groq, m_tx.ai_retry_backoff = real_groq, real_backoff
+            dp.core.AI_DISABLED.clear()
+            for k, v in env.items():
+                os.environ.pop(k, None) if v is None else os.environ.__setitem__(k, v)
+        ctx = __import__("json").loads(seen[0])["0"]["ctx"]
+        self.assertLessEqual(len(ctx), m_tx.VOCAB_CONTEXT_CHARS)
+
+    def test_vocab_cache_version_was_bumped(self):
+        """Versiya oshirilmasa eski (kontekstsiz) lug'at keshdan qaytaverardi."""
+        source = (Path(__file__).resolve().parent.parent / "subtitr" / "pipeline.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("vocab_v3_", source)
+        self.assertNotIn("vocab_v2_", source)
 
 
 class AllModeTests(unittest.TestCase):
