@@ -129,7 +129,7 @@ class DownloadVideoProcessTests(unittest.TestCase):
             directory = Path(raw_dir)
             key = m_media.download_cache_key(url)
             downloaded = directory / f"Video__{key}.mp4"
-            # downloaded will be created by fake_popen on attempt 2
+# deferred write
             calls: list[list[str]] = []
             processes = [
                 FakePopen(["ERROR: first client is blocked\n"], returncode=1),
@@ -138,9 +138,9 @@ class DownloadVideoProcessTests(unittest.TestCase):
 
             def fake_popen(cmd: list[str], *args: object, **kwargs: object) -> FakePopen:
                 calls.append(cmd)
-                if len(calls) == 2:
-                    downloaded.write_bytes(b"complete video")
-                return processes.pop(0)
+                p = processes.pop(0)
+                if p.returncode == 0: downloaded.write_bytes(b"complete video")
+                return p
 
             with (
                 patch.object(m_media, "YTDLP", "fake-yt-dlp"),
@@ -268,7 +268,7 @@ class GroqTranscriptionContractTests(unittest.TestCase):
                 with self.assertRaises(RuntimeError):
                     m_tr.transcribe_with_groq(audio, "en")
 
-            # raises RuntimeError when all chunks fail
+            # verified raise
             self.assertEqual(run.call_args.args[0][0], m_tr.FFMPEG)
             self.assertFalse((audio.parent / "chunk_000.ogg").exists())
             self.assertTrue(any("audiosi kesilmadi" in str(call) for call in emit.call_args_list))
