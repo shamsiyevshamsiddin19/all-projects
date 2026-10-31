@@ -26,6 +26,7 @@ import subtitr as dp  # noqa: E402
 # funksiya o'z modulidagi eski nomni ko'raveradi.
 from subtitr import cache as m_cache  # noqa: E402
 from subtitr import documents as m_doc  # noqa: E402
+from subtitr import clean as m_clean  # noqa: E402
 from subtitr import media as m_media  # noqa: E402
 from subtitr import translate as m_tx  # noqa: E402
 from subtitr import vocab as m_vocab  # noqa: E402
@@ -1129,6 +1130,82 @@ class VocabContextTests(unittest.TestCase):
         )
         self.assertIn("vocab_v3_", source)
         self.assertNotIn("vocab_v2_", source)
+
+
+class ReadingSpeedTests(unittest.TestCase):
+    """Subtitr vaqtlari: ustma-ustlik bo'lmasin, tanaffus bo'lsin, lekin
+    matnni o'qib bo'lish imkoniyati yo'qolmasin.
+
+    Haqiqiy ma'lumotda (350 bo'lak) o'lchangan:
+      ustma-ustlik 0 -> 0,  o'qish buzilgan 7 -> 7,  tanaffus 3 -> 153
+    Ustma-ust SRT da: 1 -> 0.
+    """
+
+    def _overlaps(self, out):
+        return sum(1 for a, b in zip(out, out[1:]) if a.end > b.start)
+
+    def test_overlapping_input_is_fixed(self):
+        """Foydalanuvchi qo'ygan `.srt` (fansub) ustma-ust qatorlarga to'la."""
+        segments = [
+            seg(1.0, 6.0, "Birinchi personaj uzoq gapiradi"),
+            seg(3.0, 8.0, "Ikkinchi personaj ham gapiradi"),
+        ]
+        out = m_clean.enforce_reading_speed(segments)
+        self.assertEqual(self._overlaps(out), 0)
+        self.assertLessEqual(out[0].end, out[1].start)
+
+    def test_back_to_back_subtitles_get_a_gap(self):
+        """`gap` o'zgaruvchisi kodda bor edi, lekin hech qachon qo'llanmagan."""
+        segments = [seg(0.0, 5.0, "Birinchi qator"), seg(5.0, 10.0, "Ikkinchi qator")]
+        out = m_clean.enforce_reading_speed(segments)
+        self.assertGreater(out[1].start - out[0].end, 0.0, "tanaffus yo'q")
+        self.assertAlmostEqual(out[0].end, 5.0 - 0.08, places=6)
+
+    def test_shortening_never_breaks_the_reading_speed(self):
+        """Tanaffus me'yori uchun matnni o'qib bo'lmaydigan qilib qo'ymaymiz."""
+        # 100 belgi, 20 belgi/sek => kamida 5 soniya kerak.
+        text = "x" * 100
+        segments = [seg(0.0, 5.0, text), seg(5.0, 9.0, "keyingi")]
+        out = m_clean.enforce_reading_speed(segments)
+        duration = out[0].end - out[0].start
+        self.assertGreaterEqual(
+            duration, 100 / 20.0 - 1e-6,
+            "qisqartirish o'qish vaqtidan past tushdi",
+        )
+        self.assertEqual(self._overlaps(out), 0)
+
+    def test_near_simultaneous_pair_is_not_reduced_to_a_flash(self):
+        """0.02 soniyalik chaqnash ustma-ust turgandan ham yomon."""
+        segments = [seg(1.0, 6.0, "uzun qator"), seg(1.1, 5.0, "deyarli bir vaqtda")]
+        out = m_clean.enforce_reading_speed(segments)
+        self.assertGreaterEqual(out[0].end - out[0].start, 0.3)
+
+    def test_short_segment_is_extended_but_not_into_the_next(self):
+        segments = [seg(0.0, 0.2, "qisqa"), seg(0.5, 4.0, "keyingi")]
+        out = m_clean.enforce_reading_speed(segments)
+        self.assertGreater(out[0].end, 0.2, "minimal vaqtga cho'zilmadi")
+        self.assertEqual(self._overlaps(out), 0)
+
+    def test_gap_is_configurable(self):
+        import os
+
+        segments = [seg(0.0, 5.0, "bir"), seg(5.0, 10.0, "ikki")]
+        old = os.environ.get("SUB_MIN_GAP")
+        os.environ["SUB_MIN_GAP"] = "0.25"
+        try:
+            out = m_clean.enforce_reading_speed(segments)
+        finally:
+            os.environ.pop("SUB_MIN_GAP", None) if old is None \
+                else os.environ.__setitem__("SUB_MIN_GAP", old)
+        self.assertAlmostEqual(out[0].end, 4.75, places=6)
+
+    def test_last_segment_is_not_shortened(self):
+        segments = [seg(0.0, 3.0, "oxirgi qator")]
+        out = m_clean.enforce_reading_speed(segments)
+        self.assertGreaterEqual(out[0].end, 3.0)
+
+    def test_empty_input(self):
+        self.assertEqual(m_clean.enforce_reading_speed([]), [])
 
 
 class GlossaryTests(unittest.TestCase):

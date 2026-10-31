@@ -71,6 +71,13 @@ sahifasida bo'ladi.
     bo'lsa, "o'ng"; `light` → "yorug'lik" bo'lsa, "yengil".
     Kesh `vocab_v3_*` — versiya oshirilmasa eski (kontekstsiz) lug'at
     qaytarilaverardi
+  - `clean.enforce_reading_speed()` — subtitr vaqtlari. Ustma-ust
+    bo'laklar tuzatiladi (foydalanuvchi qo'ygan `.srt` ko'pincha ustma-ust
+    bo'ladi va u yuqoridagi bosqichlardan o'tmaydi), ketma-ket bo'laklar
+    orasiga tanaffus qo'yiladi. Qisqartirish o'qish vaqtidan past
+    tushmaydi — matnni o'qib bo'lish tanaffus me'yoridan muhimroq.
+    Sozlash: `SUB_MAX_CPS` (20), `SUB_MIN_DUR` (1.0),
+    `SUB_MIN_GAP` (0.08), `SUB_MIN_VISIBLE` (0.3)
   - `translate.build_glossary()` — film bo'ylab ism izchilligi. Ism
     mezoni — token GAP O'RTASIDA bosh harf bilan kelishi (gap boshida
     har qanday so'z bosh harfli). Kelishik shakllari AI qaytargan
@@ -210,7 +217,7 @@ qaytadan pul turadi, shuning uchun uni faqat atayin so'raganda o'chiradi.
 Testlar (yangi bog'liqliksiz, standart `unittest`):
 
 ```bash
-.venv/bin/python -m unittest discover -s tests   # 123 ta
+.venv/bin/python -m unittest discover -s tests   # 131 ta
 cd subtitr_app && flutter test                   # 16 ta
 ```
 

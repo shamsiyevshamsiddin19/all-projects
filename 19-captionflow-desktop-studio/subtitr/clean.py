@@ -216,21 +216,49 @@ def polish_segments(segments: list[Segment]) -> list[Segment]:
 
 def enforce_reading_speed(segments: list[Segment]) -> list[Segment]:
     """O'qishga qulay bo'lishi uchun subtitr davomiyligini moslashtiradi:
-    minimal ko'rinish vaqti va belgi/sekund (CPS) chegarasi, keyingi subtitrga
-    tegmagan holda oxirini cho'zadi. Vaqtlarni buzmaydi (faqat oxirini uzaytiradi)."""
+    minimal ko'rinish vaqti va belgi/sekund (CPS) chegarasi, keyingi
+    subtitrga tegmagan holda oxirini cho'zadi.
+
+    Ustma-ust tushgan bo'laklar ham TUZATILADI. Ilgari bu funksiya faqat
+    uzaytirar edi (`min(max(end, desired), max(end, limit))` — ikkinchi
+    `max` tufayli mavjud ustma-ustlik saqlanib qolardi), shuning uchun
+    ekranda ikkita subtitr bir vaqtda chiqishi mumkin edi. Whisper
+    natijasi odatda toza, lekin foydalanuvchi video yoniga qo'ygan `.srt`
+    (ayniqsa fansub) ustma-ust qatorlarga to'la bo'ladi va u yuqoridagi
+    bosqichlardan o'tmaydi.
+
+    Qisqartirish faqat bo'lak KO'RINARLI qolganda bajariladi: ikki bo'lak
+    bir-biridan 0.1 soniya farq qilsa, 0.02 soniyalik chaqnash ustma-ust
+    turgandan ham yomon."""
     if not segments:
         return segments
     max_cps = float(os.getenv("SUB_MAX_CPS", "20"))
     min_dur = float(os.getenv("SUB_MIN_DUR", "1.0"))
-    gap = 0.08
+    gap = _env_float("SUB_MIN_GAP", 0.08)
+    min_visible = _env_float("SUB_MIN_VISIBLE", 0.3)
     out: list[Segment] = []
     for i, seg in enumerate(segments):
         start, end = seg.start, seg.end
         limit = segments[i + 1].start - gap if i + 1 < len(segments) else end + 6.0
         chars = len(seg.text)
         need_cps = chars / max_cps if max_cps > 0 else 0.0
-        desired_end = start + max(min_dur, need_cps)
-        end = min(max(end, desired_end), max(end, limit))
+        # 1) O'qishga yetarli vaqt bo'lmasa — oxirini cho'zamiz, lekin
+        #    cho'zish keyingi bo'lakka KIRIB KETMASLIGI kerak. `max(end, limit)`
+        #    muhim: asl oxir allaqachon limitdan oshgan bo'lsa (ustma-ustlik),
+        #    bu qadam uni qisqartirmaydi — buni 2-qadam hal qiladi.
+        end = min(max(end, start + max(min_dur, need_cps)), max(end, limit))
+        # 2) ASL oxiri keyingisiga kirib ketgan bo'lsa — qisqartiramiz.
+        #    Ikki chegara bor:
+        #      - matnni o'qib bo'lish MUHIMROQ: qisqartirish o'qish vaqtidan
+        #        past tushmaydi (tanaffus me'yori uchun matnni yo'qotmaymiz);
+        #      - bo'lak ko'rinmas chaqnashga aylanib qolmasligi kerak (ikki
+        #        bo'lak 0.1 soniya farq qilsa, 0.02s chaqnash ustma-ust
+        #        turgandan ham yomon).
+        if end > limit:
+            need = start + max(min_dur, need_cps)
+            target = max(limit, need)
+            if target < end and target - start >= min_visible:
+                end = target
         if end < start:
             end = start
         out.append(Segment(start, end, seg.text))
