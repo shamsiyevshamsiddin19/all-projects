@@ -4,11 +4,25 @@
 set -euo pipefail
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TARGET="${SUBTITR_PREFIX:-$HOME/.local/share/SubtitrDesktop}"
+INSTALL_ROOT="$HOME/.local/share"
+TARGET="${SUBTITR_PREFIX:-$INSTALL_ROOT/SubtitrDesktop}"
 APPS="$HOME/.local/share/applications"
 DESKTOP_FILE="$APPS/subtitr-desktop.desktop"
 
 say() { printf '\033[1;36m==> %s\033[0m\n' "$*"; }
+
+# `SUBTITR_PREFIX` faqat foydalanuvchining ilova ma'lumotlari ichidagi
+# bola papkaga ruxsat etiladi. Aks holda keyingi `rm -rf` HOME yoki boshqa
+# muhim papkani o'chirib yuborishi mumkin.
+INSTALL_ROOT="$(realpath -m "$INSTALL_ROOT")"
+TARGET="$(realpath -m "$TARGET")"
+case "$TARGET" in
+  "$INSTALL_ROOT"/*) ;;
+  *)
+    echo "XATO: SUBTITR_PREFIX faqat $INSTALL_ROOT ichidagi bola papka bo'lishi kerak." >&2
+    exit 1
+    ;;
+esac
 
 [ -x "$SRC/subtitr_app" ] || { echo "XATO: subtitr_app topilmadi ($SRC)" >&2; exit 1; }
 
@@ -52,6 +66,10 @@ cat > "$TARGET/uninstall.sh" <<UNINST
 #!/usr/bin/env bash
 # Subtitr Desktop ni o'chirish.
 set -e
+case "\$TARGET" in
+  "$(printf '%s' "$INSTALL_ROOT")"/*) ;;
+  *) echo "XATO: xavfsiz bo'lmagan uninstall manzili" >&2; exit 1 ;;
+esac
 rm -f "$DESKTOP_FILE"
 rm -rf "$TARGET"
 command -v update-desktop-database >/dev/null && update-desktop-database "$APPS" || true
