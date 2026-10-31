@@ -46,6 +46,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String? _currentDir;
   double _videoDuration = 0.0;
   DateTime? _startTime;
+  DateTime? _lastProgressUpdate;
   Timer? _timer;
 
   static const _modes = [
@@ -162,7 +163,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   void _saveJobPrefs() {
-    _settingsStore.saveJobPrefs(mode: _mode, source: _sourceLang, target: _targetLang);
+    _settingsStore.saveJobPrefs(
+      mode: _mode,
+      source: _sourceLang,
+      target: _targetLang,
+    );
   }
 
   void _updateAppearance(AppearanceSettings a) {
@@ -172,9 +177,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Future<void> _openSettings() async {
     final updated = await Navigator.of(context).push<AppSettings>(
-      MaterialPageRoute(
-        builder: (_) => ApiKeysScreen(initial: _settings),
-      ),
+      MaterialPageRoute(builder: (_) => ApiKeysScreen(initial: _settings)),
     );
     if (updated == null || !mounted) return;
     _service.processEnvironment = updated.toEnvironment();
@@ -238,12 +241,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       });
       if (dir.isNotEmpty) await _openPath(dir);
     } on ProcessorCancelled {
-      if (mounted) setState(() { _status = 'Bekor qilindi'; _progress = 0; });
+      if (mounted) {
+        setState(() {
+          _status = 'Bekor qilindi';
+          _progress = 0;
+        });
+      }
     } catch (error) {
       _showError(error.toString());
     } finally {
       _timer?.cancel();
-      if (mounted) setState(() { _running = false; _startTime = null; });
+      if (mounted) {
+        setState(() {
+          _running = false;
+          _startTime = null;
+        });
+      }
     }
   }
 
@@ -260,8 +273,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _videos = scan.videos;
         _kinoDir = scan.kinoDir;
         _outDir = scan.outDir;
-        
-        if (_selectedVideo != null && !_videos.any((v) => v.path == _selectedVideo!.path)) {
+
+        if (_selectedVideo != null &&
+            !_videos.any((v) => v.path == _selectedVideo!.path)) {
           _selectedVideo = null;
         }
         if (_selectedVideo == null) {
@@ -270,7 +284,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         }
 
         _externalVideoPath = null;
-        _status = _videos.isEmpty ? 'Kinolar papkasiga video tashlang' : 'Tayyor';
+        _status = _videos.isEmpty
+            ? 'Kinolar papkasiga video tashlang'
+            : 'Tayyor';
       });
       _updateDuration();
     } catch (error) {
@@ -647,7 +663,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (!mounted) return;
     setState(() {
       _status = progress.message.isEmpty ? _status : progress.message;
-      _progress = progress.progress.clamp(0, 1);
+      final nextProgress = progress.progress.clamp(0, 1).toDouble();
+      // Xabar o'zgarishi foiz siljigani degani emas. Yakuniy PDF/DOCX
+      // yozilishida aynan foizning oxirgi o'zgargan vaqtini saqlaymiz.
+      if (nextProgress != _progress) _lastProgressUpdate = DateTime.now();
+      _progress = nextProgress;
     });
   }
 
@@ -754,7 +774,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int get _estimatedSeconds {
     double factor = 0.35;
     if (_mode == 'all') factor = 0.5;
-    if (_mode == 'srt' || _mode == 'transcript' || _mode == 'reading') factor = 0.15;
+    if (_mode == 'srt' || _mode == 'transcript' || _mode == 'reading') {
+      factor = 0.15;
+    }
     return (_videoDuration * factor).round();
   }
 
@@ -764,12 +786,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// ham tarjima tokeni va'da qilinardi — aslida hech qanday tarjima
   /// so'rovi ketmasdi.
   static const _translatingModes = {
-    'dual', 'dual_vocab', 'translated', 'srt', 'transcript', 'reading', 'all',
+    'dual',
+    'dual_vocab',
+    'translated',
+    'srt',
+    'transcript',
+    'reading',
+    'all',
   };
 
   /// Lug'at tuzadigan rejimlar — `pipeline._prepare_data` dagi `VOCAB_MODES`.
   static const _vocabModes = {
-    'vocabulary', 'original_vocab', 'dual_vocab', 'all',
+    'vocabulary',
+    'original_vocab',
+    'dual_vocab',
+    'all',
   };
 
   /// Rough token estimate so the user knows about how much they'll spend.
@@ -860,120 +891,127 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ),
       body: SafeArea(
         child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final wide = constraints.maxWidth >= 1040;
-                  
-                  final videoPanel = VideoSelectionPanel(
-                    kinoDir: _kinoDir,
-                    currentDir: _currentDir,
-                    videos: _videos,
-                    selectedVideo: _selectedVideo,
-                    externalVideoPath: _externalVideoPath,
+          builder: (context, constraints) {
+            final wide = constraints.maxWidth >= 1040;
+
+            final videoPanel = VideoSelectionPanel(
+              kinoDir: _kinoDir,
+              currentDir: _currentDir,
+              videos: _videos,
+              selectedVideo: _selectedVideo,
+              externalVideoPath: _externalVideoPath,
+              isRunning: _running,
+              isLoading: _loading,
+              onScan: () => _scanVideos(path: _currentDir),
+              onPickExternal: _pickExternalVideo,
+              onSelectVideo: (v) {
+                if (v.isDir) {
+                  _scanVideos(path: v.path);
+                } else {
+                  setState(() {
+                    _selectedVideo = v;
+                    _externalVideoPath = null;
+                    _result = null;
+                  });
+                  _updateDuration();
+                }
+              },
+              onNavigateBack: () {
+                if (_currentDir != null && _kinoDir != _currentDir) {
+                  final parent = File(_currentDir!).parent.path;
+                  _scanVideos(path: parent);
+                }
+              },
+              onClearExternal: () {
+                setState(() {
+                  _externalVideoPath = null;
+                  _selectedVideo = _videos.where((v) => !v.isDir).firstOrNull;
+                });
+                _updateDuration();
+              },
+              onUrlSubmit: _startFromUrl,
+              onDownloadOnly: _downloadOnly,
+            );
+
+            final leftColumn = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                videoPanel,
+                const SizedBox(height: 24),
+                Expanded(
+                  child: SettingsPanel(
+                    modes: _modes,
+                    mode: _mode,
+                    sourceLang: _sourceLang,
+                    targetLang: _targetLang,
+                    appearance: _appearance,
                     isRunning: _running,
-                    isLoading: _loading,
-                    onScan: () => _scanVideos(path: _currentDir),
-                    onPickExternal: _pickExternalVideo,
-                    onSelectVideo: (v) {
-                      if (v.isDir) {
-                        _scanVideos(path: v.path);
-                      } else {
-                        setState(() {
-                          _selectedVideo = v;
-                          _externalVideoPath = null;
-                          _result = null;
-                        });
-                        _updateDuration();
-                      }
+                    onModeChanged: (v) {
+                      setState(() => _mode = v);
+                      _saveJobPrefs();
                     },
-                    onNavigateBack: () {
-                      if (_currentDir != null && _kinoDir != _currentDir) {
-                        final parent = File(_currentDir!).parent.path;
-                        _scanVideos(path: parent);
-                      }
+                    onSourceLangChanged: (v) {
+                      setState(() => _sourceLang = v);
+                      _saveJobPrefs();
                     },
-                    onClearExternal: () {
-                      setState(() {
-                        _externalVideoPath = null;
-                        _selectedVideo = _videos.where((v) => !v.isDir).firstOrNull;
-                      });
-                      _updateDuration();
+                    onTargetLangChanged: (v) {
+                      setState(() => _targetLang = v);
+                      _saveJobPrefs();
                     },
-                    onUrlSubmit: _startFromUrl,
-                    onDownloadOnly: _downloadOnly,
-                  );
+                    onAppearanceChanged: _updateAppearance,
+                  ),
+                ),
+              ],
+            );
 
-                  final leftColumn = Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      videoPanel,
-                      const SizedBox(height: 24),
-                      Expanded(
-                        child: SettingsPanel(
-                          modes: _modes,
-                          mode: _mode,
-                          sourceLang: _sourceLang,
-                          targetLang: _targetLang,
-                          appearance: _appearance,
-                          isRunning: _running,
-                          onModeChanged: (v) { setState(() => _mode = v); _saveJobPrefs(); },
-                          onSourceLangChanged: (v) { setState(() => _sourceLang = v); _saveJobPrefs(); },
-                          onTargetLangChanged: (v) { setState(() => _targetLang = v); _saveJobPrefs(); },
-                          onAppearanceChanged: _updateAppearance,
-                        ),
-                      ),
-                    ],
-                  );
+            final rightColumn = ProcessingPanel(
+              selectedName: _selectedName,
+              selectedPath: _selectedPath,
+              outDir: _result?.outDir.isNotEmpty == true
+                  ? _result!.outDir
+                  : _outDir,
+              isRunning: _running,
+              progress: _progress,
+              status: _status,
+              result: _result,
+              estimatedSeconds: _estimatedSeconds,
+              estimateText: _estimateText,
+              startTime: _startTime,
+              lastProgressUpdate: _lastProgressUpdate,
+              onStart: _startProcessing,
+              onReview: _reviewAndRender,
+              onCancel: _cancelProcessing,
+              onStartBatch: _startBatch,
+              videoCount: _videos.where((v) => !v.isDir).length,
+              onOpenPath: _openPath,
+            );
 
-                  final rightColumn = ProcessingPanel(
-                    selectedName: _selectedName,
-                    selectedPath: _selectedPath,
-                    outDir: _result?.outDir.isNotEmpty == true ? _result!.outDir : _outDir,
-                    isRunning: _running,
-                    progress: _progress,
-                    status: _status,
-                    result: _result,
-                    estimatedSeconds: _estimatedSeconds,
-                    estimateText: _estimateText,
-                    startTime: _startTime,
-                    onStart: _startProcessing,
-                    onReview: _reviewAndRender,
-                    onCancel: _cancelProcessing,
-                    onStartBatch: _startBatch,
-                    videoCount: _videos.where((v) => !v.isDir).length,
-                    onOpenPath: _openPath,
-                  );
+            if (wide) {
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(width: 440, child: leftColumn),
+                    const SizedBox(width: 24),
+                    Container(width: 1, color: const Color(0xFF333333)),
+                    const SizedBox(width: 24),
+                    Expanded(child: rightColumn),
+                  ],
+                ),
+              );
+            }
 
-                  if (wide) {
-                    return Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          SizedBox(
-                            width: 440,
-                            child: leftColumn,
-                          ),
-                          const SizedBox(width: 24),
-                          Container(width: 1, color: const Color(0xFF333333)),
-                          const SizedBox(width: 24),
-                          Expanded(
-                            child: rightColumn,
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  return ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                    children: [
-                      SizedBox(height: 580, child: leftColumn),
-                      const SizedBox(height: 16),
-                      rightColumn,
-                    ],
-                  );
-                },
-              ),
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              children: [
+                SizedBox(height: 580, child: leftColumn),
+                const SizedBox(height: 16),
+                rightColumn,
+              ],
+            );
+          },
+        ),
       ),
     );
   }

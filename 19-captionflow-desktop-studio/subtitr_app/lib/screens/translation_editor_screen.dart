@@ -36,8 +36,12 @@ class TranslationEditorScreen extends StatefulWidget {
 
 class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
   late final List<SubtitleSegment> _segments;
+  late final List<({String original, String translated})> _initialTexts;
+  late final bool _showsTranslation;
   String _search = '';
   bool _onlyUncertain = false;
+  bool _hasUnsavedChanges = false;
+  bool _exitApproved = false;
 
   /// Qidiruvni kechiktirish taymeri. Har bosilgan harf butun ro'yxatni
   /// qayta quradi — 2000 qatorli kinoda "qidirish" so'zini yozish 8 marta
@@ -71,7 +75,84 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
   void initState() {
     super.initState();
     _segments = widget.session.segments;
+    _initialTexts = _segments
+        .map(
+          (segment) =>
+              (original: segment.original, translated: segment.translated),
+        )
+        .toList(growable: false);
+    // Tarjima rejimi ish boshlanishidagi tanlovga bog'liq. Foydalanuvchi
+    // oxirgi tarjimani vaqtincha o'chirsa, kiritish maydoni yo'qolib ketmasin.
+    _showsTranslation = _segments.any(
+      (segment) => segment.translated.trim().isNotEmpty,
+    );
     if (playerAvailable) _loadPlayer();
+  }
+
+  void _onSegmentTextChanged() {
+    final changed = _segments.indexed.any((entry) {
+      final initial = _initialTexts[entry.$1];
+      final segment = entry.$2;
+      return segment.original != initial.original ||
+          segment.translated != initial.translated;
+    });
+    // PopScope faqat tahrir holati o'zgarganda qayta qurilishi kerak;
+    // har bir harfda butun, katta ro'yxatni qurish sezilarli sekinlashtiradi.
+    if (changed != _hasUnsavedChanges) {
+      setState(() => _hasUnsavedChanges = changed);
+    }
+  }
+
+  Future<void> _requestExit() async {
+    if (!_hasUnsavedChanges) {
+      Navigator.of(context).pop();
+      return;
+    }
+
+    final discard = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.edit_off_outlined),
+        title: const Text('Tahrirlar saqlanmaydi'),
+        content: const Text('Chiqilsinmi? Tahrirlar saqlanmaydi.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Qolish'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Chiqish'),
+          ),
+        ],
+      ),
+    );
+    if (discard != true || !mounted) return;
+
+    for (final entry in _segments.indexed) {
+      final initial = _initialTexts[entry.$1];
+      entry.$2.original = initial.original;
+      entry.$2.translated = initial.translated;
+    }
+    // Segmentlar session bilan bir obyektni bo'lishadi. Bekor qilishdan
+    // keyin ularni qaytarib qo'yamiz, aks holda `null` natijaga qaramay
+    // tahrir keyingi ishlovga sizib o'tishi mumkin.
+    setState(() {
+      _hasUnsavedChanges = false;
+      _exitApproved = true;
+    });
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
+    Navigator.of(context).pop();
+  }
+
+  Future<void> _submitEdits() async {
+    // Render tugmasi tahrirlarni saqlab qaytadi. PopScope uni bekor qilish
+    // chiqishi deb to'xtatmasligi uchun, natijali chiqishni oldindan belgilaymiz.
+    setState(() => _exitApproved = true);
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
+    Navigator.of(context).pop(_collect());
   }
 
   /// Writes the ASS once and points the player at it.
@@ -196,8 +277,9 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
           _previewError!,
           maxLines: 4,
           overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodySmall
-              ?.copyWith(color: theme.colorScheme.error),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.error,
+          ),
         ),
       );
     } else if (_previewPath != null) {
@@ -208,7 +290,8 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
         key: ValueKey(_previewPath),
         fit: BoxFit.contain,
         gaplessPlayback: true,
-        errorBuilder: (context, error, stack) => const Center(child: Text('Kadr ochilmadi')),
+        errorBuilder: (context, error, stack) =>
+            const Center(child: Text('Kadr ochilmadi')),
       );
     } else {
       body = Center(
@@ -218,8 +301,9 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
             'Qatorni bossangiz, subtitr o\'sha joyda qanday '
             'chiqishi shu yerda ko\'rinadi.',
             textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
       );
@@ -273,139 +357,151 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final hasTranslation = _segments.any((s) => s.translated.trim().isNotEmpty);
+    final hasTranslation = _showsTranslation;
     final uncertain = _segments.where((s) => s.isUncertain).length;
     final visible = <int>[
       for (var i = 0; i < _segments.length; i++)
         if (_matches(i)) i,
     ];
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tarjimani ko\'rib chiqish'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Center(
-              child: Text(
-                '${_segments.length} qator',
-                style: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 13),
+    return PopScope(
+      canPop: _exitApproved || !_hasUnsavedChanges,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _hasUnsavedChanges) _requestExit();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Tarjimani ko\'rib chiqish'),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Center(
+                child: Text(
+                  '${_segments.length} qator',
+                  style: const TextStyle(
+                    color: Color(0xFFAAAAAA),
+                    fontSize: 13,
+                  ),
+                ),
               ),
             ),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          if (!hasTranslation)
-            Container(
-              width: double.infinity,
-              color: const Color(0xFF141414),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: const Text(
-                'Bu rejimda tarjima yo\'q — faqat original matnni ko\'rib chiqasiz.',
-                style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 13),
+          ],
+        ),
+        body: Column(
+          children: [
+            if (!hasTranslation)
+              Container(
+                width: double.infinity,
+                color: const Color(0xFF141414),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+                child: const Text(
+                  'Bu rejimda tarjima yo\'q — faqat original matnni ko\'rib chiqasiz.',
+                  style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 13),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.search, size: 20),
+                        hintText: 'Qatorlardan qidirish...',
+                        isDense: true,
+                      ),
+                      onChanged: _onSearchChanged,
+                    ),
+                  ),
+                  if (uncertain > 0) ...[
+                    const SizedBox(width: 12),
+                    // Model ishonmagan qatorlar — noto'g'ri eshitilgan ism
+                    // yoki so'z odatda aynan shu joylarda bo'ladi.
+                    FilterChip(
+                      avatar: Icon(
+                        Icons.help_outline_rounded,
+                        size: 18,
+                        color: _onlyUncertain ? Colors.black : Colors.amber,
+                      ),
+                      label: Text('Shubhali $uncertain'),
+                      selected: _onlyUncertain,
+                      selectedColor: Colors.amber,
+                      onSelected: (v) => setState(() => _onlyUncertain = v),
+                    ),
+                  ],
+                ],
               ),
             ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final list = ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                    itemCount: visible.length,
+                    itemBuilder: (context, idx) {
+                      final i = visible[idx];
+                      return _SegmentTile(
+                        index: i + 1,
+                        timecode:
+                            '${_timecode(_segments[i].start)} → ${_timecode(_segments[i].end)}',
+                        segment: _segments[i],
+                        editable: hasTranslation,
+                        onTextChanged: _onSegmentTextChanged,
+                        uncertain: _segments[i].isUncertain,
+                        selected: _previewIndex == i,
+                        onPreview: () => _preview(i),
+                      );
+                    },
+                  );
+                  // Keng oynada kadr yonma-yon turadi — qatorni bosganda
+                  // ro'yxat joyidan qimirlamaydi.
+                  if (constraints.maxWidth < 900) return list;
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: list),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(0, 4, 16, 24),
+                        child: SizedBox(
+                          width: 320,
+                          child: AspectRatio(
+                            aspectRatio: 9 / 16,
+                            child: _previewPanel(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+        bottomNavigationBar: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             child: Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    decoration: const InputDecoration(
-                      prefixIcon: Icon(Icons.search, size: 20),
-                      hintText: 'Qatorlardan qidirish...',
-                      isDense: true,
-                    ),
-                    onChanged: _onSearchChanged,
+                  child: OutlinedButton(
+                    onPressed: _requestExit,
+                    child: const Text('Bekor qilish'),
                   ),
                 ),
-                if (uncertain > 0) ...[
-                  const SizedBox(width: 12),
-                  // Model ishonmagan qatorlar — noto'g'ri eshitilgan ism
-                  // yoki so'z odatda aynan shu joylarda bo'ladi.
-                  FilterChip(
-                    avatar: Icon(
-                      Icons.help_outline_rounded,
-                      size: 18,
-                      color: _onlyUncertain ? Colors.black : Colors.amber,
-                    ),
-                    label: Text('Shubhali $uncertain'),
-                    selected: _onlyUncertain,
-                    selectedColor: Colors.amber,
-                    onSelected: (v) => setState(() => _onlyUncertain = v),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: FilledButton.icon(
+                    onPressed: _submitEdits,
+                    icon: const Icon(Icons.movie_creation_outlined, size: 20),
+                    label: const Text('Videoni render qilish'),
                   ),
-                ],
+                ),
               ],
             ),
-          ),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final list = ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                  itemCount: visible.length,
-                  itemBuilder: (context, idx) {
-                    final i = visible[idx];
-                    return _SegmentTile(
-                      index: i + 1,
-                      timecode:
-                          '${_timecode(_segments[i].start)} → ${_timecode(_segments[i].end)}',
-                      original: _segments[i].original,
-                      segment: _segments[i],
-                      editable: hasTranslation,
-                      uncertain: _segments[i].isUncertain,
-                      selected: _previewIndex == i,
-                      onPreview: () => _preview(i),
-                    );
-                  },
-                );
-                // Keng oynada kadr yonma-yon turadi — qatorni bosganda
-                // ro'yxat joyidan qimirlamaydi.
-                if (constraints.maxWidth < 900) return list;
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: list),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(0, 4, 16, 24),
-                      child: SizedBox(
-                        width: 320,
-                        child: AspectRatio(
-                          aspectRatio: 9 / 16,
-                          child: _previewPanel(),
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Bekor qilish'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 2,
-                child: FilledButton.icon(
-                  onPressed: () => Navigator.of(context).pop(_collect()),
-                  icon: const Icon(Icons.movie_creation_outlined, size: 20),
-                  label: const Text('Videoni render qilish'),
-                ),
-              ),
-            ],
           ),
         ),
       ),
@@ -425,9 +521,9 @@ class _SegmentTile extends StatefulWidget {
   const _SegmentTile({
     required this.index,
     required this.timecode,
-    required this.original,
     required this.segment,
     required this.editable,
+    required this.onTextChanged,
     this.uncertain = false,
     this.selected = false,
     this.onPreview,
@@ -441,12 +537,12 @@ class _SegmentTile extends StatefulWidget {
 
   final int index;
   final String timecode;
-  final String original;
 
   /// Tahrir to'g'ridan-to'g'ri shunga yoziladi.
   final SubtitleSegment segment;
 
   final bool editable;
+  final VoidCallback onTextChanged;
 
   /// The model was unsure of this line — worth reading before rendering.
   final bool uncertain;
@@ -456,17 +552,26 @@ class _SegmentTile extends StatefulWidget {
 }
 
 class _SegmentTileState extends State<_SegmentTile> {
-  TextEditingController? _controller;
+  TextEditingController? _translationController;
+  bool _editingOriginal = false;
 
-  TextEditingController get _field =>
-      _controller ??= TextEditingController(text: widget.segment.translated)
+  TextEditingController get _originalField => _originalController ??=
+      TextEditingController(text: widget.segment.original);
+  TextEditingController? _originalController;
+
+  TextEditingController get _translationField => _translationController ??=
+      TextEditingController(text: widget.segment.translated)
         // Har bosilgan harf segmentga yoziladi, shuning uchun qator
         // ekrandan chiqib ketsa ham tahrir yo'qolmaydi.
-        ..addListener(() => widget.segment.translated = _controller!.text);
+        ..addListener(() {
+          widget.segment.translated = _translationController!.text;
+          widget.onTextChanged();
+        });
 
   @override
   void dispose() {
-    _controller?.dispose();
+    _originalController?.dispose();
+    _translationController?.dispose();
     super.dispose();
   }
 
@@ -474,14 +579,15 @@ class _SegmentTileState extends State<_SegmentTile> {
   Widget build(BuildContext context) {
     final index = widget.index;
     final timecode = widget.timecode;
-    final original = widget.original;
     final editable = widget.editable;
     final uncertain = widget.uncertain;
     final selected = widget.selected;
     final onPreview = widget.onPreview;
     final borderColor = selected
         ? Colors.white
-        : (uncertain ? Colors.amber.withValues(alpha: 0.6) : const Color(0xFF222222));
+        : (uncertain
+              ? Colors.amber.withValues(alpha: 0.6)
+              : const Color(0xFF222222));
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
@@ -515,7 +621,10 @@ class _SegmentTileState extends State<_SegmentTile> {
                   onPressed: onPreview,
                   visualDensity: VisualDensity.compact,
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                  constraints: const BoxConstraints(
+                    minWidth: 30,
+                    minHeight: 30,
+                  ),
                   icon: Icon(
                     Icons.image_outlined,
                     size: 17,
@@ -524,8 +633,11 @@ class _SegmentTileState extends State<_SegmentTile> {
                 ),
               if (uncertain) ...[
                 const SizedBox(width: 4),
-                Icon(Icons.help_outline_rounded,
-                     size: 15, color: Colors.amber.withValues(alpha: 0.9)),
+                Icon(
+                  Icons.help_outline_rounded,
+                  size: 15,
+                  color: Colors.amber.withValues(alpha: 0.9),
+                ),
                 const SizedBox(width: 5),
                 Text(
                   'tekshiring',
@@ -539,29 +651,94 @@ class _SegmentTileState extends State<_SegmentTile> {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            original,
-            style: const TextStyle(
-              color: Color(0xFFCCCCCC),
-              fontSize: 14,
-              height: 1.35,
-            ),
-          ),
-          if (editable) ...[
-            const SizedBox(height: 10),
-            TextField(
-              controller: _field,
-              maxLines: null,
-              style: const TextStyle(fontSize: 14, height: 1.35),
-              decoration: const InputDecoration(
-                isDense: true,
-                hintText: 'Tarjima...',
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              ),
-            ),
-          ],
+          if (editable)
+            // Daraxtda tarjima birinchi turadi, lekin `up` yo'nalishi uni
+            // pastga joylaydi. Shu yo'l bilan ikkala matn ham Material
+            // maydon bo'ladi va original foydalanuvchi ko'radigan yuqorida.
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              verticalDirection: VerticalDirection.up,
+              children: [
+                TextField(
+                  controller: _translationField,
+                  maxLines: null,
+                  style: const TextStyle(fontSize: 14, height: 1.35),
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    hintText: 'Tarjima...',
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                _originalEditor(index),
+              ],
+            )
+          else
+            _originalEditor(index),
         ],
+      ),
+    );
+  }
+
+  Widget _originalTextField(int index) => TextField(
+    key: ValueKey('original-$index'),
+    controller: _originalField,
+    maxLines: null,
+    style: const TextStyle(
+      color: Color(0xFFCCCCCC),
+      fontSize: 14,
+      height: 1.35,
+    ),
+    decoration: const InputDecoration(
+      labelText: 'Asl matn',
+      isDense: true,
+      contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    ),
+    onChanged: (text) {
+      // Transkripsiya ism yoki atamani noto'g'ri eshitganda foydalanuvchi
+      // aynan asl jumlani tuzatib render qiladi.
+      widget.segment.original = text;
+      widget.onTextChanged();
+    },
+  );
+
+  Widget _originalEditor(int index) {
+    if (_editingOriginal) return _originalTextField(index);
+    return Tooltip(
+      message: 'Asl matnni tahrirlash',
+      child: InkWell(
+        onTap: () => setState(() => _editingOriginal = true),
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  widget.segment.original.isEmpty
+                      ? 'Asl matn kiritish'
+                      : widget.segment.original,
+                  style: const TextStyle(
+                    color: Color(0xFFCCCCCC),
+                    fontSize: 14,
+                    height: 1.35,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.edit_outlined,
+                size: 16,
+                color: Color(0xFF888888),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

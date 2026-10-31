@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+// Paket `wakelock_plus` orqali keladi, lekin fayl chegarasi pubspecga
+// bevosita kiritishni taqiqlaydi; versiyani baribir uning rasmiy API'si o'qiydi.
+// ignore: depend_on_referenced_packages
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../services/desktop_processor_service.dart';
 import '../services/settings_store.dart';
@@ -7,7 +11,11 @@ import '../services/settings_store.dart';
 /// Screen where the user enters their own AI provider API keys. Nothing is
 /// bundled with the app; each user pastes their own keys here.
 class ApiKeysScreen extends StatefulWidget {
-  const ApiKeysScreen({super.key, required this.initial, this.loadCache = true});
+  const ApiKeysScreen({
+    super.key,
+    required this.initial,
+    this.loadCache = true,
+  });
 
   final AppSettings initial;
 
@@ -35,6 +43,7 @@ class _ApiKeysScreenState extends State<ApiKeysScreen> {
   bool _obscure = true;
   bool _advanced = false;
   bool _saving = false;
+  String? _appVersion;
 
   @override
   void initState() {
@@ -46,11 +55,29 @@ class _ApiKeysScreenState extends State<ApiKeysScreen> {
     _groqModel = TextEditingController(text: widget.initial.groqWhisperModel);
     _openaiModel = TextEditingController(text: widget.initial.openaiModel);
     _geminiModel = TextEditingController(text: widget.initial.geminiModel);
-    _anthropicModel = TextEditingController(text: widget.initial.anthropicModel);
-    _advanced = widget.initial.groqWhisperModel.isNotEmpty ||
+    _anthropicModel = TextEditingController(
+      text: widget.initial.anthropicModel,
+    );
+    _advanced =
+        widget.initial.groqWhisperModel.isNotEmpty ||
         widget.initial.openaiModel.isNotEmpty ||
         widget.initial.geminiModel.isNotEmpty ||
         widget.initial.anthropicModel.isNotEmpty;
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (!mounted) return;
+      // Paket build paytida pubspec versiyasini oladi; uni qo'lda yozsak,
+      // yangilanishda ekran ko'rsatgan raqam haqiqiy ilovadan ortda qoladi.
+      final build = info.buildNumber.isEmpty ? '' : '+${info.buildNumber}';
+      setState(() => _appVersion = '${info.version}$build');
+    } catch (_) {
+      // Platforma metama'lumoti olinmasa, sozlamalar ekrani ishlashda
+      // davom etadi; versiya qatori shunchaki ko'rsatilmaydi.
+    }
   }
 
   @override
@@ -108,7 +135,8 @@ class _ApiKeysScreenState extends State<ApiKeysScreen> {
                   controller: _groq,
                   label: 'Groq API kalit',
                   hint: 'gsk_...',
-                  helper: 'Nutqni matnga aylantirish (Whisper) va tarjima. console.groq.com',
+                  helper:
+                      'Nutqni matnga aylantirish (Whisper) va tarjima. console.groq.com',
                   obscure: _obscure,
                 ),
                 const SizedBox(height: 20),
@@ -178,6 +206,17 @@ class _ApiKeysScreenState extends State<ApiKeysScreen> {
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
+                if (_appVersion != null) ...[
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Text(
+                      'Versiya $_appVersion',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
                 const Divider(height: 40),
                 _CacheSection(autoLoad: widget.loadCache),
               ],
@@ -296,13 +335,29 @@ class _AdvancedSection extends StatelessWidget {
         ),
         if (expanded) ...[
           const SizedBox(height: 12),
-          _ModelField(controller: groqModel, label: 'Groq Whisper modeli', hint: 'whisper-large-v3'),
+          _ModelField(
+            controller: groqModel,
+            label: 'Groq Whisper modeli',
+            hint: 'whisper-large-v3',
+          ),
           const SizedBox(height: 16),
-          _ModelField(controller: openaiModel, label: 'OpenAI modeli', hint: 'gpt-4o-mini'),
+          _ModelField(
+            controller: openaiModel,
+            label: 'OpenAI modeli',
+            hint: 'gpt-4o-mini',
+          ),
           const SizedBox(height: 16),
-          _ModelField(controller: geminiModel, label: 'Gemini modeli', hint: 'gemini-2.5-flash'),
+          _ModelField(
+            controller: geminiModel,
+            label: 'Gemini modeli',
+            hint: 'gemini-2.5-flash',
+          ),
           const SizedBox(height: 16),
-          _ModelField(controller: anthropicModel, label: 'Claude modeli', hint: 'claude-sonnet-5'),
+          _ModelField(
+            controller: anthropicModel,
+            label: 'Claude modeli',
+            hint: 'claude-sonnet-5',
+          ),
         ],
       ],
     );
@@ -310,7 +365,11 @@ class _AdvancedSection extends StatelessWidget {
 }
 
 class _ModelField extends StatelessWidget {
-  const _ModelField({required this.controller, required this.label, required this.hint});
+  const _ModelField({
+    required this.controller,
+    required this.label,
+    required this.hint,
+  });
   final TextEditingController controller;
   final String label;
   final String hint;
@@ -328,7 +387,6 @@ class _ModelField extends StatelessWidget {
     );
   }
 }
-
 
 /// Disk cache panel.
 ///
@@ -377,9 +435,9 @@ class _CacheSectionState extends State<_CacheSection> {
         content: Text(
           what == 'transcripts'
               ? 'Tayyor matn va tarjimalar o\'chadi. Shu videolarni qayta '
-                  'ishlaganda AI\'ga QAYTADAN pul ketadi.'
+                    'ishlaganda AI\'ga QAYTADAN pul ketadi.'
               : 'Bu fayllar kerak bo\'lganda qaytadan yuklanadi. '
-                  'Tayyor natijalaringizga tegilmaydi.',
+                    'Tayyor natijalaringizga tegilmaydi.',
         ),
         actions: [
           TextButton(
@@ -438,8 +496,9 @@ class _CacheSectionState extends State<_CacheSection> {
             Expanded(
               child: Text(
                 'Disk keshi',
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
             if (usage != null)
@@ -464,8 +523,9 @@ class _CacheSectionState extends State<_CacheSection> {
         Text(
           'Yuklangan videolar va ishchi fayllar ko\'rinmas papkada saqlanadi. '
           'Yuklamalar keshi 5 GB dan oshsa eng eskilari o\'zi o\'chadi.',
-          style: theme.textTheme.bodySmall
-              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
         if (_error != null) ...[
           const SizedBox(height: 10),
@@ -473,8 +533,9 @@ class _CacheSectionState extends State<_CacheSection> {
             _error!,
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: theme.colorScheme.error),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.error,
+            ),
           ),
         ],
         if (usage != null) ...[
@@ -518,8 +579,9 @@ class _CacheSectionState extends State<_CacheSection> {
             Expanded(
               child: Text(
                 'Xato hisoboti',
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
             TextButton.icon(
@@ -534,8 +596,9 @@ class _CacheSectionState extends State<_CacheSection> {
           'Biror narsa ishlamasa, to\'liq xato izi (traceback) kunlik log '
           'faylida bo\'ladi — ekranda faqat bitta qator ko\'rinadi. '
           'Loglar 14 kundan keyin o\'zi o\'chadi, API kalitlar yozilmaydi.',
-          style: theme.textTheme.bodySmall
-              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );
