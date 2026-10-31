@@ -118,6 +118,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _loading = true;
   bool _running = false;
   String? _currentDir;
+  String? _activePlayerVideo;
+  String? _activePlayerSubtitle;
+  String? _activePlayerTitle;
   double _videoDuration = 0.0;
   DateTime? _startTime;
   DateTime? _lastProgressUpdate;
@@ -424,6 +427,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   ) async {
     setState(() {
       _running = true;
+      _activePlayerVideo = null;
       _result = null;
       _progress = 0;
       _status = initialStatus;
@@ -939,12 +943,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           }
         }
 
-        await InAppVideoPlayerDialog.show(
-          context,
-          videoPath: path,
-          subtitlePath: sub,
-          onOpenExternal: (p) => _service.openPath(p),
-        );
+        setState(() {
+          _activePlayerVideo = path;
+          _activePlayerSubtitle = sub;
+          _activePlayerTitle = File(path).uri.pathSegments.last;
+        });
         return;
       }
       await _service.openPath(path);
@@ -1324,9 +1327,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           results: _batchResults,
                           onDetail: _showErrorDetail,
                         );
+                  final rightContent = _activePlayerVideo != null
+                      ? EmbeddedVideoPlayer(
+                          videoPath: _activePlayerVideo!,
+                          subtitlePath: _activePlayerSubtitle,
+                          title: _activePlayerTitle,
+                          onClose: () {
+                            setState(() {
+                              _activePlayerVideo = null;
+                              _activePlayerSubtitle = null;
+                              _activePlayerTitle = null;
+                            });
+                          },
+                          onOpenExternal: (p) => _service.openPath(p),
+                        )
+                      : processor;
+
                   final wideRightColumn = Column(
                     children: [
-                      Expanded(child: processor),
+                      Expanded(child: rightContent),
                       if (batchCard case final Widget card) card,
                     ],
                   );
@@ -1350,6 +1369,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   return ListView(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                     children: [
+                      if (_activePlayerVideo != null) ...[
+                        SizedBox(
+                          height: 440,
+                          child: EmbeddedVideoPlayer(
+                            videoPath: _activePlayerVideo!,
+                            subtitlePath: _activePlayerSubtitle,
+                            title: _activePlayerTitle,
+                            onClose: () {
+                              setState(() {
+                                _activePlayerVideo = null;
+                                _activePlayerSubtitle = null;
+                                _activePlayerTitle = null;
+                              });
+                            },
+                            onOpenExternal: (p) => _service.openPath(p),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                       SizedBox(height: 580, child: leftColumn),
                       const SizedBox(height: 16),
                       processor,

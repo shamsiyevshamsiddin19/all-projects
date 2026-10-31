@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:subtitr_app/widgets/in_app_video_player.dart';
@@ -31,17 +29,55 @@ void main() {
       ),
     );
 
-    // Initial pump: renders the chrome header and loading/error view
     await tester.pump();
 
     expect(find.text('sample_movie.mp4'), findsOneWidget);
     expect(find.byIcon(Icons.close_rounded), findsOneWidget);
     expect(find.byTooltip('Tashqi pleyerda ochish (VLC / mpv)'), findsOneWidget);
 
-    // Tap external open button
     await tester.tap(find.byTooltip('Tashqi pleyerda ochish (VLC / mpv)'));
     await tester.pump();
     expect(externalOpened, isTrue);
+  });
+
+  testWidgets('EmbeddedVideoPlayer renders header controls, back button and actions', (tester) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    bool closed = false;
+    String? externalVideo;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData.dark(),
+        home: Scaffold(
+          body: EmbeddedVideoPlayer(
+            videoPath: '/dummy/movies/inline_movie.mp4',
+            title: 'inline_movie.mp4',
+            onClose: () => closed = true,
+            onOpenExternal: (p) => externalVideo = p,
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    // Verify title and buttons
+    expect(find.text('inline_movie.mp4'), findsOneWidget);
+    expect(find.text('Boshqaruv paneli'), findsOneWidget);
+    expect(find.byIcon(Icons.arrow_back_rounded), findsOneWidget);
+
+    // Tap 'Boshqaruv paneli' button to return
+    await tester.tap(find.text('Boshqaruv paneli'));
+    await tester.pump();
+    expect(closed, isTrue);
+
+    // Tap external open icon button
+    await tester.tap(find.byTooltip('Tashqi pleyerda ochish (VLC / mpv)'));
+    await tester.pump();
+    expect(externalVideo, equals('/dummy/movies/inline_movie.mp4'));
   });
 
   testWidgets('ProcessingPanel Videoni ochish prioritizes generated video output', (tester) async {
