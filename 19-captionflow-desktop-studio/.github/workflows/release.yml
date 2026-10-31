@@ -1,0 +1,112 @@
+name: Subtitr Desktop packages
+
+on:
+  push:
+    tags:
+      - 'subtitr-v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: Linux x64 archive
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libmpv-dev mpv python3-venv
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Build and verify archive
+        run: |
+          ./linux/build.sh
+          (cd dist && sha256sum --check SubtitrDesktop-linux-x64.tar.gz.sha256)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: subtitr-linux-x64
+          path: |
+            dist/SubtitrDesktop-linux-x64.tar.gz
+            dist/SubtitrDesktop-linux-x64.tar.gz.sha256
+          if-no-files-found: error
+
+  macos:
+    name: macOS DMG
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Build and verify DMG
+        run: |
+          ./macos/build.sh
+          (cd dist && shasum -a 256 -c *.dmg.sha256)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: subtitr-macos
+          path: |
+            dist/*.dmg
+            dist/*.dmg.sha256
+          if-no-files-found: error
+
+  windows:
+    name: Windows installer and portable ZIP
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Install installer and media tooling
+        shell: pwsh
+        run: |
+          choco install innosetup ffmpeg -y --no-progress
+          New-Item -ItemType Directory -Force tools | Out-Null
+          Copy-Item (Get-Command ffmpeg).Source tools/ffmpeg.exe
+          Copy-Item (Get-Command ffprobe).Source tools/ffprobe.exe
+          curl.exe -fL https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe -o tools/yt-dlp.exe
+      - name: Build installer and portable ZIP
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r desktop_requirements.txt
+          ./windows/build.ps1
+          if (-not (Test-Path installer/SubtitrSetup.exe)) { throw 'Installer yaratilmadi' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: subtitr-windows
+          path: |
+            installer/SubtitrSetup.exe
+            Subtitr-Release.zip
+          if-no-files-found: error
+
+  publish:
+    name: Publish tag assets
+    if: startsWith(github.ref, 'refs/tags/subtitr-v')
+    needs: [linux, macos, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: release-assets/*
