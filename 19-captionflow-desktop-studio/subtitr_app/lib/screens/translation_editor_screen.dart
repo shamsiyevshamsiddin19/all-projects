@@ -34,7 +34,6 @@ class TranslationEditorScreen extends StatefulWidget {
 }
 
 class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
-  late final List<TextEditingController> _controllers;
   late final List<SubtitleSegment> _segments;
   String _search = '';
   bool _onlyUncertain = false;
@@ -66,9 +65,6 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
   void initState() {
     super.initState();
     _segments = widget.session.segments;
-    _controllers = _segments
-        .map((s) => TextEditingController(text: s.translated))
-        .toList();
     if (playerAvailable) _loadPlayer();
   }
 
@@ -96,9 +92,8 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
 
   @override
   void dispose() {
-    for (final c in _controllers) {
-      c.dispose();
-    }
+    // Kontrollerlar endi har qatorning O'ZIDA — `_SegmentTile` ularni
+    // o'zi yaratadi va o'zi tozalaydi.
     super.dispose();
   }
 
@@ -241,12 +236,9 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
     );
   }
 
-  List<SubtitleSegment> _collect() {
-    for (var i = 0; i < _segments.length; i++) {
-      _segments[i].translated = _controllers[i].text;
-    }
-    return _segments;
-  }
+  /// Tahrirlangan matn `_SegmentTile` tomonidan har o'zgarishda
+  /// segmentga yoziladi, shuning uchun bu yerda yig'ish shart emas.
+  List<SubtitleSegment> _collect() => _segments;
 
   static String _timecode(double seconds) {
     final total = seconds.round();
@@ -260,7 +252,7 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
     if (_search.isEmpty) return true;
     final q = _search.toLowerCase();
     return _segments[i].original.toLowerCase().contains(q) ||
-        _controllers[i].text.toLowerCase().contains(q);
+        _segments[i].translated.toLowerCase().contains(q);
   }
 
   @override
@@ -345,7 +337,7 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
                       timecode:
                           '${_timecode(_segments[i].start)} → ${_timecode(_segments[i].end)}',
                       original: _segments[i].original,
-                      controller: _controllers[i],
+                      segment: _segments[i],
                       editable: hasTranslation,
                       uncertain: _segments[i].isUncertain,
                       selected: _previewIndex == i,
@@ -405,12 +397,20 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
   }
 }
 
-class _SegmentTile extends StatelessWidget {
+/// One subtitle line in the editor.
+///
+/// Stateful so it can own its own TextEditingController. The screen used to
+/// build one controller per line up front: a two-hour film is about 2000
+/// lines, so that was 2000 controllers and 2000 pieces of field state alive
+/// at once, for the ten or so rows actually on screen. Now a controller
+/// exists only while its row is built, and the edited text is written
+/// straight back to the segment so nothing is lost when the row scrolls away.
+class _SegmentTile extends StatefulWidget {
   const _SegmentTile({
     required this.index,
     required this.timecode,
     required this.original,
-    required this.controller,
+    required this.segment,
     required this.editable,
     this.uncertain = false,
     this.selected = false,
@@ -426,14 +426,43 @@ class _SegmentTile extends StatelessWidget {
   final int index;
   final String timecode;
   final String original;
-  final TextEditingController controller;
+
+  /// Tahrir to'g'ridan-to'g'ri shunga yoziladi.
+  final SubtitleSegment segment;
+
   final bool editable;
 
   /// The model was unsure of this line — worth reading before rendering.
   final bool uncertain;
 
   @override
+  State<_SegmentTile> createState() => _SegmentTileState();
+}
+
+class _SegmentTileState extends State<_SegmentTile> {
+  TextEditingController? _controller;
+
+  TextEditingController get _field =>
+      _controller ??= TextEditingController(text: widget.segment.translated)
+        // Har bosilgan harf segmentga yoziladi, shuning uchun qator
+        // ekrandan chiqib ketsa ham tahrir yo'qolmaydi.
+        ..addListener(() => widget.segment.translated = _controller!.text);
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final index = widget.index;
+    final timecode = widget.timecode;
+    final original = widget.original;
+    final editable = widget.editable;
+    final uncertain = widget.uncertain;
+    final selected = widget.selected;
+    final onPreview = widget.onPreview;
     final borderColor = selected
         ? Colors.white
         : (uncertain ? Colors.amber.withValues(alpha: 0.6) : const Color(0xFF222222));
@@ -505,7 +534,7 @@ class _SegmentTile extends StatelessWidget {
           if (editable) ...[
             const SizedBox(height: 10),
             TextField(
-              controller: controller,
+              controller: _field,
               maxLines: null,
               style: const TextStyle(fontSize: 14, height: 1.35),
               decoration: const InputDecoration(

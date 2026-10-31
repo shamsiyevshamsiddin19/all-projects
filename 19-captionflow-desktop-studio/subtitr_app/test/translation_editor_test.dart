@@ -121,6 +121,44 @@ void main() {
     expect(find.textContaining('Shubhali'), findsNothing);
   });
 
+  testWidgets('an edit survives the row scrolling out of view', (tester) async {
+    // Ilgari har qator uchun kontroller oldindan yaratilardi (2 soatlik
+    // kinoda ~2000 ta). Endi kontroller qator ko'ringandagina yashaydi,
+    // shuning uchun tahrir SEGMENTGA yozilishi shart — aks holda
+    // ro'yxatni aylantirganda yo'qoladi.
+    final segments = [
+      for (var i = 0; i < 40; i++) line(i * 3.0, 'qator $i', null),
+    ];
+    await open(tester, segments, size: const Size(700, 500));
+
+    await tester.enterText(find.byType(TextField).at(1), 'MENING TARJIMAM');
+    await tester.pump();
+    expect(segments[0].translated, 'MENING TARJIMAM');
+
+    // Juda pastga aylantiramiz — birinchi qator butunlay yo'qoladi.
+    await tester.drag(find.byType(ListView), const Offset(0, -4000));
+    await tester.pumpAndSettle();
+    expect(find.text('qator 0'), findsNothing, reason: 'qator hali ekranda');
+
+    // Orqaga qaytamiz — matn joyida bo'lishi kerak.
+    await tester.drag(find.byType(ListView), const Offset(0, 4000));
+    await tester.pumpAndSettle();
+    expect(segments[0].translated, 'MENING TARJIMAM');
+    expect(find.text('MENING TARJIMAM'), findsOneWidget);
+  });
+
+  testWidgets('only visible rows hold a controller', (tester) async {
+    final segments = [
+      for (var i = 0; i < 300; i++) line(i * 3.0, 'qator $i', null),
+    ];
+    await open(tester, segments, size: const Size(700, 500));
+    // 300 qator, lekin ekranda o'nga yaqini. Ilgari 300 ta kontroller
+    // bir vaqtda yashardi.
+    final fields = tester.widgetList(find.byType(TextField)).length;
+    expect(fields, lessThan(30),
+        reason: '$fields ta maydon qurildi — kontrollerlar hali oldindan yaratilyapti');
+  });
+
   testWidgets('tapping preview asks for the middle of the line', (tester) async {
     final png = File('${Directory.systemTemp.path}/subtitr_test_frame.png')
       ..writeAsBytesSync(_onePixelPng);
