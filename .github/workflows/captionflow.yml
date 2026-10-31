@@ -1,0 +1,83 @@
+name: Captionflow Desktop Studio CI
+
+on:
+  push:
+    paths:
+      - '19-captionflow-desktop-studio/**'
+      - '.github/workflows/captionflow.yml'
+  pull_request:
+    paths:
+      - '19-captionflow-desktop-studio/**'
+      - '.github/workflows/captionflow.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: Python Tests & Mypy
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 19-captionflow-desktop-studio
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: 19-captionflow-desktop-studio/desktop_requirements.txt
+
+      - name: Create virtual environment and install dependencies
+        run: |
+          python3 -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install -r desktop_requirements.txt mypy
+
+      - name: (a) Python Unit Tests
+        run: |
+          .venv/bin/python -m unittest discover -s tests
+
+      - name: Mypy Strict Type Check (non-blocking)
+        # Nima uchun: mypy --strict tekshiruvi kod sifatini doimiy kuzatib boradi,
+        # ammo mavjud refaktoring bosqichida CI oqimini bloklamasligi (continue-on-error) kerak.
+        continue-on-error: true
+        run: |
+          .venv/bin/mypy
+
+  flutter:
+    name: Flutter Analyze & Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 19-captionflow-desktop-studio
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies (libmpv)
+        # Nima uchun: subtitr_app dagi media_kit paketi tizimdagi libmpv ga tayanadi.
+        # Agar libmpv o'rnatilmasa, flutter test/build vaqtida CMake xatosi bilan tushadi.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libmpv-dev mpv
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: (b) Flutter Analyze
+        run: |
+          cd subtitr_app && flutter pub get && flutter analyze
+
+      - name: (c) Flutter Test
+        run: |
+          cd subtitr_app && flutter test
