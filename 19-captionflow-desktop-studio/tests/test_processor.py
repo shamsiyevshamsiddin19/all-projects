@@ -1132,6 +1132,79 @@ class VocabContextTests(unittest.TestCase):
         self.assertNotIn("vocab_v2_", source)
 
 
+class VocabCardTests(unittest.TestCase):
+    """Ekrandagi lug'at kartochkalari ketma-ket suzib chiqadi.
+
+    Kartochka davomiyligi minimal oraliqni ham belgilaydi (tezlik =
+    masofa/vaqt). 4.0 soniyada sekundda ~3.2 kartochka sig'adi, shundan
+    tez nutqda so'zlar tashlanadi. O'lchangan: haqiqiy 6 videoda (1980
+    so'z) birorta ham tashlanmagan, lekin 4 so'z/sek dan boshlab
+    mexanizm ishlaydi (80 so'zdan 8 ta, 5 so'z/sek da 20 ta)."""
+
+    def _cards(self, path: Path) -> int:
+        return sum(1 for ln in path.read_text(encoding="utf-8").splitlines()
+                   if ",Vocab," in ln)
+
+    def _write(self, tmp: Path, rate: float, count: int, duration: str | None):
+        import os
+
+        words = [dp.Word(i / rate, i / rate + 0.15, f"word{i}") for i in range(count)]
+        vocab_map = {f"word{i}": f"soz{i}" for i in range(count)}
+        old = os.environ.get("SUBTITR_VOCAB_DURATION")
+        if duration is None:
+            os.environ.pop("SUBTITR_VOCAB_DURATION", None)
+        else:
+            os.environ["SUBTITR_VOCAB_DURATION"] = duration
+        out = tmp / f"a_{rate}_{duration}.ass"
+        try:
+            m_sub.write_ass(
+                out, [seg(0.0, count / rate + 5, "matn")], None,
+                words, vocab_map, 1920, 1080,
+            )
+        finally:
+            os.environ.pop("SUBTITR_VOCAB_DURATION", None) if old is None \
+                else os.environ.__setitem__("SUBTITR_VOCAB_DURATION", old)
+        return self._cards(out)
+
+    def test_normal_speech_loses_nothing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(self._write(Path(tmp), 2.0, 40, None), 40)
+
+    def test_dense_speech_drops_cards_with_the_default_duration(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            shown = self._write(Path(tmp), 5.0, 60, "4.0")
+        self.assertLess(shown, 60, "zich nutqda ham hammasi sig'di?")
+
+    def test_shorter_duration_fits_more_cards(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            at_four = self._write(Path(tmp), 5.0, 60, "4.0")
+            at_three = self._write(Path(tmp), 5.0, 60, "3.0")
+        self.assertGreater(at_three, at_four)
+        self.assertEqual(at_three, 60)
+
+    def test_dropped_cards_are_reported(self):
+        """Ilgari so'zlar jimgina tashlanardi — foydalanuvchi sababini bilmasdi."""
+        import contextlib
+        import io
+
+        buffer = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp:
+            with contextlib.redirect_stdout(buffer):
+                self._write(Path(tmp), 5.0, 60, "4.0")
+        self.assertIn("kartochkasi sig'madi", buffer.getvalue())
+        self.assertIn("SUBTITR_VOCAB_DURATION", buffer.getvalue())
+
+    def test_nothing_is_reported_when_all_cards_fit(self):
+        import contextlib
+        import io
+
+        buffer = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp:
+            with contextlib.redirect_stdout(buffer):
+                self._write(Path(tmp), 2.0, 40, None)
+        self.assertNotIn("sig'madi", buffer.getvalue())
+
+
 class ReadingSpeedTests(unittest.TestCase):
     """Subtitr vaqtlari: ustma-ustlik bo'lmasin, tanaffus bo'lsin, lekin
     matnni o'qib bo'lish imkoniyati yo'qolmasin.

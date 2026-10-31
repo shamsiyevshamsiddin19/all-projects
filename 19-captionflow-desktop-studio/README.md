@@ -71,6 +71,11 @@ sahifasida bo'ladi.
     bo'lsa, "o'ng"; `light` → "yorug'lik" bo'lsa, "yengil".
     Kesh `vocab_v3_*` — versiya oshirilmasa eski (kontekstsiz) lug'at
     qaytarilaverardi
+  - `subtitles.write_ass()` lug'at kartochkalari — davomiylik
+    (`SUBTITR_VOCAB_DURATION`, 4.0) minimal oraliqni ham belgilaydi:
+    4.0 da sekundda ~3.2 kartochka sig'adi, 3.0 da ~4.2. Tez nutqda
+    (4+ so'z/sek) sig'magan so'zlar bor bo'lsa, ularning soni aytiladi —
+    ilgari jimgina tashlanardi
   - `clean.enforce_reading_speed()` — subtitr vaqtlari. Ustma-ust
     bo'laklar tuzatiladi (foydalanuvchi qo'ygan `.srt` ko'pincha ustma-ust
     bo'ladi va u yuqoridagi bosqichlardan o'tmaydi), ketma-ket bo'laklar
@@ -217,7 +222,7 @@ qaytadan pul turadi, shuning uchun uni faqat atayin so'raganda o'chiradi.
 Testlar (yangi bog'liqliksiz, standart `unittest`):
 
 ```bash
-.venv/bin/python -m unittest discover -s tests   # 131 ta
+.venv/bin/python -m unittest discover -s tests   # 136 ta
 cd subtitr_app && flutter test                   # 16 ta
 ```
 

@@ -252,7 +252,12 @@ def write_ass(
             # Ekranning 75% qismini bosib o'tadi
             distance = round(height * 0.75)
             target_y = base_y - distance
-            duration_sec = 4.0
+            # Kartochka ekranda qancha turadi. Bu SON MINIMAL ORALIQNI ham
+            # belgilaydi: tezlik = masofa/vaqt, oraliq = qator balandligi/tezlik.
+            # 4.0 da oraliq ~0.32s, ya'ni sekundda ~3.2 kartochka. Tez
+            # nutqda (4+ so'z/sek) surilish to'planib, so'zlar tashlanadi —
+            # o'shanda bu sonni kamaytirish kerak (3.0 da ~4.2 kartochka).
+            duration_sec = _env_float("SUBTITR_VOCAB_DURATION", 4.0)
             
             # Tezlik = Masofa / Vaqt (piksellar / sekund)
             speed = distance / duration_sec
@@ -269,6 +274,10 @@ def write_ass(
             sep = "  ·  "
 
             last_start_time = -999.0
+            # Nechta so'z surilish tufayli tashlab ketilgani. Ilgari bu
+            # jimgina bo'lardi: foydalanuvchi ekranda so'z chiqmaganini
+            # ko'rar, lekin sababini bilmasdi.
+            drifted = 0
             
             for item in vocab_words:
                 key = normalize_word(item.word)
@@ -285,6 +294,7 @@ def write_ass(
                 # ancha keyin chiqadi. Bunday so'zni ko'rsatmaymiz — noto'g'ri
                 # joyda chiqqan so'z tomoshabinni chalg'itadi.
                 if actual_start - item.start > max_drift:
+                    drifted += 1
                     continue
                 actual_end = actual_start + duration_sec
                 last_start_time = actual_start
@@ -310,6 +320,15 @@ def write_ass(
                     f"{inline_color(trans_color)}{translation}"
                 )
                 f.write(f"Dialogue: 1,{start},{end},Vocab,,0,0,0,,{body}\n")
+
+            if drifted:
+                emit(
+                    "progress",
+                    message=f"Diqqat: {drifted} so'z kartochkasi sig'madi "
+                            f"(nutq zich). SUBTITR_VOCAB_DURATION ni kamaytirsa "
+                            "ko'proq so'z sig'adi.",
+                    progress=0.66,
+                )
 
 
 _HW_ENCODER_CACHE: str | None = None
