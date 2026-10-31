@@ -40,11 +40,11 @@ class AppSettings {
 
   /// Provider labels that are currently configured (non-empty key).
   List<String> get configuredProviders => [
-        if (groqApiKey.trim().isNotEmpty) 'Groq',
-        if (openaiApiKey.trim().isNotEmpty) 'OpenAI',
-        if (geminiApiKey.trim().isNotEmpty) 'Gemini',
-        if (anthropicApiKey.trim().isNotEmpty) 'Claude',
-      ];
+    if (groqApiKey.trim().isNotEmpty) 'Groq',
+    if (openaiApiKey.trim().isNotEmpty) 'OpenAI',
+    if (geminiApiKey.trim().isNotEmpty) 'Gemini',
+    if (anthropicApiKey.trim().isNotEmpty) 'Claude',
+  ];
 
   /// Maps the saved settings to the environment variables the Python
   /// processor reads.
@@ -114,7 +114,7 @@ class AppearanceSettings {
   final String position; // 'bottom' | 'top'
   final String subColor; // tarjima qatori rangi (hex)
   final String origStyle; // asl matn uslubi: 'box' (sariq quti) yoki 'plain'
-  final String quality;   // video sifati: '720' | '1080' | '1440' | '2160'
+  final String quality; // video sifati: '720' | '1080' | '1440' | '2160'
   // Manba past sifatli bo'lsa ham tanlangan o'lchamga kattalashtirish.
   // Tasvirga tafsilot qo'shmaydi, lekin subtitr matni yangi o'lchamda
   // vektor sifatida chizilib, ancha tiniq chiqadi.
@@ -137,6 +137,56 @@ class AppearanceSettings {
       upscale: upscale ?? this.upscale,
     );
   }
+}
+
+/// A reusable job configuration. API keys are deliberately excluded: presets
+/// describe output choices only and can safely be stored in preferences.
+class JobPreset {
+  const JobPreset({
+    required this.name,
+    required this.mode,
+    required this.source,
+    required this.target,
+    required this.appearance,
+    required this.subtitleOffset,
+  });
+
+  final String name;
+  final String mode;
+  final String source;
+  final String target;
+  final AppearanceSettings appearance;
+  final double subtitleOffset;
+
+  Map<String, Object> toJson() => {
+    'name': name,
+    'mode': mode,
+    'source': source,
+    'target': target,
+    'fontScale': appearance.fontScale,
+    'position': appearance.position,
+    'subColor': appearance.subColor,
+    'origStyle': appearance.origStyle,
+    'quality': appearance.quality,
+    'upscale': appearance.upscale,
+    'subtitleOffset': subtitleOffset,
+  };
+
+  factory JobPreset.fromJson(Map<String, dynamic> json) => JobPreset(
+    name: json['name'] as String? ?? '',
+    mode: json['mode'] as String? ?? 'dual_vocab',
+    source: json['source'] as String? ?? 'auto',
+    target: json['target'] as String? ?? 'uz',
+    appearance: AppearanceSettings(
+      fontScale: (json['fontScale'] as num?)?.toDouble() ?? 1,
+      position: json['position'] as String? ?? 'bottom',
+      subColor: json['subColor'] as String? ?? '#39FF14',
+      origStyle: json['origStyle'] as String? ?? 'box',
+      quality: json['quality'] as String? ?? '1080',
+      upscale: json['upscale'] as bool? ?? false,
+    ),
+    subtitleOffset: (json['subtitleOffset'] as num?)?.toDouble() ?? 0,
+  );
 }
 
 class SettingsStore {
@@ -213,7 +263,11 @@ class SettingsStore {
     };
   }
 
-  Future<void> saveJobPrefs({required String mode, required String source, required String target}) async {
+  Future<void> saveJobPrefs({
+    required String mode,
+    required String source,
+    required String target,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('job_mode', mode);
     await prefs.setString('job_source', source);
@@ -223,7 +277,9 @@ class SettingsStore {
   /// Returns true at most once per [minInterval] (default: 1 day). Used to
   /// throttle the yt-dlp self-update so it runs on the first launch of the day
   /// but not on every app start.
-  Future<bool> shouldUpdateYtDlp({Duration minInterval = const Duration(days: 1)}) async {
+  Future<bool> shouldUpdateYtDlp({
+    Duration minInterval = const Duration(days: 1),
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     final last = prefs.getInt('ytdlp_last_update_ms') ?? 0;
     final now = DateTime.now().millisecondsSinceEpoch;
@@ -255,6 +311,44 @@ class SettingsStore {
   }
 
   static const _kLastResult = 'last_processor_result';
+  static const _kJobPresets = 'job_presets_v1';
+
+  Future<List<JobPreset>> loadPresets() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_kJobPresets);
+    if (raw == null || raw.isEmpty) return const [];
+    try {
+      final decoded = jsonDecode(raw) as List<dynamic>;
+      return decoded
+          .whereType<Map>()
+          .map((v) => JobPreset.fromJson(Map<String, dynamic>.from(v)))
+          .where((v) => v.name.trim().isNotEmpty)
+          .toList(growable: false);
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<void> savePreset(JobPreset preset) async {
+    final prefs = await SharedPreferences.getInstance();
+    final presets = (await loadPresets())
+        .where((item) => item.name.toLowerCase() != preset.name.toLowerCase())
+        .toList();
+    presets.add(preset);
+    await prefs.setString(
+      _kJobPresets,
+      jsonEncode(presets.map((v) => v.toJson()).toList()),
+    );
+  }
+
+  Future<void> deletePreset(String name) async {
+    final prefs = await SharedPreferences.getInstance();
+    final presets = (await loadPresets())
+        .where((item) => item.name != name)
+        .map((v) => v.toJson())
+        .toList();
+    await prefs.setString(_kJobPresets, jsonEncode(presets));
+  }
 
   /// Remembers the most recently finished job's result so it is still shown
   /// when the app is reopened (instead of starting from an empty screen).

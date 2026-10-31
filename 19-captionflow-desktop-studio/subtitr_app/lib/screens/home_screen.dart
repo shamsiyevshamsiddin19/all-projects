@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:ui' show AppExitResponse;
 
 import 'package:file_picker/file_picker.dart';
+import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 // ignore: depend_on_referenced_packages
@@ -34,44 +35,59 @@ class _PlaylistPickerDialog extends StatefulWidget {
 }
 
 class _PlaylistPickerDialogState extends State<_PlaylistPickerDialog> {
-  late final Set<String> _selected = widget.entries.map((e) => e.url).take(25).toSet();
+  late final Set<String> _selected = widget.entries
+      .map((e) => e.url)
+      .take(25)
+      .toSet();
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-        title: const Text('Playlistdan videolarni tanlang'),
-        content: SizedBox(
-          width: 560,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: widget.entries.length,
-            itemBuilder: (_, index) {
-              final entry = widget.entries[index];
-              return CheckboxListTile(
-                value: _selected.contains(entry.url),
-                title: Text(entry.title, maxLines: 2, overflow: TextOverflow.ellipsis),
-                subtitle: entry.duration.isEmpty ? null : Text('${entry.duration} soniya'),
-                onChanged: (checked) => setState(() {
-                  if (checked == true && _selected.length < 25) {
-                    _selected.add(entry.url);
-                  }
-                  if (checked != true) {
-                    _selected.remove(entry.url);
-                  }
-                }),
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Bekor qilish')),
-          FilledButton(
-            onPressed: _selected.isEmpty
+    title: const Text('Playlistdan videolarni tanlang'),
+    content: SizedBox(
+      width: 560,
+      child: ListView.builder(
+        shrinkWrap: true,
+        itemCount: widget.entries.length,
+        itemBuilder: (_, index) {
+          final entry = widget.entries[index];
+          return CheckboxListTile(
+            value: _selected.contains(entry.url),
+            title: Text(
+              entry.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: entry.duration.isEmpty
                 ? null
-                : () => Navigator.pop(context, widget.entries.where((e) => _selected.contains(e.url)).toList()),
-            child: Text('${_selected.length} ta navbatga qo\'shish'),
-          ),
-        ],
-      );
+                : Text('${entry.duration} soniya'),
+            onChanged: (checked) => setState(() {
+              if (checked == true && _selected.length < 25) {
+                _selected.add(entry.url);
+              }
+              if (checked != true) {
+                _selected.remove(entry.url);
+              }
+            }),
+          );
+        },
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Bekor qilish'),
+      ),
+      FilledButton(
+        onPressed: _selected.isEmpty
+            ? null
+            : () => Navigator.pop(
+                context,
+                widget.entries.where((e) => _selected.contains(e.url)).toList(),
+              ),
+        child: Text('${_selected.length} ta navbatga qo\'shish'),
+      ),
+    ],
+  );
 }
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
@@ -81,6 +97,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   AppSettings _settings = const AppSettings();
   AppearanceSettings _appearance = const AppearanceSettings();
   String _batchInfo = ''; // "Video 2/5" — navbat holati
+  List<JobPreset> _presets = const [];
+  List<_BatchResult> _batchResults = const [];
 
   List<DesktopVideo> _videos = const [];
   DesktopVideo? _selectedVideo;
@@ -198,6 +216,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final appearance = await _settingsStore.loadAppearance();
     final job = await _settingsStore.loadJobPrefs();
     final lastResult = await _settingsStore.loadLastResult();
+    final presets = await _settingsStore.loadPresets();
     _service.processEnvironment = settings.toEnvironment();
     if (mounted) {
       setState(() {
@@ -206,6 +225,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _mode = job['mode'] ?? _mode;
         _sourceLang = job['source'] ?? _sourceLang;
         _targetLang = job['target'] ?? _targetLang;
+        _presets = presets;
         // Ilova qayta ochilganda oldingi videoning natijasi bo'sh ekrandan
         // ko'ra ko'proq foydali — foydalanuvchi so'nggi yakunlangan ishni
         // darhol ko'radi, qayta ishga tushirishga hojat qolmaydi.
@@ -215,6 +235,120 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         }
       });
     }
+  }
+
+  Future<void> _handleDrop(List<DropItem> files) async {
+    if (_running || files.isEmpty) return;
+    const videoExtensions = {'mp4', 'mkv', 'avi', 'mov', 'webm', 'm4v'};
+    const subtitleExtensions = {'srt', 'vtt', 'ass', 'ssa'};
+    final paths = files.map((file) => file.path).whereType<String>().toList();
+    final video = paths
+        .where(
+          (path) =>
+              videoExtensions.contains(path.split('.').last.toLowerCase()),
+        )
+        .firstOrNull;
+    final subtitle = paths
+        .where(
+          (path) =>
+              subtitleExtensions.contains(path.split('.').last.toLowerCase()),
+        )
+        .firstOrNull;
+    if (video == null && subtitle == null) {
+      _showError('Faqat video yoki SRT/VTT/ASS subtitr faylini tashlang');
+      return;
+    }
+    setState(() {
+      if (video != null) {
+        _selectedVideo = null;
+        _externalVideoPath = video;
+        _result = null;
+        _status = 'Tashlab qo\'yilgan video tanlandi';
+      }
+      if (subtitle != null) {
+        _externalSubtitlePath = subtitle;
+        _status = video == null
+            ? 'Tashlab qo\'yilgan subtitr tanlandi'
+            : _status;
+      }
+    });
+    if (video != null) await _updateDuration();
+  }
+
+  Future<void> _savePreset() async {
+    final controller = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Presetni saqlash'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Nomi, masalan: YouTube 1080p',
+          ),
+          onSubmitted: (value) => Navigator.pop(context, value.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Bekor qilish'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Saqlash'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (name == null || name.isEmpty) return;
+    final preset = JobPreset(
+      name: name,
+      mode: _mode,
+      source: _sourceLang,
+      target: _targetLang,
+      appearance: _appearance,
+      subtitleOffset: _subtitleOffset,
+    );
+    await _settingsStore.savePreset(preset);
+    if (!mounted) return;
+    setState(
+      () => _presets = [
+        ..._presets.where(
+          (item) => item.name.toLowerCase() != name.toLowerCase(),
+        ),
+        preset,
+      ],
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Preset saqlandi'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Future<void> _deletePreset(JobPreset preset) async {
+    await _settingsStore.deletePreset(preset.name);
+    if (!mounted) return;
+    setState(
+      () => _presets = _presets
+          .where((item) => item.name != preset.name)
+          .toList(),
+    );
+  }
+
+  void _applyPreset(JobPreset preset) {
+    setState(() {
+      _mode = preset.mode;
+      _sourceLang = preset.source;
+      _targetLang = preset.target;
+      _appearance = preset.appearance;
+      _subtitleOffset = preset.subtitleOffset;
+    });
+    _saveJobPrefs();
+    _settingsStore.saveAppearance(preset.appearance);
   }
 
   void _saveJobPrefs() {
@@ -581,7 +715,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         return;
       }
     }
+    if (!mounted) return;
+    final queue = await showDialog<List<DesktopVideo>>(
+      context: context,
+      builder: (_) => _BatchQueueDialog(videos: videos),
+    );
+    if (queue == null || queue.isEmpty || !mounted) return;
+    await _runVideoBatch(queue);
+  }
+
+  /// Runs exactly the selection/order approved in [_BatchQueueDialog]. A
+  /// cancelled job stops before the next queue item and preserves completed
+  /// and failed item details for the user to inspect.
+  Future<void> _runVideoBatch(List<DesktopVideo> videos) async {
     _batchCancelled = false;
+    _batchResults = const [];
     setState(() {
       _running = true;
       _result = null;
@@ -589,8 +737,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
     });
-    int done = 0;
-    int failed = 0;
+    final results = <_BatchResult>[];
     try {
       for (var i = 0; i < videos.length; i++) {
         if (_batchCancelled) break;
@@ -615,18 +762,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             quality: _appearance.quality,
             upscale: _appearance.upscale,
           );
-          done++;
+          results.add(_BatchResult(video: v, success: true));
           if (mounted) setState(() => _result = result);
           _settingsStore.saveLastResult(result);
         } on ProcessorCancelled {
           break;
-        } catch (_) {
-          failed++;
+        } catch (error) {
+          results.add(
+            _BatchResult(video: v, success: false, detail: error.toString()),
+          );
         }
       }
       if (mounted) {
         setState(() {
           _progress = _batchCancelled ? 0 : 1;
+          _batchResults = List.unmodifiable(results);
+          final done = results.where((item) => item.success).length;
+          final failed = results.where((item) => !item.success).length;
           _status = _batchCancelled
               ? 'Bekor qilindi ($done tayyor)'
               : 'Navbat yakunlandi: $done tayyor${failed > 0 ? ", $failed xato" : ""}';
@@ -677,11 +829,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         }
         try {
           final result = await _service.process(
-            videoPath: entry.url, mode: _mode, sourceLang: _sourceLang,
-            targetLang: _targetLang, onProgress: _applyProgress,
-            fontScale: _appearance.fontScale, position: _appearance.position,
-            subColor: _appearance.subColor, origStyle: _appearance.origStyle,
-            quality: _appearance.quality, upscale: _appearance.upscale,
+            videoPath: entry.url,
+            mode: _mode,
+            sourceLang: _sourceLang,
+            targetLang: _targetLang,
+            onProgress: _applyProgress,
+            fontScale: _appearance.fontScale,
+            position: _appearance.position,
+            subColor: _appearance.subColor,
+            origStyle: _appearance.origStyle,
+            quality: _appearance.quality,
+            upscale: _appearance.upscale,
           );
           done++;
           if (mounted) {
@@ -696,7 +854,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       }
       if (mounted) {
         setState(() {
-          _status = _batchCancelled ? 'Bekor qilindi ($done tayyor)' : 'Navbat yakunlandi: $done tayyor${failed > 0 ? ', $failed xato' : ''}';
+          _status = _batchCancelled
+              ? 'Bekor qilindi ($done tayyor)'
+              : 'Navbat yakunlandi: $done tayyor${failed > 0 ? ', $failed xato' : ''}';
           _progress = _batchCancelled ? 0 : 1;
         });
       }
@@ -893,245 +1053,416 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return CallbackShortcuts(
-      bindings: <ShortcutActivator, VoidCallback>{
-        const SingleActivator(LogicalKeyboardKey.keyO, control: true): () {
-          if (!_running) _pickExternalVideo();
-        },
-        const SingleActivator(LogicalKeyboardKey.keyO, meta: true): () {
-          if (!_running) _pickExternalVideo();
-        },
-        const SingleActivator(LogicalKeyboardKey.enter, control: true): () {
-          if (!_running) _startProcessing();
-        },
-        const SingleActivator(LogicalKeyboardKey.enter, meta: true): () {
-          if (!_running) _startProcessing();
-        },
-        const SingleActivator(LogicalKeyboardKey.escape): () {
-          if (_running) _cancelProcessing();
-        },
-      },
-      child: Focus(
-        autofocus: true,
-        child: Scaffold(
-      appBar: AppBar(
-        titleSpacing: 24,
-        toolbarHeight: 70,
-        title: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Image.asset(
-                'assets/app_logo.png',
-                width: 36,
-                height: 36,
-                fit: BoxFit.cover,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Text(
-              'Subtitr Desktop',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.5,
-              ),
-            ),
-            if (_appVersion != null) ...[
-              const SizedBox(width: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  'v$_appVersion',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-        actions: [
-          IconButton(
-            tooltip: _settings.hasAnyKey
-                ? 'API kalitlar (${_settings.configuredProviders.join(", ")})'
-                : 'API kalitlarni kiriting',
-            onPressed: _running ? null : _openSettings,
-            icon: Badge(
-              isLabelVisible: !_settings.hasAnyKey,
-              backgroundColor: Colors.amber,
-              child: const Icon(Icons.key_rounded),
-            ),
-            style: IconButton.styleFrom(
-              backgroundColor: theme.colorScheme.surfaceContainerHighest,
-            ),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            tooltip: 'Paketlarni o\'rnatish',
-            onPressed: _running ? null : _installDependencies,
-            icon: const Icon(Icons.download_for_offline_rounded),
-            style: IconButton.styleFrom(
-              backgroundColor: theme.colorScheme.surfaceContainerHighest,
-            ),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            tooltip: 'Kinolar papkasini ochish',
-            onPressed: _kinoDir.isEmpty ? null : () => _openPath(_kinoDir),
-            icon: const Icon(Icons.folder_open_rounded),
-            style: IconButton.styleFrom(
-              backgroundColor: theme.colorScheme.surfaceContainerHighest,
-            ),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            tooltip: 'Tayyor natijalar papkasini ochish',
-            onPressed: _outDir.isEmpty ? null : () => _openPath(_outDir),
-            icon: const Icon(Icons.output_rounded),
-            style: IconButton.styleFrom(
-              backgroundColor: theme.colorScheme.surfaceContainerHighest,
-            ),
-          ),
-          const SizedBox(width: 24),
-        ],
-      ),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final wide = constraints.maxWidth >= 1040;
-
-            final videoPanel = VideoSelectionPanel(
-              kinoDir: _kinoDir,
-              currentDir: _currentDir,
-              videos: _videos,
-              selectedVideo: _selectedVideo,
-              externalVideoPath: _externalVideoPath,
-              externalSubtitlePath: _externalSubtitlePath,
-              subtitleOffset: _subtitleOffset,
-              isRunning: _running,
-              isLoading: _loading,
-              onScan: () => _scanVideos(path: _currentDir),
-              onPickExternal: _pickExternalVideo,
-              onPickSubtitle: _pickExternalSubtitle,
-              onClearSubtitle: () => setState(() => _externalSubtitlePath = null),
-              onOffsetChanged: (value) => setState(() => _subtitleOffset = value),
-              onSelectVideo: (v) {
-                if (v.isDir) {
-                  _scanVideos(path: v.path);
-                } else {
-                  setState(() {
-                    _selectedVideo = v;
-                    _externalVideoPath = null;
-                    _result = null;
-                  });
-                  _updateDuration();
-                }
-              },
-              onNavigateBack: () {
-                if (_currentDir != null && _kinoDir != _currentDir) {
-                  final parent = File(_currentDir!).parent.path;
-                  _scanVideos(path: parent);
-                }
-              },
-              onClearExternal: () {
-                setState(() {
-                  _externalVideoPath = null;
-                  _selectedVideo = _videos.where((v) => !v.isDir).firstOrNull;
-                });
-                _updateDuration();
-              },
-              onUrlSubmit: _startFromUrl,
-              onDownloadOnly: _downloadOnly,
-              onPlaylistSubmit: _loadPlaylistQueue,
-            );
-
-            final leftColumn = Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                videoPanel,
-                const SizedBox(height: 24),
-                Expanded(
-                  child: SettingsPanel(
-                    modes: _modes,
-                    mode: _mode,
-                    sourceLang: _sourceLang,
-                    targetLang: _targetLang,
-                    appearance: _appearance,
-                    isRunning: _running,
-                    onModeChanged: (v) {
-                      setState(() => _mode = v);
-                      _saveJobPrefs();
-                    },
-                    onSourceLangChanged: (v) {
-                      setState(() => _sourceLang = v);
-                      _saveJobPrefs();
-                    },
-                    onTargetLangChanged: (v) {
-                      setState(() => _targetLang = v);
-                      _saveJobPrefs();
-                    },
-                    onAppearanceChanged: _updateAppearance,
-                  ),
-                ),
-              ],
-            );
-
-            final rightColumn = ProcessingPanel(
-              selectedName: _selectedName,
-              selectedPath: _selectedPath,
-              outDir: _result?.outDir.isNotEmpty == true
-                  ? _result!.outDir
-                  : _outDir,
-              isRunning: _running,
-              progress: _progress,
-              status: _status,
-              result: _result,
-              estimatedSeconds: _estimatedSeconds,
-              estimateText: _estimateText,
-              startTime: _startTime,
-              lastProgressUpdate: _lastProgressUpdate,
-              onStart: _startProcessing,
-              onReview: _reviewAndRender,
-              onCancel: _cancelProcessing,
-              onStartBatch: _startBatch,
-              videoCount: _videos.where((v) => !v.isDir).length,
-              onOpenPath: _openPath,
-            );
-
-            if (wide) {
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SizedBox(width: 440, child: leftColumn),
-                    const SizedBox(width: 24),
-                    Container(width: 1, color: const Color(0xFF333333)),
-                    const SizedBox(width: 24),
-                    Expanded(child: rightColumn),
-                  ],
-                ),
-              );
-            }
-
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              children: [
-                SizedBox(height: 580, child: leftColumn),
-                const SizedBox(height: 16),
-                rightColumn,
-              ],
-            );
+    return DropTarget(
+      onDragDone: (detail) => _handleDrop(detail.files),
+      child: CallbackShortcuts(
+        bindings: <ShortcutActivator, VoidCallback>{
+          const SingleActivator(LogicalKeyboardKey.keyO, control: true): () {
+            if (!_running) _pickExternalVideo();
           },
+          const SingleActivator(LogicalKeyboardKey.keyO, meta: true): () {
+            if (!_running) _pickExternalVideo();
+          },
+          const SingleActivator(LogicalKeyboardKey.enter, control: true): () {
+            if (!_running) _startProcessing();
+          },
+          const SingleActivator(LogicalKeyboardKey.enter, meta: true): () {
+            if (!_running) _startProcessing();
+          },
+          const SingleActivator(LogicalKeyboardKey.escape): () {
+            if (_running) _cancelProcessing();
+          },
+        },
+        child: Focus(
+          autofocus: true,
+          child: Scaffold(
+            appBar: AppBar(
+              titleSpacing: 24,
+              toolbarHeight: 70,
+              title: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.asset(
+                      'assets/app_logo.png',
+                      width: 36,
+                      height: 36,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Text(
+                    'Subtitr Desktop',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  if (_appVersion != null) ...[
+                    const SizedBox(width: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'v$_appVersion',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                IconButton(
+                  tooltip: _settings.hasAnyKey
+                      ? 'API kalitlar (${_settings.configuredProviders.join(", ")})'
+                      : 'API kalitlarni kiriting',
+                  onPressed: _running ? null : _openSettings,
+                  icon: Badge(
+                    isLabelVisible: !_settings.hasAnyKey,
+                    backgroundColor: Colors.amber,
+                    child: const Icon(Icons.key_rounded),
+                  ),
+                  style: IconButton.styleFrom(
+                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  tooltip: 'Paketlarni o\'rnatish',
+                  onPressed: _running ? null : _installDependencies,
+                  icon: const Icon(Icons.download_for_offline_rounded),
+                  style: IconButton.styleFrom(
+                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  tooltip: 'Kinolar papkasini ochish',
+                  onPressed: _kinoDir.isEmpty
+                      ? null
+                      : () => _openPath(_kinoDir),
+                  icon: const Icon(Icons.folder_open_rounded),
+                  style: IconButton.styleFrom(
+                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  tooltip: 'Tayyor natijalar papkasini ochish',
+                  onPressed: _outDir.isEmpty ? null : () => _openPath(_outDir),
+                  icon: const Icon(Icons.output_rounded),
+                  style: IconButton.styleFrom(
+                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                  ),
+                ),
+                const SizedBox(width: 24),
+              ],
+            ),
+            body: SafeArea(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final wide = constraints.maxWidth >= 1040;
+
+                  final videoPanel = VideoSelectionPanel(
+                    kinoDir: _kinoDir,
+                    currentDir: _currentDir,
+                    videos: _videos,
+                    selectedVideo: _selectedVideo,
+                    externalVideoPath: _externalVideoPath,
+                    externalSubtitlePath: _externalSubtitlePath,
+                    subtitleOffset: _subtitleOffset,
+                    isRunning: _running,
+                    isLoading: _loading,
+                    onScan: () => _scanVideos(path: _currentDir),
+                    onPickExternal: _pickExternalVideo,
+                    onPickSubtitle: _pickExternalSubtitle,
+                    onClearSubtitle: () =>
+                        setState(() => _externalSubtitlePath = null),
+                    onOffsetChanged: (value) =>
+                        setState(() => _subtitleOffset = value),
+                    onSelectVideo: (v) {
+                      if (v.isDir) {
+                        _scanVideos(path: v.path);
+                      } else {
+                        setState(() {
+                          _selectedVideo = v;
+                          _externalVideoPath = null;
+                          _result = null;
+                        });
+                        _updateDuration();
+                      }
+                    },
+                    onNavigateBack: () {
+                      if (_currentDir != null && _kinoDir != _currentDir) {
+                        final parent = File(_currentDir!).parent.path;
+                        _scanVideos(path: parent);
+                      }
+                    },
+                    onClearExternal: () {
+                      setState(() {
+                        _externalVideoPath = null;
+                        _selectedVideo = _videos
+                            .where((v) => !v.isDir)
+                            .firstOrNull;
+                      });
+                      _updateDuration();
+                    },
+                    onUrlSubmit: _startFromUrl,
+                    onDownloadOnly: _downloadOnly,
+                    onPlaylistSubmit: _loadPlaylistQueue,
+                  );
+
+                  final leftColumn = Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      videoPanel,
+                      const SizedBox(height: 24),
+                      Expanded(
+                        child: SettingsPanel(
+                          modes: _modes,
+                          mode: _mode,
+                          sourceLang: _sourceLang,
+                          targetLang: _targetLang,
+                          appearance: _appearance,
+                          isRunning: _running,
+                          onModeChanged: (v) {
+                            setState(() => _mode = v);
+                            _saveJobPrefs();
+                          },
+                          onSourceLangChanged: (v) {
+                            setState(() => _sourceLang = v);
+                            _saveJobPrefs();
+                          },
+                          onTargetLangChanged: (v) {
+                            setState(() => _targetLang = v);
+                            _saveJobPrefs();
+                          },
+                          onAppearanceChanged: _updateAppearance,
+                          presets: _presets,
+                          onSavePreset: _savePreset,
+                          onApplyPreset: _applyPreset,
+                          onDeletePreset: _deletePreset,
+                        ),
+                      ),
+                    ],
+                  );
+
+                  final processor = ProcessingPanel(
+                    selectedName: _selectedName,
+                    selectedPath: _selectedPath,
+                    outDir: _result?.outDir.isNotEmpty == true
+                        ? _result!.outDir
+                        : _outDir,
+                    isRunning: _running,
+                    progress: _progress,
+                    status: _status,
+                    result: _result,
+                    estimatedSeconds: _estimatedSeconds,
+                    estimateText: _estimateText,
+                    startTime: _startTime,
+                    lastProgressUpdate: _lastProgressUpdate,
+                    onStart: _startProcessing,
+                    onReview: _reviewAndRender,
+                    onCancel: _cancelProcessing,
+                    onStartBatch: _startBatch,
+                    videoCount: _videos.where((v) => !v.isDir).length,
+                    onOpenPath: _openPath,
+                  );
+                  final batchCard = _batchResults.isEmpty
+                      ? null
+                      : _BatchResultsCard(
+                          results: _batchResults,
+                          onDetail: _showErrorDetail,
+                        );
+                  final wideRightColumn = Column(
+                    children: [
+                      Expanded(child: processor),
+                      if (batchCard case final Widget card) card,
+                    ],
+                  );
+
+                  if (wide) {
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          SizedBox(width: 440, child: leftColumn),
+                          const SizedBox(width: 24),
+                          Container(width: 1, color: const Color(0xFF333333)),
+                          const SizedBox(width: 24),
+                          Expanded(child: wideRightColumn),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                    children: [
+                      SizedBox(height: 580, child: leftColumn),
+                      const SizedBox(height: 16),
+                      processor,
+                      if (batchCard case final Widget card) card,
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
         ),
       ),
-    ),
-    ),
     );
   }
+}
+
+class _BatchResult {
+  const _BatchResult({
+    required this.video,
+    required this.success,
+    this.detail = '',
+  });
+  final DesktopVideo video;
+  final bool success;
+  final String detail;
+}
+
+class _BatchQueueDialog extends StatefulWidget {
+  const _BatchQueueDialog({required this.videos});
+  final List<DesktopVideo> videos;
+
+  @override
+  State<_BatchQueueDialog> createState() => _BatchQueueDialogState();
+}
+
+class _BatchQueueDialogState extends State<_BatchQueueDialog> {
+  late final List<DesktopVideo> _queue = [...widget.videos];
+  late final Set<String> _selected = _queue.map((item) => item.path).toSet();
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Ishlash navbati'),
+    content: SizedBox(
+      width: 560,
+      height: 420,
+      child: ReorderableListView.builder(
+        buildDefaultDragHandles: false,
+        itemCount: _queue.length,
+        onReorderItem: (oldIndex, newIndex) => setState(() {
+          final item = _queue.removeAt(oldIndex);
+          _queue.insert(newIndex, item);
+        }),
+        itemBuilder: (context, index) {
+          final video = _queue[index];
+          return ListTile(
+            key: ValueKey(video.path),
+            leading: Checkbox(
+              value: _selected.contains(video.path),
+              onChanged: (value) => setState(() {
+                if (value == true) {
+                  _selected.add(video.path);
+                } else {
+                  _selected.remove(video.path);
+                }
+              }),
+            ),
+            title: Text(
+              video.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(
+              video.path,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            trailing: ReorderableDragStartListener(
+              index: index,
+              child: const Icon(Icons.drag_handle_rounded),
+            ),
+            onTap: () => setState(() {
+              if (_selected.contains(video.path)) {
+                _selected.remove(video.path);
+              } else {
+                _selected.add(video.path);
+              }
+            }),
+          );
+        },
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Bekor qilish'),
+      ),
+      FilledButton(
+        onPressed: _selected.isEmpty
+            ? null
+            : () => Navigator.pop(
+                context,
+                _queue.where((item) => _selected.contains(item.path)).toList(),
+              ),
+        child: Text('${_selected.length} ta videoni boshlash'),
+      ),
+    ],
+  );
+}
+
+class _BatchResultsCard extends StatelessWidget {
+  const _BatchResultsCard({required this.results, required this.onDetail});
+  final List<_BatchResult> results;
+  final ValueChanged<String> onDetail;
+
+  @override
+  Widget build(BuildContext context) => Card(
+    margin: const EdgeInsets.only(top: 12),
+    child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Navbat natijalari',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 6),
+          ...results.map(
+            (item) => ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                item.success
+                    ? Icons.check_circle_outline_rounded
+                    : Icons.error_outline_rounded,
+                color: item.success
+                    ? Colors.green
+                    : Theme.of(context).colorScheme.error,
+              ),
+              title: Text(
+                item.video.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              trailing: item.success
+                  ? null
+                  : TextButton(
+                      onPressed: () => onDetail(item.detail),
+                      child: const Text('Tafsilot'),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }

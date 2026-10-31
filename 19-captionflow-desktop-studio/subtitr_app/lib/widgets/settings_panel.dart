@@ -29,6 +29,10 @@ class SettingsPanel extends StatelessWidget {
     required this.onSourceLangChanged,
     required this.onTargetLangChanged,
     required this.onAppearanceChanged,
+    this.presets = const [],
+    this.onSavePreset = _ignoreVoid,
+    this.onApplyPreset = _ignorePreset,
+    this.onDeletePreset = _ignorePreset,
   });
 
   final List<ModeChoice> modes;
@@ -41,8 +45,21 @@ class SettingsPanel extends StatelessWidget {
   final ValueChanged<String> onSourceLangChanged;
   final ValueChanged<String> onTargetLangChanged;
   final ValueChanged<AppearanceSettings> onAppearanceChanged;
+  final List<JobPreset> presets;
+  final VoidCallback onSavePreset;
+  final ValueChanged<JobPreset> onApplyPreset;
+  final ValueChanged<JobPreset> onDeletePreset;
 
-  static const _videoModes = {'dual_vocab', 'original_vocab', 'dual', 'original', 'translated'};
+  static void _ignoreVoid() {}
+  static void _ignorePreset(JobPreset _) {}
+
+  static const _videoModes = {
+    'dual_vocab',
+    'original_vocab',
+    'dual',
+    'original',
+    'translated',
+  };
 
   /// Rejimlar ro'yxati, "Video" va "Hujjat" sarlavhalari bilan.
   ///
@@ -54,31 +71,29 @@ class SettingsPanel extends StatelessWidget {
     final docs = modes.where((m) => !_videoModes.contains(m.value));
 
     DropdownMenuItem<String> header(String text) => DropdownMenuItem(
-          value: '__header_$text',
-          enabled: false,
-          child: Text(
-            text.toUpperCase(),
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.8,
-            ),
-          ),
-        );
+      value: '__header_$text',
+      enabled: false,
+      child: Text(
+        text.toUpperCase(),
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+        ),
+      ),
+    );
 
     DropdownMenuItem<String> entry(ModeChoice m) => DropdownMenuItem(
-          value: m.value,
-          child: Row(
-            children: [
-              Icon(m.icon, size: 20, color: theme.colorScheme.primary),
-              const SizedBox(width: 12),
-              // Uzun nom tor oynada chetidan toshib ketmasin.
-              Expanded(
-                child: Text(m.title, overflow: TextOverflow.ellipsis),
-              ),
-            ],
-          ),
-        );
+      value: m.value,
+      child: Row(
+        children: [
+          Icon(m.icon, size: 20, color: theme.colorScheme.primary),
+          const SizedBox(width: 12),
+          // Uzun nom tor oynada chetidan toshib ketmasin.
+          Expanded(child: Text(m.title, overflow: TextOverflow.ellipsis)),
+        ],
+      ),
+    );
 
     return [
       if (video.isNotEmpty) header('Video'),
@@ -95,23 +110,34 @@ class SettingsPanel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _PresetRow(
+          presets: presets,
+          enabled: !isRunning,
+          onSave: onSavePreset,
+          onApply: onApplyPreset,
+          onDelete: onDeletePreset,
+        ),
+        const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           initialValue: mode,
           decoration: InputDecoration(
             labelText: 'Natija turi',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             filled: true,
             fillColor: theme.colorScheme.surface,
           ),
           // Ro'yxat uzun (9 ta) — "Video" va "Hujjat" deb ikkiga bo'linadi.
           isExpanded: true,
           items: _modeItems(theme),
-          onChanged: isRunning ? null : (v) {
-            if (v != null) onModeChanged(v);
-          },
+          onChanged: isRunning
+              ? null
+              : (v) {
+                  if (v != null) onModeChanged(v);
+                },
         ),
         const SizedBox(height: 16),
         Row(
@@ -125,7 +151,10 @@ class SettingsPanel extends StatelessWidget {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
                   filled: true,
                   fillColor: theme.colorScheme.surface,
                 ),
@@ -139,9 +168,11 @@ class SettingsPanel extends StatelessWidget {
                   DropdownMenuItem(value: 'tg', child: Text('Tojik')),
                   DropdownMenuItem(value: 'ky', child: Text('Qirg\'iz')),
                 ],
-                onChanged: isRunning ? null : (v) {
-                  if (v != null) onSourceLangChanged(v);
-                },
+                onChanged: isRunning
+                    ? null
+                    : (v) {
+                        if (v != null) onSourceLangChanged(v);
+                      },
               ),
             ),
             const SizedBox(width: 16),
@@ -154,7 +185,10 @@ class SettingsPanel extends StatelessWidget {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
                   filled: true,
                   fillColor: theme.colorScheme.surface,
                 ),
@@ -167,9 +201,11 @@ class SettingsPanel extends StatelessWidget {
                   DropdownMenuItem(value: 'tg', child: Text('Tojik')),
                   DropdownMenuItem(value: 'ky', child: Text('Qirg\'iz')),
                 ],
-                onChanged: isRunning ? null : (v) {
-                  if (v != null) onTargetLangChanged(v);
-                },
+                onChanged: isRunning
+                    ? null
+                    : (v) {
+                        if (v != null) onTargetLangChanged(v);
+                      },
               ),
             ),
           ],
@@ -185,20 +221,90 @@ class SettingsPanel extends StatelessWidget {
             showOrigStyle: mode != 'translated',
           ),
         ],
-        Expanded(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: _ModePreview(
-              key: ValueKey('$mode|${appearance.subColor}|${appearance.origStyle}'),
-              mode: mode,
-              subColor: appearance.subColor,
-              origStyle: appearance.origStyle,
+        // Kichik oynada avval boshqaruvlar ko'rinsin; namunani yashirish
+        // vertical overflowning oldini oladi. Keng desktop oynada esa u
+        // qolgan balandlikni egallaydi.
+        if (MediaQuery.sizeOf(context).height >= 700)
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: _ModePreview(
+                key: ValueKey(
+                  '$mode|${appearance.subColor}|${appearance.origStyle}',
+                ),
+                mode: mode,
+                subColor: appearance.subColor,
+                origStyle: appearance.origStyle,
+              ),
             ),
           ),
-        ),
       ],
     );
   }
+}
+
+class _PresetRow extends StatelessWidget {
+  const _PresetRow({
+    required this.presets,
+    required this.enabled,
+    required this.onSave,
+    required this.onApply,
+    required this.onDelete,
+  });
+  final List<JobPreset> presets;
+  final bool enabled;
+  final VoidCallback onSave;
+  final ValueChanged<JobPreset> onApply;
+  final ValueChanged<JobPreset> onDelete;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Expanded(
+        child: DropdownButtonFormField<JobPreset>(
+          isExpanded: true,
+          decoration: const InputDecoration(
+            labelText: 'Saqlangan preset',
+            isDense: true,
+          ),
+          hint: const Text('Tanlash'),
+          items: presets
+              .map(
+                (preset) => DropdownMenuItem(
+                  value: preset,
+                  child: Text(preset.name, overflow: TextOverflow.ellipsis),
+                ),
+              )
+              .toList(),
+          onChanged: enabled
+              ? (preset) {
+                  if (preset != null) onApply(preset);
+                }
+              : null,
+        ),
+      ),
+      const SizedBox(width: 8),
+      IconButton(
+        tooltip: 'Joriy sozlamani preset sifatida saqlash',
+        onPressed: enabled ? onSave : null,
+        icon: const Icon(Icons.bookmark_add_outlined),
+      ),
+      PopupMenuButton<JobPreset>(
+        tooltip: 'Presetni o\'chirish',
+        enabled: enabled && presets.isNotEmpty,
+        icon: const Icon(Icons.more_horiz_rounded),
+        onSelected: onDelete,
+        itemBuilder: (_) => presets
+            .map(
+              (preset) => PopupMenuItem(
+                value: preset,
+                child: Text('${preset.name} — o\'chirish'),
+              ),
+            )
+            .toList(),
+      ),
+    ],
+  );
 }
 
 /// Compact row for subtitle appearance (font size / position / colour).
@@ -239,76 +345,78 @@ class _AppearanceRow extends StatelessWidget {
 
   List<Widget> _rowOne() {
     return [
-        Expanded(
-          child: _MiniDropdown<double>(
-            label: 'Shrift',
-            value: appearance.fontScale,
-            items: {0.85: 'Kichik', 1.0: 'O\'rta', 1.2: 'Katta'},
-            enabled: enabled,
-            onChanged: (v) => onChanged(appearance.copyWith(fontScale: v)),
-          ),
+      Expanded(
+        child: _MiniDropdown<double>(
+          label: 'Shrift',
+          value: appearance.fontScale,
+          items: {0.85: 'Kichik', 1.0: 'O\'rta', 1.2: 'Katta'},
+          enabled: enabled,
+          onChanged: (v) => onChanged(appearance.copyWith(fontScale: v)),
         ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _MiniDropdown<String>(
-            label: 'Joyi',
-            value: appearance.position,
-            items: const {'bottom': 'Past', 'top': 'Tepa'},
-            enabled: enabled,
-            onChanged: (v) => onChanged(appearance.copyWith(position: v)),
-          ),
+      ),
+      const SizedBox(width: 10),
+      Expanded(
+        child: _MiniDropdown<String>(
+          label: 'Joyi',
+          value: appearance.position,
+          items: const {'bottom': 'Past', 'top': 'Tepa'},
+          enabled: enabled,
+          onChanged: (v) => onChanged(appearance.copyWith(position: v)),
         ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _MiniDropdown<String>(
-            label: 'Sifat',
-            value: appearance.quality,
-            items: const {
-              '720': '720p',
-              '1080': '1080p',
-              '1440': '2K',
-              '2160': '4K',
-            },
-            enabled: enabled,
-            onChanged: (v) => onChanged(appearance.copyWith(quality: v)),
-          ),
+      ),
+      const SizedBox(width: 10),
+      Expanded(
+        child: _MiniDropdown<String>(
+          label: 'Sifat',
+          value: appearance.quality,
+          items: const {
+            '720': '720p',
+            '1080': '1080p',
+            '1440': '2K',
+            '2160': '4K',
+          },
+          enabled: enabled,
+          onChanged: (v) => onChanged(appearance.copyWith(quality: v)),
         ),
+      ),
     ];
   }
 
   List<Widget> _rowTwo() {
     return [
+      Expanded(
+        child: _MiniDropdown<bool>(
+          label: 'Kattalash',
+          value: appearance.upscale,
+          items: const {false: 'Yo\'q', true: 'Ha'},
+          enabled: enabled,
+          onChanged: (v) => onChanged(appearance.copyWith(upscale: v)),
+        ),
+      ),
+      const SizedBox(width: 10),
+      if (showOrigStyle) ...[
         Expanded(
-          child: _MiniDropdown<bool>(
-            label: 'Kattalash',
-            value: appearance.upscale,
-            items: const {false: 'Yo\'q', true: 'Ha'},
+          child: _MiniDropdown<String>(
+            label: 'Asl matn',
+            value: appearance.origStyle,
+            items: const {'box': 'Sariq quti', 'plain': 'Oddiy'},
             enabled: enabled,
-            onChanged: (v) => onChanged(appearance.copyWith(upscale: v)),
+            onChanged: (v) => onChanged(appearance.copyWith(origStyle: v)),
           ),
         ),
         const SizedBox(width: 10),
-        if (showOrigStyle) ...[
-          Expanded(
-            child: _MiniDropdown<String>(
-              label: 'Asl matn',
-              value: appearance.origStyle,
-              items: const {'box': 'Sariq quti', 'plain': 'Oddiy'},
-              enabled: enabled,
-              onChanged: (v) => onChanged(appearance.copyWith(origStyle: v)),
-            ),
-          ),
-          const SizedBox(width: 10),
-        ],
-        Expanded(
-          child: _MiniDropdown<String>(
-            label: 'Rang',
-            value: _colors.containsKey(appearance.subColor) ? appearance.subColor : '#39FF14',
-            items: _colors,
-            enabled: enabled,
-            onChanged: (v) => onChanged(appearance.copyWith(subColor: v)),
-          ),
+      ],
+      Expanded(
+        child: _MiniDropdown<String>(
+          label: 'Rang',
+          value: _colors.containsKey(appearance.subColor)
+              ? appearance.subColor
+              : '#39FF14',
+          items: _colors,
+          enabled: enabled,
+          onChanged: (v) => onChanged(appearance.copyWith(subColor: v)),
         ),
+      ),
     ];
   }
 }
@@ -336,14 +444,21 @@ class _MiniDropdown<T> extends StatelessWidget {
       isExpanded: true,
       decoration: InputDecoration(
         labelText: label,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 10,
+          vertical: 12,
+        ),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
       ),
       items: [
         for (final e in items.entries)
           DropdownMenuItem(value: e.key, child: Text(e.value)),
       ],
-      onChanged: enabled ? (v) { if (v != null) onChanged(v); } : null,
+      onChanged: enabled
+          ? (v) {
+              if (v != null) onChanged(v);
+            }
+          : null,
     );
   }
 }
@@ -369,7 +484,7 @@ class _ModePreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     Widget content;
     switch (mode) {
       case 'dual_vocab':
@@ -380,7 +495,7 @@ class _ModePreview extends StatelessWidget {
         final hasVocab = mode.contains('vocab');
         final showOriginal = mode != 'translated';
         final isDual = mode.startsWith('dual') || mode == 'translated';
-        
+
         content = Container(
           width: double.infinity,
           height: double.infinity,
@@ -390,10 +505,7 @@ class _ModePreview extends StatelessWidget {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF1A1A1A),
-                Color(0xFF0A0A0A),
-              ],
+              colors: [Color(0xFF1A1A1A), Color(0xFF0A0A0A)],
             ),
           ),
           child: Stack(
@@ -424,13 +536,46 @@ class _ModePreview extends StatelessWidget {
                       if (origStyle == 'box')
                         Container(
                           color: const Color(0xFFFFD400),
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          child: const Text('This is the original text', textAlign: TextAlign.center, style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.w900)),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          child: const Text(
+                            'This is the original text',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
                         )
                       else
-                        const Text('This is the original text', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900, shadows: [Shadow(blurRadius: 4, color: Colors.black)])),
+                        const Text(
+                          'This is the original text',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                            shadows: [
+                              Shadow(blurRadius: 4, color: Colors.black),
+                            ],
+                          ),
+                        ),
                     if (isDual)
-                      Text('Bu tarjima qilingan matn', textAlign: TextAlign.center, style: TextStyle(color: _subColor, fontSize: showOriginal ? 13 : 15, fontWeight: FontWeight.w900, shadows: const [Shadow(blurRadius: 4, color: Colors.black)])),
+                      Text(
+                        'Bu tarjima qilingan matn',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: _subColor,
+                          fontSize: showOriginal ? 13 : 15,
+                          fontWeight: FontWeight.w900,
+                          shadows: const [
+                            Shadow(blurRadius: 4, color: Colors.black),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -445,7 +590,9 @@ class _ModePreview extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.3,
+            ),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: theme.colorScheme.outlineVariant),
           ),
@@ -468,9 +615,17 @@ class _ModePreview extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const _PaperLine(widthFactor: 0.72, height: 5, color: Color(0xFF15171A)),
+                    const _PaperLine(
+                      widthFactor: 0.72,
+                      height: 5,
+                      color: Color(0xFF15171A),
+                    ),
                     const SizedBox(height: 5),
-                    const _PaperLine(widthFactor: 0.36, height: 2.5, color: Color(0xFFB4B9C2)),
+                    const _PaperLine(
+                      widthFactor: 0.36,
+                      height: 2.5,
+                      color: Color(0xFFB4B9C2),
+                    ),
                     const SizedBox(height: 7),
                     Container(height: 0.6, color: const Color(0xFFD7DAE0)),
                     const SizedBox(height: 8),
@@ -499,23 +654,34 @@ class _ModePreview extends StatelessWidget {
           width: double.infinity,
           height: 140,
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.3,
+            ),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: theme.colorScheme.outlineVariant, style: BorderStyle.solid),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant,
+              style: BorderStyle.solid,
+            ),
           ),
           child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  mode == 'all' ? Icons.all_inclusive_rounded : Icons.description_rounded, 
-                  size: 36, 
-                  color: theme.colorScheme.primary.withValues(alpha: 0.7)
+                  mode == 'all'
+                      ? Icons.all_inclusive_rounded
+                      : Icons.description_rounded,
+                  size: 36,
+                  color: theme.colorScheme.primary.withValues(alpha: 0.7),
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  mode == 'all' ? 'Barcha fayllar (Video, Matn, Lug\'at, SRT)' : 'Faqat hujjat fayllari yaratiladi',
-                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  mode == 'all'
+                      ? 'Barcha fayllar (Video, Matn, Lug\'at, SRT)'
+                      : 'Faqat hujjat fayllari yaratiladi',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -530,7 +696,10 @@ class _ModePreview extends StatelessWidget {
         const SizedBox(height: 24),
         Text(
           'Namuna',
-          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600, color: theme.colorScheme.primary),
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.primary,
+          ),
         ),
         const SizedBox(height: 10),
         Expanded(
@@ -549,9 +718,32 @@ class _ModePreview extends StatelessWidget {
       child: RichText(
         text: TextSpan(
           children: [
-            TextSpan(text: en, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900, shadows: [Shadow(blurRadius: 3, color: Colors.black)])),
-            const TextSpan(text: '  ·  ', style: TextStyle(color: Color(0xFF8A93A6), fontSize: 13, fontWeight: FontWeight.w900)),
-            TextSpan(text: uz, style: TextStyle(color: _subColor, fontSize: 13, fontWeight: FontWeight.w900, shadows: const [Shadow(blurRadius: 3, color: Colors.black)])),
+            TextSpan(
+              text: en,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+                shadows: [Shadow(blurRadius: 3, color: Colors.black)],
+              ),
+            ),
+            const TextSpan(
+              text: '  ·  ',
+              style: TextStyle(
+                color: Color(0xFF8A93A6),
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            TextSpan(
+              text: uz,
+              style: TextStyle(
+                color: _subColor,
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+                shadows: const [Shadow(blurRadius: 3, color: Colors.black)],
+              ),
+            ),
           ],
         ),
       ),
