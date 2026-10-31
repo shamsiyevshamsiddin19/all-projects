@@ -7,7 +7,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:subtitr_app/screens/api_keys_screen.dart';
 import 'package:subtitr_app/screens/home_screen.dart';
 import 'package:subtitr_app/screens/translation_editor_screen.dart';
-import 'package:subtitr_app/screens/translation_editor_screen.dart';
 import 'package:subtitr_app/services/desktop_processor_service.dart';
 import 'package:subtitr_app/services/settings_store.dart';
 import 'package:subtitr_app/widgets/processing_panel.dart';
