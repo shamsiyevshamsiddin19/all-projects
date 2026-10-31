@@ -416,6 +416,31 @@ def audio_args_for(video: Path) -> list[str]:
     return list(AAC_ARGS)
 
 
+# Apparat DEKODLASH sukut bo'yicha O'CHIQ — atayin.
+#
+# O'lchangan (AMD Lucienne iGPU, VAAPI bilan kodlash, 60s 1080p):
+#
+#   VP9:  CPU dekod 6.0-7.1s   GPU dekod 13.2-13.4s   -> GPU IKKI BARAVAR SEKIN
+#   AV1:  CPU dekod 11.7s      GPU dekod butunlay TUSHADI (kod 69)
+#
+# Sababi ikkita:
+#   1. `ass` filtri CPU xotirasidagi kadrni talab qiladi, shuning uchun har
+#      kadr GPU -> CPU -> GPU bo'ylab yuradi. Umumiy xotirali iGPU da bu
+#      ko'chirish dekodlashdan tejalgan vaqtdan qimmatroq turadi.
+#   2. Bu iGPU (VCN 2.x) AV1 ni dekodlay olmaydi va ffmpeg CPU ga
+#      QAYTMAYDI — xato bilan to'xtaydi. YouTube esa ko'pincha AV1 beradi.
+#
+# Alohida videokartada (katta VRAM va tasma) foydali bo'lishi mumkin,
+# shuning uchun yoqish imkoniyati qoldirilgan: SUB_HWACCEL=vaapi (yoki
+# cuda, qsv). Ishlatishdan oldin O'LCHANG.
+def hwaccel_args() -> list[str]:
+    name = os.getenv("SUB_HWACCEL", "").strip().lower()
+    if not name or name in {"none", "off", "0", "no"}:
+        return []
+    log.info("apparat dekodlash yoqilgan: %s", name)
+    return ["-hwaccel", name]
+
+
 def burn_subtitles(
     video: Path,
     ass_path: Path,
@@ -456,6 +481,7 @@ def burn_subtitles(
         )
         cmd = [
             FFMPEG, "-y",
+            *hwaccel_args(),
             *choice.pre_args,
             "-i", str(video),
             "-vf", vf,

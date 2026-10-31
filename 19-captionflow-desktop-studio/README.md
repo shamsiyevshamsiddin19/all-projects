@@ -119,6 +119,29 @@ bitta qatori ko'rinadi, to'liq izi (traceback) esa shu faylda bo'ladi.
 - `SUBTITR_DEBUG=1` — batafsil (ishga tushgan buyruqlar ham).
 - `SUBTITR_NO_LOG=1` — butunlay o'chiradi.
 
+## Apparat kodlash/dekodlash
+
+Subtitr kuydirishda **kodlash** apparatda ketadi (NVENC / QSV / AMF /
+VAAPI — `pick_video_encoder()` ishlaydiganini o'zi topadi, `SUB_ENCODER`
+bilan majburlash mumkin).
+
+**Dekodlash esa atayin CPU da.** Bu kompyuterda (AMD Lucienne iGPU)
+o'lchangan, 60 soniyalik 1080p:
+
+| manba | CPU dekod | GPU dekod (`-hwaccel vaapi`) |
+|---|---|---|
+| VP9 | 6.0–7.1 s | 13.2–13.4 s — **2× sekin** |
+| AV1 | 11.7 s | **tushadi** (kod 69, AV1 qo'llanmaydi) |
+
+Sababi: `ass` filtri CPU xotirasidagi kadrni talab qiladi, shuning uchun
+har kadr GPU → CPU → GPU bo'ylab yuradi; umumiy xotirali iGPU da bu
+ko'chirish dekodlashdan tejalgan vaqtdan qimmat. Ikkinchisi — bu iGPU
+AV1 ni dekodlay olmaydi va ffmpeg CPU ga **qaytmaydi**, xato bilan
+to'xtaydi (YouTube esa ko'pincha AV1 beradi).
+
+Alohida videokartada foydali bo'lishi mumkin: `SUB_HWACCEL=vaapi`
+(yoki `cuda`, `qsv`). **Yoqishdan oldin o'lchang.**
+
 ## To'xtatish (Bekor qilish)
 
 "Bekor qilish" bosilganda ilova avval **SIGTERM** yuboradi: protsessor uni
