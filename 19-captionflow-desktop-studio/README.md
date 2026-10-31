@@ -78,6 +78,12 @@ sahifasida bo'ladi.
     (429/5xx) eksponensial kutish bilan qayta urinadi. Sozlash:
     `AI_MAX_ATTEMPTS` (3), `AI_RETRY_BACKOFF_SEC` (6),
     `AI_RETRY_MAX_SEC` (30)
+  - `translate.translate_segments()` — to'plamlar PARALLEL yuboriladi.
+    Kontekst manba matnidan olinadi (oldingi tarjimadan emas), shuning
+    uchun to'plamlar bir-biriga bog'liq emas. Natija asl tartibda
+    yig'iladi, kesh esa har to'plamdan keyin saqlanadi. Sozlash:
+    `TRANSLATE_WORKERS` (3; `1` — eski ketma-ket xatti-harakat),
+    `TRANSLATE_BATCH` (50)
 - `desktop_requirements.txt` — Python paketlar ro'yxati. **Yagona manba**:
   `linux/build.sh` ham, ilovadagi "Paketlarni o'rnatish" tugmasi ham
   (`pipeline.required_packages()`) aynan shu fayldan o'qiydi.
@@ -152,7 +158,7 @@ qaytadan pul turadi, shuning uchun uni faqat atayin so'raganda o'chiradi.
 Testlar (yangi bog'liqliksiz, standart `unittest`):
 
 ```bash
-.venv/bin/python -m unittest discover -s tests   # 91 ta
+.venv/bin/python -m unittest discover -s tests   # 97 ta
 cd subtitr_app && flutter test                   # 16 ta
 ```
 

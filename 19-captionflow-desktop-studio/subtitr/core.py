@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 import io
+import threading
 from dataclasses import dataclass
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
@@ -602,9 +603,18 @@ def ensure_dirs() -> None:
         load_dotenv()
 
 
+# Chiqishni himoyalovchi qulf. Ilova stdout'ni QATOR-QATOR o'qib JSON
+# sifatida tahlil qiladi, shuning uchun ikki oqim bir vaqtda yozsa qatorlar
+# aralashib tahlil buziladi. Tarjima parallellashtirilgandan keyin bu
+# nazariy xavf emas.
+_EMIT_LOCK = threading.Lock()
+
+
 def emit(kind: str, **data: Any) -> None:
     data["type"] = kind
-    print(json.dumps(data, ensure_ascii=False), flush=True)
+    line = json.dumps(data, ensure_ascii=False)
+    with _EMIT_LOCK:
+        print(line, flush=True)
     # Butun progress izi logga ham tushadi: ilova yopilgandan keyin "nima
     # bo'ldi?" degan savolga javob beradigan yagona joy shu.
     message = str(data.get("message") or "")
@@ -639,9 +649,15 @@ def _done_summary(data: dict[str, Any]) -> str:
 # o'zgaruvchan qilgandan keyin kerak bo'ldi.
 USAGE: dict[str, int] = {}
 
+# `USAGE[k] = USAGE.get(k, 0) + n` atomar EMAS: ikki oqim bir vaqtda
+# o'qib-yozsa hisob yo'qoladi va foydalanuvchi ketgan so'rovlar sonini
+# kam ko'rsatiladi. Shu qulf `AI_DISABLED` ni ham himoyalaydi.
+_USAGE_LOCK = threading.Lock()
+
 
 def _count(name: str, n: int = 1) -> None:
-    USAGE[name] = USAGE.get(name, 0) + n
+    with _USAGE_LOCK:
+        USAGE[name] = USAGE.get(name, 0) + n
 
 
 def reset_usage() -> None:
@@ -735,14 +751,18 @@ AI_DISABLED: dict[str, str] = {}
 
 
 def disable_provider(name: str, reason: str) -> None:
-    if name not in AI_DISABLED:
+    # Bir nechta oqim bir vaqtda o'sha provayderdan 401 olishi mumkin —
+    # ogohlantirish faqat BIR marta chiqishi kerak.
+    with _USAGE_LOCK:
+        if name in AI_DISABLED:
+            return
         AI_DISABLED[name] = reason
-        log.warning("provayder o'chirildi (%s): %s", name, redact(reason)[:200])
-        emit(
-            "progress",
-            message=f"Diqqat: {name} o'chirildi — {redact(reason)[:120]}",
-            progress=0.4,
-        )
+    log.warning("provayder o'chirildi (%s): %s", name, redact(reason)[:200])
+    emit(
+        "progress",
+        message=f"Diqqat: {name} o'chirildi — {redact(reason)[:120]}",
+        progress=0.4,
+    )
 
 
 def run(cmd: list[str], cwd: Path | None = None) -> subprocess.CompletedProcess:

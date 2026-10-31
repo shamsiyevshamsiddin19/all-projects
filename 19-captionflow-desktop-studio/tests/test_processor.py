@@ -869,6 +869,183 @@ class LoggingTests(unittest.TestCase):
         self.assertEqual(dp.core.LOG_DIR.name, "logs")
 
 
+class ParallelTranslationTests(unittest.TestCase):
+    """Tarjima to'plamlari parallel yuboriladi.
+
+    Eng katta xavf: to'plamlar BOSHQA TARTIBDA tugaydi va natijalar
+    aralashib ketadi — ekranda boshqa gapning tarjimasi chiqadi. Shu
+    sababli tartib har testda tekshiriladi."""
+
+    def setUp(self):
+        self._real = m_tx.ai_translate_batch
+        self.seen: list[list[str]] = []
+        self.lock = __import__("threading").Lock()
+
+    def tearDown(self):
+        m_tx.ai_translate_batch = self._real
+
+    def _segments(self, n: int) -> list:
+        return [seg(float(i), float(i) + 1.0, f"line {i}") for i in range(n)]
+
+    def _stub(self, delay_for=None):
+        """`delay_for(texts) -> soniya` bilan tugash tartibini boshqaramiz."""
+        import time
+
+        def fake(texts, target_lang, source_lang="", before=None, after=None, glossary=None):
+            with self.lock:
+                self.seen.append(list(texts))
+            if delay_for is not None:
+                time.sleep(delay_for(texts))
+            return [t.replace("line", "qator") for t in texts], "claude"
+
+        m_tx.ai_translate_batch = fake
+
+    def test_order_is_preserved_when_batches_finish_out_of_order(self):
+        import os
+
+        # Birinchi to'plam ENG SEKIN tugaydi — natija oxirida keladi.
+        def delay(texts):
+            return 0.25 if texts[0] == "line 0" else 0.01
+
+        self._stub(delay)
+        old = os.environ.get("TRANSLATE_BATCH"), os.environ.get("TRANSLATE_WORKERS")
+        os.environ["TRANSLATE_BATCH"] = "10"
+        os.environ["TRANSLATE_WORKERS"] = "4"
+        try:
+            out, provider = m_tx.translate_segments(self._segments(40), "uz", "en")
+        finally:
+            for k, v in zip(("TRANSLATE_BATCH", "TRANSLATE_WORKERS"), old):
+                os.environ.pop(k, None) if v is None else os.environ.__setitem__(k, v)
+
+        self.assertEqual(len(out), 40)
+        self.assertEqual(provider, "claude")
+        for i, item in enumerate(out):
+            self.assertEqual(item.text, f"qator {i}", f"{i}-qator tarjimasi aralashdi")
+            # Vaqtlar asl bo'lakdan olinishi kerak.
+            self.assertEqual(item.start, float(i))
+
+    def test_batches_actually_run_in_parallel(self):
+        import os
+        import time
+
+        self._stub(lambda texts: 0.15)
+        old = os.environ.get("TRANSLATE_BATCH"), os.environ.get("TRANSLATE_WORKERS")
+        os.environ["TRANSLATE_BATCH"] = "10"
+        try:
+            os.environ["TRANSLATE_WORKERS"] = "1"
+            t0 = time.monotonic()
+            m_tx.translate_segments(self._segments(40), "uz", "en")
+            sequential = time.monotonic() - t0
+
+            os.environ["TRANSLATE_WORKERS"] = "4"
+            t0 = time.monotonic()
+            m_tx.translate_segments(self._segments(40), "uz", "en")
+            parallel = time.monotonic() - t0
+        finally:
+            for k, v in zip(("TRANSLATE_BATCH", "TRANSLATE_WORKERS"), old):
+                os.environ.pop(k, None) if v is None else os.environ.__setitem__(k, v)
+
+        # 4 ta to'plam x 0.15s: ketma-ket ~0.6s, 4 oqimda ~0.15s.
+        self.assertLess(parallel, sequential * 0.6,
+                        f"parallel {parallel:.2f}s vs ketma-ket {sequential:.2f}s")
+
+    def test_cached_lines_are_not_sent_to_the_ai(self):
+        import json
+        import os
+
+        self._stub()
+        with tempfile.TemporaryDirectory() as tmp:
+            cache = Path(tmp) / "tr.json"
+            segments = self._segments(20)
+            # Birinchi 10 qator allaqachon tarjima qilingan.
+            cache.write_text(json.dumps({
+                m_tx._text_key(x.text): f"keshdan {i}"
+                for i, x in enumerate(segments[:10])
+            }), encoding="utf-8")
+            old = os.environ.get("TRANSLATE_BATCH")
+            os.environ["TRANSLATE_BATCH"] = "10"
+            try:
+                out, _ = m_tx.translate_segments(
+                    segments, "uz", "en", cache_path=cache
+                )
+            finally:
+                os.environ.pop("TRANSLATE_BATCH", None) if old is None \
+                    else os.environ.__setitem__("TRANSLATE_BATCH", old)
+
+        self.assertEqual(len(self.seen), 1, "keshdagi to'plam ham AI'ga yuborildi")
+        self.assertEqual(out[0].text, "keshdan 0")
+        self.assertEqual(out[10].text, "qator 10")
+
+    def test_single_worker_matches_parallel_result(self):
+        """TRANSLATE_WORKERS=1 (eski xatti-harakat) bir xil natija bersin."""
+        import os
+
+        results = {}
+        old = os.environ.get("TRANSLATE_BATCH"), os.environ.get("TRANSLATE_WORKERS")
+        os.environ["TRANSLATE_BATCH"] = "7"
+        try:
+            for workers in ("1", "4"):
+                os.environ["TRANSLATE_WORKERS"] = workers
+                self.seen = []
+                self._stub()
+                out, _ = m_tx.translate_segments(self._segments(30), "uz", "en")
+                results[workers] = [x.text for x in out]
+        finally:
+            for k, v in zip(("TRANSLATE_BATCH", "TRANSLATE_WORKERS"), old):
+                os.environ.pop(k, None) if v is None else os.environ.__setitem__(k, v)
+        self.assertEqual(results["1"], results["4"])
+
+
+class ThreadSafetyTests(unittest.TestCase):
+    """Parallel ishda umumiy holat buzilmasligi kerak."""
+
+    def test_usage_counter_does_not_lose_increments(self):
+        import threading
+
+        dp.core.reset_usage()
+        threads = [
+            threading.Thread(target=lambda: [dp.core._count("translate") for _ in range(500)])
+            for _ in range(8)
+        ]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        self.assertEqual(dp.core.USAGE["translate"], 4000)
+        dp.core.reset_usage()
+
+    def test_emit_writes_whole_lines(self):
+        """Ilova stdout'ni qator-qator JSON deb o'qiydi — qator bo'linmasin."""
+        import io
+        import json
+        import sys
+        import threading
+
+        buffer = io.StringIO()
+        real = sys.stdout
+        sys.stdout = buffer
+        try:
+            threads = [
+                threading.Thread(
+                    target=lambda n=n: [
+                        dp.emit("progress", message=f"oqim {n} xabar {i}", progress=0.5)
+                        for i in range(100)
+                    ]
+                )
+                for n in range(6)
+            ]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
+        finally:
+            sys.stdout = real
+        lines = [ln for ln in buffer.getvalue().splitlines() if ln.strip()]
+        self.assertEqual(len(lines), 600)
+        for line in lines:
+            json.loads(line)  # buzilgan qator bo'lsa shu yerda tushadi
+
+
 class ProviderRetryTests(unittest.TestCase):
     """Qayta urinish siyosati — bu bevosita vaqt va pulga ta'sir qiladi.
 

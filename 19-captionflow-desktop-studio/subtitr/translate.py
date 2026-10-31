@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
@@ -484,19 +485,31 @@ def translate_segments(
     out_texts: list[str | None] = [cached.get(key) for key in keys]
     provider = "cache" if any(t is not None for t in out_texts) else ""
 
+    # To'plamlarni ikkiga ajratamiz: keshdan to'liq chiqqanlari (tekin) va
+    # AI'ga yuborilishi kerak bo'lganlari.
+    todo: list[tuple[int, int]] = []
+    cached_lines = 0
     for start in range(0, total, batch):
         end_i = min(start + batch, total)
-        idxs = list(range(start, end_i))
-        done = end_i
-        frac = done / total if total else 1.0
-        if all(out_texts[i] is not None for i in idxs):
-            emit("progress", message=f"Tarjima {done}/{total} (keshdan)",
-                 progress=progress_lo + (progress_hi - progress_lo) * frac)
-            continue
+        if all(out_texts[i] is not None for i in range(start, end_i)):
+            cached_lines += end_i - start
+        else:
+            todo.append((start, end_i))
+    if cached_lines:
+        emit("progress", message=f"Tarjima: {cached_lines}/{total} qator keshdan",
+             progress=progress_lo)
+
+    def work(span: tuple[int, int]) -> tuple[tuple[int, int], list[str], str]:
+        """Bitta to'plamni tarjima qiladi. Oqimda bajariladi — faqat O'QIYDI
+        (segments, glossary), hech qanday umumiy holatni o'zgartirmaydi."""
+        start, end_i = span
         chunk = segments[start:end_i]
+        # Kontekst MANBA matnidan olinadi, oldingi TARJIMADAN emas —
+        # shuning uchun to'plamlar bir-biriga bog'liq emas va ularni
+        # parallel yuborish natijani o'zgartirmaydi.
         before = [seg.text for seg in segments[max(0, start - ctx):start]]
         after = [seg.text for seg in segments[end_i:end_i + ctx]]
-        translated, provider = ai_translate_batch(
+        translated, used = ai_translate_batch(
             [seg.text for seg in chunk],
             target_lang,
             source_lang=source_lang,
@@ -504,13 +517,44 @@ def translate_segments(
             after=after,
             glossary=glossary,
         )
-        for j, i in enumerate(idxs):
-            out_texts[i] = translated[j] if j < len(translated) else chunk[j].text
+        return span, translated, used
+
+    def absorb(span: tuple[int, int], translated: list[str], used: str) -> None:
+        """Natijani yozadi va keshni saqlaydi — faqat ASOSIY oqimda."""
+        nonlocal provider, done_lines
+        start, end_i = span
+        for j, i in enumerate(range(start, end_i)):
+            out_texts[i] = translated[j] if j < len(translated) else segments[i].text
             cached[keys[i]] = out_texts[i] or ""
         if cache_path is not None and _cache_enabled():
-            _save_json(cache_path, cached)  # har batchdan keyin saqlaymiz
-        emit("progress", message=f"Tarjima {done}/{total}",
+            # Har to'plamdan keyin saqlaymiz: ish uzilsa tayyori yo'qolmaydi.
+            _save_json(cache_path, cached)
+        if used and used != "offline_dictionary":
+            provider = used
+        elif not provider:
+            provider = used
+        done_lines += end_i - start
+        frac = (cached_lines + done_lines) / total if total else 1.0
+        emit("progress", message=f"Tarjima {cached_lines + done_lines}/{total}",
              progress=progress_lo + (progress_hi - progress_lo) * frac)
+
+    done_lines = 0
+    # To'plamlar bir-biriga bog'liq emas, shuning uchun ularni parallel
+    # yuborish mumkin. 2 soatlik kinoda ~40 to'plam bor va ketma-ket
+    # yuborilganda butun vaqt API javobini kutishga ketadi.
+    #
+    # Ishchi oqimlar soni ehtiyotkor olingan: Groq bepul tarifi daqiqadagi
+    # so'rovni cheklaydi, ko'p oqim esa 429 ga olib keladi (keyin backoff
+    # baribir sekinlashtiradi). TRANSLATE_WORKERS=1 — eski ketma-ket xatti-harakat.
+    workers = max(1, int(os.getenv("TRANSLATE_WORKERS", "3")))
+    if workers == 1 or len(todo) <= 1:
+        for span in todo:
+            absorb(*work(span))
+    else:
+        with ThreadPoolExecutor(max_workers=min(workers, len(todo))) as pool:
+            futures = [pool.submit(work, span) for span in todo]
+            for future in as_completed(futures):
+                absorb(*future.result())
 
     # Bo'sh satr — "bu qatorni tarjima qilib bo'lmadi" degani; originalni
     # tarjima o'rniga qo'ymaymiz (aks holda bir gap ikki marta ko'rinadi).
