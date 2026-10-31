@@ -18,8 +18,8 @@ from .cache import _cache_enabled, _load_json, _save_json, cache_dir_for, load_t
 from .translate import build_glossary, translate_segments
 from .clean import clean_transcription, enforce_reading_speed, filter_words, polish_segments
 from .vocab import build_vocabulary, entry_helper, is_translit_only
-from .subtitles import ass_fonts_option, burn_subtitles, write_ass
-from .documents import build_reading_blocks, build_sentence_pairs, reading_meta, reading_title, reading_vocab_map, write_docx_transcript, write_docx_vocab, write_md_reading, write_pdf_reading, write_txt_reading, write_txt_transcript, write_txt_vocab
+from .subtitles import ass_fonts_option, attach_soft_subtitles, burn_subtitles, write_ass
+from .documents import build_reading_blocks, build_sentence_pairs, reading_meta, reading_title, reading_vocab_map, write_csv_vocab, write_docx_transcript, write_docx_vocab, write_md_reading, write_pdf_reading, write_txt_reading, write_txt_transcript, write_txt_vocab
 
 
 def _prepare_data(
@@ -86,7 +86,7 @@ def _prepare_data(
         emit("progress", message=f"Matn tayyor ({transcriber})", progress=0.35)
 
         needs_translation = mode in {
-            "dual", "dual_vocab", "translated", "srt", "transcript", "reading", "all",
+            "dual", "dual_vocab", "translated", "softsub", "srt", "transcript", "reading", "all",
         }
         translated: list[Segment] | None = None
         provider = ""
@@ -182,8 +182,9 @@ def _prepare_data(
             shutil.rmtree(job_tmp, ignore_errors=True)
 
 
-# Videoga subtitr KUYDIRADIGAN rejimlar (qolganlari faqat fayl yozadi).
-VIDEO_MODES = {"original", "dual", "original_vocab", "dual_vocab", "translated"}
+# Video chiqishi beradigan rejimlar. `softsub` kadrni kuydirmaydi, ammo
+# foydalanuvchi tanlaydigan video natija sifatida qoladi.
+VIDEO_MODES = {"original", "dual", "original_vocab", "dual_vocab", "translated", "softsub"}
 
 # "Hammasi" rejimi nimalarni beradi. Video BITTA — `dual_vocab` (original +
 # tarjima + lug'at, ya'ni eng to'liq variant).
@@ -403,17 +404,24 @@ def _render_outputs(
     if "vocabulary" in modes_to_render:
         txt = job_out_dir / f"{stem}_lugat.txt"
         docx = job_out_dir / f"{stem}_lugat.docx"
+        csv = job_out_dir / f"{stem}_lugat.csv"
         write_txt_vocab(txt, entries)
         write_docx_vocab(docx, entries)
+        write_csv_vocab(csv, entries)
         add_output("txt", "Lug'at TXT", txt)
         add_output("docx", "Lug'at DOCX", docx)
+        add_output("csv", "Lug'at CSV (Anki/Quizlet)", csv)
 
     render_modes = [m for m in modes_to_render if m in VIDEO_MODES]
     n_render = max(1, len(render_modes))
     for i, render_mode in enumerate(render_modes):
         emit("progress", message=f"ASS tayyorlanmoqda: {render_mode}", progress=0.66)
         ass = job_out_dir / f"{stem}_{render_mode}.ass"
-        out = job_out_dir / f"{stem}_{render_mode}.mp4"
+        # MKV ASS uslubini o'zgartirmay saqlay oladi; MP4 esa mos keluvchi
+        # `mov_text` trek talab qiladi. Shu sabab manba MKV bo'lsa konteynerni
+        # almashtirmaymiz, boshqa holatda keng tarqalgan MP4 natija beramiz.
+        out_suffix = ".mkv" if render_mode == "softsub" and video.suffix.lower() == ".mkv" else ".mp4"
+        out = job_out_dir / f"{stem}_{render_mode}{out_suffix}"
         # Render, kadr ko'rish va pleyer UCHALASI ham shu yozuvchidan
         # o'tadi — ko'rinish ajralib ketishi mumkin emas.
         _write_mode_ass(
@@ -423,10 +431,15 @@ def _render_outputs(
         # Render progressini bir necha video orasida bo'lib ko'rsatamiz.
         lo = 0.70 + (0.28 * i / n_render)
         hi = 0.70 + (0.28 * (i + 1) / n_render)
-        burn_subtitles(
-            video, ass, out, progress_lo=lo, progress_hi=hi, label=render_mode,
-            max_height=quality_height(quality), upscale=upscale,
-        )
+        if render_mode == "softsub":
+            attach_soft_subtitles(
+                video, ass, out, progress_lo=lo, progress_hi=hi, label=render_mode,
+            )
+        else:
+            burn_subtitles(
+                video, ass, out, progress_lo=lo, progress_hi=hi, label=render_mode,
+                max_height=quality_height(quality), upscale=upscale,
+            )
         add_output("video", f"{render_mode} video", out)
 
     # Vocab-li video rejimlar uchun lug'at faylini ham saqlab qo'yamiz.
@@ -506,7 +519,7 @@ def _write_mode_ass(
     write_ass(
         path,
         data.display_original,
-        data.translated if mode in {"dual", "dual_vocab", "translated"} else None,
+        data.translated if mode in {"dual", "dual_vocab", "translated", "softsub"} else None,
         data.words if mode in {"original_vocab", "dual_vocab"} else None,
         data.vocab_map,
         data.width,

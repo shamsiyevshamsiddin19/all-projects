@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import bisect
+import csv
 import os
 import re
 import textwrap
@@ -117,6 +118,24 @@ def write_docx_vocab(path: Path, entries: list[dict[str, Any]]) -> None:
         row[2].text = pos_label(e)
         row[3].text = str(int(e.get("count", 1) or 1))
     doc.save(path)
+
+
+def write_csv_vocab(path: Path, entries: list[dict[str, Any]]) -> None:
+    """Anki va Quizlet importi uchun sodda ustunli lug'at yozadi."""
+    # Bitta lemma turli shakllarda takrorlansa, kartochkalar ham takrorlanib
+    # ketadi va takrorlash navbati sun'iy uzayadi; shu sabab TXT/DOCX kabi
+    # CSV ham birlashtirilgan ro'yxatdan tuziladi.
+    merged = dedupe_by_lemma(entries)
+    with path.open("w", encoding="utf-8-sig", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["So'z", "Tarjima", "So'z turkumi", "Chastota"])
+        for entry in merged:
+            writer.writerow([
+                str(entry.get("word", "")),
+                str(entry.get("translation", "")),
+                pos_label(entry),
+                int(entry.get("count", 1) or 1),
+            ])
 
 
 # ---------------------------------------------------------------------------
