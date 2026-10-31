@@ -90,6 +90,65 @@ VENV_DIR = ROOT / ".venv"
 # ro'yxat ikki joyda yozilsa, biri eskirib qoladi.
 REQUIREMENTS_FILE = ROOT / "desktop_requirements.txt"
 
+# GUI hech qachon API kalitni bola Python jarayonining environment'iga
+# uzatmaydi. Ular 0600 vaqtinchalik JSON faylda keladi; bu lug'atga faqat
+# xotirada o'qiladi. Shuning uchun `/proc/<pid>/environ`, ffmpeg/yt-dlp va
+# boshqa keyingi subprocess'lar kalitni meros qilmaydi.
+_SECRET_FILE_ENV = "SUBTITR_SECRETS_FILE"
+_SECRET_NAMES = frozenset({
+    "GROQ_API_KEY",
+    "OPENAI_API_KEY",
+    "GEMINI_API_KEY",
+    "ANTHROPIC_API_KEY",
+})
+_SESSION_SECRETS: dict[str, str] = {}
+
+
+def secret(name: str) -> str:
+    """Session faylidagi kalitni, yoki eski CLI environment kalitini qaytaradi.
+
+    Session faylida bo'sh qiymat ham muhim: u loyiha `.env` faylidagi yoki
+    tizimdan qolgan kalitni GUI foydalanuvchisi ataylab o'chirganini bildiradi.
+    """
+    if name in _SESSION_SECRETS:
+        return _SESSION_SECRETS[name]
+    return os.getenv(name, "")
+
+
+def _load_session_secrets() -> None:
+    """0600 JSON fayldan kalitlarni `os.environ` ga tegmasdan o'qiydi."""
+    _SESSION_SECRETS.clear()
+    raw_path = os.getenv(_SECRET_FILE_ENV, "").strip()
+    if not raw_path:
+        return
+    # Developer `.env` fayli `load_dotenv()` orqali allaqachon o'qilgan bo'lishi
+    # mumkin. GUI sessionida undan chiqqan kalit ham `os.environ`da qolmasin;
+    # aks holda ffmpeg/yt-dlp kabi keyingi subprocess unga merosxo'r bo'ladi.
+    for name in _SECRET_NAMES:
+        os.environ.pop(name, None)
+    try:
+        path = Path(raw_path)
+        stat = path.stat()
+        # POSIX'da fayl guruh/boshqalarga ochiq bo'lsa, kalitni o'qimaymiz.
+        # Windows'da foydalanuvchi AppData ACL'i shu himoyani bajaradi.
+        if os.name != "nt" and (stat.st_mode & 0o077):
+            raise PermissionError("vaqtinchalik kalit fayli 0600 emas")
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            raise ValueError("kalit fayli JSON obyekt emas")
+        for name in _SECRET_NAMES:
+            value = data.get(name)
+            # Barcha tanilgan nomlarni saqlaymiz, shu jumladan bo'shlarini.
+            # Bu UI'dagi "provider o'chirilgan" holatini aniq saqlab qoladi.
+            if value is not None and not isinstance(value, str):
+                raise ValueError(f"{name} matn bo'lishi kerak")
+            if value is not None:
+                _SESSION_SECRETS[name] = value.strip()
+    except Exception as exc:
+        # Yo'l yoki kalit qiymatini logga yozmang: ikkalasi ham maxfiy
+        # kontekstga aylanishi mumkin.
+        log.warning("Vaqtinchalik API kalit fayli o'qilmadi: %s", type(exc).__name__)
+
 
 def venv_python() -> Path:
     """Interpreter of the virtualenv shipped next to the processor."""
@@ -733,6 +792,7 @@ def ensure_dirs() -> None:
         load_dotenv(ENV_FILE)
     elif load_dotenv:
         load_dotenv()
+    _load_session_secrets()
 
 
 # Chiqishni himoyalovchi qulf. Ilova stdout'ni QATOR-QATOR o'qib JSON

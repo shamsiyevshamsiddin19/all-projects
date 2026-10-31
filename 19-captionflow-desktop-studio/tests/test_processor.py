@@ -11,6 +11,9 @@ yordamchi so'zlar to'lib ketadi). Shuning uchun har biriga qotirilgan misol.
 from __future__ import annotations
 
 import ast
+import json
+import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -870,6 +873,73 @@ class LoggingTests(unittest.TestCase):
         """LOG_DIR boshqa ishchi papkalar bilan bir joyda bo'lsin."""
         self.assertEqual(dp.core.LOG_DIR.parent, dp.core.CACHE_DIR.parent)
         self.assertEqual(dp.core.LOG_DIR.name, "logs")
+
+
+class SessionSecretTests(unittest.TestCase):
+    """GUI kalitni environment emas, qisqa umrli 0600 fayl bilan uzatadi."""
+
+    def test_secret_file_is_memory_only_and_absent_from_proc_environment(self):
+        marker = "unit-test-api-secret-never-in-environment"
+        with tempfile.TemporaryDirectory() as tmp:
+            secret_file = Path(tmp) / "keys.json"
+            secret_file.write_text(
+                json.dumps({"GROQ_API_KEY": marker}), encoding="utf-8"
+            )
+            secret_file.chmod(0o600)
+            # Kalit buyruq satrida ham, `env` argumentida ham yo'q. Bola
+            # protsess faqat yo'lni oladi va core uni `os.environ` ga yozmaydi.
+            env = {
+                key: value
+                for key, value in os.environ.items()
+                if not key.endswith(("_API_KEY", "_TOKEN", "_SECRET", "_PASSWORD"))
+            }
+            env["SUBTITR_SECRETS_FILE"] = str(secret_file)
+            script = """
+from subtitr.core import ensure_dirs, secret
+import os
+ensure_dirs()
+raw = open('/proc/self/environ', 'rb').read() if os.path.exists('/proc/self/environ') else b''
+assert b'unit-test-api-secret-never-in-environment' not in raw
+assert os.getenv('GROQ_API_KEY') is None
+assert secret('GROQ_API_KEY') == 'unit-test-api-secret-never-in-environment'
+"""
+            result = subprocess.run(
+                [sys.executable, "-c", script],
+                cwd=Path(__file__).resolve().parent.parent,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_insecure_secret_file_is_not_loaded(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            secret_file = Path(tmp) / "keys.json"
+            secret_file.write_text('{"GROQ_API_KEY":"must-not-load"}', encoding="utf-8")
+            secret_file.chmod(0o644)
+            original = dict(dp.core._SESSION_SECRETS)
+            old_path = os.environ.get("SUBTITR_SECRETS_FILE")
+            old_key = os.environ.get("GROQ_API_KEY")
+            try:
+                os.environ["SUBTITR_SECRETS_FILE"] = str(secret_file)
+                # Hatto developer `.env` dan qolgan qiymat ham GUI sessionida
+                # subprocess'larga meros bo'lib ketmasligi kerak.
+                os.environ["GROQ_API_KEY"] = "ambient-key-must-be-cleared"
+                dp.core._load_session_secrets()
+                self.assertNotEqual(dp.core.secret("GROQ_API_KEY"), "must-not-load")
+                self.assertNotIn("GROQ_API_KEY", os.environ)
+            finally:
+                dp.core._SESSION_SECRETS.clear()
+                dp.core._SESSION_SECRETS.update(original)
+                if old_path is None:
+                    os.environ.pop("SUBTITR_SECRETS_FILE", None)
+                else:
+                    os.environ["SUBTITR_SECRETS_FILE"] = old_path
+                if old_key is None:
+                    os.environ.pop("GROQ_API_KEY", None)
+                else:
+                    os.environ["GROQ_API_KEY"] = old_key
 
 
 class ParallelTranslationTests(unittest.TestCase):

@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Callable
 
-from .core import FFMPEG, MODEL_DIR, Segment, Word, _count, _env_float, emit, model_candidates, normalize_lang_code, run, whisper_confidence, words_from_segments
+from .core import FFMPEG, MODEL_DIR, Segment, Word, _count, _env_float, emit, model_candidates, normalize_lang_code, run, secret, whisper_confidence, words_from_segments
 from .media import extract_audio, extract_embedded_subtitle, find_sidecar_subtitle, parse_srt, parse_vtt, probe_duration_seconds, strip_tags
 from .clean import is_hallucination
 
@@ -488,7 +488,7 @@ def _local_window_transcriber(model: Any, fallback_lang: str) -> "WindowTranscri
 def transcribe_with_groq(
     audio_path: Path, language: str, source_media: Path | None = None
 ) -> tuple[list[Segment], list[Word], str]:
-    key = os.getenv("GROQ_API_KEY", "").strip()
+    key = secret("GROQ_API_KEY").strip()
     if not key:
         raise RuntimeError("GROQ_API_KEY topilmadi")
     from groq import Groq
@@ -886,7 +886,7 @@ def get_transcription(video: Path, tmp_dir: Path, source_lang: str) -> tuple[lis
         return cache[key]
 
     errors: list[str] = []
-    if os.getenv("GROQ_API_KEY", "").strip():
+    if secret("GROQ_API_KEY").strip():
         try:
             emit("progress", message="Groq Whisper transkripsiya qilmoqda", progress=0.30)
             segments, words, detected = transcribe_with_groq(

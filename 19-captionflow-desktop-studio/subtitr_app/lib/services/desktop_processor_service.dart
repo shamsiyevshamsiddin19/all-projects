@@ -9,6 +9,26 @@ class ProcessorCancelled implements Exception {
 
 typedef _CancelledException = ProcessorCancelled;
 
+class _SecretFile {
+  const _SecretFile(this.file, this.directory);
+
+  final File file;
+  final Directory directory;
+
+  Future<void> dispose() async {
+    try {
+      await directory.delete(recursive: true);
+    } catch (_) {}
+  }
+}
+
+class _StartedProcess {
+  const _StartedProcess(this.process, this.secretFile);
+
+  final Process process;
+  final _SecretFile? secretFile;
+}
+
 class DesktopVideo {
   const DesktopVideo({
     required this.name,
@@ -58,11 +78,11 @@ class ProcessorOutput {
   }
 
   Map<String, dynamic> toJson() => {
-        'kind': kind,
-        'label': label,
-        'path': path,
-        'name': name,
-      };
+    'kind': kind,
+    'label': label,
+    'path': path,
+    'name': name,
+  };
 }
 
 class ProcessorResult {
@@ -106,23 +126,23 @@ class ProcessorResult {
       outDir: json['outDir'] as String? ?? '',
       usage: switch (json['usage']) {
         final Map<dynamic, dynamic> m => {
-            for (final e in m.entries)
-              if (e.value is num) '${e.key}': (e.value as num).toInt(),
-          },
+          for (final e in m.entries)
+            if (e.value is num) '${e.key}': (e.value as num).toInt(),
+        },
         _ => const <String, int>{},
       },
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'outputs': outputs.map((o) => o.toJson()).toList(),
-        'transcriber': transcriber,
-        'translator': translator,
-        'sourceLang': sourceLang,
-        'targetLang': targetLang,
-        'outDir': outDir,
-        'usage': usage,
-      };
+    'outputs': outputs.map((o) => o.toJson()).toList(),
+    'transcriber': transcriber,
+    'translator': translator,
+    'sourceLang': sourceLang,
+    'targetLang': targetLang,
+    'outDir': outDir,
+    'usage': usage,
+  };
 }
 
 /// One subtitle line — the original text plus its (editable) translation.
@@ -162,12 +182,12 @@ class SubtitleSegment {
   }
 
   Map<String, dynamic> toJson() => {
-        'start': start,
-        'end': end,
-        'original': original,
-        'translated': translated,
-        if (confidence != null) 'confidence': confidence,
-      };
+    'start': start,
+    'end': end,
+    'original': original,
+    'translated': translated,
+    if (confidence != null) 'confidence': confidence,
+  };
 }
 
 /// Result of the `prepare` phase: transcription + translation ready to review
@@ -207,10 +227,12 @@ class PreparedSession {
       translator: json['translator'] as String? ?? '',
       segments: rawSegments is List
           ? rawSegments
-              .whereType<Map>()
-              .map((item) =>
-                  SubtitleSegment.fromJson(Map<String, dynamic>.from(item)))
-              .toList()
+                .whereType<Map>()
+                .map(
+                  (item) =>
+                      SubtitleSegment.fromJson(Map<String, dynamic>.from(item)),
+                )
+                .toList()
           : <SubtitleSegment>[],
       vocabCount: json['vocabCount'] as int? ?? 0,
     );
@@ -232,17 +254,21 @@ class CacheSection {
   final int bytes;
 
   factory CacheSection.fromJson(Map<String, dynamic> json) => CacheSection(
-        name: json['name'] as String? ?? '',
-        label: json['label'] as String? ?? '',
-        path: json['path'] as String? ?? '',
-        bytes: (json['bytes'] as num?)?.toInt() ?? 0,
-      );
+    name: json['name'] as String? ?? '',
+    label: json['label'] as String? ?? '',
+    path: json['path'] as String? ?? '',
+    bytes: (json['bytes'] as num?)?.toInt() ?? 0,
+  );
 }
 
 /// How much disk the app's hidden working folders use. Shown in settings so
 /// the download cache cannot quietly grow to tens of gigabytes unnoticed.
 class CacheUsage {
-  const CacheUsage({required this.sections, required this.total, this.freed = 0});
+  const CacheUsage({
+    required this.sections,
+    required this.total,
+    this.freed = 0,
+  });
 
   final List<CacheSection> sections;
   final int total;
@@ -257,9 +283,9 @@ class CacheUsage {
     return CacheUsage(
       sections: raw is List
           ? raw
-              .whereType<Map>()
-              .map((e) => CacheSection.fromJson(Map<String, dynamic>.from(e)))
-              .toList()
+                .whereType<Map>()
+                .map((e) => CacheSection.fromJson(Map<String, dynamic>.from(e)))
+                .toList()
           : const [],
       total: (json['total'] as num?)?.toInt() ?? 0,
       freed: (json['freed'] as num?)?.toInt() ?? 0,
@@ -317,9 +343,11 @@ class DesktopProcessorService {
 
   final Directory root;
 
-  /// Extra environment variables (API keys, model overrides) injected into the
-  /// Python processor at launch. Populated from the in-app settings so no keys
-  /// are ever hard-coded or shipped with the app.
+  /// Provider settings received from the in-app settings screen.
+  ///
+  /// The public shape stays an environment-like map for backwards
+  /// compatibility. API keys in it are deliberately NOT passed as process
+  /// environment variables: they travel in an owner-only temporary file.
   Map<String, String> processEnvironment = const {};
 
   File get script =>
@@ -477,22 +505,34 @@ class DesktopProcessorService {
   }) async {
     final stamp = DateTime.now().microsecondsSinceEpoch;
     final sep = Platform.pathSeparator;
-    final edits = File('${Directory.systemTemp.path}${sep}subtitr_edits_$stamp.json');
-    final out = File('${Directory.systemTemp.path}${sep}subtitr_live_$stamp.ass');
+    final edits = File(
+      '${Directory.systemTemp.path}${sep}subtitr_edits_$stamp.json',
+    );
+    final out = File(
+      '${Directory.systemTemp.path}${sep}subtitr_live_$stamp.ass',
+    );
     await edits.writeAsString(
       jsonEncode(segments.map((s) => s.toJson()).toList()),
     );
     try {
       final payload = await _runJson([
         'subtitle-file',
-        '--session', sessionPath,
-        '--segments', edits.path,
-        '--out', out.path,
-        '--render-mode', mode,
-        '--font-scale', fontScale.toString(),
-        '--position', position,
-        '--sub-color', subColor,
-        '--orig-style', origStyle,
+        '--session',
+        sessionPath,
+        '--segments',
+        edits.path,
+        '--out',
+        out.path,
+        '--render-mode',
+        mode,
+        '--font-scale',
+        fontScale.toString(),
+        '--position',
+        position,
+        '--sub-color',
+        subColor,
+        '--orig-style',
+        origStyle,
       ]);
       return (
         subtitles: payload['path'] as String? ?? out.path,
@@ -524,23 +564,36 @@ class DesktopProcessorService {
   }) async {
     final stamp = DateTime.now().microsecondsSinceEpoch;
     final sep = Platform.pathSeparator;
-    final edits = File('${Directory.systemTemp.path}${sep}subtitr_prev_$stamp.json');
-    final out = File('${Directory.systemTemp.path}${sep}subtitr_prev_$stamp.jpg');
+    final edits = File(
+      '${Directory.systemTemp.path}${sep}subtitr_prev_$stamp.json',
+    );
+    final out = File(
+      '${Directory.systemTemp.path}${sep}subtitr_prev_$stamp.jpg',
+    );
     await edits.writeAsString(
       jsonEncode(segments.map((s) => s.toJson()).toList()),
     );
     try {
       final payload = await _runJson([
         'preview',
-        '--session', sessionPath,
-        '--segments', edits.path,
-        '--at', at.toStringAsFixed(3),
-        '--out', out.path,
-        '--render-mode', mode,
-        '--font-scale', fontScale.toString(),
-        '--position', position,
-        '--sub-color', subColor,
-        '--orig-style', origStyle,
+        '--session',
+        sessionPath,
+        '--segments',
+        edits.path,
+        '--at',
+        at.toStringAsFixed(3),
+        '--out',
+        out.path,
+        '--render-mode',
+        mode,
+        '--font-scale',
+        fontScale.toString(),
+        '--position',
+        position,
+        '--sub-color',
+        subColor,
+        '--orig-style',
+        origStyle,
       ]);
       return payload['path'] as String? ?? out.path;
     } finally {
@@ -607,10 +660,13 @@ class DesktopProcessorService {
     required void Function(ProcessorProgress progress) onProgress,
     String quality = '1080',
   }) async {
-    return _streamProcess(
-      ['download', '--url', url, '--quality', quality],
-      onProgress: onProgress,
-    );
+    return _streamProcess([
+      'download',
+      '--url',
+      url,
+      '--quality',
+      quality,
+    ], onProgress: onProgress);
   }
 
   /// Lists at most [limit] playlist/channel entries without downloading them.
@@ -641,16 +697,15 @@ class DesktopProcessorService {
   Future<double> probeDuration(String path) async {
     if (path.isEmpty) return 0.0;
     try {
-      final result = await Process.run(
-        resolveTool('ffprobe'),
-        [
-          '-v', 'error',
-          '-show_entries', 'format=duration',
-          '-of', 'default=noprint_wrappers=1:nokey=1',
-          path,
-        ],
-        runInShell: false,
-      );
+      final result = await Process.run(resolveTool('ffprobe'), [
+        '-v',
+        'error',
+        '-show_entries',
+        'format=duration',
+        '-of',
+        'default=noprint_wrappers=1:nokey=1',
+        path,
+      ], runInShell: false);
       if (result.exitCode == 0) {
         return double.tryParse(result.stdout.toString().trim()) ?? 0.0;
       }
@@ -673,20 +728,80 @@ class DesktopProcessorService {
     await Process.run('xdg-open', [path]);
   }
 
-  /// Environment for the processor. Dart merges this over the parent
-  /// environment, so PATH and friends are still inherited.
+  static const _apiKeyNames = <String>{
+    'GROQ_API_KEY',
+    'OPENAI_API_KEY',
+    'GEMINI_API_KEY',
+    'ANTHROPIC_API_KEY',
+  };
+
+  static final _sensitiveEnvironmentName = RegExp(
+    r'(?:^|_)(?:API_KEY|TOKEN|SECRET|PASSWORD)$',
+    caseSensitive: false,
+  );
+
+  /// Prepares a private file which is read by Python into memory only.
   ///
-  /// [ownGroup] is set for long-running jobs only: it tells the processor to
-  /// put itself in its own process group so [cancel] can stop the whole tree
-  /// (python + ffmpeg + yt-dlp) with one signal. It is deliberately NOT set
-  /// for short commands, and never for plain CLI use, where it would stop
-  /// Ctrl+C from reaching the process.
-  Map<String, String>? _envFor({bool ownGroup = false}) {
-    if (processEnvironment.isEmpty && !ownGroup) return null;
-    return {
-      ...processEnvironment,
-      if (ownGroup) 'SUBTITR_OWN_PROCESS_GROUP': '1',
+  /// Creating the empty file before chmod means a secret is never present in
+  /// a broad-permission file, even for a short moment. Windows AppData ACLs
+  /// protect the temp folder, while POSIX receives an explicit 0600 mode.
+  Future<_SecretFile?> _createSecretFile() async {
+    final keys = <String, String>{
+      for (final name in _apiKeyNames) name: processEnvironment[name] ?? '',
     };
+    // No settings object means command-line/developer use; retain its normal
+    // `.env` behaviour without creating an unnecessary session file.
+    if (processEnvironment.isEmpty) return null;
+
+    final directory = await Directory.systemTemp.createTemp('subtitr-secrets-');
+    try {
+      await _restrict(directory.path, '700');
+      final file = File('${directory.path}${Platform.pathSeparator}keys.json');
+      await file.create(exclusive: true);
+      await _restrict(file.path, '600');
+      await file.writeAsString(jsonEncode(keys), flush: true);
+      return _SecretFile(file, directory);
+    } catch (_) {
+      try {
+        await directory.delete(recursive: true);
+      } catch (_) {}
+      rethrow;
+    }
+  }
+
+  Future<void> _restrict(String path, String mode) async {
+    if (Platform.isWindows) return;
+    final result = await Process.run('chmod', [mode, path]);
+    if (result.exitCode != 0) {
+      throw StateError('Vaqtinchalik kalit fayli himoyalanmadi');
+    }
+  }
+
+  /// Builds a deliberately scrubbed process environment. In particular, an
+  /// API key inherited from a shell, IDE or another tool cannot reach the
+  /// processor or the ffmpeg/yt-dlp subprocesses it starts.
+  Map<String, String> _envFor({
+    bool ownGroup = false,
+    _SecretFile? secretFile,
+  }) {
+    final environment = <String, String>{
+      for (final entry in Platform.environment.entries)
+        if (!_sensitiveEnvironmentName.hasMatch(entry.key))
+          entry.key: entry.value,
+    };
+    for (final entry in processEnvironment.entries) {
+      if (!_apiKeyNames.contains(entry.key) &&
+          !_sensitiveEnvironmentName.hasMatch(entry.key)) {
+        environment[entry.key] = entry.value;
+      }
+    }
+    if (secretFile != null) {
+      environment['SUBTITR_SECRETS_FILE'] = secretFile.file.path;
+    } else {
+      environment.remove('SUBTITR_SECRETS_FILE');
+    }
+    if (ownGroup) environment['SUBTITR_OWN_PROCESS_GROUP'] = '1';
+    return environment;
   }
 
   /// The frozen (PyInstaller) processor shipped next to the app, or null when
@@ -701,52 +816,65 @@ class DesktopProcessorService {
   }
 
   Future<ProcessResult> _executeRun(List<String> args) async {
-    final exeFile = _frozenProcessor;
-    if (exeFile != null) {
-      return Process.run(
-        exeFile.path,
-        args,
+    final secretFile = await _createSecretFile();
+    try {
+      final exeFile = _frozenProcessor;
+      if (exeFile != null) {
+        return await Process.run(
+          exeFile.path,
+          args,
+          workingDirectory: root.path,
+          runInShell: false,
+          environment: _envFor(secretFile: secretFile),
+          // The processor prints UTF-8 JSON; decode as UTF-8 so non-ASCII
+          // folder/file names (Cyrillic, etc.) are not mangled by the OS ANSI
+          // code page (the Process.run default).
+          stdoutEncoding: utf8,
+          stderrEncoding: utf8,
+        );
+      }
+      final executable = await _pythonExecutable();
+      return await Process.run(
+        executable,
+        [script.path, ...args],
         workingDirectory: root.path,
-        runInShell: false,
-        environment: _envFor(),
-        // The processor prints UTF-8 JSON; decode as UTF-8 so non-ASCII
-        // folder/file names (Cyrillic, etc.) are not mangled by the OS ANSI
-        // code page (the Process.run default).
+        runInShell: Platform.isWindows,
+        environment: _envFor(secretFile: secretFile),
         stdoutEncoding: utf8,
         stderrEncoding: utf8,
       );
+    } finally {
+      await secretFile?.dispose();
     }
-    final executable = await _pythonExecutable();
-    return Process.run(
-      executable,
-      [script.path, ...args],
-      workingDirectory: root.path,
-      runInShell: Platform.isWindows,
-      environment: _envFor(),
-      stdoutEncoding: utf8,
-      stderrEncoding: utf8,
-    );
   }
 
-  Future<Process> _executeStart(List<String> args) async {
-    final exeFile = _frozenProcessor;
-    if (exeFile != null) {
-      return Process.start(
-        exeFile.path,
-        args,
+  Future<_StartedProcess> _executeStart(List<String> args) async {
+    final secretFile = await _createSecretFile();
+    try {
+      final exeFile = _frozenProcessor;
+      if (exeFile != null) {
+        final process = await Process.start(
+          exeFile.path,
+          args,
+          workingDirectory: root.path,
+          runInShell: false,
+          environment: _envFor(ownGroup: true, secretFile: secretFile),
+        );
+        return _StartedProcess(process, secretFile);
+      }
+      final executable = await _pythonExecutable();
+      final process = await Process.start(
+        executable,
+        [script.path, ...args],
         workingDirectory: root.path,
-        runInShell: false,
-        environment: _envFor(ownGroup: true),
+        runInShell: Platform.isWindows,
+        environment: _envFor(ownGroup: true, secretFile: secretFile),
       );
+      return _StartedProcess(process, secretFile);
+    } catch (_) {
+      await secretFile?.dispose();
+      rethrow;
     }
-    final executable = await _pythonExecutable();
-    return Process.start(
-      executable,
-      [script.path, ...args],
-      workingDirectory: root.path,
-      runInShell: Platform.isWindows,
-      environment: _envFor(ownGroup: true),
-    );
   }
 
   Future<Map<String, dynamic>> _runJson(List<String> args) async {
@@ -811,10 +939,7 @@ class DesktopProcessorService {
     exited.whenComplete(() => stopped = true);
 
     await _signal('-TERM', process.pid);
-    await Future.any([
-      exited,
-      Future<void>.delayed(_gracePeriod),
-    ]);
+    await Future.any([exited, Future<void>.delayed(_gracePeriod)]);
     if (stopped) return;
 
     await _signal('-KILL', process.pid);
@@ -841,7 +966,8 @@ class DesktopProcessorService {
     List<String> args, {
     required void Function(ProcessorProgress progress) onProgress,
   }) async {
-    final process = await _executeStart(args);
+    final started = await _executeStart(args);
+    final process = started.process;
     _active = process;
     _cancelled = false;
     try {
@@ -851,6 +977,7 @@ class DesktopProcessorService {
       // oqimda xato chiqsa o'lgan jarayon "faol" bo'lib qolar va keyingi
       // `cancel()` yo'q pid'ga signal yuborardi.
       _active = null;
+      await started.secretFile?.dispose();
     }
   }
 

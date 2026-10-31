@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
-from .core import AI_DISABLED, AI_MIN_SPLIT_BATCH, SOURCE_LANG_NAMES, Segment, TARGET_LANG_NAMES, WORD_RE, _count, _env_float, ai_retry_backoff, ai_throttle, disable_provider, emit, error_kind, log, model_candidates, normalize_word, offline_phrases, offline_words
+from .core import AI_DISABLED, AI_MIN_SPLIT_BATCH, SOURCE_LANG_NAMES, Segment, TARGET_LANG_NAMES, WORD_RE, _count, _env_float, ai_retry_backoff, ai_throttle, disable_provider, emit, error_kind, log, model_candidates, normalize_word, offline_phrases, offline_words, secret
 from .cache import _cache_enabled, _load_json, _save_json
 
 
@@ -65,7 +65,7 @@ def ai_providers() -> list[tuple[str, Any]]:
     return [
         (name, fn)
         for name, env_key, fn in all_providers
-        if os.getenv(env_key) and name not in AI_DISABLED
+        if secret(env_key) and name not in AI_DISABLED
     ]
 
 
@@ -222,7 +222,7 @@ def translate_openai(prompt: str, payload: str) -> str:
     _count("translate")
     from openai import OpenAI
 
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    client = OpenAI(api_key=secret("OPENAI_API_KEY"))
     last_error: Exception | None = None
     for model in model_candidates(
         "OPENAI_MODEL",
@@ -266,7 +266,7 @@ def translate_claude(prompt: str, payload: str) -> str:
     _count("translate")
     from anthropic import Anthropic
 
-    client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    client = Anthropic(api_key=secret("ANTHROPIC_API_KEY"))
     max_tokens = int(os.getenv("ANTHROPIC_MAX_TOKENS", "8192"))
     # Tarjima uchun "thinking" kerak emas — uni o'chirib token tejaymiz
     # (Sonnet 5 da u sukut bo'yicha YOQILGAN va qo'shimcha token yeydi).
@@ -312,7 +312,7 @@ def translate_gemini(prompt: str, payload: str) -> str:
     from google import genai
     from google.genai import types
 
-    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+    client = genai.Client(api_key=secret("GEMINI_API_KEY"))
     last_error: Exception | None = None
     # DIQQAT: bu standart `.env.example` dagi GEMINI_MODEL bilan BIR XIL
     # bo'lishi kerak. Ilgari kodda "gemini-2.5-pro", namunada esa
@@ -375,7 +375,7 @@ def translate_groq(prompt: str, payload: str) -> str:
     _count("translate")
     from groq import Groq
 
-    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+    client = Groq(api_key=secret("GROQ_API_KEY"))
     last_error: Exception | None = None
     candidates = model_candidates(
         "GROQ_TEXT_MODEL",
