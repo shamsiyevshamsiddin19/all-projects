@@ -10,15 +10,21 @@ class VideoSelectionPanel extends StatelessWidget {
     required this.videos,
     required this.selectedVideo,
     required this.externalVideoPath,
+    required this.externalSubtitlePath,
+    required this.subtitleOffset,
     required this.isRunning,
     required this.isLoading,
     required this.onScan,
     required this.onPickExternal,
+    required this.onPickSubtitle,
+    required this.onClearSubtitle,
+    required this.onOffsetChanged,
     required this.onSelectVideo,
     required this.onClearExternal,
     required this.onNavigateBack,
     required this.onUrlSubmit,
     required this.onDownloadOnly,
+    required this.onPlaylistSubmit,
   });
 
   final String kinoDir;
@@ -26,15 +32,21 @@ class VideoSelectionPanel extends StatelessWidget {
   final List<DesktopVideo> videos;
   final DesktopVideo? selectedVideo;
   final String? externalVideoPath;
+  final String? externalSubtitlePath;
+  final double subtitleOffset;
   final bool isRunning;
   final bool isLoading;
   final VoidCallback onScan;
   final VoidCallback onPickExternal;
+  final VoidCallback onPickSubtitle;
+  final VoidCallback onClearSubtitle;
+  final ValueChanged<double> onOffsetChanged;
   final ValueChanged<DesktopVideo> onSelectVideo;
   final VoidCallback onClearExternal;
   final VoidCallback onNavigateBack;
   final ValueChanged<String> onUrlSubmit;
   final ValueChanged<String> onDownloadOnly;
+  final ValueChanged<String> onPlaylistSubmit;
 
   String get _selectedName {
     final p = externalVideoPath;
@@ -80,8 +92,33 @@ class VideoSelectionPanel extends StatelessWidget {
           enabled: !isRunning,
           onSubmit: onUrlSubmit,
           onDownloadOnly: onDownloadOnly,
+          onPlaylistSubmit: onPlaylistSubmit,
         ),
         const SizedBox(height: 16),
+        OutlinedButton.icon(
+          onPressed: isRunning ? null : onPickSubtitle,
+          icon: const Icon(Icons.subtitles_outlined),
+          label: Text(externalSubtitlePath == null ? 'Tashqi SRT/ASS import qilish' : 'Subtitrni almashtirish'),
+        ),
+        if (externalSubtitlePath != null) ...[
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(child: Text(File(externalSubtitlePath!).uri.pathSegments.last, maxLines: 1, overflow: TextOverflow.ellipsis)),
+            IconButton(tooltip: 'Subtitrni olib tashlash', onPressed: isRunning ? null : onClearSubtitle, icon: const Icon(Icons.close_rounded)),
+          ]),
+          const SizedBox(height: 4),
+          Row(children: [
+            const Text('Vaqt siljishi:'),
+            const SizedBox(width: 12),
+            Expanded(child: DropdownButton<double>(
+              isExpanded: true,
+              value: subtitleOffset,
+              items: const [-10.0, -5.0, -2.0, 0.0, 2.0, 5.0, 10.0].map((v) => DropdownMenuItem(value: v, child: Text('${v >= 0 ? '+' : ''}$v soniya'))).toList(),
+              onChanged: isRunning ? null : (v) { if (v != null) onOffsetChanged(v); },
+            )),
+          ]),
+        ],
+        const SizedBox(height: 12),
         if (externalVideoPath != null)
           Container(
             padding: const EdgeInsets.all(14),
@@ -138,11 +175,13 @@ class _UrlInput extends StatefulWidget {
     required this.enabled,
     required this.onSubmit,
     required this.onDownloadOnly,
+    required this.onPlaylistSubmit,
   });
 
   final bool enabled;
   final ValueChanged<String> onSubmit;
   final ValueChanged<String> onDownloadOnly;
+  final ValueChanged<String> onPlaylistSubmit;
 
   @override
   State<_UrlInput> createState() => _UrlInputState();
@@ -211,6 +250,12 @@ class _UrlInputState extends State<_UrlInput> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: widget.enabled ? () { final u = _url; if (u != null) widget.onPlaylistSubmit(u); } : null,
+            icon: const Icon(Icons.playlist_add_rounded, size: 18),
+            label: const Text('Playlist yoki kanalni tanlab navbatga qo\'shish'),
           ),
         ],
       ],

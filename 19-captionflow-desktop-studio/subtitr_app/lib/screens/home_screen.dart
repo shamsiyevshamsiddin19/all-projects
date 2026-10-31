@@ -25,6 +25,55 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
+class _PlaylistPickerDialog extends StatefulWidget {
+  const _PlaylistPickerDialog({required this.entries});
+  final List<PlaylistEntry> entries;
+
+  @override
+  State<_PlaylistPickerDialog> createState() => _PlaylistPickerDialogState();
+}
+
+class _PlaylistPickerDialogState extends State<_PlaylistPickerDialog> {
+  late final Set<String> _selected = widget.entries.map((e) => e.url).take(25).toSet();
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: const Text('Playlistdan videolarni tanlang'),
+        content: SizedBox(
+          width: 560,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: widget.entries.length,
+            itemBuilder: (_, index) {
+              final entry = widget.entries[index];
+              return CheckboxListTile(
+                value: _selected.contains(entry.url),
+                title: Text(entry.title, maxLines: 2, overflow: TextOverflow.ellipsis),
+                subtitle: entry.duration.isEmpty ? null : Text('${entry.duration} soniya'),
+                onChanged: (checked) => setState(() {
+                  if (checked == true && _selected.length < 25) {
+                    _selected.add(entry.url);
+                  }
+                  if (checked != true) {
+                    _selected.remove(entry.url);
+                  }
+                }),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Bekor qilish')),
+          FilledButton(
+            onPressed: _selected.isEmpty
+                ? null
+                : () => Navigator.pop(context, widget.entries.where((e) => _selected.contains(e.url)).toList()),
+            child: Text('${_selected.length} ta navbatga qo\'shish'),
+          ),
+        ],
+      );
+}
+
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String? _appVersion;
   final DesktopProcessorService _service = DesktopProcessorService();
@@ -37,6 +86,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   DesktopVideo? _selectedVideo;
   ProcessorResult? _result;
   String? _externalVideoPath;
+  String? _externalSubtitlePath;
+  double _subtitleOffset = 0;
   String _kinoDir = '';
   String _outDir = '';
   String _mode = 'dual_vocab';
@@ -340,6 +391,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _updateDuration();
   }
 
+  Future<void> _pickExternalSubtitle() async {
+    final picked = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['srt', 'vtt', 'ass', 'ssa'],
+    );
+    final path = picked?.files.single.path;
+    if (path == null || !mounted) return;
+    setState(() {
+      _externalSubtitlePath = path;
+      _result = null;
+      _status = 'Tashqi subtitr tanlandi';
+    });
+  }
+
   Future<void> _installDependencies() async {
     setState(() {
       _running = true;
@@ -413,6 +478,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         origStyle: _appearance.origStyle,
         quality: _appearance.quality,
         upscale: _appearance.upscale,
+        subtitlePath: _externalSubtitlePath,
+        subtitleOffset: _subtitleOffset,
       );
       if (!mounted) return;
       setState(() {
@@ -448,6 +515,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         sourceLang: _sourceLang,
         targetLang: _targetLang,
         onProgress: _applyProgress,
+        subtitlePath: _externalSubtitlePath,
+        subtitleOffset: _subtitleOffset,
       );
     });
     if (session == null || !mounted) return;
@@ -573,6 +642,65 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         });
       }
     }
+  }
+
+  /// Playlist ro'yxati avval faqat metama'lumot sifatida olinadi. Foydalanuvchi
+  /// tanlagan URLlar esa mavjud batch mexanizmi kabi birma-bir ishlanadi.
+  Future<void> _loadPlaylistQueue(String url) async {
+    try {
+      final entries = await _service.playlist(url: url, limit: 25);
+      if (!mounted) return;
+      final selected = await showDialog<List<PlaylistEntry>>(
+        context: context,
+        builder: (_) => _PlaylistPickerDialog(entries: entries),
+      );
+      if (selected == null || selected.isEmpty || !mounted) return;
+      await _startUrlBatch(selected);
+    } catch (error) {
+      _showError(error.toString());
+    }
+  }
+
+  Future<void> _startUrlBatch(List<PlaylistEntry> entries) async {
+    _batchCancelled = false;
+    await _runJob('Playlist navbati boshlanmoqda', () async {
+      var done = 0;
+      var failed = 0;
+      for (var i = 0; i < entries.length && !_batchCancelled; i++) {
+        final entry = entries[i];
+        if (mounted) {
+          setState(() {
+            _batchInfo = 'Video ${i + 1}/${entries.length}';
+            _status = '$_batchInfo: ${entry.title}';
+            _progress = 0;
+          });
+        }
+        try {
+          final result = await _service.process(
+            videoPath: entry.url, mode: _mode, sourceLang: _sourceLang,
+            targetLang: _targetLang, onProgress: _applyProgress,
+            fontScale: _appearance.fontScale, position: _appearance.position,
+            subColor: _appearance.subColor, origStyle: _appearance.origStyle,
+            quality: _appearance.quality, upscale: _appearance.upscale,
+          );
+          done++;
+          if (mounted) {
+            setState(() => _result = result);
+          }
+          _settingsStore.saveLastResult(result);
+        } on ProcessorCancelled {
+          break;
+        } catch (_) {
+          failed++;
+        }
+      }
+      if (mounted) {
+        setState(() {
+          _status = _batchCancelled ? 'Bekor qilindi ($done tayyor)' : 'Navbat yakunlandi: $done tayyor${failed > 0 ? ', $failed xato' : ''}';
+          _progress = _batchCancelled ? 0 : 1;
+        });
+      }
+    });
   }
 
   /// Returns true to continue anyway, false to open settings, null to cancel.
@@ -883,10 +1011,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               videos: _videos,
               selectedVideo: _selectedVideo,
               externalVideoPath: _externalVideoPath,
+              externalSubtitlePath: _externalSubtitlePath,
+              subtitleOffset: _subtitleOffset,
               isRunning: _running,
               isLoading: _loading,
               onScan: () => _scanVideos(path: _currentDir),
               onPickExternal: _pickExternalVideo,
+              onPickSubtitle: _pickExternalSubtitle,
+              onClearSubtitle: () => setState(() => _externalSubtitlePath = null),
+              onOffsetChanged: (value) => setState(() => _subtitleOffset = value),
               onSelectVideo: (v) {
                 if (v.isDir) {
                   _scanVideos(path: v.path);
@@ -914,6 +1047,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               },
               onUrlSubmit: _startFromUrl,
               onDownloadOnly: _downloadOnly,
+              onPlaylistSubmit: _loadPlaylistQueue,
             );
 
             final leftColumn = Column(

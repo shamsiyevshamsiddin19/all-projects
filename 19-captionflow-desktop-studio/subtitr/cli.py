@@ -6,7 +6,7 @@ import traceback
 
 from .cache import cache_usage, clear_cache
 from .core import KINO_DIR, LOG_DIR, OUT_DIR, clean_orphan_tmp, current_log_file, emit, ensure_dirs, install_signal_handlers, log, redact, setup_logging
-from .media import DEFAULT_QUALITY, QUALITY_HEIGHTS, download_video, scan, update_ytdlp
+from .media import DEFAULT_QUALITY, QUALITY_HEIGHTS, download_video, playlist_entries, scan, update_ytdlp
 from .pipeline import install_deps, prepare_session, preview_frame, process, render_session, subtitle_file
 
 
@@ -41,10 +41,17 @@ def main() -> int:
     p_process.add_argument("--quality", default=DEFAULT_QUALITY, choices=list(QUALITY_HEIGHTS))
     p_process.add_argument("--upscale", action="store_true",
                            help="manba past sifatli bo'lsa ham tanlangan o'lchamga kattalashtirish")
+    p_process.add_argument("--subtitle", default=None, help="tashqi SRT/VTT/ASS/SSA fayl")
+    p_process.add_argument("--subtitle-offset", type=float, default=0.0,
+                           help="import qilingan subtitr uchun umumiy soniya siljishi")
 
     p_download = sub.add_parser("download")
     p_download.add_argument("--url", required=True)
     p_download.add_argument("--quality", default=DEFAULT_QUALITY, choices=list(QUALITY_HEIGHTS))
+
+    p_playlist = sub.add_parser("playlist")
+    p_playlist.add_argument("--url", required=True)
+    p_playlist.add_argument("--limit", type=int, default=25)
 
     sub.add_parser("update-ytdlp")
 
@@ -70,6 +77,8 @@ def main() -> int:
     p_prepare.add_argument("--source-lang", default="auto")
     p_prepare.add_argument("--target-lang", default="uz")
     p_prepare.add_argument("--quality", default=DEFAULT_QUALITY, choices=list(QUALITY_HEIGHTS))
+    p_prepare.add_argument("--subtitle", default=None)
+    p_prepare.add_argument("--subtitle-offset", type=float, default=0.0)
 
     # Tahrirlash oynasi uchun: bitta kadr + ustida haqiqiy subtitr.
     p_prev = sub.add_parser("preview")
@@ -121,6 +130,8 @@ def main() -> int:
                 progress_lo=0.0, progress_hi=1.0, quality=args.quality,
             )
             emit("done", path=str(path), name=path.name, dir=str(dest))
+        elif args.command == "playlist":
+            emit("done", entries=playlist_entries(args.url, args.limit))
         elif args.command == "update-ytdlp":
             emit("done", **update_ytdlp())
         elif args.command == "cache-info":
@@ -133,6 +144,7 @@ def main() -> int:
             result = prepare_session(
                 args.video, args.mode, args.source_lang, args.target_lang,
                 quality=args.quality,
+                subtitle_path=args.subtitle, subtitle_offset=args.subtitle_offset,
             )
             emit("done", **result)
         elif args.command == "preview":
@@ -163,7 +175,8 @@ def main() -> int:
                 args.video, args.mode, args.source_lang, args.target_lang,
                 font_scale=args.font_scale, position=args.position, sub_color=args.sub_color,
                 orig_style=args.orig_style, quality=args.quality,
-                upscale=args.upscale,
+                upscale=args.upscale, subtitle_path=args.subtitle,
+                subtitle_offset=args.subtitle_offset,
             )
             emit("done", **result)
         return 0

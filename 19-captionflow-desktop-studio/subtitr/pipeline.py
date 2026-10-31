@@ -12,8 +12,8 @@ from pathlib import Path
 from typing import Any
 
 from .core import CACHE_DIR, FFMPEG, OUT_DIR, REQUIREMENTS_FILE, Segment, TMP_DIR, USAGE, VENV_DIR, Word, emit, ensure_dirs, normalize_lang_code, require_disk_space, require_tool, reset_usage, run, safe_stem, venv_python
-from .media import normalize_video_path, probe_resolution, quality_height, write_srt
-from .transcribe import get_transcription
+from .media import normalize_video_path, parse_subtitle, probe_resolution, quality_height, write_srt
+from .transcribe import get_transcription, words_from_segments
 from .cache import _cache_enabled, _load_json, _save_json, cache_dir_for, load_transcription, save_transcription
 from .translate import build_glossary, translate_segments
 from .clean import clean_transcription, enforce_reading_speed, filter_words, polish_segments
@@ -22,12 +22,26 @@ from .subtitles import ass_fonts_option, attach_soft_subtitles, burn_subtitles, 
 from .documents import build_reading_blocks, build_sentence_pairs, reading_meta, reading_title, reading_vocab_map, write_csv_vocab, write_docx_transcript, write_docx_vocab, write_md_reading, write_pdf_reading, write_txt_reading, write_txt_transcript, write_txt_vocab
 
 
+def _apply_subtitle_offset(segments: list[Segment], offset: float) -> list[Segment]:
+    """Shift all subtitle times safely, discarding lines wholly before zero."""
+    if not offset:
+        return segments
+    return [
+        Segment(max(0.0, seg.start + offset), max(0.0, seg.end + offset), seg.text,
+                seg.confidence)
+        for seg in segments
+        if seg.end + offset > 0
+    ]
+
+
 def _prepare_data(
     video_value: str,
     mode: str,
     source_lang: str,
     target_lang: str,
     quality: str | None = None,
+    subtitle_path: str | None = None,
+    subtitle_offset: float = 0.0,
 ) -> dict[str, Any]:
     """Transkripsiya + (kerak bo'lsa) tarjima + lug'at. Renderlashga kerak
     bo'lgan hamma narsani lug'at (dict) qilib qaytaradi. `process()` (bir-martalik
@@ -48,19 +62,41 @@ def _prepare_data(
     cdir = cache_dir_for(video)
     try:
         emit("progress", message="Video o'qilmoqda", progress=0.05)
-        # Checkpoint: oldingi ishdan transkripsiyani qayta ishlatamiz (Whisper
-        # sekin/qimmat — takrorlamaslik uchun).
-        cached_tr = load_transcription(cdir)
-        if cached_tr is not None:
-            original, words, detected_lang, transcriber = cached_tr
-            emit("progress", message="Matn keshdan olindi", progress=0.35)
-        else:
-            original, words, detected_lang, transcriber = get_transcription(video, job_tmp, source_lang)
+        imported = Path(subtitle_path).expanduser().resolve() if subtitle_path else None
+        if imported is not None:
+            if not imported.is_file():
+                raise RuntimeError(f"Subtitr fayli topilmadi: {imported}")
+            emit("progress", message=f"Subtitr import qilinmoqda: {imported.name}", progress=0.12)
+            original = parse_subtitle(imported)
             if not original:
-                raise RuntimeError("Nutq/subtitr topilmadi")
-            save_transcription(cdir, original, words, detected_lang, transcriber)
+                raise RuntimeError("Import qilingan subtitrda vaqtli satr topilmadi")
+            words = words_from_segments(original)
+            detected_lang = source_lang if source_lang != "auto" else ""
+            transcriber = "imported_subtitle"
+            emit("progress", message="Tayyor subtitr import qilindi", progress=0.35)
+        else:
+            # Checkpoint: oldingi ishdan transkripsiyani qayta ishlatamiz (Whisper
+            # sekin/qimmat — takrorlamaslik uchun).
+            cached_tr = load_transcription(cdir)
+            if cached_tr is not None:
+                original, words, detected_lang, transcriber = cached_tr
+                emit("progress", message="Matn keshdan olindi", progress=0.35)
+            else:
+                original, words, detected_lang, transcriber = get_transcription(video, job_tmp, source_lang)
+                if not original:
+                    raise RuntimeError("Nutq/subtitr topilmadi")
+                save_transcription(cdir, original, words, detected_lang, transcriber)
         if not original:
             raise RuntimeError("Nutq/subtitr topilmadi")
+        if subtitle_offset:
+            # Global siljitish import qilingan ham, avval transkripsiya qilingan
+            # satrlarga ham bir xil ishlaydi. Manfiy siljishda boshlanish nolga
+            # qisiladi, butunlay videodan oldinga chiqib ketgan satr tashlanadi.
+            original = _apply_subtitle_offset(original, subtitle_offset)
+            if not original:
+                raise RuntimeError("Vaqt siljishi barcha subtitr satrlarini videodan oldinga olib chiqdi")
+            if imported is not None:
+                words = words_from_segments(original)
 
         # #2 + #3: soxta matnni tozalash va aqlli birlashtirish/bo'lish.
         # (Whisper natijasiga qo'llaymiz; sozlash: SUBTITR_NO_POLISH=1 o'chiradi.)
@@ -629,10 +665,12 @@ def _session_path_for(job: dict[str, Any]) -> Path:
 
 
 def prepare_session(video_value: str, mode: str, source_lang: str, target_lang: str,
-                    quality: str | None = None) -> dict[str, Any]:
+                    quality: str | None = None, subtitle_path: str | None = None,
+                    subtitle_offset: float = 0.0) -> dict[str, Any]:
     """Renderlashdan OLDIN transkripsiya+tarjimani tayyorlab, seans faylига saqlaydi.
     Foydalanuvchi tarjimalarni ko'rib/tahrirlab, keyin `render` bilan yakunlaydi."""
-    job = _prepare_data(video_value, mode, source_lang, target_lang, quality=quality)
+    job = _prepare_data(video_value, mode, source_lang, target_lang, quality=quality,
+                        subtitle_path=subtitle_path, subtitle_offset=subtitle_offset)
     job["sessionVersion"] = SESSION_VERSION
     session_path = _session_path_for(job)
     session_path.write_text(json.dumps(job, ensure_ascii=False), encoding="utf-8")
@@ -680,8 +718,11 @@ def process(
     orig_style: str = "box",
     quality: str | None = None,
     upscale: bool = False,
+    subtitle_path: str | None = None,
+    subtitle_offset: float = 0.0,
 ) -> dict[str, Any]:
-    job = _prepare_data(video_value, mode, source_lang, target_lang, quality=quality)
+    job = _prepare_data(video_value, mode, source_lang, target_lang, quality=quality,
+                        subtitle_path=subtitle_path, subtitle_offset=subtitle_offset)
     return _render_outputs(
         job, font_scale=font_scale, position=position,
         sub_color=sub_color, orig_style=orig_style, quality=quality,

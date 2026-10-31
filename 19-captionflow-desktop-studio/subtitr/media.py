@@ -326,6 +326,57 @@ def download_video(
     return final_path
 
 
+def playlist_entries(url: str, limit: int = 25) -> list[dict[str, str]]:
+    """Return a *selection list* for a playlist/channel without downloading it.
+
+    The application deliberately fetches individual selected URLs afterwards.
+    That keeps a channel URL from silently consuming a disk with hundreds of
+    videos and lets the desktop queue report an error per item.
+    """
+    url = (url or "").strip()
+    if not url:
+        raise RuntimeError("Playlist havolasi bo'sh")
+    if not (os.path.isfile(YTDLP) or shutil.which(YTDLP)):
+        raise RuntimeError("yt-dlp topilmadi — playlist o'qib bo'lmaydi.")
+    limit = max(1, min(int(limit), 100))
+    cmd = [
+        YTDLP, "--flat-playlist", "--dump-single-json", "--no-warnings",
+        "--playlist-end", str(limit), *js_runtime_args(), url,
+    ]
+    proc = subprocess.run(
+        cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
+        timeout=90,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError("Playlistni o'qib bo'lmadi: " + (proc.stderr or proc.stdout)[-600:])
+    try:
+        payload = json.loads(proc.stdout or "{}")
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("Playlist javobi o'qilmadi") from exc
+    raw_entries = payload.get("entries") if isinstance(payload, dict) else None
+    if not isinstance(raw_entries, list):
+        raw_entries = [payload] if isinstance(payload, dict) else []
+    entries: list[dict[str, str]] = []
+    for item in raw_entries:
+        if not isinstance(item, dict):
+            continue
+        item_url = str(item.get("webpage_url") or item.get("url") or "").strip()
+        item_id = str(item.get("id") or "").strip()
+        if item_url and not item_url.startswith("http") and item_id:
+            item_url = f"https://www.youtube.com/watch?v={item_id}"
+        if not item_url.startswith("http"):
+            continue
+        entries.append({
+            "id": item_id,
+            "title": str(item.get("title") or item_id or "Nomsiz video"),
+            "url": item_url,
+            "duration": str(item.get("duration") or ""),
+        })
+    if not entries:
+        raise RuntimeError("Playlistda yuklash mumkin bo'lgan video topilmadi")
+    return entries
+
+
 def normalize_video_path(value: str, quality: str | None = None) -> Path:
     if is_url(value):
         return download_video(value, quality=quality)
@@ -470,6 +521,51 @@ def parse_srt_text(raw: str) -> list[Segment]:
 
 def parse_srt(path: Path) -> list[Segment]:
     return parse_srt_text(read_subtitle_text(path))
+
+
+def parse_ass(path: Path) -> list[Segment]:
+    """Read timed Dialogue lines from an ASS/SSA subtitle file.
+
+    ASS dialogue text has nine fixed CSV fields before text.  Splitting only
+    nine times preserves commas in a spoken line; override tags are removed
+    and ASS line breaks are made normal text before the standard cleaner runs.
+    """
+    in_events = False
+    segments: list[Segment] = []
+    for line in read_subtitle_text(path).replace("\r", "").splitlines():
+        stripped = line.strip()
+        if stripped.lower() == "[events]":
+            in_events = True
+            continue
+        if stripped.startswith("["):
+            in_events = False
+        if not in_events or not stripped.lower().startswith("dialogue:"):
+            continue
+        fields = stripped.split(":", 1)[1].split(",", 9)
+        if len(fields) != 10:
+            continue
+        try:
+            start, end = srt_time_to_seconds(fields[1]), srt_time_to_seconds(fields[2])
+        except (TypeError, ValueError):
+            continue
+        text = re.sub(r"\{[^}]*\}", "", fields[9])
+        text = text.replace(r"\N", " ").replace(r"\n", " ").replace(r"\h", " ")
+        text = strip_tags(text)
+        if text:
+            segments.append(Segment(start, end, text))
+    return segments
+
+
+def parse_subtitle(path: Path) -> list[Segment]:
+    """Parse an explicitly imported SRT, VTT, ASS or SSA file."""
+    suffix = path.suffix.lower()
+    if suffix in {".ass", ".ssa"}:
+        return parse_ass(path)
+    if suffix == ".vtt":
+        return parse_vtt(path)
+    if suffix == ".srt":
+        return parse_srt(path)
+    raise RuntimeError("Faqat SRT, VTT, ASS yoki SSA subtitr fayli import qilinadi")
 
 
 def parse_vtt(path: Path) -> list[Segment]:

@@ -294,6 +294,24 @@ class ProcessorProgress {
   final double progress;
 }
 
+/// A remote item returned by yt-dlp's lightweight playlist inspection.
+/// It is metadata only: no video is downloaded until the user selects it.
+class PlaylistEntry {
+  const PlaylistEntry({required this.id, required this.title, required this.url, this.duration = ''});
+
+  final String id;
+  final String title;
+  final String url;
+  final String duration;
+
+  factory PlaylistEntry.fromJson(Map<String, dynamic> json) => PlaylistEntry(
+        id: json['id'] as String? ?? '',
+        title: json['title'] as String? ?? 'Nomsiz video',
+        url: json['url'] as String? ?? '',
+        duration: json['duration'] as String? ?? '',
+      );
+}
+
 class DesktopProcessorService {
   DesktopProcessorService() : root = _findRoot();
 
@@ -385,6 +403,8 @@ class DesktopProcessorService {
     String origStyle = 'box',
     String quality = '1080',
     bool upscale = false,
+    String? subtitlePath,
+    double subtitleOffset = 0,
   }) async {
     final payload = await _streamProcess([
       'process',
@@ -407,6 +427,8 @@ class DesktopProcessorService {
       '--quality',
       quality,
       if (upscale) '--upscale',
+      if (subtitlePath != null && subtitlePath.isNotEmpty) ...['--subtitle', subtitlePath],
+      if (subtitleOffset != 0) ...['--subtitle-offset', subtitleOffset.toString()],
     ], onProgress: onProgress);
     return ProcessorResult.fromJson(payload);
   }
@@ -419,6 +441,8 @@ class DesktopProcessorService {
     required String sourceLang,
     required String targetLang,
     required void Function(ProcessorProgress progress) onProgress,
+    String? subtitlePath,
+    double subtitleOffset = 0,
   }) async {
     final payload = await _streamProcess([
       'prepare',
@@ -430,6 +454,8 @@ class DesktopProcessorService {
       sourceLang,
       '--target-lang',
       targetLang,
+      if (subtitlePath != null && subtitlePath.isNotEmpty) ...['--subtitle', subtitlePath],
+      if (subtitleOffset != 0) ...['--subtitle-offset', subtitleOffset.toString()],
     ], onProgress: onProgress);
     return PreparedSession.fromJson(payload);
   }
@@ -585,6 +611,17 @@ class DesktopProcessorService {
       ['download', '--url', url, '--quality', quality],
       onProgress: onProgress,
     );
+  }
+
+  /// Lists at most [limit] playlist/channel entries without downloading them.
+  /// Selected entries are subsequently run one-by-one, preserving cancellation
+  /// and per-video failure reporting in the desktop queue.
+  Future<List<PlaylistEntry>> playlist({required String url, int limit = 25}) async {
+    final payload = await _runJson(['playlist', '--url', url, '--limit', '$limit']);
+    final raw = payload['entries'];
+    return raw is List
+        ? raw.whereType<Map>().map((item) => PlaylistEntry.fromJson(Map<String, dynamic>.from(item))).where((e) => e.url.isNotEmpty).toList()
+        : const [];
   }
 
   /// Resolves a bundled tool (ffmpeg/ffprobe) next to the app, else PATH.
