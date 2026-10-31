@@ -277,7 +277,16 @@ class ProcessingPanel extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: selectedPath.isEmpty
                   ? null
-                  : () => onOpenPath(selectedPath),
+                  : () {
+                      final finishedVideo = result?.outputs
+                          .where((o) => o.kind == 'video')
+                          .firstOrNull
+                          ?.path;
+                      final target = (finishedVideo != null && finishedVideo.isNotEmpty)
+                          ? finishedVideo
+                          : selectedPath;
+                      onOpenPath(target);
+                    },
               icon: const Icon(Icons.play_arrow_rounded),
               label: const Text('Videoni ochish'),
             ),
@@ -440,6 +449,7 @@ class _ResultView extends StatelessWidget {
               clipBehavior: Clip.antiAlias,
               child: ListTile(
                 dense: true,
+                onTap: () => onOpen(output.path),
                 leading: Icon(
                   _iconFor(output.kind),
                   color: theme.colorScheme.primary,
@@ -456,9 +466,16 @@ class _ResultView extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 trailing: IconButton(
-                  tooltip: 'Ochish',
+                  tooltip: output.kind == 'video'
+                      ? "Ilovada ko'rish"
+                      : 'Ochish',
                   onPressed: () => onOpen(output.path),
-                  icon: const Icon(Icons.open_in_new_rounded, size: 20),
+                  icon: Icon(
+                    output.kind == 'video'
+                        ? Icons.play_circle_fill_rounded
+                        : Icons.open_in_new_rounded,
+                    size: 20,
+                  ),
                 ),
               ),
             ),

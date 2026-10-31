@@ -14,6 +14,8 @@ import '../services/settings_store.dart';
 import '../widgets/processing_panel.dart';
 import '../widgets/settings_panel.dart';
 import '../widgets/video_selection_panel.dart';
+import '../widgets/in_app_video_player.dart';
+import '../widgets/subtitle_player.dart' show playerAvailable;
 import 'api_keys_screen.dart';
 import 'translation_editor_screen.dart';
 
@@ -905,8 +907,46 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
   }
 
+  bool _isVideoPath(String path) {
+    const videoExts = {'mp4', 'mkv', 'avi', 'mov', 'webm', 'm4v', 'flv', 'ts'};
+    final dot = path.lastIndexOf('.');
+    if (dot == -1) return false;
+    final ext = path.substring(dot + 1).toLowerCase();
+    return videoExts.contains(ext);
+  }
+
   Future<void> _openPath(String path) async {
     try {
+      if (_isVideoPath(path) && playerAvailable) {
+        String? sub;
+        if (_result != null) {
+          sub = _result!.outputs
+              .where((o) => o.kind == 'ass' || o.kind == 'srt')
+              .firstOrNull
+              ?.path;
+        }
+        if (sub == null || !File(sub).existsSync()) {
+          final dot = path.lastIndexOf('.');
+          if (dot > 0) {
+            final base = path.substring(0, dot);
+            final ass = '$base.ass';
+            final srt = '$base.srt';
+            if (File(ass).existsSync()) {
+              sub = ass;
+            } else if (File(srt).existsSync()) {
+              sub = srt;
+            }
+          }
+        }
+
+        await InAppVideoPlayerDialog.show(
+          context,
+          videoPath: path,
+          subtitlePath: sub,
+          onOpenExternal: (p) => _service.openPath(p),
+        );
+        return;
+      }
       await _service.openPath(path);
     } catch (error) {
       _showError(error.toString());
@@ -1219,6 +1259,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     onUrlSubmit: _startFromUrl,
                     onDownloadOnly: _downloadOnly,
                     onPlaylistSubmit: _loadPlaylistQueue,
+                    onPreviewVideo: _openPath,
                   );
 
                   final leftColumn = Column(

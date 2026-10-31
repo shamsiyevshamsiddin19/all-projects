@@ -25,6 +25,7 @@ class VideoSelectionPanel extends StatelessWidget {
     required this.onUrlSubmit,
     required this.onDownloadOnly,
     required this.onPlaylistSubmit,
+    this.onPreviewVideo,
   });
 
   final String kinoDir;
@@ -47,6 +48,7 @@ class VideoSelectionPanel extends StatelessWidget {
   final ValueChanged<String> onUrlSubmit;
   final ValueChanged<String> onDownloadOnly;
   final ValueChanged<String> onPlaylistSubmit;
+  final ValueChanged<String>? onPreviewVideo;
 
   String get _selectedName {
     final p = externalVideoPath;
@@ -150,6 +152,21 @@ class VideoSelectionPanel extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (externalVideoPath != null &&
+                    !externalVideoPath!.startsWith('http') &&
+                    onPreviewVideo != null) ...[
+                  IconButton(
+                    tooltip: "Videoni ko'rish",
+                    onPressed: isRunning
+                        ? null
+                        : () => onPreviewVideo!(externalVideoPath!),
+                    icon: const Icon(Icons.play_circle_outline_rounded, size: 20),
+                    style: IconButton.styleFrom(
+                      padding: const EdgeInsets.all(4),
+                      minimumSize: const Size(32, 32),
+                    ),
+                  ),
+                ],
                 IconButton(
                   tooltip: 'Olib tashlash',
                   onPressed: isRunning ? null : onClearExternal,
