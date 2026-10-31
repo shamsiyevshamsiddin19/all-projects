@@ -235,8 +235,16 @@ def download_video(
         cmd = [
             YTDLP, "--no-playlist", "--no-warnings", "--no-mtime",
             *js_runtime_args(),
+            # Audio uchun AVVAL m4a (AAC) so'raladi. YouTube sukut bo'yicha
+            # Opus beradi, Opus esa MP4 ga kuydirishda baribir AAC ga qayta
+            # kodlanadi — ya'ni bir marta ortiqcha yo'qotish bo'ladi. m4a
+            # tanlansa, subtitr kuydirishda audio `-c:a copy` bilan o'tadi.
+            # Topilmasa oddiy zaxira zanjiri ishlaydi.
             "-f", (
-                f"bv*[height<={max_height}]+ba/b[height<={max_height}]/bv*+ba/b"
+                f"bv*[height<={max_height}]+ba[ext=m4a]"
+                f"/bv*[height<={max_height}]+ba"
+                f"/b[height<={max_height}]"
+                f"/bv*+ba[ext=m4a]/bv*+ba/b"
             ),
             "--merge-output-format", "mp4",
             "--ffmpeg-location", ffmpeg_dir,
@@ -508,6 +516,22 @@ def probe_resolution(video: Path) -> tuple[int, int]:
         except Exception:
             pass
     return 1280, 720
+
+
+def probe_audio_codec(video: Path) -> str:
+    """Birinchi audio yo'lakchaning kodeki ("aac", "opus", ...) yoki bo'sh satr."""
+    proc = run(
+        [
+            FFPROBE, "-v", "error",
+            "-select_streams", "a:0",
+            "-show_entries", "stream=codec_name",
+            "-of", "default=noprint_wrappers=1:nokey=1",
+            str(video),
+        ]
+    )
+    if proc.returncode != 0:
+        return ""
+    return (proc.stdout or "").strip().splitlines()[0].strip().lower() if proc.stdout.strip() else ""
 
 
 def extract_embedded_subtitle(video: Path, tmp_dir: Path) -> Path | None:

@@ -90,6 +90,11 @@ sahifasida bo'ladi.
     yig'iladi (aks holda subtitr vaqtlari aralashadi). Sozlash:
     `GROQ_AUDIO_WORKERS` (2 — audio yuklash matndan og'ir),
     `GROQ_CHUNK_SECONDS` (1200)
+  - `subtitles.audio_args_for()` — audio MP4 ga mos bo'lsa (aac, mp3,
+    ac3, eac3, alac) qayta kodlanmaydi, `-c:a copy` bilan o'tadi.
+    O'lchangan: 10 daqiqalik klipda 40.1s -> 15.1s. Yuklashda ham m4a
+    (AAC) afzal ko'riladi, shuning uchun bu yo'l ko'pincha ishlaydi.
+    Sozlash: `SUB_AUDIO` (auto|copy|aac), `SUB_AUDIO_BITRATE` (128k)
 - `desktop_requirements.txt` — Python paketlar ro'yxati. **Yagona manba**:
   `linux/build.sh` ham, ilovadagi "Paketlarni o'rnatish" tugmasi ham
   (`pipeline.required_packages()`) aynan shu fayldan o'qiydi.
@@ -164,7 +169,7 @@ qaytadan pul turadi, shuning uchun uni faqat atayin so'raganda o'chiradi.
 Testlar (yangi bog'liqliksiz, standart `unittest`):
 
 ```bash
-.venv/bin/python -m unittest discover -s tests   # 101 ta
+.venv/bin/python -m unittest discover -s tests   # 105 ta
 cd subtitr_app && flutter test                   # 16 ta
 ```
 

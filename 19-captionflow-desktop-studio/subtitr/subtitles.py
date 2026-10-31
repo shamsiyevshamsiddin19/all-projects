@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import NamedTuple
 
 from .core import FFMPEG, ROOT, Segment, Word, _env_float, emit, log, normalize_word, require_tool, run, stop_child, wrap_lines
-from .media import probe_duration_seconds, probe_resolution, seconds_to_ass_time
+from .media import probe_audio_codec, probe_duration_seconds, probe_resolution, seconds_to_ass_time
 
 
 def ass_escape(text: str) -> str:
@@ -391,6 +391,31 @@ def pick_video_encoder() -> EncoderChoice:
     return presets.get(_HW_ENCODER_CACHE, x264)
 
 
+# MP4 ga to'g'ridan-to'g'ri ko'chirib o'tkazish mumkin bo'lgan audio
+# kodeklari. Boshqalari (opus, vorbis, flac...) AAC ga o'giriladi.
+_MP4_SAFE_AUDIO = {"aac", "mp3", "ac3", "eac3", "alac"}
+AAC_ARGS = ["-c:a", "aac", "-b:a", os.getenv("SUB_AUDIO_BITRATE", "128k")]
+
+
+def audio_args_for(video: Path) -> list[str]:
+    """Audio uchun ffmpeg argumentlari.
+
+    Ilgari audio HAR DOIM AAC 128k ga qayta kodlanardi — hatto manba
+    allaqachon AAC bo'lganda ham. Bu uzun kinoda bekorga vaqt oladi va
+    bitta avlod sifat yo'qotadi. `SUB_AUDIO=aac` eski xatti-harakatni
+    qaytaradi, `SUB_AUDIO=copy` esa majburan ko'chiradi."""
+    mode = os.getenv("SUB_AUDIO", "auto").strip().lower()
+    if mode == "aac":
+        return list(AAC_ARGS)
+    if mode == "copy":
+        return ["-c:a", "copy"]
+    codec = probe_audio_codec(video)
+    if codec in _MP4_SAFE_AUDIO:
+        log.info("audio qayta kodlanmaydi (%s) — ko'chiriladi", codec)
+        return ["-c:a", "copy"]
+    return list(AAC_ARGS)
+
+
 def burn_subtitles(
     video: Path,
     ass_path: Path,
@@ -422,7 +447,7 @@ def burn_subtitles(
             if sharpen:
                 scale_filter += "," + sharpen
 
-    def _run(choice: EncoderChoice) -> tuple[int, str]:
+    def _run(choice: EncoderChoice, audio: list[str]) -> tuple[int, str]:
         enc_name = choice.name
         emit("progress", message=f"Video render qilinmoqda ({enc_name}){suffix}", progress=progress_lo)
         vf = ",".join(
@@ -435,8 +460,7 @@ def burn_subtitles(
             "-i", str(video),
             "-vf", vf,
             "-c:v", choice.codec, *choice.args,
-            "-c:a", "aac",
-            "-b:a", "128k",
+            *audio,
             "-movflags", "+faststart",
             "-progress", "pipe:1", "-nostats",
             str(out_path),
@@ -498,8 +522,15 @@ def burn_subtitles(
             pass
 
     try:
+        audio = audio_args_for(video)
         choice = pick_video_encoder()
-        code, err = _run(choice)
+        code, err = _run(choice, audio)
+        if code != 0 and audio[1] == "copy":
+            # MP4 muxer ba'zan ko'chirishni rad etadi (g'ayrioddiy profil,
+            # buzilgan yo'lakcha) — o'shanda AAC ga qaytamiz.
+            log.info("audio ko'chirish ishlamadi — AAC ga o'girilmoqda")
+            audio = list(AAC_ARGS)
+            code, err = _run(choice, audio)
         if code != 0 and choice.codec != "libx264":
             # Apparat kodlash uzildi (drayver/format) — libx264 (CPU) ga qaytamiz.
             global _HW_ENCODER_CACHE
@@ -509,7 +540,8 @@ def burn_subtitles(
                     "libx264",
                     ["-preset", os.getenv("SUB_PRESET", "veryfast"), "-crf", os.getenv("SUB_CRF", "20")],
                     "libx264 (CPU)",
-                )
+                ),
+                audio,
             )
     except BaseException:
         # KeyboardInterrupt ham shu yerga tushadi (SIGTERM -> to'xtatish).

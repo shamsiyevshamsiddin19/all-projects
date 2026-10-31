@@ -29,6 +29,7 @@ from subtitr import documents as m_doc  # noqa: E402
 from subtitr import media as m_media  # noqa: E402
 from subtitr import translate as m_tx  # noqa: E402
 from subtitr import pipeline as m_pipe  # noqa: E402
+from subtitr import subtitles as m_sub  # noqa: E402
 from subtitr import transcribe as m_tr  # noqa: E402
 
 
@@ -994,6 +995,57 @@ class ParallelTranslationTests(unittest.TestCase):
             for k, v in zip(("TRANSLATE_BATCH", "TRANSLATE_WORKERS"), old):
                 os.environ.pop(k, None) if v is None else os.environ.__setitem__(k, v)
         self.assertEqual(results["1"], results["4"])
+
+
+class AudioPassthroughTests(unittest.TestCase):
+    """Audio allaqachon MP4 ga mos bo'lsa qayta kodlanmasligi kerak.
+
+    O'lchangan (10 daqiqalik klip, VAAPI video): qayta kodlash 40.1s,
+    ko'chirish 15.1s. GPU video kodlaganda CPU'dagi AAC butun quvurni
+    ushlab turadi, ustiga bir avlod sifat yo'qoladi."""
+
+    def setUp(self):
+        import os
+
+        self._real = m_sub.probe_audio_codec
+        self._env = os.environ.get("SUB_AUDIO")
+
+    def tearDown(self):
+        import os
+
+        m_sub.probe_audio_codec = self._real
+        os.environ.pop("SUB_AUDIO", None) if self._env is None \
+            else os.environ.__setitem__("SUB_AUDIO", self._env)
+
+    def _args_for(self, codec: str) -> list[str]:
+        m_sub.probe_audio_codec = lambda _p: codec
+        return m_sub.audio_args_for(Path("/yoq/kino.mp4"))
+
+    def test_mp4_safe_codecs_are_copied(self):
+        for codec in ("aac", "mp3", "ac3", "eac3", "alac"):
+            self.assertEqual(self._args_for(codec), ["-c:a", "copy"], codec)
+
+    def test_other_codecs_are_converted_to_aac(self):
+        # YouTube sukut bo'yicha Opus beradi — u MP4 uchun o'girilishi kerak.
+        for codec in ("opus", "vorbis", "flac", "pcm_s16le", ""):
+            self.assertEqual(self._args_for(codec)[:2], ["-c:a", "aac"], codec)
+
+    def test_env_override_forces_the_old_behaviour(self):
+        import os
+
+        os.environ["SUB_AUDIO"] = "aac"
+        self.assertEqual(self._args_for("aac")[:2], ["-c:a", "aac"])
+        os.environ["SUB_AUDIO"] = "copy"
+        self.assertEqual(self._args_for("opus"), ["-c:a", "copy"])
+
+    def test_download_format_prefers_m4a_over_opus(self):
+        """Yuklashda m4a so'ralsa, keyin kuydirishda qayta kodlash kerak bo'lmaydi."""
+        source = (Path(__file__).resolve().parent.parent / "subtitr" / "media.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("ba[ext=m4a]", source)
+        # Zaxira zanjiri saqlanib qolsin — m4a topilmasa ham yuklanishi kerak.
+        self.assertIn("/bv*+ba/b", source)
 
 
 class GroqChunkTests(unittest.TestCase):
