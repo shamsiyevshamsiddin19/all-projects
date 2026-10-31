@@ -15,7 +15,7 @@ from .core import CACHE_DIR, FFMPEG, OUT_DIR, REQUIREMENTS_FILE, Segment, TMP_DI
 from .media import normalize_video_path, parse_subtitle, probe_resolution, quality_height, write_srt
 from .transcribe import get_transcription, words_from_segments
 from .cache import _cache_enabled, _load_json, _save_json, cache_dir_for, load_transcription, save_transcription
-from .translate import build_glossary, translate_segments
+from .translate import ai_translate_batch, build_glossary, translate_segments
 from .clean import clean_transcription, enforce_reading_speed, filter_words, polish_segments
 from .vocab import build_vocabulary, entry_helper, is_translit_only
 from .subtitles import ass_fonts_option, attach_soft_subtitles, burn_subtitles, write_ass
@@ -705,6 +705,42 @@ def render_session(
         sub_color=sub_color, orig_style=orig_style, quality=quality,
         upscale=upscale,
     )
+
+
+def retranslate_session_segment(
+    session_path: str,
+    index: int,
+    segments_path: str | None = None,
+) -> dict[str, Any]:
+    """Translate one editor line again while keeping immediate context.
+
+    The caller may supply its unsaved editor list via segments_path.
+    """
+    data = _load_session(session_path, segments_path)
+    segments = data.get("segments") or []
+    if not isinstance(segments, list) or index < 0 or index >= len(segments):
+        raise RuntimeError("Qayta tarjima qilinadigan subtitr qatori topilmadi")
+    segment = segments[index]
+    if not isinstance(segment, dict):
+        raise RuntimeError("Subtitr qatori buzilgan")
+    original = str(segment.get("original") or "").strip()
+    if not original:
+        raise RuntimeError("Bo'sh asl matnni tarjima qilib bo'lmaydi")
+    before = [str(item.get("original") or "") for item in segments[max(0, index - 2):index]
+              if isinstance(item, dict)]
+    after = [str(item.get("original") or "") for item in segments[index + 1:index + 3]
+             if isinstance(item, dict)]
+    translated, provider = ai_translate_batch(
+        [original],
+        str(data.get("targetLang") or "uz"),
+        source_lang=str(data.get("sourceLang") or ""),
+        before=before,
+        after=after,
+    )
+    value = (translated[0] if translated else "").strip()
+    if not value:
+        raise RuntimeError("AI bu qator uchun tarjima qaytarmadi")
+    return {"index": index, "translated": value, "provider": provider}
 
 
 def process(

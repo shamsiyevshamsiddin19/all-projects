@@ -7,7 +7,7 @@ import traceback
 from .cache import cache_usage, clear_cache
 from .core import KINO_DIR, LOG_DIR, OUT_DIR, clean_orphan_tmp, current_log_file, emit, ensure_dirs, install_signal_handlers, log, redact, setup_logging
 from .media import DEFAULT_QUALITY, QUALITY_HEIGHTS, download_video, playlist_entries, scan, update_ytdlp
-from .pipeline import install_deps, prepare_session, preview_frame, process, render_session, subtitle_file
+from .pipeline import install_deps, prepare_session, preview_frame, process, render_session, retranslate_session_segment, subtitle_file
 
 
 def main() -> int:
@@ -113,6 +113,10 @@ def main() -> int:
     p_render.add_argument("--orig-style", default="box", choices=["box", "plain"])
     p_render.add_argument("--quality", default=DEFAULT_QUALITY, choices=list(QUALITY_HEIGHTS))
     p_render.add_argument("--upscale", action="store_true")
+    p_retranslate = sub.add_parser("retranslate")
+    p_retranslate.add_argument("--session", required=True)
+    p_retranslate.add_argument("--segments", default=None)
+    p_retranslate.add_argument("--index", required=True, type=int)
 
     args = parser.parse_args()
     # Hech qanday argument qiymati logga tushmaydi (`--video` yo'li tushadi,
@@ -161,6 +165,10 @@ def main() -> int:
                 render_mode=args.render_mode, font_scale=args.font_scale,
                 position=args.position, sub_color=args.sub_color,
                 orig_style=args.orig_style,
+            ))
+        elif args.command == "retranslate":
+            emit("done", **retranslate_session_segment(
+                args.session, args.index, segments_path=args.segments,
             ))
         elif args.command == "render":
             result = render_session(

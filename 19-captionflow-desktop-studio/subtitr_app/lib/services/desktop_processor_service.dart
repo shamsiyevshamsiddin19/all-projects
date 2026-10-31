@@ -239,6 +239,26 @@ class PreparedSession {
   }
 }
 
+/// The response from a single-line AI translation request.
+class RetranslatedSegment {
+  const RetranslatedSegment({
+    required this.index,
+    required this.translated,
+    required this.provider,
+  });
+
+  final int index;
+  final String translated;
+  final String provider;
+
+  factory RetranslatedSegment.fromJson(Map<String, dynamic> json) =>
+      RetranslatedSegment(
+        index: (json['index'] as num?)?.toInt() ?? -1,
+        translated: json['translated'] as String? ?? '',
+        provider: json['provider'] as String? ?? '',
+      );
+}
+
 /// One section of the on-disk cache, as reported by `cache-info`.
 class CacheSection {
   const CacheSection({
@@ -1106,6 +1126,108 @@ class DesktopProcessorService {
       }
     }
     return Directory.current.absolute;
+  }
+
+  /// Asks the configured translator for just one edited subtitle line.
+  Future<RetranslatedSegment> retranslate({
+    required String sessionPath,
+    required List<SubtitleSegment> segments,
+    required int index,
+  }) async {
+    if (index < 0 || index >= segments.length) {
+      throw ArgumentError.value(index, 'index', 'Mavjud subtitr qatori emas');
+    }
+    final edits = await _writeSegmentsTemp('subtitr_retranslate_', segments);
+    try {
+      final payload = await _streamProcess([
+        'retranslate',
+        '--session',
+        sessionPath,
+        '--segments',
+        edits.path,
+        '--index',
+        index.toString(),
+      ], onProgress: (_) {});
+      return RetranslatedSegment.fromJson(payload);
+    } finally {
+      await _deleteQuietly(edits);
+    }
+  }
+
+  /// Crash-safe local draft next to the prepared session.
+  Future<void> saveDraft({
+    required String sessionPath,
+    required List<SubtitleSegment> segments,
+  }) async {
+    final draft = _draftFile(sessionPath);
+    await draft.parent.create(recursive: true);
+    final temp = File(
+      '${draft.path}.${DateTime.now().microsecondsSinceEpoch}.tmp',
+    );
+    final payload = <String, dynamic>{
+      'version': 1,
+      'session': sessionPath,
+      'segments': segments.map((segment) => segment.toJson()).toList(),
+    };
+    try {
+      await temp.writeAsString(jsonEncode(payload), flush: true);
+      if (await draft.exists()) await draft.delete();
+      await temp.rename(draft.path);
+    } finally {
+      await _deleteQuietly(temp);
+    }
+  }
+
+  /// Returns a compatible saved draft, or null if missing/corrupt.
+  Future<List<SubtitleSegment>?> loadDraft({
+    required String sessionPath,
+    required int expectedSegments,
+  }) async {
+    final draft = _draftFile(sessionPath);
+    try {
+      if (!await draft.exists()) return null;
+      final decoded = jsonDecode(await draft.readAsString());
+      if (decoded is! Map ||
+          decoded['version'] != 1 ||
+          decoded['session'] != sessionPath) {
+        return null;
+      }
+      final raw = decoded['segments'];
+      if (raw is! List || raw.length != expectedSegments) return null;
+      return raw
+          .whereType<Map>()
+          .map(
+            (item) => SubtitleSegment.fromJson(Map<String, dynamic>.from(item)),
+          )
+          .toList();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> discardDraft(String sessionPath) =>
+      _deleteQuietly(_draftFile(sessionPath));
+
+  File _draftFile(String sessionPath) => File('$sessionPath.draft.json');
+
+  Future<File> _writeSegmentsTemp(
+    String prefix,
+    List<SubtitleSegment> segments,
+  ) async {
+    final file = File(
+      '${Directory.systemTemp.path}${Platform.pathSeparator}$prefix${DateTime.now().microsecondsSinceEpoch}.json',
+    );
+    await file.writeAsString(
+      jsonEncode(segments.map((segment) => segment.toJson()).toList()),
+      flush: true,
+    );
+    return file;
+  }
+
+  Future<void> _deleteQuietly(File file) async {
+    try {
+      if (await file.exists()) await file.delete();
+    } catch (_) {}
   }
 }
 

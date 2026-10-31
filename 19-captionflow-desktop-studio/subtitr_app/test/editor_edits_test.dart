@@ -14,6 +14,37 @@ import 'package:subtitr_app/widgets/processing_panel.dart';
 /// Tahrirlash oynasida haqiqiy pleyer ishga tushmasligi uchun soxta servis.
 /// Bu testlar fayl renderini emas, foydalanuvchi ko'radigan natijani tekshiradi.
 class _EditorProcessor extends DesktopProcessorService {
+  int? retranslatedIndex;
+
+  @override
+  Future<RetranslatedSegment> retranslate({
+    required String sessionPath,
+    required List<SubtitleSegment> segments,
+    required int index,
+  }) async {
+    retranslatedIndex = index;
+    return RetranslatedSegment(
+      index: index,
+      translated: 'AI yangilagan tarjima',
+      provider: 'test',
+    );
+  }
+
+  @override
+  Future<void> saveDraft({
+    required String sessionPath,
+    required List<SubtitleSegment> segments,
+  }) async {}
+
+  @override
+  Future<List<SubtitleSegment>?> loadDraft({
+    required String sessionPath,
+    required int expectedSegments,
+  }) async => null;
+
+  @override
+  Future<void> discardDraft(String sessionPath) async {}
+
   @override
   Future<({String subtitles, String video})> subtitleFile({
     required String sessionPath,
@@ -56,8 +87,9 @@ class _EditorHandle {
 
 Future<_EditorHandle> _openEditor(
   WidgetTester tester,
-  List<SubtitleSegment> segments,
-) async {
+  List<SubtitleSegment> segments, {
+  _EditorProcessor? service,
+}) async {
   final handle = _EditorHandle();
   await tester.pumpWidget(
     MaterialApp(
@@ -71,7 +103,7 @@ Future<_EditorHandle> _openEditor(
                       MaterialPageRoute(
                         builder: (_) => TranslationEditorScreen(
                           session: _session(segments),
-                          service: _EditorProcessor(),
+                          service: service ?? _EditorProcessor(),
                         ),
                       ),
                     );
@@ -258,5 +290,24 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('v1.2.3+4'), findsOneWidget);
+  });
+
+  testWidgets('bitta qator AI bilan qayta tarjima qilinadi', (tester) async {
+    final service = _EditorProcessor();
+    final segments = [_segment(translated: 'Eski tarjima')];
+    final handle = await _openEditor(tester, segments, service: service);
+
+    expect(find.byKey(const ValueKey('retranslate-tile-1')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('retranslate-tile-1')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(service.retranslatedIndex, 0);
+    expect(find.text('AI yangilagan tarjima'), findsOneWidget);
+
+    await tester.tap(find.text('Videoni render qilish'));
+    await tester.pumpAndSettle();
+    final rendered = await handle.result;
+    expect(rendered!.single.translated, 'AI yangilagan tarjima');
   });
 }
