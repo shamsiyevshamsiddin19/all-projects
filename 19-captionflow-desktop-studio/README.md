@@ -84,6 +84,12 @@ sahifasida bo'ladi.
     yig'iladi, kesh esa har to'plamdan keyin saqlanadi. Sozlash:
     `TRANSLATE_WORKERS` (3; `1` — eski ketma-ket xatti-harakat),
     `TRANSLATE_BATCH` (50)
+  - `transcribe.transcribe_with_groq()` — Groq hajm chegarasidan katta
+    audio 20 daqiqalik bo'laklarga bo'linadi va ular ham parallel
+    yuboriladi. Natija tugash tartibidan emas, BO'LAK INDEKSI bo'yicha
+    yig'iladi (aks holda subtitr vaqtlari aralashadi). Sozlash:
+    `GROQ_AUDIO_WORKERS` (2 — audio yuklash matndan og'ir),
+    `GROQ_CHUNK_SECONDS` (1200)
 - `desktop_requirements.txt` — Python paketlar ro'yxati. **Yagona manba**:
   `linux/build.sh` ham, ilovadagi "Paketlarni o'rnatish" tugmasi ham
   (`pipeline.required_packages()`) aynan shu fayldan o'qiydi.
@@ -158,7 +164,7 @@ qaytadan pul turadi, shuning uchun uni faqat atayin so'raganda o'chiradi.
 Testlar (yangi bog'liqliksiz, standart `unittest`):
 
 ```bash
-.venv/bin/python -m unittest discover -s tests   # 97 ta
+.venv/bin/python -m unittest discover -s tests   # 101 ta
 cd subtitr_app && flutter test                   # 16 ta
 ```
 

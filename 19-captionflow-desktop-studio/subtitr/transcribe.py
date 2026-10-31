@@ -6,6 +6,8 @@ import os
 import re
 import shutil
 import subprocess
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Callable
 
@@ -512,65 +514,95 @@ def transcribe_with_groq(
         duration = chunk_sec  # noma'lum — hech bo'lmasa bitta bo'lak
 
     total_chunks = int((duration + chunk_sec - 1) // chunk_sec)
+    spans: list[tuple[int, float, float]] = []
+    idx, start = 0, 0.0
+    while start < duration - 0.05:
+        spans.append((idx, start, min(duration, start + chunk_sec)))
+        idx += 1
+        start += chunk_sec
+
+    # Bitta bo'lakni kesib, Groq'ga yuboradi. Bo'laklar bir-biriga bog'liq
+    # emas (har biri o'z vaqt siljishi bilan keladi), shuning uchun ularni
+    # parallel yuborish mumkin. Natija INDEKS bo'yicha yig'iladi — tugash
+    # tartibi muhim emas.
+    # `done += 1` atomar emas — progress hisobini qulf bilan himoyalaymiz.
+    progress_lock = threading.Lock()
+    done = 0
+
+    def transcribe_chunk(
+        spec: tuple[int, float, float]
+    ) -> tuple[int, list[Segment], list[Word], str, tuple[float, float] | None]:
+        nonlocal done
+        index, lo, hi = spec
+        chunk_path = audio_path.parent / f"chunk_{index:03d}.ogg"
+        try:
+            # -ss so'rovdan oldin: tez qidirish, audio uchun aniqligi yetarli.
+            proc = run(
+                [
+                    FFMPEG, "-y", "-ss", f"{lo:.3f}", "-t", f"{chunk_sec:.3f}",
+                    "-i", str(audio_path),
+                    "-vn", "-ac", "1", "-ar", "16000",
+                    "-c:a", "libopus", "-b:a", "12k",
+                    str(chunk_path),
+                ]
+            )
+            if proc.returncode != 0 or not chunk_path.exists() or chunk_path.stat().st_size == 0:
+                emit(
+                    "progress",
+                    message=f"Diqqat: {index + 1}-qism audiosi kesilmadi "
+                            f"({_mmss(lo)}-{_mmss(hi)}) — o'sha joy subtitrsiz qoladi",
+                    progress=0.30,
+                )
+                return index, [], [], "", (lo, hi)
+            # Bitta bo'lak tushsa ham butun kino yo'qolmasin.
+            try:
+                segs, wds, det = _groq_transcribe_file(
+                    client, models, chunk_path, language, lo
+                )
+            except Exception as exc:
+                emit(
+                    "progress",
+                    message=f"Diqqat: {index + 1}-qism o'qilmadi "
+                            f"({_mmss(lo)}-{_mmss(hi)}): {exc}",
+                    progress=0.30,
+                )
+                return index, [], [], "", (lo, hi)
+        finally:
+            chunk_path.unlink(missing_ok=True)
+        with progress_lock:
+            done += 1
+            seen = done
+        emit(
+            "progress",
+            message=f"Groq transkripsiya ({seen}/{total_chunks} qism)",
+            progress=0.30,
+        )
+        return index, segs, wds, det, None
+
+    # Audio yuklash matn so'rovidan og'irroq (har bo'lak ~2 MB) va Groq
+    # bepul tarifi daqiqadagi audio sekundini ham cheklaydi — shuning uchun
+    # oqimlar soni tarjimadagidan kamroq. 1 — eski ketma-ket xatti-harakat.
+    workers = max(1, int(os.getenv("GROQ_AUDIO_WORKERS", "2")))
+    if workers == 1 or len(spans) <= 1:
+        results = [transcribe_chunk(spec) for spec in spans]
+    else:
+        with ThreadPoolExecutor(max_workers=min(workers, len(spans))) as pool:
+            results = list(pool.map(transcribe_chunk, spans))
+
+    # Indeks bo'yicha tartiblash: ustma-ust tushgan vaqtlar paydo bo'lmasin.
+    results.sort(key=lambda r: r[0])
     segments_all: list[Segment] = []
     words_all: list[Word] = []
     detected = ""
-    # Tushib qolgan bo'laklar. Ilgari bo'lak ffmpeg xatosi bilan kesilmasa
-    # `if` jimgina o'tib ketardi — 20 daqiqalik nutq hech qanday ogohlantirishsiz
-    # yo'qolardi. Endi har bir tushgan bo'lak sanaladi va oxirida aytiladi.
     failed: list[tuple[float, float]] = []
-    idx = 0
-    start = 0.0
-    while start < duration - 0.05:
-        chunk_path = audio_path.parent / f"chunk_{idx:03d}.ogg"
-        span = (start, min(duration, start + chunk_sec))
-        # -ss so'rovdan oldin: tez qidirish, audio uchun aniqligi yetarli.
-        proc = run(
-            [
-                FFMPEG, "-y", "-ss", f"{start:.3f}", "-t", f"{chunk_sec:.3f}",
-                "-i", str(audio_path),
-                "-vn", "-ac", "1", "-ar", "16000",
-                "-c:a", "libopus", "-b:a", "12k",
-                str(chunk_path),
-            ]
-        )
-        try:
-            if proc.returncode != 0 or not chunk_path.exists() or chunk_path.stat().st_size == 0:
-                failed.append(span)
-                emit(
-                    "progress",
-                    message=f"Diqqat: {idx + 1}-qism audiosi kesilmadi "
-                            f"({_mmss(span[0])}-{_mmss(span[1])}) — o'sha joy subtitrsiz qoladi",
-                    progress=0.30,
-                )
-            else:
-                emit(
-                    "progress",
-                    message=f"Groq transkripsiya (qism {idx + 1}/{total_chunks})",
-                    progress=0.30,
-                )
-                # Bitta bo'lak tushsa ham butun kino yo'qolmasin: xato
-                # ushlanadi, qolgan bo'laklar o'qilaveradi.
-                try:
-                    segs, wds, det = _groq_transcribe_file(
-                        client, models, chunk_path, language, start
-                    )
-                except Exception as exc:
-                    failed.append(span)
-                    emit(
-                        "progress",
-                        message=f"Diqqat: {idx + 1}-qism o'qilmadi "
-                                f"({_mmss(span[0])}-{_mmss(span[1])}): {exc}",
-                        progress=0.30,
-                    )
-                else:
-                    segments_all.extend(segs)
-                    words_all.extend(wds)
-                    detected = detected or det
-        finally:
-            chunk_path.unlink(missing_ok=True)
-        idx += 1
-        start += chunk_sec
+    for _index, segs, wds, det, miss in results:
+        segments_all.extend(segs)
+        words_all.extend(wds)
+        # Til BIRINCHI muvaffaqiyatli bo'lakdan olinadi (tugash tartibidan
+        # emas) — natija har ishda bir xil bo'lsin.
+        detected = detected or det
+        if miss is not None:
+            failed.append(miss)
 
     if not segments_all:
         raise RuntimeError("Groq Whisper bo'laklab transkripsiya qila olmadi")

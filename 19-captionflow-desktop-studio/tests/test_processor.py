@@ -996,6 +996,131 @@ class ParallelTranslationTests(unittest.TestCase):
         self.assertEqual(results["1"], results["4"])
 
 
+class GroqChunkTests(unittest.TestCase):
+    """Uzun kino 20 daqiqalik bo'laklarga bo'linib Groq'ga yuboriladi.
+
+    Bo'laklar parallel ketadi, lekin natija VAQT bo'yicha to'g'ri
+    tartibda yig'ilishi shart — aks holda subtitr vaqtlari aralashib,
+    ekranda keyingi sahnaning matni chiqadi."""
+
+    def setUp(self):
+        import os
+
+        self._real_tx = m_tr._groq_transcribe_file
+        self._real_run = m_tr.run
+        self._real_dur = m_tr.probe_duration_seconds
+        self._real_rescan = m_tr.rescan_swallowed_speech
+        self._env = {
+            k: os.environ.get(k)
+            for k in ("GROQ_API_KEY", "GROQ_AUDIO_CHUNK_BYTES",
+                      "GROQ_CHUNK_SECONDS", "GROQ_AUDIO_WORKERS")
+        }
+        os.environ["GROQ_API_KEY"] = "test-key"
+        os.environ["GROQ_AUDIO_CHUNK_BYTES"] = "1"      # har doim bo'laklaymiz
+        os.environ["GROQ_CHUNK_SECONDS"] = "60"
+        # ffmpeg kesishini taqlid qilamiz: fayl yasaladi, qaytish kodi 0.
+        self.cut: list[float] = []
+
+        class FakeProc:
+            returncode = 0
+            stderr = ""
+
+        def fake_run(cmd, cwd=None):
+            out = Path(cmd[-1])
+            out.write_bytes(b"audio")
+            return FakeProc()
+
+        m_tr.run = fake_run
+        m_tr.probe_duration_seconds = lambda _p: 300.0   # 5 daqiqa -> 5 bo'lak
+        m_tr.rescan_swallowed_speech = (
+            lambda _t, _a, _l, segments, words, source_media=None: (segments, words)
+        )
+
+    def tearDown(self):
+        import os
+
+        m_tr._groq_transcribe_file = self._real_tx
+        m_tr.run = self._real_run
+        m_tr.probe_duration_seconds = self._real_dur
+        m_tr.rescan_swallowed_speech = self._real_rescan
+        for k, v in self._env.items():
+            os.environ.pop(k, None) if v is None else os.environ.__setitem__(k, v)
+
+    def _stub(self, delay_for=None, fail_at=None):
+        import time
+
+        def fake(_client, _models, path, _language, offset):
+            if delay_for is not None:
+                time.sleep(delay_for(offset))
+            if fail_at is not None and abs(offset - fail_at) < 0.01:
+                raise RuntimeError("soxta xato")
+            # Har bo'lak o'z siljishi bilan bitta bo'lak qaytaradi.
+            return (
+                [dp.Segment(offset + 1.0, offset + 2.0, f"qism {int(offset // 60)}")],
+                [dp.Word(offset + 1.0, offset + 1.5, f"soz{int(offset // 60)}")],
+                "english",
+            )
+
+        m_tr._groq_transcribe_file = fake
+
+    def test_chunks_are_ordered_by_time_not_by_completion(self):
+        import os
+
+        with tempfile.TemporaryDirectory() as tmp:
+            audio = Path(tmp) / "audio.webm"
+            audio.write_bytes(b"x" * 100)
+            # BIRINCHI bo'lak eng sekin tugaydi.
+            self._stub(delay_for=lambda off: 0.2 if off == 0.0 else 0.01)
+            os.environ["GROQ_AUDIO_WORKERS"] = "5"
+            segs, words, detected = m_tr.transcribe_with_groq(audio, "en")
+
+        self.assertEqual([x.text for x in segs],
+                         [f"qism {i}" for i in range(5)])
+        self.assertEqual([x.start for x in segs], [1.0, 61.0, 121.0, 181.0, 241.0])
+        self.assertEqual([w.word for w in words], [f"soz{i}" for i in range(5)])
+        self.assertEqual(detected, "english")
+
+    def test_one_failed_chunk_does_not_lose_the_rest(self):
+        import os
+
+        with tempfile.TemporaryDirectory() as tmp:
+            audio = Path(tmp) / "audio.webm"
+            audio.write_bytes(b"x" * 100)
+            self._stub(fail_at=120.0)   # 3-bo'lak tushadi
+            os.environ["GROQ_AUDIO_WORKERS"] = "3"
+            segs, _words, _detected = m_tr.transcribe_with_groq(audio, "en")
+
+        texts = [x.text for x in segs]
+        self.assertEqual(texts, ["qism 0", "qism 1", "qism 3", "qism 4"])
+        self.assertNotIn("qism 2", texts)
+
+    def test_single_worker_gives_the_same_result(self):
+        import os
+
+        results = {}
+        with tempfile.TemporaryDirectory() as tmp:
+            audio = Path(tmp) / "audio.webm"
+            audio.write_bytes(b"x" * 100)
+            for workers in ("1", "4"):
+                self._stub()
+                os.environ["GROQ_AUDIO_WORKERS"] = workers
+                segs, _w, _d = m_tr.transcribe_with_groq(audio, "en")
+                results[workers] = [(x.start, x.text) for x in segs]
+        self.assertEqual(results["1"], results["4"])
+
+    def test_chunk_files_are_cleaned_up(self):
+        import os
+
+        with tempfile.TemporaryDirectory() as tmp:
+            audio = Path(tmp) / "audio.webm"
+            audio.write_bytes(b"x" * 100)
+            self._stub()
+            os.environ["GROQ_AUDIO_WORKERS"] = "3"
+            m_tr.transcribe_with_groq(audio, "en")
+            left = sorted(p.name for p in Path(tmp).iterdir())
+        self.assertEqual(left, ["audio.webm"], f"vaqtinchalik fayl qoldi: {left}")
+
+
 class ThreadSafetyTests(unittest.TestCase):
     """Parallel ishda umumiy holat buzilmasligi kerak."""
 
