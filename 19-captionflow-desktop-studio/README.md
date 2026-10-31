@@ -1,5 +1,10 @@
 # Subtitr Desktop
 
+> Kod ikki joyda turadi: [`all-projects`](https://github.com/shamsiyevshamsiddin19/all-projects)
+> monorepo'sida (`19-captionflow-desktop-studio/`) va shu alohida
+> [`subtitle-desktop`](https://github.com/shamsiyevshamsiddin19/subtitle-desktop)
+> repo'sida. Monorepo asosiy manba; bu repo `git subtree` bilan yangilanadi.
+
 Video subtitr/tarjima qiluvchi desktop ilova (Flutter GUI + Python backend).
 
 ## O'rnatish
