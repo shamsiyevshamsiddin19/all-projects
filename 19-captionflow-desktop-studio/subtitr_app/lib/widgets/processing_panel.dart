@@ -14,6 +14,7 @@ class ProcessingPanel extends StatelessWidget {
     this.estimatedSeconds = 0,
     this.estimateText = '',
     this.startTime,
+    this.lastProgressUpdate,
     required this.onStart,
     this.onReview,
     this.onCancel,
@@ -32,6 +33,7 @@ class ProcessingPanel extends StatelessWidget {
   final int estimatedSeconds;
   final String estimateText;
   final DateTime? startTime;
+  final DateTime? lastProgressUpdate;
   final VoidCallback onStart;
   final VoidCallback? onReview;
   final VoidCallback? onCancel;
@@ -51,14 +53,28 @@ class ProcessingPanel extends StatelessWidget {
       final rem = (totalEst - elapsed).clamp(0, 9999).toInt();
       final m = rem ~/ 60;
       final s = rem % 60;
-      timeText = 'Qolgan vaqt: ${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+      timeText =
+          'Qolgan vaqt: ${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
     } else if (isRunning && startTime != null) {
       timeText = 'Hisoblanmoqda...';
     } else if (!isRunning && estimatedSeconds > 0 && result == null) {
       final m = estimatedSeconds ~/ 60;
       final s = estimatedSeconds % 60;
-      timeText = 'Taxminiy vaqt: ${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+      timeText =
+          'Taxminiy vaqt: ${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
     }
+    final progressAge = lastProgressUpdate == null
+        ? null
+        : DateTime.now().difference(lastProgressUpdate!);
+    // PDF/DOCX kabi yakuniy fayllarni yozish foizni oshirmasligi mumkin.
+    // Shu sabab 60–70% oralig'ida 15 soniyadan keyin alohida jonli belgi
+    // ko'rsatamiz: foydalanuvchi jarayon qotib qolgan deb o'ylamaydi.
+    final isStillWorking =
+        isRunning &&
+        progress >= 0.60 &&
+        progress <= 0.70 &&
+        progressAge != null &&
+        progressAge >= const Duration(seconds: 15);
 
     final content = Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -68,13 +84,19 @@ class ProcessingPanel extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.5,
+              ),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.timer_outlined, size: 18, color: theme.colorScheme.onSurfaceVariant),
+                Icon(
+                  Icons.timer_outlined,
+                  size: 18,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   timeText,
@@ -92,11 +114,17 @@ class ProcessingPanel extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.data_usage_rounded, size: 16, color: theme.colorScheme.onSurfaceVariant),
+              Icon(
+                Icons.data_usage_rounded,
+                size: 16,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
               const SizedBox(width: 6),
               Text(
                 estimateText,
-                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -126,7 +154,10 @@ class ProcessingPanel extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(20),
@@ -141,16 +172,40 @@ class ProcessingPanel extends StatelessWidget {
               ),
             ],
           ),
+          if (isStillWorking) ...[
+            const SizedBox(height: 10),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Hali ishlayapti — yakuniy fayllar yozilmoqda.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 24),
-        ] else if (status.isNotEmpty && status != 'Tayyor' && status != 'Kinolar papkasiga video tashlang') ...[
+        ] else if (status.isNotEmpty &&
+            status != 'Tayyor' &&
+            status != 'Kinolar papkasiga video tashlang') ...[
           const SizedBox(height: 8),
           Text(
             status,
-            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 24),
         ],
-        
+
         Wrap(
           spacing: 16,
           runSpacing: 16,
@@ -164,8 +219,14 @@ class ProcessingPanel extends StatelessWidget {
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFFB00020),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 20),
-                  textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 48,
+                    vertical: 20,
+                  ),
+                  textStyle: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
                 ),
               )
             else
@@ -174,8 +235,14 @@ class ProcessingPanel extends StatelessWidget {
                 icon: const Icon(Icons.auto_awesome_rounded),
                 label: const Text('Boshlash'),
                 style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 20),
-                  textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 48,
+                    vertical: 20,
+                  ),
+                  textStyle: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
                 ),
               ),
             if (!isRunning && onReview != null)
@@ -184,7 +251,10 @@ class ProcessingPanel extends StatelessWidget {
                 icon: const Icon(Icons.edit_note_rounded),
                 label: const Text('Ko\'rib chiqib render'),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 20,
+                  ),
                 ),
               ),
             if (!isRunning && onStartBatch != null && videoCount > 1)
@@ -193,7 +263,10 @@ class ProcessingPanel extends StatelessWidget {
                 icon: const Icon(Icons.playlist_play_rounded),
                 label: Text('Barchasini ($videoCount)'),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 20,
+                  ),
                 ),
               ),
             OutlinedButton.icon(
@@ -202,13 +275,15 @@ class ProcessingPanel extends StatelessWidget {
               label: const Text('Natijalar'),
             ),
             OutlinedButton.icon(
-              onPressed: selectedPath.isEmpty ? null : () => onOpenPath(selectedPath),
+              onPressed: selectedPath.isEmpty
+                  ? null
+                  : () => onOpenPath(selectedPath),
               icon: const Icon(Icons.play_arrow_rounded),
               label: const Text('Videoni ochish'),
             ),
           ],
         ),
-        
+
         if (result != null) ...[
           const SizedBox(height: 32),
           const Divider(),
@@ -227,9 +302,7 @@ class ProcessingPanel extends StatelessWidget {
           child: Container(
             alignment: Alignment.center,
             padding: const EdgeInsets.symmetric(vertical: 24),
-            constraints: BoxConstraints(
-              minHeight: constraints.maxHeight,
-            ),
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
             child: content,
           ),
         );
@@ -268,9 +341,11 @@ class _ResultView extends StatelessWidget {
     if (whisper > 0) {
       // Qayta o'qish oynalari ham Whisper so'rovi — qavs ichida ajratamiz,
       // chunki ularning soni videodan videoga o'zgaradi.
-      parts.add(rescan > 0
-          ? 'Whisper: $whisper so\'rov (shundan $rescan yutilgan nutqni qayta o\'qish)'
-          : 'Whisper: $whisper so\'rov');
+      parts.add(
+        rescan > 0
+            ? 'Whisper: $whisper so\'rov (shundan $rescan yutilgan nutqni qayta o\'qish)'
+            : 'Whisper: $whisper so\'rov',
+      );
     }
     if (translate > 0) parts.add('Matn AI: $translate so\'rov');
     return parts.join('  •  ');
@@ -335,8 +410,11 @@ class _ResultView extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.info_outline_rounded,
-                  size: 16, color: theme.colorScheme.tertiary),
+              Icon(
+                Icons.info_outline_rounded,
+                size: 16,
+                color: theme.colorScheme.tertiary,
+              ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
@@ -355,12 +433,17 @@ class _ResultView extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(bottom: 8.0),
             child: Material(
-              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.3,
+              ),
               borderRadius: BorderRadius.circular(10),
               clipBehavior: Clip.antiAlias,
               child: ListTile(
                 dense: true,
-                leading: Icon(_iconFor(output.kind), color: theme.colorScheme.primary),
+                leading: Icon(
+                  _iconFor(output.kind),
+                  color: theme.colorScheme.primary,
+                ),
                 title: Text(
                   output.label,
                   maxLines: 1,
