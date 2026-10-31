@@ -41,6 +41,8 @@ sahifasida bo'ladi.
 - Subtitr kuydirish (ffmpeg, apparat kodlash: NVENC/QSV/AMF) — asl matn,
   ikki qator, yoki faqat tarjima
 - YouTube/Instagram va boshqa saytlardan video yuklash (yt-dlp)
+- Tahrirlashda kadr ko'rish: qatorni bosganda subtitr o'sha joyda qanday
+  chiqishini kuydirishni kutmasdan ko'rsatadi
 - Chrome kengaytmasi (`chrome-extension/`) — sahifadagi video oqim havolasini topib beradi
 
 ## Tuzilma
@@ -71,6 +73,12 @@ sahifasida bo'ladi.
     bo'lsa, "o'ng"; `light` → "yorug'lik" bo'lsa, "yengil".
     Kesh `vocab_v3_*` — versiya oshirilmasa eski (kontekstsiz) lug'at
     qaytarilaverardi
+  - `pipeline.preview_frame()` — tahrirlash oynasida qatorni bosganda
+    o'sha soniyadan BITTA kadr chiqadi, ustida haqiqiy subtitr bilan.
+    ASS `_render_data()` orqali renderning aynan o'zi bilan yasaladi,
+    shuning uchun shrift, sariq quti, joylashuv va lug'at kartochkasi
+    yakuniy videodagidek. `-copyts` SHART: usiz `-ss` vaqtlarni 0 ga
+    qaytaradi va `ass` filtri subtitrni topa olmaydi
   - `core.dialogue_parts()` — "- Salom. - Salom." ko'rinishidagi dialog
     har so'zlovchi O'Z QATORIDAN boshlanadi. Shart: matn chiziqcha bilan
     boshlanishi va kamida ikkitasi bo'lishi — shunda "shunday - deb
@@ -241,8 +249,8 @@ qaytadan pul turadi, shuning uchun uni faqat atayin so'raganda o'chiradi.
 Testlar (yangi bog'liqliksiz, standart `unittest`):
 
 ```bash
-.venv/bin/python -m unittest discover -s tests   # 167 ta
-cd subtitr_app && flutter test                   # 22 ta
+.venv/bin/python -m unittest discover -s tests   # 171 ta
+cd subtitr_app && flutter test                   # 24 ta
 ```
 
 ## Eslatma

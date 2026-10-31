@@ -465,7 +465,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Review/edit screen — returns edited segments, or null if cancelled.
     final edited = await Navigator.of(context).push<List<SubtitleSegment>>(
       MaterialPageRoute(
-        builder: (_) => TranslationEditorScreen(session: session!),
+        builder: (_) => TranslationEditorScreen(
+          session: session!,
+          // Kadr ko'rish kuydiriladigan ko'rinishni AYNAN takrorlashi uchun.
+          appearance: _appearance,
+        ),
       ),
     );
     if (edited == null || !mounted) {

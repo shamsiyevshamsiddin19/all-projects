@@ -7,7 +7,7 @@ import traceback
 from .cache import cache_usage, clear_cache
 from .core import KINO_DIR, LOG_DIR, OUT_DIR, clean_orphan_tmp, current_log_file, emit, ensure_dirs, install_signal_handlers, log, redact, setup_logging
 from .media import DEFAULT_QUALITY, QUALITY_HEIGHTS, download_video, scan, update_ytdlp
-from .pipeline import install_deps, prepare_session, process, render_session
+from .pipeline import install_deps, prepare_session, preview_frame, process, render_session
 
 
 def main() -> int:
@@ -71,6 +71,19 @@ def main() -> int:
     p_prepare.add_argument("--target-lang", default="uz")
     p_prepare.add_argument("--quality", default=DEFAULT_QUALITY, choices=list(QUALITY_HEIGHTS))
 
+    # Tahrirlash oynasi uchun: bitta kadr + ustida haqiqiy subtitr.
+    p_prev = sub.add_parser("preview")
+    p_prev.add_argument("--session", required=True)
+    p_prev.add_argument("--segments", default=None)
+    p_prev.add_argument("--at", type=float, required=True)
+    p_prev.add_argument("--out", required=True)
+    p_prev.add_argument("--render-mode", default=None)
+    p_prev.add_argument("--font-scale", type=float, default=1.0)
+    p_prev.add_argument("--position", default="bottom", choices=["bottom", "top"])
+    p_prev.add_argument("--sub-color", default="#FFE680")
+    p_prev.add_argument("--orig-style", default="box", choices=["box", "plain"])
+    p_prev.add_argument("--preview-height", type=int, default=540)
+
     p_render = sub.add_parser("render")
     p_render.add_argument("--session", required=True)
     p_render.add_argument("--segments", default=None)
@@ -111,6 +124,14 @@ def main() -> int:
                 quality=args.quality,
             )
             emit("done", **result)
+        elif args.command == "preview":
+            emit("done", **preview_frame(
+                args.session, args.at, args.out,
+                segments_path=args.segments, render_mode=args.render_mode,
+                font_scale=args.font_scale, position=args.position,
+                sub_color=args.sub_color, orig_style=args.orig_style,
+                preview_height=args.preview_height,
+            ))
         elif args.command == "render":
             result = render_session(
                 args.session, segments_path=args.segments,

@@ -1132,6 +1132,58 @@ class VocabContextTests(unittest.TestCase):
         self.assertNotIn("vocab_v2_", source)
 
 
+class PreviewFrameTests(unittest.TestCase):
+    """Tahrirlash oynasidagi kadr renderning AYNAN o'zi bo'lishi kerak."""
+
+    def test_preview_uses_the_same_render_data(self):
+        """Kadr va kuydirilgan video bir manbadan ASS oladi."""
+        source = (Path(__file__).resolve().parent.parent / "subtitr" / "pipeline.py").read_text(
+            encoding="utf-8"
+        )
+        # Ikkalasi ham `_render_data()` dan foydalanishi shart; aks holda
+        # ko'rinish (shrift, quti, kartochka) ajralib ketadi.
+        body = source[source.index("def preview_frame("):source.index("def _session_path_for(")]
+        self.assertIn("_render_data(job)", body)
+        self.assertIn("write_ass(", body)
+
+    def test_preview_keeps_timestamps_for_the_ass_filter(self):
+        """`-ss` kirishdan oldin qo'yilganda ffmpeg vaqtlarni 0 ga qaytaradi
+        va `ass` filtri o'sha daqiqadagi subtitrni topa olmaydi — kadr bo'sh
+        chiqadi. `-copyts` shuning uchun shart."""
+        source = (Path(__file__).resolve().parent.parent / "subtitr" / "pipeline.py").read_text(
+            encoding="utf-8"
+        )
+        body = source[source.index("def preview_frame("):source.index("def _session_path_for(")]
+        self.assertIn('"-copyts"', body)
+        self.assertIn('"-frames:v", "1"', body)
+
+    def test_document_modes_fall_back_to_a_visual_mode(self):
+        """"srt"/"reading" da kuydirilgan subtitr yo'q — ko'rish uchun
+        eng to'liq ko'rinish olinadi."""
+        from subtitr.pipeline import VIDEO_MODES, modes_for
+
+        self.assertNotIn("srt", VIDEO_MODES)
+        self.assertIn("dual_vocab", VIDEO_MODES)
+        self.assertEqual(
+            [m for m in modes_for("all") if m in VIDEO_MODES], ["dual_vocab"]
+        )
+
+    def test_old_session_is_rejected_before_previewing(self):
+        import json
+
+        from subtitr.pipeline import preview_frame
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "s.json"
+            path.write_text(json.dumps({
+                "segments": [{"start": 0, "end": 1, "original": "a"}],
+                "video": "/yoq", "mode": "dual",
+            }), encoding="utf-8")
+            with self.assertRaises(RuntimeError) as ctx:
+                preview_frame(str(path), 0.5, str(Path(tmp) / "out.jpg"))
+        self.assertIn("eski", str(ctx.exception))
+
+
 class DialogueWrapTests(unittest.TestCase):
     """Dialog chiziqchasi qator BOSHIDA turishi kerak.
 

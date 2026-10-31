@@ -7,17 +7,18 @@ import os
 import shutil
 import sys
 import tempfile
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .core import CACHE_DIR, OUT_DIR, REQUIREMENTS_FILE, Segment, TMP_DIR, USAGE, VENV_DIR, Word, emit, ensure_dirs, normalize_lang_code, require_disk_space, require_tool, reset_usage, run, safe_stem, venv_python
+from .core import CACHE_DIR, FFMPEG, OUT_DIR, REQUIREMENTS_FILE, Segment, TMP_DIR, USAGE, VENV_DIR, Word, emit, ensure_dirs, normalize_lang_code, require_disk_space, require_tool, reset_usage, run, safe_stem, venv_python
 from .media import normalize_video_path, probe_resolution, quality_height, write_srt
 from .transcribe import get_transcription
 from .cache import _cache_enabled, _load_json, _save_json, cache_dir_for, load_transcription, save_transcription
 from .translate import build_glossary, translate_segments
 from .clean import clean_transcription, enforce_reading_speed, filter_words, polish_segments
 from .vocab import build_vocabulary, entry_helper, is_translit_only
-from .subtitles import burn_subtitles, write_ass
+from .subtitles import ass_fonts_option, burn_subtitles, write_ass
 from .documents import build_reading_blocks, build_sentence_pairs, reading_meta, reading_title, reading_vocab_map, write_docx_transcript, write_docx_vocab, write_md_reading, write_pdf_reading, write_txt_reading, write_txt_transcript, write_txt_vocab
 
 
@@ -210,32 +211,34 @@ def _opt_float(value: Any) -> float | None:
         return None
 
 
-def _render_outputs(
-    job: dict[str, Any],
-    font_scale: float = 1.0,
-    position: str = "bottom",
-    sub_color: str = "#FFE680",
-    orig_style: str = "box",
-    quality: str | None = None,
-    upscale: bool = False,
-) -> dict[str, Any]:
-    """`_prepare_data()` qaytargan (yoki foydalanuvchi tahrirlagan) `job`dan
-    SRT/ASS/DOCX fayllar va subtitr kuydirilgan videoni tayyorlaydi."""
-    ensure_dirs()
-    require_tool("ffmpeg")
-    require_tool("ffprobe")
-    video = normalize_video_path(str(job["video"]))
-    # Render chiqishi manbaga yaqin hajmda bo'ladi; "all" rejimida ikkita.
-    require_disk_space(video, OUT_DIR, factor=2.2)
-    stem = safe_stem(str(job.get("stem") or video.name))
-    mode = str(job["mode"])
-    effective_lang = str(job.get("sourceLang") or "en")
-    target_lang = str(job.get("targetLang") or "uz")
-    transcriber = str(job.get("transcriber") or "")
-    provider = str(job.get("translator") or "none")
-    width = int(job.get("width") or 1280)
-    height = int(job.get("height") or 720)
+@dataclass
+class RenderData:
+    """`job` dan ASS yasash uchun kerak bo'lgan hamma narsa.
 
+    `_render_outputs` va `preview_frame` IKKALASI ham shuni ishlatadi —
+    shunda ko'rish oynasidagi kadr kuydirilgan videodan farq qilmaydi
+    (shrift, quti, joylashuv, lug'at kartochkasi bir xil)."""
+
+    video: Path
+    stem: str
+    mode: str
+    source_lang: str
+    target_lang: str
+    transcriber: str
+    translator: str
+    width: int
+    height: int
+    display_original: list[Segment]
+    translated: list[Segment] | None
+    reading_source: list[Segment]
+    reading_translated: list[Segment] | None
+    words: list[Word]
+    entries: list[dict[str, Any]]
+    vocab_map: dict[str, str]
+
+
+def _render_data(job: dict[str, Any]) -> RenderData:
+    video = normalize_video_path(str(job["video"]))
     seg_data = job.get("segments") or []
     display_original = [
         Segment(float(s["start"]), float(s["end"]), str(s.get("original", "")),
@@ -264,15 +267,57 @@ def _render_outputs(
         ]
         if has_tr else None
     )
-    words = [Word(float(w[0]), float(w[1]), str(w[2])) for w in (job.get("words") or [])]
     entries: list[dict[str, Any]] = list(job.get("vocab") or [])
-    # Ism va o'zlashmalar kartochkaga chiqmaydi ("Чебурашка · Cheburashka"
-    # ekranda joy egallaydi-yu, hech narsa o'rgatmaydi).
-    vocab_map = {
-        str(e["word"]): str(e["translation"])
-        for e in entries
-        if not is_translit_only(e)
-    }
+    return RenderData(
+        video=video,
+        stem=safe_stem(str(job.get("stem") or video.name)),
+        mode=str(job["mode"]),
+        source_lang=str(job.get("sourceLang") or "en"),
+        target_lang=str(job.get("targetLang") or "uz"),
+        transcriber=str(job.get("transcriber") or ""),
+        translator=str(job.get("translator") or "none"),
+        width=int(job.get("width") or 1280),
+        height=int(job.get("height") or 720),
+        display_original=display_original,
+        translated=translated,
+        reading_source=reading_source,
+        reading_translated=reading_translated,
+        words=[Word(float(w[0]), float(w[1]), str(w[2])) for w in (job.get("words") or [])],
+        entries=entries,
+        # Ism va o'zlashmalar kartochkaga chiqmaydi ("Чебурашка · Cheburashka"
+        # ekranda joy egallaydi-yu, hech narsa o'rgatmaydi).
+        vocab_map={
+            str(e["word"]): str(e["translation"])
+            for e in entries
+            if not is_translit_only(e)
+        },
+    )
+
+
+def _render_outputs(
+    job: dict[str, Any],
+    font_scale: float = 1.0,
+    position: str = "bottom",
+    sub_color: str = "#FFE680",
+    orig_style: str = "box",
+    quality: str | None = None,
+    upscale: bool = False,
+) -> dict[str, Any]:
+    """`_prepare_data()` qaytargan (yoki foydalanuvchi tahrirlagan) `job`dan
+    SRT/ASS/DOCX fayllar va subtitr kuydirilgan videoni tayyorlaydi."""
+    ensure_dirs()
+    require_tool("ffmpeg")
+    require_tool("ffprobe")
+    data = _render_data(job)
+    video, stem, mode = data.video, data.stem, data.mode
+    # Render chiqishi manbaga yaqin hajmda bo'ladi; "all" rejimida ikkita.
+    require_disk_space(video, OUT_DIR, factor=2.2)
+    effective_lang, target_lang = data.source_lang, data.target_lang
+    transcriber, provider = data.transcriber, data.translator
+    width, height = data.width, data.height
+    display_original, translated = data.display_original, data.translated
+    reading_source, reading_translated = data.reading_source, data.reading_translated
+    words, entries, vocab_map = data.words, data.entries, data.vocab_map
 
     emit("progress", message="Fayllar tayyorlanmoqda", progress=0.60)
 
@@ -417,6 +462,104 @@ def _render_outputs(
 SESSION_VERSION = 2
 
 
+def _load_session(session_path: str, segments_path: str | None = None) -> dict[str, Any]:
+    """Seans faylini o'qiydi va (berilgan bo'lsa) tahrirlangan segmentlarni
+    qo'yadi. `render_session` ham, `preview_frame` ham shuni ishlatadi."""
+    data = _load_json(Path(session_path))
+    if not isinstance(data, dict) or not data.get("segments"):
+        raise RuntimeError("Seans fayli topilmadi yoki buzilgan.")
+    version = int(data.get("sessionVersion", 1) or 1)
+    if version != SESSION_VERSION:
+        raise RuntimeError(
+            f"Seans fayli eski ({version}-versiya, hozir {SESSION_VERSION}). "
+            "Videoni qaytadan tayyorlang — matn va tarjima keshdan olinadi, "
+            "AI'ga qayta so'rov ketmaydi."
+        )
+    if segments_path:
+        edited = _load_json(Path(segments_path))
+        if isinstance(edited, list) and edited:
+            # Foydalanuvchi tahrirlagan segmentlar butunlay almashtiradi.
+            data["segments"] = edited
+    return data
+
+
+def preview_frame(
+    session_path: str,
+    at: float,
+    out_path: str,
+    segments_path: str | None = None,
+    render_mode: str | None = None,
+    font_scale: float = 1.0,
+    position: str = "bottom",
+    sub_color: str = "#FFE680",
+    orig_style: str = "box",
+    preview_height: int = 540,
+) -> dict[str, Any]:
+    """Berilgan soniyadan BITTA kadr chiqaradi, ustiga haqiqiy subtitr bilan.
+
+    Ilova tahrirlash oynasida shuni ko'rsatadi: kuydirishni kutmasdan
+    subtitr qanday chiqishini ko'rish mumkin — shrift, sariq quti,
+    joylashuv va lug'at kartochkasi bilan. ASS `_render_data()` orqali
+    renderning AYNAN o'zi bilan yasaladi, shuning uchun ko'rinish
+    yakuniy videodan farq qilmaydi."""
+    ensure_dirs()
+    require_tool("ffmpeg")
+    job = _load_session(session_path, segments_path)
+    data = _render_data(job)
+
+    mode = render_mode or data.mode
+    if mode == "all":
+        mode = next((m for m in modes_for("all") if m in VIDEO_MODES), "dual_vocab")
+    if mode not in VIDEO_MODES:
+        # Hujjat rejimlarida kuydirilgan subtitr yo'q — ko'rish uchun eng
+        # to'liq ko'rinishni olamiz.
+        mode = "dual_vocab"
+
+    out = Path(out_path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    tmp_dir = Path(tempfile.mkdtemp(prefix="preview_", dir=str(TMP_DIR)))
+    try:
+        ass = tmp_dir / "preview.ass"
+        write_ass(
+            ass,
+            data.display_original,
+            data.translated if mode in {"dual", "dual_vocab", "translated"} else None,
+            data.words if mode in {"original_vocab", "dual_vocab"} else None,
+            data.vocab_map,
+            data.width,
+            data.height,
+            font_scale=font_scale,
+            position=position,
+            trans_color=sub_color,
+            orig_style=orig_style,
+            show_original=mode != "translated",
+        )
+        # `-ss` kirishdan OLDIN — tez qidirish. `-copyts` SHART: usiz ffmpeg
+        # vaqtlarni 0 ga qaytaradi va `ass` filtri o'sha daqiqadagi subtitrni
+        # topa olmaydi (kadr bo'sh chiqadi).
+        filters = f"ass={ass.name}{ass_fonts_option()}"
+        if preview_height and data.height > preview_height:
+            filters += f",scale=-2:{preview_height}:flags=lanczos"
+        proc = run(
+            [
+                FFMPEG, "-y", "-v", "error",
+                "-ss", f"{max(0.0, at):.3f}", "-copyts",
+                "-i", str(data.video),
+                "-vf", filters,
+                "-frames:v", "1", "-q:v", "2",
+                str(out),
+            ],
+            cwd=tmp_dir,
+        )
+        if proc.returncode != 0 or not out.exists() or out.stat().st_size == 0:
+            raise RuntimeError(
+                "Kadr chiqarib bo'lmadi: " + (proc.stderr[-400:] or "noma'lum")
+            )
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+    return {"path": str(out), "at": round(at, 3), "mode": mode}
+
+
 def _session_path_for(job: dict[str, Any]) -> Path:
     d = CACHE_DIR / "sessions"
     d.mkdir(parents=True, exist_ok=True)
@@ -457,21 +600,7 @@ def render_session(
 ) -> dict[str, Any]:
     """Seans faylini (va agar berilgan bo'lsa, tahrirlangan segmentlarni) o'qib,
     videoni renderlaydi."""
-    data = _load_json(Path(session_path))
-    if not isinstance(data, dict) or not data.get("segments"):
-        raise RuntimeError("Seans fayli topilmadi yoki buzilgan.")
-    version = int(data.get("sessionVersion", 1) or 1)
-    if version != SESSION_VERSION:
-        raise RuntimeError(
-            f"Seans fayli eski ({version}-versiya, hozir {SESSION_VERSION}). "
-            "Videoni qaytadan tayyorlang — matn va tarjima keshdan olinadi, "
-            "AI'ga qayta so'rov ketmaydi."
-        )
-    if segments_path:
-        edited = _load_json(Path(segments_path))
-        if isinstance(edited, list) and edited:
-            # Foydalanuvchi tahrirlagan segmentlar butunlay almashtiradi.
-            data["segments"] = edited
+    data = _load_session(session_path, segments_path)
     return _render_outputs(
         data, font_scale=font_scale, position=position,
         sub_color=sub_color, orig_style=orig_style, quality=quality,

@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../services/desktop_processor_service.dart';
+import '../services/settings_store.dart';
 
 /// Review-and-edit screen shown between the `prepare` and `render` phases.
 ///
@@ -9,9 +12,20 @@ import '../services/desktop_processor_service.dart';
 /// with the edited [SubtitleSegment] list tells the caller to render; popping
 /// with `null` cancels.
 class TranslationEditorScreen extends StatefulWidget {
-  const TranslationEditorScreen({super.key, required this.session});
+  const TranslationEditorScreen({
+    super.key,
+    required this.session,
+    this.appearance = const AppearanceSettings(),
+    this.service,
+  });
 
   final PreparedSession session;
+
+  /// Subtitle look, so the preview frame matches what will be burned.
+  final AppearanceSettings appearance;
+
+  /// Injected in tests; the screen makes its own otherwise.
+  final DesktopProcessorService? service;
 
   @override
   State<TranslationEditorScreen> createState() =>
@@ -23,6 +37,17 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
   late final List<SubtitleSegment> _segments;
   String _search = '';
   bool _onlyUncertain = false;
+
+  late final DesktopProcessorService _service =
+      widget.service ?? DesktopProcessorService();
+
+  int? _previewIndex;
+  String? _previewPath;
+  String? _previewError;
+  bool _previewLoading = false;
+
+  /// Guards against a slow preview landing after a newer one was requested.
+  int _previewRun = 0;
 
   @override
   void initState() {
@@ -39,6 +64,109 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
       c.dispose();
     }
     super.dispose();
+  }
+
+  /// Renders the frame for [index] with the real subtitle on it.
+  ///
+  /// Mid-segment, so the line is definitely on screen: at the exact start
+  /// the previous subtitle may still be showing.
+  Future<void> _preview(int index) async {
+    final run = ++_previewRun;
+    setState(() {
+      _previewIndex = index;
+      _previewLoading = true;
+      _previewError = null;
+    });
+    final segment = _segments[index];
+    try {
+      final path = await _service.previewFrame(
+        sessionPath: widget.session.sessionPath,
+        segments: _collect(),
+        at: (segment.start + segment.end) / 2,
+        mode: widget.session.mode,
+        fontScale: widget.appearance.fontScale,
+        position: widget.appearance.position,
+        subColor: widget.appearance.subColor,
+        origStyle: widget.appearance.origStyle,
+      );
+      if (!mounted || run != _previewRun) return;
+      setState(() {
+        _previewPath = path;
+        _previewLoading = false;
+      });
+    } catch (error) {
+      if (!mounted || run != _previewRun) return;
+      setState(() {
+        _previewError = error.toString();
+        _previewLoading = false;
+      });
+    }
+  }
+
+  Widget _previewPanel() {
+    final theme = Theme.of(context);
+    Widget body;
+    if (_previewError != null) {
+      body = Padding(
+        padding: const EdgeInsets.all(12),
+        child: Text(
+          _previewError!,
+          maxLines: 4,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodySmall
+              ?.copyWith(color: theme.colorScheme.error),
+        ),
+      );
+    } else if (_previewPath != null) {
+      // Kesh o'chiriladi: har kadr yangi fayl, lekin Flutter rasmni yo'l
+      // bo'yicha keshlaydi — tahrirdan keyin eskisi ko'rinib qolmasin.
+      body = Image.file(
+        File(_previewPath!),
+        key: ValueKey(_previewPath),
+        fit: BoxFit.contain,
+        gaplessPlayback: true,
+        errorBuilder: (context, error, stack) => const Center(child: Text('Kadr ochilmadi')),
+      );
+    } else {
+      body = Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            'Qatorni bossangiz, subtitr o\'sha joyda qanday '
+            'chiqishi shu yerda ko\'rinadi.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
+        ),
+      );
+    }
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF0A0A0A),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF222222)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          body,
+          if (_previewLoading)
+            const Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: EdgeInsets.all(10),
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   List<SubtitleSegment> _collect() {
@@ -133,19 +261,44 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
             ),
           ),
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-              itemCount: visible.length,
-              itemBuilder: (context, idx) {
-                final i = visible[idx];
-                return _SegmentTile(
-                  index: i + 1,
-                  timecode:
-                      '${_timecode(_segments[i].start)} → ${_timecode(_segments[i].end)}',
-                  original: _segments[i].original,
-                  controller: _controllers[i],
-                  editable: hasTranslation,
-                  uncertain: _segments[i].isUncertain,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final list = ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                  itemCount: visible.length,
+                  itemBuilder: (context, idx) {
+                    final i = visible[idx];
+                    return _SegmentTile(
+                      index: i + 1,
+                      timecode:
+                          '${_timecode(_segments[i].start)} → ${_timecode(_segments[i].end)}',
+                      original: _segments[i].original,
+                      controller: _controllers[i],
+                      editable: hasTranslation,
+                      uncertain: _segments[i].isUncertain,
+                      selected: _previewIndex == i,
+                      onPreview: () => _preview(i),
+                    );
+                  },
+                );
+                // Keng oynada kadr yonma-yon turadi — qatorni bosganda
+                // ro'yxat joyidan qimirlamaydi.
+                if (constraints.maxWidth < 900) return list;
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: list),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(0, 4, 16, 24),
+                      child: SizedBox(
+                        width: 320,
+                        child: AspectRatio(
+                          aspectRatio: 9 / 16,
+                          child: _previewPanel(),
+                        ),
+                      ),
+                    ),
+                  ],
                 );
               },
             ),
@@ -188,7 +341,15 @@ class _SegmentTile extends StatelessWidget {
     required this.controller,
     required this.editable,
     this.uncertain = false,
+    this.selected = false,
+    this.onPreview,
   });
+
+  /// This line's frame is the one being shown.
+  final bool selected;
+
+  /// Ask for a preview frame at this line.
+  final VoidCallback? onPreview;
 
   final int index;
   final String timecode;
@@ -201,16 +362,16 @@ class _SegmentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final borderColor = selected
+        ? Colors.white
+        : (uncertain ? Colors.amber.withValues(alpha: 0.6) : const Color(0xFF222222));
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: const Color(0xFF0A0A0A),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: uncertain ? Colors.amber.withValues(alpha: 0.6)
-                           : const Color(0xFF222222),
-        ),
+        border: Border.all(color: borderColor, width: selected ? 1.5 : 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -230,8 +391,22 @@ class _SegmentTile extends StatelessWidget {
                 timecode,
                 style: const TextStyle(color: Color(0xFF666666), fontSize: 12),
               ),
+              const Spacer(),
+              if (onPreview != null)
+                IconButton(
+                  tooltip: 'Shu joyda qanday chiqishini ko\'rish',
+                  onPressed: onPreview,
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                  icon: Icon(
+                    Icons.image_outlined,
+                    size: 17,
+                    color: selected ? Colors.white : const Color(0xFF777777),
+                  ),
+                ),
               if (uncertain) ...[
-                const Spacer(),
+                const SizedBox(width: 4),
                 Icon(Icons.help_outline_rounded,
                      size: 15, color: Colors.amber.withValues(alpha: 0.9)),
                 const SizedBox(width: 5),

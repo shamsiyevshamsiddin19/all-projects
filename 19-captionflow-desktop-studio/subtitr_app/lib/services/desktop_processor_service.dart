@@ -434,6 +434,51 @@ class DesktopProcessorService {
     return PreparedSession.fromJson(payload);
   }
 
+  /// Renders ONE frame at [at] seconds with the real subtitle drawn on it,
+  /// and returns the image path.
+  ///
+  /// The frame is built from the same ASS the burn uses, so what the editor
+  /// shows is what the finished video will look like — font, yellow box,
+  /// position and vocabulary card included. Previously the only way to see
+  /// any of that was to wait for a full render.
+  Future<String> previewFrame({
+    required String sessionPath,
+    required List<SubtitleSegment> segments,
+    required double at,
+    required String mode,
+    double fontScale = 1.0,
+    String position = 'bottom',
+    String subColor = '#FFE680',
+    String origStyle = 'box',
+  }) async {
+    final stamp = DateTime.now().microsecondsSinceEpoch;
+    final sep = Platform.pathSeparator;
+    final edits = File('${Directory.systemTemp.path}${sep}subtitr_prev_$stamp.json');
+    final out = File('${Directory.systemTemp.path}${sep}subtitr_prev_$stamp.jpg');
+    await edits.writeAsString(
+      jsonEncode(segments.map((s) => s.toJson()).toList()),
+    );
+    try {
+      final payload = await _runJson([
+        'preview',
+        '--session', sessionPath,
+        '--segments', edits.path,
+        '--at', at.toStringAsFixed(3),
+        '--out', out.path,
+        '--render-mode', mode,
+        '--font-scale', fontScale.toString(),
+        '--position', position,
+        '--sub-color', subColor,
+        '--orig-style', origStyle,
+      ]);
+      return payload['path'] as String? ?? out.path;
+    } finally {
+      try {
+        await edits.delete();
+      } catch (_) {}
+    }
+  }
+
   /// Phase 2: render the (possibly edited) segments from a prepared session and
   /// burn them into the video.
   Future<ProcessorResult> render({
