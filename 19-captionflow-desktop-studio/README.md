@@ -95,6 +95,11 @@ sahifasida bo'ladi.
     O'lchangan: 10 daqiqalik klipda 40.1s -> 15.1s. Yuklashda ham m4a
     (AAC) afzal ko'riladi, shuning uchun bu yo'l ko'pincha ishlaydi.
     Sozlash: `SUB_AUDIO` (auto|copy|aac), `SUB_AUDIO_BITRATE` (128k)
+  - `pipeline.modes_for()` — "Hammasi" rejimi BITTA video beradi
+    (`dual_vocab`) va qolgan hamma hujjatni. Render eng sekin bosqich,
+    to'siq esa GPU kodlagichi: u ikki oqimni tezroq qila olmaydi
+    (o'lchangan — bitta chiqish 6.1s, ikkitasi 12.2s; bir o'tishda ikki
+    chiqish 11.3s, parallel ikki jarayon 10.7s, ya'ni 7-12%)
 - `desktop_requirements.txt` — Python paketlar ro'yxati. **Yagona manba**:
   `linux/build.sh` ham, ilovadagi "Paketlarni o'rnatish" tugmasi ham
   (`pipeline.required_packages()`) aynan shu fayldan o'qiydi.
@@ -192,7 +197,7 @@ qaytadan pul turadi, shuning uchun uni faqat atayin so'raganda o'chiradi.
 Testlar (yangi bog'liqliksiz, standart `unittest`):
 
 ```bash
-.venv/bin/python -m unittest discover -s tests   # 105 ta
+.venv/bin/python -m unittest discover -s tests   # 109 ta
 cd subtitr_app && flutter test                   # 16 ta
 ```
 

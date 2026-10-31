@@ -997,6 +997,42 @@ class ParallelTranslationTests(unittest.TestCase):
         self.assertEqual(results["1"], results["4"])
 
 
+class AllModeTests(unittest.TestCase):
+    """"Hammasi" rejimi BITTA video berishi kerak.
+
+    Render eng sekin bosqich va to'siq GPU kodlagichi, u ikki oqimni
+    tezroq qila olmaydi (o'lchangan: 1 chiqish 6.1s, 2 chiqish 12.2s;
+    bir o'tishda ikki chiqish 11.3s, parallel 10.7s — 7-12%). Shuning
+    uchun yagona haqiqiy tejash — ortiqcha videoni render qilmaslik."""
+
+    def test_all_renders_exactly_one_video(self):
+        from subtitr.pipeline import VIDEO_MODES, modes_for
+
+        videos = [m for m in modes_for("all") if m in VIDEO_MODES]
+        self.assertEqual(videos, ["dual_vocab"])
+
+    def test_all_still_produces_every_document(self):
+        from subtitr.pipeline import modes_for
+
+        produced = set(modes_for("all"))
+        for kind in ("srt", "transcript", "reading", "vocabulary"):
+            self.assertIn(kind, produced, f"{kind} 'Hammasi' dan tushib qoldi")
+
+    def test_plain_modes_pass_through_unchanged(self):
+        from subtitr.pipeline import modes_for
+
+        for mode in ("dual_vocab", "original_vocab", "translated", "reading", "srt"):
+            self.assertEqual(modes_for(mode), [mode])
+
+    def test_ui_description_matches_one_video(self):
+        """Interfeys "Video" deb BIRLIKDA yozadi — kod ham shunday bo'lsin."""
+        home = (
+            Path(__file__).resolve().parent.parent
+            / "subtitr_app" / "lib" / "screens" / "home_screen.dart"
+        ).read_text(encoding="utf-8")
+        self.assertIn("'Video, SRT, matn va lug\\'at'", home)
+
+
 class AudioPassthroughTests(unittest.TestCase):
     """Audio allaqachon MP4 ga mos bo'lsa qayta kodlanmasligi kerak.
 

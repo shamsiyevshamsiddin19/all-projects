@@ -171,6 +171,27 @@ def _prepare_data(
             shutil.rmtree(job_tmp, ignore_errors=True)
 
 
+# Videoga subtitr KUYDIRADIGAN rejimlar (qolganlari faqat fayl yozadi).
+VIDEO_MODES = {"original", "dual", "original_vocab", "dual_vocab", "translated"}
+
+# "Hammasi" rejimi nimalarni beradi. Video BITTA — `dual_vocab` (original +
+# tarjima + lug'at, ya'ni eng to'liq variant).
+#
+# Ilgari bu yerda `original_vocab` ham bor edi, ya'ni ikkita to'liq render
+# ketardi. Render eng sekin bosqich va to'siq GPU kodlagichi: 60 soniyalik
+# 1080p da bitta chiqish 6.1s, ikkitasi 12.2s. Bitta o'tishda ikki chiqish
+# (filter_complex split) 11.3s, ikki jarayon parallel 10.7s berdi — 7-12%,
+# chunki kodlagich ikki oqimni tezroq qila olmaydi. Demak yagona haqiqiy
+# tejash kerak bo'lmagan videoni render qilmaslik. Interfeys ham "Hammasi"
+# uchun "Video" deb birlikda yozadi.
+ALL_MODE_OUTPUTS = ["dual_vocab", "srt", "transcript", "reading", "vocabulary"]
+
+
+def modes_for(mode: str) -> list[str]:
+    """Berilgan rejim qaysi chiqishlarni beradi."""
+    return list(ALL_MODE_OUTPUTS) if mode == "all" else [mode]
+
+
 def _render_outputs(
     job: dict[str, Any],
     font_scale: float = 1.0,
@@ -236,9 +257,7 @@ def _render_outputs(
 
     emit("progress", message="Fayllar tayyorlanmoqda", progress=0.60)
 
-    modes_to_render = [mode]
-    if mode == "all":
-        modes_to_render = ["dual_vocab", "original_vocab", "srt", "transcript", "reading", "vocabulary"]
+    modes_to_render = modes_for(mode)
     VOCAB_MODES = {"vocabulary", "original_vocab", "dual_vocab"}
     needs_vocab = any(m in VOCAB_MODES for m in modes_to_render)
 
@@ -325,10 +344,7 @@ def _render_outputs(
         add_output("txt", "Lug'at TXT", txt)
         add_output("docx", "Lug'at DOCX", docx)
 
-    render_modes = [
-        m for m in modes_to_render
-        if m in {"original", "dual", "original_vocab", "dual_vocab", "translated"}
-    ]
+    render_modes = [m for m in modes_to_render if m in VIDEO_MODES]
     n_render = max(1, len(render_modes))
     for i, render_mode in enumerate(render_modes):
         emit("progress", message=f"ASS tayyorlanmoqda: {render_mode}", progress=0.66)
