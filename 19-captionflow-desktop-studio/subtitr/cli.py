@@ -30,7 +30,7 @@ def main() -> int:
         "--mode",
         default="dual_vocab",
         choices=["dual_vocab", "original_vocab", "dual", "original", "translated",
-                 "srt", "transcript", "reading", "vocabulary", "all"],
+                 "softsub", "srt", "transcript", "reading", "vocabulary", "all"],
     )
     p_process.add_argument("--source-lang", default="auto")
     p_process.add_argument("--target-lang", default="uz")
@@ -65,7 +65,7 @@ def main() -> int:
         "--mode",
         default="dual_vocab",
         choices=["dual_vocab", "original_vocab", "dual", "original", "translated",
-                 "srt", "transcript", "reading", "vocabulary", "all"],
+                 "softsub", "srt", "transcript", "reading", "vocabulary", "all"],
     )
     p_prepare.add_argument("--source-lang", default="auto")
     p_prepare.add_argument("--target-lang", default="uz")

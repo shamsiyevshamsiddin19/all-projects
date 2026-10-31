@@ -12,7 +12,10 @@ from .media import probe_audio_codec, probe_duration_seconds, probe_resolution, 
 
 
 def ass_escape(text: str) -> str:
-    return (text or "").replace("{", "(").replace("}", ")").replace("\n", r"\N")
+    # ASS `\N` va `\h` ni matn emas, buyruq deb o'qiydi. Tarjima ichidagi
+    # haqiqiy teskari chiziq avval himoyalanmasa, foydalanuvchi yozgan matn
+    # jim turib buzilib qoladi.
+    return (text or "").replace("\\", r"\\").replace("{", "(").replace("}", ")").replace("\n", r"\N")
 
 
 def ass_color(hex_color: str, alpha: str = "00") -> str:
@@ -76,7 +79,17 @@ def subtitle_font_name() -> str:
 
 def _filter_escape(value: str) -> str:
     """ffmpeg filtr argumenti uchun yo'lni himoyalash."""
-    return value.replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'")
+    # `ass` filtri bu belgilarni argument ajratgich deb oladi; shrift papkasi
+    # nomi ulardan birini olsa, to'g'ri yo'l ham bir nechta bo'lakka bo'linadi.
+    return (
+        value.replace("\\", "\\\\")
+        .replace(":", "\\:")
+        .replace("'", "\\'")
+        .replace("[", "\\[")
+        .replace("]", "\\]")
+        .replace(",", "\\,")
+        .replace(";", "\\;")
+    )
 
 
 def ass_fonts_option() -> str:
@@ -595,3 +608,46 @@ def burn_subtitles(
     if code != 0:
         discard_partial()
         raise RuntimeError("Video render xato: " + (err[-900:] or "noma'lum"))
+
+
+def attach_soft_subtitles(
+    video: Path,
+    ass_path: Path,
+    out_path: Path,
+    progress_lo: float = 0.76,
+    progress_hi: float = 0.98,
+    label: str = "",
+) -> None:
+    """ASS ni videoga alohida, o'chirib-yoqiladigan trek qilib qo'shadi."""
+    require_tool("ffmpeg")
+    suffix = out_path.suffix.lower()
+    if suffix == ".mp4":
+        subtitle_codec = "mov_text"
+    elif suffix == ".mkv":
+        subtitle_codec = "copy"
+    else:
+        raise ValueError("Softsub chiqishi faqat .mp4 yoki .mkv bo'lishi mumkin")
+
+    # Video va audio qayta kodlanmaydi: softsubning foydasi aynan tasvir sifati
+    # o'zgarmasdan, uzoq render o'rniga konteynerni tez muxlashidadir.
+    suffix_label = f": {label}" if label else ""
+    emit("progress", message=f"Softsub trek qo'shilmoqda{suffix_label}", progress=progress_lo)
+    proc = run([
+        FFMPEG, "-y",
+        "-i", str(video),
+        "-i", str(ass_path),
+        "-map", "0:v:0",
+        "-map", "0:a?",
+        "-map", "1:0",
+        "-c:v", "copy",
+        "-c:a", "copy",
+        "-c:s", subtitle_codec,
+        str(out_path),
+    ])
+    if proc.returncode != 0:
+        try:
+            out_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise RuntimeError("Softsub trek qo'shilmadi: " + (proc.stderr[-900:] or "noma'lum"))
+    emit("progress", message=f"Softsub tayyor{suffix_label}", progress=progress_hi)
