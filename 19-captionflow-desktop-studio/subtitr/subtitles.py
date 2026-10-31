@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import threading
 from pathlib import Path
@@ -11,11 +12,15 @@ from .core import FFMPEG, ROOT, Segment, Word, _env_float, emit, log, normalize_
 from .media import probe_audio_codec, probe_duration_seconds, probe_resolution, seconds_to_ass_time
 
 
+_ASS_CONTROL_SLASH_RE = re.compile(r"\\(?=[Nnh])")
+
+
 def ass_escape(text: str) -> str:
-    # ASS `\N` va `\h` ni matn emas, buyruq deb o'qiydi. Tarjima ichidagi
-    # haqiqiy teskari chiziq avval himoyalanmasa, foydalanuvchi yozgan matn
-    # jim turib buzilib qoladi.
-    return (text or "").replace("\\", r"\\").replace("{", "(").replace("}", ")").replace("\n", r"\N")
+    # Libass `\\` ni bitta literal belgi deb tugatmaydi: undan keyingi `N`,
+    # `n` yoki `h` yana boshqaruv kodi bo'lib qoladi. U+200B ko'rinmaydi va
+    # kenglik egallamaydi, ammo buyruq belgisi uzilishini aniq saqlaydi.
+    escaped = _ASS_CONTROL_SLASH_RE.sub(lambda _match: "\\\u200b", text or "")
+    return escaped.replace("{", "(").replace("}", ")").replace("\n", r"\N")
 
 
 def ass_color(hex_color: str, alpha: str = "00") -> str:
