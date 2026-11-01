@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -59,6 +60,10 @@ class _InAppVideoPlayerDialogState extends State<InAppVideoPlayerDialog> {
   bool _ready = false;
   String? _error;
   bool _subtitlesEnabled = true;
+  Tracks _tracks = const Tracks();
+  Track _track = const Track();
+  StreamSubscription<Tracks>? _tracksSub;
+  StreamSubscription<Track>? _trackSub;
 
   String get _displayName {
     if (widget.title != null && widget.title!.isNotEmpty) {
@@ -77,6 +82,58 @@ class _InAppVideoPlayerDialogState extends State<InAppVideoPlayerDialog> {
     return lower.contains('_dual.') || lower.contains('_single.');
   }
 
+  List<AudioTrack> get _realAudioTracks {
+    return _tracks.audio.where((t) => t.id != 'auto' && t.id != 'no').toList();
+  }
+
+  List<SubtitleTrack> get _realSubtitleTracks {
+    return _tracks.subtitle.where((t) => t.id != 'auto' && t.id != 'no').toList();
+  }
+
+  bool get _canToggleSubtitles => _hasSubtitles || _realSubtitleTracks.isNotEmpty;
+
+  String _formatAudioTrackTitle(AudioTrack t, int index) {
+    final title = t.title?.trim();
+    if (title != null && title.isNotEmpty) return title;
+    final lang = t.language?.trim();
+    if (lang != null && lang.isNotEmpty) {
+      final lower = lang.toLowerCase();
+      if (lower.startsWith('uz')) return "O'zbekcha AI Dublyaj";
+      if (lower.startsWith('en')) return "Asl ovoz (Original)";
+      if (lower.startsWith('ru')) return "Ruscha ovoz";
+      return "${lang.toUpperCase()} ovozi";
+    }
+    return "${index + 1}-audio trek";
+  }
+
+  String get _currentAudioLabel {
+    final cur = _track.audio;
+    if (cur.id == 'no') return "Ovozsiz";
+    final realList = _realAudioTracks;
+    final foundIdx = realList.indexWhere((t) => t.id == cur.id);
+    if (foundIdx != -1) {
+      return _formatAudioTrackTitle(realList[foundIdx], foundIdx);
+    }
+    if (realList.isNotEmpty) {
+      return _formatAudioTrackTitle(realList.first, 0);
+    }
+    return "Audio trek";
+  }
+
+  String _formatSubtitleTrackTitle(SubtitleTrack t, int index) {
+    final title = t.title?.trim();
+    if (title != null && title.isNotEmpty) return title;
+    final lang = t.language?.trim();
+    if (lang != null && lang.isNotEmpty) {
+      final lower = lang.toLowerCase();
+      if (lower.startsWith('uz')) return "O'zbekcha";
+      if (lower.startsWith('en')) return "Asl til (English)";
+      if (lower.startsWith('ru')) return "Ruscha";
+      return lang.toUpperCase();
+    }
+    return "${index + 1}-subtitr";
+  }
+
   @override
   void initState() {
     super.initState();
@@ -88,6 +145,13 @@ class _InAppVideoPlayerDialogState extends State<InAppVideoPlayerDialog> {
     try {
       final player = Player();
       final video = VideoController(player);
+
+      _tracksSub = player.stream.tracks.listen((tracks) {
+        if (mounted) setState(() => _tracks = tracks);
+      });
+      _trackSub = player.stream.track.listen((track) {
+        if (mounted) setState(() => _track = track);
+      });
 
       await player.open(
         Media(Uri.file(widget.videoPath).toString()),
@@ -123,22 +187,298 @@ class _InAppVideoPlayerDialogState extends State<InAppVideoPlayerDialog> {
 
   Future<void> _toggleSubtitles() async {
     final player = _player;
-    if (player == null || !_hasSubtitles) return;
+    if (player == null || !_canToggleSubtitles) return;
     final nextState = !_subtitlesEnabled;
     setState(() => _subtitlesEnabled = nextState);
     try {
       if (nextState) {
-        await player.setSubtitleTrack(
-          SubtitleTrack.uri(Uri.file(widget.subtitlePath!).toString()),
-        );
+        if (_hasSubtitles) {
+          await player.setSubtitleTrack(
+            SubtitleTrack.uri(Uri.file(widget.subtitlePath!).toString()),
+          );
+        } else if (_realSubtitleTracks.isNotEmpty) {
+          await player.setSubtitleTrack(_realSubtitleTracks.first);
+        }
       } else {
         await player.setSubtitleTrack(SubtitleTrack.no());
       }
     } catch (_) {}
   }
 
+  Widget _buildAudioTrackSelector() {
+    final realList = _realAudioTracks;
+    if (realList.length <= 1) return const SizedBox.shrink();
+
+    return PopupMenuButton<AudioTrack>(
+      tooltip: "Audio trekni almashtirish (Asl ovoz / O'zbekcha AI Dublyaj)",
+      initialValue: _track.audio,
+      onSelected: (t) async {
+        await _player?.setAudioTrack(t);
+      },
+      color: const Color(0xFF1E293B),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: const BorderSide(color: Color(0xFF334155)),
+      ),
+      itemBuilder: (ctx) => [
+        for (int i = 0; i < realList.length; i++)
+          PopupMenuItem<AudioTrack>(
+            value: realList[i],
+            height: 38,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _track.audio.id == realList[i].id
+                      ? Icons.check_circle_rounded
+                      : Icons.radio_button_unchecked_rounded,
+                  size: 16,
+                  color: _track.audio.id == realList[i].id
+                      ? const Color(0xFF38BDF8)
+                      : Colors.grey,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _formatAudioTrackTitle(realList[i], i),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: _track.audio.id == realList[i].id
+                        ? FontWeight.w700
+                        : FontWeight.normal,
+                    color: _track.audio.id == realList[i].id
+                        ? Colors.white
+                        : const Color(0xFFCBD5E1),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F172A),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: const Color(0xFF38BDF8).withValues(alpha: 0.5),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.audiotrack_rounded,
+              size: 14,
+              color: Color(0xFF38BDF8),
+            ),
+            const SizedBox(width: 6),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 160),
+              child: Text(
+                _currentAudioLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF38BDF8),
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(
+              Icons.arrow_drop_down_rounded,
+              size: 16,
+              color: Color(0xFF38BDF8),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubtitleTrackSelector() {
+    if (!_canToggleSubtitles) return const SizedBox.shrink();
+
+    final realSubs = _realSubtitleTracks;
+    if (realSubs.length > 1) {
+      return PopupMenuButton<SubtitleTrack>(
+        tooltip: "Subtitr tilini tanlash / o'chirish",
+        onSelected: (st) async {
+          final player = _player;
+          if (player == null) return;
+          if (st.id == 'no') {
+            setState(() => _subtitlesEnabled = false);
+            await player.setSubtitleTrack(SubtitleTrack.no());
+          } else {
+            setState(() => _subtitlesEnabled = true);
+            await player.setSubtitleTrack(st);
+          }
+        },
+        color: const Color(0xFF1E293B),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: const BorderSide(color: Color(0xFF334155)),
+        ),
+        itemBuilder: (ctx) => [
+          PopupMenuItem<SubtitleTrack>(
+            value: SubtitleTrack.no(),
+            height: 38,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  !_subtitlesEnabled || _track.subtitle.id == 'no'
+                      ? Icons.check_circle_rounded
+                      : Icons.radio_button_unchecked_rounded,
+                  size: 16,
+                  color: !_subtitlesEnabled || _track.subtitle.id == 'no'
+                      ? Colors.amberAccent
+                      : Colors.grey,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  "Subtitrni o'chirish",
+                  style: TextStyle(fontSize: 12, color: Color(0xFFCBD5E1)),
+                ),
+              ],
+            ),
+          ),
+          for (int i = 0; i < realSubs.length; i++)
+            PopupMenuItem<SubtitleTrack>(
+              value: realSubs[i],
+              height: 38,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _subtitlesEnabled && _track.subtitle.id == realSubs[i].id
+                        ? Icons.check_circle_rounded
+                        : Icons.radio_button_unchecked_rounded,
+                    size: 16,
+                    color: _subtitlesEnabled && _track.subtitle.id == realSubs[i].id
+                        ? Colors.amberAccent
+                        : Colors.grey,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    _formatSubtitleTrackTitle(realSubs[i], i),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: _subtitlesEnabled && _track.subtitle.id == realSubs[i].id
+                          ? FontWeight.w700
+                          : FontWeight.normal,
+                      color: _subtitlesEnabled && _track.subtitle.id == realSubs[i].id
+                          ? Colors.white
+                          : const Color(0xFFCBD5E1),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: _subtitlesEnabled
+                ? Colors.amberAccent.withValues(alpha: 0.18)
+                : Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: _subtitlesEnabled
+                  ? Colors.amberAccent.withValues(alpha: 0.5)
+                  : Colors.white.withValues(alpha: 0.15),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                _subtitlesEnabled
+                    ? Icons.subtitles_rounded
+                    : Icons.subtitles_off_rounded,
+                size: 14,
+                color: _subtitlesEnabled ? Colors.amberAccent : Colors.grey,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                _subtitlesEnabled ? "Subtitr: Yoqiq" : "Subtitr: O'chiq",
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: _subtitlesEnabled ? Colors.amberAccent : Colors.grey,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                Icons.arrow_drop_down_rounded,
+                size: 16,
+                color: _subtitlesEnabled ? Colors.amberAccent : Colors.grey,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Tooltip(
+      message: _subtitlesEnabled
+          ? "Subtitrni o'chirish (ustidagi qatlamni yashirish)"
+          : "Subtitrni yoqish",
+      child: InkWell(
+        onTap: _toggleSubtitles,
+        borderRadius: BorderRadius.circular(8),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 5,
+          ),
+          decoration: BoxDecoration(
+            color: _subtitlesEnabled
+                ? Colors.amberAccent.withValues(alpha: 0.18)
+                : Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: _subtitlesEnabled
+                  ? Colors.amberAccent.withValues(alpha: 0.5)
+                  : Colors.white.withValues(alpha: 0.15),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                _subtitlesEnabled
+                    ? Icons.subtitles_rounded
+                    : Icons.subtitles_off_rounded,
+                size: 14,
+                color: _subtitlesEnabled
+                    ? Colors.amberAccent
+                    : Colors.grey,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                _subtitlesEnabled ? "Subtitr: Yoqiq" : "Subtitr: O'chiq",
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: _subtitlesEnabled
+                      ? Colors.amberAccent
+                      : Colors.grey,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
+    _tracksSub?.cancel();
+    _trackSub?.cancel();
     _player?.dispose();
     super.dispose();
   }
@@ -199,61 +539,9 @@ class _InAppVideoPlayerDialogState extends State<InAppVideoPlayerDialog> {
                           ),
                         ),
                       ),
-                      if (_hasSubtitles) ...[
-                        const SizedBox(width: 8),
-                        Tooltip(
-                          message: _subtitlesEnabled
-                              ? "Subtitrni o'chirish (ustidagi qatlamni yashirish)"
-                              : "Subtitrni yoqish",
-                          child: InkWell(
-                            onTap: _toggleSubtitles,
-                            borderRadius: BorderRadius.circular(8),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _subtitlesEnabled
-                                    ? Colors.amberAccent.withValues(alpha: 0.18)
-                                    : Colors.white.withValues(alpha: 0.05),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: _subtitlesEnabled
-                                      ? Colors.amberAccent.withValues(alpha: 0.5)
-                                      : Colors.white.withValues(alpha: 0.15),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    _subtitlesEnabled
-                                        ? Icons.subtitles_rounded
-                                        : Icons.subtitles_off_rounded,
-                                    size: 14,
-                                    color: _subtitlesEnabled
-                                        ? Colors.amberAccent
-                                        : Colors.grey,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    _subtitlesEnabled ? "Subtitr: Yoqiq" : "Subtitr: O'chiq",
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: _subtitlesEnabled
-                                          ? Colors.amberAccent
-                                          : Colors.grey,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                      _buildAudioTrackSelector(),
+                      if (_realAudioTracks.length > 1) const SizedBox(width: 8),
+                      _buildSubtitleTrackSelector(),
                       const SizedBox(width: 12),
                       if (widget.onOpenExternal != null)
                         IconButton(
@@ -370,6 +658,10 @@ class _EmbeddedVideoPlayerState extends State<EmbeddedVideoPlayer> {
   bool _ready = false;
   String? _error;
   bool _subtitlesEnabled = true;
+  Tracks _tracks = const Tracks();
+  Track _track = const Track();
+  StreamSubscription<Tracks>? _tracksSub;
+  StreamSubscription<Track>? _trackSub;
 
   String get _displayName {
     if (widget.title != null && widget.title!.isNotEmpty) {
@@ -388,12 +680,61 @@ class _EmbeddedVideoPlayerState extends State<EmbeddedVideoPlayer> {
     return lower.contains('_dual.') || lower.contains('_single.');
   }
 
+  List<AudioTrack> get _realAudioTracks {
+    return _tracks.audio.where((t) => t.id != 'auto' && t.id != 'no').toList();
+  }
+
+  List<SubtitleTrack> get _realSubtitleTracks {
+    return _tracks.subtitle.where((t) => t.id != 'auto' && t.id != 'no').toList();
+  }
+
+  bool get _canToggleSubtitles => _hasSubtitles || _realSubtitleTracks.isNotEmpty;
+
+  String _formatAudioTrackTitle(AudioTrack t, int index) {
+    final title = t.title?.trim();
+    if (title != null && title.isNotEmpty) return title;
+    final lang = t.language?.trim();
+    if (lang != null && lang.isNotEmpty) {
+      final lower = lang.toLowerCase();
+      if (lower.startsWith('uz')) return "O'zbekcha AI Dublyaj";
+      if (lower.startsWith('en')) return "Asl ovoz (Original)";
+      if (lower.startsWith('ru')) return "Ruscha ovoz";
+      return "${lang.toUpperCase()} ovozi";
+    }
+    return "${index + 1}-audio trek";
+  }
+
+  String get _currentAudioLabel {
+    final cur = _track.audio;
+    if (cur.id == 'no') return "Ovozsiz";
+    final realList = _realAudioTracks;
+    final foundIdx = realList.indexWhere((t) => t.id == cur.id);
+    if (foundIdx != -1) {
+      return _formatAudioTrackTitle(realList[foundIdx], foundIdx);
+    }
+    if (realList.isNotEmpty) {
+      return _formatAudioTrackTitle(realList.first, 0);
+    }
+    return "Audio trek";
+  }
+
+  String _formatSubtitleTrackTitle(SubtitleTrack t, int index) {
+    final title = t.title?.trim();
+    if (title != null && title.isNotEmpty) return title;
+    final lang = t.language?.trim();
+    if (lang != null && lang.isNotEmpty) {
+      final lower = lang.toLowerCase();
+      if (lower.startsWith('uz')) return "O'zbekcha";
+      if (lower.startsWith('en')) return "Asl til (English)";
+      if (lower.startsWith('ru')) return "Ruscha";
+      return lang.toUpperCase();
+    }
+    return "${index + 1}-subtitr";
+  }
+
   @override
   void initState() {
     super.initState();
-    // Agar video faylning o'ziga allaqachon subtitr kuydirilgan bo'lsa (masalan, _dual.mp4),
-    // tashqi subtitrni ustiga qayta chizib ikkita qilib yubormaslik uchun
-    // boshlang'ich holatda o'chirilgan bo'ladi. Foydalanuvchi tugmani bosib yoqishi/o'chirishi mumkin.
     _subtitlesEnabled = !_isBurnedVideo;
     _initPlayer();
   }
@@ -412,6 +753,14 @@ class _EmbeddedVideoPlayerState extends State<EmbeddedVideoPlayer> {
     try {
       final player = Player();
       final video = VideoController(player);
+
+      _tracksSub = player.stream.tracks.listen((tracks) {
+        if (mounted) setState(() => _tracks = tracks);
+      });
+      _trackSub = player.stream.track.listen((track) {
+        if (mounted) setState(() => _track = track);
+      });
+
       if (!mounted) {
         await player.dispose();
         return;
@@ -462,22 +811,298 @@ class _EmbeddedVideoPlayerState extends State<EmbeddedVideoPlayer> {
 
   Future<void> _toggleSubtitles() async {
     final player = _player;
-    if (player == null || !_hasSubtitles) return;
+    if (player == null || !_canToggleSubtitles) return;
     final nextState = !_subtitlesEnabled;
     setState(() => _subtitlesEnabled = nextState);
     try {
       if (nextState) {
-        await player.setSubtitleTrack(
-          SubtitleTrack.uri(Uri.file(widget.subtitlePath!).toString()),
-        );
+        if (_hasSubtitles) {
+          await player.setSubtitleTrack(
+            SubtitleTrack.uri(Uri.file(widget.subtitlePath!).toString()),
+          );
+        } else if (_realSubtitleTracks.isNotEmpty) {
+          await player.setSubtitleTrack(_realSubtitleTracks.first);
+        }
       } else {
         await player.setSubtitleTrack(SubtitleTrack.no());
       }
     } catch (_) {}
   }
 
+  Widget _buildAudioTrackSelector() {
+    final realList = _realAudioTracks;
+    if (realList.length <= 1) return const SizedBox.shrink();
+
+    return PopupMenuButton<AudioTrack>(
+      tooltip: "Audio trekni almashtirish (Asl ovoz / O'zbekcha AI Dublyaj)",
+      initialValue: _track.audio,
+      onSelected: (t) async {
+        await _player?.setAudioTrack(t);
+      },
+      color: const Color(0xFF1E293B),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: const BorderSide(color: Color(0xFF334155)),
+      ),
+      itemBuilder: (ctx) => [
+        for (int i = 0; i < realList.length; i++)
+          PopupMenuItem<AudioTrack>(
+            value: realList[i],
+            height: 38,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _track.audio.id == realList[i].id
+                      ? Icons.check_circle_rounded
+                      : Icons.radio_button_unchecked_rounded,
+                  size: 16,
+                  color: _track.audio.id == realList[i].id
+                      ? const Color(0xFF38BDF8)
+                      : Colors.grey,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _formatAudioTrackTitle(realList[i], i),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: _track.audio.id == realList[i].id
+                        ? FontWeight.w700
+                        : FontWeight.normal,
+                    color: _track.audio.id == realList[i].id
+                        ? Colors.white
+                        : const Color(0xFFCBD5E1),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F172A),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: const Color(0xFF38BDF8).withValues(alpha: 0.5),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.audiotrack_rounded,
+              size: 14,
+              color: Color(0xFF38BDF8),
+            ),
+            const SizedBox(width: 6),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 160),
+              child: Text(
+                _currentAudioLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF38BDF8),
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(
+              Icons.arrow_drop_down_rounded,
+              size: 16,
+              color: Color(0xFF38BDF8),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubtitleTrackSelector() {
+    if (!_canToggleSubtitles) return const SizedBox.shrink();
+
+    final realSubs = _realSubtitleTracks;
+    if (realSubs.length > 1) {
+      return PopupMenuButton<SubtitleTrack>(
+        tooltip: "Subtitr tilini tanlash / o'chirish",
+        onSelected: (st) async {
+          final player = _player;
+          if (player == null) return;
+          if (st.id == 'no') {
+            setState(() => _subtitlesEnabled = false);
+            await player.setSubtitleTrack(SubtitleTrack.no());
+          } else {
+            setState(() => _subtitlesEnabled = true);
+            await player.setSubtitleTrack(st);
+          }
+        },
+        color: const Color(0xFF1E293B),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: const BorderSide(color: Color(0xFF334155)),
+        ),
+        itemBuilder: (ctx) => [
+          PopupMenuItem<SubtitleTrack>(
+            value: SubtitleTrack.no(),
+            height: 38,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  !_subtitlesEnabled || _track.subtitle.id == 'no'
+                      ? Icons.check_circle_rounded
+                      : Icons.radio_button_unchecked_rounded,
+                  size: 16,
+                  color: !_subtitlesEnabled || _track.subtitle.id == 'no'
+                      ? Colors.amberAccent
+                      : Colors.grey,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  "Subtitrni o'chirish",
+                  style: TextStyle(fontSize: 12, color: Color(0xFFCBD5E1)),
+                ),
+              ],
+            ),
+          ),
+          for (int i = 0; i < realSubs.length; i++)
+            PopupMenuItem<SubtitleTrack>(
+              value: realSubs[i],
+              height: 38,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _subtitlesEnabled && _track.subtitle.id == realSubs[i].id
+                        ? Icons.check_circle_rounded
+                        : Icons.radio_button_unchecked_rounded,
+                    size: 16,
+                    color: _subtitlesEnabled && _track.subtitle.id == realSubs[i].id
+                        ? Colors.amberAccent
+                        : Colors.grey,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    _formatSubtitleTrackTitle(realSubs[i], i),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: _subtitlesEnabled && _track.subtitle.id == realSubs[i].id
+                          ? FontWeight.w700
+                          : FontWeight.normal,
+                      color: _subtitlesEnabled && _track.subtitle.id == realSubs[i].id
+                          ? Colors.white
+                          : const Color(0xFFCBD5E1),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: _subtitlesEnabled
+                ? Colors.amberAccent.withValues(alpha: 0.18)
+                : Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: _subtitlesEnabled
+                  ? Colors.amberAccent.withValues(alpha: 0.5)
+                  : Colors.white.withValues(alpha: 0.15),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                _subtitlesEnabled
+                    ? Icons.subtitles_rounded
+                    : Icons.subtitles_off_rounded,
+                size: 14,
+                color: _subtitlesEnabled ? Colors.amberAccent : Colors.grey,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                _subtitlesEnabled ? "Subtitr: Yoqiq" : "Subtitr: O'chiq",
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: _subtitlesEnabled ? Colors.amberAccent : Colors.grey,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                Icons.arrow_drop_down_rounded,
+                size: 16,
+                color: _subtitlesEnabled ? Colors.amberAccent : Colors.grey,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Tooltip(
+      message: _subtitlesEnabled
+          ? "Subtitrni o'chirish (ustidagi qatlamni yashirish)"
+          : "Subtitrni yoqish",
+      child: InkWell(
+        onTap: _toggleSubtitles,
+        borderRadius: BorderRadius.circular(8),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 5,
+          ),
+          decoration: BoxDecoration(
+            color: _subtitlesEnabled
+                ? Colors.amberAccent.withValues(alpha: 0.18)
+                : Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: _subtitlesEnabled
+                  ? Colors.amberAccent.withValues(alpha: 0.5)
+                  : Colors.white.withValues(alpha: 0.15),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                _subtitlesEnabled
+                    ? Icons.subtitles_rounded
+                    : Icons.subtitles_off_rounded,
+                size: 14,
+                color: _subtitlesEnabled
+                    ? Colors.amberAccent
+                    : Colors.grey,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                _subtitlesEnabled ? "Subtitr: Yoqiq" : "Subtitr: O'chiq",
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: _subtitlesEnabled
+                      ? Colors.amberAccent
+                      : Colors.grey,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
+    _tracksSub?.cancel();
+    _trackSub?.cancel();
     _player?.dispose();
     super.dispose();
   }
@@ -545,61 +1170,9 @@ class _EmbeddedVideoPlayerState extends State<EmbeddedVideoPlayer> {
                         ),
                       ),
                     ),
-                    if (_hasSubtitles) ...[
-                      const SizedBox(width: 8),
-                      Tooltip(
-                        message: _subtitlesEnabled
-                            ? "Subtitrni o'chirish (ustidagi qatlamni yashirish)"
-                            : "Subtitrni yoqish",
-                        child: InkWell(
-                          onTap: _toggleSubtitles,
-                          borderRadius: BorderRadius.circular(8),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _subtitlesEnabled
-                                  ? Colors.amberAccent.withValues(alpha: 0.18)
-                                  : Colors.white.withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: _subtitlesEnabled
-                                    ? Colors.amberAccent.withValues(alpha: 0.5)
-                                    : Colors.white.withValues(alpha: 0.15),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  _subtitlesEnabled
-                                      ? Icons.subtitles_rounded
-                                      : Icons.subtitles_off_rounded,
-                                  size: 14,
-                                  color: _subtitlesEnabled
-                                      ? Colors.amberAccent
-                                      : Colors.grey,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  _subtitlesEnabled ? "Subtitr: Yoqiq" : "Subtitr: O'chiq",
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: _subtitlesEnabled
-                                        ? Colors.amberAccent
-                                        : Colors.grey,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                    _buildAudioTrackSelector(),
+                    if (_realAudioTracks.length > 1) const SizedBox(width: 8),
+                    _buildSubtitleTrackSelector(),
                     const SizedBox(width: 10),
                     if (widget.onOpenExternal != null)
                       IconButton(
