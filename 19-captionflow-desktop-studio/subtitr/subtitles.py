@@ -619,11 +619,18 @@ def attach_soft_subtitles(
     video: Path,
     ass_path: Path,
     out_path: Path,
+    secondary_sub: Path | None = None,
     progress_lo: float = 0.76,
     progress_hi: float = 0.98,
     label: str = "",
+    lang1: str = "uzb",
+    title1: str = "O'zbekcha (Tarjima)",
+    lang2: str = "eng",
+    title2: str = "Asl til (Original)",
 ) -> None:
-    """ASS ni videoga alohida, o'chirib-yoqiladigan trek qilib qo'shadi."""
+    """ASS yoki SRT ni videoga alohida, o'chirib-yoqiladigan trek qilib qo'shadi.
+    Agar secondary_sub berilsa, 2 ta alohida trek (Track 1: Tarjima, Track 2: Original)
+    muxlanadi."""
     require_tool("ffmpeg")
     suffix = out_path.suffix.lower()
     if suffix == ".mp4":
@@ -633,22 +640,45 @@ def attach_soft_subtitles(
     else:
         raise ValueError("Softsub chiqishi faqat .mp4 yoki .mkv bo'lishi mumkin")
 
-    # Video va audio qayta kodlanmaydi: softsubning foydasi aynan tasvir sifati
-    # o'zgarmasdan, uzoq render o'rniga konteynerni tez muxlashidadir.
     suffix_label = f": {label}" if label else ""
     emit("progress", message=f"Softsub trek qo'shilmoqda{suffix_label}", progress=progress_lo)
-    proc = run([
+    cmd = [
         FFMPEG, "-y",
         "-i", str(video),
         "-i", str(ass_path),
-        "-map", "0:v:0",
-        "-map", "0:a?",
-        "-map", "1:0",
-        "-c:v", "copy",
-        "-c:a", "copy",
-        "-c:s", subtitle_codec,
-        str(out_path),
-    ])
+    ]
+    if secondary_sub is not None:
+        cmd += ["-i", str(secondary_sub)]
+        cmd += [
+            "-map", "0:v:0",
+            "-map", "0:a?",
+            "-map", "1:0",
+            "-map", "2:0",
+            "-c:v", "copy",
+            "-c:a", "copy",
+            "-c:s", subtitle_codec,
+            "-metadata:s:s:0", f"language={lang1}",
+            "-metadata:s:s:0", f"title={title1}",
+            "-disposition:s:0", "default",
+            "-metadata:s:s:1", f"language={lang2}",
+            "-metadata:s:s:1", f"title={title2}",
+            "-disposition:s:1", "0",
+        ]
+    else:
+        cmd += [
+            "-map", "0:v:0",
+            "-map", "0:a?",
+            "-map", "1:0",
+            "-c:v", "copy",
+            "-c:a", "copy",
+            "-c:s", subtitle_codec,
+            "-metadata:s:s:0", f"language={lang1}",
+            "-metadata:s:s:0", f"title={title1}",
+            "-disposition:s:0", "default",
+        ]
+    cmd.append(str(out_path))
+
+    proc = run(cmd)
     if proc.returncode != 0:
         try:
             out_path.unlink(missing_ok=True)

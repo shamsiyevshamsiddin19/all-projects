@@ -30,7 +30,7 @@ def main() -> int:
         "--mode",
         default="dual_vocab",
         choices=["dual_vocab", "original_vocab", "dual", "original", "translated",
-                 "softsub", "srt", "transcript", "reading", "vocabulary", "all"],
+                 "softsub", "dubbing", "srt", "transcript", "reading", "vocabulary", "all"],
     )
     p_process.add_argument("--source-lang", default="auto")
     p_process.add_argument("--target-lang", default="uz")
@@ -44,6 +44,8 @@ def main() -> int:
     p_process.add_argument("--subtitle", default=None, help="tashqi SRT/VTT/ASS/SSA fayl")
     p_process.add_argument("--subtitle-offset", type=float, default=0.0,
                            help="import qilingan subtitr uchun umumiy soniya siljishi")
+    p_process.add_argument("--voice", default="uz-UZ-SardorNeural", help="AI Dublyaj ovozi (Sardor, Madina...)")
+    p_process.add_argument("--ducking", type=float, default=0.18, help="Original fon musiqasi balandligi (0.0 - 1.0)")
 
     p_download = sub.add_parser("download")
     p_download.add_argument("--url", required=True)
@@ -72,13 +74,15 @@ def main() -> int:
         "--mode",
         default="dual_vocab",
         choices=["dual_vocab", "original_vocab", "dual", "original", "translated",
-                 "softsub", "srt", "transcript", "reading", "vocabulary", "all"],
+                 "softsub", "dubbing", "srt", "transcript", "reading", "vocabulary", "all"],
     )
     p_prepare.add_argument("--source-lang", default="auto")
     p_prepare.add_argument("--target-lang", default="uz")
     p_prepare.add_argument("--quality", default=DEFAULT_QUALITY, choices=list(QUALITY_HEIGHTS))
     p_prepare.add_argument("--subtitle", default=None)
     p_prepare.add_argument("--subtitle-offset", type=float, default=0.0)
+    p_prepare.add_argument("--voice", default="uz-UZ-SardorNeural")
+    p_prepare.add_argument("--ducking", type=float, default=0.18)
 
     # Tahrirlash oynasi uchun: bitta kadr + ustida haqiqiy subtitr.
     p_prev = sub.add_parser("preview")
@@ -149,6 +153,8 @@ def main() -> int:
                 args.video, args.mode, args.source_lang, args.target_lang,
                 quality=args.quality,
                 subtitle_path=args.subtitle, subtitle_offset=args.subtitle_offset,
+                voice=getattr(args, "voice", None),
+                ducking=getattr(args, "ducking", 0.18),
             )
             emit("done", **result)
         elif args.command == "preview":
@@ -185,6 +191,8 @@ def main() -> int:
                 orig_style=args.orig_style, quality=args.quality,
                 upscale=args.upscale, subtitle_path=args.subtitle,
                 subtitle_offset=args.subtitle_offset,
+                voice=getattr(args, "voice", None),
+                ducking=getattr(args, "ducking", 0.18),
             )
             emit("done", **result)
         return 0

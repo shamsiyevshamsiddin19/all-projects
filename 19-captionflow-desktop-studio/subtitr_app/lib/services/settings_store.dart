@@ -260,6 +260,8 @@ class SettingsStore {
       'mode': prefs.getString('job_mode') ?? 'dual_vocab',
       'source': prefs.getString('job_source') ?? 'auto',
       'target': prefs.getString('job_target') ?? 'uz',
+      'voice': prefs.getString('job_voice') ?? 'uz-UZ-SardorNeural',
+      'ducking': prefs.getString('job_ducking') ?? '0.18',
     };
   }
 
@@ -267,11 +269,15 @@ class SettingsStore {
     required String mode,
     required String source,
     required String target,
+    String? voice,
+    double? ducking,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('job_mode', mode);
     await prefs.setString('job_source', source);
     await prefs.setString('job_target', target);
+    if (voice != null) await prefs.setString('job_voice', voice);
+    if (ducking != null) await prefs.setString('job_ducking', ducking.toString());
   }
 
   /// Returns true at most once per [minInterval] (default: 1 day). Used to

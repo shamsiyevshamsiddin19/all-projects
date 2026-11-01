@@ -42,6 +42,8 @@ def _prepare_data(
     quality: str | None = None,
     subtitle_path: str | None = None,
     subtitle_offset: float = 0.0,
+    voice: str | None = None,
+    ducking: float = 0.18,
 ) -> dict[str, Any]:
     """Transkripsiya + (kerak bo'lsa) tarjima + lug'at. Renderlashga kerak
     bo'lgan hamma narsani lug'at (dict) qilib qaytaradi. `process()` (bir-martalik
@@ -200,6 +202,8 @@ def _prepare_data(
             "video": str(video),
             "stem": stem,
             "mode": mode,
+            "voice": voice,
+            "ducking": ducking,
             "sourceLang": effective_lang,
             "targetLang": target_lang,
             "transcriber": transcriber,
@@ -220,7 +224,7 @@ def _prepare_data(
 
 # Video chiqishi beradigan rejimlar. `softsub` kadrni kuydirmaydi, ammo
 # foydalanuvchi tanlaydigan video natija sifatida qoladi.
-VIDEO_MODES = {"original", "dual", "original_vocab", "dual_vocab", "translated", "softsub"}
+VIDEO_MODES = {"original", "dual", "original_vocab", "dual_vocab", "translated", "softsub", "dubbing"}
 
 # "Hammasi" rejimi nimalarni beradi. Video BITTA — `dual_vocab` (original +
 # tarjima + lug'at, ya'ni eng to'liq variant).
@@ -347,6 +351,7 @@ def _render_outputs(
     require_tool("ffprobe")
     data = _render_data(job)
     video, stem, mode = data.video, data.stem, data.mode
+    job_tmp = Path(tempfile.mkdtemp(prefix=stem + "_render_", dir=str(TMP_DIR)))
     # Render chiqishi manbaga yaqin hajmda bo'ladi; "all" rejimida ikkita.
     require_disk_space(video, OUT_DIR, factor=2.2)
     effective_lang, target_lang = data.source_lang, data.target_lang
@@ -471,8 +476,50 @@ def _render_outputs(
         lo = 0.70 + (0.28 * i / n_render)
         hi = 0.70 + (0.28 * (i + 1) / n_render)
         if render_mode == "softsub":
-            attach_soft_subtitles(
-                video, ass, out, progress_lo=lo, progress_hi=hi, label=render_mode,
+            if data.translated and data.display_original:
+                orig_ass = job_tmp / f"{stem}_orig_soft.ass"
+                trans_ass = job_tmp / f"{stem}_trans_soft.ass"
+                _write_mode_ass(orig_ass, data, "original", font_scale, position, sub_color, orig_style)
+                _write_mode_ass(trans_ass, data, "translated", font_scale, position, sub_color, orig_style)
+                attach_soft_subtitles(
+                    video, trans_ass, out, secondary_sub=orig_ass,
+                    progress_lo=lo, progress_hi=hi, label=render_mode,
+                    lang1="uzb" if data.target_lang.startswith("uz") else data.target_lang,
+                    title1="O'zbekcha (Tarjima)",
+                    lang2="eng" if data.source_lang.startswith("en") else data.source_lang,
+                    title2="Asl til (Original)",
+                )
+            else:
+                attach_soft_subtitles(
+                    video, ass, out, progress_lo=lo, progress_hi=hi, label=render_mode,
+                )
+        elif render_mode == "dubbing":
+            from subtitr.dubbing import (
+                build_speech_timeline_wav,
+                create_dubbed_video,
+                mix_dubbed_soundtrack,
+                resolve_voice,
+                synthesize_all_segments,
+            )
+            emit("progress", message="AI Dublyaj tayyorlanmoqda (Edge-TTS)", progress=lo)
+            dub_tmp = job_tmp / "dubbing"
+            dub_target = data.target_lang
+            voice = resolve_voice(job.get("voice"), target_lang=dub_target)
+            dub_segments = data.translated or data.display_original
+            placed_clips = synthesize_all_segments(
+                dub_segments, voice=voice, work_dir=dub_tmp,
+                progress_cb=lambda p, msg: emit("progress", message=msg, progress=p),
+                progress_lo=lo, progress_hi=lo + (hi - lo) * 0.75,
+            )
+            timeline_wav = dub_tmp / "speech_timeline.wav"
+            total_dur = probe_duration_seconds(video)
+            build_speech_timeline_wav(placed_clips, total_dur, timeline_wav)
+            mixed_audio = dub_tmp / "dubbed_mixed.aac"
+            ducking_vol = float(job.get("ducking") or 0.18)
+            mix_dubbed_soundtrack(video, timeline_wav, mixed_audio, ducking_volume=ducking_vol)
+            create_dubbed_video(
+                video, mixed_audio, out,
+                ass_subtitle_path=ass, target_lang=dub_target, multi_track=True,
             )
         else:
             burn_subtitles(
@@ -488,6 +535,7 @@ def _render_outputs(
             write_txt_vocab(txt, entries)
         add_output("txt", "Lug'at TXT", txt)
 
+    shutil.rmtree(job_tmp, ignore_errors=True)
     emit("progress", message="Yakunlandi", progress=1.0)
     return {
         "video": str(video),
@@ -666,11 +714,13 @@ def _session_path_for(job: dict[str, Any]) -> Path:
 
 def prepare_session(video_value: str, mode: str, source_lang: str, target_lang: str,
                     quality: str | None = None, subtitle_path: str | None = None,
-                    subtitle_offset: float = 0.0) -> dict[str, Any]:
+                    subtitle_offset: float = 0.0, voice: str | None = None,
+                    ducking: float = 0.18) -> dict[str, Any]:
     """Renderlashdan OLDIN transkripsiya+tarjimani tayyorlab, seans faylига saqlaydi.
     Foydalanuvchi tarjimalarni ko'rib/tahrirlab, keyin `render` bilan yakunlaydi."""
     job = _prepare_data(video_value, mode, source_lang, target_lang, quality=quality,
-                        subtitle_path=subtitle_path, subtitle_offset=subtitle_offset)
+                        subtitle_path=subtitle_path, subtitle_offset=subtitle_offset,
+                        voice=voice, ducking=ducking)
     job["sessionVersion"] = SESSION_VERSION
     session_path = _session_path_for(job)
     session_path.write_text(json.dumps(job, ensure_ascii=False), encoding="utf-8")
@@ -756,9 +806,12 @@ def process(
     upscale: bool = False,
     subtitle_path: str | None = None,
     subtitle_offset: float = 0.0,
+    voice: str | None = None,
+    ducking: float = 0.18,
 ) -> dict[str, Any]:
     job = _prepare_data(video_value, mode, source_lang, target_lang, quality=quality,
-                        subtitle_path=subtitle_path, subtitle_offset=subtitle_offset)
+                        subtitle_path=subtitle_path, subtitle_offset=subtitle_offset,
+                        voice=voice, ducking=ducking)
     return _render_outputs(
         job, font_scale=font_scale, position=position,
         sub_color=sub_color, orig_style=orig_style, quality=quality,
@@ -776,6 +829,7 @@ FALLBACK_PACKAGES = [
     "anthropic>=0.40.0",
     "python-docx>=1.1.2",
     "reportlab>=4.0.0",
+    "edge-tts>=7.0.0",
     # Lokal transkripsiya zaxirasi SHU paketdan keladi. Undan ham muhimi:
     # Groq yo'lidagi nutq tekshiruvi (`transcribe.speech_regions`,
     # `_speech_seconds_vad`) ham `faster_whisper.vad` ni import qiladi va

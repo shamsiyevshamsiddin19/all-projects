@@ -113,6 +113,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String _mode = 'dual_vocab';
   String _sourceLang = 'auto';
   String _targetLang = 'uz';
+  String _voice = 'uz-UZ-SardorNeural';
+  double _ducking = 0.18;
   String _status = 'Tayyor';
   double _progress = 0;
   bool _loading = true;
@@ -156,6 +158,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       icon: Icons.translate_rounded,
       title: 'Faqat tarjima',
       description: 'Videoda faqat tarjima subtitri ko\'rinadi',
+    ),
+    ModeChoice(
+      value: 'softsub',
+      icon: Icons.closed_caption_rounded,
+      title: 'Yumshoq subtitr (CC)',
+      description: "Kuydirmasdan, videoga 2 ta o'chirib-yoqiladigan subtitr qo'shish",
+    ),
+    ModeChoice(
+      value: 'dubbing',
+      icon: Icons.record_voice_over_rounded,
+      title: "AI Dublyaj (Ko'p tilli)",
+      description: "O'zbekcha AI ovoz, asl musiqa saqlanadi (Multi-audio)",
     ),
     ModeChoice(
       value: 'reading',
@@ -230,6 +244,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _mode = job['mode'] ?? _mode;
         _sourceLang = job['source'] ?? _sourceLang;
         _targetLang = job['target'] ?? _targetLang;
+        _voice = job['voice'] ?? _voice;
+        _ducking = double.tryParse(job['ducking'] ?? '') ?? _ducking;
         _presets = presets;
         // Ilova qayta ochilganda oldingi videoning natijasi bo'sh ekrandan
         // ko'ra ko'proq foydali — foydalanuvchi so'nggi yakunlangan ishni
@@ -361,6 +377,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       mode: _mode,
       source: _sourceLang,
       target: _targetLang,
+      voice: _voice,
+      ducking: _ducking,
     );
   }
 
@@ -620,6 +638,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         upscale: _appearance.upscale,
         subtitlePath: _externalSubtitlePath,
         subtitleOffset: _subtitleOffset,
+        voice: _voice,
+        ducking: _ducking,
       );
       if (!mounted) return;
       setState(() {
@@ -657,6 +677,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onProgress: _applyProgress,
         subtitlePath: _externalSubtitlePath,
         subtitleOffset: _subtitleOffset,
+        voice: _voice,
+        ducking: _ducking,
       );
     });
     if (session == null || !mounted) return;
@@ -767,6 +789,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             origStyle: _appearance.origStyle,
             quality: _appearance.quality,
             upscale: _appearance.upscale,
+            voice: _voice,
+            ducking: _ducking,
           );
           results.add(_BatchResult(video: v, success: true));
           if (mounted) setState(() => _result = result);
@@ -846,6 +870,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             origStyle: _appearance.origStyle,
             quality: _appearance.quality,
             upscale: _appearance.upscale,
+            voice: _voice,
+            ducking: _ducking,
           );
           done++;
           if (mounted) {
@@ -1277,6 +1303,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           sourceLang: _sourceLang,
                           targetLang: _targetLang,
                           appearance: _appearance,
+                          voice: _voice,
+                          ducking: _ducking,
                           isRunning: _running,
                           onModeChanged: (v) {
                             setState(() => _mode = v);
@@ -1291,6 +1319,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             _saveJobPrefs();
                           },
                           onAppearanceChanged: _updateAppearance,
+                          onVoiceChanged: (v) {
+                            setState(() => _voice = v);
+                            _saveJobPrefs();
+                          },
+                          onDuckingChanged: (v) {
+                            setState(() => _ducking = v);
+                            _saveJobPrefs();
+                          },
                           presets: _presets,
                           onSavePreset: _savePreset,
                           onApplyPreset: _applyPreset,
@@ -1388,7 +1424,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         ),
                         const SizedBox(height: 16),
                       ],
-                      SizedBox(height: 580, child: leftColumn),
+                      SizedBox(height: 660, child: leftColumn),
                       const SizedBox(height: 16),
                       processor,
                       if (batchCard case final Widget card) card,

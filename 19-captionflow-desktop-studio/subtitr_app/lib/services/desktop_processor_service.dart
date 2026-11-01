@@ -453,6 +453,8 @@ class DesktopProcessorService {
     bool upscale = false,
     String? subtitlePath,
     double subtitleOffset = 0,
+    String? voice,
+    double ducking = 0.18,
   }) async {
     final payload = await _streamProcess([
       'process',
@@ -477,6 +479,8 @@ class DesktopProcessorService {
       if (upscale) '--upscale',
       if (subtitlePath != null && subtitlePath.isNotEmpty) ...['--subtitle', subtitlePath],
       if (subtitleOffset != 0) ...['--subtitle-offset', subtitleOffset.toString()],
+      if (voice != null && voice.isNotEmpty) ...['--voice', voice],
+      if (ducking != 0.18) ...['--ducking', ducking.toString()],
     ], onProgress: onProgress);
     return ProcessorResult.fromJson(payload);
   }
@@ -491,6 +495,8 @@ class DesktopProcessorService {
     required void Function(ProcessorProgress progress) onProgress,
     String? subtitlePath,
     double subtitleOffset = 0,
+    String? voice,
+    double ducking = 0.18,
   }) async {
     final payload = await _streamProcess([
       'prepare',
@@ -504,6 +510,8 @@ class DesktopProcessorService {
       targetLang,
       if (subtitlePath != null && subtitlePath.isNotEmpty) ...['--subtitle', subtitlePath],
       if (subtitleOffset != 0) ...['--subtitle-offset', subtitleOffset.toString()],
+      if (voice != null && voice.isNotEmpty) ...['--voice', voice],
+      if (ducking != 0.18) ...['--ducking', ducking.toString()],
     ], onProgress: onProgress);
     return PreparedSession.fromJson(payload);
   }
