@@ -10,13 +10,7 @@ from .media import DEFAULT_QUALITY, QUALITY_HEIGHTS, download_video, playlist_en
 from .pipeline import install_deps, prepare_session, preview_frame, process, render_session, retranslate_session_segment, subtitle_file
 
 
-def main() -> int:
-    ensure_dirs()
-    setup_logging()
-    install_signal_handlers()
-    # Oldingi uzilgan ishlardan qolgan papkalar (SIGKILL yoki dastur tushishi)
-    # shu yerda tozalanadi — ular keshda yuzlab megabayt egallab turardi.
-    clean_orphan_tmp()
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Subtitr desktop local processor")
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -121,7 +115,15 @@ def main() -> int:
     p_retranslate.add_argument("--session", required=True)
     p_retranslate.add_argument("--segments", default=None)
     p_retranslate.add_argument("--index", required=True, type=int)
+    return parser
 
+
+def main() -> int:
+    ensure_dirs()
+    setup_logging()
+    install_signal_handlers()
+    clean_orphan_tmp()
+    parser = build_parser()
     args = parser.parse_args()
     # Hech qanday argument qiymati logga tushmaydi (`--video` yo'li tushadi,
     # lekin kalitlar faqat muhit o'zgaruvchilarida — ularga tegmaymiz).

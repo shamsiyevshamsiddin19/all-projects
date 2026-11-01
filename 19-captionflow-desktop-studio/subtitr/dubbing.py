@@ -25,6 +25,16 @@ from subtitr.media import extract_audio, probe_audio_codec, probe_duration_secon
 
 DEFAULT_VOICE = "uz-UZ-SardorNeural"
 
+DEFAULT_LANG_VOICES = {
+    "uz": "uz-UZ-SardorNeural",
+    "ru": "ru-RU-DmitryNeural",
+    "tr": "tr-TR-AhmetNeural",
+    "en": "en-US-GuyNeural",
+    "kk": "kk-KZ-DauletNeural",
+    "tg": "ru-RU-DmitryNeural",
+    "ky": "ru-RU-DmitryNeural",
+}
+
 VOICES = {
     "sardor": "uz-UZ-SardorNeural",
     "madina": "uz-UZ-MadinaNeural",
@@ -33,21 +43,16 @@ VOICES = {
 
 def resolve_voice(voice_name: str | None, target_lang: str = "uz") -> str:
     """Ovoz nomini to'liq Edge TTS ovoz identifikatoriga aylantiradi."""
+    code = (target_lang or "uz").split("-")[0].lower()
     if not voice_name:
-        if target_lang == "uz":
-            return DEFAULT_VOICE
-        elif target_lang == "ru":
-            return "ru-RU-DmitryNeural"
-        elif target_lang == "tr":
-            return "tr-TR-AhmetNeural"
-        return DEFAULT_VOICE
+        return DEFAULT_LANG_VOICES.get(code, DEFAULT_VOICE)
 
     key = voice_name.strip().lower()
     if key in VOICES:
         return VOICES[key]
     if "neural" in key:
-        return voice_name
-    return DEFAULT_VOICE
+        return voice_name.strip()
+    return DEFAULT_LANG_VOICES.get(code, DEFAULT_VOICE)
 
 
 async def _generate_single_clip(text: str, voice: str, out_path: Path) -> None:
@@ -85,7 +90,7 @@ def adjust_audio_tempo(
             "-ar", str(sample_rate), "-ac", "1",
             str(out_wav),
         ]
-    elif ratio < 0.70 and actual_dur > 0.5:
+    elif ratio < 0.70 and actual_dur >= 0.3:
         # Agar juda kalta bo'lsa, biroz sekinlashtirish mumkin (minimum 0.75x)
         speed = max(0.75, ratio)
         cmd = [
@@ -170,8 +175,8 @@ def build_speech_timeline_wav(
         out_f.setsampwidth(sample_width)
         out_f.setframerate(sample_rate)
 
-        for start_time, clip_path in placed_clips:
-            target_sample = int(start_time * sample_rate)
+        for start_time, clip_path in sorted(placed_clips, key=lambda x: x[0]):
+            target_sample = max(0, int(start_time * sample_rate))
             if target_sample > current_sample:
                 gap = target_sample - current_sample
                 out_f.writeframes(b"\x00" * (gap * sample_width))
@@ -203,6 +208,7 @@ def mix_dubbed_soundtrack(
 ) -> Path:
     """Asl video audiosi bilan yangi dublyaj ovozini aralashtiradi (Ducking)."""
     require_tool("ffmpeg")
+    ducking_volume = max(0.0, min(1.0, float(ducking_volume)))
     has_audio = probe_audio_codec(video_path) != ""
 
     if not has_audio or ducking_volume <= 0.01:
@@ -216,8 +222,9 @@ def mix_dubbed_soundtrack(
     else:
         # Asl audioni 18% ga pasaytirib, dublyaj bilan qorishtirish
         filter_str = (
-            f"[0:a]volume={ducking_volume:.2f}[bg]; "
-            "[bg][1:a]amix=inputs=2:duration=first:dropout_transition=0[out]"
+            f"[0:a:0]aformat=channel_layouts=stereo,volume={ducking_volume:.2f}[bg]; "
+            "[1:a]aformat=channel_layouts=stereo[fg]; "
+            "[bg][fg]amix=inputs=2:duration=first:dropout_transition=0[out]"
         )
         cmd = [
             "ffmpeg", "-y",
@@ -247,6 +254,7 @@ def create_dubbed_video(
     """Videoni qayta kodlamasdan (-c:v copy) ko'p tilli audio yo'laklar bilan yig'adi."""
     require_tool("ffmpeg")
     has_orig_audio = probe_audio_codec(video_path) != ""
+    dub_title = "O'zbekcha AI Dublyaj" if target_lang.startswith("uz") else f"AI Dublyaj ({target_lang.upper()})"
 
     cmd = [
         "ffmpeg", "-y",
@@ -266,15 +274,15 @@ def create_dubbed_video(
         # 1-trek: Asl ovoz (Original)
         # 2-trek: O'zbekcha AI Dublyaj (Standart faol)
         cmd.extend([
-            "-map", "0:a",
+            "-map", "0:a:0?",
             "-c:a:0", "copy",
             "-metadata:s:a:0", "language=eng",
             "-metadata:s:a:0", "title=Asl ovoz (Original)",
             "-disposition:s:a:0", "0",
-            "-map", "1:a",
+            "-map", "1:a:0",
             "-c:a:1", "copy",
             "-metadata:s:a:1", f"language={target_lang}",
-            "-metadata:s:a:1", "title=O'zbekcha AI Dublyaj",
+            "-metadata:s:a:1", f"title={dub_title}",
             "-disposition:s:a:1", "default",
         ])
     else:
@@ -282,7 +290,7 @@ def create_dubbed_video(
             "-map", "1:a",
             "-c:a", "copy",
             "-metadata:s:a:0", f"language={target_lang}",
-            "-metadata:s:a:0", "title=O'zbekcha AI Dublyaj",
+            "-metadata:s:a:0", f"title={dub_title}",
             "-disposition:s:a:0", "default",
         ])
 

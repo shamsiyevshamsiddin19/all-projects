@@ -127,8 +127,7 @@ class SettingsPanel extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final showPreview = constraints.maxHeight >= 460 &&
-            MediaQuery.sizeOf(context).height >= 700;
+        final showPreview = constraints.maxHeight >= 600;
 
         Widget content = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -442,7 +441,7 @@ class SettingsPanel extends StatelessWidget {
           ],
         );
 
-        if (!showPreview && constraints.maxHeight < 390) {
+        if (!showPreview) {
           return SingleChildScrollView(
             child: content,
           );
@@ -1137,7 +1136,7 @@ class _ModePreview extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        for (final h in [12.0, 24.0, 40.0, 18.0, 48.0, 32.0, 56.0, 38.0, 22.0, 44.0, 28.0, 52.0, 20.0, 14.0])
+                        for (final h in [8.0, 16.0, 26.0, 12.0, 32.0, 22.0, 36.0, 25.0, 14.0, 28.0, 18.0, 34.0, 14.0, 9.0])
                           Container(
                             margin: const EdgeInsets.symmetric(horizontal: 2.5),
                             width: 4,
@@ -1153,9 +1152,9 @@ class _ModePreview extends StatelessWidget {
                           ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.4),
                         borderRadius: BorderRadius.circular(8),
@@ -1292,7 +1291,7 @@ class _ModePreview extends StatelessWidget {
       case 'reading':
         content = Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerHighest.withValues(
               alpha: 0.3,
@@ -1301,9 +1300,11 @@ class _ModePreview extends StatelessWidget {
             border: Border.all(color: theme.colorScheme.outlineVariant),
           ),
           child: Center(
-            child: AspectRatio(
-              aspectRatio: 1 / 1.414,
+            child: FittedBox(
+              fit: BoxFit.contain,
               child: Container(
+                width: 140,
+                height: 198,
                 padding: const EdgeInsets.fromLTRB(14, 13, 14, 10),
                 decoration: BoxDecoration(
                   color: Colors.white,

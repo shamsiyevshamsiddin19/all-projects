@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from .core import CACHE_DIR, FFMPEG, OUT_DIR, REQUIREMENTS_FILE, Segment, TMP_DIR, USAGE, VENV_DIR, Word, emit, ensure_dirs, normalize_lang_code, require_disk_space, require_tool, reset_usage, run, safe_stem, venv_python
-from .media import normalize_video_path, parse_subtitle, probe_resolution, quality_height, write_srt
+from .media import normalize_video_path, parse_subtitle, probe_duration_seconds, probe_resolution, quality_height, write_srt
 from .transcribe import get_transcription, words_from_segments
 from .cache import _cache_enabled, _load_json, _save_json, cache_dir_for, load_transcription, save_transcription
 from .translate import ai_translate_batch, build_glossary, translate_segments
@@ -124,7 +124,7 @@ def _prepare_data(
         emit("progress", message=f"Matn tayyor ({transcriber})", progress=0.35)
 
         needs_translation = mode in {
-            "dual", "dual_vocab", "translated", "softsub", "srt", "transcript", "reading", "all",
+            "dual", "dual_vocab", "translated", "softsub", "dubbing", "srt", "transcript", "reading", "all",
         }
         translated: list[Segment] | None = None
         provider = ""
@@ -515,7 +515,7 @@ def _render_outputs(
             total_dur = probe_duration_seconds(video)
             build_speech_timeline_wav(placed_clips, total_dur, timeline_wav)
             mixed_audio = dub_tmp / "dubbed_mixed.aac"
-            ducking_vol = float(job.get("ducking") or 0.18)
+            ducking_vol = float(job["ducking"] if job.get("ducking") is not None else 0.18)
             mix_dubbed_soundtrack(video, timeline_wav, mixed_audio, ducking_volume=ducking_vol)
             create_dubbed_video(
                 video, mixed_audio, out,
@@ -606,7 +606,7 @@ def _write_mode_ass(
     write_ass(
         path,
         data.display_original,
-        data.translated if mode in {"dual", "dual_vocab", "translated", "softsub"} else None,
+        data.translated if mode in {"dual", "dual_vocab", "translated", "softsub", "dubbing"} else None,
         data.words if mode in {"original_vocab", "dual_vocab"} else None,
         data.vocab_map,
         data.width,
