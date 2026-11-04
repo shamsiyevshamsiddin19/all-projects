@@ -85,12 +85,17 @@ def adjust_audio_tempo(
 
     # Agar ovoz berilgan vaqtdan uzunroq bo'lsa, tezlashtiramiz (maksimal 2.0x)
     ratio = actual_dur / max(0.1, target_duration)
+    # `atempo` 2x bilan cheklangan: juda uzun gaplar hali ham oraliqdan
+    # chiqishi mumkin. Chiqish davomiyligini qat'iy cheklash keyingi gaplarni
+    # siljitib yuborishining oldini oladi.
+    output_limit = f"{max(0.1, target_duration):.3f}"
     if ratio > 1.05:
         speed = min(2.0, ratio)
         cmd = [
             "ffmpeg", "-y", "-i", str(in_path),
             "-filter:a", f"atempo={speed:.3f}",
             "-ar", str(sample_rate), "-ac", "1",
+            "-t", output_limit,
             str(out_wav),
         ]
     elif ratio < 0.70 and actual_dur >= 0.3:
@@ -100,12 +105,14 @@ def adjust_audio_tempo(
             "ffmpeg", "-y", "-i", str(in_path),
             "-filter:a", f"atempo={speed:.3f}",
             "-ar", str(sample_rate), "-ac", "1",
+            "-t", output_limit,
             str(out_wav),
         ]
     else:
         cmd = [
             "ffmpeg", "-y", "-i", str(in_path),
             "-ar", str(sample_rate), "-ac", "1",
+            "-t", output_limit,
             str(out_wav),
         ]
 
@@ -113,7 +120,12 @@ def adjust_audio_tempo(
     if res.returncode != 0:
         log.warning("atempo xatosi: %s", res.stderr)
         # Zaxira: filtrlarsiz oddiy WAV ga o'tkazamiz
-        run(["ffmpeg", "-y", "-i", str(in_path), "-ar", str(sample_rate), "-ac", "1", str(out_wav)])
+        run([
+            "ffmpeg", "-y", "-i", str(in_path),
+            "-ar", str(sample_rate), "-ac", "1",
+            "-t", output_limit,
+            str(out_wav),
+        ])
 
     return probe_duration_seconds(out_wav)
 
@@ -191,8 +203,17 @@ def build_speech_timeline_wav(
         out_f.setsampwidth(sample_width)
         out_f.setframerate(sample_rate)
 
-        for start_time, clip_path in sorted(placed_clips, key=lambda x: x[0]):
+        ordered_clips = sorted(placed_clips, key=lambda x: x[0])
+        target_total = max(0, int(total_duration * sample_rate))
+        for index, (start_time, clip_path) in enumerate(ordered_clips):
             target_sample = max(0, int(start_time * sample_rate))
+            # Bir segment keyingisining boshlanishidan oshmasin. Aks holda
+            # eski kod uni ketma-ket yozib, keyingi ovozni noto'g'ri vaqtga
+            # surib yuborardi.
+            next_sample = target_total
+            if index + 1 < len(ordered_clips):
+                next_sample = max(0, int(ordered_clips[index + 1][0] * sample_rate))
+            clip_end = min(target_total, next_sample)
             if target_sample > current_sample:
                 gap = target_sample - current_sample
                 out_f.writeframes(b"\x00" * (gap * sample_width))
@@ -201,14 +222,14 @@ def build_speech_timeline_wav(
             if clip_path.exists():
                 try:
                     with wave.open(str(clip_path), "rb") as clip_f:
-                        frames = clip_f.readframes(clip_f.getnframes())
+                        available_frames = max(0, clip_end - current_sample)
+                        frames = clip_f.readframes(available_frames)
                         out_f.writeframes(frames)
-                        current_sample += clip_f.getnframes()
+                        current_sample += len(frames) // sample_width
                 except Exception as exc:
                     log.warning("Klipni ulab bo'lmadi %s: %s", clip_path, exc)
 
         # Video oxirigacha sukunat bilan to'ldirish
-        target_total = int(total_duration * sample_rate)
         if target_total > current_sample:
             rem = target_total - current_sample
             out_f.writeframes(b"\x00" * (rem * sample_width))

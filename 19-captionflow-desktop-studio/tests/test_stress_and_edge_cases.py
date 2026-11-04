@@ -138,6 +138,7 @@ class DubbingTempoAndEdgeCasesTests(TestCase):
         m_dub.adjust_audio_tempo(Path("/tmp/in.mp3"), out, target_duration=0.5)
         cmd = mock_run.call_args[0][0]
         self.assertIn("atempo=2.000", cmd[cmd.index("-filter:a") + 1])
+        self.assertEqual(cmd[cmd.index("-t") + 1], "0.500")
 
     @patch("subtitr.dubbing.probe_duration_seconds", return_value=0.5)
     @patch("subtitr.dubbing.run", return_value=SimpleNamespace(returncode=0, stderr=""))

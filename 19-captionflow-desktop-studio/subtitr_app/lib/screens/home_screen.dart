@@ -107,6 +107,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   ProcessorResult? _result;
   String? _externalVideoPath;
   String? _externalSubtitlePath;
+  String? _externalSubtitleVideoPath;
   double _subtitleOffset = 0;
   String _kinoDir = '';
   String _outDir = '';
@@ -283,11 +284,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (video != null) {
         _selectedVideo = null;
         _externalVideoPath = video;
+        _dropManualSubtitleForOtherVideo(video);
         _result = null;
         _status = 'Tashlab qo\'yilgan video tanlandi';
       }
       if (subtitle != null) {
         _externalSubtitlePath = subtitle;
+        _externalSubtitleVideoPath = video ?? _selectedPath;
         _status = video == null
             ? 'Tashlab qo\'yilgan subtitr tanlandi'
             : _status;
@@ -419,6 +422,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     setState(() {
       _selectedVideo = null;
       _externalVideoPath = url;
+      _dropManualSubtitleForOtherVideo(url);
       _result = null;
       _videoDuration = 0.0;
       _status = 'Havola tanlandi';
@@ -520,6 +524,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         }
 
         _externalVideoPath = null;
+        _dropManualSubtitleForOtherVideo(_selectedVideo?.path ?? '');
         _status = _videos.isEmpty
             ? 'Kinolar papkasiga video tashlang'
             : 'Tayyor';
@@ -543,6 +548,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     setState(() {
       _selectedVideo = null;
       _externalVideoPath = path;
+      _dropManualSubtitleForOtherVideo(path);
       _result = null;
       _status = 'Tashqi video tanlandi';
     });
@@ -558,6 +564,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (path == null || !mounted) return;
     setState(() {
       _externalSubtitlePath = path;
+      _externalSubtitleVideoPath = _selectedPath.isEmpty ? null : _selectedPath;
       _result = null;
       _status = 'Tashqi subtitr tanlandi';
     });
@@ -959,7 +966,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// skaner topgan `film.srt` avtomatik ravishda aynan o'sha videoga beriladi.
   String? _subtitleFor(String videoPath) {
     final external = _externalSubtitlePath;
-    if (external != null && external.isNotEmpty) return external;
+    if (external != null &&
+        external.isNotEmpty &&
+        (_externalSubtitleVideoPath == null ||
+            _externalSubtitleVideoPath == videoPath)) {
+      return external;
+    }
     final selected = _selectedVideo;
     if (selected != null && selected.path == videoPath && selected.subtitlePath.isNotEmpty) {
       return selected.subtitlePath;
@@ -971,6 +983,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// presetdagi offset yangi transkripsiyani ham sababsiz surib yuboradi.
   double _subtitleOffsetFor(String videoPath) =>
       _subtitleFor(videoPath) == null ? 0 : _subtitleOffset;
+
+  /// Qo'lda tanlangan subtitr bitta video bilan bog'langan. Video almashtirilsa
+  /// eski matn boshqa filmga qo'llanib ketmasligi uchun uni olib tashlaymiz.
+  /// Ushbu metod faqat `setState` ichida chaqiriladi.
+  void _dropManualSubtitleForOtherVideo(String videoPath) {
+    if (_externalSubtitlePath == null) return;
+    final owner = _externalSubtitleVideoPath;
+    if (owner == null) {
+      _externalSubtitleVideoPath = videoPath;
+    } else if (owner != videoPath) {
+      _externalSubtitlePath = null;
+      _externalSubtitleVideoPath = null;
+      _subtitleOffset = 0;
+    }
+  }
 
   bool _isVideoPath(String path) {
     const videoExts = {'mp4', 'mkv', 'avi', 'mov', 'webm', 'm4v', 'flv', 'ts'};
@@ -1289,8 +1316,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     onScan: () => _scanVideos(path: _currentDir),
                     onPickExternal: _pickExternalVideo,
                     onPickSubtitle: _pickExternalSubtitle,
-                    onClearSubtitle: () =>
-                        setState(() => _externalSubtitlePath = null),
+                    onClearSubtitle: () => setState(() {
+                      _externalSubtitlePath = null;
+                      _externalSubtitleVideoPath = null;
+                      _subtitleOffset = 0;
+                    }),
                     onOffsetChanged: (value) =>
                         setState(() => _subtitleOffset = value),
                     onSelectVideo: (v) {
@@ -1300,6 +1330,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         setState(() {
                           _selectedVideo = v;
                           _externalVideoPath = null;
+                          _dropManualSubtitleForOtherVideo(v.path);
                           _result = null;
                         });
                         _updateDuration();
@@ -1317,6 +1348,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         _selectedVideo = _videos
                             .where((v) => !v.isDir)
                             .firstOrNull;
+                        _dropManualSubtitleForOtherVideo(
+                          _selectedVideo?.path ?? '',
+                        );
                       });
                       _updateDuration();
                     },
