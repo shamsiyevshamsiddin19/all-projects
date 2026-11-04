@@ -1,4 +1,4 @@
-package com.example.subtitr_app
+package uz.shamsiyev.subtitr
 
 import io.flutter.embedding.android.FlutterActivity
 

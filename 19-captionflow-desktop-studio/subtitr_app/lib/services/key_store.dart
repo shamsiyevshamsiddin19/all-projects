@@ -75,9 +75,13 @@ class KeyStore {
   static Future<void> restrict(File file) async {
     if (Platform.isWindows) return;
     try {
-      await Process.run('chmod', ['600', file.path]);
-    } catch (_) {
-      // chmod yo'q bo'lsa ham kalitlar saqlanadi — ruxsat kengroq qoladi.
+      final result = await Process.run('chmod', ['600', file.path]);
+      if (result.exitCode != 0) {
+        throw StateError('API kalit fayli uchun 0600 ruxsat o\'rnatilmadi');
+      }
+    } catch (error) {
+      // Xavfsiz deb ko'rsatib, aslida ochiq faylga kalit yozish mumkin emas.
+      throw StateError('API kalit fayli himoyalanmadi: $error');
     }
   }
 

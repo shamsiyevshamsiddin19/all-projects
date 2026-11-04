@@ -519,7 +519,8 @@ def _render_outputs(
             mix_dubbed_soundtrack(video, timeline_wav, mixed_audio, ducking_volume=ducking_vol)
             create_dubbed_video(
                 video, mixed_audio, out,
-                ass_subtitle_path=ass, target_lang=dub_target, multi_track=True,
+                ass_subtitle_path=ass, target_lang=dub_target,
+                source_lang=data.source_lang, multi_track=True,
             )
         else:
             burn_subtitles(

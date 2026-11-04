@@ -277,6 +277,10 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
   void dispose() {
     _searchDebounce?.cancel();
     _draftDebounce?.cancel();
+    final preview = _previewPath;
+    final subtitle = _playerSubtitles;
+    if (preview != null) _deleteTempFile(preview);
+    if (subtitle != null) _deleteTempFile(subtitle);
     // Kontrollerlar endi har qatorning O'ZIDA — `_SegmentTile` ularni
     // o'zi yaratadi va o'zi tozalaydi.
     super.dispose();
@@ -324,16 +328,29 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
         origStyle: widget.appearance.origStyle,
       );
       if (!mounted || run != _previewRun) return;
+      final previousPreview = _previewPath;
       setState(() {
         _previewPath = path;
         _previewLoading = false;
       });
+      if (previousPreview != null && previousPreview != path) {
+        await _deleteTempFile(previousPreview);
+      }
     } catch (error) {
       if (!mounted || run != _previewRun) return;
       setState(() {
         _previewError = error.toString();
         _previewLoading = false;
       });
+    }
+  }
+
+  Future<void> _deleteTempFile(String path) async {
+    try {
+      final file = File(path);
+      if (await file.exists()) await file.delete();
+    } catch (_) {
+      // Preview tozalash render natijasiga ta'sir qilmasligi kerak.
     }
   }
 
@@ -351,6 +368,7 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
           videoPath: _playerVideo!,
           subtitlePath: _playerSubtitles!,
           controller: _playerControl,
+          onPreviousSubtitleReleased: _deleteTempFile,
           onUnavailable: (_) {
             if (mounted) setState(() => _playerFailed = true);
           },

@@ -10,11 +10,13 @@ void main() {
       'path': r'E:\Subtitle\Kinolar\movie.mp4',
       'size': 1024,
       'subtitleName': 'movie.srt',
+      'subtitle': r'E:\Subtitle\Kinolar\movie.srt',
     });
 
     expect(video.name, 'movie.mp4');
     expect(video.size, 1024);
     expect(video.subtitleName, 'movie.srt');
+    expect(video.subtitlePath, r'E:\Subtitle\Kinolar\movie.srt');
   });
 
   group('CacheUsage', () {

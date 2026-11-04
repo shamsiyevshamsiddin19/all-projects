@@ -116,6 +116,18 @@ class DubbingTimelineTests(TestCase):
                 self.assertEqual(f.getnframes(), 2 * 24000)
 
 
+class DubbingSynthesisFailureTests(TestCase):
+    @patch.object(m_dub, "generate_clip_sync", side_effect=RuntimeError("tarmoq yo'q"))
+    def test_all_failed_tts_segments_abort_the_job(self, _mock_generate):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            with self.assertRaisesRegex(RuntimeError, "birorta ovoz qatori"):
+                m_dub.synthesize_all_segments(
+                    [{"start": 0, "end": 1, "translated": "Salom"}],
+                    voice="uz-UZ-SardorNeural",
+                    work_dir=Path(tmp_dir),
+                )
+
+
 class DubbingMixerTests(TestCase):
     @patch.object(m_dub, "run", return_value=SimpleNamespace(returncode=0, stderr=""))
     @patch.object(m_dub, "require_tool")
@@ -158,14 +170,16 @@ class DubbingMixerTests(TestCase):
 class DubbingMuxingTests(TestCase):
     @patch.object(m_dub, "run", return_value=SimpleNamespace(returncode=0, stderr=""))
     @patch.object(m_dub, "require_tool")
+    @patch.object(m_dub, "probe_audio_stream_count", return_value=2)
     @patch.object(m_dub, "probe_audio_codec", return_value="aac")
-    def test_create_dubbed_video_maps_multi_tracks(self, mock_codec, mock_req, mock_run):
+    def test_create_dubbed_video_maps_multi_tracks(self, mock_codec, mock_count, mock_req, mock_run):
         out_video = Path("/tmp/out_dubbed.mp4")
         m_dub.create_dubbed_video(
             video_path=Path("/tmp/src.mp4"),
             dubbed_audio_path=Path("/tmp/dub.aac"),
             out_video_path=out_video,
             target_lang="uz",
+            source_lang="ru",
             multi_track=True,
         )
 
@@ -175,7 +189,10 @@ class DubbingMuxingTests(TestCase):
         self.assertEqual(cmd[cmd.index("-c:v") + 1], "copy")
         # Track 0: Original
         self.assertIn("title=Asl ovoz (Original)", "".join(cmd))
-        # Track 1: Uzbek Dubbed
+        # Two original tracks are kept; Uzbek dub becomes track 2.
+        self.assertIn("0:a?", cmd)
+        self.assertIn("language=ru", "".join(cmd))
+        self.assertIn("-metadata:s:a:2", cmd)
         self.assertIn("title=O'zbekcha AI Dublyaj", "".join(cmd))
         self.assertIn("default", cmd)
 

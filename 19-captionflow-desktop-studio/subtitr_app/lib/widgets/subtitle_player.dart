@@ -21,12 +21,15 @@ class SubtitlePlayer extends StatefulWidget {
     required this.subtitlePath,
     required this.controller,
     this.onUnavailable,
+    this.onPreviousSubtitleReleased,
   });
 
   final String videoPath;
   final String subtitlePath;
   final SubtitlePlayerController controller;
   final void Function(Object error)? onUnavailable;
+  /// Old ASS can only be removed after libmpv has switched to the new track.
+  final Future<void> Function(String path)? onPreviousSubtitleReleased;
 
   @override
   State<SubtitlePlayer> createState() => _SubtitlePlayerState();
@@ -73,6 +76,42 @@ class _SubtitlePlayerState extends State<SubtitlePlayer> {
         _video = video;
         _ready = true;
       });
+    } catch (error) {
+      if (mounted) widget.onUnavailable?.call(error);
+    }
+  }
+
+  @override
+  void didUpdateWidget(SubtitlePlayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Tahrirchi qayta tarjima qilganda yangi ASS fayl yaratadi. Stateful
+    // pleyer esa initState'ni qayta chaqirmaydi, shuning uchun trekni alohida
+    // almashtirmasak ekranda eski tarjima qolib ketadi.
+    if (widget.videoPath != oldWidget.videoPath ||
+        widget.subtitlePath != oldWidget.subtitlePath) {
+      _reloadMedia(
+        reopenVideo: widget.videoPath != oldWidget.videoPath,
+        previousSubtitle: oldWidget.subtitlePath,
+      );
+    }
+  }
+
+  Future<void> _reloadMedia({
+    required bool reopenVideo,
+    required String previousSubtitle,
+  }) async {
+    final player = _player;
+    if (player == null) return;
+    try {
+      if (reopenVideo) {
+        await player.open(Media(Uri.file(widget.videoPath).toString()), play: false);
+      }
+      await player.setSubtitleTrack(
+        SubtitleTrack.uri(Uri.file(widget.subtitlePath).toString()),
+      );
+      if (previousSubtitle != widget.subtitlePath) {
+        await widget.onPreviousSubtitleReleased?.call(previousSubtitle);
+      }
     } catch (error) {
       if (mounted) widget.onUnavailable?.call(error);
     }
