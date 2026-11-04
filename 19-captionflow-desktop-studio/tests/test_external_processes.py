@@ -119,6 +119,8 @@ class BurnSubtitlesProcessTests(unittest.TestCase):
         self.assertEqual(len(calls), 2)
         self.assertEqual(calls[0][calls[0].index("-c:a") + 1], "copy")
         self.assertEqual(calls[1][calls[1].index("-c:a") + 1], "aac")
+        self.assertIn("-sn", calls[0])
+        self.assertIn("-sn", calls[1])
 
 
 class DownloadVideoProcessTests(unittest.TestCase):
