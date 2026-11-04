@@ -90,7 +90,10 @@ class _InAppVideoPlayerDialogState extends State<InAppVideoPlayerDialog> {
     return _tracks.subtitle.where((t) => t.id != 'auto' && t.id != 'no').toList();
   }
 
-  bool get _canToggleSubtitles => _hasSubtitles || _realSubtitleTracks.isNotEmpty;
+  // Kuydirilgan videoda matn kadrga allaqachon qo'shilgan bo'ladi. Shuning
+  // uchun tashqi subtitr qatlami ham, uning boshqaruvi ham ishlatilmaydi.
+  bool get _canToggleSubtitles =>
+      !_isBurnedVideo && (_hasSubtitles || _realSubtitleTracks.isNotEmpty);
 
   String _formatAudioTrackTitle(AudioTrack t, int index) {
     final title = t.title?.trim();
@@ -688,7 +691,10 @@ class _EmbeddedVideoPlayerState extends State<EmbeddedVideoPlayer> {
     return _tracks.subtitle.where((t) => t.id != 'auto' && t.id != 'no').toList();
   }
 
-  bool get _canToggleSubtitles => _hasSubtitles || _realSubtitleTracks.isNotEmpty;
+  // Kuydirilgan videoda matn kadrga allaqachon qo'shilgan bo'ladi. Shuning
+  // uchun tashqi subtitr qatlami ham, uning boshqaruvi ham ishlatilmaydi.
+  bool get _canToggleSubtitles =>
+      !_isBurnedVideo && (_hasSubtitles || _realSubtitleTracks.isNotEmpty);
 
   String _formatAudioTrackTitle(AudioTrack t, int index) {
     final title = t.title?.trim();
