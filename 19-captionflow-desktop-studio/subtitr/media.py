@@ -630,6 +630,18 @@ def probe_audio_codec(video: Path) -> str:
     return (proc.stdout or "").strip().splitlines()[0].strip().lower() if proc.stdout.strip() else ""
 
 
+def probe_audio_stream_count(video: Path) -> int:
+    """Videodagi audio treklar soni; ffprobe ishlamasa 0 qaytaradi."""
+    proc = run([
+        FFPROBE, "-v", "error", "-select_streams", "a",
+        "-show_entries", "stream=index",
+        "-of", "default=noprint_wrappers=1:nokey=1", str(video),
+    ])
+    if proc.returncode != 0:
+        return 0
+    return len([line for line in (proc.stdout or "").splitlines() if line.strip()])
+
+
 def extract_embedded_subtitle(video: Path, tmp_dir: Path) -> Path | None:
     proc = run(
         [

@@ -35,6 +35,7 @@ class DesktopVideo {
     required this.path,
     required this.size,
     required this.subtitleName,
+    required this.subtitlePath,
     this.isDir = false,
   });
 
@@ -42,6 +43,9 @@ class DesktopVideo {
   final String path;
   final int size;
   final String subtitleName;
+  /// Video yonidan topilgan subtitrning to'liq yo'li. Nomning o'zi renderga
+  /// yetmaydi: processor import qilishi uchun aynan shu manzil kerak.
+  final String subtitlePath;
   final bool isDir;
 
   factory DesktopVideo.fromJson(Map<String, dynamic> json) {
@@ -50,6 +54,7 @@ class DesktopVideo {
       path: json['path'] as String? ?? '',
       size: json['size'] as int? ?? 0,
       subtitleName: json['subtitleName'] as String? ?? '',
+      subtitlePath: json['subtitle'] as String? ?? '',
       isDir: json['isDir'] as bool? ?? false,
     );
   }

@@ -636,8 +636,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         origStyle: _appearance.origStyle,
         quality: _appearance.quality,
         upscale: _appearance.upscale,
-        subtitlePath: _externalSubtitlePath,
-        subtitleOffset: _subtitleOffset,
+        subtitlePath: _subtitleFor(path),
+        subtitleOffset: _subtitleOffsetFor(path),
         voice: _voice,
         ducking: _ducking,
       );
@@ -675,8 +675,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         sourceLang: _sourceLang,
         targetLang: _targetLang,
         onProgress: _applyProgress,
-        subtitlePath: _externalSubtitlePath,
-        subtitleOffset: _subtitleOffset,
+        subtitlePath: _subtitleFor(path),
+        subtitleOffset: _subtitleOffsetFor(path),
         voice: _voice,
         ducking: _ducking,
       );
@@ -736,6 +736,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _showError('Papkada video topilmadi');
       return;
     }
+    // Bitta qo'lda tanlangan subtitrni turli videolarga jimgina qo'llash
+    // noto'g'ri vaqt/matn beradi. Navbatda har video o'z yonidagi sidecar
+    // subtitrini oladi; qo'lda import qilingan fayl esa faqat bitta video
+    // uchun ishlatiladi.
+    if (_externalSubtitlePath != null) {
+      _showError(
+        'Tashqi subtitr bitta video uchun tanlangan. Navbatdan oldin uni olib tashlang; navbat har video yonidagi subtitrni avtomatik oladi.',
+      );
+      return;
+    }
     if (!_settings.hasAnyKey) {
       final proceed = await _confirmNoKeys();
       if (proceed != true) {
@@ -789,6 +799,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             origStyle: _appearance.origStyle,
             quality: _appearance.quality,
             upscale: _appearance.upscale,
+            subtitlePath: v.subtitlePath,
+            subtitleOffset: v.subtitlePath.isNotEmpty ? _subtitleOffset : 0,
             voice: _voice,
             ducking: _ducking,
           );
@@ -844,6 +856,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _startUrlBatch(List<PlaylistEntry> entries) async {
+    if (_externalSubtitlePath != null) {
+      _showError(
+        'Tashqi subtitr playlist navbatiga qo\'llanmaydi. Uni olib tashlab qayta urinib ko\'ring.',
+      );
+      return;
+    }
     _batchCancelled = false;
     await _runJob('Playlist navbati boshlanmoqda', () async {
       var done = 0;
@@ -936,6 +954,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _progress = nextProgress;
     });
   }
+
+  /// Qo'lda import qilingan subtitr sidecar fayldan ustun turadi. Aks holda
+  /// skaner topgan `film.srt` avtomatik ravishda aynan o'sha videoga beriladi.
+  String? _subtitleFor(String videoPath) {
+    final external = _externalSubtitlePath;
+    if (external != null && external.isNotEmpty) return external;
+    final selected = _selectedVideo;
+    if (selected != null && selected.path == videoPath && selected.subtitlePath.isNotEmpty) {
+      return selected.subtitlePath;
+    }
+    return null;
+  }
+
+  /// Vaqt siljishi faqat import qilingan subtitrga tegishli. Aks holda eski
+  /// presetdagi offset yangi transkripsiyani ham sababsiz surib yuboradi.
+  double _subtitleOffsetFor(String videoPath) =>
+      _subtitleFor(videoPath) == null ? 0 : _subtitleOffset;
 
   bool _isVideoPath(String path) {
     const videoExts = {'mp4', 'mkv', 'avi', 'mov', 'webm', 'm4v', 'flv', 'ts'};

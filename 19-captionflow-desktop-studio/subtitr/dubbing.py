@@ -21,7 +21,10 @@ except ImportError:
     edge_tts = None  # type: ignore
 
 from subtitr.core import emit, log, require_tool, run
-from subtitr.media import extract_audio, probe_audio_codec, probe_duration_seconds
+from subtitr.media import (
+    extract_audio, probe_audio_codec, probe_audio_stream_count,
+    probe_duration_seconds,
+)
 
 DEFAULT_VOICE = "uz-UZ-SardorNeural"
 
@@ -126,6 +129,7 @@ def synthesize_all_segments(
     """Barcha tarjima qilingan segmentlarni ketma-ket TTS ovoziga aylantiradi."""
     work_dir.mkdir(parents=True, exist_ok=True)
     results: list[tuple[float, Path]] = []
+    failures = 0
     total = len(segments)
 
     for i, seg in enumerate(segments):
@@ -154,8 +158,20 @@ def synthesize_all_segments(
             adjust_audio_tempo(raw_mp3, out_wav, target_duration=target_dur)
             results.append((start, out_wav))
         except Exception as exc:
+            failures += 1
             log.warning("Segment %d ovozlashtirishda xato: %s", i, exc)
 
+    if total and not results:
+        raise RuntimeError(
+            "AI Dublyaj uchun birorta ovoz qatori yaratilolmadi. "
+            "Internet, Edge-TTS va tanlangan ovozni tekshiring."
+        )
+    if failures:
+        emit(
+            "progress",
+            message=f"Diqqat: {failures} qator ovozlashtirilmadi",
+            progress=progress_hi,
+        )
     return results
 
 
@@ -249,11 +265,13 @@ def create_dubbed_video(
     out_video_path: Path,
     ass_subtitle_path: Path | None = None,
     target_lang: str = "uz",
+    source_lang: str = "en",
     multi_track: bool = True,
 ) -> Path:
     """Videoni qayta kodlamasdan (-c:v copy) ko'p tilli audio yo'laklar bilan yig'adi."""
     require_tool("ffmpeg")
     has_orig_audio = probe_audio_codec(video_path) != ""
+    original_track_count = probe_audio_stream_count(video_path) if has_orig_audio else 0
     dub_title = "O'zbekcha AI Dublyaj" if target_lang.startswith("uz") else f"AI Dublyaj ({target_lang.upper()})"
 
     cmd = [
@@ -274,16 +292,17 @@ def create_dubbed_video(
         # 1-trek: Asl ovoz (Original)
         # 2-trek: O'zbekcha AI Dublyaj (Standart faol)
         cmd.extend([
-            "-map", "0:a:0?",
-            "-c:a:0", "copy",
-            "-metadata:s:a:0", "language=eng",
+            # Barcha asl audio treklar yo'qolmasdan saqlanadi. Dublyajning
+            # chiqish indeksi ular sonidan keyin keladi.
+            "-map", "0:a?",
+            "-map", "1:a:0",
+            "-c:a", "copy",
+            "-metadata:s:a:0", f"language={source_lang}",
             "-metadata:s:a:0", "title=Asl ovoz (Original)",
             "-disposition:s:a:0", "0",
-            "-map", "1:a:0",
-            "-c:a:1", "copy",
-            "-metadata:s:a:1", f"language={target_lang}",
-            "-metadata:s:a:1", f"title={dub_title}",
-            "-disposition:s:a:1", "default",
+            f"-metadata:s:a:{max(1, original_track_count)}", f"language={target_lang}",
+            f"-metadata:s:a:{max(1, original_track_count)}", f"title={dub_title}",
+            f"-disposition:s:a:{max(1, original_track_count)}", "default",
         ])
     else:
         cmd.extend([
