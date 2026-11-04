@@ -524,6 +524,10 @@ def burn_subtitles(
             "-vf", vf,
             "-c:v", choice.codec, *choice.args,
             *audio,
+            # Kuydirish natijasida faqat kadrga chizilgan subtitr qoladi.
+            # Manbada avvaldan CC/softsub bo'lsa, ffmpeg uni avtomatik
+            # tanlab yana muxlab qo'ymasligi kerak.
+            "-sn",
             "-movflags", "+faststart",
             "-progress", "pipe:1", "-nostats",
             str(out_path),

@@ -343,6 +343,7 @@ class DubbingPipelineIntegrationTests(TestCase):
                 result = m_pipe._render_outputs(job)
 
         mock_create.assert_called_once()
+        self.assertIsNone(mock_create.call_args.kwargs["ass_subtitle_path"])
         self.assertEqual(result["outputs"][-1]["kind"], "video")
 
 
