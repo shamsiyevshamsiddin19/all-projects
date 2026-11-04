@@ -58,7 +58,7 @@ Exec=$TARGET/subtitr-desktop
 Icon=$TARGET/app_logo.png
 Terminal=false
 Categories=AudioVideo;Video;
-StartupWMClass=com.example.subtitr_app
+StartupWMClass=uz.shamsiyev.subtitr
 DESKTOP
 chmod +x "$DESKTOP_FILE"
 
