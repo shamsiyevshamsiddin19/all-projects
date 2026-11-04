@@ -103,4 +103,36 @@ class KeyStore {
     await write(found);
     return found;
   }
+
+  /// Linux ilovasining eski identifikatori (`com.example.subtitr_app`) bilan
+  /// saqlangan maxfiy kalitlarni bir marta yangi nom ostiga olib o'tadi.
+  /// Yangi faylda kalit bo'lsa, unga hech qachon tegmaydi.
+  Future<Map<String, String>> migrateLegacyLinuxApplicationId() async {
+    if (!Platform.isLinux || _override != null) return const {};
+    if ((await read()).isNotEmpty) return const {};
+
+    final home = Platform.environment['HOME'];
+    if (home == null || home.isEmpty) return const {};
+    final dataHome = Platform.environment['XDG_DATA_HOME'] ?? '$home/.local/share';
+    final legacy = File(
+      '$dataHome${Platform.pathSeparator}com.example.subtitr_app'
+      '${Platform.pathSeparator}$_fileName',
+    );
+    if (!await legacy.exists()) return const {};
+
+    try {
+      final raw = jsonDecode(await legacy.readAsString());
+      if (raw is! Map) return const {};
+      final found = <String, String>{
+        for (final entry in raw.entries)
+          if (entry.value is String && (entry.value as String).trim().isNotEmpty)
+            '${entry.key}': (entry.value as String).trim(),
+      };
+      if (found.isEmpty) return const {};
+      await write(found);
+      return found;
+    } catch (_) {
+      return const {};
+    }
+  }
 }

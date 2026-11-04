@@ -211,6 +211,9 @@ class SettingsStore {
     final prefs = await SharedPreferences.getInstance();
     var keys = await _keys.read();
     if (keys.isEmpty) {
+      keys = await _keys.migrateLegacyLinuxApplicationId();
+    }
+    if (keys.isEmpty) {
       // Yangilanishdan oldin kiritilgan kalitlar hali eski (hamma
       // o'qiydigan) faylda — bir marta ko'chirib, eskisini tozalaymiz.
       final migrated = await _keys.migrateFrom({
