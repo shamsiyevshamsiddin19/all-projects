@@ -101,6 +101,32 @@ class DubbingTimelineTests(TestCase):
             with wave.open(str(out_wav), "rb") as f:
                 self.assertEqual(f.getnframes(), 4 * sample_rate)
 
+    def test_build_speech_timeline_does_not_shift_overlapping_clip(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = Path(tmp_dir)
+            sample_rate = 100
+            first = tmp / "first.wav"
+            second = tmp / "second.wav"
+            for path, value, seconds in ((first, b"\x01\x00", 2), (second, b"\x02\x00", 1)):
+                with wave.open(str(path), "wb") as f:
+                    f.setnchannels(1)
+                    f.setsampwidth(2)
+                    f.setframerate(sample_rate)
+                    f.writeframes(value * (sample_rate * seconds))
+
+            out_wav = tmp / "timeline.wav"
+            m_dub.build_speech_timeline_wav(
+                [(0.0, first), (1.0, second)],
+                total_duration=3.0,
+                out_wav_path=out_wav,
+                sample_rate=sample_rate,
+            )
+
+            with wave.open(str(out_wav), "rb") as f:
+                self.assertEqual(f.getnframes(), 3 * sample_rate)
+                f.setpos(sample_rate)
+                self.assertEqual(f.readframes(1), b"\x02\x00")
+
     def test_build_speech_timeline_ignores_missing_file_gracefully(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp = Path(tmp_dir)
