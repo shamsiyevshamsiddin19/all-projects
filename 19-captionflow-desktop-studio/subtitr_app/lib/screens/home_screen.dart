@@ -101,6 +101,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String _batchInfo = ''; // "Video 2/5" — navbat holati
   List<JobPreset> _presets = const [];
   List<_BatchResult> _batchResults = const [];
+  final List<_AppNotification> _notifications = [];
+  int _unreadNotificationCount = 0;
 
   List<DesktopVideo> _videos = const [];
   DesktopVideo? _selectedVideo;
@@ -164,7 +166,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       value: 'softsub',
       icon: Icons.closed_caption_rounded,
       title: 'Yumshoq subtitr (CC)',
-      description: "Kuydirmasdan, videoga 2 ta o'chirib-yoqiladigan subtitr qo'shish",
+      description:
+          "Kuydirmasdan, videoga 2 ta o'chirib-yoqiladigan subtitr qo'shish",
     ),
     ModeChoice(
       value: 'dubbing',
@@ -954,6 +957,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (!mounted) return;
     setState(() {
       _status = progress.message.isEmpty ? _status : progress.message;
+      if (progress.message.isNotEmpty) {
+        _recordNotification(progress.message);
+      }
       final nextProgress = progress.progress.clamp(0, 1).toDouble();
       // Xabar o'zgarishi foiz siljigani degani emas. Yakuniy PDF/DOCX
       // yozilishida aynan foizning oxirgi o'zgargan vaqtini saqlaymiz.
@@ -973,7 +979,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       return external;
     }
     final selected = _selectedVideo;
-    if (selected != null && selected.path == videoPath && selected.subtitlePath.isNotEmpty) {
+    if (selected != null &&
+        selected.path == videoPath &&
+        selected.subtitlePath.isNotEmpty) {
       return selected.subtitlePath;
     }
     return null;
@@ -1053,6 +1061,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     setState(() {
       _status = message;
       _running = false;
+      _recordNotification(message, isError: true);
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1065,6 +1074,77 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           onPressed: () => _showErrorDetail(message),
         ),
         duration: const Duration(seconds: 8),
+      ),
+    );
+  }
+
+  /// So'nggi jarayonlar bitta joyda ko'rinadi; bir xil progress xabari esa
+  /// ro'yxatni to'ldirib yubormaydi.
+  void _recordNotification(String message, {bool isError = false}) {
+    final text = message.trim();
+    if (text.isEmpty) return;
+    final first = _notifications.firstOrNull;
+    if (first != null && first.message == text && first.isError == isError) {
+      return;
+    }
+    _notifications.insert(
+      0,
+      _AppNotification(message: text, isError: isError, time: DateTime.now()),
+    );
+    if (_notifications.length > 20) _notifications.removeLast();
+    _unreadNotificationCount = (_unreadNotificationCount + 1)
+        .clamp(0, 99)
+        .toInt();
+  }
+
+  Future<void> _showNotifications() async {
+    setState(() => _unreadNotificationCount = 0);
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Bildirishnomalar'),
+        content: SizedBox(
+          width: 420,
+          child: _notifications.isEmpty
+              ? const Text('Hali bildirishnoma yo\'q.')
+              : ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: _notifications.length,
+                  separatorBuilder: (_, _) => const Divider(height: 1),
+                  itemBuilder: (_, index) {
+                    final item = _notifications[index];
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        item.isError
+                            ? Icons.error_outline_rounded
+                            : Icons.info_outline_rounded,
+                        color: item.isError
+                            ? Theme.of(context).colorScheme.error
+                            : Theme.of(context).colorScheme.primary,
+                      ),
+                      title: Text(item.message),
+                      subtitle: Text(
+                        '${item.time.hour.toString().padLeft(2, '0')}:${item.time.minute.toString().padLeft(2, '0')}',
+                      ),
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          if (_notifications.isNotEmpty)
+            TextButton(
+              onPressed: () {
+                setState(_notifications.clear);
+                Navigator.of(context).pop();
+              },
+              child: const Text('Tozalash'),
+            ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Yopish'),
+          ),
+        ],
       ),
     );
   }
@@ -1277,11 +1357,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 ),
                 const SizedBox(width: 8),
                 IconButton(
-                  tooltip: 'Kinolar papkasini ochish',
-                  onPressed: _kinoDir.isEmpty
-                      ? null
-                      : () => _openPath(_kinoDir),
-                  icon: const Icon(Icons.folder_open_rounded),
+                  tooltip: 'Bildirishnomalar',
+                  onPressed: _showNotifications,
+                  icon: Badge(
+                    isLabelVisible: _unreadNotificationCount > 0,
+                    label: Text('$_unreadNotificationCount'),
+                    child: const Icon(Icons.notifications_none_rounded),
+                  ),
                   style: IconButton.styleFrom(
                     backgroundColor: theme.colorScheme.surfaceContainerHighest,
                   ),
@@ -1507,6 +1589,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ),
     );
   }
+}
+
+class _AppNotification {
+  const _AppNotification({
+    required this.message,
+    required this.isError,
+    required this.time,
+  });
+
+  final String message;
+  final bool isError;
+  final DateTime time;
 }
 
 class _BatchResult {
