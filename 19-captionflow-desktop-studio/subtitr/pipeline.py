@@ -516,7 +516,7 @@ def _render_outputs(
             build_speech_timeline_wav(placed_clips, total_dur, timeline_wav)
             mixed_audio = dub_tmp / "dubbed_mixed.aac"
             ducking_vol = float(job["ducking"] if job.get("ducking") is not None else 0.18)
-            mix_dubbed_soundtrack(video, timeline_wav, mixed_audio, ducking_volume=ducking_vol)
+            mix_dubbed_soundtrack(video, timeline_wav, mixed_audio, ducking_volume=ducking_vol, dynamic=True)
             create_dubbed_video(
                 video, mixed_audio, out,
                 # Dublyaj rejimi faqat audio yo'lagini qo'shadi. Subtitr

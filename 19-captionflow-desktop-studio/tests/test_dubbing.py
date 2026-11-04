@@ -192,6 +192,40 @@ class DubbingMixerTests(TestCase):
         self.assertIn("volume=0.25", filter_str)
         self.assertIn("amix=inputs=2", filter_str)
 
+    @patch.object(m_dub, "run", return_value=SimpleNamespace(returncode=0, stderr=""))
+    @patch.object(m_dub, "require_tool")
+    @patch.object(m_dub, "probe_audio_codec", return_value="aac")
+    def test_mix_dubbed_soundtrack_dynamic_ducking_applies_sidechain(self, mock_codec, mock_req, mock_run):
+        speech_wav = Path("/tmp/speech.wav")
+        out_audio = Path("/tmp/mixed.aac")
+        m_dub.mix_dubbed_soundtrack(Path("/tmp/video.mp4"), speech_wav, out_audio, ducking_volume=0.18, dynamic=True)
+
+        cmd = mock_run.call_args[0][0]
+        self.assertIn("-filter_complex", cmd)
+        filter_str = cmd[cmd.index("-filter_complex") + 1]
+        self.assertIn("sidechaincompress", filter_str)
+        self.assertIn("amix=inputs=2", filter_str)
+
+    def test_compute_speech_rate_pacing(self):
+        # Qisqa matn va yetarli vaqt -> +0%
+        self.assertEqual(m_dub.compute_speech_rate("Salom dunyo", 3.0), "+0%")
+        # Juda uzun matn va qisqa vaqt -> tezlashtirilgan foiz (+20%..+40%)
+        long_sentence = "Bu juda uzun matn bo'lib uning ichida juda ko'p so'zlar mavjud va u vaqtga sig'ishi kerak"
+        rate = m_dub.compute_speech_rate(long_sentence, 1.5)
+        self.assertTrue(rate.startswith("+"))
+        self.assertTrue(rate.endswith("%"))
+        pct = int(rate[1:-1])
+        self.assertGreaterEqual(pct, 20)
+        self.assertLessEqual(pct, 40)
+
+    def test_resolve_voice_expanded_catalog(self):
+        self.assertEqual(m_dub.resolve_voice("sardor"), "uz-UZ-SardorNeural")
+        self.assertEqual(m_dub.resolve_voice("madina"), "uz-UZ-MadinaNeural")
+        self.assertEqual(m_dub.resolve_voice("dmitry", target_lang="ru"), "ru-RU-DmitryNeural")
+        self.assertEqual(m_dub.resolve_voice("svetlana", target_lang="ru"), "ru-RU-SvetlanaNeural")
+        self.assertEqual(m_dub.resolve_voice("guy", target_lang="en"), "en-US-GuyNeural")
+        self.assertEqual(m_dub.resolve_voice("jenny", target_lang="en"), "en-US-JennyNeural")
+
 
 class DubbingMuxingTests(TestCase):
     @patch.object(m_dub, "run", return_value=SimpleNamespace(returncode=0, stderr=""))

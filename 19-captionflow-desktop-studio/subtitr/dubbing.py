@@ -38,9 +38,41 @@ DEFAULT_LANG_VOICES = {
     "ky": "ru-RU-DmitryNeural",
 }
 
+VOICE_CATALOG: dict[str, list[dict[str, str]]] = {
+    "uz": [
+        {"id": "uz-UZ-SardorNeural", "name": "Sardor", "gender": "male", "lang": "O'zbekcha"},
+        {"id": "uz-UZ-MadinaNeural", "name": "Madina", "gender": "female", "lang": "O'zbekcha"},
+    ],
+    "ru": [
+        {"id": "ru-RU-DmitryNeural", "name": "Dmitriy", "gender": "male", "lang": "Ruscha"},
+        {"id": "ru-RU-SvetlanaNeural", "name": "Svetlana", "gender": "female", "lang": "Ruscha"},
+    ],
+    "en": [
+        {"id": "en-US-GuyNeural", "name": "Guy", "gender": "male", "lang": "Inglizcha"},
+        {"id": "en-US-JennyNeural", "name": "Jenny", "gender": "female", "lang": "Inglizcha"},
+    ],
+    "tr": [
+        {"id": "tr-TR-AhmetNeural", "name": "Ahmet", "gender": "male", "lang": "Turkcha"},
+        {"id": "tr-TR-EmelNeural", "name": "Emel", "gender": "female", "lang": "Turkcha"},
+    ],
+    "kk": [
+        {"id": "kk-KZ-DauletNeural", "name": "Daulet", "gender": "male", "lang": "Qozoqcha"},
+        {"id": "kk-KZ-AigulNeural", "name": "Aigul", "gender": "female", "lang": "Qozoqcha"},
+    ],
+}
+
 VOICES = {
     "sardor": "uz-UZ-SardorNeural",
     "madina": "uz-UZ-MadinaNeural",
+    "dmitry": "ru-RU-DmitryNeural",
+    "dmitriy": "ru-RU-DmitryNeural",
+    "svetlana": "ru-RU-SvetlanaNeural",
+    "guy": "en-US-GuyNeural",
+    "jenny": "en-US-JennyNeural",
+    "ahmet": "tr-TR-AhmetNeural",
+    "emel": "tr-TR-EmelNeural",
+    "daulet": "kk-KZ-DauletNeural",
+    "aigul": "kk-KZ-AigulNeural",
 }
 
 
@@ -58,17 +90,58 @@ def resolve_voice(voice_name: str | None, target_lang: str = "uz") -> str:
     return DEFAULT_LANG_VOICES.get(code, DEFAULT_VOICE)
 
 
-async def _generate_single_clip(text: str, voice: str, out_path: Path) -> None:
+def estimate_natural_speech_duration(text: str, chars_per_second: float = 14.5) -> float:
+    """O'rtacha gapirish sur'atidan kelib chiqib tabiiy davomiylikni baholaydi."""
+    clean = " ".join((text or "").split())
+    if not clean:
+        return 0.5
+    return max(0.5, len(clean) / max(8.0, chars_per_second))
+
+
+def compute_speech_rate(text: str, target_duration: float) -> str:
+    """Matn hajmi va ajratilgan vaqtga qarab Edge TTS rate parametrini hisoblaydi.
+
+    Bu orqali TTS ovozi dastlabki sintezdanoq to'g'ri tezlikda yaratiladi,
+    FFmpeg atempo filtri esa so'zlarni kesib yubormasdan faqat nozik moslaydi.
+    """
+    if target_duration <= 0.1:
+        return "+0%"
+    natural_dur = estimate_natural_speech_duration(text)
+    ratio = natural_dur / target_duration
+    if ratio > 1.08:
+        # Gap vaqtga sig'mayapti: Edge TTS sur'atini oshiramiz (maksimal +40%)
+        pct = min(40, max(5, int((ratio - 1.0) * 100)))
+        return f"+{pct}%"
+    elif ratio < 0.70 and natural_dur >= 0.8:
+        # Bo'sh vaqt ko'p: biroz sekinlashtiramiz (maksimal -15%)
+        pct = max(-15, min(-5, int((ratio - 1.0) * 100)))
+        return f"{pct}%"
+    return "+0%"
+
+
+async def _generate_single_clip(
+    text: str,
+    voice: str,
+    out_path: Path,
+    rate: str = "+0%",
+    pitch: str = "+0Hz",
+) -> None:
     """Bitta gapni TTS orqali MP3 faylga aylantiradi."""
     if edge_tts is None:
         raise RuntimeError("edge-tts kutubxonasi o'rnatilmagan ('pip install edge-tts')")
-    communicate = edge_tts.Communicate(text, voice)
+    communicate = edge_tts.Communicate(text, voice, rate=rate, pitch=pitch)
     await communicate.save(str(out_path))
 
 
-def generate_clip_sync(text: str, voice: str, out_path: Path) -> None:
+def generate_clip_sync(
+    text: str,
+    voice: str,
+    out_path: Path,
+    rate: str = "+0%",
+    pitch: str = "+0Hz",
+) -> None:
     """Sinxron oqimdan TTS chaqirish uchun wrapper."""
-    asyncio.run(_generate_single_clip(text, voice, out_path))
+    asyncio.run(_generate_single_clip(text, voice, out_path, rate=rate, pitch=pitch))
 
 
 def adjust_audio_tempo(
@@ -163,8 +236,10 @@ def synthesize_all_segments(
         idx, start, end, text = item
         raw_mp3 = work_dir / f"seg_{idx:04d}_raw.mp3"
         out_wav = work_dir / f"seg_{idx:04d}_tempo.wav"
-        generate_clip_sync(text, voice, raw_mp3)
         target_dur = max(0.2, end - start)
+        # Tabiiy sur'at parametrini oldindan hisoblash orqali Edge TTS tabiiy talaffuz qiladi
+        rate_str = compute_speech_rate(text, target_dur)
+        generate_clip_sync(text, voice, raw_mp3, rate=rate_str)
         adjust_audio_tempo(raw_mp3, out_wav, target_duration=target_dur)
         return idx, start, out_wav
 
@@ -255,8 +330,14 @@ def mix_dubbed_soundtrack(
     speech_timeline_wav: Path,
     out_audio_path: Path,
     ducking_volume: float = 0.18,
+    dynamic: bool = False,
 ) -> Path:
-    """Asl video audiosi bilan yangi dublyaj ovozini aralashtiradi (Ducking)."""
+    """Asl video audiosi bilan yangi dublyaj ovozini aralashtiradi.
+
+    `dynamic=True` bo'lganda FFmpeg sidechaincompress orqali nutq paytida fon musiqasi
+    pasayadi, nutq yo'q paytda esa to'liq 100% jarangdorlik saqlanadi.
+    `dynamic=False` (standart) bo'lganda an'anaviy parametrli aralashtirish qo'llaniladi.
+    """
     require_tool("ffmpeg")
     ducking_volume = max(0.0, min(1.0, float(ducking_volume)))
     has_audio = probe_audio_codec(video_path) != ""
@@ -269,28 +350,69 @@ def mix_dubbed_soundtrack(
             "-c:a", "aac", "-b:a", "192k",
             str(out_audio_path),
         ]
-    else:
-        # Asl audioni ducking_volume ga pasaytirib, dublyaj bilan qorishtirish
-        filter_str = (
-            f"[0:a:0]aformat=channel_layouts=stereo,volume={ducking_volume:.2f}[bg]; "
-            "[1:a]aformat=channel_layouts=stereo[fg]; "
-            "[bg][fg]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[out]"
+        res = run(cmd)
+        if res.returncode != 0:
+            raise RuntimeError(f"Audioni saqlashda ffmpeg xatosi: {res.stderr}")
+        return out_audio_path
+
+    if dynamic:
+        compress_ratio = max(4.0, min(14.0, (1.0 - ducking_volume) * 12.0))
+        sc_thresh = max(0.015, min(0.06, 0.035 * (ducking_volume / 0.18)))
+        filter_dynamic = (
+            "[1:a]aformat=channel_layouts=stereo,highpass=f=75,volume=1.15,alimiter=limit=0.95,asplit[sc][fg]; "
+            "[0:a:0]aformat=channel_layouts=stereo[bg]; "
+            f"[bg][sc]sidechaincompress=threshold={sc_thresh:.3f}:ratio={compress_ratio:.1f}:attack=20:release=350[ducked_bg]; "
+            "[ducked_bg][fg]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[out]"
         )
-        cmd = [
+        cmd_dyn = [
             "ffmpeg", "-y",
             "-i", str(video_path),
             "-i", str(speech_timeline_wav),
-            "-filter_complex", filter_str,
+            "-filter_complex", filter_dynamic,
             "-map", "[out]",
             "-c:a", "aac", "-b:a", "192k",
             str(out_audio_path),
         ]
+        res_dyn = run(cmd_dyn)
+        if res_dyn.returncode == 0:
+            return out_audio_path
+        log.warning("Dinamik sidechaincompress ishlamadi, statik aralashtirishga o'tilmoqda: %s", res_dyn.stderr)
 
+    filter_str = (
+        f"[0:a:0]aformat=channel_layouts=stereo,volume={ducking_volume:.2f}[bg]; "
+        "[1:a]aformat=channel_layouts=stereo[fg]; "
+        "[bg][fg]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[out]"
+    )
+    cmd = [
+        "ffmpeg", "-y",
+        "-i", str(video_path),
+        "-i", str(speech_timeline_wav),
+        "-filter_complex", filter_str,
+        "-map", "[out]",
+        "-c:a", "aac", "-b:a", "192k",
+        str(out_audio_path),
+    ]
     res = run(cmd)
     if res.returncode != 0:
         raise RuntimeError(f"Audioni aralashtirishda ffmpeg xatosi: {res.stderr}")
 
     return out_audio_path
+
+
+def preview_voice_sample(voice: str, out_wav: Path, sample_text: str | None = None) -> Path:
+    """Ovoz namunasini eshitish uchun qisqa audio fayl yaratadi."""
+    require_tool("ffmpeg")
+    text = sample_text or "Assalomu alaykum! Men sun'iy intellekt orqali videolaringizni professional ovozlashtirib beraman."
+    raw_mp3 = out_wav.with_suffix(".mp3")
+    generate_clip_sync(text, voice, raw_mp3, rate="+0%")
+    run([
+        "ffmpeg", "-y", "-i", str(raw_mp3),
+        "-ar", "24000", "-ac", "1",
+        str(out_wav),
+    ])
+    if raw_mp3.exists():
+        raw_mp3.unlink(missing_ok=True)
+    return out_wav
 
 
 def create_dubbed_video(
