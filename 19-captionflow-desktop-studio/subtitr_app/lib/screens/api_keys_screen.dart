@@ -43,11 +43,15 @@ class _ApiKeysScreenState extends State<ApiKeysScreen> {
   bool _obscure = true;
   bool _advanced = false;
   bool _saving = false;
+  late String _preferredProvider;
+  late String _preferredTranscriber;
   String? _appVersion;
 
   @override
   void initState() {
     super.initState();
+    _preferredProvider = widget.initial.preferredProvider;
+    _preferredTranscriber = widget.initial.preferredTranscriber;
     _groq = TextEditingController(text: widget.initial.groqApiKey);
     _openai = TextEditingController(text: widget.initial.openaiApiKey);
     _gemini = TextEditingController(text: widget.initial.geminiApiKey);
@@ -104,6 +108,8 @@ class _ApiKeysScreenState extends State<ApiKeysScreen> {
       openaiModel: _openaiModel.text,
       geminiModel: _geminiModel.text,
       anthropicModel: _anthropicModel.text,
+      preferredProvider: _preferredProvider,
+      preferredTranscriber: _preferredTranscriber,
     );
     await _store.save(settings);
     if (!mounted) return;
@@ -130,6 +136,42 @@ class _ApiKeysScreenState extends State<ApiKeysScreen> {
               padding: const EdgeInsets.all(24),
               children: [
                 _InfoBanner(theme: theme),
+                const SizedBox(height: 20),
+                DropdownButtonFormField<String>(
+                  initialValue: _preferredProvider,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Asosiy tarjima modeli (Provayder)',
+                    prefixIcon: Icon(Icons.psychology_rounded),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'auto', child: Text('Avtomatik (Mavjud eng sifatlisi)')),
+                    DropdownMenuItem(value: 'gemini', child: Text('Google Gemini (Tavsiya)')),
+                    DropdownMenuItem(value: 'openai', child: Text('OpenAI (GPT-4o)')),
+                    DropdownMenuItem(value: 'claude', child: Text('Anthropic Claude')),
+                    DropdownMenuItem(value: 'groq', child: Text('Groq (Llama / Bepul)')),
+                  ],
+                  onChanged: (v) {
+                    if (v != null) setState(() => _preferredProvider = v);
+                  },
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  initialValue: _preferredTranscriber,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Nutqni matnga aylantirish (Whisper)',
+                    prefixIcon: Icon(Icons.mic_rounded),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'auto', child: Text('Avtomatik (Groq bo\'lsa tezkor, aks holda lokal)')),
+                    DropdownMenuItem(value: 'groq', child: Text('Groq Cloud Whisper (Yuqori tezlik)')),
+                    DropdownMenuItem(value: 'faster_whisper', child: Text('Lokal faster-whisper (Oflayn / GPU)')),
+                  ],
+                  onChanged: (v) {
+                    if (v != null) setState(() => _preferredTranscriber = v);
+                  },
+                ),
                 const SizedBox(height: 24),
                 _KeyField(
                   controller: _groq,

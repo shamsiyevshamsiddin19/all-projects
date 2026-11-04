@@ -885,35 +885,53 @@ def get_transcription(video: Path, tmp_dir: Path, source_lang: str) -> tuple[lis
             cache[key] = path
         return cache[key]
 
+    preferred = os.getenv("PREFERRED_TRANSCRIBER", "").strip().lower()
     errors: list[str] = []
-    if secret("GROQ_API_KEY").strip():
+
+    def try_groq() -> tuple[list[Segment], list[Word], str, str] | None:
+        if secret("GROQ_API_KEY").strip():
+            try:
+                emit("progress", message="Groq Whisper transkripsiya qilmoqda", progress=0.30)
+                segments, words, detected = transcribe_with_groq(
+                    audio_for(False), source_lang, video
+                )
+                segments, words = gate_by_speech(segments, words, audio_for(False))
+                if not segments:
+                    raise RuntimeError("nutq topilmadi")
+                return segments, words or words_from_segments(segments), detected, "groq"
+            except Exception as exc:
+                errors.append(f"Groq: {exc}")
+        return None
+
+    def try_faster_whisper() -> tuple[list[Segment], list[Word], str, str] | None:
         try:
-            emit("progress", message="Groq Whisper transkripsiya qilmoqda", progress=0.30)
-            segments, words, detected = transcribe_with_groq(
-                audio_for(False), source_lang, video
+            emit("progress", message="Lokal faster-whisper tekshirilmoqda", progress=0.30)
+            segments, words, detected = transcribe_with_faster_whisper(
+                audio_for(True), source_lang, video
             )
-            segments, words = gate_by_speech(segments, words, audio_for(False))
-            if not segments:
-                raise RuntimeError("nutq topilmadi")
-            return segments, words or words_from_segments(segments), detected, "groq"
+            return segments, words or words_from_segments(segments), detected, "faster_whisper"
         except Exception as exc:
-            errors.append(f"Groq: {exc}")
+            errors.append(f"faster-whisper: {exc}")
+        return None
 
-    try:
-        emit("progress", message="Lokal faster-whisper tekshirilmoqda", progress=0.30)
-        segments, words, detected = transcribe_with_faster_whisper(
-            audio_for(True), source_lang, video
-        )
-        return segments, words or words_from_segments(segments), detected, "faster_whisper"
-    except Exception as exc:
-        errors.append(f"faster-whisper: {exc}")
+    def try_whisper_cli() -> tuple[list[Segment], list[Word], str, str] | None:
+        try:
+            emit("progress", message="Lokal whisper CLI tekshirilmoqda", progress=0.30)
+            segments, words, detected = transcribe_with_whisper_cli(audio_for(True), tmp_dir, source_lang)
+            return segments, words, detected, "whisper_cli"
+        except Exception as exc:
+            errors.append(f"whisper CLI: {exc}")
+        return None
 
-    try:
-        emit("progress", message="Lokal whisper CLI tekshirilmoqda", progress=0.30)
-        segments, words, detected = transcribe_with_whisper_cli(audio_for(True), tmp_dir, source_lang)
-        return segments, words, detected, "whisper_cli"
-    except Exception as exc:
-        errors.append(f"whisper CLI: {exc}")
+    if preferred in {"faster_whisper", "local", "offline"}:
+        order = [try_faster_whisper, try_whisper_cli, try_groq]
+    else:
+        order = [try_groq, try_faster_whisper, try_whisper_cli]
+
+    for fn in order:
+        res = fn()
+        if res is not None:
+            return res
 
     detail = " | ".join(errors[-3:])
     raise RuntimeError(

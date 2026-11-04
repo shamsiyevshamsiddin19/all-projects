@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../services/desktop_processor_service.dart';
 
-class VideoSelectionPanel extends StatelessWidget {
+class VideoSelectionPanel extends StatefulWidget {
   const VideoSelectionPanel({
     super.key,
     required this.kinoDir,
@@ -50,63 +50,245 @@ class VideoSelectionPanel extends StatelessWidget {
   final ValueChanged<String> onPlaylistSubmit;
   final ValueChanged<String>? onPreviewVideo;
 
+  @override
+  State<VideoSelectionPanel> createState() => _VideoSelectionPanelState();
+}
+
+class _VideoSelectionPanelState extends State<VideoSelectionPanel> {
+  int _selectedSourceTab = 0; // 0: Fayllar va Katalog, 1: Internet (URL)
+
   String get _selectedName {
-    final p = externalVideoPath;
+    final p = widget.externalVideoPath;
     if (p != null) {
       if (p.startsWith('http')) return 'Havola (yuklab olinadi)';
       return File(p).uri.pathSegments.last;
     }
-    return selectedVideo?.name ?? 'Video tanlanmagan';
+    return widget.selectedVideo?.name ?? 'Video tanlanmagan';
+  }
+
+  String? get _effectiveVideoPath =>
+      widget.externalVideoPath ?? widget.selectedVideo?.path;
+
+  static String _formatSize(int bytes) {
+    if (bytes <= 0) return '';
+    if (bytes >= 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+    }
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(0)} MB';
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+    final activePath = _effectiveVideoPath;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: isRunning ? null : onPickExternal,
-            icon: const Icon(Icons.add_to_drive_rounded),
-            label: const Text('Video tanlash (Fayldan)'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-            ),
+        // 1. Manba tanlash (Katalog yoki URL)
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: const Color(0xFF141414),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF262626)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: _SourceTabButton(
+                  title: 'Kompyuterdan / Papka',
+                  icon: Icons.folder_rounded,
+                  isSelected: _selectedSourceTab == 0,
+                  onTap: () => setState(() => _selectedSourceTab = 0),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: _SourceTabButton(
+                  title: 'Internetdan (URL)',
+                  icon: Icons.link_rounded,
+                  isSelected: _selectedSourceTab == 1,
+                  onTap: () => setState(() => _selectedSourceTab = 1),
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 10),
-        const Row(
-          children: [
-            Expanded(child: Divider()),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 10),
-              child: Text('yoki'),
+        const SizedBox(height: 12),
+
+        // 2. Tab mazmuni
+        if (_selectedSourceTab == 0) ...[
+          // Fayl tanlash tugmasi
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: widget.isRunning ? null : widget.onPickExternal,
+              icon: const Icon(Icons.add_to_drive_rounded),
+              label: const Text('Istalgan videoni tanlash (Fayldan)'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
             ),
-            Expanded(child: Divider()),
-          ],
-        ),
-        const SizedBox(height: 10),
-        _UrlInput(
-          enabled: !isRunning,
-          onSubmit: onUrlSubmit,
-          onDownloadOnly: onDownloadOnly,
-          onPlaylistSubmit: onPlaylistSubmit,
-        ),
-        const SizedBox(height: 16),
+          ),
+          const SizedBox(height: 10),
+
+          // Skanerlangan videolar ro'yxati (Katalog ~/Videos)
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F0F0F),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF222222)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.video_library_rounded, size: 16, color: Color(0xFFAAAAAA)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          widget.currentDir != null && widget.currentDir != widget.kinoDir
+                              ? File(widget.currentDir!).uri.pathSegments.reversed.skip(1).firstOrNull ?? 'Papka'
+                              : 'Kinolar papkasi (~/Videos)',
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFCCCCCC)),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (widget.currentDir != null && widget.kinoDir != widget.currentDir)
+                        IconButton(
+                          tooltip: 'Yuqoriga (Orqaga)',
+                          icon: const Icon(Icons.arrow_upward_rounded, size: 16),
+                          visualDensity: VisualDensity.compact,
+                          onPressed: widget.isRunning ? null : widget.onNavigateBack,
+                        ),
+                      IconButton(
+                        tooltip: 'Qayta skanerlash',
+                        icon: const Icon(Icons.refresh_rounded, size: 16),
+                        visualDensity: VisualDensity.compact,
+                        onPressed: widget.isRunning ? null : widget.onScan,
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1, color: Color(0xFF222222)),
+                if (widget.isLoading)
+                  const Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  )
+                else if (widget.videos.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                    child: Center(
+                      child: Text(
+                        "Ushbu papkada video topilmadi.\nYuqoridagi tugma orqali istalgan videoni tanlang.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12, color: Color(0xFF777777)),
+                      ),
+                    ),
+                  )
+                else
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 180),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: widget.videos.length,
+                      separatorBuilder: (_, _) => const Divider(height: 1, color: Color(0xFF1A1A1A)),
+                      itemBuilder: (context, index) {
+                        final v = widget.videos[index];
+                        final isSelected = activePath == v.path;
+                        return InkWell(
+                          onTap: widget.isRunning ? null : () => widget.onSelectVideo(v),
+                          child: Container(
+                            color: isSelected ? const Color(0xFF1E293B) : null,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  v.isDir ? Icons.folder_rounded : Icons.movie_outlined,
+                                  size: 18,
+                                  color: v.isDir
+                                      ? const Color(0xFFFFD400)
+                                      : (isSelected ? const Color(0xFF38BDF8) : const Color(0xFF888888)),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    v.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                      color: isSelected ? Colors.white : const Color(0xFFDDDDDD),
+                                    ),
+                                  ),
+                                ),
+                                if (v.subtitleName.isNotEmpty) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF0284C7).withValues(alpha: 0.3),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text(
+                                      'SRT',
+                                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF38BDF8)),
+                                    ),
+                                  ),
+                                ],
+                                if (v.size > 0) ...[
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    _formatSize(v.size),
+                                    style: const TextStyle(fontSize: 11, color: Color(0xFF777777)),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ] else ...[
+          // Internet URL kiritish
+          _UrlInput(
+            enabled: !widget.isRunning,
+            onSubmit: widget.onUrlSubmit,
+            onDownloadOnly: widget.onDownloadOnly,
+            onPlaylistSubmit: widget.onPlaylistSubmit,
+          ),
+        ],
+
+        const SizedBox(height: 14),
+
+        // 3. Tashqi subtitr import qilish
         OutlinedButton.icon(
-          onPressed: isRunning ? null : onPickSubtitle,
+          onPressed: widget.isRunning ? null : widget.onPickSubtitle,
           icon: const Icon(Icons.subtitles_outlined),
-          label: Text(externalSubtitlePath == null ? 'Tashqi SRT/ASS import qilish' : 'Subtitrni almashtirish'),
+          label: Text(widget.externalSubtitlePath == null ? 'Tashqi SRT/ASS import qilish' : 'Subtitrni almashtirish'),
         ),
-        if (externalSubtitlePath != null) ...[
+        if (widget.externalSubtitlePath != null) ...[
           const SizedBox(height: 8),
           Row(children: [
-            Expanded(child: Text(File(externalSubtitlePath!).uri.pathSegments.last, maxLines: 1, overflow: TextOverflow.ellipsis)),
-            IconButton(tooltip: 'Subtitrni olib tashlash', onPressed: isRunning ? null : onClearSubtitle, icon: const Icon(Icons.close_rounded)),
+            Expanded(child: Text(File(widget.externalSubtitlePath!).uri.pathSegments.last, maxLines: 1, overflow: TextOverflow.ellipsis)),
+            IconButton(tooltip: 'Subtitrni olib tashlash', onPressed: widget.isRunning ? null : widget.onClearSubtitle, icon: const Icon(Icons.close_rounded)),
           ]),
           const SizedBox(height: 4),
           Row(children: [
@@ -114,21 +296,23 @@ class VideoSelectionPanel extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(child: DropdownButton<double>(
               isExpanded: true,
-              value: subtitleOffset,
+              value: widget.subtitleOffset,
               items: const [-10.0, -5.0, -2.0, 0.0, 2.0, 5.0, 10.0].map((v) => DropdownMenuItem(value: v, child: Text('${v >= 0 ? '+' : ''}$v soniya'))).toList(),
-              onChanged: isRunning ? null : (v) { if (v != null) onOffsetChanged(v); },
+              onChanged: widget.isRunning ? null : (v) { if (v != null) widget.onOffsetChanged(v); },
             )),
           ]),
         ],
-        const SizedBox(height: 12),
-        if (externalVideoPath != null)
+
+        // 4. Faol tanlangan video kartasi
+        if (activePath != null && activePath.isNotEmpty) ...[
+          const SizedBox(height: 14),
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(10),
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                color: theme.colorScheme.primary.withValues(alpha: 0.25),
               ),
             ),
             child: Row(
@@ -139,27 +323,31 @@ class VideoSelectionPanel extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(_selectedName, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600)),
+                      Text(
+                        _selectedName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+                      ),
                       const SizedBox(height: 2),
                       Text(
-                        externalVideoPath!,
+                        activePath,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
+                          fontSize: 11,
                         ),
                       ),
                     ],
                   ),
                 ),
-                if (externalVideoPath != null &&
-                    !externalVideoPath!.startsWith('http') &&
-                    onPreviewVideo != null) ...[
+                if (!activePath.startsWith('http') && widget.onPreviewVideo != null) ...[
                   IconButton(
                     tooltip: "Videoni ko'rish",
-                    onPressed: isRunning
+                    onPressed: widget.isRunning
                         ? null
-                        : () => onPreviewVideo!(externalVideoPath!),
+                        : () => widget.onPreviewVideo!(activePath),
                     icon: const Icon(Icons.play_circle_outline_rounded, size: 20),
                     style: IconButton.styleFrom(
                       padding: const EdgeInsets.all(4),
@@ -169,7 +357,7 @@ class VideoSelectionPanel extends StatelessWidget {
                 ],
                 IconButton(
                   tooltip: 'Olib tashlash',
-                  onPressed: isRunning ? null : onClearExternal,
+                  onPressed: widget.isRunning ? null : widget.onClearExternal,
                   icon: const Icon(Icons.close_rounded, size: 20),
                   style: IconButton.styleFrom(
                     padding: const EdgeInsets.all(4),
@@ -179,14 +367,62 @@ class VideoSelectionPanel extends StatelessWidget {
               ],
             ),
           ),
+        ],
       ],
     );
   }
 }
 
+class _SourceTabButton extends StatelessWidget {
+  const _SourceTabButton({
+    required this.title,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String title;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(9),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF262626) : Colors.transparent,
+          borderRadius: BorderRadius.circular(9),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: isSelected ? Colors.white : const Color(0xFF888888)),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  color: isSelected ? Colors.white : const Color(0xFF888888),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// URL input for downloading a video from YouTube / Instagram / any site.
-/// When a valid URL is entered, two actions appear: download only, or
-/// download + subtitle.
 class _UrlInput extends StatefulWidget {
   const _UrlInput({
     required this.enabled,
@@ -215,8 +451,11 @@ class _UrlInputState extends State<_UrlInput> {
   }
 
   String? get _url {
-    final url = _controller.text.trim();
-    return url.startsWith('http') ? url : null;
+    final raw = _controller.text.trim();
+    if (raw.isEmpty) return null;
+    if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+    if (raw.contains('.') && !raw.contains(' ')) return 'https://$raw';
+    return null;
   }
 
   @override
@@ -230,11 +469,12 @@ class _UrlInputState extends State<_UrlInput> {
           enabled: widget.enabled,
           keyboardType: TextInputType.url,
           onChanged: (v) {
-            final has = v.trim().startsWith('http');
+            final raw = v.trim();
+            final has = raw.startsWith('http') || (raw.contains('.') && !raw.contains(' '));
             if (has != _hasUrl) setState(() => _hasUrl = has);
           },
           decoration: InputDecoration(
-            hintText: 'YouTube / Instagram / kino sayti havolasi',
+            hintText: 'YouTube / Instagram / havola kiriting',
             prefixIcon: const Icon(Icons.link_rounded, size: 20),
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
@@ -249,7 +489,7 @@ class _UrlInputState extends State<_UrlInput> {
                 child: OutlinedButton.icon(
                   onPressed: widget.enabled ? () { final u = _url; if (u != null) widget.onDownloadOnly(u); } : null,
                   icon: const Icon(Icons.file_download_outlined, size: 18),
-                  label: const Text('Videoni yuklash'),
+                  label: const Text('Faqat yuklash'),
                   style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
                 ),
               ),

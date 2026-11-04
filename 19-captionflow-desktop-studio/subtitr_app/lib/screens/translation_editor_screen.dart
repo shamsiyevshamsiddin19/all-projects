@@ -272,6 +272,130 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
     }
   }
 
+  Future<void> _addNewSegment() async {
+    final startController = TextEditingController(text: '00:00.0');
+    final endController = TextEditingController(text: '00:02.0');
+    final origController = TextEditingController();
+    final transController = TextEditingController();
+
+    if (_segments.isNotEmpty) {
+      final last = _segments.last;
+      startController.text = _SegmentTileState._formatSeconds(last.end + 0.1);
+      endController.text = _SegmentTileState._formatSeconds(last.end + 2.5);
+    }
+
+    final created = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: const Icon(Icons.add_comment_rounded),
+        title: const Text("Yangi subtitr qatori qo'shish"),
+        content: SizedBox(
+          width: 420,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: startController,
+                      decoration: const InputDecoration(labelText: 'Boshlanish', hintText: '00:00.0'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: endController,
+                      decoration: const InputDecoration(labelText: 'Tugash', hintText: '00:02.0'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: origController,
+                decoration: const InputDecoration(labelText: 'Asl matn (Original)'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: transController,
+                decoration: const InputDecoration(labelText: 'Tarjima'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Bekor qilish'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final s = _SegmentTileState._parseTime(startController.text) ?? 0.0;
+              final e = _SegmentTileState._parseTime(endController.text) ?? (s + 2.0);
+              if (e > s && origController.text.trim().isNotEmpty) {
+                Navigator.pop(ctx, true);
+              }
+            },
+            child: const Text("Qo'shish"),
+          ),
+        ],
+      ),
+    );
+
+    if (created == true && mounted) {
+      final s = _SegmentTileState._parseTime(startController.text) ?? 0.0;
+      final e = _SegmentTileState._parseTime(endController.text) ?? (s + 2.0);
+      final newSeg = SubtitleSegment(
+        start: s,
+        end: e,
+        original: origController.text.trim(),
+        translated: transController.text.trim(),
+        confidence: 1.0,
+      );
+
+      setState(() {
+        _segments.add(newSeg);
+        _segments.sort((a, b) => a.start.compareTo(b.start));
+      });
+      _onSegmentTextChanged();
+      if (_usePlayer) await _loadPlayer();
+    }
+  }
+
+  Future<void> _deleteSegment(int index) async {
+    if (index < 0 || index >= _segments.length) return;
+    final seg = _segments[index];
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+        title: Text("#${index + 1} qatorni o'chirish"),
+        content: Text('Ushbu subtitr o\'chirilsinmi?\n\n"${seg.original}"'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Bekor qilish'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text("O'chirish"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      setState(() {
+        _segments.removeAt(index);
+        if (_previewIndex == index) _previewIndex = null;
+      });
+      _onSegmentTextChanged();
+      if (_usePlayer) await _loadPlayer();
+    }
+  }
+
 
   @override
   void dispose() {
@@ -548,6 +672,12 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
                           onSelected: (v) => setState(() => _onlyUncertain = v),
                         ),
                       ],
+                      const SizedBox(width: 8),
+                      IconButton.filledTonal(
+                        tooltip: "Yangi qator qo'shish",
+                        icon: const Icon(Icons.add_rounded),
+                        onPressed: _addNewSegment,
+                      ),
                     ],
                   ),
                 ),
@@ -575,6 +705,7 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
                             onRetranslate: hasTranslation
                                 ? () => _retranslate(i)
                                 : null,
+                            onDelete: () => _deleteSegment(i),
                           );
                         },
                       );
@@ -656,6 +787,7 @@ class _SegmentTile extends StatefulWidget {
     this.selected = false,
     this.onPreview,
     this.onRetranslate,
+    this.onDelete,
     this.retranslating = false,
     this.retranslateError,
   });
@@ -666,6 +798,7 @@ class _SegmentTile extends StatefulWidget {
   /// Ask for a preview frame at this line.
   final VoidCallback? onPreview;
   final VoidCallback? onRetranslate;
+  final VoidCallback? onDelete;
   final bool retranslating;
   final String? retranslateError;
 
@@ -1011,6 +1144,21 @@ class _SegmentTileState extends State<_SegmentTile> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.auto_fix_high_outlined, size: 17),
+                ),
+              if (widget.onDelete != null)
+                IconButton(
+                  tooltip: "Qatorni o'chirish",
+                  onPressed: widget.onDelete,
+                  visualDensity: VisualDensity.compact,
+                  constraints: const BoxConstraints(
+                    minWidth: 30,
+                    minHeight: 30,
+                  ),
+                  icon: const Icon(
+                    Icons.delete_outline_rounded,
+                    size: 17,
+                    color: Color(0xFF888888),
+                  ),
                 ),
               if (uncertain) ...[
                 const SizedBox(width: 4),
