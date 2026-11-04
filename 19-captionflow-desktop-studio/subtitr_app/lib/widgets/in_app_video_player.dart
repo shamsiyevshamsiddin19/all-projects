@@ -79,7 +79,12 @@ class _InAppVideoPlayerDialogState extends State<InAppVideoPlayerDialog> {
 
   bool get _isBurnedVideo {
     final lower = widget.videoPath.toLowerCase();
-    return lower.contains('_dual.') || lower.contains('_single.');
+    return lower.contains('_dual.') ||
+        lower.contains('_single.') ||
+        lower.contains('_dual_vocab.') ||
+        lower.contains('_original_vocab.') ||
+        lower.contains('_original.') ||
+        lower.contains('_translated.');
   }
 
   List<AudioTrack> get _realAudioTracks {
@@ -680,7 +685,12 @@ class _EmbeddedVideoPlayerState extends State<EmbeddedVideoPlayer> {
 
   bool get _isBurnedVideo {
     final lower = widget.videoPath.toLowerCase();
-    return lower.contains('_dual.') || lower.contains('_single.');
+    return lower.contains('_dual.') ||
+        lower.contains('_single.') ||
+        lower.contains('_dual_vocab.') ||
+        lower.contains('_original_vocab.') ||
+        lower.contains('_original.') ||
+        lower.contains('_translated.');
   }
 
   List<AudioTrack> get _realAudioTracks {

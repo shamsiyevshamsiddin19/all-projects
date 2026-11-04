@@ -127,7 +127,8 @@ class SettingsPanel extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final showPreview = constraints.maxHeight >= 600;
+        final hasBoundedHeight = constraints.hasBoundedHeight;
+        final showPreview = hasBoundedHeight && constraints.maxHeight >= 600;
 
         Widget content = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -442,6 +443,9 @@ class SettingsPanel extends StatelessWidget {
         );
 
         if (!showPreview) {
+          if (!hasBoundedHeight) {
+            return content;
+          }
           return SingleChildScrollView(
             child: content,
           );
@@ -739,20 +743,9 @@ class _PresetRow extends StatelessWidget {
                 for (final p in presets)
                   DropdownMenuItem(
                     value: p.name,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            p.name,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, size: 18),
-                          tooltip: "O'chirish",
-                          onPressed: () => onDelete(p),
-                        ),
-                      ],
+                    child: Text(
+                      p.name,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
             ],
@@ -769,6 +762,50 @@ class _PresetRow extends StatelessWidget {
           tooltip: 'Joriy sozlamalarni saqlash',
           onPressed: enabled ? onSave : null,
         ),
+        if (presets.isNotEmpty) ...[
+          const SizedBox(width: 6),
+          IconButton.outlined(
+            icon: const Icon(Icons.delete_outline, size: 20),
+            tooltip: "Presetni o'chirish",
+            onPressed: enabled
+                ? () async {
+                    final target = await showDialog<JobPreset>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        icon: const Icon(Icons.delete_outline_rounded),
+                        title: const Text("Presetni o'chirish"),
+                        content: SizedBox(
+                          width: 320,
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            itemCount: presets.length,
+                            separatorBuilder: (_, _) => const Divider(height: 1),
+                            itemBuilder: (_, i) {
+                              final item = presets[i];
+                              return ListTile(
+                                title: Text(item.name),
+                                subtitle: Text('${item.mode} · ${item.target}'),
+                                trailing: const Icon(Icons.delete_forever_rounded, color: Colors.redAccent),
+                                onTap: () => Navigator.pop(ctx, item),
+                              );
+                            },
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: const Text('Yopish'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (target != null) {
+                      onDelete(target);
+                    }
+                  }
+                : null,
+          ),
+        ],
       ],
     );
   }

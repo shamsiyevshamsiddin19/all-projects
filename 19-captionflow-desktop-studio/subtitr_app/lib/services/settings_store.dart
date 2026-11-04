@@ -21,6 +21,8 @@ class AppSettings {
     this.openaiModel = '',
     this.geminiModel = '',
     this.anthropicModel = '',
+    this.preferredProvider = 'auto',
+    this.preferredTranscriber = 'auto',
   });
 
   final String groqApiKey;
@@ -31,6 +33,8 @@ class AppSettings {
   final String openaiModel;
   final String geminiModel;
   final String anthropicModel;
+  final String preferredProvider; // 'auto', 'openai', 'claude', 'gemini', 'groq'
+  final String preferredTranscriber; // 'auto', 'groq', 'faster_whisper'
 
   bool get hasAnyKey =>
       groqApiKey.trim().isNotEmpty ||
@@ -48,13 +52,6 @@ class AppSettings {
 
   /// Maps the saved settings to the environment variables the Python
   /// processor reads.
-  ///
-  /// The app is the single source of truth for provider config. Every managed
-  /// variable is emitted explicitly — an empty string when the user left it
-  /// blank — so that any ambient/inherited value on the machine (e.g. a global
-  /// `ANTHROPIC_MODEL` or a proxy base URL set by another tool like Claude
-  /// Code) is overridden and cannot leak into the processor. The Python side
-  /// treats an empty model value as "use the built-in default".
   Map<String, String> toEnvironment() {
     String t(String v) => v.trim();
     return <String, String>{
@@ -68,6 +65,11 @@ class AppSettings {
       'OPENAI_MODEL': t(openaiModel),
       'GEMINI_MODEL': t(geminiModel),
       'ANTHROPIC_MODEL': t(anthropicModel),
+      // Preferred provider overrides
+      if (preferredProvider.isNotEmpty && preferredProvider != 'auto')
+        'PREFERRED_TRANSLATE_PROVIDER': t(preferredProvider),
+      if (preferredTranscriber.isNotEmpty && preferredTranscriber != 'auto')
+        'PREFERRED_TRANSCRIBER': t(preferredTranscriber),
       // Pin to official endpoints so a user's key is never routed through an
       // inherited proxy base URL.
       'ANTHROPIC_BASE_URL': 'https://api.anthropic.com',
@@ -84,6 +86,8 @@ class AppSettings {
     String? openaiModel,
     String? geminiModel,
     String? anthropicModel,
+    String? preferredProvider,
+    String? preferredTranscriber,
   }) {
     return AppSettings(
       groqApiKey: groqApiKey ?? this.groqApiKey,
@@ -94,6 +98,8 @@ class AppSettings {
       openaiModel: openaiModel ?? this.openaiModel,
       geminiModel: geminiModel ?? this.geminiModel,
       anthropicModel: anthropicModel ?? this.anthropicModel,
+      preferredProvider: preferredProvider ?? this.preferredProvider,
+      preferredTranscriber: preferredTranscriber ?? this.preferredTranscriber,
     );
   }
 }
@@ -149,6 +155,8 @@ class JobPreset {
     required this.target,
     required this.appearance,
     required this.subtitleOffset,
+    this.voice = 'uz-UZ-SardorNeural',
+    this.ducking = 0.18,
   });
 
   final String name;
@@ -157,6 +165,8 @@ class JobPreset {
   final String target;
   final AppearanceSettings appearance;
   final double subtitleOffset;
+  final String voice;
+  final double ducking;
 
   Map<String, Object> toJson() => {
     'name': name,
@@ -170,6 +180,8 @@ class JobPreset {
     'quality': appearance.quality,
     'upscale': appearance.upscale,
     'subtitleOffset': subtitleOffset,
+    'voice': voice,
+    'ducking': ducking,
   };
 
   factory JobPreset.fromJson(Map<String, dynamic> json) => JobPreset(
@@ -186,6 +198,8 @@ class JobPreset {
       upscale: json['upscale'] as bool? ?? false,
     ),
     subtitleOffset: (json['subtitleOffset'] as num?)?.toDouble() ?? 0,
+    voice: json['voice'] as String? ?? 'uz-UZ-SardorNeural',
+    ducking: (json['ducking'] as num?)?.toDouble() ?? 0.18,
   );
 }
 
@@ -204,6 +218,8 @@ class SettingsStore {
   static const _kOpenaiModel = 'openai_model';
   static const _kGeminiModel = 'gemini_model';
   static const _kAnthropicModel = 'anthropic_model';
+  static const _kPreferredProvider = 'preferred_provider';
+  static const _kPreferredTranscriber = 'preferred_transcriber';
 
   static const _keyNames = [_kGroq, _kOpenai, _kGemini, _kAnthropic];
 
@@ -235,13 +251,13 @@ class SettingsStore {
       openaiModel: prefs.getString(_kOpenaiModel) ?? '',
       geminiModel: prefs.getString(_kGeminiModel) ?? '',
       anthropicModel: prefs.getString(_kAnthropicModel) ?? '',
+      preferredProvider: prefs.getString(_kPreferredProvider) ?? 'auto',
+      preferredTranscriber: prefs.getString(_kPreferredTranscriber) ?? 'auto',
     );
   }
 
   Future<void> save(AppSettings settings) async {
     final prefs = await SharedPreferences.getInstance();
-    // Kalitlar faqat egasi o'qiydigan alohida faylga; model nomlari sir
-    // emas, ular SharedPreferences da qolaveradi.
     await _keys.write({
       _kGroq: settings.groqApiKey,
       _kOpenai: settings.openaiApiKey,
@@ -255,6 +271,8 @@ class SettingsStore {
     await prefs.setString(_kOpenaiModel, settings.openaiModel.trim());
     await prefs.setString(_kGeminiModel, settings.geminiModel.trim());
     await prefs.setString(_kAnthropicModel, settings.anthropicModel.trim());
+    await prefs.setString(_kPreferredProvider, settings.preferredProvider);
+    await prefs.setString(_kPreferredTranscriber, settings.preferredTranscriber);
   }
 
   Future<Map<String, String>> loadJobPrefs() async {

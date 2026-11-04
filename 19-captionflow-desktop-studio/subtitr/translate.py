@@ -62,11 +62,17 @@ def ai_providers() -> list[tuple[str, Any]]:
         ("gemini", "GEMINI_API_KEY", translate_gemini),
         ("groq", "GROQ_API_KEY", translate_groq),
     ]
-    return [
+    active = [
         (name, fn)
         for name, env_key, fn in all_providers
         if secret(env_key) and name not in AI_DISABLED
     ]
+    pref = os.getenv("PREFERRED_TRANSLATE_PROVIDER", "").strip().lower()
+    if pref:
+        matched = [p for p in active if p[0] == pref]
+        others = [p for p in active if p[0] != pref]
+        return matched + others
+    return active
 
 
 # Urinishlar soni. 5 ta ko'p edi: har urinish 4 provayderni aylanib chiqadi,

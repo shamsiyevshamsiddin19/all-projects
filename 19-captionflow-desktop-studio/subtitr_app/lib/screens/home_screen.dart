@@ -103,6 +103,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   List<_BatchResult> _batchResults = const [];
   final List<_AppNotification> _notifications = [];
   int _unreadNotificationCount = 0;
+  bool _isDragging = false;
 
   List<DesktopVideo> _videos = const [];
   DesktopVideo? _selectedVideo;
@@ -264,9 +265,27 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Future<void> _handleDrop(List<DropItem> files) async {
     if (_running || files.isEmpty) return;
+    final paths = files.map((file) => file.path).whereType<String>().toList();
+
+    // Agar papka tashlangan bo'lsa, uni kino papkasi sifatida ochish
+    final droppedDir = paths.where((p) => Directory(p).existsSync()).firstOrNull;
+    if (droppedDir != null) {
+      await _scanVideos(path: droppedDir);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Papka ochildi: ${File(droppedDir).uri.pathSegments.where((s) => s.isNotEmpty).lastOrNull ?? droppedDir}',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
     const videoExtensions = {'mp4', 'mkv', 'avi', 'mov', 'webm', 'm4v'};
     const subtitleExtensions = {'srt', 'vtt', 'ass', 'ssa'};
-    final paths = files.map((file) => file.path).whereType<String>().toList();
     final video = paths
         .where(
           (path) =>
@@ -280,7 +299,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         )
         .firstOrNull;
     if (video == null && subtitle == null) {
-      _showError('Faqat video yoki SRT/VTT/ASS subtitr faylini tashlang');
+      _showError('Faqat video, papka yoki SRT/VTT/ASS subtitr faylini tashlang');
       return;
     }
     setState(() {
@@ -335,6 +354,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       mode: _mode,
       source: _sourceLang,
       target: _targetLang,
+      voice: _voice,
+      ducking: _ducking,
       appearance: _appearance,
       subtitleOffset: _subtitleOffset,
     );
@@ -371,6 +392,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _mode = preset.mode;
       _sourceLang = preset.source;
       _targetLang = preset.target;
+      _voice = preset.voice;
+      _ducking = preset.ducking;
       _appearance = preset.appearance;
       _subtitleOffset = preset.subtitleOffset;
     });
@@ -495,10 +518,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (!mounted) return;
       final dir = res['dir'] as String? ?? '';
       final name = res['name'] as String? ?? 'video';
+      final downloadedPath = res['path'] as String? ?? '';
       setState(() {
         _status = 'Yuklandi: $name';
         _progress = 1;
+        if (downloadedPath.isNotEmpty && File(downloadedPath).existsSync()) {
+          _externalVideoPath = downloadedPath;
+          _selectedVideo = null;
+        }
       });
+      _recordNotification('Video muvaffaqiyatli yuklandi: $name');
+      await _updateDuration();
       if (dir.isNotEmpty) await _openPath(dir);
     });
   }
@@ -658,6 +688,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _progress = 1;
       });
       _settingsStore.saveLastResult(result);
+      _recordNotification('Muvaffaqiyatli yakunlandi: $_selectedName');
     });
   }
 
@@ -728,6 +759,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _progress = 1;
       });
       _settingsStore.saveLastResult(result);
+      _recordNotification('Tahrirlangan subtitr bilan yakunlandi: $_selectedName');
+      await _service.discardDraft(session!.sessionPath);
     });
   }
 
@@ -835,6 +868,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               ? 'Bekor qilindi ($done tayyor)'
               : 'Navbat yakunlandi: $done tayyor${failed > 0 ? ", $failed xato" : ""}';
         });
+        _recordNotification(_status);
       }
     } finally {
       _timer?.cancel();
@@ -919,6 +953,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               : 'Navbat yakunlandi: $done tayyor${failed > 0 ? ', $failed xato' : ''}';
           _progress = _batchCancelled ? 0 : 1;
         });
+        _recordNotification(_status);
       }
     });
   }
@@ -957,9 +992,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (!mounted) return;
     setState(() {
       _status = progress.message.isEmpty ? _status : progress.message;
-      if (progress.message.isNotEmpty) {
-        _recordNotification(progress.message);
-      }
       final nextProgress = progress.progress.clamp(0, 1).toDouble();
       // Xabar o'zgarishi foiz siljigani degani emas. Yakuniy PDF/DOCX
       // yozilishida aynan foizning oxirgi o'zgargan vaqtini saqlaymiz.
@@ -1265,27 +1297,34 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final theme = Theme.of(context);
 
     return DropTarget(
-      onDragDone: (detail) => _handleDrop(detail.files),
-      child: CallbackShortcuts(
-        bindings: <ShortcutActivator, VoidCallback>{
-          const SingleActivator(LogicalKeyboardKey.keyO, control: true): () {
-            if (!_running) _pickExternalVideo();
-          },
-          const SingleActivator(LogicalKeyboardKey.keyO, meta: true): () {
-            if (!_running) _pickExternalVideo();
-          },
-          const SingleActivator(LogicalKeyboardKey.enter, control: true): () {
-            if (!_running) _startProcessing();
-          },
-          const SingleActivator(LogicalKeyboardKey.enter, meta: true): () {
-            if (!_running) _startProcessing();
-          },
-          const SingleActivator(LogicalKeyboardKey.escape): () {
-            if (_running) _cancelProcessing();
-          },
-        },
-        child: Focus(
-          autofocus: true,
+      onDragDone: (detail) {
+        setState(() => _isDragging = false);
+        _handleDrop(detail.files);
+      },
+      onDragEntered: (_) => setState(() => _isDragging = true),
+      onDragExited: (_) => setState(() => _isDragging = false),
+      child: Stack(
+        children: [
+          CallbackShortcuts(
+            bindings: <ShortcutActivator, VoidCallback>{
+              const SingleActivator(LogicalKeyboardKey.keyO, control: true): () {
+                if (!_running) _pickExternalVideo();
+              },
+              const SingleActivator(LogicalKeyboardKey.keyO, meta: true): () {
+                if (!_running) _pickExternalVideo();
+              },
+              const SingleActivator(LogicalKeyboardKey.enter, control: true): () {
+                if (!_running) _startProcessing();
+              },
+              const SingleActivator(LogicalKeyboardKey.enter, meta: true): () {
+                if (!_running) _startProcessing();
+              },
+              const SingleActivator(LogicalKeyboardKey.escape): () {
+                if (_running) _cancelProcessing();
+              },
+            },
+            child: Focus(
+              autofocus: true,
           child: Scaffold(
             appBar: AppBar(
               titleSpacing: 24,
@@ -1442,49 +1481,40 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     onPreviewVideo: _openPath,
                   );
 
-                  final leftColumn = Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      videoPanel,
-                      const SizedBox(height: 24),
-                      Expanded(
-                        child: SettingsPanel(
-                          modes: _modes,
-                          mode: _mode,
-                          sourceLang: _sourceLang,
-                          targetLang: _targetLang,
-                          appearance: _appearance,
-                          voice: _voice,
-                          ducking: _ducking,
-                          isRunning: _running,
-                          onModeChanged: (v) {
-                            setState(() => _mode = v);
-                            _saveJobPrefs();
-                          },
-                          onSourceLangChanged: (v) {
-                            setState(() => _sourceLang = v);
-                            _saveJobPrefs();
-                          },
-                          onTargetLangChanged: (v) {
-                            setState(() => _targetLang = v);
-                            _saveJobPrefs();
-                          },
-                          onAppearanceChanged: _updateAppearance,
-                          onVoiceChanged: (v) {
-                            setState(() => _voice = v);
-                            _saveJobPrefs();
-                          },
-                          onDuckingChanged: (v) {
-                            setState(() => _ducking = v);
-                            _saveJobPrefs();
-                          },
-                          presets: _presets,
-                          onSavePreset: _savePreset,
-                          onApplyPreset: _applyPreset,
-                          onDeletePreset: _deletePreset,
-                        ),
-                      ),
-                    ],
+                  final settingsPanel = SettingsPanel(
+                    modes: _modes,
+                    mode: _mode,
+                    sourceLang: _sourceLang,
+                    targetLang: _targetLang,
+                    appearance: _appearance,
+                    voice: _voice,
+                    ducking: _ducking,
+                    isRunning: _running,
+                    onModeChanged: (v) {
+                      setState(() => _mode = v);
+                      _saveJobPrefs();
+                    },
+                    onSourceLangChanged: (v) {
+                      setState(() => _sourceLang = v);
+                      _saveJobPrefs();
+                    },
+                    onTargetLangChanged: (v) {
+                      setState(() => _targetLang = v);
+                      _saveJobPrefs();
+                    },
+                    onAppearanceChanged: _updateAppearance,
+                    onVoiceChanged: (v) {
+                      setState(() => _voice = v);
+                      _saveJobPrefs();
+                    },
+                    onDuckingChanged: (v) {
+                      setState(() => _ducking = v);
+                      _saveJobPrefs();
+                    },
+                    presets: _presets,
+                    onSavePreset: _savePreset,
+                    onApplyPreset: _applyPreset,
+                    onDeletePreset: _deletePreset,
                   );
 
                   final processor = ProcessingPanel(
@@ -1538,6 +1568,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   );
 
                   if (wide) {
+                    final leftColumn = Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        videoPanel,
+                        const SizedBox(height: 24),
+                        Expanded(child: settingsPanel),
+                      ],
+                    );
                     return Padding(
                       padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
                       child: Row(
@@ -1575,10 +1613,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         ),
                         const SizedBox(height: 16),
                       ],
-                      SizedBox(height: 660, child: leftColumn),
+                      videoPanel,
+                      const SizedBox(height: 16),
+                      settingsPanel,
                       const SizedBox(height: 16),
                       processor,
-                      if (batchCard case final Widget card) card,
+                      if (batchCard case final Widget card) ...[
+                        const SizedBox(height: 16),
+                        card,
+                      ],
                     ],
                   );
                 },
@@ -1586,6 +1629,65 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ),
           ),
         ),
+      ),
+      if (_isDragging)
+        Positioned.fill(
+          child: IgnorePointer(
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.78),
+                  child: Center(
+                    child: Container(
+                      margin: const EdgeInsets.all(32),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 48,
+                        vertical: 36,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: theme.colorScheme.primary,
+                          width: 2.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: theme.colorScheme.primary.withValues(alpha: 0.25),
+                            blurRadius: 32,
+                            spreadRadius: 6,
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.file_download_outlined,
+                            size: 64,
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Video, papka yoki subtitr faylini tashlang',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'MP4, MKV, AVI, MOV, SRT, VTT yoki butun boshli papka',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

@@ -138,12 +138,15 @@ def synthesize_all_segments(
     progress_lo: float = 0.70,
     progress_hi: float = 0.88,
 ) -> list[tuple[float, Path]]:
-    """Barcha tarjima qilingan segmentlarni ketma-ket TTS ovoziga aylantiradi."""
+    """Barcha tarjima qilingan segmentlarni parallel ravishda TTS ovoziga aylantiradi."""
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
     work_dir.mkdir(parents=True, exist_ok=True)
-    results: list[tuple[float, Path]] = []
+    results_dict: dict[int, tuple[float, Path]] = {}
     failures = 0
     total = len(segments)
 
+    tasks_to_run: list[tuple[int, float, float, str]] = []
     for i, seg in enumerate(segments):
         start = float(getattr(seg, "start", None) if hasattr(seg, "start") else seg.get("start", 0.0))
         end = float(getattr(seg, "end", None) if hasattr(seg, "end") else seg.get("end", start + 2.0))
@@ -153,26 +156,36 @@ def synthesize_all_segments(
             text = str(getattr(seg, "text", "")).strip()
         else:
             text = str(seg.get("translated") or seg.get("text") or seg.get("original") or "").strip()
-        if not text:
-            continue
+        if text:
+            tasks_to_run.append((i, start, end, text))
 
-        raw_mp3 = work_dir / f"seg_{i:04d}_raw.mp3"
-        out_wav = work_dir / f"seg_{i:04d}_tempo.wav"
+    def process_item(item: tuple[int, float, float, str]) -> tuple[int, float, Path]:
+        idx, start, end, text = item
+        raw_mp3 = work_dir / f"seg_{idx:04d}_raw.mp3"
+        out_wav = work_dir / f"seg_{idx:04d}_tempo.wav"
+        generate_clip_sync(text, voice, raw_mp3)
+        target_dur = max(0.2, end - start)
+        adjust_audio_tempo(raw_mp3, out_wav, target_duration=target_dur)
+        return idx, start, out_wav
 
-        # Progress yangilash
-        pct = progress_lo + (progress_hi - progress_lo) * (i / max(1, total))
-        if progress_cb:
-            progress_cb(pct, f"AI Ovozlashtirilmoqda ({i + 1}/{total}): {text[:35]}...")
+    completed = 0
+    max_workers = min(6, max(1, len(tasks_to_run))) if tasks_to_run else 1
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_map = {executor.submit(process_item, item): item for item in tasks_to_run}
+        for future in as_completed(future_map):
+            item = future_map[future]
+            try:
+                idx, start, out_wav = future.result()
+                results_dict[idx] = (start, out_wav)
+            except Exception as exc:
+                failures += 1
+                log.warning("Segment %d ovozlashtirishda xato: %s", item[0], exc)
+            completed += 1
+            if progress_cb and total:
+                pct = progress_lo + (progress_hi - progress_lo) * (completed / total)
+                progress_cb(pct, f"AI Ovozlashtirilmoqda ({completed}/{total}): {item[3][:35]}...")
 
-        try:
-            generate_clip_sync(text, voice, raw_mp3)
-            target_dur = max(0.2, end - start)
-            adjust_audio_tempo(raw_mp3, out_wav, target_duration=target_dur)
-            results.append((start, out_wav))
-        except Exception as exc:
-            failures += 1
-            log.warning("Segment %d ovozlashtirishda xato: %s", i, exc)
-
+    results = [results_dict[item[0]] for item in tasks_to_run if item[0] in results_dict]
     if total and not results:
         raise RuntimeError(
             "AI Dublyaj uchun birorta ovoz qatori yaratilolmadi. "
@@ -257,11 +270,11 @@ def mix_dubbed_soundtrack(
             str(out_audio_path),
         ]
     else:
-        # Asl audioni 18% ga pasaytirib, dublyaj bilan qorishtirish
+        # Asl audioni ducking_volume ga pasaytirib, dublyaj bilan qorishtirish
         filter_str = (
             f"[0:a:0]aformat=channel_layouts=stereo,volume={ducking_volume:.2f}[bg]; "
             "[1:a]aformat=channel_layouts=stereo[fg]; "
-            "[bg][fg]amix=inputs=2:duration=first:dropout_transition=0[out]"
+            "[bg][fg]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[out]"
         )
         cmd = [
             "ffmpeg", "-y",
