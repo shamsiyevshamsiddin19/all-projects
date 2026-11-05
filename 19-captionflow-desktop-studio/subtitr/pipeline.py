@@ -131,14 +131,21 @@ def _prepare_data(
         if needs_translation:
             emit("progress", message="Ismlar izchilligi (glossariy)", progress=0.38)
             glossary = build_glossary(original, target_lang, effective_lang)
-            emit("progress", message="Tarjima qilinmoqda", progress=0.40)
-            tr_cache = cdir / f"translation_{effective_lang}_{target_lang}.json"
+            is_dub = (mode == "dubbing")
+            emit("progress", message="Kino dublyaji uchun jonli tarjima qilinmoqda" if is_dub else "Tarjima qilinmoqda", progress=0.40)
+            tr_cache = (
+                cdir / f"dubbing_translation_{effective_lang}_{target_lang}.json"
+                if is_dub
+                else cdir / f"translation_{effective_lang}_{target_lang}.json"
+            )
             translated, provider = translate_segments(
                 original, target_lang, effective_lang,
                 cache_path=tr_cache, glossary=glossary,
+                is_dubbing=is_dub,
             )
-            # #5 — o'qishga qulay vaqtlar (juda tez o'tib ketmasin).
-            translated = enforce_reading_speed(translated)
+            if not is_dub:
+                # #5 — o'qishga qulay vaqtlar (juda tez o'tib ketmasin).
+                translated = enforce_reading_speed(translated)
 
         # #5 — original subtitr vaqtlarini ham o'qishga qulay qilamiz.
         display_original = enforce_reading_speed(original)
@@ -530,29 +537,49 @@ def _render_outputs(
                 create_dubbed_video,
                 mix_dubbed_soundtrack,
                 resolve_voice,
+                separate_audio_stems,
                 synthesize_all_segments,
             )
-            emit("progress", message="AI Dublyaj tayyorlanmoqda (Edge-TTS)", progress=lo)
             dub_tmp = job_tmp / "dubbing"
+            dub_tmp.mkdir(parents=True, exist_ok=True)
             dub_target = data.target_lang
-            voice = resolve_voice(job.get("voice"), target_lang=dub_target)
+            raw_voice = job.get("voice") or "uz-UZ-SardorNeural"
+
+            # 1. AI Vokal izolyatsiyasi (Fon musiqasi va chet tili nutqini ajratish)
+            emit("progress", message="AI Vokal izolyatsiyasi (Musiqa va effektlar tozalash)", progress=lo)
+            bg_stem, vocals_stem = separate_audio_stems(
+                video, dub_tmp,
+                progress_cb=lambda p, msg: emit("progress", message=msg, progress=p),
+                progress_lo=lo, progress_hi=lo + (hi - lo) * 0.35,
+            )
+
+            # 2. Studiya darajasidagi ovozlashtirish (Multi-voice va xarakterlar bilan)
             dub_segments = data.translated or data.display_original
             placed_clips = synthesize_all_segments(
-                dub_segments, voice=voice, work_dir=dub_tmp,
+                dub_segments, voice=raw_voice, work_dir=dub_tmp,
                 progress_cb=lambda p, msg: emit("progress", message=msg, progress=p),
-                progress_lo=lo, progress_hi=lo + (hi - lo) * 0.75,
+                progress_lo=lo + (hi - lo) * 0.35, progress_hi=lo + (hi - lo) * 0.80,
+                target_lang=dub_target, reference_audio=vocals_stem,
             )
+
+            # 3. Aniq vaqt o'qi bo'yicha yig'ish
             timeline_wav = dub_tmp / "speech_timeline.wav"
             total_dur = probe_duration_seconds(video)
             build_speech_timeline_wav(placed_clips, total_dur, timeline_wav)
+
+            # 4. Kino soundtrack mikshingi
+            emit("progress", message="Kino studiyasi mikshingi va audio mastering", progress=lo + (hi - lo) * 0.85)
             mixed_audio = dub_tmp / "dubbed_mixed.aac"
             ducking_vol = float(job["ducking"] if job.get("ducking") is not None else 0.18)
-            mix_dubbed_soundtrack(video, timeline_wav, mixed_audio, ducking_volume=ducking_vol, dynamic=True)
+            mix_dubbed_soundtrack(
+                video, timeline_wav, mixed_audio,
+                ducking_volume=ducking_vol, dynamic=True,
+                isolated_bg_wav=bg_stem,
+            )
+
+            # 5. Ko'p tilli audio yo'lakli video hosil qilish
             create_dubbed_video(
                 video, mixed_audio, out,
-                # Dublyaj rejimi faqat audio yo'lagini qo'shadi. Subtitr
-                # kerak bo'lsa foydalanuvchi alohida "Yumshoq subtitr" yoki
-                # "Kuydirish" rejimini tanlaydi.
                 ass_subtitle_path=None, target_lang=dub_target,
                 source_lang=data.source_lang, multi_track=True,
             )

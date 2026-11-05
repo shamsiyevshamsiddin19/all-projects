@@ -1,6 +1,7 @@
 """AI Dublyaj va ko'p tilli audio yo'lakchalari moduli uchun testlar."""
 from __future__ import annotations
 
+import os
 import sys
 import tempfile
 import wave
@@ -379,6 +380,76 @@ class DubbingPipelineIntegrationTests(TestCase):
         mock_create.assert_called_once()
         self.assertIsNone(mock_create.call_args.kwargs["ass_subtitle_path"])
         self.assertEqual(result["outputs"][-1]["kind"], "video")
+
+
+class CinemaDubbingEngineTests(TestCase):
+    def test_resolve_voice_auto_multi(self):
+        self.assertEqual(m_dub.resolve_voice("auto"), "auto")
+        self.assertEqual(m_dub.resolve_voice("multi"), "auto")
+        self.assertEqual(m_dub.resolve_voice("kino"), "auto")
+        
+        voice_m, pitch_m = m_dub.resolve_voice_for_segment("auto", target_lang="uz", gender="male")
+        self.assertEqual(voice_m, "uz-UZ-SardorNeural")
+        
+        voice_f, pitch_f = m_dub.resolve_voice_for_segment("auto", target_lang="uz", gender="female")
+        self.assertEqual(voice_f, "uz-UZ-MadinaNeural")
+
+        # Explicit choice overrides gender
+        voice_exp, _ = m_dub.resolve_voice_for_segment("uz-UZ-MadinaNeural", target_lang="uz", gender="male")
+        self.assertEqual(voice_exp, "uz-UZ-MadinaNeural")
+
+    def test_estimate_speaker_gender_synthetic(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = Path(tmp_dir)
+            import numpy as np
+            sr = 16000
+            t = np.linspace(0, 0.5, int(sr * 0.5))
+
+            # Male ~120Hz
+            male_p = tmp / "male.wav"
+            s_male = (np.sin(2 * np.pi * 120 * t) * 8000).astype(np.int16)
+            with wave.open(str(male_p), "wb") as wf:
+                wf.setnchannels(1)
+                wf.setsampwidth(2)
+                wf.setframerate(sr)
+                wf.writeframes(s_male.tobytes())
+
+            # Female ~230Hz
+            fem_p = tmp / "fem.wav"
+            s_fem = (np.sin(2 * np.pi * 230 * t) * 8000).astype(np.int16)
+            with wave.open(str(fem_p), "wb") as wf:
+                wf.setnchannels(1)
+                wf.setsampwidth(2)
+                wf.setframerate(sr)
+                wf.writeframes(s_fem.tobytes())
+
+            g_male = m_dub.estimate_speaker_gender(male_p, 0.0, 0.4)
+            g_fem = m_dub.estimate_speaker_gender(fem_p, 0.0, 0.4)
+            self.assertEqual(g_male, "male")
+            self.assertEqual(g_fem, "female")
+
+    def test_separate_audio_stems_fallback_produces_files(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = Path(tmp_dir)
+            dummy_in = tmp / "in.wav"
+            sample_rate = 44100
+            with wave.open(str(dummy_in), "wb") as wf:
+                wf.setnchannels(2)
+                wf.setsampwidth(2)
+                wf.setframerate(sample_rate)
+                wf.writeframes(b"\x01\x00\x02\x00" * int(sample_rate * 0.5))
+
+            with patch.dict(os.environ, {"DUBBING_USE_DEMUCS": "0"}):
+                bg, voc = m_dub.separate_audio_stems(dummy_in, tmp / "stems")
+                self.assertTrue(bg.exists())
+                self.assertTrue(voc.exists())
+                self.assertGreater(bg.stat().st_size, 0)
+
+    def test_dubbing_prompt_generated(self):
+        from subtitr import translate as m_tr
+        prompt = m_tr.dubbing_prompt("uz", "en")
+        self.assertIn("cinema dubbing", prompt.lower())
+        self.assertIn("max_duration_sec", prompt)
 
 
 if __name__ == "__main__":

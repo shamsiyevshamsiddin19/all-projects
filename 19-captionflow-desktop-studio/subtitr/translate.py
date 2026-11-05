@@ -44,7 +44,14 @@ def indexed_values(data: dict[str, Any], count: int, fallback: list[str]) -> tup
         if isinstance(value, dict):
             pos = str(value.get("pos") or "").lower().strip()
             lemma = str(value.get("lemma") or value.get("base") or "").strip()
-            value = value.get("t") or value.get("translation") or value.get("text")
+            value = (
+                value.get("t")
+                or value.get("translation")
+                or value.get("text")
+                or value.get("dubbed")
+                or value.get("target")
+                or value.get("result")
+            )
         text = str(value).strip() if value is not None else ""
         out_tr.append(text or fallback[i])
         out_pos.append(pos)
@@ -156,6 +163,35 @@ def subtitle_prompt(target_lang: str, source_lang: str, glossary: dict[str, str]
     )
 
 
+def dubbing_prompt(target_lang: str, source_lang: str, glossary: dict[str, str] | None = None) -> str:
+    """Kino dublyaji uchun maxsus vaqt va og'zaki nutqqa moslashtirilgan prompt."""
+    target_name = TARGET_LANG_NAMES.get(target_lang, target_lang)
+    source_name = SOURCE_LANG_NAMES.get(source_lang, source_lang or "source language")
+    gloss = ""
+    if glossary:
+        pairs = "; ".join(f"{k} = {v}" for k, v in list(glossary.items())[:60])
+        gloss = (
+            "Names/terms glossary — ALWAYS use exactly these target forms for "
+            f"consistency across the whole film: {pairs}\n"
+        )
+    return (
+        "You are an elite cinema dubbing scriptwriter and voice dialogue director.\n"
+        f"Translate spoken film dialogue from {source_name} into natural, punchy spoken {target_name} for voice actors.\n"
+        + gloss +
+        "CRITICAL CINEMA DUBBING RULES:\n"
+        "1. STRICT TIMING BUDGET: Voice actors must speak each line comfortably in the specified max_duration_sec.\n"
+        "   - Spoken Uzbek/Russian natural speed is ~12-14 characters per second (3-4 words/second).\n"
+        "   - Short durations (< 2.0s): keep translation VERY compact and punchy (2-5 words max). Condense thoughts naturally.\n"
+        "   - Medium durations (2.0s - 4.5s): natural spoken phrasing matching human breath.\n"
+        "   - NEVER produce overly long sentences that force robotic 2x speech speedups!\n"
+        "2. VIVID SPOKEN CINEMA STYLE: Use natural colloquial speech, idioms, and live spoken phrasing. No stiff, bookish, or literal translations.\n"
+        "3. EMOTION & INTENSITY: Preserve screams, banter, jokes, questions, pauses, and character persona.\n"
+        "4. For Uzbek: Use modern Latin script with correct apostrophes (o', g').\n"
+        "5. Output format: Return a flat JSON object with the exact same numeric keys: {\"0\": \"tarjima matni\", ...}\n"
+        "No markdown codeblocks, no explanations, pure JSON only."
+    )
+
+
 def ai_translate_batch(
     texts: list[str],
     target_lang: str,
@@ -163,14 +199,27 @@ def ai_translate_batch(
     before: list[str] | None = None,
     after: list[str] | None = None,
     glossary: dict[str, str] | None = None,
+    is_dubbing: bool = False,
+    durations: list[float] | None = None,
 ) -> tuple[list[str], str]:
     if not texts:
         return [], ""
-    prompt = subtitle_prompt(target_lang, source_lang, glossary)
+    prompt = dubbing_prompt(target_lang, source_lang, glossary) if is_dubbing else subtitle_prompt(target_lang, source_lang, glossary)
+    if is_dubbing and durations:
+        tr_map = {
+            str(i): {
+                "text": text,
+                "max_duration_sec": round(float(durations[i]), 2) if i < len(durations) else 2.5,
+            }
+            for i, text in enumerate(texts)
+        }
+    else:
+        tr_map = {str(i): text for i, text in enumerate(texts)}
+
     payload = json.dumps(
         {
             "context_before": before or [],
-            "translate": {str(i): text for i, text in enumerate(texts)},
+            "translate": tr_map,
             "context_after": after or [],
         },
         ensure_ascii=False,
@@ -204,11 +253,15 @@ def ai_translate_batch(
     # jimgina tarjimasiz qolib ketadi.
     if len(texts) > AI_MIN_SPLIT_BATCH:
         half = len(texts) // 2
+        dur_left = durations[:half] if durations else None
+        dur_right = durations[half:] if durations else None
         left, lp = ai_translate_batch(
-            texts[:half], target_lang, source_lang, before, texts[half:half + 4], glossary
+            texts[:half], target_lang, source_lang, before, texts[half:half + 4], glossary,
+            is_dubbing=is_dubbing, durations=dur_left,
         )
         right, rp = ai_translate_batch(
-            texts[half:], target_lang, source_lang, texts[max(0, half - 4):half], after, glossary
+            texts[half:], target_lang, source_lang, texts[max(0, half - 4):half], after, glossary,
+            is_dubbing=is_dubbing, durations=dur_right,
         )
         provider = lp if lp != "offline_dictionary" else rp
         return left + right, provider
@@ -483,6 +536,7 @@ def translate_segments(
     progress_hi: float = 0.56,
     cache_path: Path | None = None,
     glossary: dict[str, str] | None = None,
+    is_dubbing: bool = False,
 ) -> tuple[list[Segment], str]:
     # Kattaroq batch = kamroq API chaqiruvi va kamroq takroriy prompt/kontekst
     # tokeni; sifat saqlanadi. Kontekst atigi bir necha satr — pronoun/oxang
@@ -528,14 +582,27 @@ def translate_segments(
         # parallel yuborish natijani o'zgartirmaydi.
         before = [seg.text for seg in segments[max(0, start - ctx):start]]
         after = [seg.text for seg in segments[end_i:end_i + ctx]]
-        translated, used = ai_translate_batch(
-            [seg.text for seg in chunk],
-            target_lang,
-            source_lang=source_lang,
-            before=before,
-            after=after,
-            glossary=glossary,
-        )
+        if is_dubbing:
+            durations = [max(0.3, seg.end - seg.start) for seg in chunk]
+            translated, used = ai_translate_batch(
+                [seg.text for seg in chunk],
+                target_lang,
+                source_lang=source_lang,
+                before=before,
+                after=after,
+                glossary=glossary,
+                is_dubbing=True,
+                durations=durations,
+            )
+        else:
+            translated, used = ai_translate_batch(
+                [seg.text for seg in chunk],
+                target_lang,
+                source_lang=source_lang,
+                before=before,
+                after=after,
+                glossary=glossary,
+            )
         return span, translated, used
 
     def absorb(span: tuple[int, int], translated: list[str], used: str) -> None:

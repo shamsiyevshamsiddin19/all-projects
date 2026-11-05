@@ -319,6 +319,17 @@ class SettingsPanel extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _VoiceChoiceCard(
+                      title: 'Kino (Avto)',
+                      subtitle: 'Erkak + Ayol',
+                      icon: Icons.movie_filter_rounded,
+                      isSelected: voice == 'auto' || voice == 'multi',
+                      enabled: !isRunning,
+                      onTap: () => onVoiceChanged('auto'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _VoiceChoiceCard(
                       title: 'Sardor',
                       subtitle: 'Erkak ovozi',
                       icon: Icons.face_rounded,
@@ -327,7 +338,7 @@ class SettingsPanel extends StatelessWidget {
                       onTap: () => onVoiceChanged('uz-UZ-SardorNeural'),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: _VoiceChoiceCard(
                       title: 'Madina',
@@ -1170,8 +1181,11 @@ class _ModePreview extends StatelessWidget {
         break;
 
       case 'dubbing':
+        final isAuto = voice == 'auto' || voice == 'multi';
         final isMadina = voice.contains('Madina');
-        final voiceName = isMadina ? 'Madina (Ayol)' : 'Sardor (Erkak)';
+        final voiceName = isAuto
+            ? 'Kino Studiyasi (Avto: Erkak + Ayol)'
+            : (isMadina ? 'Madina (Ayol)' : 'Sardor (Erkak)');
         final duckingPct = (ducking * 100).toInt();
 
         content = Container(
