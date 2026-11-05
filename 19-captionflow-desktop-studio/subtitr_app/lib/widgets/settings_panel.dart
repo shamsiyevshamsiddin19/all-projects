@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../services/settings_store.dart';
@@ -37,6 +39,9 @@ class SettingsPanel extends StatelessWidget {
     this.onSavePreset = _ignoreVoid,
     this.onApplyPreset = _ignorePreset,
     this.onDeletePreset = _ignorePreset,
+    this.onPickSubtitle,
+    this.externalSubtitlePath,
+    this.onClearSubtitle,
   });
 
   final List<ModeChoice> modes;
@@ -57,6 +62,9 @@ class SettingsPanel extends StatelessWidget {
   final VoidCallback onSavePreset;
   final ValueChanged<JobPreset> onApplyPreset;
   final ValueChanged<JobPreset> onDeletePreset;
+  final VoidCallback? onPickSubtitle;
+  final String? externalSubtitlePath;
+  final VoidCallback? onClearSubtitle;
 
   static void _ignoreVoid() {}
   static void _ignorePreset(JobPreset _) {}
@@ -71,6 +79,13 @@ class SettingsPanel extends StatelessWidget {
     'translated',
   };
 
+  static const _softsubModes = {
+    'softsub',
+    'softsub_dual',
+    'softsub_translated',
+    'softsub_original',
+  };
+
   static const _videoModes = {
     'dual_vocab',
     'original_vocab',
@@ -78,8 +93,33 @@ class SettingsPanel extends StatelessWidget {
     'original',
     'translated',
     'softsub',
+    'softsub_dual',
+    'softsub_translated',
+    'softsub_original',
     'dubbing',
   };
+
+  List<DropdownMenuItem<String>> _softsubModeItems(ThemeData theme) {
+    const items = [
+      ('softsub', '2 ta alohida trek (Original + Tarjima CC)', Icons.closed_caption_rounded),
+      ('softsub_dual', 'Ikki qatorli subtitr (Asl matn + Tarjima birgalikda)', Icons.subtitles_rounded),
+      ('softsub_translated', 'Faqat tarjima (Yagona trek CC)', Icons.translate_rounded),
+      ('softsub_original', 'Faqat asl matn (Yagona trek CC)', Icons.text_snippet_rounded),
+    ];
+
+    return items.map((item) {
+      return DropdownMenuItem<String>(
+        value: item.$1,
+        child: Row(
+          children: [
+            Icon(item.$3, size: 20, color: const Color(0xFF0284C7)),
+            const SizedBox(width: 12),
+            Expanded(child: Text(item.$2, overflow: TextOverflow.ellipsis)),
+          ],
+        ),
+      );
+    }).toList();
+  }
 
   List<DropdownMenuItem<String>> _modeItems(ThemeData theme) {
     final video = modes.where((m) => _hardsubModes.contains(m.value));
@@ -121,8 +161,8 @@ class SettingsPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isHardsub = _hardsubModes.contains(mode) ||
-        (!_videoModes.contains(mode) && mode != 'softsub' && mode != 'dubbing');
-    final isSoftsub = mode == 'softsub';
+        (!_videoModes.contains(mode) && !_softsubModes.contains(mode) && mode != 'dubbing');
+    final isSoftsub = _softsubModes.contains(mode);
     final isDubbing = mode == 'dubbing';
 
     return LayoutBuilder(
@@ -147,6 +187,9 @@ class SettingsPanel extends StatelessWidget {
               onSave: onSavePreset,
               onApply: onApplyPreset,
               onDelete: onDeletePreset,
+              onPickSubtitle: onPickSubtitle,
+              externalSubtitlePath: externalSubtitlePath,
+              onClearSubtitle: onClearSubtitle,
             ),
             const SizedBox(height: 10),
 
@@ -174,97 +217,25 @@ class SettingsPanel extends StatelessWidget {
               ),
               const SizedBox(height: 10),
             ] else if (isSoftsub) ...[
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0B192C),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: const Color(0xFF38BDF8).withValues(alpha: 0.35),
+              DropdownButtonFormField<String>(
+                initialValue: _softsubModes.contains(mode) ? mode : 'softsub',
+                decoration: InputDecoration(
+                  labelText: 'Yumshoq subtitr uslubi',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
                   ),
+                  filled: true,
+                  fillColor: theme.colorScheme.surface,
                 ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.closed_caption_rounded,
-                      color: Color(0xFF38BDF8),
-                      size: 22,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "2 ta subtitr (Original + Tarjima) — Kuydirmasdan",
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12.5,
-                              color: Color(0xFFF0F9FF),
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            "Subtitrlar video kadriga kuydirilmaydi, alohida trek qilib muxlanadi. 1-2 soniyada tayyor bo'ladi va video sifati 100% saqlanadi.",
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: const Color(0xFF93C5FD).withValues(alpha: 0.85),
-                              height: 1.3,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 10),
-            ] else if (isDubbing) ...[
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1F0E38),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: const Color(0xFFA855F7).withValues(alpha: 0.35),
-                  ),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.graphic_eq_rounded,
-                      color: Color(0xFFA855F7),
-                      size: 22,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "AI Dublyaj — Ko'p tilli audio treklar (Multi-audio)",
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12.5,
-                              color: Color(0xFFFAF5FF),
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            "Videoga 2 ta audio yo'lak yoziladi: 1-Asl ovoz, 2-O'zbekcha AI Dublyaj. Asl musiqa orqa fonda saqlanadi (ducking).",
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: const Color(0xFFD8B4FE).withValues(alpha: 0.85),
-                              height: 1.3,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                isExpanded: true,
+                items: _softsubModeItems(theme),
+                onChanged: isRunning
+                    ? null
+                    : (v) {
+                        if (v != null) onModeChanged(v);
+                      },
               ),
               const SizedBox(height: 10),
             ],
@@ -411,14 +382,14 @@ class SettingsPanel extends StatelessWidget {
               ),
             ],
 
-            // 5. Hardsub tashqi ko'rinish sozlamalari
-            if (_hardsubModes.contains(mode)) ...[
+            // 5. Subtitr tashqi ko'rinish sozlamalari (Kuydirish va Yumshoq rejimlar)
+            if (_hardsubModes.contains(mode) || isSoftsub) ...[
               const SizedBox(height: 10),
               _AppearanceRow(
                 appearance: appearance,
                 enabled: !isRunning,
                 onChanged: onAppearanceChanged,
-                showOrigStyle: mode != 'translated',
+                showOrigStyle: mode != 'translated' && mode != 'softsub_translated',
               ),
             ],
 
@@ -471,16 +442,18 @@ class _TopModeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isHardsub = SettingsPanel._hardsubModes.contains(currentMode) ||
-        (!SettingsPanel._videoModes.contains(currentMode) && currentMode != 'softsub' && currentMode != 'dubbing');
-    final isSoftsub = currentMode == 'softsub';
+        (!SettingsPanel._videoModes.contains(currentMode) &&
+            !SettingsPanel._softsubModes.contains(currentMode) &&
+            currentMode != 'dubbing');
+    final isSoftsub = SettingsPanel._softsubModes.contains(currentMode);
     final isDubbing = currentMode == 'dubbing';
 
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: const Color(0xFF141414),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF262626)),
+        color: const Color(0xFF141416),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFF26262B)),
       ),
       child: Row(
         children: [
@@ -490,10 +463,12 @@ class _TopModeSelector extends StatelessWidget {
               title: 'Kuydirish',
               subtitle: 'Hardsub',
               isSelected: isHardsub,
-              activeColor: const Color(0xFFFFD400),
-              textColor: Colors.black,
+              activeColor: const Color(0xFF2563EB),
+              textColor: Colors.white,
               enabled: enabled,
-              onTap: () => onSelectPrimaryMode('dual_vocab'),
+              onTap: () => onSelectPrimaryMode(
+                SettingsPanel._hardsubModes.contains(currentMode) ? currentMode : 'dual_vocab',
+              ),
             ),
           ),
           const SizedBox(width: 4),
@@ -501,12 +476,14 @@ class _TopModeSelector extends StatelessWidget {
             child: _ModeTabButton(
               icon: Icons.closed_caption_rounded,
               title: 'Yumshoq',
-              subtitle: '2 subtitr (CC)',
+              subtitle: 'Softsub (CC)',
               isSelected: isSoftsub,
-              activeColor: const Color(0xFF38BDF8),
-              textColor: const Color(0xFF0F172A),
+              activeColor: const Color(0xFF0284C7),
+              textColor: Colors.white,
               enabled: enabled,
-              onTap: () => onSelectPrimaryMode('softsub'),
+              onTap: () => onSelectPrimaryMode(
+                SettingsPanel._softsubModes.contains(currentMode) ? currentMode : 'softsub',
+              ),
             ),
           ),
           const SizedBox(width: 4),
@@ -516,7 +493,7 @@ class _TopModeSelector extends StatelessWidget {
               title: 'AI Dublyaj',
               subtitle: "O'zgartirish",
               isSelected: isDubbing,
-              activeColor: const Color(0xFFA855F7),
+              activeColor: const Color(0xFF7C3AED),
               textColor: Colors.white,
               enabled: enabled,
               onTap: () => onSelectPrimaryMode('dubbing'),
@@ -555,55 +532,63 @@ class _ModeTabButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(9),
+        borderRadius: BorderRadius.circular(8),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
           decoration: BoxDecoration(
             color: isSelected ? activeColor : Colors.transparent,
-            borderRadius: BorderRadius.circular(9),
+            borderRadius: BorderRadius.circular(8),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
                       color: activeColor.withValues(alpha: 0.28),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+                      blurRadius: 6,
+                      offset: const Offset(0, 1.5),
                     ),
                   ]
                 : null,
           ),
-          child: Column(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 icon,
-                size: 20,
-                color: isSelected ? textColor : const Color(0xFF9E9E9E),
+                size: 16,
+                color: isSelected ? textColor : const Color(0xFF94A3B8),
               ),
-              const SizedBox(height: 3),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: isSelected ? textColor : const Color(0xFFE2E8F0),
-                ),
-              ),
-              const SizedBox(height: 1),
-              Text(
-                subtitle,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                  color: isSelected
-                      ? textColor.withValues(alpha: 0.8)
-                      : const Color(0xFF757575),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                        color: isSelected ? textColor : const Color(0xFFD4D4D8),
+                        height: 1.15,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w400,
+                        color: isSelected
+                            ? textColor.withValues(alpha: 0.8)
+                            : const Color(0xFF71717A),
+                        height: 1.15,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -699,6 +684,9 @@ class _PresetRow extends StatelessWidget {
     required this.onSave,
     required this.onApply,
     required this.onDelete,
+    this.onPickSubtitle,
+    this.externalSubtitlePath,
+    this.onClearSubtitle,
   });
 
   final List<JobPreset> presets;
@@ -706,6 +694,9 @@ class _PresetRow extends StatelessWidget {
   final VoidCallback onSave;
   final ValueChanged<JobPreset> onApply;
   final ValueChanged<JobPreset> onDelete;
+  final VoidCallback? onPickSubtitle;
+  final String? externalSubtitlePath;
+  final VoidCallback? onClearSubtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -713,6 +704,59 @@ class _PresetRow extends StatelessWidget {
 
     return Row(
       children: [
+        if (onPickSubtitle != null) ...[
+          Tooltip(
+            message: externalSubtitlePath == null
+                ? 'Tashqi SRT/ASS subtitr import qilish'
+                : 'Subtitr: ${File(externalSubtitlePath!).uri.pathSegments.last} (o\'zgartirish)',
+            child: OutlinedButton.icon(
+              onPressed: enabled ? onPickSubtitle : null,
+              icon: Icon(
+                externalSubtitlePath == null
+                    ? Icons.subtitles_outlined
+                    : Icons.check_circle_rounded,
+                size: 16,
+                color: externalSubtitlePath == null
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF10B981),
+              ),
+              label: Text(
+                externalSubtitlePath == null ? 'SRT / ASS' : 'SRT',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: externalSubtitlePath == null
+                      ? const Color(0xFFE2E8F0)
+                      : const Color(0xFF10B981),
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                side: BorderSide(
+                  color: externalSubtitlePath == null
+                      ? const Color(0xFF333338)
+                      : const Color(0xFF10B981).withValues(alpha: 0.6),
+                ),
+                backgroundColor: externalSubtitlePath == null
+                    ? const Color(0xFF16181D)
+                    : const Color(0xFF10B981).withValues(alpha: 0.1),
+              ),
+            ),
+          ),
+          if (externalSubtitlePath != null && onClearSubtitle != null) ...[
+            const SizedBox(width: 4),
+            IconButton(
+              icon: const Icon(Icons.close_rounded, size: 16),
+              tooltip: 'Subtitrni tozalash',
+              visualDensity: VisualDensity.compact,
+              onPressed: enabled ? onClearSubtitle : null,
+            ),
+          ],
+          const SizedBox(width: 8),
+        ],
         Expanded(
           child: DropdownButtonFormField<String>(
             initialValue: null,
@@ -825,6 +869,7 @@ class _AppearanceRow extends StatelessWidget {
   final bool showOrigStyle;
 
   static const _colors = {
+    '#94A3B8': 'Kulrang',
     '#39FF14': 'Neon yashil',
     '#FFE680': 'Sariq',
     '#FFFFFF': 'Oq',
@@ -992,16 +1037,51 @@ class _ModePreview extends StatelessWidget {
     Widget content;
     switch (mode) {
       case 'softsub':
+      case 'softsub_dual':
+      case 'softsub_translated':
+      case 'softsub_original':
+        final effectiveSubColor = (subColor == '#39FF14' || subColor == '#94A3B8')
+            ? const Color(0xFF94A3B8)
+            : _subColor;
+
+        final String badgeTitle;
+        final bool showOrig;
+        final bool showTrans;
+
+        switch (mode) {
+          case 'softsub_original':
+            badgeTitle = 'CC: Faqat Asl Matn';
+            showOrig = true;
+            showTrans = false;
+            break;
+          case 'softsub_translated':
+            badgeTitle = 'CC: Faqat Tarjima';
+            showOrig = false;
+            showTrans = true;
+            break;
+          case 'softsub_dual':
+            badgeTitle = 'CC: Birgalikda (2 qator)';
+            showOrig = true;
+            showTrans = true;
+            break;
+          case 'softsub':
+          default:
+            badgeTitle = 'CC: 2 ta alohida trek';
+            showOrig = true;
+            showTrans = true;
+            break;
+        }
+
         content = Container(
           width: double.infinity,
           height: double.infinity,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.3)),
+            border: Border.all(color: const Color(0xFF222222)),
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF0A1828), Color(0xFF050C16)],
+              colors: [Color(0xFF141416), Color(0xFF0A0A0C)],
             ),
           ),
           child: Stack(
@@ -1012,18 +1092,18 @@ class _ModePreview extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF38BDF8).withValues(alpha: 0.2),
+                    color: const Color(0xFF0284C7).withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.4)),
+                    border: Border.all(color: const Color(0xFF0284C7).withValues(alpha: 0.4)),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.closed_caption_rounded, size: 16, color: Color(0xFF38BDF8)),
-                      SizedBox(width: 5),
+                      const Icon(Icons.closed_caption_rounded, size: 16, color: Color(0xFF38BDF8)),
+                      const SizedBox(width: 5),
                       Text(
-                        'CC: 2 ta alohida trek',
-                        style: TextStyle(
+                        badgeTitle,
+                        style: const TextStyle(
                           color: Color(0xFF38BDF8),
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
@@ -1034,64 +1114,53 @@ class _ModePreview extends StatelessWidget {
                 ),
               ),
               Positioned(
-                top: 14,
-                left: 14,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Text(
-                    '⚡ Tezkor Mux (~1.5 soniya)',
-                    style: TextStyle(
-                      color: Colors.greenAccent,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: 24,
+                bottom: 20,
                 left: 16,
                 right: 16,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'This is the original English subtitle',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        shadows: [Shadow(blurRadius: 4, color: Colors.black)],
+                    if (showOrig)
+                      if (origStyle == 'box')
+                        Container(
+                          color: const Color(0xFF334155),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          child: const Text(
+                            'This is the original English subtitle',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Color(0xFFE2E8F0),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        )
+                      else
+                        const Text(
+                          'This is the original English subtitle',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xFFE2E8F0),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            shadows: [Shadow(blurRadius: 4, color: Colors.black)],
+                          ),
+                        ),
+                    if (showOrig && showTrans) const SizedBox(height: 5),
+                    if (showTrans)
+                      Text(
+                        "Bu o'zbekcha tarjima qilingan subtitr",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: effectiveSubColor,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w800,
+                          shadows: const [Shadow(blurRadius: 4, color: Colors.black)],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      "Bu o'zbekcha tarjima qilingan subtitr (Softsub)",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Color(0xFF38BDF8),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        shadows: [Shadow(blurRadius: 4, color: Colors.black)],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        "Pleyerda subtitrni o'chirib/yoqish mumkin",
-                        style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10.5),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -1110,11 +1179,11 @@ class _ModePreview extends StatelessWidget {
           height: double.infinity,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFA855F7).withValues(alpha: 0.3)),
+            border: Border.all(color: const Color(0xFF222222)),
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF1B0C2E), Color(0xFF0C0517)],
+              colors: [Color(0xFF141416), Color(0xFF0A0A0C)],
             ),
           ),
           child: Stack(
@@ -1125,43 +1194,24 @@ class _ModePreview extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFA855F7).withValues(alpha: 0.2),
+                    color: const Color(0xFF7C3AED).withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFFA855F7).withValues(alpha: 0.4)),
+                    border: Border.all(color: const Color(0xFF7C3AED).withValues(alpha: 0.4)),
                   ),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.graphic_eq_rounded, size: 16, color: Color(0xFFA855F7)),
+                      Icon(Icons.record_voice_over_rounded, size: 15, color: Color(0xFFA78BFA)),
                       SizedBox(width: 5),
                       Text(
                         'Multi-Audio: 2 trek',
                         style: TextStyle(
-                          color: Color(0xFFA855F7),
+                          color: Color(0xFFA78BFA),
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 14,
-                left: 14,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFA855F7).withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Text(
-                    '🎙️ Microsoft Edge TTS',
-                    style: TextStyle(
-                      color: Color(0xFFD8B4FE),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
                   ),
                 ),
               ),
@@ -1173,51 +1223,89 @@ class _ModePreview extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        for (final h in [8.0, 16.0, 26.0, 12.0, 32.0, 22.0, 36.0, 25.0, 14.0, 28.0, 18.0, 34.0, 14.0, 9.0])
+                        for (final h in [6.0, 12.0, 20.0, 10.0, 28.0, 18.0, 32.0, 22.0, 14.0, 26.0, 16.0, 30.0, 12.0, 7.0])
                           Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 2.5),
-                            width: 4,
+                            margin: const EdgeInsets.symmetric(horizontal: 2),
+                            width: 3.5,
                             height: h,
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
-                                colors: [Color(0xFFC084FC), Color(0xFFA855F7)],
+                                colors: [Color(0xFFA78BFA), Color(0xFF7C3AED)],
                               ),
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.4),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFF333333)),
+                        color: const Color(0xFF1A1A1E),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFF2E2E38)),
                       ),
-                      child: Column(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          const Icon(Icons.headphones_rounded, size: 12, color: Color(0xFF94A3B8)),
+                          const SizedBox(width: 4),
                           Text(
-                            '1-trek: 🎧 Asl fon ovozi (Ducking: $duckingPct%)',
+                            'Fon: $duckingPct%',
                             style: const TextStyle(
-                              color: Color(0xFFCBD5E1),
-                              fontSize: 11.5,
+                              color: Color(0xFF94A3B8),
+                              fontSize: 10.5,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          const SizedBox(height: 3),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 6),
+                            child: Text('•', style: TextStyle(color: Color(0xFF475569), fontSize: 10)),
+                          ),
+                          const Icon(Icons.mic_rounded, size: 12, color: Color(0xFFA78BFA)),
+                          const SizedBox(width: 4),
                           Text(
-                            "2-trek: 🗣️ O'zbekcha AI Dublyaj ($voiceName)",
+                            voiceName,
                             style: const TextStyle(
-                              color: Color(0xFFF3E8FF),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
+                              color: Color(0xFFDDD6FE),
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Positioned(
+                bottom: 20,
+                left: 16,
+                right: 16,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'This is the original English speech',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        shadows: [Shadow(blurRadius: 4, color: Colors.black)],
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    const Text(
+                      "🗣️ \"Bu o'zbekcha AI dublyaj qilingan nutq\"",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Color(0xFFF1F5F9),
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w800,
+                        shadows: [Shadow(blurRadius: 4, color: Colors.black)],
                       ),
                     ),
                   ],
@@ -1246,7 +1334,7 @@ class _ModePreview extends StatelessWidget {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF1A1A1A), Color(0xFF0A0A0A)],
+              colors: [Color(0xFF141416), Color(0xFF0A0A0C)],
             ),
           ),
           child: Stack(

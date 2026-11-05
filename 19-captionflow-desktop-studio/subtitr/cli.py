@@ -24,7 +24,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--mode",
         default="dual_vocab",
         choices=["dual_vocab", "original_vocab", "dual", "original", "translated",
-                 "softsub", "dubbing", "srt", "transcript", "reading", "vocabulary", "all"],
+                 "softsub", "softsub_dual", "softsub_translated", "softsub_original",
+                 "dubbing", "srt", "transcript", "reading", "vocabulary", "all"],
     )
     p_process.add_argument("--source-lang", default="auto")
     p_process.add_argument("--target-lang", default="uz")
@@ -68,7 +69,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--mode",
         default="dual_vocab",
         choices=["dual_vocab", "original_vocab", "dual", "original", "translated",
-                 "softsub", "dubbing", "srt", "transcript", "reading", "vocabulary", "all"],
+                 "softsub", "softsub_dual", "softsub_translated", "softsub_original",
+                 "dubbing", "srt", "transcript", "reading", "vocabulary", "all"],
     )
     p_prepare.add_argument("--source-lang", default="auto")
     p_prepare.add_argument("--target-lang", default="uz")

@@ -166,9 +166,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     ModeChoice(
       value: 'softsub',
       icon: Icons.closed_caption_rounded,
-      title: 'Yumshoq subtitr (CC)',
-      description:
-          "Kuydirmasdan, videoga 2 ta o'chirib-yoqiladigan subtitr qo'shish",
+      title: '2 ta alohida trek (CC)',
+      description: "Pleyerda tilni almashtirish (Original / Tarjima)",
+    ),
+    ModeChoice(
+      value: 'softsub_dual',
+      icon: Icons.subtitles_rounded,
+      title: 'Ikki qatorli subtitr',
+      description: "Asl matn va tarjima birgalikda",
+    ),
+    ModeChoice(
+      value: 'softsub_translated',
+      icon: Icons.translate_rounded,
+      title: 'Faqat tarjima',
+      description: "Kadrda faqat tarjima tili",
+    ),
+    ModeChoice(
+      value: 'softsub_original',
+      icon: Icons.language_rounded,
+      title: 'Faqat asl matn',
+      description: "Faqat original til (Ingliz/Rus...)",
     ),
     ModeChoice(
       value: 'dubbing',
@@ -1266,6 +1283,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     'dual',
     'dual_vocab',
     'translated',
+    'softsub',
+    'softsub_dual',
+    'softsub_translated',
     'srt',
     'transcript',
     'reading',
@@ -1515,6 +1535,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     onSavePreset: _savePreset,
                     onApplyPreset: _applyPreset,
                     onDeletePreset: _deletePreset,
+                    onPickSubtitle: _pickExternalSubtitle,
+                    externalSubtitlePath: _externalSubtitlePath,
+                    onClearSubtitle: () => setState(() {
+                      _externalSubtitlePath = null;
+                      _externalSubtitleVideoPath = null;
+                      _subtitleOffset = 0;
+                    }),
                   );
 
                   final processor = ProcessingPanel(

@@ -89,17 +89,18 @@ class SoftsubPipelineTests(unittest.TestCase):
 
 class SoftsubCliTests(unittest.TestCase):
     def test_process_accepts_softsub_mode(self):
-        with (
-            patch.object(m_cli, "ensure_dirs"),
-            patch.object(m_cli, "setup_logging"),
-            patch.object(m_cli, "install_signal_handlers"),
-            patch.object(m_cli, "clean_orphan_tmp"),
-            patch.object(m_cli, "emit"),
-            patch.object(m_cli, "process", return_value={}) as process,
-            patch.object(sys, "argv", ["subtitr", "process", "--video", "source.mp4", "--mode", "softsub"]),
-        ):
-            self.assertEqual(m_cli.main(), 0)
-        self.assertEqual(process.call_args.args[1], "softsub")
+        for mode in ("softsub", "softsub_dual", "softsub_translated", "softsub_original"):
+            with (
+                patch.object(m_cli, "ensure_dirs"),
+                patch.object(m_cli, "setup_logging"),
+                patch.object(m_cli, "install_signal_handlers"),
+                patch.object(m_cli, "clean_orphan_tmp"),
+                patch.object(m_cli, "emit"),
+                patch.object(m_cli, "process", return_value={}) as process,
+                patch.object(sys, "argv", ["subtitr", "process", "--video", "source.mp4", "--mode", mode]),
+            ):
+                self.assertEqual(m_cli.main(), 0)
+            self.assertEqual(process.call_args.args[1], mode)
 
 
 if __name__ == "__main__":

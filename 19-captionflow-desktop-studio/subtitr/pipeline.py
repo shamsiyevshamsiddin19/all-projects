@@ -124,7 +124,7 @@ def _prepare_data(
         emit("progress", message=f"Matn tayyor ({transcriber})", progress=0.35)
 
         needs_translation = mode in {
-            "dual", "dual_vocab", "translated", "softsub", "dubbing", "srt", "transcript", "reading", "all",
+            "dual", "dual_vocab", "translated", "softsub", "softsub_dual", "softsub_translated", "dubbing", "srt", "transcript", "reading", "all",
         }
         translated: list[Segment] | None = None
         provider = ""
@@ -224,7 +224,11 @@ def _prepare_data(
 
 # Video chiqishi beradigan rejimlar. `softsub` kadrni kuydirmaydi, ammo
 # foydalanuvchi tanlaydigan video natija sifatida qoladi.
-VIDEO_MODES = {"original", "dual", "original_vocab", "dual_vocab", "translated", "softsub", "dubbing"}
+VIDEO_MODES = {
+    "original", "dual", "original_vocab", "dual_vocab", "translated",
+    "softsub", "softsub_dual", "softsub_translated", "softsub_original",
+    "dubbing",
+}
 
 # "Hammasi" rejimi nimalarni beradi. Video BITTA — `dual_vocab` (original +
 # tarjima + lug'at, ya'ni eng to'liq variant).
@@ -464,7 +468,7 @@ def _render_outputs(
         # MKV ASS uslubini o'zgartirmay saqlay oladi; MP4 esa mos keluvchi
         # `mov_text` trek talab qiladi. Shu sabab manba MKV bo'lsa konteynerni
         # almashtirmaymiz, boshqa holatda keng tarqalgan MP4 natija beramiz.
-        out_suffix = ".mkv" if render_mode == "softsub" and video.suffix.lower() == ".mkv" else ".mp4"
+        out_suffix = ".mkv" if render_mode.startswith("softsub") and video.suffix.lower() == ".mkv" else ".mp4"
         out = job_out_dir / f"{stem}_{render_mode}{out_suffix}"
         # Render, kadr ko'rish va pleyer UCHALASI ham shu yozuvchidan
         # o'tadi — ko'rinish ajralib ketishi mumkin emas.
@@ -493,6 +497,33 @@ def _render_outputs(
                 attach_soft_subtitles(
                     video, ass, out, progress_lo=lo, progress_hi=hi, label=render_mode,
                 )
+        elif render_mode == "softsub_dual":
+            dual_ass = job_tmp / f"{stem}_dual_soft.ass"
+            _write_mode_ass(dual_ass, data, "dual", font_scale, position, sub_color, orig_style)
+            attach_soft_subtitles(
+                video, dual_ass, out,
+                progress_lo=lo, progress_hi=hi, label=render_mode,
+                lang1="und",
+                title1="Ikki qatorli (Asl + Tarjima)",
+            )
+        elif render_mode == "softsub_translated":
+            trans_ass = job_tmp / f"{stem}_trans_soft.ass"
+            _write_mode_ass(trans_ass, data, "translated", font_scale, position, sub_color, orig_style)
+            attach_soft_subtitles(
+                video, trans_ass, out,
+                progress_lo=lo, progress_hi=hi, label=render_mode,
+                lang1="uzb" if data.target_lang.startswith("uz") else data.target_lang,
+                title1="Tarjima subtitri",
+            )
+        elif render_mode == "softsub_original":
+            orig_ass = job_tmp / f"{stem}_orig_soft.ass"
+            _write_mode_ass(orig_ass, data, "original", font_scale, position, sub_color, orig_style)
+            attach_soft_subtitles(
+                video, orig_ass, out,
+                progress_lo=lo, progress_hi=hi, label=render_mode,
+                lang1="eng" if data.source_lang.startswith("en") else data.source_lang,
+                title1="Asl til subtitri (Original)",
+            )
         elif render_mode == "dubbing":
             from subtitr.dubbing import (
                 build_speech_timeline_wav,
@@ -610,7 +641,9 @@ def _write_mode_ass(
     write_ass(
         path,
         data.display_original,
-        data.translated if mode in {"dual", "dual_vocab", "translated", "softsub", "dubbing"} else None,
+        data.translated if mode in {
+            "dual", "dual_vocab", "translated", "softsub", "softsub_dual", "softsub_translated", "dubbing",
+        } else None,
         data.words if mode in {"original_vocab", "dual_vocab"} else None,
         data.vocab_map,
         data.width,

@@ -98,7 +98,7 @@ void main() {
     expect(selectedMode, 'dual_vocab');
   });
 
-  testWidgets('Yumshoq subtitr tanlanganda 2 subtitr izohi chiqadi', (tester) async {
+  testWidgets('Yumshoq subtitr tanlanganda uslub tanlash va preview ko\'rinadi', (tester) async {
     String? selectedMode;
     await tester.pumpWidget(
       harness(
@@ -116,7 +116,7 @@ void main() {
     await tester.pumpWidget(harness(mode: 'softsub'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('2 ta subtitr (Original + Tarjima)'), findsOneWidget);
+    expect(find.text('Yumshoq subtitr uslubi'), findsOneWidget);
     expect(find.text('CC: 2 ta alohida trek'), findsOneWidget);
   });
 
