@@ -564,7 +564,7 @@ class _UrlInputState extends State<_UrlInput> {
                       ),
                     ),
                     Text(
-                      'YouTube, Instagram, TikTok yoki veb video',
+                      'YouTube, Pinterest, Instagram, TikTok yoki havola',
                       style: TextStyle(fontSize: 10.5, color: Color(0xFF71717A)),
                     ),
                   ],
@@ -597,7 +597,7 @@ class _UrlInputState extends State<_UrlInput> {
               if (has != _hasUrl) setState(() => _hasUrl = has);
             },
             decoration: InputDecoration(
-              hintText: 'https://youtube.com/watch?v=... yoki havola',
+              hintText: 'https://... (Pinterest, YouTube, Instagram, TikTok)',
               hintStyle: const TextStyle(fontSize: 11.5, color: Color(0xFF52525B)),
               prefixIcon: const Icon(Icons.travel_explore_rounded, size: 16, color: Color(0xFF38BDF8)),
               suffixIcon: _controller.text.isNotEmpty

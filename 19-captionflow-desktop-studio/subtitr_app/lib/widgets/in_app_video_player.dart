@@ -280,6 +280,15 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
     return sub != null && sub.isNotEmpty && File(sub).existsSync();
   }
 
+  bool get _isImageFile {
+    final lower = widget.videoPath.toLowerCase();
+    return lower.endsWith('.jpg') ||
+        lower.endsWith('.jpeg') ||
+        lower.endsWith('.png') ||
+        lower.endsWith('.webp') ||
+        lower.endsWith('.gif');
+  }
+
   bool get _isBurnedVideo {
     final lower = widget.videoPath.toLowerCase();
     return lower.contains('_dual.') ||
@@ -388,6 +397,17 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
   }
 
   Future<void> _loadMedia() async {
+    if (_isImageFile) {
+      if (mounted) {
+        setState(() {
+          _ready = true;
+          _error = null;
+        });
+        _focusNode.requestFocus();
+      }
+      return;
+    }
+
     final player = _player;
     if (player == null) return;
     try {
@@ -1036,6 +1056,18 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
   }
 
   Widget _buildVideoSurface() {
+    if (_isImageFile) {
+      return Center(
+        child: Image.file(
+          File(widget.videoPath),
+          fit: _aspectRatioMode.boxFit,
+          errorBuilder: (context, error, stackTrace) => const Center(
+            child: Text("Rasmni ochib bo'lmadi", style: TextStyle(color: Colors.white70)),
+          ),
+        ),
+      );
+    }
+
     if (_error != null) {
       return Padding(
         padding: const EdgeInsets.all(24.0),

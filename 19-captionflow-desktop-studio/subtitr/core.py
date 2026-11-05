@@ -172,6 +172,8 @@ FFPROBE = resolve_tool("ffprobe")
 YTDLP = resolve_tool("yt-dlp")
 
 VIDEO_EXTS = {".mp4", ".mkv", ".mov", ".avi", ".webm", ".m4v"}
+IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+MEDIA_EXTS = VIDEO_EXTS | IMAGE_EXTS
 SUB_EXTS = {".srt", ".vtt"}
 
 TARGET_LANG_NAMES = {

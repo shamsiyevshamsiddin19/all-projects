@@ -11,7 +11,8 @@ from pathlib import Path
 from typing import Any, Iterable
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
-from .core import FFMPEG, FFPROBE, KINO_DIR, ROOT, SUB_EXTS, Segment, TMP_DIR, VIDEO_EXTS, YTDLP, emit, ensure_dirs, is_url, require_tool, run, stop_child, wrap_lines
+from .core import FFMPEG, FFPROBE, KINO_DIR, MEDIA_EXTS, ROOT, SUB_EXTS, Segment, TMP_DIR, VIDEO_EXTS, YTDLP, emit, ensure_dirs, is_url, require_tool, run, stop_child, wrap_lines
+from .pinterest import download_pinterest_media, is_pinterest_url
 
 
 # Video sifati: foydalanuvchi tanlaydigan maksimal balandlik.
@@ -163,7 +164,7 @@ def prune_download_cache(dl_dir: Path, keep: Path | None = None) -> int:
     files: list[tuple[float, int, Path]] = []
     total = 0
     for path in dl_dir.iterdir():
-        if not path.is_file() or path.suffix.lower() not in VIDEO_EXTS:
+        if not path.is_file() or path.suffix.lower() not in MEDIA_EXTS:
             continue
         try:
             st = path.stat()
@@ -209,6 +210,16 @@ def download_video(
     Ko'rinadigan papka berilsa (masalan Videos/Yuklab olingan) — o'sha yerga toza
     nom bilan saqlaydi."""
     url = url.strip()
+    if is_pinterest_url(url):
+        return download_pinterest_media(
+            url,
+            dest_dir=dest_dir,
+            use_cache=use_cache,
+            progress_lo=progress_lo,
+            progress_hi=progress_hi,
+            quality=quality,
+        )
+
     if not (os.path.isfile(YTDLP) or shutil.which(YTDLP)):
         raise RuntimeError("yt-dlp topilmadi — havoladan yuklab bo'lmaydi.")
 
@@ -390,7 +401,7 @@ def normalize_video_path(value: str, quality: str | None = None) -> Path:
     path = path.resolve()
     if not path.exists():
         raise RuntimeError(f"Video topilmadi: {path}")
-    if path.suffix.lower() not in VIDEO_EXTS:
+    if path.suffix.lower() not in MEDIA_EXTS:
         raise RuntimeError("Bu video formati qo'llab-quvvatlanmaydi")
     return path
 
@@ -413,7 +424,7 @@ def scan(target_dir: str | None = None) -> list[dict[str, Any]]:
                     "subtitleName": "",
                     "isDir": True,
                 })
-            elif path.is_file() and path.suffix.lower() in VIDEO_EXTS:
+            elif path.is_file() and path.suffix.lower() in MEDIA_EXTS:
                 sidecar = find_sidecar_subtitle(path)
                 videos.append({
                     "name": path.name,
