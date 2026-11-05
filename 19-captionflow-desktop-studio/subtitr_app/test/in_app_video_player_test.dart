@@ -183,4 +183,60 @@ void main() {
     // Verify widget builds cleanly without crashing
     expect(find.text('video.mp4'), findsOneWidget);
   });
+
+  testWidgets('StudioVideoPlayer provides studio controls: speed, sync, A-B loop, shortcuts help', (tester) async {
+    tester.view.physicalSize = const Size(1280, 850);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData.dark(),
+        home: Scaffold(
+          body: EmbeddedVideoPlayer(
+            videoPath: '/dummy/movies/studio_clip.mp4',
+            title: 'studio_clip.mp4',
+            onClose: () {},
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    // 1. Verify frame step buttons exist
+    expect(find.byTooltip('1 kadr orqaga (,)'), findsOneWidget);
+    expect(find.byTooltip('1 kadr oldinga (.)'), findsOneWidget);
+
+    // 2. Verify seek buttons exist
+    expect(find.byTooltip('10 soniya orqaga (J)'), findsOneWidget);
+    expect(find.byTooltip('10 soniya oldinga (L)'), findsOneWidget);
+
+    // 3. Verify snapshot button exists
+    expect(find.byTooltip('Kadr suratini olish (P)'), findsOneWidget);
+
+    // 4. Verify A-B loop button exists and shows A-B
+    expect(find.text('A-B'), findsOneWidget);
+
+    // 5. Verify speed indicator is present
+    expect(find.text('1.0x'), findsOneWidget);
+
+    // 6. Verify sync offset indicator is present
+    expect(find.text('+0.0s'), findsOneWidget);
+
+    // 7. Verify keyboard shortcuts help button and modal
+    final helpBtn = find.byTooltip('Klaviatura tugmalari (?)');
+    expect(helpBtn, findsOneWidget);
+    await tester.tap(helpBtn);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Klaviatura tezkor tugmalari'), findsOneWidget);
+    expect(find.text("Bo'sh joy / K"), findsOneWidget);
+    expect(find.text(", / ."), findsOneWidget);
+
+    // Close shortcuts dialog
+    await tester.tap(find.text('Tushunarli'));
+    await tester.pumpAndSettle();
+    expect(find.text('Klaviatura tezkor tugmalari'), findsNothing);
+  });
 }
