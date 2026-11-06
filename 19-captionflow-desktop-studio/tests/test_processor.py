@@ -2213,6 +2213,30 @@ class ProviderRetryTests(unittest.TestCase):
         self.assertLessEqual(slept[3], 33)
         self.assertGreater(slept[1], slept[0], "backoff o'smadi")
 
+    def test_gate_by_speech_preserves_song_lyrics_when_vad_coverage_is_low(self):
+        """Musiqa yoki qo'shiqlarda Silero VAD past qamrov bersa ham matn yo'qolmasligi kerak."""
+        import subtitr._transcribe_engine as te
+
+        orig_sr = te.speech_regions
+        # Mock VAD which only detects 4 seconds in the intro of a 200s song
+        te.speech_regions = lambda p: [(1.0, 5.0)]
+        try:
+            segs = [
+                dp.core.Segment(1.0, 4.0, "Shine bright like a diamond"),
+                dp.core.Segment(15.0, 19.0, "You and I we are like diamonds"),
+                dp.core.Segment(30.0, 35.0, "A vision of ecstasy"),
+                dp.core.Segment(60.0, 65.0, "Shine bright tonight"),
+                dp.core.Segment(120.0, 125.0, "We are beautiful like diamonds"),
+                dp.core.Segment(180.0, 185.0, "Diamonds in the sky"),
+            ]
+            words = [dp.core.Word(1.0, 2.0, "Shine")]
+            filtered_segs, filtered_words = te.gate_by_speech(segs, words, Path("fake_audio.webm"))
+            # Barcha 6 ta segment to'liq saqlanib qolishi kerak (qo'shiq matni yutilmasin)
+            self.assertEqual(len(filtered_segs), 6)
+            self.assertEqual(filtered_segs[-1].text, "Diamonds in the sky")
+        finally:
+            te.speech_regions = orig_sr
+
 
 if __name__ == "__main__":
     unittest.main()

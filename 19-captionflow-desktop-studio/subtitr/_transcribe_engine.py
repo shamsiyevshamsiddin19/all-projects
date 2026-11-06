@@ -680,21 +680,46 @@ def gate_by_speech(
 ) -> tuple[list[Segment], list[Word]]:
     """Nutq bo'lmagan joydagi matnni olib tashlaydi.
 
-    Lokal Whisper buni o'z ichida qiladi; Groq natijasi esa hech qanday
-    tekshiruvdan o'tmasdi — u ham sukunat/musiqa ustida matn to'qib qo'yadi."""
+    Lokal Whisper buni o'z ichida qiladi; Groq natijasi esa sukunat/musiqa
+    ustida matn to'qib qo'ymasligi uchun tekshiriladi.
+    DIQQAT: Musiqa, qo'shiq yoki fon musiqasi baland bo'lganda Silero VAD
+    qo'shiq matnini musiqa deb o'ylab, xato tarzda o'chirib yubormasligi kerak.
+    """
+    if not segments:
+        return segments, words
     if os.getenv("WHISPER_VAD", "1") in {"0", "false", "no"}:
         return segments, words
     regions = speech_regions(audio_path)
     if not regions:
         return segments, words
+
+    total_vad = sum(hi - lo for lo, hi in regions)
+    span_dur = max(1.0, segments[-1].end - segments[0].start)
+    # Qo'shiqlar va baland musiqali videolarda VAD qamrovi juda past bo'ladi
+    # (masalan 25% dan kam). Agar Whisper ko'p segmentlar topgan bo'lsa,
+    # bu musiqiy nutq/qo'shiq bo'lib, VAD filtri haqiqiy matnni yo'qotadi.
+    if (total_vad / span_dur) < 0.25 and len(segments) >= 5:
+        return segments, words
+
     out_segments: list[Segment] = []
     for seg in segments:
         span = clamp_to_speech(seg.start, seg.end, regions)
         if span is None:
-            continue  # nutq yo'q joyda paydo bo'lgan matn — to'qilgan
+            # Agar segment bir necha so'zdan iborat bo'lsa yoki ishonchli bo'lsa,
+            # uni VAD tufayli darhol o'chirib yubormaymiz (qo'shiq/musiqa bo'lishi mumkin)
+            words_in_seg = len(seg.text.strip().split())
+            if words_in_seg >= 3 or (seg.confidence is not None and seg.confidence >= 0.35):
+                out_segments.append(seg)
+            continue
         out_segments.append(Segment(span[0], span[1], seg.text, seg.confidence))
-    out_words = [w for w in words if clamp_to_speech(w.start, w.end, regions) is not None]
-    return out_segments, out_words
+
+    # Agar VAD filtri natijasida segmentlarning yarmidan ko'pi yo'qolib ketsa,
+    # demak VAD musiqada adashgan (false negative). Asl segmentlarni saqlaymiz.
+    if len(segments) >= 5 and len(out_segments) < len(segments) * 0.6:
+        return segments, words
+
+    clamped_words = [w for w in words if clamp_to_speech(w.start, w.end, regions) is not None]
+    return out_segments, clamped_words if len(clamped_words) >= len(words) * 0.5 else words
 
 
 def transcribe_with_faster_whisper(
