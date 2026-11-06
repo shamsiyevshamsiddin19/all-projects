@@ -224,6 +224,12 @@ void main() {
     // 6. Verify sync offset indicator is present
     expect(find.text('+0.0s'), findsOneWidget);
 
+    // 6.5. Verify CC soft subtitle button exists and can be tapped
+    final ccBtn = find.text('CC');
+    expect(ccBtn, findsOneWidget);
+    await tester.tap(ccBtn);
+    await tester.pump();
+
     // 7. Verify keyboard shortcuts help button and modal
     final helpBtn = find.byTooltip('Klaviatura tugmalari (?)');
     expect(helpBtn, findsOneWidget);

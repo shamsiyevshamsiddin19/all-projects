@@ -275,8 +275,72 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
     return File(widget.videoPath).uri.pathSegments.last;
   }
 
+  String? _resolvedSubtitlePath;
+
+  String? _resolveSubtitlePath() {
+    if (widget.subtitlePath != null &&
+        widget.subtitlePath!.isNotEmpty &&
+        File(widget.subtitlePath!).existsSync()) {
+      return widget.subtitlePath;
+    }
+
+    final videoFile = File(widget.videoPath);
+    final dot = videoFile.path.lastIndexOf('.');
+    if (dot <= 0) return null;
+
+    final base = videoFile.path.substring(0, dot);
+    final parent = videoFile.parent;
+    final videoName = videoFile.uri.pathSegments.isNotEmpty
+        ? videoFile.uri.pathSegments.last
+        : '';
+    final nameNoExt = videoName.contains('.')
+        ? videoName.substring(0, videoName.lastIndexOf('.'))
+        : videoName;
+
+    // 1. Asl (original) subtitr fayllarini birinchi navbatda tekshiramiz
+    final originalCandidates = [
+      '${base}_original.srt',
+      '${base}_original.ass',
+      '${base}_orig.srt',
+      '${base}_orig_soft.ass',
+      '${base}_softsub_original.ass',
+      '$base.srt',
+      '$base.ass',
+      '$base.vtt',
+      '${base}_softsub.ass',
+      '${base}_dual.ass',
+    ];
+
+    for (final c in originalCandidates) {
+      if (File(c).existsSync()) {
+        return c;
+      }
+    }
+
+    // 2. out/ papkasidan qidirish
+    final outDir = Directory('${parent.path}/out');
+    if (outDir.existsSync()) {
+      final outCandidates = [
+        '${outDir.path}/${nameNoExt}_original.srt',
+        '${outDir.path}/${nameNoExt}_original.ass',
+        '${outDir.path}/${nameNoExt}_orig.srt',
+        '${outDir.path}/$nameNoExt.srt',
+        '${outDir.path}/$nameNoExt.ass',
+        '${outDir.path}/${nameNoExt}_softsub_original.ass',
+        '${outDir.path}/${nameNoExt}_softsub.ass',
+      ];
+      for (final c in outCandidates) {
+        if (File(c).existsSync()) {
+          return c;
+        }
+      }
+    }
+
+    return null;
+  }
+
   bool get _hasSubtitles {
-    final sub = widget.subtitlePath;
+    final sub = _resolvedSubtitlePath ?? widget.subtitlePath;
     return sub != null && sub.isNotEmpty && File(sub).existsSync();
   }
 
@@ -313,6 +377,7 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
   @override
   void initState() {
     super.initState();
+    _resolvedSubtitlePath = _resolveSubtitlePath();
     _subtitlesEnabled = !_isBurnedVideo;
     _initPlayer();
   }
@@ -322,6 +387,7 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
     super.didUpdateWidget(oldWidget);
     if (widget.videoPath != oldWidget.videoPath ||
         widget.subtitlePath != oldWidget.subtitlePath) {
+      _resolvedSubtitlePath = _resolveSubtitlePath();
       _subtitlesEnabled = !_isBurnedVideo;
       _loopA = null;
       _loopB = null;
@@ -415,10 +481,15 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
         Media(Uri.file(widget.videoPath).toString()),
         play: true,
       );
-      if (_hasSubtitles && _subtitlesEnabled) {
+      final subPath = _resolvedSubtitlePath ?? _resolveSubtitlePath();
+      if (subPath != null) _resolvedSubtitlePath = subPath;
+
+      if (_subtitlesEnabled && subPath != null && File(subPath).existsSync()) {
         await player.setSubtitleTrack(
-          SubtitleTrack.uri(Uri.file(widget.subtitlePath!).toString()),
+          SubtitleTrack.uri(Uri.file(subPath).toString()),
         );
+      } else if (_subtitlesEnabled && _realSubtitleTracks.isNotEmpty) {
+        await player.setSubtitleTrack(_realSubtitleTracks.first);
       } else {
         await player.setSubtitleTrack(SubtitleTrack.no());
       }
@@ -602,21 +673,40 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
 
   Future<void> _toggleSubtitles() async {
     final player = _player;
-    if (player == null || !_canToggleSubtitles) return;
+    if (player == null) return;
+    if (_isBurnedVideo) {
+      _showOSD("Videoga subtitr allaqachon yopishtirilgan (Hardsub)", Icons.info_outline_rounded);
+      return;
+    }
+
+    final subPath = _resolvedSubtitlePath ?? _resolveSubtitlePath();
+    if (subPath != null) _resolvedSubtitlePath = subPath;
+
+    final hasExternal = subPath != null && File(subPath).existsSync();
+    final hasInternal = _realSubtitleTracks.isNotEmpty;
+
+    if (!hasExternal && !hasInternal) {
+      _showOSD("Yumshoq subtitr topilmadi (Asl .srt/.ass fayl yo'q)", Icons.subtitles_off_rounded);
+      return;
+    }
+
     final next = !_subtitlesEnabled;
     setState(() => _subtitlesEnabled = next);
     try {
       if (next) {
-        if (_hasSubtitles) {
-          await player.setSubtitleTrack(SubtitleTrack.uri(Uri.file(widget.subtitlePath!).toString()));
-        } else if (_realSubtitleTracks.isNotEmpty) {
+        if (hasExternal) {
+          await player.setSubtitleTrack(SubtitleTrack.uri(Uri.file(subPath).toString()));
+        } else if (hasInternal) {
           await player.setSubtitleTrack(_realSubtitleTracks.first);
         }
       } else {
         await player.setSubtitleTrack(SubtitleTrack.no());
       }
     } catch (_) {}
-    _showOSD(next ? "Subtitr: Yoqildi" : "Subtitr: O'chirildi", next ? Icons.subtitles_rounded : Icons.subtitles_off_rounded);
+    _showOSD(
+      next ? "Yumshoq subtitr: Asl matn (CC)" : "Subtitr: O'chirildi",
+      next ? Icons.closed_caption_rounded : Icons.closed_caption_off_rounded,
+    );
   }
 
   void _cycleAudioTrack() {
@@ -1559,6 +1649,10 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
 
               const Spacer(),
 
+              // Yumshoq subtitr (CC) tugmasi — Asl matn
+              _buildCCButton(),
+              const SizedBox(width: 6),
+
               // Subtitr sinxronlash popupi
               _buildSubtitleSyncButton(),
               const SizedBox(width: 6),
@@ -1688,6 +1782,65 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
           ),
         ),
       ],
+    );
+  }
+
+  // --- Yumshoq subtitr (CC) tugmasi — Asl matn ---
+  Widget _buildCCButton() {
+    final hasSub = _hasSubtitles || _realSubtitleTracks.isNotEmpty;
+    final isActive = _subtitlesEnabled && hasSub;
+
+    return Tooltip(
+      message: isActive
+          ? "Yumshoq subtitr (CC): Yoqilgan — Asl matn (C)"
+          : (hasSub
+              ? "Yumshoq subtitr (CC) ni yoqish — Asl matn (C)"
+              : "Yumshoq subtitr (CC) — Asl matn (C)"),
+      child: InkWell(
+        onTap: _toggleSubtitles,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: isActive
+                ? const Color(0xFF38BDF8).withValues(alpha: 0.22)
+                : Colors.white.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: isActive
+                  ? const Color(0xFF38BDF8)
+                  : Colors.white.withValues(alpha: 0.12),
+              width: isActive ? 1.2 : 1.0,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isActive
+                    ? Icons.closed_caption_rounded
+                    : Icons.closed_caption_off_rounded,
+                size: 15,
+                color: isActive
+                    ? const Color(0xFF38BDF8)
+                    : const Color(0xFF94A3B8),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                "CC",
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.4,
+                  color: isActive
+                      ? const Color(0xFF38BDF8)
+                      : const Color(0xFFCBD5E1),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

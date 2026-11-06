@@ -1069,21 +1069,38 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (_isVideoPath(path) && playerAvailable) {
         String? sub;
         if (_result != null) {
-          sub = _result!.outputs
-              .where((o) => o.kind == 'ass' || o.kind == 'srt')
-              .firstOrNull
-              ?.path;
+          // Asl (original) subtitrni birinchi navbatda tanlaymiz
+          final orig = _result!.outputs
+              .where((o) =>
+                  (o.kind == 'ass' || o.kind == 'srt') &&
+                  (o.name.toLowerCase().contains('original') ||
+                      o.name.toLowerCase().contains('orig')))
+              .firstOrNull;
+          sub = orig?.path ??
+              _result!.outputs
+                  .where((o) => o.kind == 'ass' || o.kind == 'srt')
+                  .firstOrNull
+                  ?.path;
         }
         if (sub == null || !File(sub).existsSync()) {
           final dot = path.lastIndexOf('.');
           if (dot > 0) {
             final base = path.substring(0, dot);
-            final ass = '$base.ass';
-            final srt = '$base.srt';
-            if (File(ass).existsSync()) {
-              sub = ass;
-            } else if (File(srt).existsSync()) {
-              sub = srt;
+            final candidates = [
+              '${base}_original.srt',
+              '${base}_original.ass',
+              '${base}_orig.srt',
+              '${base}_orig_soft.ass',
+              '${base}_softsub_original.ass',
+              '$base.ass',
+              '$base.srt',
+              '$base.vtt',
+            ];
+            for (final c in candidates) {
+              if (File(c).existsSync()) {
+                sub = c;
+                break;
+              }
             }
           }
         }
