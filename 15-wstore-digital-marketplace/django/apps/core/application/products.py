@@ -7,7 +7,7 @@ from uuid import UUID
 
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils.text import slugify
 
 from store.models import Category, Product
@@ -219,9 +219,20 @@ class ProductApplicationService:
             seller=seller,
             status=Product.Status.DRAFT,
         )
-        product.slug = self._next_slug(product.title)
-        product.save()
-        return product
+        for _attempt in range(5):
+            product.slug = self._next_slug(product.title)
+            try:
+                # Har urinish alohida savepointda: boshqa worker xuddi shu
+                # slug'ni birinchi saqlab qo'ysa, transaction zaharlanmaydi.
+                with transaction.atomic():
+                    product.save()
+            except IntegrityError:
+                continue
+            return product
+        raise ProductApplicationError(
+            "Mahsulot manzilini yaratib bo'lmadi, qayta urinib ko'ring.",
+            409,
+        )
 
     @transaction.atomic
     def update_product(

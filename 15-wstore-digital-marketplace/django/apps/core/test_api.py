@@ -4,6 +4,7 @@ import json
 import uuid
 from decimal import Decimal
 from io import BytesIO
+from unittest.mock import patch
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
@@ -453,6 +454,37 @@ class ProductApplicationServiceTests(TestCase):
         self.assertEqual(product.status, Product.Status.DRAFT)
         self.assertEqual(product.title, "Boundary product")
         self.assertEqual(product.sales_count, 0)
+
+    def test_create_retries_when_concurrent_slug_wins_race(self):
+        original_save = Product.save
+        raced = False
+
+        def save_with_competing_slug(instance, *args, **kwargs):
+            nonlocal raced
+            if not raced:
+                raced = True
+                competitor = Product(
+                    title="Concurrent product",
+                    slug=instance.slug,
+                    price="10.00",
+                    category=self.category,
+                    seller=self.other,
+                )
+                original_save(competitor)
+            return original_save(instance, *args, **kwargs)
+
+        with patch.object(Product, "save", save_with_competing_slug):
+            product = self.service.create_product(
+                seller=self.seller,
+                data={
+                    "title": "Concurrent product",
+                    "price": "19.99",
+                    "category": self.category.slug,
+                },
+            )
+
+        self.assertTrue(raced)
+        self.assertEqual(product.slug, "concurrent-product")
 
     def test_rejected_transition_does_not_partially_update_product(self):
         with self.assertRaises(ProductApplicationError) as raised:
