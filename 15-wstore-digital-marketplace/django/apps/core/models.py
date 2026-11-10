@@ -1,13 +1,16 @@
 import hashlib
 import secrets
 import uuid
+
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+
 def generate_referral_code():
     return uuid.uuid4().hex[:12]
+
 
 class User(AbstractUser):
     class Role(models.TextChoices):
@@ -17,18 +20,14 @@ class User(AbstractUser):
 
     email = models.EmailField(_("Email manzili"), unique=True)
     role = models.CharField(
-        max_length=10,
-        choices=Role.choices,
-        default=Role.BUYER,
-        verbose_name=_("Rol")
+        max_length=10, choices=Role.choices, default=Role.BUYER, verbose_name=_("Rol")
     )
     balance = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=0.00,
-        verbose_name=_("Balans (so'm)")
+        max_digits=12, decimal_places=2, default=0.00, verbose_name=_("Balans (so'm)")
     )
-    avatar = models.URLField(max_length=500, blank=True, null=True, verbose_name=_("Avatar havolasi"))
+    avatar = models.URLField(
+        max_length=500, blank=True, null=True, verbose_name=_("Avatar havolasi")
+    )
 
     # Google hisobining doimiy identifikatori (OpenID `sub`). Faqat email
     # bo'yicha bog'lash yetarli emas: foydalanuvchi Google'dagi emailini
@@ -41,13 +40,13 @@ class User(AbstractUser):
         db_index=True,
         verbose_name=_("Google ID"),
     )
-    
+
     # Referral system
     referral_code = models.CharField(
         max_length=32,
         unique=True,
         default=generate_referral_code,
-        verbose_name=_("Referal kodi")
+        verbose_name=_("Referal kodi"),
     )
     referred_by = models.ForeignKey(
         "self",
@@ -55,40 +54,49 @@ class User(AbstractUser):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="referrals",
-        verbose_name=_("Taklif qilgan foydalanuvchi")
+        verbose_name=_("Taklif qilgan foydalanuvchi"),
     )
     referral_bonus_paid = models.BooleanField(
-        default=False,
-        verbose_name=_("Referal bonusi to'landimi")
+        default=False, verbose_name=_("Referal bonusi to'landimi")
     )
 
     # ---- Sotuvchi profili ----
     # Sotuvchi bo'lish uchun to'ldiriladigan qo'shimcha ma'lumotlar.
     # `seller_since` to'lgan bo'lsa — foydalanuvchi onboarding'dan o'tgan.
     telegram_username = models.CharField(
-        max_length=100, blank=True, null=True,
+        max_length=100,
+        blank=True,
+        null=True,
         verbose_name=_("Telegram username"),
         help_text=_("Xaridorlar siz bilan shu orqali bog'lanadi"),
     )
     card_number = models.CharField(
-        max_length=30, blank=True, null=True,
+        max_length=30,
+        blank=True,
+        null=True,
         verbose_name=_("Karta raqami (Uzcard/Humo)"),
         help_text=_("Sotuvdan tushgan mablag' shu kartaga yechiladi"),
     )
     bio = models.TextField(
-        blank=True, null=True, max_length=500,
+        blank=True,
+        null=True,
+        max_length=500,
         verbose_name=_("O'zingiz haqingizda"),
     )
     website = models.URLField(
-        blank=True, null=True,
+        blank=True,
+        null=True,
         verbose_name=_("Shaxsiy sayt yoki portfolio"),
     )
     seller_since = models.DateTimeField(
-        blank=True, null=True,
+        blank=True,
+        null=True,
         verbose_name=_("Sotuvchi bo'lgan sana"),
     )
 
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Ro'yxatdan o'tgan"))
+    created_at = models.DateTimeField(
+        auto_now_add=True, verbose_name=_("Ro'yxatdan o'tgan")
+    )
     updated_at = models.DateTimeField(auto_now=True, verbose_name=_("Yangilangan"))
 
     class Meta:
@@ -101,7 +109,12 @@ class User(AbstractUser):
 
     @property
     def display_name(self):
-        return self.get_full_name() or self.first_name or self.username or self.email.split("@")[0]
+        return (
+            self.get_full_name()
+            or self.first_name
+            or self.username
+            or self.email.split("@")[0]
+        )
 
     @property
     def initials(self):
@@ -131,8 +144,12 @@ class User(AbstractUser):
 class ErrorLog(models.Model):
     message = models.TextField(verbose_name=_("Xabar"))
     stack = models.TextField(blank=True, null=True, verbose_name=_("Xatolik steki"))
-    context = models.CharField(max_length=255, blank=True, null=True, verbose_name=_("Kontekst/URL"))
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Yuz bergan vaqti"))
+    context = models.CharField(
+        max_length=255, blank=True, null=True, verbose_name=_("Kontekst/URL")
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True, verbose_name=_("Yuz bergan vaqti")
+    )
 
     class Meta:
         verbose_name = _("Tizim xatoligi")
@@ -175,8 +192,12 @@ class ApiToken(models.Model):
     token_prefix = models.CharField(max_length=16, verbose_name=_("Ko'rinishi"))
 
     created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Yaratilgan"))
-    last_used_at = models.DateTimeField(blank=True, null=True, verbose_name=_("Oxirgi ishlatilgan"))
-    revoked_at = models.DateTimeField(blank=True, null=True, verbose_name=_("Bekor qilingan"))
+    last_used_at = models.DateTimeField(
+        blank=True, null=True, verbose_name=_("Oxirgi ishlatilgan")
+    )
+    revoked_at = models.DateTimeField(
+        blank=True, null=True, verbose_name=_("Bekor qilingan")
+    )
 
     class Meta:
         verbose_name = _("API kalit")
@@ -226,5 +247,6 @@ class ApiToken(models.Model):
     def touch(self):
         """Oxirgi ishlatilgan vaqtni yangilaydi (har so'rovda chaqiriladi)."""
         from django.utils import timezone
+
         self.last_used_at = timezone.now()
         self.save(update_fields=["last_used_at"])

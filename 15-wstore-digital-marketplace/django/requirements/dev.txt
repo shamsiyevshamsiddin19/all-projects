@@ -1,0 +1,10 @@
+-r ../requirements.txt
+
+# Local va CI sifat darvozalari. Versiyalar qayta ishlab chiqariladigan
+# tekshiruvlar uchun chegaralangan; production dependencies alohida qoladi.
+ruff>=0.12,<0.15
+pytest>=8.3,<9.0
+pytest-django>=4.9,<5.0
+coverage>=7.6,<8.0
+django-stubs>=5.1,<6.0
+requests-mock>=1.12,<2.0

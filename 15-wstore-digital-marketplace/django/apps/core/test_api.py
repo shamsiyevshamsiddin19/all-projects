@@ -349,20 +349,20 @@ class SellerApiTests(TestCase):
             self.write("patch", self.detail, {"status": "DRAFT"}).status_code, 400
         )
 
-    def test_paid_order_blocks_deletion_even_with_zero_sales_counter(self):
+    def test_paid_order_is_preserved_when_product_is_archived(self):
         order = Order.objects.create(
             buyer=self.buyer, product=self.product, amount=100, status="PAID"
         )
         self.assertEqual(self.product.sales_count, 0)
-        self.assertEqual(self.client.delete(self.detail).status_code, 409)
+        self.assertEqual(self.client.delete(self.detail).status_code, 200)
         self.product.refresh_from_db()
         order.refresh_from_db()
-        self.assertFalse(self.product.is_deleted)
+        self.assertTrue(self.product.is_deleted)
         self.assertEqual(order.product_id, self.product.pk)
 
-    def test_sales_counter_also_blocks_deletion(self):
+    def test_sales_counter_does_not_prevent_safe_archiving(self):
         Product.objects.filter(pk=self.product.pk).update(sales_count=1)
-        self.assertEqual(self.client.delete(self.detail).status_code, 409)
+        self.assertEqual(self.client.delete(self.detail).status_code, 200)
 
     def test_delete_archives_and_cannot_resurface(self):
         order = Order.objects.create(buyer=self.buyer, product=self.product, amount=100)

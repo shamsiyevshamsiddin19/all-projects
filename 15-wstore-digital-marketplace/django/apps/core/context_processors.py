@@ -22,7 +22,9 @@ def global_settings(request):
 
     return {
         "DEMO_MODE": getattr(settings, "DEMO_MODE", False),
-        "GOOGLE_AUTH_ENABLED": getattr(settings, "GOOGLE_AUTH_ENABLED", False) or settings.DEBUG or getattr(settings, "DEMO_MODE", False),
+        "GOOGLE_AUTH_ENABLED": getattr(settings, "GOOGLE_AUTH_ENABLED", False)
+        or settings.DEBUG
+        or getattr(settings, "DEMO_MODE", False),
         "GOOGLE_REAL_AUTH_ENABLED": getattr(settings, "GOOGLE_AUTH_ENABLED", False),
         "STATIC_VERSION": static_version,
         "UZS_RATE": getattr(settings, "PRODUCT_UZS_RATE", 12600),

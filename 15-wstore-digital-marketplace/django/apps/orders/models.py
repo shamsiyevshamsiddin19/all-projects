@@ -1,7 +1,9 @@
 import uuid
+
 from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+
 
 class Order(models.Model):
     class PayStatus(models.TextChoices):
@@ -15,7 +17,7 @@ class Order(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="orders",
-        verbose_name=_("Xaridor")
+        verbose_name=_("Xaridor"),
     )
     product = models.ForeignKey(
         "store.Product",
@@ -23,43 +25,42 @@ class Order(models.Model):
         null=True,
         blank=True,
         related_name="orders",
-        verbose_name=_("Mahsulot")
+        verbose_name=_("Mahsulot"),
     )
     product_title = models.CharField(
         max_length=255,
         blank=True,
         default="",
-        verbose_name=_("Mahsulot nomi (snapshot)")
+        verbose_name=_("Mahsulot nomi (snapshot)"),
     )
     amount = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        verbose_name=_("Summa (so'm)")
+        max_digits=12, decimal_places=2, verbose_name=_("Summa (so'm)")
     )
     status = models.CharField(
         max_length=20,
         choices=PayStatus.choices,
         default=PayStatus.PENDING,
-        verbose_name=_("Holati")
+        verbose_name=_("Holati"),
     )
     provider = models.CharField(
         max_length=50,
         blank=True,
         null=True,
-        verbose_name=_("To'lov usuli (click, payme, balance)")
+        verbose_name=_("To'lov usuli (click, payme, balance)"),
     )
     download_token = models.CharField(
         max_length=64,
         blank=True,
         null=True,
         unique=True,
-        verbose_name=_("Yuklab olish xavfsiz tokeni")
+        verbose_name=_("Yuklab olish xavfsiz tokeni"),
     )
     download_count = models.PositiveIntegerField(
-        default=0,
-        verbose_name=_("Yuklab olishlar soni")
+        default=0, verbose_name=_("Yuklab olishlar soni")
     )
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Yaratilgan vaqti"))
+    created_at = models.DateTimeField(
+        auto_now_add=True, verbose_name=_("Yaratilgan vaqti")
+    )
 
     class Meta:
         verbose_name = _("Buyurtma")
@@ -67,7 +68,9 @@ class Order(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        title = self.product.title if self.product else (self.product_title or "Mahsulot")
+        title = (
+            self.product.title if self.product else (self.product_title or "Mahsulot")
+        )
         return f"Order #{str(self.id)[:8]} — {title} ({self.get_status_display()})"
 
     def save(self, *args, **kwargs):
@@ -82,9 +85,7 @@ class ClickTransaction(models.Model):
         LISTING = "LISTING", _("E'lon to'lovi")
 
     kind = models.CharField(
-        max_length=20,
-        choices=ClickKind.choices,
-        verbose_name=_("Turi")
+        max_length=20, choices=ClickKind.choices, verbose_name=_("Turi")
     )
     order = models.ForeignKey(
         Order,
@@ -92,7 +93,7 @@ class ClickTransaction(models.Model):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="click_transactions",
-        verbose_name=_("Buyurtma")
+        verbose_name=_("Buyurtma"),
     )
     product = models.ForeignKey(
         "store.Product",
@@ -100,33 +101,32 @@ class ClickTransaction(models.Model):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="listing_payments",
-        verbose_name=_("Mahsulot (e'lon to'lovi uchun)")
+        verbose_name=_("Mahsulot (e'lon to'lovi uchun)"),
     )
     amount = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        verbose_name=_("Summa (so'm)")
+        max_digits=12, decimal_places=2, verbose_name=_("Summa (so'm)")
     )
     status = models.CharField(
         max_length=20,
         choices=Order.PayStatus.choices,
         default=Order.PayStatus.PENDING,
-        verbose_name=_("Holati")
+        verbose_name=_("Holati"),
     )
     click_trans_id = models.CharField(
-        max_length=100,
-        blank=True,
-        null=True,
-        verbose_name=_("Click Tranzaksiya ID")
+        max_length=100, blank=True, null=True, verbose_name=_("Click Tranzaksiya ID")
     )
     merchant_trans_id = models.CharField(
         max_length=100,
         blank=True,
         null=True,
-        verbose_name=_("Merchant Tranzaksiya Param (masalan WSTP123)")
+        verbose_name=_("Merchant Tranzaksiya Param (masalan WSTP123)"),
     )
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Yaratilgan vaqti"))
-    paid_at = models.DateTimeField(blank=True, null=True, verbose_name=_("To'langan vaqti"))
+    created_at = models.DateTimeField(
+        auto_now_add=True, verbose_name=_("Yaratilgan vaqti")
+    )
+    paid_at = models.DateTimeField(
+        blank=True, null=True, verbose_name=_("To'langan vaqti")
+    )
 
     class Meta:
         verbose_name = _("Click Tranzaksiyasi")
@@ -134,7 +134,10 @@ class ClickTransaction(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"Click #{self.id} — {self.merchant_trans_id or self.kind} ({self.amount} so'm)"
+        return (
+            f"Click #{self.id} — {self.merchant_trans_id or self.kind} "
+            f"({self.amount} so'm)"
+        )
 
 
 class Withdrawal(models.Model):
@@ -148,25 +151,24 @@ class Withdrawal(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="withdrawals",
-        verbose_name=_("Sotuvchi")
+        verbose_name=_("Sotuvchi"),
     )
     amount = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        verbose_name=_("Summa (so'm)")
+        max_digits=12, decimal_places=2, verbose_name=_("Summa (so'm)")
     )
     card_number = models.CharField(
-        max_length=30,
-        verbose_name=_("Karta raqami (Uzcard/Humo)")
+        max_length=30, verbose_name=_("Karta raqami (Uzcard/Humo)")
     )
     status = models.CharField(
         max_length=20,
         choices=WithdrawalStatus.choices,
         default=WithdrawalStatus.PENDING,
-        verbose_name=_("Holati")
+        verbose_name=_("Holati"),
     )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("So'rov vaqti"))
-    paid_at = models.DateTimeField(blank=True, null=True, verbose_name=_("To'langan vaqti"))
+    paid_at = models.DateTimeField(
+        blank=True, null=True, verbose_name=_("To'langan vaqti")
+    )
 
     class Meta:
         verbose_name = _("Pul yechish so'rovi")
@@ -174,7 +176,10 @@ class Withdrawal(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"Withdrawal #{str(self.id)[:8]} — {self.seller.display_name} ({self.amount} so'm)"
+        return (
+            f"Withdrawal #{str(self.id)[:8]} — {self.seller.display_name} "
+            f"({self.amount} so'm)"
+        )
 
     @property
     def masked_card(self):

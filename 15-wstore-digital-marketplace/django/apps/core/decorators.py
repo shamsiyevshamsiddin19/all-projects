@@ -1,4 +1,5 @@
 """Umumiy ruxsat dekoratorlari."""
+
 from functools import wraps
 
 from django.contrib import messages
@@ -21,7 +22,9 @@ def seller_required(view):
         if not request.user.is_authenticated:
             return redirect(f"/auth/login/?next={request.path}")
         if not request.user.seller_onboarded:
-            messages.info(request, _("Bu bo'lim sotuvchilar uchun — avval sotuvchi bo'ling."))
+            messages.info(
+                request, _("Bu bo'lim sotuvchilar uchun — avval sotuvchi bo'ling.")
+            )
             return redirect("core:seller_onboarding")
         return view(request, *args, **kwargs)
 

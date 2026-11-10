@@ -10,7 +10,6 @@ from django.core.validators import URLValidator
 from django.db import transaction
 from django.utils.text import slugify
 
-from orders.models import Order
 from store.models import Category, Product
 
 from ..models import User
@@ -54,6 +53,10 @@ class ProductPayloadValidator:
         "status": "status",
     }
     _LIST_FIELDS = ("tech_stack", "features")
+    # Eski mijozlar yuborishi mumkin bo'lgan, ammo faqat server boshqaradigan
+    # maydonlar. Ularni sukutda chetlab o'tamiz; boshqa noma'lum maydon esa
+    # shartnoma xatosi sifatida qaytariladi.
+    _SERVER_MANAGED_FIELDS = {"seller", "sales_count", "is_deleted", "slug"}
     _HTTP_URL_VALIDATOR = URLValidator(schemes=["http", "https"])
 
     def validate(
@@ -63,6 +66,17 @@ class ProductPayloadValidator:
         creating: bool = False,
     ) -> dict[str, Any]:
         """Payloadni tozalaydi; noma'lum maydonlarni yozishga ruxsat bermaydi."""
+        allowed_fields = (
+            set(self._TEXT_FIELDS)
+            | set(self._LIST_FIELDS)
+            | {"price"}
+            | self._SERVER_MANAGED_FIELDS
+        )
+        unknown_fields = set(data) - allowed_fields
+        if unknown_fields:
+            names = ", ".join(sorted(unknown_fields))
+            raise ValidationError(f"Ruxsat berilmagan maydonlar: {names}")
+
         cleaned: dict[str, Any] = {}
         self._clean_text_fields(data, cleaned)
         self._clean_price(data, cleaned)
@@ -232,12 +246,9 @@ class ProductApplicationService:
     @transaction.atomic
     def archive_product(self, *, seller: User, product_id: UUID) -> None:
         product = self._locked_owned_product(seller=seller, product_id=product_id)
-        has_paid_order = product.orders.filter(status=Order.PayStatus.PAID).exists()
-        if product.sales_count or has_paid_order:
-            raise ProductApplicationError(
-                "Sotilgan mahsulotni o'chirib bo'lmaydi — uni to'xtatib qo'ying",
-                409,
-            )
+        # Arxivlash hech qachon tarixiy buyurtma yoki kechikib keladigan
+        # to'lov callbackini yetim qoldirmaydi. Mahsulot faqat vitrinadan
+        # olinadi; uning qatori va xaridor huquqlari saqlanadi.
         product.is_deleted = True
         product.status = Product.Status.PAUSED
         product.save(update_fields=["is_deleted", "status", "updated_at"])

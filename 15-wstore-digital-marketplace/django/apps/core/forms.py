@@ -11,70 +11,88 @@ User = get_user_model()
 # qilingan) xabarimizga almashtiramiz.
 PASSWORD_ERROR_MESSAGES = {
     "password_too_short": _("Parol kamida 8 ta belgidan iborat bo'lishi kerak."),
-    "password_too_common": _("Bu parol juda ko'p ishlatiladi — kamroq tarqalgan parol tanlang."),
+    "password_too_common": _(
+        "Bu parol juda ko'p ishlatiladi — kamroq tarqalgan parol tanlang."
+    ),
     "password_entirely_numeric": _("Parol faqat raqamlardan iborat bo'lmasligi kerak."),
-    "password_too_similar": _("Parol foydalanuvchi nomi yoki emailga juda o'xshab ketyapti."),
+    "password_too_similar": _(
+        "Parol foydalanuvchi nomi yoki emailga juda o'xshab ketyapti."
+    ),
 }
 
 
 class LoginForm(forms.Form):
     login = forms.CharField(
         label=_("Login yoki Email"),
-        widget=forms.TextInput(attrs={
-            "class": "form-control",
-            "placeholder": _("Username yoki emailingiz"),
-            "autocomplete": "username",
-            "required": True,
-        })
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": _("Username yoki emailingiz"),
+                "autocomplete": "username",
+                "required": True,
+            }
+        ),
     )
     password = forms.CharField(
         label=_("Parol"),
-        widget=forms.PasswordInput(attrs={
-            "class": "form-control",
-            "placeholder": "••••••••",
-            "autocomplete": "current-password",
-            "required": True,
-        })
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "••••••••",
+                "autocomplete": "current-password",
+                "required": True,
+            }
+        ),
     )
 
 
 class RegisterForm(forms.ModelForm):
     password = forms.CharField(
         label=_("Parol"),
-        widget=forms.PasswordInput(attrs={
-            "class": "form-control",
-            "placeholder": _("Kamida 8 ta belgi"),
-            "autocomplete": "new-password",
-            "required": True,
-        })
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": _("Kamida 8 ta belgi"),
+                "autocomplete": "new-password",
+                "required": True,
+            }
+        ),
     )
     password_confirm = forms.CharField(
         label=_("Parolni tasdiqlang"),
-        widget=forms.PasswordInput(attrs={
-            "class": "form-control",
-            "placeholder": "••••••••",
-            "autocomplete": "new-password",
-            "required": True,
-        })
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "••••••••",
+                "autocomplete": "new-password",
+                "required": True,
+            }
+        ),
     )
 
     class Meta:
         model = User
         fields = ["username", "email", "role"]
         widgets = {
-            "username": forms.TextInput(attrs={
-                "class": "form-control",
-                "placeholder": "devbek",
-                "required": True,
-            }),
-            "email": forms.EmailInput(attrs={
-                "class": "form-control",
-                "placeholder": "misol@gmail.com",
-                "required": True,
-            }),
-            "role": forms.Select(attrs={
-                "class": "form-control",
-            }),
+            "username": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "devbek",
+                    "required": True,
+                }
+            ),
+            "email": forms.EmailInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "misol@gmail.com",
+                    "required": True,
+                }
+            ),
+            "role": forms.Select(
+                attrs={
+                    "class": "form-control",
+                }
+            ),
         }
 
     def __init__(self, *args, **kwargs):
@@ -96,7 +114,9 @@ class RegisterForm(forms.ModelForm):
     def clean_email(self):
         email = self.cleaned_data.get("email", "").strip().lower()
         if User.objects.filter(email__iexact=email).exists():
-            raise forms.ValidationError(_("Bu email manzil bilan allaqachon ro'yxatdan o'tilgan."))
+            raise forms.ValidationError(
+                _("Bu email manzil bilan allaqachon ro'yxatdan o'tilgan.")
+            )
         return email
 
     def clean(self):
@@ -127,9 +147,10 @@ class RegisterForm(forms.ModelForm):
                 # o'zimizning (uch tilga tarjima qilingan) xabarimizni
                 # ko'rsatamiz.
                 for err in getattr(exc, "error_list", [exc]):
-                    self.add_error("password", PASSWORD_ERROR_MESSAGES.get(
-                        getattr(err, "code", None), err
-                    ))
+                    self.add_error(
+                        "password",
+                        PASSWORD_ERROR_MESSAGES.get(getattr(err, "code", None), err),
+                    )
 
         return cleaned_data
 
@@ -141,12 +162,25 @@ class ProfileForm(forms.ModelForm):
         model = User
         fields = ["first_name", "last_name", "telegram_username", "bio", "website"]
         widgets = {
-            "first_name": forms.TextInput(attrs={"class": "form-control", "placeholder": _("Ismingiz")}),
-            "last_name": forms.TextInput(attrs={"class": "form-control", "placeholder": _("Familiyangiz")}),
-            "telegram_username": forms.TextInput(attrs={"class": "form-control", "placeholder": "username"}),
-            "bio": forms.Textarea(attrs={"class": "form-control", "rows": 3,
-                                         "placeholder": _("O'zingiz va ishlaringiz haqida qisqacha")}),
-            "website": forms.URLInput(attrs={"class": "form-control", "placeholder": "https://..."}),
+            "first_name": forms.TextInput(
+                attrs={"class": "form-control", "placeholder": _("Ismingiz")}
+            ),
+            "last_name": forms.TextInput(
+                attrs={"class": "form-control", "placeholder": _("Familiyangiz")}
+            ),
+            "telegram_username": forms.TextInput(
+                attrs={"class": "form-control", "placeholder": "username"}
+            ),
+            "bio": forms.Textarea(
+                attrs={
+                    "class": "form-control",
+                    "rows": 3,
+                    "placeholder": _("O'zingiz va ishlaringiz haqida qisqacha"),
+                }
+            ),
+            "website": forms.URLInput(
+                attrs={"class": "form-control", "placeholder": "https://..."}
+            ),
         }
 
     def clean_telegram_username(self):
@@ -167,32 +201,55 @@ class SellerOnboardingForm(forms.ModelForm):
     agree = forms.BooleanField(
         required=True,
         label=_("Sotuvchi shartlariga roziman"),
-        error_messages={"required": _("Davom etish uchun shartlarga rozilik bildiring.")},
+        error_messages={
+            "required": _("Davom etish uchun shartlarga rozilik bildiring.")
+        },
     )
 
     class Meta:
         model = User
         fields = ["telegram_username", "card_number", "bio", "website"]
         widgets = {
-            "telegram_username": forms.TextInput(attrs={"class": "form-control", "placeholder": "username"}),
-            "card_number": forms.TextInput(attrs={"class": "form-control", "placeholder": "8600 0000 0000 0000",
-                                                  "maxlength": "25"}),
-            "bio": forms.Textarea(attrs={"class": "form-control", "rows": 3,
-                                         "placeholder": _("Qanday loyihalar yaratasiz?")}),
-            "website": forms.URLInput(attrs={"class": "form-control", "placeholder": "https://github.com/..."}),
+            "telegram_username": forms.TextInput(
+                attrs={"class": "form-control", "placeholder": "username"}
+            ),
+            "card_number": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "8600 0000 0000 0000",
+                    "maxlength": "25",
+                }
+            ),
+            "bio": forms.Textarea(
+                attrs={
+                    "class": "form-control",
+                    "rows": 3,
+                    "placeholder": _("Qanday loyihalar yaratasiz?"),
+                }
+            ),
+            "website": forms.URLInput(
+                attrs={"class": "form-control", "placeholder": "https://github.com/..."}
+            ),
         }
 
     def clean_telegram_username(self):
         v = (self.cleaned_data.get("telegram_username") or "").strip().lstrip("@")
         if not v:
-            raise forms.ValidationError(_("Telegram username majburiy — xaridorlar siz bilan shu orqali bog'lanadi."))
+            raise forms.ValidationError(
+                _(
+                    "Telegram username majburiy — xaridorlar siz bilan shu orqali "
+                    "bog'lanadi."
+                )
+            )
         return v
 
     def clean_card_number(self):
-        raw = (self.cleaned_data.get("card_number") or "")
+        raw = self.cleaned_data.get("card_number") or ""
         digits = "".join(ch for ch in raw if ch.isdigit())
         if len(digits) != 16:
-            raise forms.ValidationError(_("Karta raqami 16 ta raqamdan iborat bo'lishi kerak (Uzcard / Humo)."))
+            raise forms.ValidationError(
+                _("Karta raqami 16 ta raqamdan iborat bo'lishi kerak (Uzcard / Humo).")
+            )
         return digits
 
 
@@ -202,8 +259,10 @@ class ApiTokenForm(forms.Form):
     name = forms.CharField(
         max_length=80,
         label=_("Kalit nomi"),
-        widget=forms.TextInput(attrs={
-            "class": "form-control",
-            "placeholder": _("Masalan: AI yuklovchi"),
-        }),
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": _("Masalan: AI yuklovchi"),
+            }
+        ),
     )

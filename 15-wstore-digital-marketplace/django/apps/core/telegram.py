@@ -1,8 +1,10 @@
 import logging
+
 import requests
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
+
 
 def send_telegram_notification(text: str) -> bool:
     """
@@ -26,7 +28,9 @@ def send_telegram_notification(text: str) -> bool:
     try:
         resp = requests.post(url, json=payload, timeout=5)
         if resp.status_code != 200:
-            logger.warning(f"Telegram notification failed ({resp.status_code}): {resp.text}")
+            logger.warning(
+                f"Telegram notification failed ({resp.status_code}): {resp.text}"
+            )
             return False
         return True
     except Exception as exc:

@@ -6,6 +6,7 @@ profil orqali anketa to'ldiriladi (`seller_onboarding_view`), shundan keyingina
 panel va API kalitlari ochiladi. Shu sabab bu yerdagi view'lar `is_seller`
 emas, `seller_onboarded` ni tekshiradi.
 """
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Sum
@@ -53,11 +54,15 @@ def profile_view(request):
             "active_tokens": user.api_tokens.filter(revoked_at__isnull=True).count(),
         }
 
-    return render(request, "core/profile.html", {
-        "form": form,
-        "stats": stats,
-        "seller_stats": seller_stats,
-    })
+    return render(
+        request,
+        "core/profile.html",
+        {
+            "form": form,
+            "stats": stats,
+            "seller_stats": seller_stats,
+        },
+    )
 
 
 @login_required
@@ -77,7 +82,13 @@ def seller_onboarding_view(request):
             if seller.role == user.Role.BUYER:
                 seller.role = user.Role.SELLER
             seller.save()
-            messages.success(request, _("Tabriklaymiz! Endi siz sotuvchisiz — birinchi loyihangizni qo'shing."))
+            messages.success(
+                request,
+                _(
+                    "Tabriklaymiz! Endi siz sotuvchisiz — birinchi loyihangizni "
+                    "qo'shing."
+                ),
+            )
             return redirect("orders:seller_dashboard")
     else:
         form = SellerOnboardingForm(instance=user)
@@ -98,29 +109,43 @@ def api_tokens_view(request):
     user = request.user
 
     if not user.seller_onboarded:
-        messages.info(request, _("API kalitlari sotuvchilar uchun — avval sotuvchi bo'ling."))
+        messages.info(
+            request, _("API kalitlari sotuvchilar uchun — avval sotuvchi bo'ling.")
+        )
         return redirect("core:seller_onboarding")
 
     if request.method == "POST":
         form = ApiTokenForm(request.POST)
         if form.is_valid():
             if user.api_tokens.filter(revoked_at__isnull=True).count() >= 10:
-                messages.error(request, _("Faol kalitlar soni 10 tadan oshmasligi kerak."))
+                messages.error(
+                    request, _("Faol kalitlar soni 10 tadan oshmasligi kerak.")
+                )
             else:
                 _token, raw = ApiToken.generate(user, form.cleaned_data["name"])
                 request.session["new_api_token"] = raw
-                messages.success(request, _("Kalit yaratildi. Uni hozir nusxalab oling — boshqa ko'rsatilmaydi."))
+                messages.success(
+                    request,
+                    _(
+                        "Kalit yaratildi. Uni hozir nusxalab oling — boshqa "
+                        "ko'rsatilmaydi."
+                    ),
+                )
             return redirect("core:api_tokens")
     else:
         form = ApiTokenForm()
 
-    return render(request, "core/api_tokens.html", {
-        "form": form,
-        "tokens": user.api_tokens.all(),
-        # pop — bir marta ko'rsatiladi, keyin sessiyadan o'chadi
-        "new_token": request.session.pop("new_api_token", None),
-        "api_base": request.build_absolute_uri("/api/v1/").rstrip("/"),
-    })
+    return render(
+        request,
+        "core/api_tokens.html",
+        {
+            "form": form,
+            "tokens": user.api_tokens.all(),
+            # pop — bir marta ko'rsatiladi, keyin sessiyadan o'chadi
+            "new_token": request.session.pop("new_api_token", None),
+            "api_base": request.build_absolute_uri("/api/v1/").rstrip("/"),
+        },
+    )
 
 
 @login_required
@@ -131,5 +156,7 @@ def api_token_revoke_view(request, token_id):
     if token:
         token.revoked_at = timezone.now()
         token.save(update_fields=["revoked_at"])
-        messages.info(request, _("«%(name)s» kaliti bekor qilindi.") % {"name": token.name})
+        messages.info(
+            request, _("«%(name)s» kaliti bekor qilindi.") % {"name": token.name}
+        )
     return redirect("core:api_tokens")

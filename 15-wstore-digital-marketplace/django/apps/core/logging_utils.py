@@ -1,4 +1,5 @@
 """ErrorLog modeliga yozish uchun yordamchi."""
+
 import logging
 import traceback
 
