@@ -28,5 +28,6 @@ jobs:
       - run: ruff format --check .
       - run: ruff check .
       - run: python manage.py check
+      - run: DEBUG=False python manage.py check --deploy
       - run: python manage.py makemigrations --check --dry-run
       - run: python manage.py test
