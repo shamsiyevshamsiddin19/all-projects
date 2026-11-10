@@ -5,10 +5,12 @@ from django.urls import include, path
 
 from core import oauth as core_oauth
 from core import views as core_views
+from core.health import healthcheck_view
 from orders import views as orders_views
 from store import views as store_views
 
 urlpatterns = [
+    path("healthz/", healthcheck_view, name="healthcheck"),
     path("admin/", admin.site.urls),
     # Django'ning set_language view'i — navbar'dagi til almashtirgich
     # shu manzilga POST yuboradi va tilni cookie'ga yozadi.
