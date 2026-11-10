@@ -4,7 +4,7 @@ import json
 import re
 import secrets
 import urllib.parse
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 from django.conf import settings
 
@@ -17,8 +17,19 @@ def generate_secure_download_token():
 
 
 def amount_after_commission(amount_som):
-    pct = getattr(settings, "PLATFORM_COMMISSION_PERCENT", 0)
-    return round(float(amount_som) * (1 - pct / 100))
+    """Komissiyadan keyingi summani float xatolarisiz qaytaradi."""
+    try:
+        percentage = Decimal(str(getattr(settings, "PLATFORM_COMMISSION_PERCENT", 0)))
+    except InvalidOperation as exc:
+        raise ValueError("PLATFORM_COMMISSION_PERCENT son bo'lishi kerak") from exc
+    if not Decimal("0") <= percentage <= Decimal("100"):
+        raise ValueError("PLATFORM_COMMISSION_PERCENT 0 dan 100 gacha bo'lishi kerak")
+
+    amount = Decimal(str(amount_som))
+    return (amount * (Decimal("100") - percentage) / Decimal("100")).quantize(
+        Decimal("0.01"),
+        rounding=ROUND_HALF_UP,
+    )
 
 
 def parse_click_transaction_id(merchant_trans_id):

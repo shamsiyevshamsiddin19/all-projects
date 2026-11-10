@@ -13,7 +13,7 @@ from django.utils import timezone
 from store.models import Category, Product, Review
 
 from .models import ClickTransaction, Order, Withdrawal
-from .utils import amounts_match, check_click_auth
+from .utils import amount_after_commission, amounts_match, check_click_auth
 
 User = get_user_model()
 
@@ -132,6 +132,15 @@ class PaymentRegressionTests(TestCase):
         self.assertTrue(amounts_match("126000.00", Decimal("126000")))
         for value in ("NaN", "Infinity", "126000.001", None, {}):
             self.assertFalse(amounts_match(value, 126000))
+
+    @override_settings(PLATFORM_COMMISSION_PERCENT=Decimal("12.5"))
+    def test_commission_calculation_keeps_decimal_precision(self):
+        self.assertEqual(amount_after_commission(Decimal("100.01")), Decimal("87.51"))
+
+    @override_settings(PLATFORM_COMMISSION_PERCENT=101)
+    def test_invalid_commission_percentage_is_rejected(self):
+        with self.assertRaises(ValueError):
+            amount_after_commission(Decimal("100"))
 
     def test_missing_archive_does_not_create_checkout_or_fake_download(self):
         self.client.force_login(self.buyer)
