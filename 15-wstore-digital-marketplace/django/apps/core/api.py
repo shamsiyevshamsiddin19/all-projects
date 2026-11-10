@@ -12,24 +12,25 @@ Hech bir endpoint boshqa sotuvchining ma'lumotini qaytarmasligi yoki
 o'zgartirmasligi kerak — shuning uchun hamma joyda `seller=request.api_user`
 sharti bor va u hech qachon so'rov parametridan olinmaydi.
 """
+
 import json
 from decimal import Decimal, InvalidOperation
 from functools import wraps
 
-from django.core.exceptions import RequestDataTooBig, ValidationError
-from django.core.validators import URLValidator
-from django.db import transaction
+from django.core.exceptions import RequestDataTooBig
 from django.db.models import Count, Sum
 from django.http import JsonResponse
-from django.utils.text import slugify
 from django.views.decorators.csrf import csrf_exempt
 
 from orders.models import Order
 from store.models import Category, Product
 
+from .application import ProductApplicationError, ProductApplicationService
 from .models import ApiToken
+from .presentation import product_to_dict
 
 MAX_BODY = 256 * 1024  # 256 KB — JSON tanasi uchun yetarli
+product_service = ProductApplicationService()
 
 
 def _err(message, status=400, **extra):
@@ -74,8 +75,9 @@ def _json_body(request):
         body = request.body
         if len(body) > MAX_BODY:
             return None, _err("So'rov tanasi juda katta", 413)
-        data = json.loads(body or b"{}", parse_float=Decimal,
-                          parse_constant=_reject_json_constant)
+        data = json.loads(
+            body or b"{}", parse_float=Decimal, parse_constant=_reject_json_constant
+        )
     except RequestDataTooBig:
         return None, _err("So'rov tanasi juda katta", 413)
     except (ValueError, RecursionError, InvalidOperation):
@@ -89,114 +91,32 @@ def _reject_json_constant(value):
     raise ValueError("JSON soni chekli bo'lishi kerak")
 
 
-def _product_data(data, *, creating=False):
-    """POST/PATCH uchun bir xil tur, uzunlik va qiymat chegaralari."""
-    cleaned = {}
-    text_fields = {
-        "title": "title", "description": "description",
-        "subcategory": "subcategory", "cover_url": "cover_image_url",
-        "demo_url": "demo_url", "category": "category", "status": "status",
-    }
-    for name, field_name in text_fields.items():
-        if name not in data:
-            continue
-        value = data[name]
-        field = Product._meta.get_field(field_name)
-        if value is None and field.null:
-            value = ""
-        if not isinstance(value, str):
-            raise ValidationError(f"«{name}» matn bo'lishi kerak")
-        value = value.strip()
-        max_length = (Category._meta.get_field("slug").max_length
-                      if name == "category" else field.max_length)
-        if max_length and len(value) > max_length:
-            raise ValidationError(f"«{name}» ko'pi bilan {max_length} belgi bo'lishi kerak")
-        if name == "title" and not value:
-            raise ValidationError("«title» majburiy")
-        if name in ("cover_url", "demo_url") and value:
-            URLValidator(schemes=["http", "https"])(value)
-        if name == "category":
-            value = Category.objects.filter(slug=value).first()
-            if value is None:
-                raise ValidationError("«category» topilmadi")
-        elif name == "status":
-            value = value.upper()
-        elif not value and field.null:
-            value = None
-        cleaned[field_name] = value
-
-    if "price" in data:
-        value = data["price"]
-        if isinstance(value, bool) or not isinstance(value, (str, int, Decimal)):
-            raise ValidationError("«price» musbat son bo'lishi kerak")
-        try:
-            price = Decimal(value)
-        except (InvalidOperation, ValueError):
-            raise ValidationError("«price» musbat son bo'lishi kerak")
-        if not price.is_finite() or price <= 0:
-            raise ValidationError("«price» musbat va chekli son bo'lishi kerak")
-        # DecimalField bazaga sig'maydigan yoki ortiqcha kasrli narxni rad etadi.
-        cleaned["price"] = Product._meta.get_field("price").clean(price, None)
-
-    for name in ("tech_stack", "features"):
-        if name in data:
-            value = data[name]
-            if not isinstance(value, list) or any(
-                not isinstance(item, str) or not item.strip() for item in value
-            ):
-                raise ValidationError(f"«{name}» bo'sh bo'lmagan matnlar ro'yxati bo'lishi kerak")
-            cleaned[name] = [item.strip() for item in value]
-
-    if creating:
-        for name in ("title", "price", "category"):
-            if name not in cleaned:
-                raise ValidationError(f"«{name}» majburiy")
-    return cleaned
-
-
-def _product_json(p, request=None):
-    url = p.cover_url
-    if request and url.startswith("/"):
-        url = request.build_absolute_uri(url)
-    return {
-        "id": str(p.id),
-        "title": p.title,
-        "slug": p.slug,
-        "description": p.description,
-        "price": float(p.price),
-        "category": p.category.slug if p.category_id else None,
-        "subcategory": p.subcategory,
-        "tech_stack": p.tech_stack or [],
-        "features": p.features or [],
-        "cover_url": url,
-        "demo_url": p.demo_url,
-        "status": p.status,
-        "rating": p.rating,
-        "sales_count": p.sales_count,
-        "created_at": p.created_at.isoformat(),
-    }
-
-
 # --------------------------------------------------------------------------
 # Endpointlar
 # --------------------------------------------------------------------------
+
 
 @api_token_required
 def me_view(request):
     """GET /api/v1/me — kalit kimga tegishli."""
     u = request.api_user
-    return JsonResponse({
-        "ok": True,
-        "user": {
-            "username": u.username,
-            "email": u.email,
-            "display_name": u.display_name,
-            "role": u.role,
-            "balance": float(u.balance),
-            "seller_since": u.seller_since.isoformat() if u.seller_since else None,
-        },
-        "token": {"name": request.api_token.name, "prefix": request.api_token.token_prefix},
-    })
+    return JsonResponse(
+        {
+            "ok": True,
+            "user": {
+                "username": u.username,
+                "email": u.email,
+                "display_name": u.display_name,
+                "role": u.role,
+                "balance": float(u.balance),
+                "seller_since": u.seller_since.isoformat() if u.seller_since else None,
+            },
+            "token": {
+                "name": request.api_token.name,
+                "prefix": request.api_token.token_prefix,
+            },
+        }
+    )
 
 
 @api_token_required
@@ -208,15 +128,17 @@ def products_view(request):
     user = request.api_user
 
     if request.method == "GET":
-        qs = Product.objects.filter(seller=user, is_deleted=False).select_related("category").order_by("-created_at")
-        status = request.GET.get("status")
-        if status:
-            qs = qs.filter(status=status.upper())
-        return JsonResponse({
-            "ok": True,
-            "count": qs.count(),
-            "products": [_product_json(p, request) for p in qs[:200]],
-        })
+        result = product_service.list_products(
+            seller=user,
+            status=request.GET.get("status"),
+        )
+        return JsonResponse(
+            {
+                "ok": True,
+                "count": result.total,
+                "products": [product_to_dict(item, request) for item in result.items],
+            }
+        )
 
     if request.method != "POST":
         return _err("Faqat GET yoki POST", 405)
@@ -226,54 +148,41 @@ def products_view(request):
         return err
 
     try:
-        values = _product_data(data, creating=True)
-    except ValidationError as exc:
-        return _err("; ".join(exc.messages))
-    values.pop("status", None)
-
-    product = Product(
-        **values,
-        telegram_username=user.telegram_username,
-        seller=user,
-        # Yangi mahsulot har doim DRAFT: e'lon to'lovi va moderatsiya
-        # saytdagi oqim orqali o'tadi — API buni chetlab o'tolmaydi.
-        status=Product.Status.DRAFT,
+        product = product_service.create_product(seller=user, data=data)
+    except ProductApplicationError as exc:
+        return _err(exc.message, exc.status_code)
+    return JsonResponse(
+        {"ok": True, "product": product_to_dict(product, request)},
+        status=201,
     )
-    # Uzun sarlavhalar takrorlansa ham slug ustuni chegarasidan chiqmasin.
-    base_slug = slugify(product.title) or "product"
-    product.slug = base_slug
-    suffix = 1
-    while Product.objects.filter(slug=product.slug).exists():
-        tail = f"-{suffix}"
-        product.slug = base_slug[:255 - len(tail)] + tail
-        suffix += 1
-    product.save()
-    return JsonResponse({"ok": True, "product": _product_json(product, request)}, status=201)
 
 
 @api_token_required
-@transaction.atomic
 def product_detail_view(request, product_id):
     """
     GET    /api/v1/products/<id>
     PATCH  /api/v1/products/<id>
     DELETE /api/v1/products/<id>
     """
-    product = Product.objects.select_for_update().filter(
-        id=product_id, seller=request.api_user, is_deleted=False
-    ).first()
-    if not product:
-        return _err("Mahsulot topilmadi", 404)
+    try:
+        product = product_service.retrieve_product(
+            seller=request.api_user,
+            product_id=product_id,
+        )
+    except ProductApplicationError as exc:
+        return _err(exc.message, exc.status_code)
 
     if request.method == "GET":
-        return JsonResponse({"ok": True, "product": _product_json(product, request)})
+        return JsonResponse({"ok": True, "product": product_to_dict(product, request)})
 
     if request.method == "DELETE":
-        if product.sales_count or product.orders.filter(status=Order.PayStatus.PAID).exists():
-            return _err("Sotilgan mahsulotni o'chirib bo'lmaydi — uni to'xtatib qo'ying", 409)
-        product.is_deleted = True
-        product.status = Product.Status.PAUSED
-        product.save(update_fields=["is_deleted", "status", "updated_at"])
+        try:
+            product_service.archive_product(
+                seller=request.api_user,
+                product_id=product_id,
+            )
+        except ProductApplicationError as exc:
+            return _err(exc.message, exc.status_code)
         return JsonResponse({"ok": True, "deleted": True})
 
     if request.method != "PATCH":
@@ -284,29 +193,20 @@ def product_detail_view(request, product_id):
         return err
 
     try:
-        values = _product_data(data)
-    except ValidationError as exc:
-        return _err("; ".join(exc.messages))
-
-    # Holatni API orqali faqat ACTIVE <-> PAUSED oralig'ida o'zgartirish mumkin.
-    # DRAFT/PENDING/REJECTED — moderatsiya hal qiladigan holatlar, ularga
-    # sotuvchi o'zi o'tolmaydi (aks holda e'lon to'lovi chetlab o'tilardi).
-    if "status" in data:
-        wanted = values["status"]
-        allowed = {Product.Status.ACTIVE, Product.Status.PAUSED}
-        if wanted not in allowed:
-            return _err("«status» faqat ACTIVE yoki PAUSED bo'lishi mumkin")
-        if product.status not in allowed:
-            return _err("Bu mahsulot hali moderatsiyadan o'tmagan", 409)
-
-    if not values:
-        return _err("O'zgartirish uchun maydon berilmadi")
-
-    for field, value in values.items():
-        setattr(product, field, value)
-    changed = list(values)
-    product.save()
-    return JsonResponse({"ok": True, "updated": changed, "product": _product_json(product, request)})
+        result = product_service.update_product(
+            seller=request.api_user,
+            product_id=product_id,
+            data=data,
+        )
+    except ProductApplicationError as exc:
+        return _err(exc.message, exc.status_code)
+    return JsonResponse(
+        {
+            "ok": True,
+            "updated": list(result.changed_fields),
+            "product": product_to_dict(result.product, request),
+        }
+    )
 
 
 @api_token_required
@@ -324,32 +224,37 @@ def stats_view(request):
     revenue = paid.aggregate(total=Sum("amount"))["total"] or 0
 
     by_product = list(
-        products.values("id", "title", "slug", "status", "sales_count", "rating")
-        .order_by("-sales_count")[:50]
+        products.values(
+            "id", "title", "slug", "status", "sales_count", "rating"
+        ).order_by("-sales_count")[:50]
     )
     for row in by_product:
         row["id"] = str(row["id"])
 
-    return JsonResponse({
-        "ok": True,
-        "summary": {
-            "products": agg["total"] or 0,
-            "total_sales": agg["sales"] or 0,
-            "paid_orders": paid.count(),
-            "revenue_som": float(revenue),
-            "balance_som": float(user.balance),
-        },
-        "by_product": by_product,
-    })
+    return JsonResponse(
+        {
+            "ok": True,
+            "summary": {
+                "products": agg["total"] or 0,
+                "total_sales": agg["sales"] or 0,
+                "paid_orders": paid.count(),
+                "revenue_som": float(revenue),
+                "balance_som": float(user.balance),
+            },
+            "by_product": by_product,
+        }
+    )
 
 
 @api_token_required
 def categories_view(request):
     """GET /api/v1/categories — mahsulot yaratishda kerak bo'ladigan ro'yxat."""
-    return JsonResponse({
-        "ok": True,
-        "categories": [
-            {"slug": c.slug, "name": c.name}
-            for c in Category.objects.all().order_by("name")
-        ],
-    })
+    return JsonResponse(
+        {
+            "ok": True,
+            "categories": [
+                {"slug": c.slug, "name": c.name}
+                for c in Category.objects.all().order_by("name")
+            ],
+        }
+    )
