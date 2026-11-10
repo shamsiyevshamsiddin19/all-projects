@@ -290,6 +290,11 @@ class SellerApiTests(TestCase):
         for payload in ({}, {"seller": self.other.pk}, {"is_deleted": False}):
             self.assertEqual(self.write("patch", self.detail, payload).status_code, 400)
 
+    def test_unknown_mutation_field_is_rejected(self):
+        response = self.write("patch", self.detail, {"unexpected": "value"})
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Ruxsat berilmagan maydon", response.json()["error"])
+
     def test_price_bounds_and_numeric_json(self):
         for price in ("0.01", "9999999999.99", 12.34, 1):
             with self.subTest(price=price):
