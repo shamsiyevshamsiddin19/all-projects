@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import IntegrityError
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -216,6 +217,15 @@ class PaymentRegressionTests(TestCase):
         self.assertTrue(self.product.is_deleted)
         self.assertEqual(self.product.status, Product.Status.PAUSED)
         self.assertEqual(self.tx.product_id, self.product.pk)
+
+    def test_database_allows_only_one_pending_order_per_buyer_and_product(self):
+        with self.assertRaises(IntegrityError):
+            Order.objects.create(
+                buyer=self.buyer,
+                product=self.product,
+                amount=126000,
+                status=Order.PayStatus.PENDING,
+            )
 
     def test_only_verified_buyer_can_create_review(self):
         self.client.force_login(self.buyer)

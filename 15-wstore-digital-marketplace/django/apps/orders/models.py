@@ -2,6 +2,7 @@ import uuid
 
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
 
@@ -66,6 +67,13 @@ class Order(models.Model):
         verbose_name = _("Buyurtma")
         verbose_name_plural = _("Buyurtmalar")
         ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["buyer", "product"],
+                condition=Q(status="PENDING") & Q(product__isnull=False),
+                name="orders_one_pending_purchase_per_buyer_product",
+            )
+        ]
 
     def __str__(self):
         title = (
