@@ -151,6 +151,38 @@ class PaymentRegressionTests(TestCase):
         self.order.refresh_from_db()
         self.assertEqual(self.order.download_count, 0)
 
+    def test_checkout_reuses_pending_order_and_payment_attempt(self):
+        with (
+            tempfile.TemporaryDirectory() as media,
+            override_settings(MEDIA_ROOT=media),
+        ):
+            self.product.file_archive.save(
+                "project.zip", SimpleUploadedFile("project.zip", b"archive")
+            )
+            self.client.force_login(self.buyer)
+            checkout_url = reverse("orders:checkout", args=[self.product.pk])
+
+            first = self.client.post(checkout_url)
+            second = self.client.post(checkout_url)
+
+            self.assertEqual(first.status_code, 302)
+            self.assertEqual(second.status_code, 302)
+            self.assertEqual(Order.objects.filter(buyer=self.buyer).count(), 1)
+            self.assertEqual(
+                ClickTransaction.objects.filter(
+                    order__buyer=self.buyer,
+                    kind=ClickTransaction.ClickKind.PURCHASE,
+                ).count(),
+                1,
+            )
+
+    def test_order_status_get_does_not_create_payment_attempt(self):
+        self.client.force_login(self.buyer)
+        self.tx.delete()
+        response = self.client.get(reverse("orders:order_status", args=[self.order.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(ClickTransaction.objects.filter(order=self.order).exists())
+
     def test_download_requires_owner_and_preserves_real_archive(self):
         with (
             tempfile.TemporaryDirectory() as media,
