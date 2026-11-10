@@ -1,5 +1,7 @@
 from django.contrib import admin
-from .models import Category, Product, Review, Wishlist, Report
+
+from .models import Category, Product, Report, Review, Wishlist
+
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
@@ -9,25 +11,44 @@ class CategoryAdmin(admin.ModelAdmin):
 
     def products_count(self, obj):
         return obj.products.count()
+
     products_count.short_description = "Mahsulotlar soni"
 
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ("title", "category", "price_display", "status", "sales_count", "rating", "seller", "created_at")
+    list_display = (
+        "title",
+        "category",
+        "price_display",
+        "status",
+        "sales_count",
+        "rating",
+        "seller",
+        "created_at",
+    )
     list_filter = ("status", "category", "subcategory", "created_at")
-    search_fields = ("title", "description", "slug", "seller__username", "seller__email")
+    search_fields = (
+        "title",
+        "description",
+        "slug",
+        "seller__username",
+        "seller__email",
+    )
     prepopulated_fields = {"slug": ("title",)}
     actions = ["make_active", "make_rejected", "make_paused"]
 
     def price_display(self, obj):
         return f"{obj.price} USD ({obj.price_som:,} so'm)".replace(",", " ")
+
     price_display.short_description = "Narx"
 
     @admin.action(description="Tanlangan mahsulotlarni tasdiqlash (ACTIVE)")
     def make_active(self, request, queryset):
         count = queryset.update(status=Product.Status.ACTIVE)
-        self.message_user(request, f"{count} ta mahsulot muvaffaqiyatli faollashtirildi (ACTIVE).")
+        self.message_user(
+            request, f"{count} ta mahsulot muvaffaqiyatli faollashtirildi (ACTIVE)."
+        )
 
     @admin.action(description="Tanlangan mahsulotlarni rad etish (REJECTED)")
     def make_rejected(self, request, queryset):
@@ -48,6 +69,7 @@ class ReviewAdmin(admin.ModelAdmin):
 
     def comment_short(self, obj):
         return obj.comment[:60]
+
     comment_short.short_description = "Sharh"
 
 

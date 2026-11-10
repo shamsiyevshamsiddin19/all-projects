@@ -10,6 +10,7 @@ Ishlatish:
     python manage.py compilepo          # barcha tillar
     python manage.py compilepo --lang ru
 """
+
 from pathlib import Path
 
 from django.conf import settings
@@ -28,10 +29,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         try:
             import polib
-        except ImportError:
+        except ImportError as exc:
             raise CommandError(
                 "polib o'rnatilmagan. O'rnatish: pip install polib"
-            )
+            ) from exc
 
         locale_paths = [Path(p) for p in getattr(settings, "LOCALE_PATHS", [])]
         if not locale_paths:

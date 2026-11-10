@@ -1,9 +1,10 @@
 import os
 import sys
 from pathlib import Path
-from dotenv import load_dotenv
+
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
+from dotenv import load_dotenv
 
 # Load environment variables from .env
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -12,28 +13,44 @@ load_dotenv(BASE_DIR / ".env")
 # Ensure apps directory is in sys.path
 sys.path.insert(0, str(BASE_DIR / "apps"))
 
+
 def _env_flag(name, default):
     return os.getenv(name, default).strip().lower() in ("true", "1", "yes")
 
 
-SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-wstore-uz-super-secret-key-production-change-this")
-DEBUG = _env_flag("DEBUG", "True")
+TESTING = "test" in sys.argv or "pytest" in sys.modules
+DEBUG = _env_flag("DEBUG", "True" if TESTING else "False")
+SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
+
+if not SECRET_KEY:
+    if TESTING:
+        SECRET_KEY = "django-insecure-wstore-test-key-only"
+    else:
+        raise ImproperlyConfigured(
+            "SECRET_KEY majburiy. Production va lokal ishga tushirishdan oldin "
+            ".env ga kiriting."
+        )
 
 # "*" ni standart qiymatdan olib tashladik — u Host header'ni qalbakilashtirishga
 # yo'l ochadi. Prod'da domenlar .env dagi ALLOWED_HOSTS orqali beriladi.
-ALLOWED_HOSTS = [h.strip() for h in os.getenv(
-    "ALLOWED_HOSTS", "localhost,127.0.0.1,testserver,wstore.uz,www.wstore.uz"
-).split(",") if h.strip()]
+ALLOWED_HOSTS = [
+    h.strip()
+    for h in os.getenv(
+        "ALLOWED_HOSTS", "localhost,127.0.0.1,testserver,wstore.uz,www.wstore.uz"
+    ).split(",")
+    if h.strip()
+]
 
 # DEMO_MODE — tezkor kirish (demo-login) va "simulyatsiya qilingan to'lov"ni
 # yoqadi. Bular mahsulotni BEPUL berib yuboradi va admin hisobiga kirishga
-# ruxsat beradi, shuning uchun standart holatda faqat DEBUG'da yoniq.
-DEMO_MODE = _env_flag("DEMO_MODE", str(DEBUG))
+# ruxsat beradi. U hech qachon DEBUG bilan avtomatik yoqilmaydi: sinov yoki
+# lokal demo uchun .env ichida aniq DEMO_MODE=True yozilishi talab qilinadi.
+DEMO_MODE = _env_flag("DEMO_MODE", "False")
 
-if not DEBUG and SECRET_KEY.startswith("django-insecure-"):
+if not TESTING and SECRET_KEY.startswith("django-insecure-"):
     raise ImproperlyConfigured(
-        "Prod rejimida (DEBUG=False) standart SECRET_KEY bilan ishga tushirib bo'lmaydi. "
-        ".env faylida SECRET_KEY ni o'rnating."
+        "Standart django-insecure SECRET_KEY bilan ishga tushirib bo'lmaydi. "
+        ".env faylida tasodifiy SECRET_KEY ni o'rnating."
     )
 
 # Application definition
@@ -114,7 +131,11 @@ AUTH_USER_MODEL = "core.User"
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {
+        "NAME": (
+            "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+        )
+    },
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
@@ -149,6 +170,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # Media files (Product uploads, covers, archives)
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
 
 # Kesh-buster: wstore.css/wstore.js o'zgarganda havoladagi ?v= ham o'zgaradi.
 # Bunsiz brauzer (va nginx'dagi uzoq muddatli kesh) eski faylni ushlab qolardi —
@@ -234,9 +256,7 @@ GOOGLE_AUTH_ENABLED = bool(GOOGLE_OAUTH_CLIENT_ID)
 # admin huquqini berishning saytdan boshqa yo'li qolmasdi.
 # Faqat Google tomonidan TASDIQLANGAN email hisobga olinadi.
 ADMIN_EMAILS = [
-    e.strip().lower()
-    for e in os.getenv("ADMIN_EMAILS", "").split(",")
-    if e.strip()
+    e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()
 ]
 
 # Telegram Bot

@@ -1,21 +1,22 @@
 import urllib.parse
 from decimal import Decimal, InvalidOperation
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
+
 from django.contrib import messages
-from django.utils.translation import gettext as _
-from django.db.models import Q, Exists, OuterRef
-from django.http import JsonResponse, HttpResponseForbidden
-from django.utils.http import url_has_allowed_host_and_scheme
-from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db.models import Exists, OuterRef, Q
+from django.http import HttpResponseForbidden, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.translation import gettext as _
+from django.views.decorators.http import require_POST
 
 from core.decorators import seller_required
-
-from .models import Category, Product, Review, Wishlist, Report
-from .forms import ProductForm, ReviewForm, ReportForm, TECH_CHOICES, SUBCAT_CHOICES
 from core.telegram import send_telegram_notification
 from orders.utils import payments_configured
+
+from .forms import SUBCAT_CHOICES, TECH_CHOICES, ProductForm, ReportForm, ReviewForm
+from .models import Category, Product, Review, Wishlist
 
 PRICE_RANGES = [
     {"label": "0 – 10 USD", "min": 0, "max": 10},
@@ -25,6 +26,7 @@ PRICE_RANGES = [
     {"label": "200 + USD", "min": 200, "max": 999999},
 ]
 
+
 def catalog_view(request):
     # Capture referral if present in query params
     ref = request.GET.get("ref")
@@ -32,15 +34,17 @@ def catalog_view(request):
         request.session["referral_code"] = ref
 
     categories = Category.objects.all().order_by("name")
-    products = Product.objects.filter(status=Product.Status.ACTIVE, is_deleted=False).select_related("category", "seller")
+    products = Product.objects.filter(
+        status=Product.Status.ACTIVE, is_deleted=False
+    ).select_related("category", "seller")
 
     # Search query
     q = request.GET.get("q", "").strip()
     if q:
         products = products.filter(
-            Q(title__icontains=q) |
-            Q(description__icontains=q) |
-            Q(category__name__icontains=q)
+            Q(title__icontains=q)
+            | Q(description__icontains=q)
+            | Q(category__name__icontains=q)
         )
 
     # Category filter — support multiple selection
@@ -92,15 +96,29 @@ def catalog_view(request):
     else:  # newest
         products = products.order_by("-created_at")
 
-    has_filters = bool(q or selected_cats or subcat or selected_tech or price_min or price_max)
-    active_filters_count = len(selected_cats) + len(selected_tech) + (1 if price_min or price_max else 0)
+    has_filters = bool(
+        q or selected_cats or subcat or selected_tech or price_min or price_max
+    )
+    active_filters_count = (
+        len(selected_cats) + len(selected_tech) + (1 if price_min or price_max else 0)
+    )
 
     # Highlights (shown when no filter is active, identical to Next.js)
-    top_selling = Product.objects.filter(status=Product.Status.ACTIVE, is_deleted=False).select_related("category", "seller").order_by("-sales_count")[:10]
-    new_arrivals = Product.objects.filter(status=Product.Status.ACTIVE, is_deleted=False).select_related("category", "seller").order_by("-created_at")[:10]
+    top_selling = (
+        Product.objects.filter(status=Product.Status.ACTIVE, is_deleted=False)
+        .select_related("category", "seller")
+        .order_by("-sales_count")[:10]
+    )
+    new_arrivals = (
+        Product.objects.filter(status=Product.Status.ACTIVE, is_deleted=False)
+        .select_related("category", "seller")
+        .order_by("-created_at")[:10]
+    )
 
     # Minimal products list for real-time client-side search autocomplete
-    all_active = Product.objects.filter(status=Product.Status.ACTIVE, is_deleted=False).select_related("category", "seller")
+    all_active = Product.objects.filter(
+        status=Product.Status.ACTIVE, is_deleted=False
+    ).select_related("category", "seller")
     search_index = [
         {
             "id": str(p.id),
@@ -127,57 +145,80 @@ def catalog_view(request):
     # Wishlist IDs for authenticated user
     wishlist_ids = set()
     if request.user.is_authenticated:
-        wishlist_ids = {str(pid) for pid in Wishlist.objects.filter(user=request.user).values_list("product_id", flat=True)}
+        wishlist_ids = {
+            str(pid)
+            for pid in Wishlist.objects.filter(user=request.user).values_list(
+                "product_id", flat=True
+            )
+        }
 
-    return render(request, "store/catalog.html", {
-        "page_obj": page_obj,
-        "categories": categories,
-        "selected_cats": selected_cats,
-        "category_slug": selected_cats[0] if len(selected_cats) == 1 else "",
-        "subcat": subcat,
-        "selected_tech": selected_tech,
-        "tech_options": TECH_CHOICES,
-        "subcat_options": SUBCAT_CHOICES[1:],  # exclude empty
-        "price_ranges": PRICE_RANGES,
-        "price_min": price_min,
-        "price_max": price_max,
-        "sort": sort,
-        "q": q,
-        "has_filters": has_filters,
-        "active_filters_count": active_filters_count,
-        "top_selling": top_selling,
-        "new_arrivals": new_arrivals,
-        "search_index": search_index,
-        "total_count": paginator.count,
-        "pagination_qs": pagination_qs,
-        "wishlist_ids": wishlist_ids,
-    })
+    return render(
+        request,
+        "store/catalog.html",
+        {
+            "page_obj": page_obj,
+            "categories": categories,
+            "selected_cats": selected_cats,
+            "category_slug": selected_cats[0] if len(selected_cats) == 1 else "",
+            "subcat": subcat,
+            "selected_tech": selected_tech,
+            "tech_options": TECH_CHOICES,
+            "subcat_options": SUBCAT_CHOICES[1:],  # exclude empty
+            "price_ranges": PRICE_RANGES,
+            "price_min": price_min,
+            "price_max": price_max,
+            "sort": sort,
+            "q": q,
+            "has_filters": has_filters,
+            "active_filters_count": active_filters_count,
+            "top_selling": top_selling,
+            "new_arrivals": new_arrivals,
+            "search_index": search_index,
+            "total_count": paginator.count,
+            "pagination_qs": pagination_qs,
+            "wishlist_ids": wishlist_ids,
+        },
+    )
 
 
 def product_detail_view(request, slug):
     product = get_object_or_404(
         Product.objects.select_related("category", "seller"),
-        slug=slug, is_deleted=False
+        slug=slug,
+        is_deleted=False,
     )
 
     # Non-active products are only visible to the seller or staff
-    if product.status != Product.Status.ACTIVE:
-        if not request.user.is_authenticated or (request.user != product.seller and not request.user.is_staff):
-            return HttpResponseForbidden("Ushbu mahsulot hozircha faol emas.")
+    if product.status != Product.Status.ACTIVE and (
+        not request.user.is_authenticated
+        or (request.user != product.seller and not request.user.is_staff)
+    ):
+        return HttpResponseForbidden("Ushbu mahsulot hozircha faol emas.")
 
     from orders.models import Order
-    reviews = product.reviews.select_related("user").annotate(
-        verified_purchase=Exists(Order.objects.filter(
-            buyer_id=OuterRef("user_id"), product_id=product.pk, status=Order.PayStatus.PAID
-        ))
-    ).order_by("-created_at")
+
+    reviews = (
+        product.reviews.select_related("user")
+        .annotate(
+            verified_purchase=Exists(
+                Order.objects.filter(
+                    buyer_id=OuterRef("user_id"),
+                    product_id=product.pk,
+                    status=Order.PayStatus.PAID,
+                )
+            )
+        )
+        .order_by("-created_at")
+    )
     # select_related — kartochkalar seller/category ga murojaat qiladi,
     # bunsiz har bir tavsiya uchun qo'shimcha so'rov ketardi
-    recommended = Product.objects.filter(
-        status=Product.Status.ACTIVE,
-        is_deleted=False,
-        category=product.category
-    ).exclude(pk=product.pk).select_related("category", "seller")[:4]
+    recommended = (
+        Product.objects.filter(
+            status=Product.Status.ACTIVE, is_deleted=False, category=product.category
+        )
+        .exclude(pk=product.pk)
+        .select_related("category", "seller")[:4]
+    )
 
     # Wishlist status
     is_wishlisted = False
@@ -185,13 +226,18 @@ def product_detail_view(request, slug):
     user_review = None
     purchase_order = None
     if request.user.is_authenticated:
-        is_wishlisted = Wishlist.objects.filter(user=request.user, product=product).exists()
+        is_wishlisted = Wishlist.objects.filter(
+            user=request.user, product=product
+        ).exists()
         purchase_order = Order.objects.filter(
             buyer=request.user, product=product, status=Order.PayStatus.PAID
         ).first()
-        has_purchased = Order.objects.filter(
-            buyer=request.user, product=product, status=Order.PayStatus.PAID
-        ).exists() or request.user.is_staff
+        has_purchased = (
+            Order.objects.filter(
+                buyer=request.user, product=product, status=Order.PayStatus.PAID
+            ).exists()
+            or request.user.is_staff
+        )
         user_review = reviews.filter(user=request.user).first()
 
     review_form = ReviewForm(instance=user_review)
@@ -201,28 +247,35 @@ def product_detail_view(request, slug):
     telegram_link = None
     if product.telegram_username:
         clean_user = product.telegram_username.lstrip("@").strip()
-        msg = f"Assalomu alaykum! wstore.uz dagi «{product.title}» loyihangiz bo'yicha yozmoqdaman."
+        msg = (
+            "Assalomu alaykum! wstore.uz dagi "
+            f"«{product.title}» loyihangiz bo'yicha yozmoqdaman."
+        )
         encoded = urllib.parse.quote(msg)
         telegram_link = f"https://t.me/{clean_user}?text={encoded}"
 
-    return render(request, "store/product_detail.html", {
-        "product": product,
-        "reviews": reviews,
-        "recommended": recommended,
-        "is_wishlisted": is_wishlisted,
-        "has_purchased": has_purchased,
-        "review_form": review_form,
-        "user_review": user_review,
-        "report_form": report_form,
-        "telegram_link": telegram_link,
-        "purchase_order": purchase_order,
-        "can_checkout": (
-            product.status == Product.Status.ACTIVE
-            and product.seller_id != request.user.pk
-            and product.archive_available
-            and payments_configured()
-        ),
-    })
+    return render(
+        request,
+        "store/product_detail.html",
+        {
+            "product": product,
+            "reviews": reviews,
+            "recommended": recommended,
+            "is_wishlisted": is_wishlisted,
+            "has_purchased": has_purchased,
+            "review_form": review_form,
+            "user_review": user_review,
+            "report_form": report_form,
+            "telegram_link": telegram_link,
+            "purchase_order": purchase_order,
+            "can_checkout": (
+                product.status == Product.Status.ACTIVE
+                and product.seller_id != request.user.pk
+                and product.archive_available
+                and payments_configured()
+            ),
+        },
+    )
 
 
 @seller_required
@@ -248,14 +301,25 @@ def product_create_view(request):
                 f"👤 Sotuvchi: {request.user.username} ({request.user.email})"
             )
 
-            messages.success(request, _("«%(title)s» muvaffaqiyatli yaratildi! E'lon to'lovini amalga oshiring.") % {"title": product.title})
+            messages.success(
+                request,
+                _(
+                    "«%(title)s» muvaffaqiyatli yaratildi! E'lon to'lovini "
+                    "amalga oshiring."
+                )
+                % {"title": product.title},
+            )
             return redirect("orders:seller_dashboard")
     else:
         form = ProductForm()
 
-    return render(request, "store/product_create.html", {
-        "form": form,
-    })
+    return render(
+        request,
+        "store/product_create.html",
+        {
+            "form": form,
+        },
+    )
 
 
 @seller_required
@@ -265,7 +329,9 @@ def product_edit_view(request, slug=None, product_id=None):
     else:
         product = get_object_or_404(Product, slug=slug)
     if product.seller != request.user and not request.user.is_staff:
-        return HttpResponseForbidden("Siz faqat o'z mahsulotingizni tahrirlashingiz mumkin.")
+        return HttpResponseForbidden(
+            "Siz faqat o'z mahsulotingizni tahrirlashingiz mumkin."
+        )
 
     if request.method == "POST":
         form = ProductForm(request.POST, request.FILES, instance=product)
@@ -276,10 +342,14 @@ def product_edit_view(request, slug=None, product_id=None):
     else:
         form = ProductForm(instance=product)
 
-    return render(request, "store/product_edit.html", {
-        "form": form,
-        "product": product,
-    })
+    return render(
+        request,
+        "store/product_edit.html",
+        {
+            "form": form,
+            "product": product,
+        },
+    )
 
 
 @seller_required
@@ -291,10 +361,14 @@ def product_toggle_pause_view(request, slug):
 
     if product.status == Product.Status.ACTIVE:
         product.status = Product.Status.PAUSED
-        messages.info(request, _("«%(title)s» vaqtincha to'xtatildi.") % {"title": product.title})
+        messages.info(
+            request, _("«%(title)s» vaqtincha to'xtatildi.") % {"title": product.title}
+        )
     elif product.status == Product.Status.PAUSED:
         product.status = Product.Status.ACTIVE
-        messages.success(request, _("«%(title)s» qayta faollashtirildi.") % {"title": product.title})
+        messages.success(
+            request, _("«%(title)s» qayta faollashtirildi.") % {"title": product.title}
+        )
     product.save(update_fields=["status"])
     return redirect("orders:seller_dashboard")
 
@@ -306,37 +380,54 @@ def product_delete_view(request, slug):
     if product.seller != request.user and not request.user.is_staff:
         return HttpResponseForbidden("Ruxsat berilmagan.")
 
-    title = product.title
-    has_paid_orders = product.orders.filter(status="PAID").exists()
-    if has_paid_orders:
-        product.is_deleted = True
-        product.status = Product.Status.PAUSED
-        product.save(update_fields=["is_deleted", "status"])
-        messages.warning(
-            request,
-            _("«%(title)s» do'kondan olib tashlandi (arxivlandi). Oldin sotib olgan xaridorlar o'z kabinetida yuklab olishda davom etishadi.") % {"title": title}
+    # Buyurtma yoki Click urinish bo'lishidan qat'i nazar mahsulot qatori
+    # saqlanadi. Aks holda kechikib kelgan callback xaridorni to'lovsiz
+    # qoldirishi yoki yuklab olish huquqini uzib qo'yishi mumkin.
+    product.is_deleted = True
+    product.status = Product.Status.PAUSED
+    product.save(update_fields=["is_deleted", "status", "updated_at"])
+    messages.warning(
+        request,
+        _(
+            "«%(title)s» do'kondan olib tashlandi (arxivlandi). Oldin sotib olgan "
+            "xaridorlar o'z kabinetida yuklab olishda davom etishadi."
         )
-    else:
-        product.delete()
-        messages.warning(request, _("«%(title)s» butunlay o'chirildi.") % {"title": title})
+        % {"title": product.title},
+    )
     return redirect("orders:seller_dashboard")
 
 
 @login_required
 @require_POST
 def wishlist_toggle_view(request, product_id):
-    product = get_object_or_404(Product, id=product_id, status=Product.Status.ACTIVE, is_deleted=False)
-    item, wishlisted = Wishlist.objects.get_or_create(user=request.user, product=product)
+    product = get_object_or_404(
+        Product, id=product_id, status=Product.Status.ACTIVE, is_deleted=False
+    )
+    item, wishlisted = Wishlist.objects.get_or_create(
+        user=request.user, product=product
+    )
     if not wishlisted:
         item.delete()
 
-    if request.headers.get("x-requested-with") == "XMLHttpRequest" or request.GET.get("format") == "json":
-        return JsonResponse({"wishlisted": wishlisted, "count": Wishlist.objects.filter(user=request.user).count()})
+    if (
+        request.headers.get("x-requested-with") == "XMLHttpRequest"
+        or request.GET.get("format") == "json"
+    ):
+        return JsonResponse(
+            {
+                "wishlisted": wishlisted,
+                "count": Wishlist.objects.filter(user=request.user).count(),
+            }
+        )
 
     messages.info(
         request,
-        (_("«%(title)s» sevimlilarga qo'shildi") if wishlisted
-         else _("«%(title)s» sevimlilardan olib tashlandi")) % {"title": product.title}
+        (
+            _("«%(title)s» sevimlilarga qo'shildi")
+            if wishlisted
+            else _("«%(title)s» sevimlilardan olib tashlandi")
+        )
+        % {"title": product.title},
     )
     # Referer'ni tekshiruvsiz redirect'ga berish ochiq redirect bo'lardi —
     # faqat o'z domenimizdagi manzilga qaytamiz.
@@ -352,25 +443,48 @@ def wishlist_toggle_view(request, product_id):
 
 def wishlist_list_view(request):
     if not request.user.is_authenticated:
-        return render(request, "store/wishlist.html", {
-            "products": [],
-            "wishlist_ids": set(),
-        })
+        return render(
+            request,
+            "store/wishlist.html",
+            {
+                "products": [],
+                "wishlist_ids": set(),
+            },
+        )
     wishlist_items = Wishlist.objects.filter(
-        user=request.user, product__status=Product.Status.ACTIVE, product__is_deleted=False
+        user=request.user,
+        product__status=Product.Status.ACTIVE,
+        product__is_deleted=False,
     ).select_related("product", "product__category", "product__seller")
     products = [w.product for w in wishlist_items]
     wishlist_ids = {str(p.id) for p in products}
-    return render(request, "store/wishlist.html", {
-        "products": products,
-        "wishlist_ids": wishlist_ids,
-    })
+    return render(
+        request,
+        "store/wishlist.html",
+        {
+            "products": products,
+            "wishlist_ids": wishlist_ids,
+        },
+    )
 
 
 @login_required
 @require_POST
 def add_review_view(request, slug):
-    product = get_object_or_404(Product, slug=slug, status=Product.Status.ACTIVE, is_deleted=False)
+    product = get_object_or_404(
+        Product, slug=slug, status=Product.Status.ACTIVE, is_deleted=False
+    )
+    from orders.models import Order
+
+    has_paid_order = Order.objects.filter(
+        buyer=request.user,
+        product=product,
+        status=Order.PayStatus.PAID,
+    ).exists()
+    if not has_paid_order:
+        messages.error(request, _("Sharh qoldirish uchun mahsulotni sotib oling."))
+        return redirect("store:product_detail", slug=slug)
+
     form = ReviewForm(request.POST)
     if form.is_valid():
         Review.objects.update_or_create(
@@ -379,7 +493,7 @@ def add_review_view(request, slug):
             defaults={
                 "rating": form.cleaned_data["rating"],
                 "comment": form.cleaned_data["comment"],
-            }
+            },
         )
         product.update_rating()
         messages.success(request, _("Sharhingiz qabul qilindi!"))
@@ -391,12 +505,16 @@ def add_review_view(request, slug):
 @login_required
 @require_POST
 def report_product_view(request, slug):
-    product = get_object_or_404(Product, slug=slug, status=Product.Status.ACTIVE, is_deleted=False)
+    product = get_object_or_404(
+        Product, slug=slug, status=Product.Status.ACTIVE, is_deleted=False
+    )
     form = ReportForm(request.POST)
     if form.is_valid():
         report = form.save(commit=False)
         report.product = product
         report.reporter = request.user
         report.save()
-        messages.warning(request, _("Shikoyatingiz qabul qilindi va moderatorlarga yuborildi."))
+        messages.warning(
+            request, _("Shikoyatingiz qabul qilindi va moderatorlarga yuborildi.")
+        )
     return redirect("store:product_detail", slug=slug)

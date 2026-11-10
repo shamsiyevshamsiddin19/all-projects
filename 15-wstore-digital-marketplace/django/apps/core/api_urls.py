@@ -1,4 +1,5 @@
 """REST API v1 manzillari — config/urls.py dan `api/v1/` prefiksi bilan ulanadi."""
+
 from django.urls import path
 
 from . import api

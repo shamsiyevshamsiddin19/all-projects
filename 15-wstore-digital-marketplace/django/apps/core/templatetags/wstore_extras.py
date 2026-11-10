@@ -1,4 +1,5 @@
 """wstore uchun shablon filtrlari."""
+
 from decimal import Decimal, InvalidOperation
 
 from django import template

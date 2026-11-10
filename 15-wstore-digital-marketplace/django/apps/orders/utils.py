@@ -1,19 +1,25 @@
-import secrets
+import hashlib
 import hmac
+import json
 import re
+import secrets
 import urllib.parse
 from decimal import Decimal, InvalidOperation
+
 from django.conf import settings
 
 CLICK_PREFIX_PURCHASE = "WSTP"
 CLICK_PREFIX_LISTING = "WSTL"
 
+
 def generate_secure_download_token():
     return secrets.token_hex(24)
+
 
 def amount_after_commission(amount_som):
     pct = getattr(settings, "PLATFORM_COMMISSION_PERCENT", 0)
     return round(float(amount_som) * (1 - pct / 100))
+
 
 def parse_click_transaction_id(merchant_trans_id):
     """
@@ -23,6 +29,7 @@ def parse_click_transaction_id(merchant_trans_id):
     if not m:
         return 0
     return int(m.group(2))
+
 
 def build_click_payment_url(merchant_trans_id, amount_som, return_url):
     params = {
@@ -36,9 +43,6 @@ def build_click_payment_url(merchant_trans_id, amount_som, return_url):
     base_url = getattr(settings, "CLICK_BASE_URL", "https://my.click.uz/services/pay")
     return f"{base_url}?{urllib.parse.urlencode(params)}"
 
-import hashlib
-import json
-import os
 
 def extract_click_payload(request):
     """Extract parameters from either POST form or JSON body."""
@@ -48,12 +52,14 @@ def extract_click_payload(request):
         if request.body:
             data = json.loads(request.body.decode("utf-8"))
             if isinstance(data, dict) and all(
-                isinstance(value, (str, int, float, type(None))) for value in data.values()
+                isinstance(value, (str, int, float, type(None)))
+                for value in data.values()
             ):
                 return data
     except Exception:
         pass
     return {}
+
 
 def check_click_auth(data, action):
     """
@@ -79,9 +85,26 @@ def check_click_auth(data, action):
         amount = data.get("amount", "")
         sign_time = data.get("sign_time", "")
         prepare_id = data.get("merchant_prepare_id", "") if action == 1 else ""
-        if not click_trans_id or not merchant_trans_id or not sign_time or (action == 1 and not prepare_id):
+        if (
+            not click_trans_id
+            or not merchant_trans_id
+            or not sign_time
+            or (action == 1 and not prepare_id)
+        ):
             return False
-        raw_str = f"{click_trans_id}{service_id}{secret_key}{merchant_trans_id}{prepare_id}{amount}{action}{sign_time}"
+        raw_str = "".join(
+            str(value)
+            for value in (
+                click_trans_id,
+                service_id,
+                secret_key,
+                merchant_trans_id,
+                prepare_id,
+                amount,
+                action,
+                sign_time,
+            )
+        )
         calc_sign = hashlib.md5(raw_str.encode("utf-8")).hexdigest()
         return hmac.compare_digest(sign_string.lower(), calc_sign)
 
@@ -100,11 +123,13 @@ def payments_configured():
         or _usable_secret(getattr(settings, "CLICK_BRIDGE_SECRET", ""))
     )
 
+
 def check_bridge_secret(received_secret):
     expected_secret = getattr(settings, "CLICK_BRIDGE_SECRET", "")
     if not isinstance(received_secret, str) or not _usable_secret(expected_secret):
         return False
     return hmac.compare_digest(str(received_secret), str(expected_secret))
+
 
 def amounts_match(a, b):
     try:

@@ -1,0 +1,37 @@
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+extend-exclude = [
+    "migrations",
+    "staticfiles",
+    "media",
+    "venv",
+    ".venv",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "SIM", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests.py" = ["E501"]
+"**/test_*.py" = ["E501"]
+"apps/store/management/commands/seed_data.py" = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["core", "orders", "store", "config"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py", "*_tests.py", "tests.py"]
+testpaths = ["apps"]
+addopts = "--strict-markers --tb=short"
+
+[tool.coverage.run]
+branch = true
+source = ["apps"]
+omit = ["*/migrations/*", "*/tests/*", "*/test_*.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 80

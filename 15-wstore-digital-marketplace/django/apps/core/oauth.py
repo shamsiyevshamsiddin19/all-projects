@@ -12,20 +12,21 @@ serverga (client_secret bilan, TLS ustida) tokenga almashtiriladi, shuning
 uchun ID token imzosini alohida tekshirish shart emas — javob to'g'ridan-
 to'g'ri Google'dan keladi. CSRF esa `state` parametri bilan to'siladi.
 """
+
 import secrets
 from urllib.parse import urlencode
 
 import requests
 from django.conf import settings
 from django.contrib import messages
-from django.utils.translation import gettext as _
 from django.contrib.auth import get_user_model, login
 from django.db import IntegrityError, transaction
 from django.http import Http404
-from django.shortcuts import render, redirect, resolve_url
+from django.shortcuts import redirect, render, resolve_url
 from django.urls import reverse
 from django.utils.crypto import constant_time_compare
 from django.utils.text import slugify
+from django.utils.translation import gettext as _
 
 from .logging_utils import log_error
 from .views import _safe_redirect_target
@@ -64,7 +65,7 @@ def _unique_username(base):
     candidate = slugify(base).replace("-", "_")[:24] or "user"
     if not User.objects.filter(username__iexact=candidate).exists():
         return candidate
-    for _ in range(10):
+    for _attempt_number in range(10):
         suffix = secrets.token_hex(2)
         attempt = f"{candidate[:24]}_{suffix}"
         if not User.objects.filter(username__iexact=attempt).exists():
@@ -112,10 +113,12 @@ def google_login_view(request):
 
 def google_callback_view(request):
     """Google qaytargan kodni tokenga almashtiradi va foydalanuvchini kiritadi."""
-    client_id = getattr(settings, "GOOGLE_OAUTH_CLIENT_ID", "").strip()
+    getattr(settings, "GOOGLE_OAUTH_CLIENT_ID", "").strip()
     client_secret = getattr(settings, "GOOGLE_OAUTH_CLIENT_SECRET", "").strip()
 
-    next_url = request.session.pop(SESSION_NEXT_KEY, None) or resolve_url("store:catalog")
+    next_url = request.session.pop(SESSION_NEXT_KEY, None) or resolve_url(
+        "store:catalog"
+    )
     expected_state = request.session.pop(SESSION_STATE_KEY, None)
 
     if request.GET.get("error"):
@@ -138,7 +141,10 @@ def google_callback_view(request):
     if not client_secret:
         messages.error(
             request,
-            _("Google Client Secret sozlanmagan. Iltimos, GOOGLE_OAUTH_CLIENT_SECRET ni kiriting.")
+            _(
+                "Google Client Secret sozlanmagan. Iltimos, "
+                "GOOGLE_OAUTH_CLIENT_SECRET ni kiriting."
+            ),
         )
         return redirect("core:login")
 
@@ -196,9 +202,15 @@ def google_callback_view(request):
         return redirect("core:login")
     login(request, user)
     if created:
-        messages.success(request, _("Xush kelibsiz, %(name)s! Hisobingiz Google orqali yaratildi.") % {"name": user.display_name})
+        messages.success(
+            request,
+            _("Xush kelibsiz, %(name)s! Hisobingiz Google orqali yaratildi.")
+            % {"name": user.display_name},
+        )
     else:
-        messages.success(request, _("Xush kelibsiz, %(name)s!") % {"name": user.display_name})
+        messages.success(
+            request, _("Xush kelibsiz, %(name)s!") % {"name": user.display_name}
+        )
     return redirect(next_url)
 
 
@@ -225,7 +237,9 @@ def _get_or_create_user(request, info, google_id, email):
         # Mavjud hisobni Google bilan bog'laymiz — email Google tomonidan
         # tasdiqlangani yuqorida tekshirildi.
         user.google_id = google_id
-        _fill_from_google(user, first_name, last_name, picture, email, extra=["google_id"])
+        _fill_from_google(
+            user, first_name, last_name, picture, email, extra=["google_id"]
+        )
         _sync_admin(user)
         return user, False
 
@@ -330,7 +344,9 @@ def google_dev_mock_view(request):
 
     next_url = _safe_redirect_target(
         request,
-        request.POST.get("next") or request.GET.get("next") or request.session.get(SESSION_NEXT_KEY)
+        request.POST.get("next")
+        or request.GET.get("next")
+        or request.session.get(SESSION_NEXT_KEY),
     )
 
     if request.method == "POST":
@@ -358,19 +374,31 @@ def google_dev_mock_view(request):
             user, created = _get_or_create_user(request, info, mock_sub, email)
         except Exception as exc:
             log_error(exc, context="google_dev_mock:get_or_create_user")
-            messages.error(request, _("Google hisobi orqali kirishda xatolik yuz berdi."))
+            messages.error(
+                request, _("Google hisobi orqali kirishda xatolik yuz berdi.")
+            )
             return render(request, "core/google_dev_mock.html", {"next": next_url})
 
         login(request, user)
         request.session.pop(SESSION_NEXT_KEY, None)
 
         if created:
-            messages.success(request, _("Xush kelibsiz, %(name)s! Hisobingiz Google orqali yaratildi.") % {"name": user.display_name})
+            messages.success(
+                request,
+                _("Xush kelibsiz, %(name)s! Hisobingiz Google orqali yaratildi.")
+                % {"name": user.display_name},
+            )
         else:
-            messages.success(request, _("Xush kelibsiz, %(name)s!") % {"name": user.display_name})
+            messages.success(
+                request, _("Xush kelibsiz, %(name)s!") % {"name": user.display_name}
+            )
 
         return redirect(next_url)
 
-    return render(request, "core/google_dev_mock.html", {
-        "next": next_url,
-    })
+    return render(
+        request,
+        "core/google_dev_mock.html",
+        {
+            "next": next_url,
+        },
+    )
