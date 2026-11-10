@@ -1,13 +1,13 @@
+from urllib.parse import urlencode
+
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import authenticate, get_user_model, login, logout
+from django.contrib.auth import get_user_model, login, logout
 from django.http import Http404
-from django.shortcuts import redirect, render, resolve_url
+from django.shortcuts import redirect, resolve_url
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
-
-from .forms import LoginForm, RegisterForm
 
 User = get_user_model()
 
@@ -27,96 +27,21 @@ def _safe_redirect_target(request, raw, fallback="store:catalog"):
 
 
 def login_view(request):
-    """
-    Kirish sahifasi — Google OAuth va Email/Parol orqali kirish.
-    """
+    """Kirish faqat Google OAuth oqimiga yo'naltiriladi."""
     if request.user.is_authenticated:
         return redirect("store:catalog")
-
-    # Capture referral if present
-    ref = request.GET.get("ref")
-    if ref:
-        request.session["referral_code"] = ref
-
-    next_url = _safe_redirect_target(
-        request, request.GET.get("next") or request.POST.get("next")
-    )
-    form = LoginForm(request.POST or None)
-
-    if request.method == "POST" and form.is_valid():
-        login_input = form.cleaned_data["login"].strip()
-        password = form.cleaned_data["password"]
-
-        user = None
-        if "@" in login_input:
-            user_obj = User.objects.filter(email__iexact=login_input).first()
-            if user_obj:
-                user = authenticate(
-                    request, username=user_obj.username, password=password
-                )
-        else:
-            user = authenticate(request, username=login_input, password=password)
-
-        if user:
-            login(request, user)
-            messages.success(
-                request, _("Xush kelibsiz, %(name)s!") % {"name": user.display_name}
-            )
-            return redirect(next_url)
-        else:
-            messages.error(request, _("Login yoki parol noto'g'ri kiritildi."))
-
-    return render(
-        request,
-        "core/login.html",
-        {
-            "form": form,
-            "next": next_url,
-        },
-    )
+    # Eski /login manzillari va bookmarklar ishlashda davom etadi, ammo
+    # email/parol endpointi autentifikatsiya yo'li bo'lib qolmaydi.
+    next_url = request.GET.get("next") or request.POST.get("next")
+    google_url = resolve_url("core:google_login")
+    if next_url:
+        google_url = f"{google_url}?{urlencode({'next': next_url})}"
+    return redirect(google_url)
 
 
 def register_view(request):
-    """
-    Ro'yxatdan o'tish sahifasi — yangi foydalanuvchi yaratish yoki Google orqali kirish.
-    """
-    if request.user.is_authenticated:
-        return redirect("store:catalog")
-
-    ref = request.GET.get("ref")
-    if ref:
-        request.session["referral_code"] = ref
-
-    next_url = _safe_redirect_target(
-        request, request.GET.get("next") or request.POST.get("next")
-    )
-    form = RegisterForm(request.POST or None)
-
-    if request.method == "POST" and form.is_valid():
-        user = form.save(commit=False)
-        user.set_password(form.cleaned_data["password"])
-
-        ref_code = request.session.get("referral_code")
-        if ref_code:
-            referrer = User.objects.filter(referral_code=ref_code).first()
-            if referrer:
-                user.referred_by = referrer
-
-        user.save()
-        login(request, user)
-        messages.success(
-            request, _("Ro'yxatdan muvaffaqiyatli o'tdingiz! Xush kelibsiz!")
-        )
-        return redirect(next_url)
-
-    return render(
-        request,
-        "core/register.html",
-        {
-            "form": form,
-            "next": next_url,
-        },
-    )
+    """Alohida ro'yxatdan o'tish ham Google OAuth orqali bajariladi."""
+    return login_view(request)
 
 
 @require_POST

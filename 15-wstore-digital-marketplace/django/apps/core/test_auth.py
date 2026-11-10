@@ -47,3 +47,21 @@ class AuthRegressionTests(TestCase):
     def test_logout_requires_post(self):
         self.assertEqual(self.client.get(reverse("core:logout")).status_code, 405)
         self.assertEqual(self.client.post(reverse("core:logout")).status_code, 302)
+
+    def test_legacy_password_endpoints_redirect_to_google(self):
+        user = get_user_model().objects.create_user(
+            username="password-user",
+            email="password-user@example.com",
+            password="safe-password-123",
+        )
+        for url in (reverse("core:login"), reverse("core:register")):
+            response = self.client.post(
+                url,
+                {"login": user.email, "password": "safe-password-123"},
+            )
+            self.assertRedirects(
+                response,
+                reverse("core:google_login"),
+                fetch_redirect_response=False,
+            )
+        self.assertNotIn("_auth_user_id", self.client.session)
