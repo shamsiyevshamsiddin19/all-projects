@@ -1,8 +1,11 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ImproperlyConfigured
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
+
+from .crypto import card_last4, encrypt_card_number
 
 User = get_user_model()
 
@@ -205,20 +208,23 @@ class SellerOnboardingForm(forms.ModelForm):
             "required": _("Davom etish uchun shartlarga rozilik bildiring.")
         },
     )
+    card_number = forms.CharField(
+        label=_("Karta raqami (Uzcard/Humo)"),
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "8600 0000 0000 0000",
+                "maxlength": "25",
+            }
+        ),
+    )
 
     class Meta:
         model = User
-        fields = ["telegram_username", "card_number", "bio", "website"]
+        fields = ["telegram_username", "bio", "website"]
         widgets = {
             "telegram_username": forms.TextInput(
                 attrs={"class": "form-control", "placeholder": "username"}
-            ),
-            "card_number": forms.TextInput(
-                attrs={
-                    "class": "form-control",
-                    "placeholder": "8600 0000 0000 0000",
-                    "maxlength": "25",
-                }
             ),
             "bio": forms.Textarea(
                 attrs={
@@ -251,6 +257,21 @@ class SellerOnboardingForm(forms.ModelForm):
                 _("Karta raqami 16 ta raqamdan iborat bo'lishi kerak (Uzcard / Humo).")
             )
         return digits
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        card_number = self.cleaned_data["card_number"]
+        try:
+            user.encrypted_card_number = encrypt_card_number(card_number)
+        except ImproperlyConfigured as exc:
+            raise forms.ValidationError(str(exc)) from exc
+        user.card_last4 = card_last4(card_number)
+        # Yangi yozuvlarda eski ochiq maydon hech qachon to'ldirilmaydi.
+        user.card_number = ""
+        if commit:
+            user.save()
+            self.save_m2m()
+        return user
 
 
 class ApiTokenForm(forms.Form):

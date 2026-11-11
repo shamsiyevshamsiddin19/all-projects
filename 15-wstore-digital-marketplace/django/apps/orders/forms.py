@@ -1,26 +1,33 @@
 from django import forms
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
+
+from core.crypto import card_last4, encrypt_card_number
 
 from .models import Withdrawal
 
 
 class WithdrawalForm(forms.ModelForm):
+    card_number = forms.CharField(
+        label="Karta raqami (Uzcard/Humo)",
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "8600 0000 0000 0000",
+                "maxlength": "20",
+            }
+        ),
+    )
+
     class Meta:
         model = Withdrawal
-        fields = ["amount", "card_number"]
+        fields = ["amount"]
         widgets = {
             "amount": forms.NumberInput(
                 attrs={
                     "class": "form-control",
                     "placeholder": "50 000",
                     "step": "1000",
-                }
-            ),
-            "card_number": forms.TextInput(
-                attrs={
-                    "class": "form-control",
-                    "placeholder": "8600 0000 0000 0000",
-                    "maxlength": "20",
                 }
             ),
         }
@@ -49,3 +56,17 @@ class WithdrawalForm(forms.ModelForm):
                 "Karta raqami 16 ta raqamdan iborat bo'lishi kerak (Uzcard / Humo)."
             )
         return card
+
+    def save(self, commit=True):
+        withdrawal = super().save(commit=False)
+        card_number = self.cleaned_data["card_number"]
+        try:
+            withdrawal.encrypted_card_number = encrypt_card_number(card_number)
+        except ImproperlyConfigured as exc:
+            raise forms.ValidationError(str(exc)) from exc
+        withdrawal.card_last4 = card_last4(card_number)
+        withdrawal.card_number = ""
+        if commit:
+            withdrawal.save()
+            self.save_m2m()
+        return withdrawal

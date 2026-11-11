@@ -47,6 +47,13 @@ ALLOWED_HOSTS = [
 # lokal demo uchun .env ichida aniq DEMO_MODE=True yozilishi talab qilinadi.
 DEMO_MODE = _env_flag("DEMO_MODE", "False")
 
+# Karta raqamlari ma'lumotlar bazasida ochiq holda saqlanmaydi. Kalit faqat
+# muhit o'zgaruvchisidan olinadi; uni kodga yoki migratsiyaga yozish mumkin
+# emas. Testlar uchun alohida, hech qayerda ishlatilmaydigan kalit beriladi.
+FIELD_ENCRYPTION_KEY = os.getenv("FIELD_ENCRYPTION_KEY", "").strip()
+if TESTING and not FIELD_ENCRYPTION_KEY:
+    FIELD_ENCRYPTION_KEY = "3xBnbL9B_Q4gRBqTjprBoPfDXXQ4a31ETvLqL7zj5Ps="
+
 if not TESTING and SECRET_KEY.startswith("django-insecure-"):
     raise ImproperlyConfigured(
         "Standart django-insecure SECRET_KEY bilan ishga tushirib bo'lmaydi. "

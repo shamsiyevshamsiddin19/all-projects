@@ -167,6 +167,19 @@ class Withdrawal(models.Model):
     card_number = models.CharField(
         max_length=30, verbose_name=_("Karta raqami (Uzcard/Humo)")
     )
+    encrypted_card_number = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name=_("Shifrlangan karta raqami"),
+        editable=False,
+    )
+    card_last4 = models.CharField(
+        max_length=4,
+        blank=True,
+        default="",
+        verbose_name=_("Kartaning oxirgi 4 raqami"),
+        editable=False,
+    )
     status = models.CharField(
         max_length=20,
         choices=WithdrawalStatus.choices,
@@ -191,7 +204,5 @@ class Withdrawal(models.Model):
 
     @property
     def masked_card(self):
-        cleaned = self.card_number.replace(" ", "")
-        if len(cleaned) >= 4:
-            return f"**** **** **** {cleaned[-4:]}"
-        return self.card_number
+        last4 = self.card_last4 or self.card_number.replace(" ", "")[-4:]
+        return f"**** **** **** {last4}" if last4 else "—"

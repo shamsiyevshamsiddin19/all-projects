@@ -75,12 +75,12 @@ class WithdrawalAdmin(admin.ModelAdmin):
         "paid_at",
     )
     list_filter = ("status", "created_at")
-    search_fields = ("seller__username", "seller__email", "card_number")
+    search_fields = ("seller__username", "seller__email", "card_last4")
     actions = ["mark_paid", "mark_rejected"]
     readonly_fields = (
         "seller",
         "amount",
-        "card_number",
+        "masked_card",
         "status",
         "created_at",
         "paid_at",
