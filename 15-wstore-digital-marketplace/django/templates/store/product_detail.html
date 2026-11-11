@@ -157,6 +157,7 @@
             data-product-id="{{ product.id }}"
             class="wishlist-btn flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border-strong bg-surface text-muted transition hover:text-fg {% if is_wishlisted %}wishlisted{% endif %}"
             aria-label="{% translate "Sevimlilarga qo'shish" %}"
+            aria-pressed="{% if is_wishlisted %}true{% else %}false{% endif %}"
           >
             <i data-lucide="heart" style="width: 20px; height: 20px;" class="heart-icon {% if is_wishlisted %}fill-current{% endif %}"></i>
           </button>

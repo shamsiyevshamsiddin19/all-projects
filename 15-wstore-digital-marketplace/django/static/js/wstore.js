@@ -191,6 +191,7 @@
         btns.forEach((btn) => {
           btn.classList.toggle("wishlisted", data.wishlisted);
           btn.classList.toggle("active", data.wishlisted);
+          btn.setAttribute("aria-pressed", String(data.wishlisted));
           const icon = btn.querySelector("i, svg");
           if (icon) {
             if (data.wishlisted) {
@@ -355,6 +356,7 @@
     const closeMobileFilterBtn = document.getElementById("closeMobileFilterBtn");
     const mobileFilterBody = document.getElementById("mobileFilterBody");
     const catalogFilterForm = document.getElementById("catalogFilterForm");
+    let mobileFilterRestoreFocus = null;
 
     function openMobileFilter() {
       if (!mobileFilterModal || !mobileFilterSheet) return;
@@ -367,10 +369,31 @@
           el.id = el.id + "__mobile";
         });
         clone.id = "mobileCatalogFilterForm";
+        // Desktop filtrelari tanlov bilan bir zumda yuboriladi. Mobil
+        // varaqda esa foydalanuvchi bir nechta tanlov qiladi va barchasini
+        // pastdagi "Ko'rsatish" tugmasi orqali bitta so'rovda yuboradi.
+        clone.querySelectorAll("[onchange]").forEach((control) => {
+          control.removeAttribute("onchange");
+        });
+        clone.querySelectorAll('input[name="price_range"]').forEach((control) => {
+          control.addEventListener("change", () => {
+            const [min, max] = control.value.split("-");
+            clone.querySelector('[name="min_price"]').value = min || "";
+            clone.querySelector('[name="max_price"]').value = max || "";
+          });
+        });
+        clone.querySelectorAll(".tech-tag-pill input").forEach((control) => {
+          control.addEventListener("change", () => {
+            control.closest(".tech-tag-pill")?.classList.toggle("active", control.checked);
+          });
+        });
         mobileFilterBody.appendChild(clone);
       }
 
+      mobileFilterRestoreFocus = document.activeElement;
       mobileFilterModal.style.display = "block";
+      openMobileFilterBtn?.setAttribute("aria-expanded", "true");
+      document.body.classList.add("overflow-hidden");
       setTimeout(() => {
         if (mobileFilterBackdrop) {
           mobileFilterBackdrop.classList.remove("opacity-0");
@@ -378,6 +401,7 @@
         }
         mobileFilterSheet.classList.remove("translate-y-full");
         mobileFilterSheet.classList.add("translate-y-0");
+        closeMobileFilterBtn?.focus();
       }, 10);
     }
 
@@ -389,6 +413,9 @@
       }
       mobileFilterSheet.classList.remove("translate-y-0");
       mobileFilterSheet.classList.add("translate-y-full");
+      openMobileFilterBtn?.setAttribute("aria-expanded", "false");
+      document.body.classList.remove("overflow-hidden");
+      if (mobileFilterRestoreFocus instanceof HTMLElement) mobileFilterRestoreFocus.focus();
       setTimeout(() => {
         mobileFilterModal.style.display = "none";
       }, 300);
@@ -406,6 +433,11 @@
     if (openMobileFilterBtn) openMobileFilterBtn.addEventListener("click", openMobileFilter);
     if (closeMobileFilterBtn) closeMobileFilterBtn.addEventListener("click", closeMobileFilter);
     if (mobileFilterBackdrop) mobileFilterBackdrop.addEventListener("click", closeMobileFilter);
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && mobileFilterModal?.style.display !== "none") {
+        closeMobileFilter();
+      }
+    });
 
     // 5.8 Instant Live Client Autocomplete
     const searchIndexScript = document.getElementById("searchIndexData");

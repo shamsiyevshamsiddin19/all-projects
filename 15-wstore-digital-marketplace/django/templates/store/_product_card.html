@@ -1,23 +1,24 @@
 {% load static wstore_extras %}
 {% load i18n %}
-<a href="{% url 'store:product_detail' slug=product.slug %}" class="group block product-card-link">
-  <div class="product-card flex flex-col overflow-hidden rounded-card border border-border bg-surface transition hover:border-border-strong active:border-border-strong">
+<article class="group product-card product-card-link flex flex-col overflow-hidden rounded-card border border-border bg-surface transition hover:border-border-strong active:border-border-strong">
     <!-- Rasm -->
     <div class="product-card-image-wrap relative aspect-[16/10] overflow-hidden bg-surface-2">
-      <img
-        src="{{ product.cover_url }}"
-        alt="{{ product.title }}"
-        loading="lazy"
-        class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-      >
-      {% if product.badge %}
-        <span class="product-badge absolute left-2 top-2 rounded-md bg-accent px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white sm:left-3 sm:top-3 sm:px-2 sm:py-1 sm:text-[10px]">
-          {{ product.display_badge }}
+      <a href="{% url 'store:product_detail' slug=product.slug %}" class="block h-full" aria-label="{{ product.title }}">
+        <img
+          src="{{ product.cover_url }}"
+          alt="{{ product.title }}"
+          loading="lazy"
+          class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+        >
+        {% if product.badge %}
+          <span class="product-badge absolute left-2 top-2 rounded-md bg-accent px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white sm:left-3 sm:top-3 sm:px-2 sm:py-1 sm:text-[10px]">
+            {{ product.display_badge }}
+          </span>
+        {% endif %}
+        <span class="product-cat-pill absolute right-2 top-2 rounded-md border border-border-strong bg-bg/70 px-1.5 py-0.5 text-[10px] text-muted backdrop-blur sm:right-3 sm:top-3 sm:px-2 sm:py-1 sm:text-[11px]">
+          {{ product.category.display_name }}
         </span>
-      {% endif %}
-      <span class="product-cat-pill absolute right-2 top-2 rounded-md border border-border-strong bg-bg/70 px-1.5 py-0.5 text-[10px] text-muted backdrop-blur sm:right-3 sm:top-3 sm:px-2 sm:py-1 sm:text-[11px]">
-        {{ product.category.display_name }}
-      </span>
+      </a>
       <div class="absolute bottom-2 right-2 z-10">
         <button
           type="button"
@@ -25,6 +26,7 @@
           data-product-id="{{ product.id }}"
           class="wishlist-btn flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bg/60 text-fg backdrop-blur transition {% if product.id|stringformat:'s' in wishlist_ids %}wishlisted{% endif %}"
           aria-label="{% translate "Sevimlilarga qo'shish" %}"
+          aria-pressed="{% if product.id|stringformat:'s' in wishlist_ids %}true{% else %}false{% endif %}"
         >
           <i data-lucide="heart" style="width: 15px; height: 15px;" class="heart-icon {% if product.id|stringformat:'s' in wishlist_ids %}fill-current{% endif %}"></i>
         </button>
@@ -32,7 +34,7 @@
     </div>
 
     <!-- Matn -->
-    <div class="flex flex-1 flex-col p-3 sm:p-4">
+    <a href="{% url 'store:product_detail' slug=product.slug %}" class="flex flex-1 flex-col p-3 sm:p-4" aria-label="{{ product.title }}">
       <h3 class="mb-1 line-clamp-1 text-sm font-semibold text-fg sm:text-base">
         {{ product.title }}
       </h3>
@@ -68,6 +70,5 @@
       <span class="mt-3 flex w-full items-center justify-center rounded-lg bg-accent py-2 text-xs font-medium text-white transition group-hover:bg-accent-hover sm:text-sm">
         {% translate "Buyurtma" %}
       </span>
-    </div>
-  </div>
-</a>
+    </a>
+</article>

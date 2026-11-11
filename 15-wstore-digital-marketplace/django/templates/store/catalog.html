@@ -14,6 +14,9 @@
       type="button"
       id="openMobileFilterBtn"
       class="flex shrink-0 items-center gap-2 rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm font-medium text-fg"
+      aria-controls="mobileFilterModal"
+      aria-expanded="false"
+      aria-haspopup="dialog"
     >
       <i data-lucide="sliders-horizontal" style="width: 16px; height: 16px;"></i>
       <span>{% translate "Filtr" %}</span>
@@ -29,6 +32,8 @@
         type="text"
         id="mobileSearchInput"
         placeholder="{% translate "Loyihalarni qidirish..." %}"
+        aria-label="{% translate "Loyihalarni qidirish" %}"
+        aria-controls="mobileSearchDropdown"
         value="{{ q }}"
         class="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-sm text-fg outline-none placeholder:text-muted/60 focus:border-accent"
         autocomplete="off"
@@ -209,13 +214,15 @@
             id="desktopSearchInput"
             value="{{ q }}"
             placeholder="{% translate "Loyihalarni qidirish..." %}"
+            aria-label="{% translate "Loyihalarni qidirish" %}"
+            aria-controls="desktopSearchDropdown"
             class="w-full rounded-xl border border-border bg-surface py-2.5 pl-10 pr-4 text-sm text-fg outline-none placeholder:text-muted/60 focus:border-accent"
             autocomplete="off"
           >
           <!-- Desktop live search suggestions dropdown -->
           <div id="desktopSearchDropdown" class="live-search-dropdown" style="display: none;"></div>
         </div>
-        <span class="shrink-0 text-xs text-muted">
+        <span class="shrink-0 text-xs text-muted" aria-live="polite">
           {% blocktranslate with n=total_count %}{{ n }} ta mavjud{% endblocktranslate %}
         </span>
       </div>
@@ -235,10 +242,10 @@
                   </h3>
                 </div>
                 <div class="flex items-center gap-1.5">
-                  <button type="button" onclick="scrollSlider('topSellingSlider', -1)" class="slider-arrow-btn">
+                  <button type="button" onclick="scrollSlider('topSellingSlider', -1)" class="slider-arrow-btn" aria-label="{% translate "Eng ko'p sotilganlar: oldingi" %}">
                     <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i>
                   </button>
-                  <button type="button" onclick="scrollSlider('topSellingSlider', 1)" class="slider-arrow-btn">
+                  <button type="button" onclick="scrollSlider('topSellingSlider', 1)" class="slider-arrow-btn" aria-label="{% translate "Eng ko'p sotilganlar: keyingi" %}">
                     <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
                   </button>
                 </div>
@@ -265,10 +272,10 @@
                   </h3>
                 </div>
                 <div class="flex items-center gap-1.5">
-                  <button type="button" onclick="scrollSlider('newArrivalsSlider', -1)" class="slider-arrow-btn">
+                  <button type="button" onclick="scrollSlider('newArrivalsSlider', -1)" class="slider-arrow-btn" aria-label="{% translate "Yangi qo'shilganlar: oldingi" %}">
                     <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i>
                   </button>
-                  <button type="button" onclick="scrollSlider('newArrivalsSlider', 1)" class="slider-arrow-btn">
+                  <button type="button" onclick="scrollSlider('newArrivalsSlider', 1)" class="slider-arrow-btn" aria-label="{% translate "Yangi qo'shilganlar: keyingi" %}">
                     <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
                   </button>
                 </div>
@@ -351,7 +358,7 @@
 </div>
 
 <!-- Mobil filter — pastdan chiqadigan bottom sheet (Next.js kabi) -->
-<div id="mobileFilterModal" class="fixed inset-0 z-50 md:hidden" style="display: none;">
+<div id="mobileFilterModal" class="fixed inset-0 z-50 md:hidden" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="mobileFilterTitle">
   <div id="mobileFilterBackdrop" class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 opacity-0"></div>
   <div id="mobileFilterSheet" class="absolute inset-x-0 bottom-0 flex max-h-[85vh] flex-col rounded-t-2xl border-t border-border bg-bg shadow-2xl transition-transform duration-300 ease-out translate-y-full">
     <div class="flex justify-center pb-1 pt-2.5">
@@ -360,9 +367,9 @@
     <div class="flex items-center justify-between border-b border-border px-4 py-3">
       <div class="flex items-center gap-2">
         <i data-lucide="sliders-horizontal" style="width: 16px; height: 16px;" class="text-accent"></i>
-        <span class="font-semibold text-fg">{% translate "Filtr" %}</span>
+        <span id="mobileFilterTitle" class="font-semibold text-fg">{% translate "Filtr" %}</span>
       </div>
-      <button type="button" id="closeMobileFilterBtn" class="rounded-lg p-1.5 text-muted hover:text-fg">
+      <button type="button" id="closeMobileFilterBtn" class="rounded-lg p-1.5 text-muted hover:text-fg" aria-label="{% translate "Filtrni yopish" %}">
         <i data-lucide="x" style="width: 20px; height: 20px;"></i>
       </button>
     </div>
