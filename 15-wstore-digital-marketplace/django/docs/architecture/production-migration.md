@@ -1,7 +1,17 @@
 # WStore production migratsiyasi va maxfiy ma'lumotlar rejasi
 
 Bu hujjat productionda ma'lumot yo'qotmasdan ishlash tartibini belgilaydi.
-Ushbu bosqichlar tugamaguncha `main` dagi kodni serverga chiqarish mumkin emas.
+
+## Production holati — 2026-11-11
+
+- WStore production bazasi PostgreSQL **16.15** ga o'tkazildi.
+- PostgreSQL faqat `127.0.0.1:5432` da tinglaydi; alohida, cheklangan
+  `wstore_app` foydalanuvchisi ishlatiladi.
+- Cutoverdan oldingi SQLite nusxasi va yakuniy export tiklash uchun serverda
+  saqlangan. Ular tasdiqlangan retention davri tugamaguncha o'chirilmaydi.
+- Rehearsal va yakuniy importda asosiy jadval hisoblari mos keldi:
+  foydalanuvchi 7, mahsulot 21, buyurtma 2, Click tranzaksiya 9, pul yechish
+  so'rovi 1.
 
 ## Hozirgi holat va xavf
 
@@ -20,12 +30,12 @@ FIELD_ENCRYPTION_KEY=<base64-url-safe-fernet-key>
 ```
 
 Kalit parol menejerida saqlanadi, Git va backup chatlarga yozilmaydi. Kalit
-bo'lmasa production process ishga tushmasligi kerak. Kalit rotatsiyasi uchun
-`FIELD_ENCRYPTION_OLD_KEYS` faqat o'qish davrida qo'llanadi.
+bo'lmasa yangi maxfiy to'lov ma'lumotini saqlash rad etiladi. Kalit
+rotatsiyasi keyingi alohida change-management bosqichida amalga oshiriladi.
 
 ## Bosqichlar
 
-1. **Expand.** `card_number_encrypted` va faqat qidirish/ko'rsatish uchun
+1. **Expand.** `encrypted_card_number` va faqat qidirish/ko'rsatish uchun
    `card_last4` ustunlari qo'shiladi. Eski ustun o'chirilmaydi.
 2. **Dual-write.** Yangi profil va pul yechish so'rovlari faqat shifrlangan
    qiymat hamda oxirgi 4 raqamni yozadi. Admin faqat maskalangan raqamni
