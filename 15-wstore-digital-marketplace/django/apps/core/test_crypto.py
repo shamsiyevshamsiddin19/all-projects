@@ -9,7 +9,7 @@ from orders.models import Withdrawal
 
 
 class CardEncryptionTests(TestCase):
-    def test_backfill_encrypts_legacy_values_without_removing_them(self):
+    def test_backfill_encrypts_legacy_values_and_clears_with_confirmation(self):
         seller = User.objects.create_user(
             username="legacy-card", email="legacy-card@example.com"
         )
@@ -22,7 +22,12 @@ class CardEncryptionTests(TestCase):
         )
 
         output = StringIO()
-        call_command("backfill_encrypted_cards", stdout=output)
+        call_command(
+            "backfill_encrypted_cards",
+            "--clear-plaintext",
+            "--confirm-clear-plaintext",
+            stdout=output,
+        )
 
         seller.refresh_from_db()
         withdrawal.refresh_from_db()
@@ -34,9 +39,12 @@ class CardEncryptionTests(TestCase):
         self.assertEqual(
             decrypt_card_number(withdrawal.encrypted_card_number), "9860000000005678"
         )
-        self.assertEqual(seller.card_number, "8600 0000 0000 1234")
-        self.assertIn("sotuvchi profili: 1 ta yozuv shifrlandi", output.getvalue())
-        self.assertIn("pul yechish so'rovi: 1 ta yozuv shifrlandi", output.getvalue())
+        self.assertEqual(seller.card_number, "")
+        self.assertEqual(withdrawal.card_number, "")
+        self.assertIn(
+            "sotuvchi profili: 1 ta yozuv shifrlandi va ochiq maydon tozalandi",
+            output.getvalue(),
+        )
 
     def test_dry_run_does_not_change_legacy_value(self):
         user = User.objects.create_user(username="dry", email="dry@example.com")
@@ -47,3 +55,7 @@ class CardEncryptionTests(TestCase):
 
         user.refresh_from_db()
         self.assertIsNone(user.encrypted_card_number)
+
+    def test_clearing_plaintext_requires_explicit_confirmation(self):
+        with self.assertRaisesMessage(ValueError, "--confirm-clear-plaintext"):
+            call_command("backfill_encrypted_cards", "--clear-plaintext")
