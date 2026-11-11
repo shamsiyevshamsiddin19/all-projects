@@ -77,6 +77,19 @@ class User(AbstractUser):
         verbose_name=_("Karta raqami (Uzcard/Humo)"),
         help_text=_("Sotuvdan tushgan mablag' shu kartaga yechiladi"),
     )
+    encrypted_card_number = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name=_("Shifrlangan karta raqami"),
+        editable=False,
+    )
+    card_last4 = models.CharField(
+        max_length=4,
+        blank=True,
+        default="",
+        verbose_name=_("Kartaning oxirgi 4 raqami"),
+        editable=False,
+    )
     bio = models.TextField(
         blank=True,
         null=True,

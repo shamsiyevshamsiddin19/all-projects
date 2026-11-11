@@ -228,6 +228,10 @@ class PaymentRegressionTests(TestCase):
         self.seller.refresh_from_db()
         self.assertEqual(self.seller.balance, 40000)
         self.assertEqual(Withdrawal.objects.count(), 1)
+        withdrawal = Withdrawal.objects.get()
+        self.assertEqual(withdrawal.card_number, "")
+        self.assertEqual(withdrawal.card_last4, "0000")
+        self.assertNotIn("8600000000000000", withdrawal.encrypted_card_number)
         self.assertNotIn("8600000000000000", notify.call_args.args[0])
 
     def test_deleted_product_is_hidden_but_purchase_remains(self):
