@@ -363,9 +363,10 @@ void main() {
           body: StudioVideoPlayer(
             videoPath: '/dummy/movies/sample.mp4',
             onClose: () {},
-            onGenerateLiveCaption: (video, {targetLang = 'auto'}) async {
+            onGenerateLiveCaption: (video, {targetLang = 'auto', onProgress}) async {
               requestedVideo = video;
               requestedLang = targetLang;
+              onProgress?.call("Audio tekshirilmoqda...");
               return dummySrt.path;
             },
           ),

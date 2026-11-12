@@ -3,9 +3,16 @@ from __future__ import annotations
 
 import bisect
 import os
+import re
+import subprocess
 from pathlib import Path
+from typing import Any
 
-from .core import Segment, Word
+from .core import FFMPEG, Segment, Word
+
+RESCAN_GAP_MIN = 3.0
+RESCAN_GAP_SPEECH = 1.5
+RESCAN_GAP_MAX_CHECKS = 25
 
 def _pcm_window(media: Path, start: float, dur: float) -> Any:
     """Audioning bir bo'lagini 16 kHz mono float massiv qilib o'qiydi.

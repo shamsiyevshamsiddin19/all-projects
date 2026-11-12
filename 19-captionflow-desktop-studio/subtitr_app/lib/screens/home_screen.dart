@@ -647,6 +647,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<String?> _generateLiveCaption(
     String videoPath, {
     String targetLang = 'auto',
+    void Function(String message)? onProgress,
   }) async {
     _addLog("⚡ Jonli AI subtitr (Live Caption) boshlandi: $videoPath (til: $targetLang)", level: ProcessLogLevel.info);
     try {
@@ -657,6 +658,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         targetLang: targetLang,
         onProgress: (p) {
           _addLog("AI Subtitr: ${p.message}", level: ProcessLogLevel.info);
+          if (onProgress != null && p.message.isNotEmpty) {
+            onProgress(p.message);
+          }
         },
       );
 
@@ -1703,6 +1707,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               },
                               onOpenExternal: (p) => _service.openPath(p),
                               onGenerateLiveCaption: _generateLiveCaption,
+                              onCancelLiveCaption: () => _service.cancel(),
                             )
                           : _showHistory
                               ? historyPanel
@@ -1777,6 +1782,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 },
                                 onOpenExternal: (p) => _service.openPath(p),
                                 onGenerateLiveCaption: _generateLiveCaption,
+                                onCancelLiveCaption: () => _service.cancel(),
                               ),
                             ),
                             const SizedBox(height: 16),

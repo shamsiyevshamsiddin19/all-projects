@@ -111,6 +111,12 @@ class _InAppVideoPlayerDialogState extends State<InAppVideoPlayerDialog> {
   }
 }
 
+typedef LiveCaptionGenerator = Future<String?> Function(
+  String videoPath, {
+  String targetLang,
+  void Function(String message)? onProgress,
+});
+
 /// Asosiy oynaning o'ng tomonida to'g'ridan-to'g'ri integratsiya qilingan
 /// video va hujjatlar studiyasi (Dropdown orqali boshqa materiallarga o'tish imkoni bilan).
 class EmbeddedVideoPlayer extends StatefulWidget {
@@ -125,6 +131,7 @@ class EmbeddedVideoPlayer extends StatefulWidget {
     this.isFullscreen = false,
     this.onFullscreenChanged,
     this.onGenerateLiveCaption,
+    this.onCancelLiveCaption,
   });
 
   final String videoPath;
@@ -135,7 +142,8 @@ class EmbeddedVideoPlayer extends StatefulWidget {
   final List<StudioMediaFile>? siblingFiles;
   final bool isFullscreen;
   final ValueChanged<bool>? onFullscreenChanged;
-  final Future<String?> Function(String videoPath, {String targetLang})? onGenerateLiveCaption;
+  final LiveCaptionGenerator? onGenerateLiveCaption;
+  final VoidCallback? onCancelLiveCaption;
 
   @override
   State<EmbeddedVideoPlayer> createState() => _EmbeddedVideoPlayerState();
@@ -383,6 +391,7 @@ class _EmbeddedVideoPlayerState extends State<EmbeddedVideoPlayer> {
         onToggleFullscreen: _toggleFullscreen,
         headerLeading: _buildHeaderLeading(context),
         onGenerateLiveCaption: widget.onGenerateLiveCaption,
+        onCancelLiveCaption: widget.onCancelLiveCaption,
       );
     } else {
       playerWidget = DocumentViewer(
@@ -436,6 +445,7 @@ class StudioVideoPlayer extends StatefulWidget {
     this.onToggleFullscreen,
     this.headerLeading,
     this.onGenerateLiveCaption,
+    this.onCancelLiveCaption,
   });
 
   final String videoPath;
@@ -446,7 +456,8 @@ class StudioVideoPlayer extends StatefulWidget {
   final bool isFullscreen;
   final VoidCallback? onToggleFullscreen;
   final Widget? headerLeading;
-  final Future<String?> Function(String videoPath, {String targetLang})? onGenerateLiveCaption;
+  final LiveCaptionGenerator? onGenerateLiveCaption;
+  final VoidCallback? onCancelLiveCaption;
 
   @override
   State<StudioVideoPlayer> createState() => _StudioVideoPlayerState();
@@ -1037,6 +1048,11 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
       final srtPath = await widget.onGenerateLiveCaption!(
         widget.videoPath,
         targetLang: targetLang,
+        onProgress: (msg) {
+          if (mounted) {
+            setState(() => _liveCaptionStatus = msg);
+          }
+        },
       );
 
       if (srtPath != null && File(srtPath).existsSync()) {
@@ -1758,6 +1774,24 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
+                          if (widget.onCancelLiveCaption != null) ...[
+                            const SizedBox(width: 8),
+                            InkWell(
+                              onTap: () {
+                                widget.onCancelLiveCaption?.call();
+                                setState(() {
+                                  _isGeneratingLiveCaption = false;
+                                  _liveCaptionStatus = '';
+                                });
+                                _showOSD("AI subtitr bekor qilindi", Icons.close_rounded);
+                              },
+                              borderRadius: BorderRadius.circular(10),
+                              child: const Padding(
+                                padding: EdgeInsets.all(2),
+                                child: Icon(Icons.close_rounded, size: 14, color: Color(0xFF94A3B8)),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
