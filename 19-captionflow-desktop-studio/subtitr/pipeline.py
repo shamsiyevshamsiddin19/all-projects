@@ -358,6 +358,9 @@ def _render_outputs(
     """`_prepare_data()` qaytargan (yoki foydalanuvchi tahrirlagan) `job`dan
     SRT/ASS/DOCX fayllar va subtitr kuydirilgan videoni tayyorlaydi."""
     ensure_dirs()
+    # Test yoki boshqa oqim vaqtinchalik papkani tozalab yuborgan bo'lishi
+    # mumkin; mkdtemp mavjud ota papkani talab qiladi.
+    TMP_DIR.mkdir(parents=True, exist_ok=True)
     require_tool("ffmpeg")
     require_tool("ffprobe")
     data = _render_data(job)

@@ -8,6 +8,10 @@
 # The following line activates a set of recommended lints for Flutter apps,
 # packages, and plugins designed to encourage good coding practices.
 analyzer:
+  errors:
+    # Flutter 3.50 Material importini muddatidan oldin deprecated deb belgiladi.
+    # Ilova hozircha Material APIga tayanadi; CI'da bu informatsion xabar gate'ni to'smasin.
+    deprecated_member_use: ignore
   exclude:
     - build/**
     - android/**
