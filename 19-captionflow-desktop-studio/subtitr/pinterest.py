@@ -13,6 +13,7 @@ import hashlib
 import json
 import os
 import re
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -27,7 +28,7 @@ def sanitize_filename(name: str) -> str:
     return cleaned or "pinterest_media"
 
 
-PINTEREST_DOMAIN_RE = re.compile(r"(?:pinterest\.[a-z.]+|pin\.it)", re.I)
+MAX_DOWNLOAD_BYTES = 1024 * 1024 * 1024  # 1 GiB: diskni cheksiz to'ldirishdan saqlaydi.
 DEFAULT_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -43,8 +44,54 @@ def is_pinterest_url(url: str) -> bool:
     """Tekshiradi: havola Pinterest yoki pin.it domeniga tegishlimi."""
     if not url or not isinstance(url, str):
         return False
-    clean = url.strip()
-    return bool(PINTEREST_DOMAIN_RE.search(clean))
+    return _is_pinterest_page_url(url)
+
+
+def _parsed_https_url(url: str) -> urllib.parse.SplitResult | None:
+    """URL'ni faqat HTTPS va haqiqiy host bilan qabul qiladi."""
+    try:
+        parsed = urllib.parse.urlsplit(url.strip())
+    except (TypeError, ValueError):
+        return None
+    if parsed.scheme != "https" or not parsed.hostname:
+        return None
+    return parsed
+
+
+def _is_pinterest_page_url(url: str) -> bool:
+    parsed = _parsed_https_url(url)
+    if not parsed:
+        return False
+    host = parsed.hostname.lower()
+    return host == "pin.it" or host == "pinterest.com" or host.endswith(".pinterest.com")
+
+
+def _is_pinimg_media_url(url: str) -> bool:
+    parsed = _parsed_https_url(url)
+    if not parsed:
+        return False
+    host = parsed.hostname.lower()
+    return host == "pinimg.com" or host.endswith(".pinimg.com")
+
+
+class _AllowedRedirect(urllib.request.HTTPRedirectHandler):
+    """Har bir redirect manzilini so'rov yuborilishidan oldin tekshiradi."""
+
+    def __init__(self, allowed: Any) -> None:
+        super().__init__()
+        self._allowed = allowed
+
+    def redirect_request(self, req: Any, fp: Any, code: int, msg: str,
+                         headers: Any, newurl: str) -> Any:
+        if not self._allowed(newurl):
+            raise urllib.error.HTTPError(newurl, code, "Ruxsat etilmagan redirect manzili", headers, fp)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def _open_trusted(request: urllib.request.Request, *, timeout: float, allowed: Any) -> Any:
+    """Faqat ruxsat etilgan hostlarga ketadigan redirect zanjiri bilan ochadi."""
+    opener = urllib.request.build_opener(_AllowedRedirect(allowed))
+    return opener.open(request, timeout=timeout)
 
 
 def resolve_pinterest_url(url: str, timeout: float = 12.0) -> str:
@@ -52,11 +99,16 @@ def resolve_pinterest_url(url: str, timeout: float = 12.0) -> str:
     clean = url.strip()
     if not clean.startswith(("http://", "https://")):
         clean = "https://" + clean
+    if not _is_pinterest_page_url(clean):
+        raise ValueError("Faqat HTTPS Pinterest yoki pin.it havolasidan foydalaning.")
 
     req = urllib.request.Request(clean, headers=DEFAULT_HEADERS)
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            return resp.geturl()
+        with _open_trusted(req, timeout=timeout, allowed=_is_pinterest_page_url) as resp:
+            final_url = resp.geturl()
+            if not _is_pinterest_page_url(final_url):
+                raise RuntimeError("Pinterest havolasi ruxsat etilmagan manzilga yo'naltirdi.")
+            return final_url
     except Exception:
         # Agar tarmoqda xato bersa, asl URL bilan davom etamiz
         return clean
@@ -107,7 +159,7 @@ def extract_pinterest_media(url: str, timeout: float = 14.0) -> dict[str, Any]:
 
     req = urllib.request.Request(final_url, headers=DEFAULT_HEADERS)
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with _open_trusted(req, timeout=timeout, allowed=_is_pinterest_page_url) as resp:
             html = resp.read().decode("utf-8", errors="ignore")
     except Exception as e:
         raise RuntimeError(f"Pinterest sahifasini ochib bo'lmadi: {e}") from e
@@ -211,6 +263,8 @@ def download_pinterest_media(
     media_url = media_info["url"]
     title = media_info["title"]
     ext = media_info["ext"]
+    if not _is_pinimg_media_url(media_url):
+        raise RuntimeError("Pinterest media manzili ishonchli pinimg.com hostida emas.")
 
     type_label = "video" if media_type == "video" else ("gif" if media_type == "gif" else "rasm")
     emit("progress", message=f"Pinterest {type_label} topildi: {title}", progress=progress_lo + 0.05)
@@ -246,8 +300,17 @@ def download_pinterest_media(
     span = max(0.01, progress_hi - (progress_lo + 0.05))
 
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp, open(temp_path, "wb") as f:
-            total_size = int(resp.headers.get("Content-Length") or 0)
+        with _open_trusted(req, timeout=30, allowed=_is_pinimg_media_url) as resp, open(temp_path, "wb") as f:
+            content_type = str(resp.headers.get("Content-Type") or "").lower()
+            expected_type = "video/" if media_type == "video" else "image/"
+            if content_type and not content_type.startswith(expected_type):
+                raise RuntimeError(f"Kutilmagan media turi: {content_type}")
+            try:
+                total_size = int(resp.headers.get("Content-Length") or 0)
+            except ValueError as e:
+                raise RuntimeError("Pinterest noto'g'ri Content-Length qaytardi.") from e
+            if total_size > MAX_DOWNLOAD_BYTES:
+                raise RuntimeError("Pinterest fayli 1 GiB limitdan katta.")
             downloaded = 0
             chunk_size = 64 * 1024  # 64 KB
             last_reported_pct = -1
@@ -258,6 +321,8 @@ def download_pinterest_media(
                     break
                 f.write(chunk)
                 downloaded += len(chunk)
+                if downloaded > MAX_DOWNLOAD_BYTES:
+                    raise RuntimeError("Pinterest fayli 1 GiB limitdan oshdi.")
 
                 if total_size > 0:
                     pct = int((downloaded / total_size) * 100)

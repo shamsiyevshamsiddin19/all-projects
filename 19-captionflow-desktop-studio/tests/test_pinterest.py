@@ -21,9 +21,12 @@ class PinterestDownloaderTests(unittest.TestCase):
         self.assertTrue(is_pinterest_url("https://www.pinterest.com/pin/123456789/"))
         self.assertTrue(is_pinterest_url("https://pinterest.com/pin/123456789/"))
         self.assertTrue(is_pinterest_url("https://pin.it/abc123X"))
-        self.assertTrue(is_pinterest_url("http://uk.pinterest.com/pin/998877/"))
+        self.assertFalse(is_pinterest_url("http://uk.pinterest.com/pin/998877/"))
         self.assertFalse(is_pinterest_url("https://www.youtube.com/watch?v=dQw4w9WgXcQ"))
         self.assertFalse(is_pinterest_url("https://instagram.com/p/Cxyz123"))
+        self.assertFalse(is_pinterest_url("https://pinterest.com.evil.example/pin/1"))
+        self.assertFalse(is_pinterest_url("https://evil.example/?next=pinterest.com"))
+        self.assertFalse(is_pinterest_url("http://www.pinterest.com/pin/1"))
         self.assertFalse(is_pinterest_url("https://tiktok.com/@user/video/123"))
         self.assertFalse(is_pinterest_url(""))
         self.assertFalse(is_pinterest_url(None))  # type: ignore
@@ -47,7 +50,7 @@ class PinterestDownloaderTests(unittest.TestCase):
         </body>
         </html>
         """
-        with patch("urllib.request.urlopen") as mock_urlopen:
+        with patch("subtitr.pinterest._open_trusted") as mock_urlopen:
             mock_resp = MagicMock()
             mock_resp.read.return_value = mock_html.encode("utf-8")
             mock_resp.geturl.return_value = "https://www.pinterest.com/pin/12345/"
@@ -70,7 +73,7 @@ class PinterestDownloaderTests(unittest.TestCase):
         </body>
         </html>
         """
-        with patch("urllib.request.urlopen") as mock_urlopen:
+        with patch("subtitr.pinterest._open_trusted") as mock_urlopen:
             mock_resp = MagicMock()
             mock_resp.read.return_value = mock_html.encode("utf-8")
             mock_resp.geturl.return_value = "https://www.pinterest.com/pin/54321/"
@@ -94,7 +97,7 @@ class PinterestDownloaderTests(unittest.TestCase):
         </body>
         </html>
         """
-        with patch("urllib.request.urlopen") as mock_urlopen:
+        with patch("subtitr.pinterest._open_trusted") as mock_urlopen:
             mock_resp = MagicMock()
             mock_resp.read.return_value = mock_html.encode("utf-8")
             mock_resp.geturl.return_value = "https://www.pinterest.com/pin/999/"
@@ -123,7 +126,7 @@ class PinterestDownloaderTests(unittest.TestCase):
 
             with (
                 patch("subtitr.pinterest.extract_pinterest_media", return_value=mock_info),
-                patch("urllib.request.urlopen") as mock_urlopen,
+                patch("subtitr.pinterest._open_trusted") as mock_urlopen,
                 patch("subtitr.pinterest.emit") as mock_emit,
             ):
                 mock_resp = MagicMock()
@@ -152,6 +155,32 @@ class PinterestDownloaderTests(unittest.TestCase):
                 )
                 self.assertEqual(cached_path, res_path)
                 self.assertTrue(any("keshdan olindi" in str(c) for c in mock_emit.call_args_list))
+
+    def test_download_rejects_non_pinimg_media_url(self):
+        with tempfile.TemporaryDirectory() as td:
+            unsafe = {
+                "type": "image", "url": "https://evil.example/file.png",
+                "title": "Unsafe", "ext": ".png", "pin_id": "1",
+            }
+            with patch("subtitr.pinterest.extract_pinterest_media", return_value=unsafe):
+                with self.assertRaisesRegex(RuntimeError, "pinimg"):
+                    download_pinterest_media("https://www.pinterest.com/pin/1", dest_dir=Path(td))
+
+    def test_download_stops_unbounded_response_at_limit(self):
+        with tempfile.TemporaryDirectory() as td:
+            info = {
+                "type": "image", "url": "https://i.pinimg.com/originals/test.png",
+                "title": "Large", "ext": ".png", "pin_id": "1",
+            }
+            response = MagicMock()
+            response.headers = {"Content-Length": str(1024 * 1024 * 1024 + 1)}
+            response.__enter__.return_value = response
+            with (
+                patch("subtitr.pinterest.extract_pinterest_media", return_value=info),
+                patch("subtitr.pinterest._open_trusted", return_value=response),
+                self.assertRaisesRegex(RuntimeError, "1 GiB"),
+            ):
+                download_pinterest_media("https://www.pinterest.com/pin/1", dest_dir=Path(td))
 
     def test_media_download_video_routes_pinterest_url(self):
         with tempfile.TemporaryDirectory() as td:

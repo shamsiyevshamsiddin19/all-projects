@@ -19,6 +19,10 @@ jobs:
           python-version: '3.12'
           cache: pip
           cache-dependency-path: desktop_requirements.txt
+      - name: Install media tools used by integration tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
       - name: Install test dependencies
         run: |
           python -m venv .venv

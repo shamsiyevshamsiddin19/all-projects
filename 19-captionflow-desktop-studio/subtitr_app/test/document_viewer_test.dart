@@ -112,6 +112,7 @@ void main() {
   });
 
   test('StudioMediaFile categorization and discovery works correctly', () {
+    expect(srtFile.existsSync(), isTrue);
     expect(StudioMediaFile.categorize('video.mp4'), equals(StudioFileCategory.video));
     expect(StudioMediaFile.categorize('sample.pdf'), equals(StudioFileCategory.pdf));
     expect(StudioMediaFile.categorize('doc.docx'), equals(StudioFileCategory.docx));
