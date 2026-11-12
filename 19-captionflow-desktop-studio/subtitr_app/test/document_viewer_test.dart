@@ -11,6 +11,7 @@ void main() {
   late File textFile;
   late File mdFile;
   late File srtFile;
+  late File assFile;
 
   setUp(() {
     tempDir = Directory.systemTemp.createTempSync('studio_doc_test_');
@@ -20,6 +21,14 @@ void main() {
       ..writeAsStringSync('# Sarlavha\n\n- Birinchi band\n- Ikkinchi band :: tarjimasi');
     srtFile = File('${tempDir.path}/subtitles.srt')
       ..writeAsStringSync('1\n00:00:01,000 --> 00:00:03,000\nHello World\n');
+    assFile = File('${tempDir.path}/subtitles_dual.ass')
+      ..writeAsStringSync(
+        '[Script Info]\nScriptType: v4.00+\n\n'
+        '[Events]\n'
+        'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n'
+        'Dialogue: 0,0:00:01.00,0:00:03.50,Bottom,,0,0,0,,Hello world\\Nwelcome\n'
+        'Dialogue: 0,0:00:01.00,0:00:03.50,Trans,,0,0,0,,{\\c&H14FF39&}Salom dunyo\\Nxush kelibsiz\n',
+      );
   });
 
   tearDown(() {
@@ -109,6 +118,32 @@ void main() {
     // Zoom out
     await tester.tap(find.byTooltip("Shriftni kichiklashtirish (A-)"));
     await tester.pump();
+  });
+
+  testWidgets('DocumentViewer parses and formats ASS subtitle files cleanly', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData.dark(),
+        home: Scaffold(
+          body: DocumentViewer(
+            filePath: assFile.path,
+            title: 'Dual ASS Subtitle',
+            onClose: () {},
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.text('ASS'), findsOneWidget);
+    expect(find.text('Dual ASS Subtitle'), findsOneWidget);
+    expect(find.textContaining('0:00:01.00 --> 0:00:03.50'), findsWidgets);
+    expect(find.textContaining('Hello world'), findsOneWidget);
+    expect(find.textContaining('Salom dunyo'), findsOneWidget);
+    // Ugly ASS headers like [Script Info] should not be shown
+    expect(find.textContaining('[Script Info]'), findsNothing);
   });
 
   test('StudioMediaFile categorization and discovery works correctly', () {

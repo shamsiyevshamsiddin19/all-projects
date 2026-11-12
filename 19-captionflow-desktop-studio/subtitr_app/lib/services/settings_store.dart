@@ -114,6 +114,7 @@ class AppearanceSettings {
     this.origStyle = 'box',
     this.quality = '1080',
     this.upscale = false,
+    this.container = 'auto',
   });
 
   final double fontScale; // 0.85 kichik, 1.0 o'rta, 1.2 katta
@@ -125,6 +126,7 @@ class AppearanceSettings {
   // Tasvirga tafsilot qo'shmaydi, lekin subtitr matni yangi o'lchamda
   // vektor sifatida chizilib, ancha tiniq chiqadi.
   final bool upscale;
+  final String container; // 'auto' | 'mp4' | 'mkv'
 
   AppearanceSettings copyWith({
     double? fontScale,
@@ -133,6 +135,7 @@ class AppearanceSettings {
     String? origStyle,
     String? quality,
     bool? upscale,
+    String? container,
   }) {
     return AppearanceSettings(
       fontScale: fontScale ?? this.fontScale,
@@ -141,6 +144,7 @@ class AppearanceSettings {
       origStyle: origStyle ?? this.origStyle,
       quality: quality ?? this.quality,
       upscale: upscale ?? this.upscale,
+      container: container ?? this.container,
     );
   }
 }
@@ -324,6 +328,7 @@ class SettingsStore {
       origStyle: prefs.getString('sub_orig_style') ?? 'box',
       quality: prefs.getString('sub_quality') ?? '1080',
       upscale: prefs.getBool('sub_upscale') ?? false,
+      container: prefs.getString('sub_container') ?? 'auto',
     );
   }
 
@@ -335,6 +340,7 @@ class SettingsStore {
     await prefs.setString('sub_orig_style', a.origStyle);
     await prefs.setString('sub_quality', a.quality);
     await prefs.setBool('sub_upscale', a.upscale);
+    await prefs.setString('sub_container', a.container);
   }
 
   static const _kLastResult = 'last_processor_result';

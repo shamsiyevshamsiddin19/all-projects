@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -55,7 +56,10 @@ class _DocumentViewerState extends State<DocumentViewer> {
     super.dispose();
   }
 
+  int _loadGeneration = 0;
+
   Future<void> _loadFile() async {
+    final generation = ++_loadGeneration;
     setState(() {
       _loading = true;
       _error = null;
@@ -75,12 +79,14 @@ class _DocumentViewerState extends State<DocumentViewer> {
         extracted = await _readPdf(widget.filePath);
       } else if (lower.endsWith('.docx') || lower.endsWith('.doc')) {
         extracted = await _readDocx(widget.filePath);
+      } else if (lower.endsWith('.ass')) {
+        extracted = _readAss(file);
       } else {
-        // .md, .txt, .srt, .ass, .vtt, .json
+        // .md, .txt, .srt, .vtt, .json
         extracted = file.readAsStringSync();
       }
 
-      if (mounted) {
+      if (mounted && _loadGeneration == generation) {
         setState(() {
           _content = extracted.trim().isEmpty
               ? '(Fayl bo\'sh yoki matn topilmadi)'
@@ -89,13 +95,91 @@ class _DocumentViewerState extends State<DocumentViewer> {
         });
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && _loadGeneration == generation) {
         setState(() {
           _error = e.toString();
           _loading = false;
         });
       }
     }
+  }
+
+  String _readAss(File file) {
+    String raw;
+    try {
+      raw = file.readAsStringSync();
+    } catch (_) {
+      try {
+        raw = File(file.path).readAsStringSync(encoding: const Latin1Codec());
+      } catch (e) {
+        return 'ASS faylini o\'qib bo\'lmadi: $e';
+      }
+    }
+
+    final lines = raw.split('\n');
+    final tagRe = RegExp(r'\{[^}]*\}');
+    final dialogues = <_AssDialogue>[];
+
+    for (final line in lines) {
+      final trimmed = line.trim();
+      if (trimmed.startsWith('Dialogue:')) {
+        // Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+        final afterPrefix = trimmed.substring(9).trim();
+        final parts = afterPrefix.split(',');
+        if (parts.length >= 10) {
+          final start = parts[1].trim();
+          final end = parts[2].trim();
+          final style = parts[3].trim();
+          final textPart = parts.sublist(9).join(',');
+          final cleanText = textPart
+              .replaceAll(tagRe, '')
+              .replaceAll(r'\N', '\n')
+              .replaceAll(r'\n', '\n')
+              .replaceAll(r'\h', ' ')
+              .trim();
+          if (cleanText.isNotEmpty) {
+            dialogues.add(_AssDialogue(
+              start: start,
+              end: end,
+              style: style,
+              text: cleanText,
+            ));
+          }
+        }
+      }
+    }
+
+    if (dialogues.isEmpty) {
+      return raw;
+    }
+
+    final buffer = StringBuffer();
+    final fileName = file.uri.pathSegments.isNotEmpty
+        ? file.uri.pathSegments.last
+        : 'subtitr.ass';
+    buffer.writeln('# $fileName (${dialogues.length} ta subtitr dialogi)');
+    buffer.writeln();
+
+    for (final d in dialogues) {
+      final styleLower = d.style.toLowerCase();
+      final isTranslation = styleLower.contains('trans') ||
+          styleLower.contains('uz') ||
+          styleLower.contains('tarjima');
+      final isVocab = styleLower.contains('vocab') ||
+          styleLower.contains('lug');
+
+      buffer.writeln('${d.start} --> ${d.end}');
+      if (isVocab) {
+        buffer.writeln('**[Lug\'at]**: ${d.text}');
+      } else if (isTranslation) {
+        buffer.writeln(':: ${d.text}');
+      } else {
+        buffer.writeln(d.text);
+      }
+      buffer.writeln();
+    }
+
+    return buffer.toString().trim();
   }
 
   Future<String> _readPdf(String path) async {
@@ -547,4 +631,18 @@ except Exception:
       children: widgets,
     );
   }
+}
+
+class _AssDialogue {
+  const _AssDialogue({
+    required this.start,
+    required this.end,
+    required this.style,
+    required this.text,
+  });
+
+  final String start;
+  final String end;
+  final String style;
+  final String text;
 }

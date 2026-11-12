@@ -325,6 +325,13 @@ class _VideoSelectionPanelState extends State<VideoSelectionPanel> {
                         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFFEDEDED)),
                       ),
                     ),
+                    if (widget.onPreviewVideo != null)
+                      IconButton(
+                        tooltip: "Subtitrni ochib ko'rish (ASS / SRT)",
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => widget.onPreviewVideo!(widget.externalSubtitlePath!),
+                        icon: const Icon(Icons.visibility_rounded, size: 16, color: Color(0xFF38BDF8)),
+                      ),
                     IconButton(
                       tooltip: 'Subtitrni olib tashlash',
                       visualDensity: VisualDensity.compact,

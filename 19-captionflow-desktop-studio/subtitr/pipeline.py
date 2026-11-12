@@ -475,10 +475,21 @@ def _render_outputs(
     for i, render_mode in enumerate(render_modes):
         emit("progress", message=f"ASS tayyorlanmoqda: {render_mode}", progress=0.69)
         ass = job_out_dir / f"{stem}_{render_mode}.ass"
-        # MKV ASS uslubini o'zgartirmay saqlay oladi; MP4 esa mos keluvchi
-        # `mov_text` trek talab qiladi. Shu sabab manba MKV bo'lsa konteynerni
-        # almashtirmaymiz, boshqa holatda keng tarqalgan MP4 natija beramiz.
-        out_suffix = ".mkv" if render_mode.startswith("softsub") and video.suffix.lower() == ".mkv" else ".mp4"
+        # Konteyner formati tanlash:
+        # - MKV: Softsub rejimlarida ASS subtitr uslublarini (ranglar, shriftlar,
+        #   joylashuv) 100% buzmasdan saqlaydi va videoni qayta kodlamasdan 2 soniyada
+        #   muxlaydi. Shuningdek, manba MKV bo'lsa konteyner o'zgartirilmaydi.
+        # - MP4: Hardsub (videoga yopishtirilgan) rejimlarida barcha telefonlar,
+        #   brauzerlar va ijtimoiy tarmoqlar uchun universal standart.
+        pref_container = str(job.get("container", "")).strip().lower()
+        if pref_container in {"mkv", ".mkv"}:
+            out_suffix = ".mkv"
+        elif pref_container in {"mp4", ".mp4"}:
+            out_suffix = ".mp4"
+        elif render_mode.startswith("softsub") or video.suffix.lower() == ".mkv":
+            out_suffix = ".mkv"
+        else:
+            out_suffix = ".mp4"
         out = job_out_dir / f"{stem}_{render_mode}{out_suffix}"
         # Render, kadr ko'rish va pleyer UCHALASI ham shu yozuvchidan
         # o'tadi — ko'rinish ajralib ketishi mumkin emas.
@@ -813,10 +824,13 @@ def render_session(
     orig_style: str = "box",
     quality: str | None = None,
     upscale: bool = False,
+    container: str = "auto",
 ) -> dict[str, Any]:
     """Seans faylini (va agar berilgan bo'lsa, tahrirlangan segmentlarni) o'qib,
     videoni renderlaydi."""
     data = _load_session(session_path, segments_path)
+    if container and container != "auto":
+        data["container"] = container
     return _render_outputs(
         data, font_scale=font_scale, position=position,
         sub_color=sub_color, orig_style=orig_style, quality=quality,
@@ -875,10 +889,13 @@ def process(
     subtitle_offset: float = 0.0,
     voice: str | None = None,
     ducking: float = 0.18,
+    container: str = "auto",
 ) -> dict[str, Any]:
     job = _prepare_data(video_value, mode, source_lang, target_lang, quality=quality,
                         subtitle_path=subtitle_path, subtitle_offset=subtitle_offset,
                         voice=voice, ducking=ducking)
+    if container and container != "auto":
+        job["container"] = container
     return _render_outputs(
         job, font_scale=font_scale, position=position,
         sub_color=sub_color, orig_style=orig_style, quality=quality,

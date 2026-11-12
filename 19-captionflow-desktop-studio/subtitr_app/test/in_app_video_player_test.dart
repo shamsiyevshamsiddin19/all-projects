@@ -301,4 +301,47 @@ void main() {
     // Now DocumentViewer is active, showing the MD badge
     expect(find.text('MD'), findsOneWidget);
   });
+
+  testWidgets('EmbeddedVideoPlayer toggles fullscreen and notifies parent callback', (tester) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    bool isFullscreen = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData.dark(),
+        home: StatefulBuilder(
+          builder: (context, setState) {
+            return Scaffold(
+              body: EmbeddedVideoPlayer(
+                videoPath: '/dummy/movies/video.mp4',
+                isFullscreen: isFullscreen,
+                onFullscreenChanged: (fs) => setState(() => isFullscreen = fs),
+                onClose: () {},
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    final fsBtn = find.byTooltip("To'liq ekran (F)");
+    expect(fsBtn, findsAtLeastNWidgets(1));
+
+    await tester.tap(fsBtn.first);
+    await tester.pump();
+
+    expect(isFullscreen, isTrue);
+
+    final exitFsBtn = find.byTooltip("To'liq ekrandan chiqish (F)");
+    expect(exitFsBtn, findsAtLeastNWidgets(1));
+
+    await tester.tap(exitFsBtn.first);
+    await tester.pump();
+
+    expect(isFullscreen, isFalse);
+  });
 }

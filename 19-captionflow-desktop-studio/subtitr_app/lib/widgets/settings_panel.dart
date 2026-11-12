@@ -902,22 +902,12 @@ class _AppearanceRow extends StatelessWidget {
   List<Widget> _rowOne() {
     return [
       Expanded(
-        child: _MiniDropdown<double>(
-          label: 'Shrift',
-          value: appearance.fontScale,
-          items: {0.85: 'Kichik', 1.0: "O'rta", 1.2: 'Katta'},
-          enabled: enabled,
-          onChanged: (v) => onChanged(appearance.copyWith(fontScale: v)),
-        ),
-      ),
-      const SizedBox(width: 8),
-      Expanded(
         child: _MiniDropdown<String>(
-          label: 'Joyi',
-          value: appearance.position,
-          items: const {'bottom': 'Past', 'top': 'Tepa'},
+          label: 'Format',
+          value: appearance.container,
+          items: const {'auto': 'Avto', 'mp4': 'MP4', 'mkv': 'MKV'},
           enabled: enabled,
-          onChanged: (v) => onChanged(appearance.copyWith(position: v)),
+          onChanged: (v) => onChanged(appearance.copyWith(container: v)),
         ),
       ),
       const SizedBox(width: 8),
@@ -935,18 +925,28 @@ class _AppearanceRow extends StatelessWidget {
           onChanged: (v) => onChanged(appearance.copyWith(quality: v)),
         ),
       ),
+      const SizedBox(width: 8),
+      Expanded(
+        child: _MiniDropdown<String>(
+          label: 'Joyi',
+          value: appearance.position,
+          items: const {'bottom': 'Past', 'top': 'Tepa'},
+          enabled: enabled,
+          onChanged: (v) => onChanged(appearance.copyWith(position: v)),
+        ),
+      ),
     ];
   }
 
   List<Widget> _rowTwo() {
     return [
       Expanded(
-        child: _MiniDropdown<bool>(
-          label: 'Kattalash',
-          value: appearance.upscale,
-          items: const {false: "Yo'q", true: 'Ha'},
+        child: _MiniDropdown<double>(
+          label: 'Shrift',
+          value: appearance.fontScale,
+          items: {0.85: 'Kichik', 1.0: "O'rta", 1.2: 'Katta'},
           enabled: enabled,
-          onChanged: (v) => onChanged(appearance.copyWith(upscale: v)),
+          onChanged: (v) => onChanged(appearance.copyWith(fontScale: v)),
         ),
       ),
       const SizedBox(width: 8),

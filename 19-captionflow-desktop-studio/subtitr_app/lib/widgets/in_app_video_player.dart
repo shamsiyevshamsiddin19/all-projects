@@ -121,6 +121,8 @@ class EmbeddedVideoPlayer extends StatefulWidget {
     required this.onClose,
     this.onOpenExternal,
     this.siblingFiles,
+    this.isFullscreen = false,
+    this.onFullscreenChanged,
   });
 
   final String videoPath;
@@ -129,13 +131,17 @@ class EmbeddedVideoPlayer extends StatefulWidget {
   final VoidCallback onClose;
   final ValueChanged<String>? onOpenExternal;
   final List<StudioMediaFile>? siblingFiles;
+  final bool isFullscreen;
+  final ValueChanged<bool>? onFullscreenChanged;
 
   @override
   State<EmbeddedVideoPlayer> createState() => _EmbeddedVideoPlayerState();
 }
 
 class _EmbeddedVideoPlayerState extends State<EmbeddedVideoPlayer> {
-  bool _isFullscreen = false;
+  bool _localFullscreen = false;
+  bool get _isFullscreen =>
+      widget.onFullscreenChanged != null ? widget.isFullscreen : _localFullscreen;
   late String _currentPath;
   String? _currentSubtitlePath;
   List<StudioMediaFile> _files = const [];
@@ -189,7 +195,12 @@ class _EmbeddedVideoPlayerState extends State<EmbeddedVideoPlayer> {
   }
 
   void _toggleFullscreen() {
-    setState(() => _isFullscreen = !_isFullscreen);
+    final next = !_isFullscreen;
+    if (widget.onFullscreenChanged != null) {
+      widget.onFullscreenChanged!(next);
+    } else {
+      setState(() => _localFullscreen = next);
+    }
   }
 
   Widget _buildHeaderLeading(BuildContext context) {
@@ -381,8 +392,8 @@ class _EmbeddedVideoPlayerState extends State<EmbeddedVideoPlayer> {
     }
 
     if (_isFullscreen) {
-      return Dialog.fullscreen(
-        backgroundColor: Colors.black,
+      return Container(
+        color: Colors.black,
         child: playerWidget,
       );
     }

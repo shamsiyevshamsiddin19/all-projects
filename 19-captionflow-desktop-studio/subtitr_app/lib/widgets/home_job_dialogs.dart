@@ -104,10 +104,12 @@ class _BatchQueueDialogState extends State<BatchQueueDialog> {
       child: ReorderableListView.builder(
         buildDefaultDragHandles: false,
         itemCount: _queue.length,
-        onReorderItem: (oldIndex, newIndex) => setState(() {
-          // Yangi Flutter API indeksi element olib tashlangan holatga mos
-          // beriladi, shuning uchun pastga ko'chirishda qo'shimcha tuzatish
-          // talab qilinmaydi.
+        onReorder: (oldIndex, newIndex) => setState(() {
+          // Standart ReorderableListView qoidasi: agar element pastga surilsa,
+          // olib tashlangandan so'ng indeks 1 ga siljiydi.
+          if (oldIndex < newIndex) {
+            newIndex -= 1;
+          }
           final item = _queue.removeAt(oldIndex);
           _queue.insert(newIndex, item);
         }),

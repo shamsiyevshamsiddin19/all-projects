@@ -41,6 +41,8 @@ def build_parser() -> argparse.ArgumentParser:
                            help="import qilingan subtitr uchun umumiy soniya siljishi")
     p_process.add_argument("--voice", default="uz-UZ-SardorNeural", help="AI Dublyaj ovozi (Sardor, Madina...)")
     p_process.add_argument("--ducking", type=float, default=0.18, help="Original fon musiqasi balandligi (0.0 - 1.0)")
+    p_process.add_argument("--container", default="auto", choices=["auto", "mp4", "mkv"],
+                           help="Chiqish video konteyneri (auto, mp4, mkv)")
 
     p_download = sub.add_parser("download")
     p_download.add_argument("--url", required=True)
@@ -113,6 +115,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_render.add_argument("--orig-style", default="box", choices=["box", "plain"])
     p_render.add_argument("--quality", default=DEFAULT_QUALITY, choices=list(QUALITY_HEIGHTS))
     p_render.add_argument("--upscale", action="store_true")
+    p_render.add_argument("--container", default="auto", choices=["auto", "mp4", "mkv"],
+                          help="Chiqish video konteyneri (auto, mp4, mkv)")
     p_retranslate = sub.add_parser("retranslate")
     p_retranslate.add_argument("--session", required=True)
     p_retranslate.add_argument("--segments", default=None)
@@ -185,7 +189,7 @@ def main() -> int:
                 args.session, segments_path=args.segments,
                 font_scale=args.font_scale, position=args.position, sub_color=args.sub_color,
                 orig_style=args.orig_style, quality=args.quality,
-                upscale=args.upscale,
+                upscale=args.upscale, container=getattr(args, "container", "auto"),
             )
             emit("done", **result)
         elif args.command == "process":
@@ -197,6 +201,7 @@ def main() -> int:
                 subtitle_offset=args.subtitle_offset,
                 voice=getattr(args, "voice", None),
                 ducking=getattr(args, "ducking", 0.18),
+                container=getattr(args, "container", "auto"),
             )
             emit("done", **result)
         return 0

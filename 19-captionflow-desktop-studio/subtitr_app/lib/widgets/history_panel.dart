@@ -343,35 +343,44 @@ class _HistoryPanelState extends State<HistoryPanel> {
                                         ),
                                       ),
                                     if (item.subtitlePath != null)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                          vertical: 1,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: theme.colorScheme.primary
-                                              .withValues(alpha: 0.15),
-                                          borderRadius: BorderRadius.circular(
-                                            4,
+                                      InkWell(
+                                        onTap: () => widget.onPlay(item.subtitlePath!),
+                                        borderRadius: BorderRadius.circular(4),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 1,
                                           ),
-                                        ),
-                                        child: Text(
-                                          item.subtitlePath!.toLowerCase()
-                                                  .endsWith('.ass')
-                                              ? 'ASS'
-                                              : 'SRT',
-                                          style: TextStyle(
-                                            fontSize: 9.5,
-                                            fontWeight: FontWeight.w700,
-                                            color: theme.colorScheme.primary,
+                                          decoration: BoxDecoration(
+                                            color: theme.colorScheme.primary
+                                                .withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
+                                            border: Border.all(
+                                              color: theme.colorScheme.primary
+                                                  .withValues(alpha: 0.3),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            item.subtitlePath!.toLowerCase()
+                                                    .endsWith('.ass')
+                                                ? 'ASS'
+                                                : 'SRT',
+                                            style: TextStyle(
+                                              fontSize: 9.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: theme.colorScheme.primary,
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    // Boshqa materiallar (PDF, DOCX, MD)
+                                    // Boshqa materiallar (PDF, DOCX, MD, ASS, SRT)
                                     for (final f in item.files.where((f) =>
                                         f.category == StudioFileCategory.pdf ||
                                         f.category == StudioFileCategory.docx ||
-                                        f.category == StudioFileCategory.markdown))
+                                        f.category == StudioFileCategory.markdown ||
+                                        (f.category == StudioFileCategory.subtitle && f.path != item.subtitlePath)))
                                       InkWell(
                                         onTap: () => widget.onPlay(f.path),
                                         borderRadius: BorderRadius.circular(4),

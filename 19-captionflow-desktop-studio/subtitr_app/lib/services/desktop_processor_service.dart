@@ -457,6 +457,7 @@ class DesktopProcessorService {
     double subtitleOffset = 0,
     String? voice,
     double ducking = 0.18,
+    String container = 'auto',
   }) async {
     final payload = await _streamProcess([
       'process',
@@ -479,6 +480,7 @@ class DesktopProcessorService {
       '--quality',
       quality,
       if (upscale) '--upscale',
+      if (container != 'auto') ...['--container', container],
       if (subtitlePath != null && subtitlePath.isNotEmpty) ...[
         '--subtitle',
         subtitlePath,
@@ -657,6 +659,7 @@ class DesktopProcessorService {
     String origStyle = 'box',
     String quality = '1080',
     bool upscale = false,
+    String container = 'auto',
   }) async {
     // Write the edited segments next to the session so the processor can pick
     // them up (they fully replace the originals for rendering).
@@ -685,6 +688,7 @@ class DesktopProcessorService {
         '--quality',
         quality,
         if (upscale) '--upscale',
+        if (container != 'auto') ...['--container', container],
       ], onProgress: onProgress);
       return ProcessorResult.fromJson(payload);
     } finally {

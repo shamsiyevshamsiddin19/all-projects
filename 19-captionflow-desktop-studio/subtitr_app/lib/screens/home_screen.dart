@@ -68,6 +68,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String? _activePlayerVideo;
   String? _activePlayerSubtitle;
   String? _activePlayerTitle;
+  bool _isPlayerFullscreen = false;
   double _videoDuration = 0.0;
   DateTime? _startTime;
   DateTime? _lastProgressUpdate;
@@ -280,7 +281,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             : _status;
       }
     });
-    if (video != null) await _updateDuration();
+    if (video != null) {
+      await _updateDuration();
+    } else if (subtitle != null) {
+      // Faqat subtitr (.ass / .srt) tashlanganda uni to'g'ridan-to'g'ri o'zida ochib beramiz
+      await _openPath(subtitle);
+    }
   }
 
   Future<void> _savePreset() async {
@@ -438,6 +444,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     setState(() {
       _running = true;
       _activePlayerVideo = null;
+      _isPlayerFullscreen = false;
       _result = null;
       _progress = 0;
       _status = initialStatus;
@@ -638,6 +645,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         origStyle: _appearance.origStyle,
         quality: _appearance.quality,
         upscale: _appearance.upscale,
+        container: _appearance.container,
         subtitlePath: _subtitleFor(path),
         subtitleOffset: _subtitleOffsetFor(path),
         voice: _voice,
@@ -713,6 +721,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         origStyle: _appearance.origStyle,
         quality: _appearance.quality,
         upscale: _appearance.upscale,
+        container: _appearance.container,
       );
       if (!mounted) return;
       setState(() {
@@ -806,6 +815,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             origStyle: _appearance.origStyle,
             quality: _appearance.quality,
             upscale: _appearance.upscale,
+            container: _appearance.container,
             subtitlePath: v.subtitlePath,
             subtitleOffset: v.subtitlePath.isNotEmpty ? _subtitleOffset : 0,
             voice: _voice,
@@ -896,6 +906,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             origStyle: _appearance.origStyle,
             quality: _appearance.quality,
             upscale: _appearance.upscale,
+            container: _appearance.container,
             voice: _voice,
             ducking: _ducking,
           );
@@ -1009,7 +1020,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Future<void> _openPath(String path) async {
     try {
-      if (StudioMediaFile.isSupported(path) && playerAvailable) {
+      final isVideo = _isVideoPath(path);
+      // Hujjatlar (ASS, SRT, MD, DOCX, PDF, TXT) pleyer mavjudligiga (libmpv)
+      // bog'liq emas — ular har doim ilova ichidagi DocumentViewer da ochiladi.
+      if (StudioMediaFile.isSupported(path) && (!isVideo || playerAvailable)) {
         String? sub;
         if (_isVideoPath(path)) {
           if (_result != null) {
@@ -1059,6 +1073,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           _activePlayerTitle = File(path).uri.pathSegments.isNotEmpty
               ? File(path).uri.pathSegments.last
               : path;
+          _isPlayerFullscreen = false;
         });
         return;
       }
@@ -1170,6 +1185,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _showHistory = !_showHistory;
       if (_showHistory) {
         _activePlayerVideo = null;
+        _isPlayerFullscreen = false;
         _loadHistory();
       }
     });
@@ -1382,26 +1398,32 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 if (!_running) _startProcessing();
               },
               const SingleActivator(LogicalKeyboardKey.escape): () {
-                if (_running) _cancelProcessing();
+                if (_isPlayerFullscreen) {
+                  setState(() => _isPlayerFullscreen = false);
+                } else if (_running) {
+                  _cancelProcessing();
+                }
               },
             },
             child: Focus(
               autofocus: true,
               child: Scaffold(
-                appBar: HomeScreenAppBar(
-                  appVersion: _appVersion,
-                  hasApiKey: _settings.hasAnyKey,
-                  configuredProviders: _settings.configuredProviders,
-                  isRunning: _running,
-                  unreadNotificationCount: _unreadNotificationCount,
-                  canOpenOutput: _outDir.isNotEmpty,
-                  isHistoryOpen: _showHistory,
-                  onShowHistory: _toggleHistory,
-                  onOpenApiKeys: _openSettings,
-                  onInstallDependencies: _installDependencies,
-                  onShowNotifications: _showNotifications,
-                  onOpenOutput: () => _openPath(_outDir),
-                ),
+                appBar: (_isPlayerFullscreen && _activePlayerVideo != null)
+                    ? null
+                    : HomeScreenAppBar(
+                        appVersion: _appVersion,
+                        hasApiKey: _settings.hasAnyKey,
+                        configuredProviders: _settings.configuredProviders,
+                        isRunning: _running,
+                        unreadNotificationCount: _unreadNotificationCount,
+                        canOpenOutput: _outDir.isNotEmpty,
+                        isHistoryOpen: _showHistory,
+                        onShowHistory: _toggleHistory,
+                        onOpenApiKeys: _openSettings,
+                        onInstallDependencies: _installDependencies,
+                        onShowNotifications: _showNotifications,
+                        onOpenOutput: () => _openPath(_outDir),
+                      ),
                 body: SafeArea(
                   child: LayoutBuilder(
                     builder: (context, constraints) {
@@ -1556,8 +1578,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               videoPath: _activePlayerVideo!,
                               subtitlePath: _activePlayerSubtitle,
                               title: _activePlayerTitle,
+                              isFullscreen: _isPlayerFullscreen,
+                              onFullscreenChanged: (fs) {
+                                setState(() => _isPlayerFullscreen = fs);
+                              },
                               onClose: () {
                                 setState(() {
+                                  _isPlayerFullscreen = false;
                                   _activePlayerVideo = null;
                                   _activePlayerSubtitle = null;
                                   _activePlayerTitle = null;
@@ -1568,6 +1595,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           : _showHistory
                               ? historyPanel
                               : processor;
+
+                      if (_isPlayerFullscreen && _activePlayerVideo != null) {
+                        return Container(
+                          color: Colors.black,
+                          child: rightContent,
+                        );
+                      }
 
                       final wideRightColumn = Column(
                         children: [
@@ -1617,8 +1651,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 videoPath: _activePlayerVideo!,
                                 subtitlePath: _activePlayerSubtitle,
                                 title: _activePlayerTitle,
+                                isFullscreen: _isPlayerFullscreen,
+                                onFullscreenChanged: (fs) {
+                                  setState(() => _isPlayerFullscreen = fs);
+                                },
                                 onClose: () {
                                   setState(() {
+                                    _isPlayerFullscreen = false;
                                     _activePlayerVideo = null;
                                     _activePlayerSubtitle = null;
                                     _activePlayerTitle = null;

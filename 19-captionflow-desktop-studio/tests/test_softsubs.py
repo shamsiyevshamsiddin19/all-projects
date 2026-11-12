@@ -86,6 +86,39 @@ class SoftsubPipelineTests(unittest.TestCase):
         burn.assert_not_called()
         self.assertEqual(result["outputs"][-1]["kind"], "video")
 
+    def test_explicit_container_override_respected(self):
+        job = {
+            "video": "source.avi",
+            "stem": "source",
+            "mode": "dual",
+            "container": "mkv",
+            "sourceLang": "en",
+            "targetLang": "uz",
+            "transcriber": "test",
+            "translator": "test",
+            "width": 1280,
+            "height": 720,
+            "segments": [{"start": 0.0, "end": 2.0, "rawEnd": 2.0, "original": "Hi", "translated": "Salom"}],
+            "words": [],
+            "vocab": [],
+        }
+        with tempfile.TemporaryDirectory() as raw_dir:
+            source = Path(raw_dir) / "source.avi"
+            source.touch()
+            job["video"] = str(source)
+            with (
+                patch.object(m_pipe, "OUT_DIR", Path(raw_dir)),
+                patch.object(m_pipe, "ensure_dirs"),
+                patch.object(m_pipe, "require_tool"),
+                patch.object(m_pipe, "require_disk_space"),
+                patch.object(m_pipe, "emit"),
+                patch.object(m_pipe, "_write_mode_ass"),
+                patch.object(m_pipe, "burn_subtitles") as burn,
+            ):
+                result = m_pipe._render_outputs(job)
+        burn.assert_called_once()
+        self.assertEqual(burn.call_args.args[2].suffix, ".mkv")
+
 
 class SoftsubCliTests(unittest.TestCase):
     def test_process_accepts_softsub_mode(self):
