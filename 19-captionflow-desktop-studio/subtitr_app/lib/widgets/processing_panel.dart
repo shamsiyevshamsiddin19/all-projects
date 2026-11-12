@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/desktop_processor_service.dart';
+import 'process_logs_viewer.dart';
 
 class ProcessingPanel extends StatelessWidget {
   const ProcessingPanel({
@@ -21,6 +22,13 @@ class ProcessingPanel extends StatelessWidget {
     this.onStartBatch,
     this.videoCount = 0,
     required this.onOpenPath,
+    this.isLogsVisible = false,
+    this.onToggleLogs,
+    this.liveLogs = const [],
+    this.onLoadDiskLogs,
+    this.onOpenLogFile,
+    this.onOpenLogDir,
+    this.onClearLogs,
   });
 
   final String selectedName;
@@ -40,6 +48,13 @@ class ProcessingPanel extends StatelessWidget {
   final VoidCallback? onStartBatch;
   final int videoCount;
   final Future<void> Function(String path) onOpenPath;
+  final bool isLogsVisible;
+  final VoidCallback? onToggleLogs;
+  final List<ProcessLogEntry> liveLogs;
+  final Future<String> Function()? onLoadDiskLogs;
+  final VoidCallback? onOpenLogFile;
+  final VoidCallback? onOpenLogDir;
+  final VoidCallback? onClearLogs;
 
   @override
   Widget build(BuildContext context) {
@@ -290,8 +305,51 @@ class ProcessingPanel extends StatelessWidget {
               icon: const Icon(Icons.play_arrow_rounded),
               label: const Text('Videoni ochish'),
             ),
+            OutlinedButton.icon(
+              onPressed: onToggleLogs,
+              icon: Icon(
+                isLogsVisible ? Icons.terminal_rounded : Icons.terminal_outlined,
+                size: 18,
+                color: isLogsVisible ? const Color(0xFF38BDF8) : null,
+              ),
+              label: Text(
+                isLogsVisible ? 'Loglarni yashirish' : 'Loglar',
+                style: isLogsVisible
+                    ? const TextStyle(color: Color(0xFF38BDF8), fontWeight: FontWeight.w700)
+                    : null,
+              ),
+              style: isLogsVisible
+                  ? OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF38BDF8)),
+                      backgroundColor: const Color(0xFF38BDF8).withValues(alpha: 0.12),
+                    )
+                  : null,
+            ),
           ],
         ),
+
+        if (isLogsVisible) ...[
+          const SizedBox(height: 24),
+          ProcessLogsConsole(
+            liveLogs: liveLogs,
+            isRunning: isRunning,
+            onLoadDiskLogs: onLoadDiskLogs,
+            onOpenLogFile: onOpenLogFile,
+            onOpenLogDir: onOpenLogDir,
+            onClearLogs: onClearLogs,
+            onClose: onToggleLogs,
+            onExpand: () => showProcessLogsDialog(
+              context: context,
+              liveLogs: liveLogs,
+              isRunning: isRunning,
+              onLoadDiskLogs: onLoadDiskLogs,
+              onOpenLogFile: onOpenLogFile,
+              onOpenLogDir: onOpenLogDir,
+              onClearLogs: onClearLogs,
+            ),
+            embedded: true,
+          ),
+        ],
 
         if (result != null) ...[
           const SizedBox(height: 32),

@@ -16,6 +16,8 @@ class HomeScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.canOpenOutput,
     this.isHistoryOpen = false,
     this.onShowHistory,
+    this.isLogsOpen = false,
+    this.onShowLogs,
     required this.onOpenApiKeys,
     required this.onInstallDependencies,
     required this.onShowNotifications,
@@ -30,6 +32,8 @@ class HomeScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool canOpenOutput;
   final bool isHistoryOpen;
   final VoidCallback? onShowHistory;
+  final bool isLogsOpen;
+  final VoidCallback? onShowLogs;
   final VoidCallback onOpenApiKeys;
   final VoidCallback onInstallDependencies;
   final VoidCallback onShowNotifications;
@@ -108,6 +112,23 @@ class HomeScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
               : actionStyle,
         ),
         const SizedBox(width: 8),
+        if (onShowLogs != null) ...[
+          IconButton(
+            tooltip: isLogsOpen ? 'Loglarni yashirish' : 'Jarayon loglari (Terminal)',
+            onPressed: onShowLogs,
+            icon: Icon(
+              isLogsOpen ? Icons.terminal_rounded : Icons.terminal_outlined,
+              color: isLogsOpen ? theme.colorScheme.primary : null,
+            ),
+            style: isLogsOpen
+                ? IconButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primaryContainer,
+                    foregroundColor: theme.colorScheme.onPrimaryContainer,
+                  )
+                : actionStyle,
+          ),
+          const SizedBox(width: 8),
+        ],
         IconButton(
           tooltip: hasApiKey
               ? 'API kalitlar (${configuredProviders.join(", ")})'

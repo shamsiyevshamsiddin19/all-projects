@@ -53,5 +53,37 @@ void main() {
     await tester.pump();
     expect(notificationsTapped, isTrue);
   });
+
+  testWidgets('HomeScreenAppBar renders logs button and triggers callback', (tester) async {
+    var logsTapped = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          appBar: HomeScreenAppBar(
+            appVersion: '1.2.0',
+            hasApiKey: true,
+            configuredProviders: const ['groq'],
+            isRunning: false,
+            unreadNotificationCount: 0,
+            canOpenOutput: true,
+            isLogsOpen: false,
+            onShowLogs: () => logsTapped = true,
+            onOpenApiKeys: () {},
+            onInstallDependencies: () {},
+            onShowNotifications: () {},
+            onOpenOutput: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byIcon(Icons.terminal_outlined), findsOneWidget);
+    expect(find.byTooltip('Jarayon loglari (Terminal)'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.terminal_outlined));
+    await tester.pump();
+    expect(logsTapped, isTrue);
+  });
 }
 

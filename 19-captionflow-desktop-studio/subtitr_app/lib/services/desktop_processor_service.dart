@@ -441,6 +441,28 @@ class DesktopProcessorService {
     return payload['dir'] as String? ?? '';
   }
 
+  Future<({String dir, String file})> logInfo() async {
+    final payload = await _runJson(['log-path']);
+    return (
+      dir: payload['dir'] as String? ?? '',
+      file: payload['file'] as String? ?? '',
+    );
+  }
+
+  Future<String> readLogTail({int maxLines = 200}) async {
+    try {
+      final info = await logInfo();
+      if (info.file.isEmpty) return '';
+      final file = File(info.file);
+      if (!await file.exists()) return '';
+      final lines = await file.readAsLines();
+      if (lines.length <= maxLines) return lines.join('\n');
+      return lines.sublist(lines.length - maxLines).join('\n');
+    } catch (_) {
+      return '';
+    }
+  }
+
   Future<ProcessorResult> process({
     required String videoPath,
     required String mode,

@@ -18,6 +18,7 @@ import '../widgets/in_app_video_player.dart';
 import '../widgets/home_job_dialogs.dart';
 import '../widgets/home_screen_chrome.dart';
 import '../widgets/history_panel.dart';
+import '../widgets/process_logs_viewer.dart';
 import '../widgets/subtitle_player.dart' show playerAvailable;
 import 'api_keys_screen.dart';
 import 'translation_editor_screen.dart';
@@ -69,6 +70,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String? _activePlayerSubtitle;
   String? _activePlayerTitle;
   bool _isPlayerFullscreen = false;
+  bool _showLogs = false;
+  final List<ProcessLogEntry> _processLogs = [];
   double _videoDuration = 0.0;
   DateTime? _startTime;
   DateTime? _lastProgressUpdate;
@@ -437,10 +440,29 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// Yagona ish yurituvchi: taymer, holat, bekor qilish va xatolarni
   /// barcha jarayonlar (_downloadOnly, _startProcessing, _reviewAndRender)
   /// uchun markazlashtirilgan holda boshqaradi.
+  void _addLog(
+    String message, {
+    double? progress,
+    ProcessLogLevel level = ProcessLogLevel.info,
+  }) {
+    if (!mounted) return;
+    setState(() {
+      _processLogs.add(
+        ProcessLogEntry(
+          timestamp: DateTime.now(),
+          message: message,
+          progress: progress,
+          level: level,
+        ),
+      );
+    });
+  }
+
   Future<void> _runJob(
     String initialStatus,
     Future<void> Function() action,
   ) async {
+    _addLog("🚀 Jarayon boshlandi: $initialStatus", level: ProcessLogLevel.info);
     setState(() {
       _running = true;
       _activePlayerVideo = null;
@@ -457,7 +479,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
     try {
       await action();
+      _addLog("✅ Jarayon muvaffaqiyatli yakunlandi", level: ProcessLogLevel.success);
     } on ProcessorCancelled {
+      _addLog("⚠️ Jarayon foydalanuvchi tomonidan bekor qilindi", level: ProcessLogLevel.warning);
       if (mounted) {
         setState(() {
           _status = 'Bekor qilindi';
@@ -465,6 +489,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         });
       }
     } catch (error) {
+      _addLog("❌ Xatolik yuz berdi: $error", level: ProcessLogLevel.error);
       _showError(error.toString());
     } finally {
       _timer?.cancel();
@@ -972,6 +997,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       // yozilishida aynan foizning oxirgi o'zgargan vaqtini saqlaymiz.
       if (nextProgress != _progress) _lastProgressUpdate = DateTime.now();
       _progress = nextProgress;
+      if (progress.message.isNotEmpty) {
+        _processLogs.add(
+          ProcessLogEntry(
+            timestamp: DateTime.now(),
+            message: progress.message,
+            progress: nextProgress,
+            level: ProcessLogLevel.info,
+          ),
+        );
+      }
     });
   }
 
@@ -1189,6 +1224,28 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _loadHistory();
       }
     });
+  }
+
+  void _toggleLogs() {
+    if (_activePlayerVideo != null || _showHistory) {
+      showProcessLogsDialog(
+        context: context,
+        liveLogs: _processLogs,
+        isRunning: _running,
+        onLoadDiskLogs: _service.readLogTail,
+        onOpenLogFile: () async {
+          final info = await _service.logInfo();
+          if (info.file.isNotEmpty) await _openPath(info.file);
+        },
+        onOpenLogDir: () async {
+          final dir = await _service.logDir();
+          if (dir.isNotEmpty) await _openPath(dir);
+        },
+        onClearLogs: () => setState(() => _processLogs.clear()),
+      );
+    } else {
+      setState(() => _showLogs = !_showLogs);
+    }
   }
 
   void _loadHistory() {
@@ -1419,6 +1476,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         canOpenOutput: _outDir.isNotEmpty,
                         isHistoryOpen: _showHistory,
                         onShowHistory: _toggleHistory,
+                        isLogsOpen: _showLogs,
+                        onShowLogs: _toggleLogs,
                         onOpenApiKeys: _openSettings,
                         onInstallDependencies: _installDependencies,
                         onShowNotifications: _showNotifications,
@@ -1549,6 +1608,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         onStartBatch: _startBatch,
                         videoCount: _videos.where((v) => !v.isDir).length,
                         onOpenPath: _openPath,
+                        isLogsVisible: _showLogs,
+                        onToggleLogs: () => setState(() => _showLogs = !_showLogs),
+                        liveLogs: _processLogs,
+                        onLoadDiskLogs: _service.readLogTail,
+                        onOpenLogFile: () async {
+                          final info = await _service.logInfo();
+                          if (info.file.isNotEmpty) await _openPath(info.file);
+                        },
+                        onOpenLogDir: () async {
+                          final dir = await _service.logDir();
+                          if (dir.isNotEmpty) await _openPath(dir);
+                        },
+                        onClearLogs: () => setState(() => _processLogs.clear()),
                       );
                       final batchCard = _batchResults.isEmpty
                           ? null
