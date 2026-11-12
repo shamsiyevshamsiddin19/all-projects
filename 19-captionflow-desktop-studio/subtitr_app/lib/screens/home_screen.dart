@@ -15,6 +15,8 @@ import '../widgets/processing_panel.dart';
 import '../widgets/settings_panel.dart';
 import '../widgets/video_selection_panel.dart';
 import '../widgets/in_app_video_player.dart';
+import '../widgets/home_job_dialogs.dart';
+import '../widgets/home_screen_chrome.dart';
 import '../widgets/subtitle_player.dart' show playerAvailable;
 import 'api_keys_screen.dart';
 import 'translation_editor_screen.dart';
@@ -28,70 +30,6 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _PlaylistPickerDialog extends StatefulWidget {
-  const _PlaylistPickerDialog({required this.entries});
-  final List<PlaylistEntry> entries;
-
-  @override
-  State<_PlaylistPickerDialog> createState() => _PlaylistPickerDialogState();
-}
-
-class _PlaylistPickerDialogState extends State<_PlaylistPickerDialog> {
-  late final Set<String> _selected = widget.entries
-      .map((e) => e.url)
-      .take(25)
-      .toSet();
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Playlistdan videolarni tanlang'),
-    content: SizedBox(
-      width: 560,
-      child: ListView.builder(
-        shrinkWrap: true,
-        itemCount: widget.entries.length,
-        itemBuilder: (_, index) {
-          final entry = widget.entries[index];
-          return CheckboxListTile(
-            value: _selected.contains(entry.url),
-            title: Text(
-              entry.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: entry.duration.isEmpty
-                ? null
-                : Text('${entry.duration} soniya'),
-            onChanged: (checked) => setState(() {
-              if (checked == true && _selected.length < 25) {
-                _selected.add(entry.url);
-              }
-              if (checked != true) {
-                _selected.remove(entry.url);
-              }
-            }),
-          );
-        },
-      ),
-    ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: const Text('Bekor qilish'),
-      ),
-      FilledButton(
-        onPressed: _selected.isEmpty
-            ? null
-            : () => Navigator.pop(
-                context,
-                widget.entries.where((e) => _selected.contains(e.url)).toList(),
-              ),
-        child: Text('${_selected.length} ta navbatga qo\'shish'),
-      ),
-    ],
-  );
-}
-
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String? _appVersion;
   final DesktopProcessorService _service = DesktopProcessorService();
@@ -100,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   AppearanceSettings _appearance = const AppearanceSettings();
   String _batchInfo = ''; // "Video 2/5" — navbat holati
   List<JobPreset> _presets = const [];
-  List<_BatchResult> _batchResults = const [];
+  List<BatchResult> _batchResults = const [];
   final List<_AppNotification> _notifications = [];
   int _unreadNotificationCount = 0;
   bool _isDragging = false;
@@ -285,7 +223,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final paths = files.map((file) => file.path).whereType<String>().toList();
 
     // Agar papka tashlangan bo'lsa, uni kino papkasi sifatida ochish
-    final droppedDir = paths.where((p) => Directory(p).existsSync()).firstOrNull;
+    final droppedDir = paths
+        .where((p) => Directory(p).existsSync())
+        .firstOrNull;
     if (droppedDir != null) {
       await _scanVideos(path: droppedDir);
       if (mounted) {
@@ -316,7 +256,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         )
         .firstOrNull;
     if (video == null && subtitle == null) {
-      _showError('Faqat video, papka yoki SRT/VTT/ASS subtitr faylini tashlang');
+      _showError(
+        'Faqat video, papka yoki SRT/VTT/ASS subtitr faylini tashlang',
+      );
       return;
     }
     setState(() {
@@ -776,7 +718,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _progress = 1;
       });
       _settingsStore.saveLastResult(result);
-      _recordNotification('Tahrirlangan subtitr bilan yakunlandi: $_selectedName');
+      _recordNotification(
+        'Tahrirlangan subtitr bilan yakunlandi: $_selectedName',
+      );
       await _service.discardDraft(session!.sessionPath);
     });
   }
@@ -816,7 +760,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (!mounted) return;
     final queue = await showDialog<List<DesktopVideo>>(
       context: context,
-      builder: (_) => _BatchQueueDialog(videos: videos),
+      builder: (_) => BatchQueueDialog(videos: videos),
     );
     if (queue == null || queue.isEmpty || !mounted) return;
     await _runVideoBatch(queue);
@@ -835,7 +779,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
     });
-    final results = <_BatchResult>[];
+    final results = <BatchResult>[];
     try {
       for (var i = 0; i < videos.length; i++) {
         if (_batchCancelled) break;
@@ -864,14 +808,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             voice: _voice,
             ducking: _ducking,
           );
-          results.add(_BatchResult(video: v, success: true));
+          results.add(BatchResult(video: v, success: true));
           if (mounted) setState(() => _result = result);
           _settingsStore.saveLastResult(result);
         } on ProcessorCancelled {
           break;
         } catch (error) {
           results.add(
-            _BatchResult(video: v, success: false, detail: error.toString()),
+            BatchResult(video: v, success: false, detail: error.toString()),
           );
         }
       }
@@ -907,7 +851,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (!mounted) return;
       final selected = await showDialog<List<PlaylistEntry>>(
         context: context,
-        builder: (_) => _PlaylistPickerDialog(entries: entries),
+        builder: (_) => PlaylistPickerDialog(entries: entries),
       );
       if (selected == null || selected.isEmpty || !mounted) return;
       await _startUrlBatch(selected);
@@ -1071,12 +1015,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         if (_result != null) {
           // Asl (original) subtitrni birinchi navbatda tanlaymiz
           final orig = _result!.outputs
-              .where((o) =>
-                  (o.kind == 'ass' || o.kind == 'srt') &&
-                  (o.name.toLowerCase().contains('original') ||
-                      o.name.toLowerCase().contains('orig')))
+              .where(
+                (o) =>
+                    (o.kind == 'ass' || o.kind == 'srt') &&
+                    (o.name.toLowerCase().contains('original') ||
+                        o.name.toLowerCase().contains('orig')),
+              )
               .firstOrNull;
-          sub = orig?.path ??
+          sub =
+              orig?.path ??
               _result!.outputs
                   .where((o) => o.kind == 'ass' || o.kind == 'srt')
                   .firstOrNull
@@ -1331,8 +1278,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return DropTarget(
       onDragDone: (detail) {
         setState(() => _isDragging = false);
@@ -1344,13 +1289,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         children: [
           CallbackShortcuts(
             bindings: <ShortcutActivator, VoidCallback>{
-              const SingleActivator(LogicalKeyboardKey.keyO, control: true): () {
+              const SingleActivator(
+                LogicalKeyboardKey.keyO,
+                control: true,
+              ): () {
                 if (!_running) _pickExternalVideo();
               },
               const SingleActivator(LogicalKeyboardKey.keyO, meta: true): () {
                 if (!_running) _pickExternalVideo();
               },
-              const SingleActivator(LogicalKeyboardKey.enter, control: true): () {
+              const SingleActivator(
+                LogicalKeyboardKey.enter,
+                control: true,
+              ): () {
                 if (!_running) _startProcessing();
               },
               const SingleActivator(LogicalKeyboardKey.enter, meta: true): () {
@@ -1362,375 +1313,241 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             },
             child: Focus(
               autofocus: true,
-          child: Scaffold(
-            appBar: AppBar(
-              titleSpacing: 24,
-              toolbarHeight: 70,
-              title: Row(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.asset(
-                      'assets/app_logo.png',
-                      width: 36,
-                      height: 36,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    'Subtitr Desktop',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  if (_appVersion != null) ...[
-                    const SizedBox(width: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        'v$_appVersion',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              actions: [
-                IconButton(
-                  tooltip: _settings.hasAnyKey
-                      ? 'API kalitlar (${_settings.configuredProviders.join(", ")})'
-                      : 'API kalitlarni kiriting',
-                  onPressed: _running ? null : _openSettings,
-                  icon: Badge(
-                    isLabelVisible: !_settings.hasAnyKey,
-                    backgroundColor: Colors.amber,
-                    child: const Icon(Icons.key_rounded),
-                  ),
-                  style: IconButton.styleFrom(
-                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                  ),
+              child: Scaffold(
+                appBar: HomeScreenAppBar(
+                  appVersion: _appVersion,
+                  hasApiKey: _settings.hasAnyKey,
+                  configuredProviders: _settings.configuredProviders,
+                  isRunning: _running,
+                  unreadNotificationCount: _unreadNotificationCount,
+                  canOpenOutput: _outDir.isNotEmpty,
+                  onOpenApiKeys: _openSettings,
+                  onInstallDependencies: _installDependencies,
+                  onShowNotifications: _showNotifications,
+                  onOpenOutput: () => _openPath(_outDir),
                 ),
-                const SizedBox(width: 8),
-                IconButton(
-                  tooltip: 'Paketlarni o\'rnatish',
-                  onPressed: _running ? null : _installDependencies,
-                  icon: const Icon(Icons.download_for_offline_rounded),
-                  style: IconButton.styleFrom(
-                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  tooltip: 'Bildirishnomalar',
-                  onPressed: _showNotifications,
-                  icon: Badge(
-                    isLabelVisible: _unreadNotificationCount > 0,
-                    label: Text('$_unreadNotificationCount'),
-                    child: const Icon(Icons.notifications_none_rounded),
-                  ),
-                  style: IconButton.styleFrom(
-                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  tooltip: 'Tayyor natijalar papkasini ochish',
-                  onPressed: _outDir.isEmpty ? null : () => _openPath(_outDir),
-                  icon: const Icon(Icons.output_rounded),
-                  style: IconButton.styleFrom(
-                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                  ),
-                ),
-                const SizedBox(width: 24),
-              ],
-            ),
-            body: SafeArea(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final wide = constraints.maxWidth >= 1040;
+                body: SafeArea(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final wide = constraints.maxWidth >= 1040;
 
-                  final videoPanel = VideoSelectionPanel(
-                    kinoDir: _kinoDir,
-                    currentDir: _currentDir,
-                    videos: _videos,
-                    selectedVideo: _selectedVideo,
-                    externalVideoPath: _externalVideoPath,
-                    externalSubtitlePath: _externalSubtitlePath,
-                    subtitleOffset: _subtitleOffset,
-                    isRunning: _running,
-                    isLoading: _loading,
-                    onScan: () => _scanVideos(path: _currentDir),
-                    onPickExternal: _pickExternalVideo,
-                    onPickSubtitle: _pickExternalSubtitle,
-                    onClearSubtitle: () => setState(() {
-                      _externalSubtitlePath = null;
-                      _externalSubtitleVideoPath = null;
-                      _subtitleOffset = 0;
-                    }),
-                    onOffsetChanged: (value) =>
-                        setState(() => _subtitleOffset = value),
-                    onSelectVideo: (v) {
-                      if (v.isDir) {
-                        _scanVideos(path: v.path);
-                      } else {
-                        setState(() {
-                          _selectedVideo = v;
-                          _externalVideoPath = null;
-                          _dropManualSubtitleForOtherVideo(v.path);
-                          _result = null;
-                        });
-                        _updateDuration();
-                      }
-                    },
-                    onNavigateBack: () {
-                      if (_currentDir != null && _kinoDir != _currentDir) {
-                        final parent = File(_currentDir!).parent.path;
-                        _scanVideos(path: parent);
-                      }
-                    },
-                    onClearExternal: () {
-                      setState(() {
-                        _externalVideoPath = null;
-                        _selectedVideo = _videos
-                            .where((v) => !v.isDir)
-                            .firstOrNull;
-                        _dropManualSubtitleForOtherVideo(
-                          _selectedVideo?.path ?? '',
-                        );
-                      });
-                      _updateDuration();
-                    },
-                    onUrlSubmit: _startFromUrl,
-                    onDownloadOnly: _downloadOnly,
-                    onPlaylistSubmit: _loadPlaylistQueue,
-                    onPreviewVideo: _openPath,
-                  );
-
-                  final settingsPanel = SettingsPanel(
-                    modes: _modes,
-                    mode: _mode,
-                    sourceLang: _sourceLang,
-                    targetLang: _targetLang,
-                    appearance: _appearance,
-                    voice: _voice,
-                    ducking: _ducking,
-                    isRunning: _running,
-                    onModeChanged: (v) {
-                      setState(() => _mode = v);
-                      _saveJobPrefs();
-                    },
-                    onSourceLangChanged: (v) {
-                      setState(() => _sourceLang = v);
-                      _saveJobPrefs();
-                    },
-                    onTargetLangChanged: (v) {
-                      setState(() => _targetLang = v);
-                      _saveJobPrefs();
-                    },
-                    onAppearanceChanged: _updateAppearance,
-                    onVoiceChanged: (v) {
-                      setState(() => _voice = v);
-                      _saveJobPrefs();
-                    },
-                    onDuckingChanged: (v) {
-                      setState(() => _ducking = v);
-                      _saveJobPrefs();
-                    },
-                    presets: _presets,
-                    onSavePreset: _savePreset,
-                    onApplyPreset: _applyPreset,
-                    onDeletePreset: _deletePreset,
-                    onPickSubtitle: _pickExternalSubtitle,
-                    externalSubtitlePath: _externalSubtitlePath,
-                    onClearSubtitle: () => setState(() {
-                      _externalSubtitlePath = null;
-                      _externalSubtitleVideoPath = null;
-                      _subtitleOffset = 0;
-                    }),
-                  );
-
-                  final processor = ProcessingPanel(
-                    selectedName: _selectedName,
-                    selectedPath: _selectedPath,
-                    outDir: _result?.outDir.isNotEmpty == true
-                        ? _result!.outDir
-                        : _outDir,
-                    isRunning: _running,
-                    progress: _progress,
-                    status: _status,
-                    result: _result,
-                    estimatedSeconds: _estimatedSeconds,
-                    estimateText: _estimateText,
-                    startTime: _startTime,
-                    lastProgressUpdate: _lastProgressUpdate,
-                    onStart: _startProcessing,
-                    onReview: _reviewAndRender,
-                    onCancel: _cancelProcessing,
-                    onStartBatch: _startBatch,
-                    videoCount: _videos.where((v) => !v.isDir).length,
-                    onOpenPath: _openPath,
-                  );
-                  final batchCard = _batchResults.isEmpty
-                      ? null
-                      : _BatchResultsCard(
-                          results: _batchResults,
-                          onDetail: _showErrorDetail,
-                        );
-                  final rightContent = _activePlayerVideo != null
-                      ? EmbeddedVideoPlayer(
-                          videoPath: _activePlayerVideo!,
-                          subtitlePath: _activePlayerSubtitle,
-                          title: _activePlayerTitle,
-                          onClose: () {
+                      final videoPanel = VideoSelectionPanel(
+                        kinoDir: _kinoDir,
+                        currentDir: _currentDir,
+                        videos: _videos,
+                        selectedVideo: _selectedVideo,
+                        externalVideoPath: _externalVideoPath,
+                        externalSubtitlePath: _externalSubtitlePath,
+                        subtitleOffset: _subtitleOffset,
+                        isRunning: _running,
+                        isLoading: _loading,
+                        onScan: () => _scanVideos(path: _currentDir),
+                        onPickExternal: _pickExternalVideo,
+                        onPickSubtitle: _pickExternalSubtitle,
+                        onClearSubtitle: () => setState(() {
+                          _externalSubtitlePath = null;
+                          _externalSubtitleVideoPath = null;
+                          _subtitleOffset = 0;
+                        }),
+                        onOffsetChanged: (value) =>
+                            setState(() => _subtitleOffset = value),
+                        onSelectVideo: (v) {
+                          if (v.isDir) {
+                            _scanVideos(path: v.path);
+                          } else {
                             setState(() {
-                              _activePlayerVideo = null;
-                              _activePlayerSubtitle = null;
-                              _activePlayerTitle = null;
+                              _selectedVideo = v;
+                              _externalVideoPath = null;
+                              _dropManualSubtitleForOtherVideo(v.path);
+                              _result = null;
                             });
-                          },
-                          onOpenExternal: (p) => _service.openPath(p),
-                        )
-                      : processor;
+                            _updateDuration();
+                          }
+                        },
+                        onNavigateBack: () {
+                          if (_currentDir != null && _kinoDir != _currentDir) {
+                            final parent = File(_currentDir!).parent.path;
+                            _scanVideos(path: parent);
+                          }
+                        },
+                        onClearExternal: () {
+                          setState(() {
+                            _externalVideoPath = null;
+                            _selectedVideo = _videos
+                                .where((v) => !v.isDir)
+                                .firstOrNull;
+                            _dropManualSubtitleForOtherVideo(
+                              _selectedVideo?.path ?? '',
+                            );
+                          });
+                          _updateDuration();
+                        },
+                        onUrlSubmit: _startFromUrl,
+                        onDownloadOnly: _downloadOnly,
+                        onPlaylistSubmit: _loadPlaylistQueue,
+                        onPreviewVideo: _openPath,
+                      );
 
-                  final wideRightColumn = Column(
-                    children: [
-                      Expanded(child: rightContent),
-                      if (batchCard case final Widget card) card,
-                    ],
-                  );
+                      final settingsPanel = SettingsPanel(
+                        modes: _modes,
+                        mode: _mode,
+                        sourceLang: _sourceLang,
+                        targetLang: _targetLang,
+                        appearance: _appearance,
+                        voice: _voice,
+                        ducking: _ducking,
+                        isRunning: _running,
+                        onModeChanged: (v) {
+                          setState(() => _mode = v);
+                          _saveJobPrefs();
+                        },
+                        onSourceLangChanged: (v) {
+                          setState(() => _sourceLang = v);
+                          _saveJobPrefs();
+                        },
+                        onTargetLangChanged: (v) {
+                          setState(() => _targetLang = v);
+                          _saveJobPrefs();
+                        },
+                        onAppearanceChanged: _updateAppearance,
+                        onVoiceChanged: (v) {
+                          setState(() => _voice = v);
+                          _saveJobPrefs();
+                        },
+                        onDuckingChanged: (v) {
+                          setState(() => _ducking = v);
+                          _saveJobPrefs();
+                        },
+                        presets: _presets,
+                        onSavePreset: _savePreset,
+                        onApplyPreset: _applyPreset,
+                        onDeletePreset: _deletePreset,
+                        onPickSubtitle: _pickExternalSubtitle,
+                        externalSubtitlePath: _externalSubtitlePath,
+                        onClearSubtitle: () => setState(() {
+                          _externalSubtitlePath = null;
+                          _externalSubtitleVideoPath = null;
+                          _subtitleOffset = 0;
+                        }),
+                      );
 
-                  if (wide) {
-                    final leftColumn = Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        videoPanel,
-                        const SizedBox(height: 24),
-                        Expanded(child: settingsPanel),
-                      ],
-                    );
-                    return Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                      final processor = ProcessingPanel(
+                        selectedName: _selectedName,
+                        selectedPath: _selectedPath,
+                        outDir: _result?.outDir.isNotEmpty == true
+                            ? _result!.outDir
+                            : _outDir,
+                        isRunning: _running,
+                        progress: _progress,
+                        status: _status,
+                        result: _result,
+                        estimatedSeconds: _estimatedSeconds,
+                        estimateText: _estimateText,
+                        startTime: _startTime,
+                        lastProgressUpdate: _lastProgressUpdate,
+                        onStart: _startProcessing,
+                        onReview: _reviewAndRender,
+                        onCancel: _cancelProcessing,
+                        onStartBatch: _startBatch,
+                        videoCount: _videos.where((v) => !v.isDir).length,
+                        onOpenPath: _openPath,
+                      );
+                      final batchCard = _batchResults.isEmpty
+                          ? null
+                          : BatchResultsCard(
+                              results: _batchResults,
+                              onDetail: _showErrorDetail,
+                            );
+                      final rightContent = _activePlayerVideo != null
+                          ? EmbeddedVideoPlayer(
+                              videoPath: _activePlayerVideo!,
+                              subtitlePath: _activePlayerSubtitle,
+                              title: _activePlayerTitle,
+                              onClose: () {
+                                setState(() {
+                                  _activePlayerVideo = null;
+                                  _activePlayerSubtitle = null;
+                                  _activePlayerTitle = null;
+                                });
+                              },
+                              onOpenExternal: (p) => _service.openPath(p),
+                            )
+                          : processor;
+
+                      final wideRightColumn = Column(
                         children: [
-                          SizedBox(width: 440, child: leftColumn),
-                          const SizedBox(width: 24),
-                          Container(width: 1, color: const Color(0xFF333333)),
-                          const SizedBox(width: 24),
-                          Expanded(child: wideRightColumn),
+                          Expanded(child: rightContent),
+                          if (batchCard case final Widget card) card,
                         ],
-                      ),
-                    );
-                  }
+                      );
 
-                  return ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                    children: [
-                      if (_activePlayerVideo != null) ...[
-                        SizedBox(
-                          height: 440,
-                          child: EmbeddedVideoPlayer(
-                            videoPath: _activePlayerVideo!,
-                            subtitlePath: _activePlayerSubtitle,
-                            title: _activePlayerTitle,
-                            onClose: () {
-                              setState(() {
-                                _activePlayerVideo = null;
-                                _activePlayerSubtitle = null;
-                                _activePlayerTitle = null;
-                              });
-                            },
-                            onOpenExternal: (p) => _service.openPath(p),
+                      if (wide) {
+                        final leftColumn = Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            videoPanel,
+                            const SizedBox(height: 24),
+                            Expanded(child: settingsPanel),
+                          ],
+                        );
+                        return Padding(
+                          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              SizedBox(width: 440, child: leftColumn),
+                              const SizedBox(width: 24),
+                              Container(
+                                width: 1,
+                                color: const Color(0xFF333333),
+                              ),
+                              const SizedBox(width: 24),
+                              Expanded(child: wideRightColumn),
+                            ],
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      videoPanel,
-                      const SizedBox(height: 16),
-                      settingsPanel,
-                      const SizedBox(height: 16),
-                      processor,
-                      if (batchCard case final Widget card) ...[
-                        const SizedBox(height: 16),
-                        card,
-                      ],
-                    ],
-                  );
-                },
+                        );
+                      }
+
+                      return ListView(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                        children: [
+                          if (_activePlayerVideo != null) ...[
+                            SizedBox(
+                              height: 440,
+                              child: EmbeddedVideoPlayer(
+                                videoPath: _activePlayerVideo!,
+                                subtitlePath: _activePlayerSubtitle,
+                                title: _activePlayerTitle,
+                                onClose: () {
+                                  setState(() {
+                                    _activePlayerVideo = null;
+                                    _activePlayerSubtitle = null;
+                                    _activePlayerTitle = null;
+                                  });
+                                },
+                                onOpenExternal: (p) => _service.openPath(p),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          videoPanel,
+                          const SizedBox(height: 16),
+                          settingsPanel,
+                          const SizedBox(height: 16),
+                          processor,
+                          if (batchCard case final Widget card) ...[
+                            const SizedBox(height: 16),
+                            card,
+                          ],
+                        ],
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-      ),
-      if (_isDragging)
-        Positioned.fill(
-          child: IgnorePointer(
-            child: Container(
-              color: Colors.black.withValues(alpha: 0.78),
-                  child: Center(
-                    child: Container(
-                      margin: const EdgeInsets.all(32),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 48,
-                        vertical: 36,
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surface,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: theme.colorScheme.primary,
-                          width: 2.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: theme.colorScheme.primary.withValues(alpha: 0.25),
-                            blurRadius: 32,
-                            spreadRadius: 6,
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.file_download_outlined,
-                            size: 64,
-                            color: theme.colorScheme.primary,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Video, papka yoki subtitr faylini tashlang',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'MP4, MKV, AVI, MOV, SRT, VTT yoki butun boshli papka',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+          if (_isDragging) const HomeDropOverlay(),
         ],
       ),
     );
@@ -1747,146 +1564,4 @@ class _AppNotification {
   final String message;
   final bool isError;
   final DateTime time;
-}
-
-class _BatchResult {
-  const _BatchResult({
-    required this.video,
-    required this.success,
-    this.detail = '',
-  });
-  final DesktopVideo video;
-  final bool success;
-  final String detail;
-}
-
-class _BatchQueueDialog extends StatefulWidget {
-  const _BatchQueueDialog({required this.videos});
-  final List<DesktopVideo> videos;
-
-  @override
-  State<_BatchQueueDialog> createState() => _BatchQueueDialogState();
-}
-
-class _BatchQueueDialogState extends State<_BatchQueueDialog> {
-  late final List<DesktopVideo> _queue = [...widget.videos];
-  late final Set<String> _selected = _queue.map((item) => item.path).toSet();
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Ishlash navbati'),
-    content: SizedBox(
-      width: 560,
-      height: 420,
-      child: ReorderableListView.builder(
-        buildDefaultDragHandles: false,
-        itemCount: _queue.length,
-        onReorderItem: (oldIndex, newIndex) => setState(() {
-          final item = _queue.removeAt(oldIndex);
-          _queue.insert(newIndex, item);
-        }),
-        itemBuilder: (context, index) {
-          final video = _queue[index];
-          return ListTile(
-            key: ValueKey(video.path),
-            leading: Checkbox(
-              value: _selected.contains(video.path),
-              onChanged: (value) => setState(() {
-                if (value == true) {
-                  _selected.add(video.path);
-                } else {
-                  _selected.remove(video.path);
-                }
-              }),
-            ),
-            title: Text(
-              video.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: Text(
-              video.path,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            trailing: ReorderableDragStartListener(
-              index: index,
-              child: const Icon(Icons.drag_handle_rounded),
-            ),
-            onTap: () => setState(() {
-              if (_selected.contains(video.path)) {
-                _selected.remove(video.path);
-              } else {
-                _selected.add(video.path);
-              }
-            }),
-          );
-        },
-      ),
-    ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: const Text('Bekor qilish'),
-      ),
-      FilledButton(
-        onPressed: _selected.isEmpty
-            ? null
-            : () => Navigator.pop(
-                context,
-                _queue.where((item) => _selected.contains(item.path)).toList(),
-              ),
-        child: Text('${_selected.length} ta videoni boshlash'),
-      ),
-    ],
-  );
-}
-
-class _BatchResultsCard extends StatelessWidget {
-  const _BatchResultsCard({required this.results, required this.onDetail});
-  final List<_BatchResult> results;
-  final ValueChanged<String> onDetail;
-
-  @override
-  Widget build(BuildContext context) => Card(
-    margin: const EdgeInsets.only(top: 12),
-    child: Padding(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Navbat natijalari',
-            style: TextStyle(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 6),
-          ...results.map(
-            (item) => ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(
-                item.success
-                    ? Icons.check_circle_outline_rounded
-                    : Icons.error_outline_rounded,
-                color: item.success
-                    ? Colors.green
-                    : Theme.of(context).colorScheme.error,
-              ),
-              title: Text(
-                item.video.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              trailing: item.success
-                  ? null
-                  : TextButton(
-                      onPressed: () => onDetail(item.detail),
-                      child: const Text('Tafsilot'),
-                    ),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
 }
