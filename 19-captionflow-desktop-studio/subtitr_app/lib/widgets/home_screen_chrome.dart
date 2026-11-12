@@ -14,6 +14,7 @@ class HomeScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.isRunning,
     required this.unreadNotificationCount,
     required this.canOpenOutput,
+    this.isHistoryOpen = false,
     this.onShowHistory,
     required this.onOpenApiKeys,
     required this.onInstallDependencies,
@@ -27,6 +28,7 @@ class HomeScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool isRunning;
   final int unreadNotificationCount;
   final bool canOpenOutput;
+  final bool isHistoryOpen;
   final VoidCallback? onShowHistory;
   final VoidCallback onOpenApiKeys;
   final VoidCallback onInstallDependencies;
@@ -90,10 +92,20 @@ class HomeScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       actions: [
         IconButton(
-          tooltip: 'Tarix',
+          tooltip: isHistoryOpen ? 'Tarixni yopish' : 'Tarix',
           onPressed: onShowHistory,
-          icon: const Icon(Icons.history_rounded),
-          style: actionStyle,
+          icon: Icon(
+            isHistoryOpen
+                ? Icons.history_toggle_off_rounded
+                : Icons.history_rounded,
+            color: isHistoryOpen ? theme.colorScheme.primary : null,
+          ),
+          style: isHistoryOpen
+              ? IconButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primaryContainer,
+                  foregroundColor: theme.colorScheme.onPrimaryContainer,
+                )
+              : actionStyle,
         ),
         const SizedBox(width: 8),
         IconButton(

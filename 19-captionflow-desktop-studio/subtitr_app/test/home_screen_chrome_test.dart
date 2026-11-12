@@ -47,5 +47,11 @@ void main() {
     await tester.tap(find.byIcon(Icons.key_rounded));
     await tester.pump();
     expect(keysTapped, isTrue);
+
+    // Bildirishnomalar tugmasi bosilishi
+    await tester.tap(find.byIcon(Icons.notifications_none_rounded));
+    await tester.pump();
+    expect(notificationsTapped, isTrue);
   });
 }
+
