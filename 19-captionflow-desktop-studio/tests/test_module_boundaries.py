@@ -22,3 +22,14 @@ class ModuleBoundaryTests(unittest.TestCase):
         self.assertTrue(callable(documents_text.write_csv_vocab))
         self.assertTrue(callable(documents_markdown.write_md_reading))
         self.assertTrue(callable(documents_pdf.write_pdf_reading))
+
+    def test_engines_are_thin_facades_not_implementation_buckets(self) -> None:
+        """Qatlamlar faqat nom bilan emas, kod joylashuvi bilan ham ajralsin."""
+        from pathlib import Path
+        from subtitr import _documents_engine, _transcribe_engine
+
+        package = Path(_transcribe_engine.__file__).parent
+        self.assertLess(len(Path(_transcribe_engine.__file__).read_text().splitlines()), 180)
+        self.assertLess(len(Path(_documents_engine.__file__).read_text().splitlines()), 40)
+        self.assertGreater(len((package / "transcribe_providers.py").read_text().splitlines()), 200)
+        self.assertGreater(len((package / "documents_markdown.py").read_text().splitlines()), 400)
