@@ -29,6 +29,7 @@ class StudioMediaFile {
   final String extension;
 
   bool get isVideo => category == StudioFileCategory.video;
+  bool get isSubtitle => category == StudioFileCategory.subtitle;
   bool get isDocument => !isVideo;
 
   IconData get icon {

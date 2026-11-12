@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:subtitr_app/widgets/in_app_video_player.dart';
@@ -343,5 +345,57 @@ void main() {
     await tester.pump();
 
     expect(isFullscreen, isFalse);
+  });
+
+  testWidgets('StudioVideoPlayer opens Live Caption prompt when no subtitle exists and generates subtitle on demand', (tester) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    String? requestedVideo;
+    String? requestedLang;
+    final tempDir = Directory.systemTemp.createTempSync('live_caption_test');
+    final dummySrt = File('${tempDir.path}/test_original.srt')..writeAsStringSync('1\n00:00:01,000 --> 00:00:04,000\nHello test\n');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: StudioVideoPlayer(
+            videoPath: '/dummy/movies/sample.mp4',
+            onClose: () {},
+            onGenerateLiveCaption: (video, {targetLang = 'auto'}) async {
+              requestedVideo = video;
+              requestedLang = targetLang;
+              return dummySrt.path;
+            },
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    // CC button is present with Live Caption indicator
+    final ccBtn = find.text('CC');
+    expect(ccBtn, findsOneWidget);
+
+    // Tap CC button -> should open Live Caption prompt dialog
+    await tester.tap(ccBtn);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Jonli AI Subtitr (Live Caption)'), findsOneWidget);
+    expect(find.text('Tezkor AI Subtitr (Asl tilda)'), findsOneWidget);
+    expect(find.text("O'zbekcha tarjima bilan"), findsOneWidget);
+    expect(find.text('Diskdan subtitr tanlash'), findsOneWidget);
+
+    // Tap "Tezkor AI Subtitr (Asl tilda)"
+    await tester.tap(find.text('Tezkor AI Subtitr (Asl tilda)'));
+    await tester.pump();
+
+    expect(requestedVideo, '/dummy/movies/sample.mp4');
+    expect(requestedLang, 'auto');
+
+    await tester.pumpAndSettle();
+    tempDir.deleteSync(recursive: true);
   });
 }

@@ -644,6 +644,45 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
+  Future<String?> _generateLiveCaption(
+    String videoPath, {
+    String targetLang = 'auto',
+  }) async {
+    _addLog("⚡ Jonli AI subtitr (Live Caption) boshlandi: $videoPath (til: $targetLang)", level: ProcessLogLevel.info);
+    try {
+      final result = await _service.process(
+        videoPath: videoPath,
+        mode: 'srt',
+        sourceLang: _sourceLang,
+        targetLang: targetLang,
+        onProgress: (p) {
+          _addLog("AI Subtitr: ${p.message}", level: ProcessLogLevel.info);
+        },
+      );
+
+      _addLog("✅ Jonli AI subtitr tayyorlandi", level: ProcessLogLevel.success);
+
+      // Subtitr faylini topish va qaytarish
+      for (final out in result.outputs) {
+        if ((out.kind == 'srt' || out.kind == 'ass') && File(out.path).existsSync()) {
+          if (targetLang != 'auto' &&
+              targetLang != 'original' &&
+              (out.name.contains('_$targetLang') || out.label.toLowerCase().contains('tarjima'))) {
+            return out.path;
+          }
+        }
+      }
+      final firstSub = result.outputs
+          .where((o) => (o.kind == 'srt' || o.kind == 'ass') && File(o.path).existsSync())
+          .firstOrNull;
+      if (firstSub != null) return firstSub.path;
+    } catch (e) {
+      _addLog("❌ Jonli AI subtitr xatosi: $e", level: ProcessLogLevel.error);
+      rethrow;
+    }
+    return null;
+  }
+
   Future<void> _startProcessing() async {
     final path = _externalVideoPath ?? _selectedVideo?.path;
     if (path == null || path.isEmpty) {
@@ -1663,6 +1702,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 });
                               },
                               onOpenExternal: (p) => _service.openPath(p),
+                              onGenerateLiveCaption: _generateLiveCaption,
                             )
                           : _showHistory
                               ? historyPanel
@@ -1736,6 +1776,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                   });
                                 },
                                 onOpenExternal: (p) => _service.openPath(p),
+                                onGenerateLiveCaption: _generateLiveCaption,
                               ),
                             ),
                             const SizedBox(height: 16),

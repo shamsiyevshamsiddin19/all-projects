@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
@@ -123,6 +124,7 @@ class EmbeddedVideoPlayer extends StatefulWidget {
     this.siblingFiles,
     this.isFullscreen = false,
     this.onFullscreenChanged,
+    this.onGenerateLiveCaption,
   });
 
   final String videoPath;
@@ -133,6 +135,7 @@ class EmbeddedVideoPlayer extends StatefulWidget {
   final List<StudioMediaFile>? siblingFiles;
   final bool isFullscreen;
   final ValueChanged<bool>? onFullscreenChanged;
+  final Future<String?> Function(String videoPath, {String targetLang})? onGenerateLiveCaption;
 
   @override
   State<EmbeddedVideoPlayer> createState() => _EmbeddedVideoPlayerState();
@@ -379,6 +382,7 @@ class _EmbeddedVideoPlayerState extends State<EmbeddedVideoPlayer> {
         isFullscreen: _isFullscreen,
         onToggleFullscreen: _toggleFullscreen,
         headerLeading: _buildHeaderLeading(context),
+        onGenerateLiveCaption: widget.onGenerateLiveCaption,
       );
     } else {
       playerWidget = DocumentViewer(
@@ -431,6 +435,7 @@ class StudioVideoPlayer extends StatefulWidget {
     this.isFullscreen = false,
     this.onToggleFullscreen,
     this.headerLeading,
+    this.onGenerateLiveCaption,
   });
 
   final String videoPath;
@@ -441,6 +446,7 @@ class StudioVideoPlayer extends StatefulWidget {
   final bool isFullscreen;
   final VoidCallback? onToggleFullscreen;
   final Widget? headerLeading;
+  final Future<String?> Function(String videoPath, {String targetLang})? onGenerateLiveCaption;
 
   @override
   State<StudioVideoPlayer> createState() => _StudioVideoPlayerState();
@@ -475,6 +481,8 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
   // Subtitr va dublyaj sozlamalari
   bool _subtitlesEnabled = true;
   double _subtitleDelaySec = 0.0;
+  bool _isGeneratingLiveCaption = false;
+  String _liveCaptionStatus = '';
 
   // A-B takrorlash va sikl
   Duration? _loopA;
@@ -528,6 +536,8 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
     final originalCandidates = [
       '${base}_original.srt',
       '${base}_original.ass',
+      '${base}_uz.srt',
+      '${base}_uz.ass',
       '${base}_orig.srt',
       '${base}_orig_soft.ass',
       '${base}_softsub_original.ass',
@@ -550,6 +560,7 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
       final outCandidates = [
         '${outDir.path}/${nameNoExt}_original.srt',
         '${outDir.path}/${nameNoExt}_original.ass',
+        '${outDir.path}/${nameNoExt}_uz.srt',
         '${outDir.path}/${nameNoExt}_orig.srt',
         '${outDir.path}/$nameNoExt.srt',
         '${outDir.path}/$nameNoExt.ass',
@@ -562,6 +573,39 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
         }
       }
     }
+
+    // 3. Subtitr natijalar papkasi (~/Videos/Subtitr natijalar) dan qidirish
+    final home = Platform.environment['HOME'] ?? '';
+    final searchDirs = [
+      if (home.isNotEmpty) Directory('$home/Videos/Subtitr natijalar/$nameNoExt'),
+      if (home.isNotEmpty) Directory('$home/Videos/Subtitr natijalar'),
+      if (home.isNotEmpty) Directory('$home/Subtitr natijalar/$nameNoExt'),
+      Directory('${parent.path}/Subtitr natijalar/$nameNoExt'),
+    ];
+
+    for (final dir in searchDirs) {
+      if (dir.existsSync()) {
+        final candidates = [
+          '${dir.path}/${nameNoExt}_original.srt',
+          '${dir.path}/${nameNoExt}_original.ass',
+          '${dir.path}/${nameNoExt}_uz.srt',
+          '${dir.path}/${nameNoExt}_dual.ass',
+          '${dir.path}/${nameNoExt}_softsub.ass',
+          '${dir.path}/$nameNoExt.srt',
+          '${dir.path}/$nameNoExt.ass',
+        ];
+        for (final c in candidates) {
+          if (File(c).existsSync()) return c;
+        }
+      }
+    }
+
+    // 4. Sibling fayllar ro'yxatini tekshirish
+    try {
+      final siblings = StudioMediaFile.discover(widget.videoPath);
+      final sub = siblings.where((f) => f.isSubtitle && File(f.path).existsSync()).firstOrNull;
+      if (sub != null) return sub.path;
+    } catch (_) {}
 
     return null;
   }
@@ -599,7 +643,8 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
   }
 
   bool get _canToggleSubtitles =>
-      !_isBurnedVideo && (_hasSubtitles || _realSubtitleTracks.isNotEmpty);
+      !_isBurnedVideo &&
+      (_hasSubtitles || _realSubtitleTracks.isNotEmpty || widget.onGenerateLiveCaption != null);
 
   @override
   void initState() {
@@ -899,10 +944,13 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
   }
 
   Future<void> _toggleSubtitles() async {
-    final player = _player;
-    if (player == null) return;
     if (_isBurnedVideo) {
       _showOSD("Videoga subtitr allaqachon yopishtirilgan (Hardsub)", Icons.info_outline_rounded);
+      return;
+    }
+
+    if (_isGeneratingLiveCaption) {
+      _showOSD("Jonli AI subtitr tayyorlanmoqda...", Icons.hourglass_top_rounded);
       return;
     }
 
@@ -913,9 +961,16 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
     final hasInternal = _realSubtitleTracks.isNotEmpty;
 
     if (!hasExternal && !hasInternal) {
-      _showOSD("Yumshoq subtitr topilmadi (Asl .srt/.ass fayl yo'q)", Icons.subtitles_off_rounded);
+      if (widget.onGenerateLiveCaption != null) {
+        _showLiveCaptionPrompt();
+      } else {
+        _showOSD("Yumshoq subtitr topilmadi (Asl .srt/.ass fayl yo'q)", Icons.subtitles_off_rounded);
+      }
       return;
     }
+
+    final player = _player;
+    if (player == null) return;
 
     final next = !_subtitlesEnabled;
     setState(() => _subtitlesEnabled = next);
@@ -933,6 +988,297 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
     _showOSD(
       next ? "Yumshoq subtitr: Asl matn (CC)" : "Subtitr: O'chirildi",
       next ? Icons.closed_caption_rounded : Icons.closed_caption_off_rounded,
+    );
+  }
+
+  Future<void> _pickExternalSubtitle() async {
+    try {
+      final result = await FilePicker.pickFiles(
+        dialogTitle: "Subtitr faylini tanlang (.srt, .ass, .vtt)",
+        type: FileType.custom,
+        allowedExtensions: ['srt', 'ass', 'vtt', 'sub'],
+      );
+      if (result != null && result.files.single.path != null) {
+        final selectedPath = result.files.single.path!;
+        final player = _player;
+        if (player != null) {
+          _resolvedSubtitlePath = selectedPath;
+          _subtitlesEnabled = true;
+          await player.setSubtitleTrack(SubtitleTrack.uri(Uri.file(selectedPath).toString()));
+          _showOSD("📁 Subtitr biriktirildi: ${result.files.single.name}", Icons.check_circle_rounded);
+          if (mounted) setState(() {});
+        }
+      }
+    } catch (e) {
+      _showOSD("Fayl tanlashda xatolik: $e", Icons.error_outline_rounded);
+    }
+  }
+
+  Future<void> _startLiveCaptionGeneration({String targetLang = 'auto'}) async {
+    if (widget.onGenerateLiveCaption == null) {
+      _showOSD("Jonli subtitr xizmati ulanmagan", Icons.warning_amber_rounded);
+      return;
+    }
+    if (_isGeneratingLiveCaption) {
+      _showOSD("Subtitr yaratish allaqachon jarayonda...", Icons.hourglass_top_rounded);
+      return;
+    }
+
+    setState(() {
+      _isGeneratingLiveCaption = true;
+      _liveCaptionStatus = targetLang == 'uz'
+          ? "AI O'zbekcha subtitr tayyorlamoqda..."
+          : "AI Whisper nutqni aniqlamoqda...";
+    });
+
+    _showOSD("⚡ Jonli AI subtitr boshlandi (~5-15s)", Icons.bolt_rounded);
+
+    try {
+      final srtPath = await widget.onGenerateLiveCaption!(
+        widget.videoPath,
+        targetLang: targetLang,
+      );
+
+      if (srtPath != null && File(srtPath).existsSync()) {
+        _resolvedSubtitlePath = srtPath;
+        _subtitlesEnabled = true;
+        final player = _player;
+        if (player != null) {
+          await player.setSubtitleTrack(SubtitleTrack.uri(Uri.file(srtPath).toString()));
+        }
+        _showOSD("✅ Jonli subtitr ulandi!", Icons.closed_caption_rounded);
+      } else {
+        _showOSD("Subtitr yaratib bo'lmadi", Icons.error_outline_rounded);
+      }
+    } catch (e) {
+      _showOSD("Xatolik: $e", Icons.error_outline_rounded);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGeneratingLiveCaption = false;
+          _liveCaptionStatus = '';
+        });
+      }
+    }
+  }
+
+  void _showLiveCaptionPrompt() {
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.7),
+      builder: (ctx) => Dialog(
+        backgroundColor: const Color(0xFF0F172A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFF334155), width: 1.2),
+        ),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFF38BDF8).withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.bolt_rounded,
+                        color: Color(0xFF38BDF8),
+                        size: 26,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Jonli AI Subtitr (Live Caption)",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 3),
+                          Text(
+                            "Google Live Caption kabi soniyalarda subtitr",
+                            style: TextStyle(
+                              color: Color(0xFF94A3B8),
+                              fontSize: 12.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, color: Color(0xFF94A3B8)),
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      tooltip: "Yopish",
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                const Text(
+                  "Ushbu video uchun subtitr fayli topilmadi. Videoni qayta kodlamasdan (soatlab kutmasdan), AI orqali bir necha soniyada subtitr chiqaramizmi?",
+                  style: TextStyle(
+                    color: Color(0xFFCBD5E1),
+                    fontSize: 13.5,
+                    height: 1.45,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                _buildLiveCaptionOption(
+                  icon: Icons.bolt_rounded,
+                  iconColor: const Color(0xFF38BDF8),
+                  title: "Tezkor AI Subtitr (Asl tilda)",
+                  badge: "~5-10s",
+                  badgeColor: const Color(0xFF0284C7),
+                  description: "Groq Whisper nutqni bir zumda aniqlaydi, video qayta ishlanmaydi",
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    _startLiveCaptionGeneration(targetLang: 'auto');
+                  },
+                ),
+                const SizedBox(height: 10),
+                _buildLiveCaptionOption(
+                  icon: Icons.translate_rounded,
+                  iconColor: const Color(0xFF10B981),
+                  title: "O'zbekcha tarjima bilan",
+                  badge: "~10-15s",
+                  badgeColor: const Color(0xFF059669),
+                  description: "Nutq matnga aylantiriladi va o'zbek tiliga tarjima qilinadi",
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    _startLiveCaptionGeneration(targetLang: 'uz');
+                  },
+                ),
+                const SizedBox(height: 10),
+                _buildLiveCaptionOption(
+                  icon: Icons.folder_open_rounded,
+                  iconColor: const Color(0xFFF59E0B),
+                  title: "Diskdan subtitr tanlash",
+                  badge: "Mavjud fayl",
+                  badgeColor: const Color(0xFFD97706),
+                  description: "Kompyuteringizdagi .srt yoki .ass faylini to'g'ridan-to'g'ri biriktirish",
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    _pickExternalSubtitle();
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLiveCaptionOption({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String badge,
+    required Color badgeColor,
+    required String description,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        hoverColor: iconColor.withValues(alpha: 0.08),
+        splashColor: iconColor.withValues(alpha: 0.15),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E293B).withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF334155)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 2),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: iconColor, size: 20),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: badgeColor.withValues(alpha: 0.25),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: badgeColor.withValues(alpha: 0.5), width: 0.8),
+                          ),
+                          child: Text(
+                            badge,
+                            style: TextStyle(
+                              color: badgeColor.withValues(alpha: 0.95),
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      description,
+                      style: const TextStyle(
+                        color: Color(0xFF94A3B8),
+                        fontSize: 12,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Color(0xFF64748B),
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -1365,6 +1711,58 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
                   ),
                 ),
               ),
+
+              // 5. Jonli AI Subtitr (Live Caption) status indikatori
+              if (_isGeneratingLiveCaption)
+                Positioned(
+                  top: 56,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0F172A).withValues(alpha: 0.92),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: const Color(0xFF38BDF8).withValues(alpha: 0.6),
+                          width: 1.2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF38BDF8).withValues(alpha: 0.25),
+                            blurRadius: 16,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF38BDF8)),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            _liveCaptionStatus.isNotEmpty
+                                ? _liveCaptionStatus
+                                : "⚡ Jonli AI subtitr aniqlanmoqda...",
+                            style: const TextStyle(
+                              color: Color(0xFFE2E8F0),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -1640,6 +2038,9 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
     if (!_canToggleSubtitles) return const SizedBox.shrink();
 
     final realSubs = _realSubtitleTracks;
+    final hasSub = _hasSubtitles || realSubs.isNotEmpty;
+    final isGenerating = _isGeneratingLiveCaption;
+
     if (realSubs.length > 1) {
       return PopupMenuButton<SubtitleTrack>(
         tooltip: "Subtitr tilini tanlash / o'chirish (C)",
@@ -1737,35 +2138,67 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
       );
     }
 
+    String label;
+    IconData icon;
+    Color color;
+
+    if (isGenerating) {
+      label = "Subtitr: AI aniqlanmoqda...";
+      icon = Icons.hourglass_top_rounded;
+      color = const Color(0xFF38BDF8);
+    } else if (hasSub) {
+      label = _subtitlesEnabled ? "Subtitr: Yoqiq" : "Subtitr: O'chiq";
+      icon = _subtitlesEnabled ? Icons.subtitles_rounded : Icons.subtitles_off_rounded;
+      color = _subtitlesEnabled ? Colors.amberAccent : Colors.grey;
+    } else {
+      label = "⚡ Jonli Subtitr";
+      icon = Icons.bolt_rounded;
+      color = const Color(0xFF38BDF8);
+    }
+
     return Tooltip(
-      message: _subtitlesEnabled ? "Subtitrni o'chirish (C)" : "Subtitrni yoqish (C)",
+      message: isGenerating
+          ? "Jonli AI subtitr aniqlanmoqda..."
+          : (hasSub
+              ? (_subtitlesEnabled ? "Subtitrni o'chirish (C)" : "Subtitrni yoqish (C)")
+              : "⚡ Jonli AI Subtitr yaratish (Live Caption) (C)"),
       child: InkWell(
         onTap: _toggleSubtitles,
         borderRadius: BorderRadius.circular(8),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
           decoration: BoxDecoration(
-            color: _subtitlesEnabled ? Colors.amberAccent.withValues(alpha: 0.18) : Colors.white.withValues(alpha: 0.05),
+            color: color.withValues(alpha: 0.18),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: _subtitlesEnabled ? Colors.amberAccent.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.15)),
+            border: Border.all(color: color.withValues(alpha: 0.5)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                _subtitlesEnabled ? Icons.subtitles_rounded : Icons.subtitles_off_rounded,
-                size: 14,
-                color: _subtitlesEnabled ? Colors.amberAccent : Colors.grey,
-              ),
+              if (isGenerating)
+                const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF38BDF8)),
+                  ),
+                )
+              else
+                Icon(icon, size: 14, color: color),
               const SizedBox(width: 6),
               Text(
-                _subtitlesEnabled ? "Subtitr: Yoqiq" : "Subtitr: O'chiq",
+                label,
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: _subtitlesEnabled ? Colors.amberAccent : Colors.grey,
+                  color: color,
                 ),
               ),
+              if (!hasSub && !isGenerating) ...[
+                const SizedBox(width: 4),
+                const Icon(Icons.arrow_drop_down_rounded, size: 16, color: Color(0xFF38BDF8)),
+              ],
             ],
           ),
         ),
@@ -2012,54 +2445,76 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
     );
   }
 
-  // --- Yumshoq subtitr (CC) tugmasi — Asl matn ---
+  // --- Yumshoq subtitr (CC) tugmasi — Asl matn / Jonli AI Subtitr ---
   Widget _buildCCButton() {
     final hasSub = _hasSubtitles || _realSubtitleTracks.isNotEmpty;
+    final isGenerating = _isGeneratingLiveCaption;
     final isActive = _subtitlesEnabled && hasSub;
 
+    String tooltip;
+    if (isGenerating) {
+      tooltip = "⚡ Jonli AI subtitr tayyorlanmoqda...";
+    } else if (isActive) {
+      tooltip = "Yumshoq subtitr (CC): Yoqilgan — Asl matn (C)";
+    } else if (hasSub) {
+      tooltip = "Yumshoq subtitr (CC) ni yoqish — Asl matn (C)";
+    } else {
+      tooltip = "⚡ Jonli AI Subtitr yaratish (Live Caption) (C)";
+    }
+
     return Tooltip(
-      message: isActive
-          ? "Yumshoq subtitr (CC): Yoqilgan — Asl matn (C)"
-          : (hasSub
-              ? "Yumshoq subtitr (CC) ni yoqish — Asl matn (C)"
-              : "Yumshoq subtitr (CC) — Asl matn (C)"),
+      message: tooltip,
       child: InkWell(
         onTap: _toggleSubtitles,
         borderRadius: BorderRadius.circular(6),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: isActive
-                ? const Color(0xFF38BDF8).withValues(alpha: 0.22)
-                : Colors.white.withValues(alpha: 0.06),
+            color: isGenerating
+                ? const Color(0xFF0284C7).withValues(alpha: 0.25)
+                : (isActive
+                    ? const Color(0xFF38BDF8).withValues(alpha: 0.22)
+                    : Colors.white.withValues(alpha: 0.06)),
             borderRadius: BorderRadius.circular(6),
             border: Border.all(
-              color: isActive
+              color: isGenerating
                   ? const Color(0xFF38BDF8)
-                  : Colors.white.withValues(alpha: 0.12),
-              width: isActive ? 1.2 : 1.0,
+                  : (isActive
+                      ? const Color(0xFF38BDF8)
+                      : Colors.white.withValues(alpha: 0.12)),
+              width: (isActive || isGenerating) ? 1.2 : 1.0,
             ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                isActive
-                    ? Icons.closed_caption_rounded
-                    : Icons.closed_caption_off_rounded,
-                size: 15,
-                color: isActive
-                    ? const Color(0xFF38BDF8)
-                    : const Color(0xFF94A3B8),
-              ),
+              if (isGenerating)
+                const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF38BDF8)),
+                  ),
+                )
+              else
+                Icon(
+                  isActive
+                      ? Icons.closed_caption_rounded
+                      : (hasSub ? Icons.closed_caption_off_rounded : Icons.bolt_rounded),
+                  size: 15,
+                  color: (isActive || !hasSub)
+                      ? const Color(0xFF38BDF8)
+                      : const Color(0xFF94A3B8),
+                ),
               const SizedBox(width: 4),
               Text(
-                "CC",
+                isGenerating ? "AI..." : "CC",
                 style: TextStyle(
                   fontSize: 10.5,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.4,
-                  color: isActive
+                  color: (isActive || isGenerating || !hasSub)
                       ? const Color(0xFF38BDF8)
                       : const Color(0xFFCBD5E1),
                 ),
