@@ -245,4 +245,60 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Klaviatura tezkor tugmalari'), findsNothing);
   });
+
+  testWidgets('EmbeddedVideoPlayer renders file dropdown and switches to document viewer', (tester) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    final siblings = [
+      const StudioMediaFile(
+        path: '/dummy/movies/video.mp4',
+        name: 'video.mp4',
+        displayName: 'Asosiy video',
+        category: StudioFileCategory.video,
+        extension: 'mp4',
+      ),
+      const StudioMediaFile(
+        path: '/dummy/movies/konspekt.md',
+        name: 'konspekt.md',
+        displayName: 'O\'qish konspekti (MD)',
+        category: StudioFileCategory.markdown,
+        extension: 'md',
+      ),
+    ];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData.dark(),
+        home: Scaffold(
+          body: EmbeddedVideoPlayer(
+            videoPath: '/dummy/movies/video.mp4',
+            siblingFiles: siblings,
+            onClose: () {},
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    // Verify dropdown button shows count or title
+    expect(find.byTooltip('Fayllar va materiallar ro\'yxati'), findsOneWidget);
+    expect(find.text('Asosiy video'), findsNWidgets(2));
+
+    // Tap dropdown button to show sibling files
+    await tester.tap(find.byTooltip('Fayllar va materiallar ro\'yxati'));
+    await tester.pumpAndSettle();
+
+    // Verify items in popup
+    expect(find.text('O\'qish konspekti (MD)'), findsOneWidget);
+
+    // Select the document
+    await tester.tap(find.text('O\'qish konspekti (MD)'));
+    await tester.pumpAndSettle();
+
+    // Now DocumentViewer is active, showing the MD badge
+    expect(find.text('MD'), findsOneWidget);
+  });
 }

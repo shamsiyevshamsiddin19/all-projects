@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../models/studio_media_file.dart';
+
 class HistoryEntry {
   const HistoryEntry({
     required this.name,
@@ -7,6 +9,7 @@ class HistoryEntry {
     required this.videoPath,
     required this.subtitlePath,
     required this.modified,
+    this.files = const [],
   });
 
   final String name;
@@ -14,6 +17,7 @@ class HistoryEntry {
   final String? videoPath;
   final String? subtitlePath;
   final DateTime modified;
+  final List<StudioMediaFile> files;
 }
 
 class HistoryPanel extends StatefulWidget {
@@ -270,17 +274,23 @@ class _HistoryPanelState extends State<HistoryPanel> {
                                 decoration: BoxDecoration(
                                   color: (item.videoPath != null
                                           ? const Color(0xFF10B981)
-                                          : theme.colorScheme.primary)
+                                          : (item.files.any((f) => f.category == StudioFileCategory.pdf)
+                                              ? const Color(0xFFEF4444)
+                                              : theme.colorScheme.primary))
                                       .withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Icon(
                                   item.videoPath != null
                                       ? Icons.movie_outlined
-                                      : Icons.folder_outlined,
+                                      : (item.files.any((f) => f.isDocument)
+                                          ? Icons.description_outlined
+                                          : Icons.folder_outlined),
                                   color: item.videoPath != null
                                       ? const Color(0xFF10B981)
-                                      : theme.colorScheme.primary,
+                                      : (item.files.any((f) => f.category == StudioFileCategory.pdf)
+                                          ? const Color(0xFFEF4444)
+                                          : theme.colorScheme.primary),
                                   size: 22,
                                 ),
                               ),
@@ -295,7 +305,10 @@ class _HistoryPanelState extends State<HistoryPanel> {
                               ),
                               subtitle: Padding(
                                 padding: const EdgeInsets.only(top: 4.0),
-                                child: Row(
+                                child: Wrap(
+                                  spacing: 4,
+                                  runSpacing: 4,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
                                   children: [
                                     Text(
                                       _formatDate(item.modified),
@@ -306,7 +319,7 @@ class _HistoryPanelState extends State<HistoryPanel> {
                                             .onSurfaceVariant,
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
+                                    const SizedBox(width: 4),
                                     if (item.videoPath != null)
                                       Container(
                                         padding: const EdgeInsets.symmetric(
@@ -329,8 +342,7 @@ class _HistoryPanelState extends State<HistoryPanel> {
                                           ),
                                         ),
                                       ),
-                                    if (item.subtitlePath != null) ...[
-                                      const SizedBox(width: 4),
+                                    if (item.subtitlePath != null)
                                       Container(
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 6,
@@ -355,7 +367,36 @@ class _HistoryPanelState extends State<HistoryPanel> {
                                           ),
                                         ),
                                       ),
-                                    ],
+                                    // Boshqa materiallar (PDF, DOCX, MD)
+                                    for (final f in item.files.where((f) =>
+                                        f.category == StudioFileCategory.pdf ||
+                                        f.category == StudioFileCategory.docx ||
+                                        f.category == StudioFileCategory.markdown))
+                                      InkWell(
+                                        onTap: () => widget.onPlay(f.path),
+                                        borderRadius: BorderRadius.circular(4),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 5,
+                                            vertical: 1,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: f.color.withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(4),
+                                            border: Border.all(
+                                              color: f.color.withValues(alpha: 0.3),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            f.badgeText,
+                                            style: TextStyle(
+                                              fontSize: 9.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: f.color,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
                                   ],
                                 ),
                               ),
@@ -372,6 +413,17 @@ class _HistoryPanelState extends State<HistoryPanel> {
                                       tooltip: 'Ilova pleyerida ko\'rish',
                                       onPressed: () =>
                                           widget.onPlay(item.videoPath!),
+                                    )
+                                  else if (item.files.isNotEmpty)
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.visibility_rounded,
+                                        color: Color(0xFF38BDF8),
+                                        size: 24,
+                                      ),
+                                      tooltip: 'Materiallarni o\'qish',
+                                      onPressed: () =>
+                                          widget.onPlay(item.files.first.path),
                                     ),
                                   IconButton(
                                     icon: const Icon(

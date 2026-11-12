@@ -1004,52 +1004,50 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   bool _isVideoPath(String path) {
-    const videoExts = {'mp4', 'mkv', 'avi', 'mov', 'webm', 'm4v', 'flv', 'ts'};
-    final dot = path.lastIndexOf('.');
-    if (dot == -1) return false;
-    final ext = path.substring(dot + 1).toLowerCase();
-    return videoExts.contains(ext);
+    return StudioMediaFile.categorize(path) == StudioFileCategory.video;
   }
 
   Future<void> _openPath(String path) async {
     try {
-      if (_isVideoPath(path) && playerAvailable) {
+      if (StudioMediaFile.isSupported(path) && playerAvailable) {
         String? sub;
-        if (_result != null) {
-          // Asl (original) subtitrni birinchi navbatda tanlaymiz
-          final orig = _result!.outputs
-              .where(
-                (o) =>
-                    (o.kind == 'ass' || o.kind == 'srt') &&
-                    (o.name.toLowerCase().contains('original') ||
-                        o.name.toLowerCase().contains('orig')),
-              )
-              .firstOrNull;
-          sub =
-              orig?.path ??
-              _result!.outputs
-                  .where((o) => o.kind == 'ass' || o.kind == 'srt')
-                  .firstOrNull
-                  ?.path;
-        }
-        if (sub == null || !File(sub).existsSync()) {
-          final dot = path.lastIndexOf('.');
-          if (dot > 0) {
-            final base = path.substring(0, dot);
-            final candidates = [
-              '${base}_original.srt',
-              '${base}_original.ass',
-              '${base}_orig.srt',
-              '${base}_orig_soft.ass',
-              '${base}_softsub_original.ass',
-              '$base.ass',
-              '$base.srt',
-              '$base.vtt',
-            ];
-            for (final c in candidates) {
-              if (File(c).existsSync()) {
-                sub = c;
-                break;
+        if (_isVideoPath(path)) {
+          if (_result != null) {
+            // Asl (original) subtitrni birinchi navbatda tanlaymiz
+            final orig = _result!.outputs
+                .where(
+                  (o) =>
+                      (o.kind == 'ass' || o.kind == 'srt') &&
+                      (o.name.toLowerCase().contains('original') ||
+                          o.name.toLowerCase().contains('orig')),
+                )
+                .firstOrNull;
+            sub =
+                orig?.path ??
+                _result!.outputs
+                    .where((o) => o.kind == 'ass' || o.kind == 'srt')
+                    .firstOrNull
+                    ?.path;
+          }
+          if (sub == null || !File(sub).existsSync()) {
+            final dot = path.lastIndexOf('.');
+            if (dot > 0) {
+              final base = path.substring(0, dot);
+              final candidates = [
+                '${base}_original.srt',
+                '${base}_original.ass',
+                '${base}_orig.srt',
+                '${base}_orig_soft.ass',
+                '${base}_softsub_original.ass',
+                '$base.ass',
+                '$base.srt',
+                '$base.vtt',
+              ];
+              for (final c in candidates) {
+                if (File(c).existsSync()) {
+                  sub = c;
+                  break;
+                }
               }
             }
           }
@@ -1058,7 +1056,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         setState(() {
           _activePlayerVideo = path;
           _activePlayerSubtitle = sub;
-          _activePlayerTitle = File(path).uri.pathSegments.last;
+          _activePlayerTitle = File(path).uri.pathSegments.isNotEmpty
+              ? File(path).uri.pathSegments.last
+              : path;
         });
         return;
       }
@@ -1187,23 +1187,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         final entries = dir.listSync();
         for (final entry in entries) {
           if (entry is Directory) {
-            final files = entry.listSync();
-            final videoFile = files
-                .whereType<File>()
-                .where((f) {
-                  final l = f.path.toLowerCase();
-                  return l.endsWith('.mp4') ||
-                      l.endsWith('.mkv') ||
-                      l.endsWith('.webm') ||
-                      l.endsWith('.mov');
-                })
-                .firstOrNull;
-            final subtitleFile = files
-                .whereType<File>()
-                .where((f) {
-                  final l = f.path.toLowerCase();
-                  return l.endsWith('.srt') || l.endsWith('.ass');
-                })
+            final studioFiles = StudioMediaFile.discover(entry.path);
+            final videoFile = studioFiles.where((f) => f.isVideo).firstOrNull;
+            final subtitleFile = studioFiles
+                .where((f) => f.category == StudioFileCategory.subtitle)
                 .firstOrNull;
             final rawName = entry.path.split(Platform.pathSeparator).last;
             final cleanName = rawName
@@ -1216,11 +1203,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               videoPath: videoFile?.path,
               subtitlePath: subtitleFile?.path,
               modified: entry.statSync().modified,
+              files: studioFiles,
             ));
           } else if (entry is File) {
-            final l = entry.path.toLowerCase();
-            if (l.endsWith('.mp4') || l.endsWith('.mkv') || l.endsWith('.webm')) {
-              final rawName = entry.path.split(Platform.pathSeparator).last;
+            final p = entry.path;
+            if (StudioMediaFile.isSupported(p)) {
+              final isVideo =
+                  StudioMediaFile.categorize(p) == StudioFileCategory.video;
+              final rawName = p.split(Platform.pathSeparator).last;
               final cleanName = rawName
                   .replaceAll(RegExp(r'\.[^.]+$'), '')
                   .replaceAll(RegExp(r'__\w+$'), '')
@@ -1229,9 +1219,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               items.add(HistoryEntry(
                 name: cleanName.isNotEmpty ? cleanName : rawName,
                 directoryPath: entry.parent.path,
-                videoPath: entry.path,
+                videoPath: isVideo ? p : null,
                 subtitlePath: null,
                 modified: entry.statSync().modified,
+                files: [StudioMediaFile.fromFile(entry)],
               ));
             }
           }

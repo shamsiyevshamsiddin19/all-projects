@@ -6,7 +6,11 @@ import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
+import '../models/studio_media_file.dart';
+import 'document_viewer.dart';
 import 'subtitle_player.dart' show playerAvailable;
+
+export '../models/studio_media_file.dart';
 
 /// Aspect ratio variantlari
 enum VideoAspectRatioMode {
@@ -107,7 +111,7 @@ class _InAppVideoPlayerDialogState extends State<InAppVideoPlayerDialog> {
 }
 
 /// Asosiy oynaning o'ng tomonida to'g'ridan-to'g'ri integratsiya qilingan
-/// video pleyer paneli.
+/// video va hujjatlar studiyasi (Dropdown orqali boshqa materiallarga o'tish imkoni bilan).
 class EmbeddedVideoPlayer extends StatefulWidget {
   const EmbeddedVideoPlayer({
     super.key,
@@ -116,6 +120,7 @@ class EmbeddedVideoPlayer extends StatefulWidget {
     this.title,
     required this.onClose,
     this.onOpenExternal,
+    this.siblingFiles,
   });
 
   final String videoPath;
@@ -123,6 +128,7 @@ class EmbeddedVideoPlayer extends StatefulWidget {
   final String? title;
   final VoidCallback onClose;
   final ValueChanged<String>? onOpenExternal;
+  final List<StudioMediaFile>? siblingFiles;
 
   @override
   State<EmbeddedVideoPlayer> createState() => _EmbeddedVideoPlayerState();
@@ -130,25 +136,254 @@ class EmbeddedVideoPlayer extends StatefulWidget {
 
 class _EmbeddedVideoPlayerState extends State<EmbeddedVideoPlayer> {
   bool _isFullscreen = false;
+  late String _currentPath;
+  String? _currentSubtitlePath;
+  List<StudioMediaFile> _files = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _currentPath = widget.videoPath;
+    _currentSubtitlePath = widget.subtitlePath;
+    _loadFiles();
+  }
+
+  @override
+  void didUpdateWidget(covariant EmbeddedVideoPlayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.videoPath != widget.videoPath ||
+        oldWidget.subtitlePath != widget.subtitlePath) {
+      _currentPath = widget.videoPath;
+      _currentSubtitlePath = widget.subtitlePath;
+      _loadFiles();
+    }
+  }
+
+  void _loadFiles() {
+    if (widget.siblingFiles != null && widget.siblingFiles!.isNotEmpty) {
+      _files = widget.siblingFiles!;
+    } else {
+      _files = StudioMediaFile.discover(widget.videoPath);
+    }
+    if (StudioMediaFile.categorize(_currentPath) == StudioFileCategory.video &&
+        _currentSubtitlePath == null) {
+      final sub = _files
+          .where((f) => f.category == StudioFileCategory.subtitle)
+          .firstOrNull;
+      if (sub != null) {
+        _currentSubtitlePath = sub.path;
+      }
+    }
+  }
+
+  void _selectFile(StudioMediaFile file) {
+    setState(() {
+      _currentPath = file.path;
+      if (file.isVideo) {
+        final sub = _files
+            .where((f) => f.category == StudioFileCategory.subtitle)
+            .firstOrNull;
+        _currentSubtitlePath = sub?.path;
+      }
+    });
+  }
 
   void _toggleFullscreen() {
     setState(() => _isFullscreen = !_isFullscreen);
   }
 
+  Widget _buildHeaderLeading(BuildContext context) {
+    final activeFile = _files.where((f) => f.path == _currentPath).firstOrNull;
+    final fallbackName = File(_currentPath).uri.pathSegments.isNotEmpty
+        ? File(_currentPath).uri.pathSegments.last
+        : _currentPath;
+    final currentTitle = activeFile?.displayName ?? fallbackName;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        OutlinedButton.icon(
+          onPressed: _isFullscreen ? _toggleFullscreen : widget.onClose,
+          icon: const Icon(Icons.arrow_back_rounded, size: 14),
+          label: const Text("Boshqaruv paneli"),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+            side: const BorderSide(color: Color(0xFF33333C)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            foregroundColor: const Color(0xFFE2E8F0),
+            backgroundColor: const Color(0xFF14151B),
+          ),
+        ),
+        const SizedBox(width: 8),
+        if (_files.isNotEmpty)
+          Theme(
+            data: Theme.of(context).copyWith(
+              cardColor: const Color(0xFF161722),
+              popupMenuTheme: PopupMenuThemeData(
+                color: const Color(0xFF161722),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  side: const BorderSide(color: Color(0xFF2C2E3E)),
+                ),
+                elevation: 12,
+              ),
+            ),
+            child: PopupMenuButton<StudioMediaFile>(
+              tooltip: 'Fayllar va materiallar ro\'yxati',
+              offset: const Offset(0, 36),
+              onSelected: _selectFile,
+              itemBuilder: (context) {
+                return _files.map((file) {
+                  final isSelected = file.path == _currentPath;
+                  return PopupMenuItem<StudioMediaFile>(
+                    value: file,
+                    height: 40,
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: file.color.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Icon(file.icon, size: 16, color: file.color),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            file.displayName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                              color: isSelected ? const Color(0xFF38BDF8) : const Color(0xFFE2E8F0),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: file.color.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: file.color.withValues(alpha: 0.3)),
+                          ),
+                          child: Text(
+                            file.badgeText,
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: file.color,
+                            ),
+                          ),
+                        ),
+                        if (isSelected) ...[
+                          const SizedBox(width: 6),
+                          const Icon(Icons.check_rounded, size: 16, color: Color(0xFF38BDF8)),
+                        ],
+                      ],
+                    ),
+                  );
+                }).toList();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF14151B),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFF2E303E)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      activeFile?.icon ?? Icons.folder_open_rounded,
+                      size: 14,
+                      color: activeFile?.color ?? const Color(0xFF38BDF8),
+                    ),
+                    const SizedBox(width: 6),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 160),
+                      child: Text(
+                        currentTitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFE2E8F0),
+                        ),
+                      ),
+                    ),
+                    if (_files.length > 1) ...[
+                      const SizedBox(width: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF282A3A),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '${_files.length}',
+                          style: const TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 14,
+                      color: Color(0xFF94A3B8),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isVideo = StudioMediaFile.categorize(_currentPath) == StudioFileCategory.video;
+    final fileObj = _files.where((f) => f.path == _currentPath).firstOrNull;
+    final activeTitle = fileObj?.displayName ?? widget.title;
+
+    final Widget playerWidget;
+    if (isVideo) {
+      playerWidget = StudioVideoPlayer(
+        key: ValueKey(_currentPath),
+        videoPath: _currentPath,
+        subtitlePath: _currentSubtitlePath,
+        title: activeTitle,
+        onClose: _isFullscreen ? _toggleFullscreen : widget.onClose,
+        onOpenExternal: widget.onOpenExternal,
+        isFullscreen: _isFullscreen,
+        onToggleFullscreen: _toggleFullscreen,
+        headerLeading: _buildHeaderLeading(context),
+      );
+    } else {
+      playerWidget = DocumentViewer(
+        key: ValueKey(_currentPath),
+        filePath: _currentPath,
+        title: activeTitle,
+        onClose: _isFullscreen ? _toggleFullscreen : widget.onClose,
+        onOpenExternal: widget.onOpenExternal,
+        headerLeading: _buildHeaderLeading(context),
+      );
+    }
+
     if (_isFullscreen) {
       return Dialog.fullscreen(
         backgroundColor: Colors.black,
-        child: StudioVideoPlayer(
-          videoPath: widget.videoPath,
-          subtitlePath: widget.subtitlePath,
-          title: widget.title,
-          onClose: _toggleFullscreen,
-          onOpenExternal: widget.onOpenExternal,
-          isFullscreen: true,
-          onToggleFullscreen: _toggleFullscreen,
-        ),
+        child: playerWidget,
       );
     }
 
@@ -159,26 +394,7 @@ class _EmbeddedVideoPlayerState extends State<EmbeddedVideoPlayer> {
         border: Border.all(color: const Color(0xFF222226)),
       ),
       clipBehavior: Clip.antiAlias,
-      child: StudioVideoPlayer(
-        videoPath: widget.videoPath,
-        subtitlePath: widget.subtitlePath,
-        title: widget.title,
-        onClose: widget.onClose,
-        onOpenExternal: widget.onOpenExternal,
-        isFullscreen: false,
-        onToggleFullscreen: _toggleFullscreen,
-        headerLeading: OutlinedButton.icon(
-          onPressed: widget.onClose,
-          icon: const Icon(Icons.arrow_back_rounded, size: 15),
-          label: const Text("Boshqaruv paneli"),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            textStyle: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
-            side: const BorderSide(color: Color(0xFF33333C)),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          ),
-        ),
-      ),
+      child: playerWidget,
     );
   }
 }
