@@ -1162,6 +1162,181 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
+  Future<void> _showHistory() async {
+    final theme = Theme.of(context);
+    final targetDir = _outDir.isNotEmpty
+        ? _outDir
+        : '${Platform.environment['HOME']}/Videos/Subtitr natijalar';
+    final dir = Directory(targetDir);
+
+    final items = <_HistoryEntry>[];
+    if (dir.existsSync()) {
+      try {
+        final entries = dir.listSync();
+        for (final entry in entries) {
+          if (entry is Directory) {
+            final files = entry.listSync();
+            final videoFile = files
+                .whereType<File>()
+                .where((f) {
+                  final l = f.path.toLowerCase();
+                  return l.endsWith('.mp4') ||
+                      l.endsWith('.mkv') ||
+                      l.endsWith('.webm') ||
+                      l.endsWith('.mov');
+                })
+                .firstOrNull;
+            final subtitleFile = files
+                .whereType<File>()
+                .where((f) {
+                  final l = f.path.toLowerCase();
+                  return l.endsWith('.srt') || l.endsWith('.ass');
+                })
+                .firstOrNull;
+            final rawName = entry.path.split(Platform.pathSeparator).last;
+            final cleanName = rawName
+                .replaceAll(RegExp(r'__\w+$'), '')
+                .replaceAll('_', ' ')
+                .trim();
+            items.add(_HistoryEntry(
+              name: cleanName.isNotEmpty ? cleanName : rawName,
+              directoryPath: entry.path,
+              videoPath: videoFile?.path,
+              subtitlePath: subtitleFile?.path,
+              modified: entry.statSync().modified,
+            ));
+          } else if (entry is File) {
+            final l = entry.path.toLowerCase();
+            if (l.endsWith('.mp4') || l.endsWith('.mkv') || l.endsWith('.webm')) {
+              final rawName = entry.path.split(Platform.pathSeparator).last;
+              final cleanName = rawName
+                  .replaceAll(RegExp(r'\.[^.]+$'), '')
+                  .replaceAll(RegExp(r'__\w+$'), '')
+                  .replaceAll('_', ' ')
+                  .trim();
+              items.add(_HistoryEntry(
+                name: cleanName.isNotEmpty ? cleanName : rawName,
+                directoryPath: entry.parent.path,
+                videoPath: entry.path,
+                subtitlePath: null,
+                modified: entry.statSync().modified,
+              ));
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    items.sort((a, b) => b.modified.compareTo(a.modified));
+
+    if (!mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.history_rounded, color: theme.colorScheme.primary, size: 24),
+            const SizedBox(width: 10),
+            const Text('Jarayonlar tarixi'),
+          ],
+        ),
+        content: SizedBox(
+          width: 520,
+          height: items.isEmpty ? 120 : 380,
+          child: items.isEmpty
+              ? const Center(
+                  child: Text(
+                    'Hali yakunlangan natijalar tarixi yo\'q.',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                )
+              : ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: items.length,
+                  separatorBuilder: (_, _) => const Divider(height: 1),
+                  itemBuilder: (_, index) {
+                    final item = items[index];
+                    final dateStr = _formatHistoryDate(item.modified);
+                    return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      leading: CircleAvatar(
+                        backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                        child: Icon(
+                          item.videoPath != null ? Icons.movie_outlined : Icons.folder_outlined,
+                          color: theme.colorScheme.primary,
+                          size: 20,
+                        ),
+                      ),
+                      title: Text(
+                        item.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                      ),
+                      subtitle: Text(
+                        '$dateStr · ${item.videoPath != null ? "Video tayyor" : "Fayllar mavjud"}',
+                        style: const TextStyle(fontSize: 11, color: Colors.grey),
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (item.videoPath != null)
+                            IconButton(
+                              icon: const Icon(Icons.play_circle_fill_rounded, color: Color(0xFF10B981), size: 24),
+                              tooltip: 'Pleyerda ko\'rish',
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                _openPath(item.videoPath!);
+                              },
+                            ),
+                          IconButton(
+                            icon: const Icon(Icons.folder_open_rounded, size: 20),
+                            tooltip: 'Papkani ochish',
+                            onPressed: () => _service.openPath(item.directoryPath),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          if (dir.existsSync())
+            TextButton.icon(
+              icon: const Icon(Icons.folder_rounded, size: 18),
+              label: const Text('Barcha natijalar papkasi'),
+              onPressed: () => _openPath(targetDir),
+            ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Yopish'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatHistoryDate(DateTime dt) {
+    final now = DateTime.now();
+    final timeStr =
+        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    if (dt.year == now.year && dt.month == now.month && dt.day == now.day) {
+      return 'Bugun, $timeStr';
+    }
+    final yesterday = now.subtract(const Duration(days: 1));
+    if (dt.year == yesterday.year &&
+        dt.month == yesterday.month &&
+        dt.day == yesterday.day) {
+      return 'Kecha, $timeStr';
+    }
+    const months = [
+      'yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun',
+      'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr',
+    ];
+    return '${dt.day}-${months[dt.month - 1]}, $timeStr';
+  }
+
   /// Shows the full error with a copy button.
   ///
   /// The snackbar truncates at three lines, and an ffmpeg or provider
@@ -1321,6 +1496,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   isRunning: _running,
                   unreadNotificationCount: _unreadNotificationCount,
                   canOpenOutput: _outDir.isNotEmpty,
+                  onShowHistory: _showHistory,
                   onOpenApiKeys: _openSettings,
                   onInstallDependencies: _installDependencies,
                   onShowNotifications: _showNotifications,
@@ -1564,4 +1740,20 @@ class _AppNotification {
   final String message;
   final bool isError;
   final DateTime time;
+}
+
+class _HistoryEntry {
+  const _HistoryEntry({
+    required this.name,
+    required this.directoryPath,
+    required this.videoPath,
+    required this.subtitlePath,
+    required this.modified,
+  });
+
+  final String name;
+  final String directoryPath;
+  final String? videoPath;
+  final String? subtitlePath;
+  final DateTime modified;
 }

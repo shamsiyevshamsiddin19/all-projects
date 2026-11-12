@@ -14,6 +14,7 @@ class HomeScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.isRunning,
     required this.unreadNotificationCount,
     required this.canOpenOutput,
+    this.onShowHistory,
     required this.onOpenApiKeys,
     required this.onInstallDependencies,
     required this.onShowNotifications,
@@ -26,6 +27,7 @@ class HomeScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool isRunning;
   final int unreadNotificationCount;
   final bool canOpenOutput;
+  final VoidCallback? onShowHistory;
   final VoidCallback onOpenApiKeys;
   final VoidCallback onInstallDependencies;
   final VoidCallback onShowNotifications;
@@ -43,7 +45,9 @@ class HomeScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       titleSpacing: 24,
       toolbarHeight: 70,
+      centerTitle: false,
       title: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
@@ -55,11 +59,14 @@ class HomeScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
             ),
           ),
           const SizedBox(width: 16),
-          Text(
-            'Subtitr Desktop',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
+          Flexible(
+            child: Text(
+              'Subtitr Desktop',
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+              ),
             ),
           ),
           if (appVersion != null) ...[
@@ -82,6 +89,13 @@ class HomeScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
       actions: [
+        IconButton(
+          tooltip: 'Tarix',
+          onPressed: onShowHistory,
+          icon: const Icon(Icons.history_rounded),
+          style: actionStyle,
+        ),
+        const SizedBox(width: 8),
         IconButton(
           tooltip: hasApiKey
               ? 'API kalitlar (${configuredProviders.join(", ")})'
