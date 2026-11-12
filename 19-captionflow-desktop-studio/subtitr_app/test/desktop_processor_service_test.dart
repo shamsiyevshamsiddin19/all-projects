@@ -2,6 +2,33 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:subtitr_app/services/desktop_processor_service.dart';
+import 'package:subtitr_app/services/processor_session_store.dart';
+import 'package:subtitr_app/services/processor_transport.dart';
+
+class _FakeTransport implements ProcessorTransport {
+  _FakeTransport({this.response = const {'type': 'done'}});
+
+  final Map<String, dynamic> response;
+  var cancelled = false;
+  List<String>? streamedArguments;
+
+  @override
+  Future<void> cancel() async => cancelled = true;
+
+  @override
+  Future<Map<String, dynamic>> runJson(List<String> arguments) async =>
+      response;
+
+  @override
+  Future<Map<String, dynamic>> streamJson(
+    List<String> arguments, {
+    required void Function(ProcessorTransportProgress progress) onProgress,
+  }) async {
+    streamedArguments = arguments;
+    onProgress(const ProcessorTransportProgress('Ishlanmoqda', 0.5));
+    return response;
+  }
+}
 
 void main() {
   test('DesktopVideo parses scan JSON', () {
@@ -29,7 +56,12 @@ void main() {
             'path': '/tmp/yuklamalar',
             'bytes': 870318080,
           },
-          {'name': 'work', 'label': 'Ishchi fayllar', 'path': '/tmp', 'bytes': 0},
+          {
+            'name': 'work',
+            'label': 'Ishchi fayllar',
+            'path': '/tmp',
+            'bytes': 0,
+          },
         ],
         'total': 870318080,
         'freed': 0,
@@ -99,5 +131,66 @@ void main() {
         isNull,
       );
     });
+  });
+
+  group('process boundary', () {
+    test(
+      'forwards streamed progress and cancellation to a fake transport',
+      () async {
+        final transport = _FakeTransport(
+          response: {'type': 'done', 'outputs': []},
+        );
+        final service = DesktopProcessorService(transport: transport);
+        final received = <ProcessorProgress>[];
+
+        await service.installDependencies(onProgress: received.add);
+        await service.cancel();
+
+        expect(transport.streamedArguments, ['install-deps']);
+        expect(received.single.message, 'Ishlanmoqda');
+        expect(received.single.progress, 0.5);
+        expect(transport.cancelled, isTrue);
+      },
+    );
+
+    test('parses noisy JSON output and surfaces processor errors', () {
+      expect(
+        parseProcessorJsonOutput(
+          stdout: '''starting
+{"type":"done","value":7}
+''',
+          stderr: '',
+          exitCode: 0,
+          arguments: const ['scan'],
+        )['value'],
+        7,
+      );
+      expect(
+        () => parseProcessorJsonOutput(
+          stdout: '{"type":"error","message":"xato"}',
+          stderr: '',
+          exitCode: 1,
+          arguments: const ['scan'],
+        ),
+        throwsA(isA<StateError>()),
+      );
+    });
+
+    test(
+      'session store removes temporary segment data after explicit cleanup',
+      () async {
+        final directory = await Directory.systemTemp.createTemp(
+          'subtitr-store-test-',
+        );
+        addTearDown(() => directory.delete(recursive: true));
+        final store = ProcessorSessionStore(temporaryDirectory: directory);
+        final temporary = await store.writeSegments('edits_', [
+          {'original': 'asl', 'translated': 'tarjima'},
+        ]);
+        expect(await temporary.exists(), isTrue);
+        await store.deleteQuietly(temporary);
+        expect(await temporary.exists(), isFalse);
+      },
+    );
   });
 }

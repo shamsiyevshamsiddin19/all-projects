@@ -1,33 +1,10 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-/// Thrown when the user aborts a running job via [DesktopProcessorService.cancel].
-class ProcessorCancelled implements Exception {
-  const ProcessorCancelled();
-}
+import 'processor_session_store.dart';
+import 'processor_transport.dart';
 
-typedef _CancelledException = ProcessorCancelled;
-
-class _SecretFile {
-  const _SecretFile(this.file, this.directory);
-
-  final File file;
-  final Directory directory;
-
-  Future<void> dispose() async {
-    try {
-      await directory.delete(recursive: true);
-    } catch (_) {}
-  }
-}
-
-class _StartedProcess {
-  const _StartedProcess(this.process, this.secretFile);
-
-  final Process process;
-  final _SecretFile? secretFile;
-}
+export 'processor_transport.dart' show ProcessorCancelled;
 
 class DesktopVideo {
   const DesktopVideo({
@@ -43,6 +20,7 @@ class DesktopVideo {
   final String path;
   final int size;
   final String subtitleName;
+
   /// Video yonidan topilgan subtitrning to'liq yo'li. Nomning o'zi renderga
   /// yetmaydi: processor import qilishi uchun aynan shu manzil kerak.
   final String subtitlePath;
@@ -348,7 +326,12 @@ class ProcessorProgress {
 /// A remote item returned by yt-dlp's lightweight playlist inspection.
 /// It is metadata only: no video is downloaded until the user selects it.
 class PlaylistEntry {
-  const PlaylistEntry({required this.id, required this.title, required this.url, this.duration = ''});
+  const PlaylistEntry({
+    required this.id,
+    required this.title,
+    required this.url,
+    this.duration = '',
+  });
 
   final String id;
   final String title;
@@ -356,17 +339,31 @@ class PlaylistEntry {
   final String duration;
 
   factory PlaylistEntry.fromJson(Map<String, dynamic> json) => PlaylistEntry(
-        id: json['id'] as String? ?? '',
-        title: json['title'] as String? ?? 'Nomsiz video',
-        url: json['url'] as String? ?? '',
-        duration: json['duration'] as String? ?? '',
-      );
+    id: json['id'] as String? ?? '',
+    title: json['title'] as String? ?? 'Nomsiz video',
+    url: json['url'] as String? ?? '',
+    duration: json['duration'] as String? ?? '',
+  );
 }
 
 class DesktopProcessorService {
-  DesktopProcessorService() : root = _findRoot();
+  DesktopProcessorService({
+    Directory? root,
+    ProcessorTransport? transport,
+    ProcessorSessionStore? sessionStore,
+  }) : root = root ?? _findRoot(),
+       _sessionStore = sessionStore ?? const ProcessorSessionStore() {
+    _transport =
+        transport ??
+        LocalProcessorTransport(
+          root: this.root,
+          environment: () => processEnvironment,
+        );
+  }
 
   final Directory root;
+  final ProcessorSessionStore _sessionStore;
+  late final ProcessorTransport _transport;
 
   /// Provider settings received from the in-app settings screen.
   ///
@@ -482,8 +479,14 @@ class DesktopProcessorService {
       '--quality',
       quality,
       if (upscale) '--upscale',
-      if (subtitlePath != null && subtitlePath.isNotEmpty) ...['--subtitle', subtitlePath],
-      if (subtitleOffset != 0) ...['--subtitle-offset', subtitleOffset.toString()],
+      if (subtitlePath != null && subtitlePath.isNotEmpty) ...[
+        '--subtitle',
+        subtitlePath,
+      ],
+      if (subtitleOffset != 0) ...[
+        '--subtitle-offset',
+        subtitleOffset.toString(),
+      ],
       if (voice != null && voice.isNotEmpty) ...['--voice', voice],
       if (ducking != 0.18) ...['--ducking', ducking.toString()],
     ], onProgress: onProgress);
@@ -513,8 +516,14 @@ class DesktopProcessorService {
       sourceLang,
       '--target-lang',
       targetLang,
-      if (subtitlePath != null && subtitlePath.isNotEmpty) ...['--subtitle', subtitlePath],
-      if (subtitleOffset != 0) ...['--subtitle-offset', subtitleOffset.toString()],
+      if (subtitlePath != null && subtitlePath.isNotEmpty) ...[
+        '--subtitle',
+        subtitlePath,
+      ],
+      if (subtitleOffset != 0) ...[
+        '--subtitle-offset',
+        subtitleOffset.toString(),
+      ],
       if (voice != null && voice.isNotEmpty) ...['--voice', voice],
       if (ducking != 0.18) ...['--ducking', ducking.toString()],
     ], onProgress: onProgress);
@@ -705,11 +714,27 @@ class DesktopProcessorService {
   /// Lists at most [limit] playlist/channel entries without downloading them.
   /// Selected entries are subsequently run one-by-one, preserving cancellation
   /// and per-video failure reporting in the desktop queue.
-  Future<List<PlaylistEntry>> playlist({required String url, int limit = 25}) async {
-    final payload = await _runJson(['playlist', '--url', url, '--limit', '$limit']);
+  Future<List<PlaylistEntry>> playlist({
+    required String url,
+    int limit = 25,
+  }) async {
+    final payload = await _runJson([
+      'playlist',
+      '--url',
+      url,
+      '--limit',
+      '$limit',
+    ]);
     final raw = payload['entries'];
     return raw is List
-        ? raw.whereType<Map>().map((item) => PlaylistEntry.fromJson(Map<String, dynamic>.from(item))).where((e) => e.url.isNotEmpty).toList()
+        ? raw
+              .whereType<Map>()
+              .map(
+                (item) =>
+                    PlaylistEntry.fromJson(Map<String, dynamic>.from(item)),
+              )
+              .where((e) => e.url.isNotEmpty)
+              .toList()
         : const [];
   }
 
@@ -761,343 +786,22 @@ class DesktopProcessorService {
     await Process.run('xdg-open', [path]);
   }
 
-  static const _apiKeyNames = <String>{
-    'GROQ_API_KEY',
-    'OPENAI_API_KEY',
-    'GEMINI_API_KEY',
-    'ANTHROPIC_API_KEY',
-  };
-
-  static final _sensitiveEnvironmentName = RegExp(
-    r'(?:^|_)(?:API_KEY|TOKEN|SECRET|PASSWORD)$',
-    caseSensitive: false,
-  );
-
-  /// Prepares a private file which is read by Python into memory only.
-  ///
-  /// Creating the empty file before chmod means a secret is never present in
-  /// a broad-permission file, even for a short moment. Windows AppData ACLs
-  /// protect the temp folder, while POSIX receives an explicit 0600 mode.
-  Future<_SecretFile?> _createSecretFile() async {
-    final keys = <String, String>{
-      for (final name in _apiKeyNames) name: processEnvironment[name] ?? '',
-    };
-    // No settings object means command-line/developer use; retain its normal
-    // `.env` behaviour without creating an unnecessary session file.
-    if (processEnvironment.isEmpty) return null;
-
-    final directory = await Directory.systemTemp.createTemp('subtitr-secrets-');
-    try {
-      await _restrict(directory.path, '700');
-      final file = File('${directory.path}${Platform.pathSeparator}keys.json');
-      await file.create(exclusive: true);
-      await _restrict(file.path, '600');
-      await file.writeAsString(jsonEncode(keys), flush: true);
-      return _SecretFile(file, directory);
-    } catch (_) {
-      try {
-        await directory.delete(recursive: true);
-      } catch (_) {}
-      rethrow;
-    }
-  }
-
-  Future<void> _restrict(String path, String mode) async {
-    if (Platform.isWindows) return;
-    final result = await Process.run('chmod', [mode, path]);
-    if (result.exitCode != 0) {
-      throw StateError('Vaqtinchalik kalit fayli himoyalanmadi');
-    }
-  }
-
-  /// Builds a deliberately scrubbed process environment. In particular, an
-  /// API key inherited from a shell, IDE or another tool cannot reach the
-  /// processor or the ffmpeg/yt-dlp subprocesses it starts.
-  Map<String, String> _envFor({
-    bool ownGroup = false,
-    _SecretFile? secretFile,
-  }) {
-    final environment = <String, String>{
-      for (final entry in Platform.environment.entries)
-        if (!_sensitiveEnvironmentName.hasMatch(entry.key))
-          entry.key: entry.value,
-    };
-    for (final entry in processEnvironment.entries) {
-      if (!_apiKeyNames.contains(entry.key) &&
-          !_sensitiveEnvironmentName.hasMatch(entry.key)) {
-        environment[entry.key] = entry.value;
-      }
-    }
-    if (secretFile != null) {
-      environment['SUBTITR_SECRETS_FILE'] = secretFile.file.path;
-    } else {
-      environment.remove('SUBTITR_SECRETS_FILE');
-    }
-    if (ownGroup) environment['SUBTITR_OWN_PROCESS_GROUP'] = '1';
-    return environment;
-  }
-
-  /// The frozen (PyInstaller) processor shipped next to the app, or null when
-  /// only the `.py` source is present. Windows builds carry the `.exe`
-  /// suffix, Linux/macOS ones do not.
-  File? get _frozenProcessor {
-    final file = File(
-      '${root.path}${Platform.pathSeparator}desktop_processor'
-      '${Platform.isWindows ? '.exe' : ''}',
-    );
-    return file.existsSync() ? file : null;
-  }
-
-  Future<ProcessResult> _executeRun(List<String> args) async {
-    final secretFile = await _createSecretFile();
-    try {
-      final exeFile = _frozenProcessor;
-      if (exeFile != null) {
-        return await Process.run(
-          exeFile.path,
-          args,
-          workingDirectory: root.path,
-          runInShell: false,
-          environment: _envFor(secretFile: secretFile),
-          // The processor prints UTF-8 JSON; decode as UTF-8 so non-ASCII
-          // folder/file names (Cyrillic, etc.) are not mangled by the OS ANSI
-          // code page (the Process.run default).
-          stdoutEncoding: utf8,
-          stderrEncoding: utf8,
-        );
-      }
-      final executable = await _pythonExecutable();
-      return await Process.run(
-        executable,
-        [script.path, ...args],
-        workingDirectory: root.path,
-        runInShell: Platform.isWindows,
-        environment: _envFor(secretFile: secretFile),
-        stdoutEncoding: utf8,
-        stderrEncoding: utf8,
-      );
-    } finally {
-      await secretFile?.dispose();
-    }
-  }
-
-  Future<_StartedProcess> _executeStart(List<String> args) async {
-    final secretFile = await _createSecretFile();
-    try {
-      final exeFile = _frozenProcessor;
-      if (exeFile != null) {
-        final process = await Process.start(
-          exeFile.path,
-          args,
-          workingDirectory: root.path,
-          runInShell: false,
-          environment: _envFor(ownGroup: true, secretFile: secretFile),
-        );
-        return _StartedProcess(process, secretFile);
-      }
-      final executable = await _pythonExecutable();
-      final process = await Process.start(
-        executable,
-        [script.path, ...args],
-        workingDirectory: root.path,
-        runInShell: Platform.isWindows,
-        environment: _envFor(ownGroup: true, secretFile: secretFile),
-      );
-      return _StartedProcess(process, secretFile);
-    } catch (_) {
-      await secretFile?.dispose();
-      rethrow;
-    }
-  }
-
-  Future<Map<String, dynamic>> _runJson(List<String> args) async {
-    final result = await _executeRun(args);
-    final lines = const LineSplitter().convert(result.stdout.toString());
-    final jsonLine = lines.reversed.firstWhere(
-      (line) => line.trim().startsWith('{'),
-      orElse: () => '',
-    );
-    if (jsonLine.isEmpty) {
-      throw ProcessException(
-        'desktop_processor',
-        args,
-        result.stderr.toString(),
-        result.exitCode,
-      );
-    }
-    final payload = jsonDecode(jsonLine) as Map<String, dynamic>;
-    if (payload['type'] == 'error') {
-      throw StateError(payload['message'] as String? ?? "Noma'lum xato");
-    }
-    return payload;
-  }
-
-  Process? _active;
-  bool _cancelled = false;
-
-  /// Aborts the currently running job (kills the processor and its ffmpeg
-  /// children). Safe to call when nothing is running.
-  /// How long the processor gets to shut down cleanly before it is killed.
-  static const _gracePeriod = Duration(seconds: 4);
-
-  Future<void> cancel() async {
-    final process = _active;
-    if (process == null) return;
-    _cancelled = true;
-
-    if (Platform.isWindows) {
-      // Windows has no graceful equivalent for a console-less child, so the
-      // tree is killed outright. /T covers grandchildren (ffmpeg, yt-dlp).
-      try {
-        await Process.run('taskkill', ['/PID', '${process.pid}', '/T', '/F']);
-      } catch (_) {
-        process.kill(ProcessSignal.sigkill);
-      }
-      return;
-    }
-
-    // POSIX: SIGKILL cannot be caught, so it used to skip the processor's own
-    // cleanup — a half-written .mp4 stayed in the output folder and the job's
-    // temp dir (up to ~1 GB of WAV) stayed in the cache. Ask politely first:
-    // the processor turns SIGTERM into KeyboardInterrupt, so its `finally`
-    // blocks run. Only if it is still alive after the grace period do we kill.
-    //
-    // The signal goes to the whole process GROUP (negative pid) because
-    // `pkill -P` reached direct children only — ffmpeg spawned by yt-dlp
-    // survived as an orphan and kept burning CPU. The processor puts itself
-    // in its own group when SUBTITR_OWN_PROCESS_GROUP is set (see
-    // `core.install_signal_handlers`).
-    final exited = process.exitCode;
-    var stopped = false;
-    exited.whenComplete(() => stopped = true);
-
-    await _signal('-TERM', process.pid);
-    await Future.any([exited, Future<void>.delayed(_gracePeriod)]);
-    if (stopped) return;
-
-    await _signal('-KILL', process.pid);
-    process.kill(ProcessSignal.sigkill);
-  }
-
-  /// Sends a signal to the processor's process group, falling back to the
-  /// single process when the group send is not permitted.
-  Future<void> _signal(String signal, int pid) async {
-    try {
-      final group = await Process.run('kill', [signal, '-$pid']);
-      if (group.exitCode == 0) return;
-    } catch (_) {
-      // `kill` missing — fall through to the single-process path.
-    }
-    try {
-      await Process.run('kill', [signal, '$pid']);
-    } catch (_) {
-      if (signal == '-KILL') _active?.kill(ProcessSignal.sigkill);
-    }
-  }
+  Future<Map<String, dynamic>> _runJson(List<String> args) =>
+      _transport.runJson(args);
 
   Future<Map<String, dynamic>> _streamProcess(
     List<String> args, {
     required void Function(ProcessorProgress progress) onProgress,
-  }) async {
-    final started = await _executeStart(args);
-    final process = started.process;
-    _active = process;
-    _cancelled = false;
-    try {
-      return await _consume(process, onProgress);
-    } finally {
-      // Ilgari `_active = null` faqat muvaffaqiyatli yo'lda bajarilardi:
-      // oqimda xato chiqsa o'lgan jarayon "faol" bo'lib qolar va keyingi
-      // `cancel()` yo'q pid'ga signal yuborardi.
-      _active = null;
-      await started.secretFile?.dispose();
-    }
-  }
+  }) => _transport.streamJson(
+    args,
+    onProgress: (event) => onProgress(
+      ProcessorProgress(message: event.message, progress: event.progress),
+    ),
+  );
 
-  Future<Map<String, dynamic>> _consume(
-    Process process,
-    void Function(ProcessorProgress progress) onProgress,
-  ) async {
-    Map<String, dynamic>? donePayload;
-    String? errorMessage;
-
-    // Start reading stderr concurrently to avoid OS pipe buffer deadlock
-    final stderrFuture = process.stderr.transform(utf8.decoder).join();
-
-    await for (final line
-        in process.stdout
-            .transform(utf8.decoder)
-            .transform(const LineSplitter())) {
-      if (!line.trim().startsWith('{')) {
-        continue;
-      }
-      final payload = jsonDecode(line) as Map<String, dynamic>;
-      switch (payload['type']) {
-        case 'progress':
-          onProgress(
-            ProcessorProgress(
-              message: payload['message'] as String? ?? '',
-              progress: (payload['progress'] as num?)?.toDouble() ?? 0,
-            ),
-          );
-          break;
-        case 'done':
-          donePayload = payload;
-          break;
-        case 'error':
-          errorMessage = payload['message'] as String? ?? "Noma'lum xato";
-          break;
-      }
-    }
-
-    final stderr = await stderrFuture;
-    final code = await process.exitCode;
-    if (_cancelled) {
-      throw const _CancelledException();
-    }
-    if (code != 0 || errorMessage != null) {
-      throw StateError(
-        errorMessage ?? stderr.trim().ifEmpty('Jarayon xato bilan tugadi'),
-      );
-    }
-    final payload = donePayload;
-    if (payload == null) {
-      throw StateError(stderr.trim().ifEmpty('Natija kelmadi'));
-    }
-    return payload;
-  }
-
-  static String? _cachedPython;
-
-  /// Locates a usable Python interpreter. A virtualenv shipped next to the
-  /// processor wins (its site-packages already hold groq/openai/gemini), then
-  /// `python3` (the only name that exists on most Linux distros), then `python`.
-  Future<String> _pythonExecutable() async {
-    final cached = _cachedPython;
-    if (cached != null) {
-      return cached;
-    }
-    final sep = Platform.pathSeparator;
-    final venv = Platform.isWindows
-        ? '${root.path}$sep.venv${sep}Scripts${sep}python.exe'
-        : '${root.path}$sep.venv${sep}bin${sep}python';
-    if (File(venv).existsSync()) {
-      return _cachedPython = venv;
-    }
-    for (final name in const ['python3', 'python']) {
-      try {
-        final probe = await Process.run(name, [
-          '--version',
-        ], runInShell: Platform.isWindows);
-        if (probe.exitCode == 0) {
-          return _cachedPython = name;
-        }
-      } catch (_) {
-        // Not on PATH — try the next candidate.
-      }
-    }
-    return _cachedPython = 'python3';
-  }
+  /// Aborts the active processor and its descendants when supported by the
+  /// configured transport. Calling it while idle is harmless.
+  Future<void> cancel() => _transport.cancel();
 
   static Directory _findRoot() {
     // The processor (desktop_processor.exe/.py) ships next to the app. Search
@@ -1172,23 +876,10 @@ class DesktopProcessorService {
     required String sessionPath,
     required List<SubtitleSegment> segments,
   }) async {
-    final draft = _draftFile(sessionPath);
-    await draft.parent.create(recursive: true);
-    final temp = File(
-      '${draft.path}.${DateTime.now().microsecondsSinceEpoch}.tmp',
+    await _sessionStore.saveDraft(
+      sessionPath: sessionPath,
+      segments: segments.map((segment) => segment.toJson()).toList(),
     );
-    final payload = <String, dynamic>{
-      'version': 1,
-      'session': sessionPath,
-      'segments': segments.map((segment) => segment.toJson()).toList(),
-    };
-    try {
-      await temp.writeAsString(jsonEncode(payload), flush: true);
-      if (await draft.exists()) await draft.delete();
-      await temp.rename(draft.path);
-    } finally {
-      await _deleteQuietly(temp);
-    }
   }
 
   /// Returns a compatible saved draft, or null if missing/corrupt.
@@ -1196,54 +887,27 @@ class DesktopProcessorService {
     required String sessionPath,
     required int expectedSegments,
   }) async {
-    final draft = _draftFile(sessionPath);
-    try {
-      if (!await draft.exists()) return null;
-      final decoded = jsonDecode(await draft.readAsString());
-      if (decoded is! Map ||
-          decoded['version'] != 1 ||
-          decoded['session'] != sessionPath) {
-        return null;
-      }
-      final raw = decoded['segments'];
-      if (raw is! List || raw.length != expectedSegments) return null;
-      return raw
-          .whereType<Map>()
-          .map(
-            (item) => SubtitleSegment.fromJson(Map<String, dynamic>.from(item)),
-          )
-          .toList();
-    } catch (_) {
-      return null;
-    }
+    final draft = await _sessionStore.loadDraft(
+      sessionPath: sessionPath,
+      expectedSegments: expectedSegments,
+    );
+    return draft?.map(SubtitleSegment.fromJson).toList();
   }
 
   Future<void> discardDraft(String sessionPath) =>
-      _deleteQuietly(_draftFile(sessionPath));
-
-  File _draftFile(String sessionPath) => File('$sessionPath.draft.json');
+      _sessionStore.deleteQuietly(_sessionStore.draftFile(sessionPath));
 
   Future<File> _writeSegmentsTemp(
     String prefix,
     List<SubtitleSegment> segments,
   ) async {
-    final file = File(
-      '${Directory.systemTemp.path}${Platform.pathSeparator}$prefix${DateTime.now().microsecondsSinceEpoch}.json',
+    return _sessionStore.writeSegments(
+      prefix,
+      segments.map((segment) => segment.toJson()).toList(),
     );
-    await file.writeAsString(
-      jsonEncode(segments.map((segment) => segment.toJson()).toList()),
-      flush: true,
-    );
-    return file;
   }
 
   Future<void> _deleteQuietly(File file) async {
-    try {
-      if (await file.exists()) await file.delete();
-    } catch (_) {}
+    await _sessionStore.deleteQuietly(file);
   }
-}
-
-extension on String {
-  String ifEmpty(String fallback) => isEmpty ? fallback : this;
 }
