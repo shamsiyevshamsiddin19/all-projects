@@ -1320,6 +1320,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               subtitlePath: subtitleFile?.path,
               modified: entry.statSync().modified,
               files: studioFiles,
+              rawName: rawName,
             ));
           } else if (entry is File) {
             final p = entry.path;
@@ -1339,6 +1340,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 subtitlePath: null,
                 modified: entry.statSync().modified,
                 files: [StudioMediaFile.fromFile(entry)],
+                rawName: rawName,
               ));
             }
           }
@@ -1350,6 +1352,106 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     setState(() {
       _historyItems = items;
     });
+  }
+
+  Future<void> _deleteHistoryItem(HistoryEntry item) async {
+    try {
+      // 1. Natijalar papkasini o'chirish
+      final resultDir = Directory(item.directoryPath);
+      final normalizedTarget = _outDir.isNotEmpty
+          ? _outDir
+          : '${Platform.environment['HOME']}/Videos/Subtitr natijalar';
+      if (resultDir.existsSync()) {
+        if (resultDir.path != normalizedTarget &&
+            resultDir.path.startsWith(normalizedTarget)) {
+          resultDir.deleteSync(recursive: true);
+        } else {
+          for (final f in item.files) {
+            final file = File(f.path);
+            if (file.existsSync()) file.deleteSync();
+          }
+        }
+      }
+
+      // 2. Kesh papkalarini topish va butunlay tozalash
+      final cacheRoot = Platform.environment['XDG_CACHE_HOME']?.isNotEmpty == true
+          ? Platform.environment['XDG_CACHE_HOME']!
+          : '${Platform.environment['HOME']}/.cache';
+      final cacheDir = Directory('$cacheRoot/SubtitrDesktop/cache');
+      final rawStem = item.rawName.isNotEmpty
+          ? item.rawName
+          : item.directoryPath.split(Platform.pathSeparator).last;
+
+      if (cacheDir.existsSync()) {
+        for (final entity in cacheDir.listSync()) {
+          if (entity is Directory) {
+            final dirName = entity.path.split(Platform.pathSeparator).last;
+            if (dirName.startsWith(rawStem) ||
+                (item.name.isNotEmpty && dirName.startsWith(item.name.replaceAll(' ', '_')))) {
+              try {
+                entity.deleteSync(recursive: true);
+              } catch (_) {}
+            }
+          }
+        }
+      }
+
+      // 3. Ishchi (vaqtinchalik) papkalarni tozalash
+      final tmpDir = Directory('$cacheRoot/SubtitrDesktop/Ishchi fayllar');
+      if (tmpDir.existsSync()) {
+        for (final entity in tmpDir.listSync()) {
+          if (entity is Directory) {
+            final dirName = entity.path.split(Platform.pathSeparator).last;
+            if (dirName.startsWith(rawStem) ||
+                (item.name.isNotEmpty && dirName.startsWith(item.name.replaceAll(' ', '_')))) {
+              try {
+                entity.deleteSync(recursive: true);
+              } catch (_) {}
+            }
+          }
+        }
+      }
+
+      // 4. Sessiya keshini tozalash
+      final sessionFile = File('$cacheRoot/SubtitrDesktop/cache/sessions/$rawStem.json');
+      if (sessionFile.existsSync()) {
+        try {
+          sessionFile.deleteSync();
+        } catch (_) {}
+      }
+
+      // 5. Agar o'chirilgan video hozir pleyerda ochiq bo'lsa, pleyerni yopish
+      if (_activePlayerVideo != null && item.videoPath != null && _activePlayerVideo == item.videoPath) {
+        setState(() {
+          _activePlayerVideo = null;
+          _activePlayerSubtitle = null;
+          _activePlayerTitle = null;
+        });
+      }
+
+      // 6. Tarix ro'yxatini yangilash
+      _loadHistory();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('"${item.name}" natijalari va keshi butunlay tozalandi'),
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Tozalashda xatolik: $e'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   /// Shows the full error with a copy button.
@@ -1686,6 +1788,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               : '${Platform.environment['HOME']}/Videos/Subtitr natijalar',
                         ),
                         onRefresh: _loadHistory,
+                        onDelete: _deleteHistoryItem,
                       );
 
                       final rightContent = _activePlayerVideo != null

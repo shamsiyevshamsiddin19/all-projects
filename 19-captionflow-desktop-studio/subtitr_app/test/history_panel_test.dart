@@ -81,4 +81,53 @@ void main() {
     await tester.pump();
     expect(openedFolder, '/videos/rihanna');
   });
+
+  testWidgets('HistoryPanel confirms and triggers delete callback', (tester) async {
+    HistoryEntry? deletedItem;
+
+    final items = [
+      HistoryEntry(
+        name: 'The Lord of the Rings',
+        directoryPath: '/videos/lotr',
+        videoPath: '/videos/lotr/video.mp4',
+        subtitlePath: null,
+        modified: DateTime(2026, 11, 12, 10, 0),
+        rawName: 'lotr',
+      ),
+    ];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: HistoryPanel(
+            items: items,
+            onClose: () {},
+            onPlay: (_) {},
+            onOpenFolder: (_) {},
+            onOpenOutputFolder: () {},
+            onRefresh: () {},
+            onDelete: (entry) async {
+              deletedItem = entry;
+            },
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byTooltip("Tozalash (Kesh va natijalarni o'chirish)"), findsOneWidget);
+
+    // Tap delete button -> triggers confirmation dialog
+    await tester.tap(find.byTooltip("Tozalash (Kesh va natijalarni o'chirish)"));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tozalash'), findsOneWidget);
+    expect(find.text("Haqiqatan ham kesh va natijalarni tozalab o'chirmoqchimisiz?"), findsOneWidget);
+
+    // Tap "O'chirish" in the dialog
+    await tester.tap(find.widgetWithText(FilledButton, "O'chirish"));
+    await tester.pumpAndSettle();
+
+    expect(deletedItem, isNotNull);
+    expect(deletedItem?.name, 'The Lord of the Rings');
+  });
 }

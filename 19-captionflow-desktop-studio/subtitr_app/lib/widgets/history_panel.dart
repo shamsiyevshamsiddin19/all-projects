@@ -10,6 +10,7 @@ class HistoryEntry {
     required this.subtitlePath,
     required this.modified,
     this.files = const [],
+    this.rawName = '',
   });
 
   final String name;
@@ -18,6 +19,7 @@ class HistoryEntry {
   final String? subtitlePath;
   final DateTime modified;
   final List<StudioMediaFile> files;
+  final String rawName;
 }
 
 class HistoryPanel extends StatefulWidget {
@@ -29,6 +31,7 @@ class HistoryPanel extends StatefulWidget {
     required this.onOpenFolder,
     required this.onOpenOutputFolder,
     required this.onRefresh,
+    this.onDelete,
   });
 
   final List<HistoryEntry> items;
@@ -37,6 +40,7 @@ class HistoryPanel extends StatefulWidget {
   final void Function(String folderPath) onOpenFolder;
   final VoidCallback onOpenOutputFolder;
   final VoidCallback onRefresh;
+  final Future<void> Function(HistoryEntry entry)? onDelete;
 
   @override
   State<HistoryPanel> createState() => _HistoryPanelState();
@@ -80,6 +84,100 @@ class _HistoryPanelState extends State<HistoryPanel> {
       'dekabr',
     ];
     return '${dt.day}-${months[dt.month - 1]}, $timeStr';
+  }
+
+  Future<void> _confirmDelete(BuildContext context, HistoryEntry item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF141414),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFF333333)),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.redAccent.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.delete_forever_rounded,
+                color: Colors.redAccent,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Tozalash',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '"${item.name}" videoning barcha natijalari va keshlangan fayllari butunlay o\'chiriladi.',
+              style: const TextStyle(fontSize: 14, height: 1.4),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.black45,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFF262626)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.folder_outlined, size: 16, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      item.directoryPath,
+                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              "Haqiqatan ham kesh va natijalarni tozalab o'chirmoqchimisiz?",
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.redAccent,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Bekor qilish'),
+          ),
+          FilledButton.icon(
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+            ),
+            icon: const Icon(Icons.delete_outline_rounded, size: 18),
+            label: const Text("O'chirish"),
+            onPressed: () => Navigator.pop(ctx, true),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && widget.onDelete != null) {
+      await widget.onDelete!(item);
+    }
   }
 
   @override
@@ -444,6 +542,17 @@ class _HistoryPanelState extends State<HistoryPanel> {
                                       item.directoryPath,
                                     ),
                                   ),
+                                  if (widget.onDelete != null)
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.delete_outline_rounded,
+                                        color: Color(0xFFEF4444),
+                                        size: 20,
+                                      ),
+                                      tooltip: 'Tozalash (Kesh va natijalarni o\'chirish)',
+                                      onPressed: () =>
+                                          _confirmDelete(context, item),
+                                    ),
                                 ],
                               ),
                             ),

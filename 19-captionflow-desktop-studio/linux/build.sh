@@ -35,7 +35,7 @@ pkg-config --exists mpv 2>/dev/null \
   || die "libmpv topilmadi — 'sudo apt install libmpv-dev mpv' bajaring"
 
 say "1/5 Flutter Linux release yig'ilmoqda"
-(cd "$APP_DIR" && flutter pub get && flutter build linux --release)
+(cd "$APP_DIR" && flutter pub get && flutter build linux --release --no-tree-shake-icons)
 [ -x "$BUNDLE/subtitr_app" ] || die "bundle topilmadi: $BUNDLE"
 
 say "2/5 Python virtual muhiti tayyorlanmoqda"

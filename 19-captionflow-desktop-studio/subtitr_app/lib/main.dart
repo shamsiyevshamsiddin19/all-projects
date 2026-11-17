@@ -40,6 +40,9 @@ class SubtitleApp extends StatelessWidget {
         textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
         appBarTheme: const AppBarTheme(
           backgroundColor: Color(0xFF000000),
+          foregroundColor: Colors.white,
+          iconTheme: IconThemeData(color: Colors.white),
+          actionsIconTheme: IconThemeData(color: Colors.white),
           surfaceTintColor: Colors.transparent,
           elevation: 0,
         ),

@@ -47,6 +47,7 @@ class HomeScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
     final theme = Theme.of(context);
     final actionStyle = IconButton.styleFrom(
       backgroundColor: theme.colorScheme.surfaceContainerHighest,
+      foregroundColor: Colors.white,
     );
     return AppBar(
       titleSpacing: 24,
@@ -102,12 +103,13 @@ class HomeScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
             isHistoryOpen
                 ? Icons.history_toggle_off_rounded
                 : Icons.history_rounded,
-            color: isHistoryOpen ? theme.colorScheme.primary : null,
+            color: isHistoryOpen ? Colors.amber : Colors.white,
+            size: 22,
           ),
           style: isHistoryOpen
               ? IconButton.styleFrom(
                   backgroundColor: theme.colorScheme.primaryContainer,
-                  foregroundColor: theme.colorScheme.onPrimaryContainer,
+                  foregroundColor: Colors.amber,
                 )
               : actionStyle,
         ),
@@ -118,12 +120,13 @@ class HomeScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
             onPressed: onShowLogs,
             icon: Icon(
               isLogsOpen ? Icons.terminal_rounded : Icons.terminal_outlined,
-              color: isLogsOpen ? theme.colorScheme.primary : null,
+              color: isLogsOpen ? const Color(0xFF38BDF8) : Colors.white,
+              size: 22,
             ),
             style: isLogsOpen
                 ? IconButton.styleFrom(
                     backgroundColor: theme.colorScheme.primaryContainer,
-                    foregroundColor: theme.colorScheme.onPrimaryContainer,
+                    foregroundColor: const Color(0xFF38BDF8),
                   )
                 : actionStyle,
           ),
