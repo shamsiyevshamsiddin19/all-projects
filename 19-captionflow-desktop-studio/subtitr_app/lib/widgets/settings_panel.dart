@@ -294,6 +294,7 @@ class SettingsPanel extends StatelessWidget {
                       fillColor: theme.colorScheme.surface,
                     ),
                     items: const [
+                      DropdownMenuItem(value: 'none', child: Text("Tarjimasiz (Faqat asl matn)")),
                       DropdownMenuItem(value: 'uz', child: Text("O'zbek")),
                       DropdownMenuItem(value: 'en', child: Text('Ingliz')),
                       DropdownMenuItem(value: 'ru', child: Text('Rus')),

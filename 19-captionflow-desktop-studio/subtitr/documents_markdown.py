@@ -15,22 +15,29 @@ from .media import seconds_to_srt_time
 from .vocab import dedupe_by_lemma, is_translit_only
 from .subtitles import FONTS_DIR
 def write_txt_transcript(path: Path, original: list[Segment], translated: list[Segment] | None) -> None:
+    if not translated:
+        lines: list[str] = ["MATN (Original)", "===============", ""]
+        for seg in original:
+            lines.append(seg.text)
+            lines.append("")
+        path.write_text("\n".join(lines), encoding="utf-8-sig")
+        return
+
     lines: list[str] = ["MATN (1-format: Aralash)", "======================", ""]
     for i, seg in enumerate(original):
         lines.append(seg.text)
-        if translated and i < len(translated):
+        if i < len(translated):
             lines.append(f"    {translated[i].text}")
         lines.append("")
 
-    if translated:
-        lines += ["", "MATN (2-format: Alohida)", "========================", ""]
-        lines += ["--- ORIGINAL ---", ""]
-        for seg in original:
-            lines.append(seg.text)
+    lines += ["", "MATN (2-format: Alohida)", "========================", ""]
+    lines += ["--- ORIGINAL ---", ""]
+    for seg in original:
+        lines.append(seg.text)
 
-        lines += ["", "--- TARJIMA ---", ""]
-        for seg in translated:
-            lines.append(seg.text)
+    lines += ["", "--- TARJIMA ---", ""]
+    for seg in translated:
+        lines.append(seg.text)
 
     path.write_text("\n".join(lines), encoding="utf-8-sig")
 

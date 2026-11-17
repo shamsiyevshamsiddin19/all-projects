@@ -123,9 +123,10 @@ def _prepare_data(
         effective_lang = effective_lang or "en"
         emit("progress", message=f"Matn tayyor ({transcriber})", progress=0.35)
 
-        needs_translation = mode in {
+        no_trans = target_lang in {"none", "original", ""}
+        needs_translation = (not no_trans or mode in {"translated", "softsub_translated", "dubbing"}) and (mode in {
             "dual", "dual_vocab", "translated", "softsub", "softsub_dual", "softsub_translated", "dubbing", "srt", "transcript", "reading", "all",
-        }
+        })
         translated: list[Segment] | None = None
         provider = ""
         if needs_translation:
