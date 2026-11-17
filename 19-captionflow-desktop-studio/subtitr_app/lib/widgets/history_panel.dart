@@ -205,12 +205,13 @@ class _HistoryPanelState extends State<HistoryPanel> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer,
+                  color: const Color(0xFF1A1A1A),
                   borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFF2E2E2E)),
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.history_rounded,
-                  color: theme.colorScheme.primary,
+                  color: Color(0xFFFBBF24),
                   size: 22,
                 ),
               ),

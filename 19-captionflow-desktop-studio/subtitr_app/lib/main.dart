@@ -28,6 +28,8 @@ class SubtitleApp extends StatelessWidget {
         colorScheme: const ColorScheme.dark(
           primary: Colors.white,
           onPrimary: Colors.black,
+          primaryContainer: Color(0xFF222222),
+          onPrimaryContainer: Colors.white,
           secondary: Color(0xFFAAAAAA),
           onSecondary: Colors.white,
           surface: Color(0xFF0A0A0A),

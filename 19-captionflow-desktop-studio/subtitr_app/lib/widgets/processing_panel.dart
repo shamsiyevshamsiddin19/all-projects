@@ -174,14 +174,15 @@ class ProcessingPanel extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer,
+                  color: const Color(0xFF1E1E1E),
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFF333333)),
                 ),
                 child: Text(
                   '${(progress * 100).round()}%',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontWeight: FontWeight.w700,
-                    color: theme.colorScheme.onPrimaryContainer,
+                    color: Colors.white,
                   ),
                 ),
               ),
