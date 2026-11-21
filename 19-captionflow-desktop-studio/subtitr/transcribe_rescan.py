@@ -2,15 +2,15 @@
 from __future__ import annotations
 
 import os
-import re
-import shutil
-import subprocess
 from pathlib import Path
 from typing import Callable
 
 from .clean import is_hallucination
-from .core import FFMPEG, Segment, Word, _count, _env_float, emit, run
+from .core import FFMPEG, Segment, Word, _count, emit, run
 from .media import probe_duration_seconds
+from .transcribe_vad import (
+    _pcm_window, _speech_seconds_vad, _speech_seconds_ffmpeg, speech_seconds,
+)
 
 RESCAN_MIN_DUR = 10.0
 RESCAN_MAX_CPS = 4.0
@@ -25,6 +25,7 @@ RESCAN_MAX_RETRY = 8
 RESCAN_GAP_MIN = 3.0
 RESCAN_GAP_SPEECH = 1.5
 RESCAN_GAP_MAX_CHECKS = 25
+
 
 def _mmss(seconds: float) -> str:
     """Soniyani "mm:ss" ko'rinishiga o'giradi (ogohlantirish matnlari uchun)."""
@@ -63,71 +64,6 @@ def ranges_within_budget(ranges: list[tuple[float, float]]) -> list[tuple[float,
         picked.append(rng)
         total += span
     return sorted(picked)
-
-
-def _pcm_window(media: Path, start: float, dur: float) -> Any:
-    """Audioning bir bo'lagini 16 kHz mono float massiv qilib o'qiydi.
-
-    Vaqtinchalik fayl yasalmaydi — ffmpeg xom PCM ni to'g'ridan-to'g'ri
-    quvurga beradi."""
-    import numpy as np
-
-    proc = subprocess.run(
-        [
-            FFMPEG, "-v", "error", "-ss", f"{start:.3f}", "-t", f"{dur:.3f}",
-            "-i", str(media), "-vn", "-ac", "1", "-ar", "16000",
-            "-f", "f32le", "-",
-        ],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-    )
-    if proc.returncode != 0 or not proc.stdout:
-        return None
-    return np.frombuffer(proc.stdout, dtype=np.float32)
-
-
-def _speech_seconds_vad(media: Path, start: float, dur: float) -> float | None:
-    """Oynada necha soniya NUTQ borligini lokal Silero VAD bilan o'lchaydi.
-
-    Musiqa va shovqinni nutqdan ajratadi — shuning uchun jim yoki musiqali
-    bo'shliqqa bekorga Groq so'rovi ketmaydi. VAD ishlamasa None qaytadi."""
-    try:
-        from faster_whisper.vad import VadOptions, get_speech_timestamps
-
-        audio = _pcm_window(media, start, dur)
-        if audio is None or len(audio) < 16000 // 4:
-            return 0.0
-        opts = VadOptions(min_silence_duration_ms=500, speech_pad_ms=200)
-        stamps = get_speech_timestamps(audio, opts, 16000)
-        return sum(t["end"] - t["start"] for t in stamps) / 16000.0
-    except Exception:
-        return None
-
-
-def _speech_seconds_ffmpeg(media: Path, start: float, dur: float) -> float:
-    """VAD bo'lmaganda zaxira o'lchov: jim bo'lmagan vaqt.
-
-    Musiqani nutqdan ajrata olmaydi, shuning uchun ba'zan ortiqcha qayta
-    o'qishga olib keladi — lekin nutqni yo'qotgandan ko'ra yaxshiroq."""
-    proc = subprocess.run(
-        [
-            FFMPEG, "-v", "info", "-ss", f"{start:.3f}", "-t", f"{dur:.3f}",
-            "-i", str(media), "-vn",
-            "-af", "silencedetect=noise=-33dB:d=0.4", "-f", "null", "-",
-        ],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
-        encoding="utf-8", errors="replace",
-    )
-    silence = sum(
-        float(m) for m in re.findall(r"silence_duration:\s*([0-9.]+)", proc.stderr or "")
-    )
-    return max(0.0, dur - silence)
-
-
-def speech_seconds(media: Path, start: float, dur: float) -> float:
-    result = _speech_seconds_vad(media, start, dur)
-    if result is None:
-        return _speech_seconds_ffmpeg(media, start, dur)
-    return result
 
 
 def swallowed_gap_ranges(

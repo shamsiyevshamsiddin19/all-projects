@@ -193,6 +193,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     try {
       if (await _settingsStore.shouldUpdateYtDlp()) {
         await _service.updateYtDlp();
+        await _settingsStore.markYtDlpUpdated();
       }
     } catch (_) {}
   }
@@ -1294,7 +1295,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _loadHistory() {
     final targetDir = _outDir.isNotEmpty
         ? _outDir
-        : '${Platform.environment['HOME']}/Videos/Subtitr natijalar';
+        : '${Platform.environment['HOME'] ?? ''}/Videos/Subtitr natijalar';
     final dir = Directory(targetDir);
 
     final items = <HistoryEntry>[];
@@ -1360,7 +1361,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       final resultDir = Directory(item.directoryPath);
       final normalizedTarget = _outDir.isNotEmpty
           ? _outDir
-          : '${Platform.environment['HOME']}/Videos/Subtitr natijalar';
+          : '${Platform.environment['HOME'] ?? ''}/Videos/Subtitr natijalar';
       if (resultDir.existsSync()) {
         if (resultDir.path != normalizedTarget &&
             resultDir.path.startsWith(normalizedTarget)) {
@@ -1376,7 +1377,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       // 2. Kesh papkalarini topish va butunlay tozalash
       final cacheRoot = Platform.environment['XDG_CACHE_HOME']?.isNotEmpty == true
           ? Platform.environment['XDG_CACHE_HOME']!
-          : '${Platform.environment['HOME']}/.cache';
+          : '${Platform.environment['HOME'] ?? ''}/.cache';
       final cacheDir = Directory('$cacheRoot/SubtitrDesktop/cache');
       final rawStem = item.rawName.isNotEmpty
           ? item.rawName
@@ -1785,7 +1786,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         onOpenOutputFolder: () => _openPath(
                           _outDir.isNotEmpty
                               ? _outDir
-                              : '${Platform.environment['HOME']}/Videos/Subtitr natijalar',
+                              : '${Platform.environment['HOME'] ?? ''}/Videos/Subtitr natijalar',
                         ),
                         onRefresh: _loadHistory,
                         onDelete: _deleteHistoryItem,

@@ -3,12 +3,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import shutil
 from pathlib import Path
 from typing import Any
 
 from .core import CACHE_DIR, MODEL_DIR, Segment, TMP_DIR, Word, safe_stem
+
+_log = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -42,8 +45,8 @@ def _load_json(path: Path) -> Any:
 def _save_json(path: Path, data: Any) -> None:
     try:
         path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-    except OSError:
-        pass
+    except OSError as exc:
+        _log.debug("kesh yozib bo'lmadi: %s", exc)
 
 
 # Transkripsiya sozlamalari (VAD, anti-hallucination) o'zgarganda eski kesh

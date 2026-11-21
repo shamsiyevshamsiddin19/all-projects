@@ -89,34 +89,6 @@ def _groq_transcribe_file(
     return segments, words, detected
 
 
-# --- Musiqa ostida "yutib yuborilgan" nutqni qayta o'qish -------------------
-# Whisper audioni 30 soniyalik oynalarda tinglaydi. Oynaning katta qismi musiqa
-# bo'lsa, model butun oynani BITTA qisqa soxta qatorga siqib yuboradi
-# ("Девушки отдыхают", "Музыка") va oynadagi haqiqiy nutq butunlay yo'qoladi —
-# subtitrda bo'sh joy qoladi. STOCK_PHRASE_RE soxta qatorni o'chiradi, lekin
-# yo'qolgan nutqni qaytarmaydi.
-#
-# Bunday joyni matn ZICHLIGI ochib beradi: haqiqiy nutq ~10-20 belgi/sek, soxta
-# qator esa 30 soniyaga 16 belgi (~0.5 belgi/sek). O'sha oraliqni qisqa —
-# musiqa bilan to'lib ketmaydigan — oynalarda qayta o'qiymiz.
-RESCAN_MIN_DUR = 10.0      # shubha uchun eng kam segment davomiyligi (sek)
-RESCAN_MAX_CPS = 4.0       # belgi/sek — bundan past bo'lsa shubhali
-RESCAN_WINDOW = 12.0       # qayta o'qish oynasi (sek)
-RESCAN_OVERLAP = 6.0       # oynalar ustma-ustligi — jumla chegarada kesilmasin
-RESCAN_PAD = 3.0           # oraliq chetidan tashqariga qo'shimcha
-RESCAN_MAX_TOTAL = 180.0   # jami qayta o'qiladigan vaqt chegarasi (xarajat)
-RESCAN_MAX_WINDOWS = 30    # qo'shimcha so'rovlar soni chegarasi
-RESCAN_EDGE = 0.6          # segment oyna boshiga shuncha yaqin = jumla kesilgan
-RESCAN_SHIFTS = (2.0, 4.0)  # kesilgan joyni shuncha oldinroqdan qayta o'qiymiz
-RESCAN_MAX_RETRY = 8       # surilgan qo'shimcha oynalar soni chegarasi
-# Groq ba'zan butun bir parchani umuman qaytarmaydi — segmentlar orasida
-# teshik qoladi va subtitr ekranda yo'qolib turadi. Quyidagilar o'sha
-# teshiklarni topish uchun.
-RESCAN_GAP_MIN = 3.0       # shu soniyadan uzun bo'shliq — nomzod
-RESCAN_GAP_SPEECH = 1.5    # bo'shliqda shuncha soniya nutq bo'lsa qayta o'qiladi
-RESCAN_GAP_MAX_CHECKS = 25 # nechta bo'shliqni tekshirishga arziydi
-
-
 def _groq_window_transcriber(client: Any, models: list[str]) -> "WindowTranscriber":
     def run_window(part: Path, language: str, start: float):
         return _groq_transcribe_file(client, models, part, language, start)

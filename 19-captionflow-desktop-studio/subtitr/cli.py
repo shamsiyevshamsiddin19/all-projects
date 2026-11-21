@@ -5,7 +5,7 @@ import argparse
 import traceback
 
 from .cache import cache_usage, clear_cache
-from .core import KINO_DIR, LOG_DIR, OUT_DIR, clean_orphan_tmp, current_log_file, emit, ensure_dirs, install_signal_handlers, log, redact, setup_logging
+from .core import KINO_DIR, LOG_DIR, OUT_DIR, clean_orphan_tmp, current_log_file, emit, ensure_dirs, init_utf8, install_signal_handlers, log, redact, setup_logging
 from .media import DEFAULT_QUALITY, QUALITY_HEIGHTS, download_video, playlist_entries, scan, update_ytdlp
 from .pipeline import install_deps, prepare_session, preview_frame, process, render_session, retranslate_session_segment, subtitle_file
 
@@ -125,6 +125,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
+    init_utf8()
     ensure_dirs()
     setup_logging()
     install_signal_handlers()
@@ -161,8 +162,8 @@ def main() -> int:
                 args.video, args.mode, args.source_lang, args.target_lang,
                 quality=args.quality,
                 subtitle_path=args.subtitle, subtitle_offset=args.subtitle_offset,
-                voice=getattr(args, "voice", None),
-                ducking=getattr(args, "ducking", 0.18),
+                voice=args.voice,
+                ducking=args.ducking,
             )
             emit("done", **result)
         elif args.command == "preview":
@@ -189,7 +190,7 @@ def main() -> int:
                 args.session, segments_path=args.segments,
                 font_scale=args.font_scale, position=args.position, sub_color=args.sub_color,
                 orig_style=args.orig_style, quality=args.quality,
-                upscale=args.upscale, container=getattr(args, "container", "auto"),
+                upscale=args.upscale, container=args.container,
             )
             emit("done", **result)
         elif args.command == "process":
@@ -199,9 +200,9 @@ def main() -> int:
                 orig_style=args.orig_style, quality=args.quality,
                 upscale=args.upscale, subtitle_path=args.subtitle,
                 subtitle_offset=args.subtitle_offset,
-                voice=getattr(args, "voice", None),
-                ducking=getattr(args, "ducking", 0.18),
-                container=getattr(args, "container", "auto"),
+                voice=args.voice,
+                ducking=args.ducking,
+                container=args.container,
             )
             emit("done", **result)
         return 0

@@ -63,7 +63,7 @@ Ilova Apple sertifikati bilan imzolanmagan va notarizatsiya qilinmagan,
 shuning uchun macOS uni ochishdan bosh tortishi mumkin
 (*"damaged and can't be opened"* yoki *"unidentified developer"*).
 
-`install.sh` karantin belgisini o'zi olib tashlaydi. Qo'lda:
+`install.sh` karantin belgisini **olib tashlamaydi** — buni qo'lda bajarish kerak:
 
 ```bash
 xattr -dr com.apple.quarantine ~/Applications/SubtitrDesktop

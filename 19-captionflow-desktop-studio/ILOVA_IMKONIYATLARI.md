@@ -158,7 +158,7 @@ Kuydirilgan (Hardsub) va Yumshoq (Softsub) rejimlar uchun maxsus vizual sozlamal
    - Transkripsiya, tarjima, lugʻat va dublyajning har bir qadami `~/.cache/SubtitrDesktop` papkasida JSON holida saqlanadi.
    - Agar internet uzilsa yoki jarayon toʻxtatilsa, dastur qayta yoqilganda avvalgi tayyor qismlarni noldan boshlamaydi — vaqt va API soʻrovlari tejaladi.
 2. **Maxfiy Kalitlar Xavfsizligi:**
-   - OpenAI, Anthropic, Gemini, Groq kalitlari operatsion tizimning maxfiy xotirasida (`shared_preferences` / Linux secret service) saqlanadi.
+   - OpenAI, Anthropic, Gemini, Groq kalitlari ilova papkasidagi `api_keys.json` faylida saqlanadi. Fayl faqat egasiga oʻqish/yozish huquqi bilan himoyalangan (`chmod 600`). Windows'da NTFS ACL himoyasi ishlatiladi.
    - Kalitlar hech qachon ochiq muhit oʻzgaruvchisi (env) orqali boshqa dasturlarga sizib chiqmaydi.
 3. **Xatoliklarga Chidamlilik:**
    - Biror AI provayderi (masalan Groq) vaqtincha limitga tushsa, dastur avtomatik ravishda boshqa kalitga (Gemini, Claude, OpenAI) yoki offline lugʻatga oʻtadi.

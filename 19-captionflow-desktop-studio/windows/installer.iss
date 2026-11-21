@@ -5,7 +5,8 @@
 ; ============================================================
 
 #define MyAppName "Subtitr Desktop"
-#define MyAppVersion "1.0.0"
+; Versiya subtitr_app/pubspec.yaml bilan sinxron bo'lishi kerak.
+#define MyAppVersion "1.1.0"
 #define MyAppPublisher "Subtitr"
 #define MyAppExeName "subtitr_app.exe"
 #define SourceDir "..\Subtitr-Release"

@@ -471,7 +471,7 @@ class DesktopProcessorService {
     required void Function(ProcessorProgress progress) onProgress,
     double fontScale = 1.0,
     String position = 'bottom',
-    String subColor = '#FFE680',
+    String subColor = '#39FF14',
     String origStyle = 'box',
     String quality = '1080',
     bool upscale = false,
@@ -566,7 +566,7 @@ class DesktopProcessorService {
     required String mode,
     double fontScale = 1.0,
     String position = 'bottom',
-    String subColor = '#FFE680',
+    String subColor = '#39FF14',
     String origStyle = 'box',
   }) async {
     final stamp = DateTime.now().microsecondsSinceEpoch;
@@ -625,7 +625,7 @@ class DesktopProcessorService {
     required String mode,
     double fontScale = 1.0,
     String position = 'bottom',
-    String subColor = '#FFE680',
+    String subColor = '#39FF14',
     String origStyle = 'box',
   }) async {
     final stamp = DateTime.now().microsecondsSinceEpoch;
@@ -677,7 +677,7 @@ class DesktopProcessorService {
     required void Function(ProcessorProgress progress) onProgress,
     double fontScale = 1.0,
     String position = 'bottom',
-    String subColor = '#FFE680',
+    String subColor = '#39FF14',
     String origStyle = 'box',
     String quality = '1080',
     bool upscale = false,

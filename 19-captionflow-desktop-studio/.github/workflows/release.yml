@@ -78,7 +78,16 @@ jobs:
           New-Item -ItemType Directory -Force tools | Out-Null
           Copy-Item (Get-Command ffmpeg).Source tools/ffmpeg.exe
           Copy-Item (Get-Command ffprobe).Source tools/ffprobe.exe
-          curl.exe -fL https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe -o tools/yt-dlp.exe
+          # Versiya linux/build.sh bilan bir xil qilib belgilangan (latest emas).
+          $ytdlpVersion = "2026.10.26"
+          $ytdlpUrl = "https://github.com/yt-dlp/yt-dlp/releases/download/$ytdlpVersion/yt-dlp.exe"
+          $sumsUrl  = "https://github.com/yt-dlp/yt-dlp/releases/download/$ytdlpVersion/SHA2-256SUMS"
+          curl.exe -fL $ytdlpUrl -o tools/yt-dlp.exe
+          curl.exe -fL $sumsUrl  -o tools/SHA2-256SUMS
+          $expected = (Select-String -Path tools/SHA2-256SUMS -Pattern "yt-dlp\.exe$").Line.Split(" ")[0]
+          $actual   = (Get-FileHash tools/yt-dlp.exe -Algorithm SHA256).Hash.ToLower()
+          if ($actual -ne $expected) { throw "yt-dlp.exe SHA256 mos kelmadi: kutilgan=$expected, haqiqiy=$actual" }
+          Remove-Item tools/SHA2-256SUMS
       - name: Build installer and portable ZIP
         shell: pwsh
         run: |

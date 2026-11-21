@@ -32,8 +32,14 @@ def _force_utf8(stream_name: str) -> None:
         setattr(sys, stream_name, io.TextIOWrapper(buffer, encoding="utf-8", line_buffering=True))
 
 
-_force_utf8("stdout")
-_force_utf8("stderr")
+def init_utf8() -> None:
+    """stdout/stderr ni UTF-8 ga o'tkazadi.
+
+    Ilgari modul yuklanishi bilan ishlardi; endi faqat CLI boshlanganda
+    (`cli.main()`) chaqiriladi — kutubxona sifatida import qilinganda
+    (testlar, boshqa dasturlar) oqimga tegmaydi."""
+    _force_utf8("stdout")
+    _force_utf8("stderr")
 
 try:
     from dotenv import load_dotenv

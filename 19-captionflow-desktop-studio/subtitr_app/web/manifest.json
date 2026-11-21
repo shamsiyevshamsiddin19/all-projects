@@ -1,11 +1,11 @@
 {
-    "name": "subtitr_app",
-    "short_name": "subtitr_app",
+    "name": "Subtitr Desktop",
+    "short_name": "Subtitr Desktop",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Video subtitr, tarjima va dubbing uchun desktop dastur.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

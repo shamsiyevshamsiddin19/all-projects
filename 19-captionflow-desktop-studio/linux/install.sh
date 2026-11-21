@@ -66,7 +66,7 @@ cat > "$TARGET/uninstall.sh" <<UNINST
 #!/usr/bin/env bash
 # Subtitr Desktop ni o'chirish.
 set -e
-case "\$TARGET" in
+case "$TARGET" in
   "$(printf '%s' "$INSTALL_ROOT")"/*) ;;
   *) echo "XATO: xavfsiz bo'lmagan uninstall manzili" >&2; exit 1 ;;
 esac

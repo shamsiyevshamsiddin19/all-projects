@@ -11,7 +11,7 @@ analyzer:
   errors:
     # Flutter 3.50 Material importini muddatidan oldin deprecated deb belgiladi.
     # Ilova hozircha Material APIga tayanadi; CI'da bu informatsion xabar gate'ni to'smasin.
-    deprecated_member_use: ignore
+    deprecated_member_use: warning
   exclude:
     - build/**
     - android/**

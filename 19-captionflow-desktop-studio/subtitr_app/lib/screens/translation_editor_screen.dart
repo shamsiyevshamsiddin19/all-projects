@@ -568,7 +568,7 @@ class _TranslationEditorScreenState extends State<TranslationEditorScreen> {
 
   /// Tahrirlangan matn `_SegmentTile` tomonidan har o'zgarishda
   /// segmentga yoziladi, shuning uchun bu yerda yig'ish shart emas.
-  List<SubtitleSegment> _collect() => _segments;
+  List<SubtitleSegment> _collect() => List.of(_segments);
 
   static String _timecode(double seconds) {
     final total = seconds.round();

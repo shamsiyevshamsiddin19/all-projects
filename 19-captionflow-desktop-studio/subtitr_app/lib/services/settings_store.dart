@@ -308,6 +308,10 @@ class SettingsStore {
   /// Returns true at most once per [minInterval] (default: 1 day). Used to
   /// throttle the yt-dlp self-update so it runs on the first launch of the day
   /// but not on every app start.
+  ///
+  /// The caller must invoke [markYtDlpUpdated] after a successful update so
+  /// that the throttle window starts from the moment the update actually
+  /// finished, not from the moment we decided to try.
   Future<bool> shouldUpdateYtDlp({
     Duration minInterval = const Duration(days: 1),
   }) async {
@@ -315,8 +319,18 @@ class SettingsStore {
     final last = prefs.getInt('ytdlp_last_update_ms') ?? 0;
     final now = DateTime.now().millisecondsSinceEpoch;
     if (now - last < minInterval.inMilliseconds) return false;
-    await prefs.setInt('ytdlp_last_update_ms', now);
     return true;
+  }
+
+  /// Records that a yt-dlp update succeeded. Call after [updateYtDlp] returns
+  /// successfully so the next [shouldUpdateYtDlp] check measures from this
+  /// point.
+  Future<void> markYtDlpUpdated() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(
+      'ytdlp_last_update_ms',
+      DateTime.now().millisecondsSinceEpoch,
+    );
   }
 
   Future<AppearanceSettings> loadAppearance() async {

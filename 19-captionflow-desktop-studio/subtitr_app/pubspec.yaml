@@ -1,5 +1,5 @@
 name: subtitr_app
-description: "A new Flutter project."
+description: "Video subtitr, tarjima va dubbing uchun desktop dastur."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -31,7 +31,6 @@ dependencies:
   flutter:
     sdk: flutter
 
-  cupertino_icons: ^1.0.8
   google_fonts: ^8.1.0
   file_picker: ^11.0.2
   shared_preferences: ^2.5.5
