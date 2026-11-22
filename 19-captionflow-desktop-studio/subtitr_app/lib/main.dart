@@ -26,15 +26,15 @@ class SubtitleApp extends StatelessWidget {
       darkTheme: ThemeData(
         useMaterial3: true,
         colorScheme: const ColorScheme.dark(
-          primary: Colors.white,
-          onPrimary: Colors.black,
+          primary: Color(0xFF3B82F6),
+          onPrimary: Colors.white,
           primaryContainer: Color(0xFF222222),
           onPrimaryContainer: Colors.white,
           secondary: Color(0xFFAAAAAA),
           onSecondary: Colors.white,
           surface: Color(0xFF0A0A0A),
           onSurface: Colors.white,
-          surfaceContainerHighest: Color(0xFF141414), // For inputs/secondary blocks
+          surfaceContainerHighest: Color(0xFF141414),
           outline: Color(0xFF222222),
           outlineVariant: Color(0xFF1A1A1A),
         ),
@@ -58,10 +58,10 @@ class SubtitleApp extends StatelessWidget {
         ),
         filledButtonTheme: FilledButtonThemeData(
           style: FilledButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.black,
+            backgroundColor: const Color(0xFF3B82F6),
+            foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30), // Pill shape like in image
+              borderRadius: BorderRadius.circular(12),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
             elevation: 0,
@@ -72,10 +72,10 @@ class SubtitleApp extends StatelessWidget {
           style: OutlinedButton.styleFrom(
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30),
+              borderRadius: BorderRadius.circular(12),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            side: const BorderSide(color: Color(0xFF333333), width: 1.5),
+            side: const BorderSide(color: Color(0xFF333333), width: 1),
             textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
           ),
         ),

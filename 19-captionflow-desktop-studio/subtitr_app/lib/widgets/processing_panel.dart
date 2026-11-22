@@ -248,16 +248,20 @@ class ProcessingPanel extends StatelessWidget {
             else
               FilledButton.icon(
                 onPressed: canRun ? onStart : null,
-                icon: const Icon(Icons.auto_awesome_rounded),
+                icon: const Icon(Icons.auto_awesome_rounded, size: 22),
                 label: const Text('Boshlash'),
                 style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF3B82F6),
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: const Color(0xFF3B82F6).withValues(alpha: 0.3),
+                  disabledForegroundColor: Colors.white.withValues(alpha: 0.5),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 48,
-                    vertical: 20,
+                    horizontal: 56,
+                    vertical: 22,
                   ),
                   textStyle: const TextStyle(
                     fontWeight: FontWeight.w700,
-                    fontSize: 16,
+                    fontSize: 17,
                   ),
                 ),
               ),

@@ -174,13 +174,13 @@ class SettingsPanel extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 1. Eng tepada 3 ta asosiy rejim tugmasi
-            _TopModeSelector(
+            // 1. Eng tepada 3 ta asosiy rejim tugmasi (SegmentedButton)
+            _TopModeSegmented(
               currentMode: mode,
               enabled: !isRunning,
               onSelectPrimaryMode: onModeChanged,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 14),
             _PresetRow(
               presets: presets,
               enabled: !isRunning,
@@ -191,10 +191,12 @@ class SettingsPanel extends StatelessWidget {
               externalSubtitlePath: externalSubtitlePath,
               onClearSubtitle: onClearSubtitle,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
 
             // 2. Rejimga mos sozlamalar bloki
             if (isHardsub) ...[
+              _SectionHeader(title: 'Uslub'),
+              const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 initialValue: _hardsubModes.contains(mode) || !_videoModes.contains(mode) ? mode : 'dual_vocab',
                 decoration: InputDecoration(
@@ -215,8 +217,10 @@ class SettingsPanel extends StatelessWidget {
                         if (v != null) onModeChanged(v);
                       },
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
             ] else if (isSoftsub) ...[
+              _SectionHeader(title: 'Uslub'),
+              const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 initialValue: _softsubModes.contains(mode) ? mode : 'softsub',
                 decoration: InputDecoration(
@@ -237,10 +241,12 @@ class SettingsPanel extends StatelessWidget {
                         if (v != null) onModeChanged(v);
                       },
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
             ],
 
             // 3. Til tanlash
+            _SectionHeader(title: 'Tillar'),
+            const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
@@ -315,7 +321,9 @@ class SettingsPanel extends StatelessWidget {
 
             // 4. AI Dublyaj parametrlari
             if (isDubbing) ...[
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
+              _SectionHeader(title: 'Ovoz'),
+              const SizedBox(height: 8),
               Row(
                 children: [
                   Expanded(
@@ -352,7 +360,7 @@ class SettingsPanel extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               DropdownButtonFormField<double>(
                 initialValue: ducking,
                 isExpanded: true,
@@ -396,7 +404,9 @@ class SettingsPanel extends StatelessWidget {
 
             // 5. Subtitr tashqi ko'rinish sozlamalari (Kuydirish va Yumshoq rejimlar)
             if (_hardsubModes.contains(mode) || isSoftsub) ...[
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
+              _SectionHeader(title: "Ko'rinish"),
+              const SizedBox(height: 8),
               _AppearanceRow(
                 appearance: appearance,
                 enabled: !isRunning,
@@ -439,9 +449,28 @@ class SettingsPanel extends StatelessWidget {
   }
 }
 
-/// Eng tepada joylashgan 3 ta asosiy rejim tugmasi
-class _TopModeSelector extends StatelessWidget {
-  const _TopModeSelector({
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title});
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        color: Color(0xFF71717A),
+        letterSpacing: 0.5,
+      ),
+    );
+  }
+}
+
+enum _PrimaryMode { hardsub, softsub, dubbing }
+
+class _TopModeSegmented extends StatelessWidget {
+  const _TopModeSegmented({
     required this.currentMode,
     required this.enabled,
     required this.onSelectPrimaryMode,
@@ -458,154 +487,84 @@ class _TopModeSelector extends StatelessWidget {
             !SettingsPanel._softsubModes.contains(currentMode) &&
             currentMode != 'dubbing');
     final isSoftsub = SettingsPanel._softsubModes.contains(currentMode);
-    final isDubbing = currentMode == 'dubbing';
 
-    return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: const Color(0xFF141416),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF26262B)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _ModeTabButton(
-              icon: Icons.movie_filter_rounded,
-              title: 'Kuydirish',
-              subtitle: 'Hardsub',
-              isSelected: isHardsub,
-              activeColor: const Color(0xFF2563EB),
-              textColor: Colors.white,
-              enabled: enabled,
-              onTap: () => onSelectPrimaryMode(
-                SettingsPanel._hardsubModes.contains(currentMode) ? currentMode : 'dual_vocab',
-              ),
-            ),
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: _ModeTabButton(
-              icon: Icons.closed_caption_rounded,
-              title: 'Yumshoq',
-              subtitle: 'Softsub (CC)',
-              isSelected: isSoftsub,
-              activeColor: const Color(0xFF0284C7),
-              textColor: Colors.white,
-              enabled: enabled,
-              onTap: () => onSelectPrimaryMode(
-                SettingsPanel._softsubModes.contains(currentMode) ? currentMode : 'softsub',
-              ),
-            ),
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: _ModeTabButton(
-              icon: Icons.record_voice_over_rounded,
-              title: 'AI Dublyaj',
-              subtitle: "O'zgartirish",
-              isSelected: isDubbing,
-              activeColor: const Color(0xFF7C3AED),
-              textColor: Colors.white,
-              enabled: enabled,
-              onTap: () => onSelectPrimaryMode('dubbing'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+    final _PrimaryMode selected;
+    if (isSoftsub) {
+      selected = _PrimaryMode.softsub;
+    } else if (currentMode == 'dubbing') {
+      selected = _PrimaryMode.dubbing;
+    } else {
+      selected = _PrimaryMode.hardsub;
+    }
 
-class _ModeTabButton extends StatelessWidget {
-  const _ModeTabButton({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.isSelected,
-    required this.activeColor,
-    required this.textColor,
-    required this.enabled,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final bool isSelected;
-  final Color activeColor;
-  final Color textColor;
-  final bool enabled;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(8),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-          decoration: BoxDecoration(
-            color: isSelected ? activeColor : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: activeColor.withValues(alpha: 0.28),
-                      blurRadius: 6,
-                      offset: const Offset(0, 1.5),
-                    ),
-                  ]
-                : null,
+    return SizedBox(
+      width: double.infinity,
+      child: SegmentedButton<_PrimaryMode>(
+        selected: {selected},
+        showSelectedIcon: false,
+        style: ButtonStyle(
+          visualDensity: VisualDensity.compact,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          padding: WidgetStatePropertyAll(
+            const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 16,
-                color: isSelected ? textColor : const Color(0xFF94A3B8),
-              ),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                        color: isSelected ? textColor : const Color(0xFFD4D4D8),
-                        height: 1.15,
-                      ),
-                    ),
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w400,
-                        color: isSelected
-                            ? textColor.withValues(alpha: 0.8)
-                            : const Color(0xFF71717A),
-                        height: 1.15,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return const Color(0xFF3B82F6);
+            }
+            return const Color(0xFF141416);
+          }),
+          foregroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return Colors.white;
+            }
+            return const Color(0xFFD4D4D8);
+          }),
+          side: const WidgetStatePropertyAll(
+            BorderSide(color: Color(0xFF26262B)),
           ),
         ),
+        segments: const [
+          ButtonSegment(
+            value: _PrimaryMode.hardsub,
+            icon: Icon(Icons.movie_filter_rounded, size: 16),
+            label: Text('Kuydirish', style: TextStyle(fontSize: 12)),
+          ),
+          ButtonSegment(
+            value: _PrimaryMode.softsub,
+            icon: Icon(Icons.closed_caption_rounded, size: 16),
+            label: Text('Yumshoq', style: TextStyle(fontSize: 12)),
+          ),
+          ButtonSegment(
+            value: _PrimaryMode.dubbing,
+            icon: Icon(Icons.record_voice_over_rounded, size: 16),
+            label: Text('AI Dublyaj', style: TextStyle(fontSize: 12)),
+          ),
+        ],
+        onSelectionChanged: enabled
+            ? (newSelection) {
+                final mode = newSelection.first;
+                switch (mode) {
+                  case _PrimaryMode.hardsub:
+                    onSelectPrimaryMode(
+                      SettingsPanel._hardsubModes.contains(currentMode)
+                          ? currentMode
+                          : 'dual_vocab',
+                    );
+                  case _PrimaryMode.softsub:
+                    onSelectPrimaryMode(
+                      SettingsPanel._softsubModes.contains(currentMode)
+                          ? currentMode
+                          : 'softsub',
+                    );
+                  case _PrimaryMode.dubbing:
+                    onSelectPrimaryMode('dubbing');
+                }
+              }
+            : null,
       ),
     );
   }

@@ -124,33 +124,36 @@ class _VideoSelectionPanelState extends State<VideoSelectionPanel> {
           // Fayl tanlash / Drag & drop maydoni
           InkWell(
             onTap: widget.isRunning ? null : widget.onPickExternal,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
             child: Container(
-              height: 136,
+              height: 160,
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               decoration: BoxDecoration(
-                color: const Color(0xFF141416),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF26262B)),
+                color: const Color(0xFF0D1117),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: const Color(0xFF3B82F6).withValues(alpha: 0.4),
+                  width: 1.5,
+                ),
               ),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(9),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF1E222B),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF3B82F6).withValues(alpha: 0.12),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.video_library_rounded,
-                        size: 22,
-                        color: Color(0xFF38BDF8),
+                        size: 24,
+                        color: Color(0xFF3B82F6),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     const Text(
                       'Videoni tanlang yoki bu yerga tashlang',
                       style: TextStyle(
@@ -161,7 +164,7 @@ class _VideoSelectionPanelState extends State<VideoSelectionPanel> {
                     ),
                     const SizedBox(height: 4),
                     const Text(
-                      'MP4, MKV, AVI, MOV, WebM (Fayldan tanlash)',
+                      'MP4, MKV, AVI, MOV, WebM',
                       style: TextStyle(fontSize: 11, color: Color(0xFF71717A)),
                     ),
                   ],
