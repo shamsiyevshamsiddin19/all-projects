@@ -11,6 +11,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../services/desktop_processor_service.dart';
 import '../services/settings_store.dart';
+import '../widgets/app_sidebar.dart';
+import '../widgets/bottom_action_bar.dart';
 import '../widgets/processing_panel.dart';
 import '../widgets/settings_panel.dart';
 import '../widgets/video_selection_panel.dart';
@@ -45,6 +47,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _unreadNotificationCount = 0;
   bool _isDragging = false;
   bool _showHistory = false;
+  SidebarView _sidebarView = SidebarView.video;
   List<HistoryEntry> _historyItems = const [];
 
   List<DesktopVideo> _videos = const [];
@@ -1824,37 +1827,167 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         );
                       }
 
-                      final wideRightColumn = Column(
-                        children: [
-                          Expanded(child: rightContent),
-                          if (batchCard case final Widget card) card,
-                        ],
-                      );
-
                       if (wide) {
-                        final leftColumn = Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        final effectiveView =
+                            _activePlayerVideo != null
+                                ? null // player override
+                                : _showHistory
+                                    ? null // history override
+                                    : _sidebarView;
+
+                        Widget centerContent;
+                        if (_activePlayerVideo != null) {
+                          centerContent = rightContent;
+                        } else if (_showHistory) {
+                          centerContent = historyPanel;
+                        } else {
+                          switch (_sidebarView) {
+                            case SidebarView.video:
+                              centerContent = Column(
+                                children: [
+                                  Expanded(child: videoPanel),
+                                  // Qo'shimcha amallar qatori
+                                  if (_selectedPath.isNotEmpty && !_running)
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(0, 8, 0, 4),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              _selectedName,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
+                                            ),
+                                          ),
+                                          if (_estimateText.isNotEmpty)
+                                            Padding(
+                                              padding: const EdgeInsets.only(left: 8),
+                                              child: Text(
+                                                _estimateText,
+                                                style: const TextStyle(
+                                                  fontSize: 11,
+                                                  color: Color(0xFF71717A),
+                                                ),
+                                              ),
+                                            ),
+                                          const SizedBox(width: 8),
+                                          OutlinedButton.icon(
+                                            onPressed: _reviewAndRender,
+                                            icon: const Icon(Icons.edit_note_rounded, size: 16),
+                                            label: const Text('Tahrirlash'),
+                                            style: OutlinedButton.styleFrom(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 6,
+                                              ),
+                                              textStyle: const TextStyle(fontSize: 12),
+                                              side: const BorderSide(color: Color(0xFF333333)),
+                                            ),
+                                          ),
+                                          if (_videos.where((v) => !v.isDir).length > 1) ...[
+                                            const SizedBox(width: 6),
+                                            OutlinedButton.icon(
+                                              onPressed: _startBatch,
+                                              icon: const Icon(Icons.playlist_play_rounded, size: 16),
+                                              label: const Text('Navbat'),
+                                              style: OutlinedButton.styleFrom(
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 12,
+                                                  vertical: 6,
+                                                ),
+                                                textStyle: const TextStyle(fontSize: 12),
+                                                side: const BorderSide(color: Color(0xFF333333)),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                ],
+                              );
+                            case SidebarView.settings:
+                              centerContent = Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: settingsPanel,
+                              );
+                            case SidebarView.results:
+                              centerContent = Column(
+                                children: [
+                                  Expanded(child: processor),
+                                  if (batchCard case final Widget card) card,
+                                ],
+                              );
+                          }
+                        }
+
+                        return Row(
                           children: [
-                            videoPanel,
-                            const SizedBox(height: 24),
-                            Expanded(child: settingsPanel),
-                          ],
-                        );
-                        return Padding(
-                          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              SizedBox(width: 440, child: leftColumn),
-                              const SizedBox(width: 24),
-                              Container(
-                                width: 1,
-                                color: const Color(0xFF333333),
+                            AppSidebar(
+                              currentMode: _mode,
+                              currentView: effectiveView ?? SidebarView.video,
+                              isRunning: _running,
+                              hasResults: _result != null,
+                              progress: _progress,
+                              onModeChanged: (v) {
+                                setState(() => _mode = v);
+                                _saveJobPrefs();
+                              },
+                              onViewChanged: (v) {
+                                setState(() {
+                                  _sidebarView = v;
+                                  if (_activePlayerVideo != null) {
+                                    _activePlayerVideo = null;
+                                    _activePlayerSubtitle = null;
+                                    _activePlayerTitle = null;
+                                    _isPlayerFullscreen = false;
+                                  }
+                                  if (_showHistory) _showHistory = false;
+                                });
+                              },
+                            ),
+                            Expanded(
+                              child: Column(
+                                children: [
+                                  Expanded(
+                                    child: Padding(
+                                      padding: _sidebarView == SidebarView.settings
+                                          ? EdgeInsets.zero
+                                          : const EdgeInsets.fromLTRB(
+                                              16, 8, 16, 0),
+                                      child: centerContent,
+                                    ),
+                                  ),
+                                  BottomActionBar(
+                                    sourceLang: _sourceLang,
+                                    targetLang: _targetLang,
+                                    isRunning: _running,
+                                    hasVideo: _selectedPath.isNotEmpty,
+                                    progress: _progress,
+                                    status: _status,
+                                    subColor: _appearance.subColor,
+                                    startTime: _startTime,
+                                    estimateText: _estimateText,
+                                    onSourceLangChanged: (v) {
+                                      setState(() => _sourceLang = v);
+                                      _saveJobPrefs();
+                                    },
+                                    onTargetLangChanged: (v) {
+                                      setState(() => _targetLang = v);
+                                      _saveJobPrefs();
+                                    },
+                                    onStart: _startProcessing,
+                                    onCancel: _cancelProcessing,
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 24),
-                              Expanded(child: wideRightColumn),
-                            ],
-                          ),
+                            ),
+                          ],
                         );
                       }
 
