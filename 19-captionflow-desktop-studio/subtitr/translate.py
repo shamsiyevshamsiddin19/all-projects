@@ -379,9 +379,9 @@ def translate_gemini(prompt: str, payload: str) -> str:
     # kutganidan ancha qimmat modelga tushib qolardi.
     for model in model_candidates(
         "GEMINI_MODEL",
-        "gemini-2.5-flash",
+        "gemini-3.5-flash-lite",
         "GEMINI_FALLBACK_MODELS",
-        ["gemini-2.5-flash-lite"],
+        ["gemini-3.5-flash", "gemini-2.5-flash"],
     ):
         try:
             resp = client.models.generate_content(

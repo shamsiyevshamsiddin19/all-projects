@@ -274,7 +274,7 @@ def transcribe_with_faster_whisper(
 ) -> tuple[list[Segment], list[Word], str]:
     from faster_whisper import WhisperModel
 
-    model_name = os.getenv("WHISPER_MODEL", "small")
+    model_name = os.getenv("WHISPER_MODEL", "turbo")
     device = os.getenv("WHISPER_DEVICE", "auto")
     compute_type = os.getenv("WHISPER_COMPUTE_TYPE", "int8")
     # Model ATAYIN keshlanmaydi (modul darajasidagi global emas).
@@ -288,6 +288,9 @@ def transcribe_with_faster_whisper(
     # render bosqichi davomida — bo'shamay turadi. Navbat (batch) rejimida
     # ham yordam bermaydi, chunki ilova HAR VIDEO uchun yangi jarayon
     # ishga tushiradi (jarayonning o'zi 0.07s).
+    model_dir = Path(MODEL_DIR) / f"models--Systran--faster-whisper-{model_name}"
+    if not model_dir.exists():
+        emit("progress", message=f"Whisper {model_name} modeli yuklanmoqda (birinchi marta)", progress=0.31)
     model = WhisperModel(model_name, device=device, compute_type=compute_type, download_root=str(MODEL_DIR))
     # Whisper sukut bo'yicha sukunatni ham "eshitadi" va oldingi matnga qarab
     # gapni o'zi to'qib davom ettiradi. Quyidagilar shuni to'xtatadi:

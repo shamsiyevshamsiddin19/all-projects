@@ -45,7 +45,7 @@ def transcribe_with_whisper_cli(audio_path: Path, tmp_dir: Path, language: str) 
     exe = shutil.which("whisper")
     if not exe:
         raise RuntimeError("whisper CLI topilmadi")
-    model = os.getenv("WHISPER_MODEL", "small")
+    model = os.getenv("WHISPER_MODEL", "turbo")
     cmd = [exe, str(audio_path), "--model", model, "--output_format", "srt", "--output_dir", str(tmp_dir)]
     if language and language != "auto":
         cmd += ["--language", language]
