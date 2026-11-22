@@ -637,6 +637,7 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
 
   bool get _isBurnedVideo {
     final lower = widget.videoPath.toLowerCase();
+    if (lower.contains('softsub')) return false;
     return lower.contains('_dual.') ||
         lower.contains('_single.') ||
         lower.contains('_dual_vocab.') ||
@@ -685,7 +686,15 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
       final video = VideoController(player);
 
       _tracksSub = player.stream.tracks.listen((tracks) {
-        if (mounted) setState(() => _tracks = tracks);
+        if (!mounted) return;
+        final hadSubtitles = _realSubtitleTracks.isNotEmpty;
+        setState(() => _tracks = tracks);
+        if (!hadSubtitles && _subtitlesEnabled && _resolvedSubtitlePath == null) {
+          final subs = tracks.subtitle.where((t) => t.id != 'auto' && t.id != 'no').toList();
+          if (subs.isNotEmpty) {
+            player.setSubtitleTrack(subs.first);
+          }
+        }
       });
       _trackSub = player.stream.track.listen((track) {
         if (mounted) setState(() => _track = track);
