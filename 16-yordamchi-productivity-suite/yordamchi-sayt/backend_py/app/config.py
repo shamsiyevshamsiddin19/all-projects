@@ -59,15 +59,28 @@ class Settings:
     SESSION_HTTPS_ONLY: bool = _bool("SESSION_HTTPS_ONLY", True)
     SESSION_MAX_AGE: int = _int("SESSION_MAX_AGE", 60 * 60 * 24 * 30)  # 30 kun
 
-    # Yozuv (mutatsiya) endpoint'lari uchun login talab qilinsinmi?
-    # Bu ilova login talab qilmaydi (hamma umumiy fazoda ishlaydi), shuning uchun default False.
-    REQUIRE_AUTH: bool = _bool("REQUIRE_AUTH", False)
+    # Yozuv VA o'qish uchun login talab qilinsinmi?
+    #
+    # STANDART QIYMAT `True` — ATAYLAB. Ilgari `False` edi va izohda "bu ilova
+    # login talab qilmaydi" deb yozilgan edi; sayt esa 2026-08-29 da Google
+    # bilan QULFLANGAN, ya'ni izoh eskirgan va standart xavfli qolgan edi.
+    # Oqibati: `.env` yo'qolsa, bo'sh fayl bilan almashsa yoki yangi serverga
+    # ko'chirishda unutilsa — `require_write_access()` darhol `return` qiladi
+    # va BUTUN sayt (o'qish ham, yozish ham) hammaga ochilib qolardi.
+    #
+    # Shu faylda to'g'ri namuna allaqachon bor: `ALLOWED_EMAILS` bo'sh bo'lsa
+    # hech kim kira olmaydi. Mantiq bir xil bo'lishi kerak — himoyani
+    # o'chirish ANIQ harakat bo'lsin (`.env` da `REQUIRE_AUTH=false`),
+    # unutish natijasi emas.
+    REQUIRE_AUTH: bool = _bool("REQUIRE_AUTH", True)
 
     # --- Google orqali kirish (yagona egaga qulflangan sayt) ---------------
     # AUTH_MODE=google  -> parol bilan kirish va ro'yxatdan o'tish YOPILADI,
     #                      faqat Google ID token bilan kiriladi.
     # AUTH_MODE=password-> eski holat (email + parol).
-    AUTH_MODE: str = (os.getenv("AUTH_MODE", "password").strip().lower() or "password")
+    # Standart `google` — `password` EMAS. Sabab REQUIRE_AUTH bilan bir xil:
+    # `.env` yo'qolsa parol bilan kirish va ro'yxatdan o'tish qaytib ochilardi.
+    AUTH_MODE: str = (os.getenv("AUTH_MODE", "google").strip().lower() or "google")
 
     # Google Cloud Console'dagi OAuth 2.0 "Web application" client ID.
     # Kelgan ID token'ning `aud` maydoni AYNAN shunga teng bo'lishi shart —
