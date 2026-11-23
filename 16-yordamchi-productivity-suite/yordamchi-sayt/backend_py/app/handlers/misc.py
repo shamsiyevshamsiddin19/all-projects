@@ -20,23 +20,11 @@ from fastapi import Request
 from .. import db
 from ..config import settings
 from ..errors import ApiError, success
+from ..security import require_admin
 from .common import s
 
 logger = logging.getLogger("yordamchi")
 
-
-def _require_admin(request: Request) -> None:
-    """Faqat admin uchun yozuv amallari.
-
-    `save_app_icon` diskdagi UMUMIY faylga yozadi (`custom-app-icon-*.png`) —
-    u `owner_context` ga bog'lanmagan, ya'ni bitta nusxa hamma foydalanuvchiga
-    ko'rinadi. Shuning uchun bu yerda ham rol tekshiruvi shart.
-    """
-    role = request.session.get("role")
-    email = (request.session.get("doktor_email") or "").strip().lower()
-    if role == "admin" or (email and email in settings.ALLOWED_EMAILS):
-        return
-    raise ApiError("Faqat administrator o'zgartira oladi.", 403)
 
 HEALTH_TABLES = [
     "app_storage", "reja_files", "quiz_bases", "quiz_questions", "quiz_progress",
@@ -120,7 +108,10 @@ def health(request: Request, body: dict):
 # --- App ikonka saqlash -----------------------------------------------------
 
 def save_app_icon(request: Request, body: dict):
-    _require_admin(request)
+    # Bu fayl UMUMIY: `custom-app-icon-*.png` diskka yoziladi va
+    # `owner_context` ga bog'lanmagan — bitta nusxa HAMMA foydalanuvchiga
+    # ko'rinadi. Shuning uchun rol tekshiruvi shart.
+    require_admin(request)
     data_url = s(body.get("icon"))
     if data_url == "":
         raise ApiError("Icon rasmi yuborilmadi.", 400)

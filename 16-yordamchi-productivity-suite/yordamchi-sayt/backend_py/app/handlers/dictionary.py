@@ -10,17 +10,8 @@ from sqlalchemy import text
 from .. import db
 from ..errors import ApiError, success
 from ..owner import global_context, owner_context
+from ..security import require_admin
 from .common import s, to_int
-
-
-def _require_admin(request) -> None:
-    """Faqat admin yozuv amallari uchun."""
-    role = request.session.get("role")
-    email = (request.session.get("doktor_email") or "").strip().lower()
-    from ..config import settings
-    if role == "admin" or (email and email in settings.ALLOWED_EMAILS):
-        return
-    raise ApiError("Faqat administrator o'zgartira oladi.", 403)
 
 
 ALLOWED_DICT_LANGS = {"english", "russian"}
@@ -111,7 +102,7 @@ def get_dict_data(request: Request, body: dict, lang: str):
 
 
 def save_dict_cat(request: Request, body: dict):
-    _require_admin(request)
+    require_admin(request)
     lang = _clean_dict_lang(body.get("lang"))
     category = s(body.get("category"))
     words = body.get("words") if isinstance(body.get("words"), list) else []
@@ -172,7 +163,7 @@ def save_dict_cat(request: Request, body: dict):
 
 
 def rename_dict_cat(request: Request, body: dict):
-    _require_admin(request)
+    require_admin(request)
     lang = _clean_dict_lang(body.get("lang"))
     old_name = s(body.get("old_name"))
     new_name = s(body.get("new_name"))
@@ -203,7 +194,7 @@ def rename_dict_cat(request: Request, body: dict):
 
 
 def delete_dict_cat(request: Request, body: dict):
-    _require_admin(request)
+    require_admin(request)
     lang = _clean_dict_lang(body.get("lang"))
     category = s(body.get("category"))
     if category == "":
@@ -354,7 +345,7 @@ def get_eng_settings(request: Request, body: dict):
 
 
 def save_eng_settings(request: Request, body: dict):
-    _require_admin(request)
+    require_admin(request)
     ctx = owner_context(request)
     names = s(body.get("names"))
     phones = s(body.get("phones"))
@@ -372,7 +363,7 @@ def get_rus_settings(request: Request, body: dict):
 
 
 def save_rus_settings(request: Request, body: dict):
-    _require_admin(request)
+    require_admin(request)
     ctx = owner_context(request)
     db.storage_set("rus_exam_date", s(body.get("exam_date")), ctx)
     db.storage_set("rus_settings_names", s(body.get("names")), ctx)

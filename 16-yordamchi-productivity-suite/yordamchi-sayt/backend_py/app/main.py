@@ -32,6 +32,21 @@ logging.basicConfig(
 )
 logger = logging.getLogger("yordamchi")
 
+# --- Xavfsizlik audit jurnali (STRIDE R) -----------------------------------
+# Ilgari 403/401/429 hech qayerda yozilmasdi — buzilish bo'lsa iz qolmasdi.
+# Alohida faylga yoziladi, chunki `app.log` ilova xatolari bilan to'ladi va
+# xavfsizlik hodisasi ular orasida ko'rinmay ketadi. `propagate` o'chirilmaydi:
+# hodisa `app.log` va `journalctl` ga ham tushsin.
+_security_logger = logging.getLogger("yordamchi.security")
+_security_logger.addHandler(
+    RotatingFileHandler(
+        settings.LOG_DIR / "security.log",
+        maxBytes=2 * 1024 * 1024,  # 2 MB
+        backupCount=5,             # ~10 MB tarix — buzilishni orqaga qarab o'qish uchun
+        encoding="utf-8",
+    )
+)
+
 app = FastAPI(title="Yordamchi API", docs_url=None, redoc_url=None, openapi_url=None)
 
 # Sessiya (imzolangan cookie — server tomonda saqlash shart emas).

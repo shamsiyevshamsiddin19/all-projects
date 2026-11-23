@@ -7,6 +7,7 @@ from fastapi import Request
 from .. import db
 from ..errors import ApiError, success
 from ..owner import content_read_context, owner_context
+from ..security import require_admin
 from .common import s, to_int
 from . import activity
 
@@ -98,17 +99,8 @@ def get_topic(request: Request, body: dict, topic_id: int):
     })
 
 
-def _require_admin(request: Request) -> None:
-    role = request.session.get("role")
-    email = (request.session.get("doktor_email") or "").strip().lower()
-    from ..config import settings
-    if role == "admin" or (email and email in settings.ALLOWED_EMAILS):
-        return
-    raise ApiError("Faqat administrator o'zgartira oladi.", 403)
-
-
 def add_topic(request: Request, body: dict):
-    _require_admin(request)
+    require_admin(request)
     lang = _clean_lang(body.get("lang"))
     raw = s(body.get("name"))
     if raw == "":
@@ -137,7 +129,7 @@ def add_topic(request: Request, body: dict):
 
 
 def rename_topic(request: Request, body: dict):
-    _require_admin(request)
+    require_admin(request)
     topic_id = to_int(body.get("id"))
     raw = s(body.get("name"))
     if topic_id <= 0 or raw == "":
@@ -163,7 +155,7 @@ _PART_COLUMN = {"content": "content", "test": "test_content", "game": "game_cont
 
 def upload_topic_content(request: Request, body: dict):
     """Mavzuning bir qismini saqlaydi: `part` = content (matn) | test | game."""
-    _require_admin(request)
+    require_admin(request)
     topic_id = to_int(body.get("id"))
     content = "" if body.get("content") is None else str(body.get("content"))
     part = s(body.get("part")) or "content"
@@ -194,7 +186,7 @@ def upload_topic_content(request: Request, body: dict):
 
 def delete_lang_topics(request: Request, body: dict):
     """Butun tilning mavzularini o'chiradi (maxsus til o'chirilganda)."""
-    _require_admin(request)
+    require_admin(request)
     lang = _clean_lang(body.get("lang"))
     ctx = owner_context(request)
     n = db.fetch_value(
@@ -210,7 +202,7 @@ def delete_lang_topics(request: Request, body: dict):
 
 
 def delete_topic(request: Request, body: dict):
-    _require_admin(request)
+    require_admin(request)
     topic_id = to_int(body.get("id"))
     if topic_id <= 0:
         raise ApiError("Mavzu ID kelmadi.", 422)

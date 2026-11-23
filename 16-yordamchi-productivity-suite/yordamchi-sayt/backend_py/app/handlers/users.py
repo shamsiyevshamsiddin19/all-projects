@@ -13,7 +13,7 @@ from .. import db
 from ..config import settings
 from ..errors import ApiError, success
 
-from ..security import hash_password, verify_password
+from ..security import hash_password, require_admin, verify_password
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 # Tartib MUHIM: mobil pastki panel shu ketma-ketlikda quriladi
@@ -57,11 +57,13 @@ def _with_profile(ruxsatlar: list) -> list:
 
 
 def _require_admin(request: Request) -> None:
-    role = request.session.get("role")
-    email = (request.session.get("doktor_email") or "").strip().lower()
-    if role == "admin" or (email and email in settings.ALLOWED_EMAILS):
-        return
-    raise ApiError("Faqat administrator uchun ruxsat berilgan.", 403)
+    """`security.require_admin` ustiga yupqa qobiq — xabari shu bo'limga xos.
+
+    Mantiq bu yerda EMAS: tekshiruv va xavfsizlik jurnali `security.py` da,
+    yagona joyda. Bu qobiq faqat xabar matni uchun ("ruxsat berilgan" —
+    foydalanuvchilarni boshqarish bo'limiga mosroq).
+    """
+    require_admin(request, "Faqat administrator uchun ruxsat berilgan.")
 
 
 def ensure_table() -> None:

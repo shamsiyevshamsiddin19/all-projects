@@ -10,18 +10,9 @@ from sqlalchemy import text
 from .. import db
 from ..errors import ApiError, success
 from ..owner import owner_context
+from ..security import require_admin
 from .common import normalize_quiz_segment, parse_quiz_full_name, s, to_int
 from . import activity, goals as goals_handlers
-
-
-def _require_admin(request) -> None:
-    """Faqat admin baza/savol o'zgartirishi uchun."""
-    role = request.session.get("role")
-    email = (request.session.get("doktor_email") or "").strip().lower()
-    from ..config import settings
-    if role == "admin" or (email and email in settings.ALLOWED_EMAILS):
-        return
-    raise ApiError("Faqat administrator o'zgartira oladi.", 403)
 
 
 def _find_base(name) -> dict | None:
@@ -63,7 +54,7 @@ def get_structure(request: Request, body: dict):
 
 
 def create_db(request: Request, body: dict):
-    _require_admin(request)
+    require_admin(request)
     parsed = parse_quiz_full_name(body.get("name") or "")
     if parsed["full"] == "":
         raise ApiError("Baza nomi bo'sh.")
@@ -76,7 +67,7 @@ def create_db(request: Request, body: dict):
 
 
 def rename_fan(request: Request, body: dict):
-    _require_admin(request)
+    require_admin(request)
     old_subject = normalize_quiz_segment(body.get("old") or "")
     new_subject = normalize_quiz_segment(body.get("new") or "")
     if old_subject == "" or new_subject == "":
@@ -107,7 +98,7 @@ def rename_fan(request: Request, body: dict):
 
 
 def delete_fan(request: Request, body: dict):
-    _require_admin(request)
+    require_admin(request)
     subject = normalize_quiz_segment(body.get("fan") or "")
     if subject == "":
         raise ApiError("Fan nomi bo'sh.")
@@ -116,7 +107,7 @@ def delete_fan(request: Request, body: dict):
 
 
 def rename_db(request: Request, body: dict):
-    _require_admin(request)
+    require_admin(request)
     old_parsed = parse_quiz_full_name(body.get("old") or "")
     new_parsed = parse_quiz_full_name(body.get("new") or "")
 
@@ -142,14 +133,14 @@ def rename_db(request: Request, body: dict):
 
 
 def delete_db(request: Request, body: dict):
-    _require_admin(request)
+    require_admin(request)
     parsed = parse_quiz_full_name(body.get("name") or "")
     deleted = db.execute("DELETE FROM quiz_bases WHERE full_name = :f", {"f": parsed["full"]})
     return success({"deleted": deleted})
 
 
 def upload_base(request: Request, body: dict, db_name: str):
-    _require_admin(request)
+    require_admin(request)
     if db_name.strip() == "":
         raise ApiError("Baza nomi kelmadi.")
 
@@ -294,7 +285,7 @@ def _question_of_base(base_id, question_id: int) -> dict | None:
 
 def add_question(request: Request, body: dict, db_name: str):
     """Bazaga bitta savol qo'shadi (butun bazani qayta yuklamasdan)."""
-    _require_admin(request)
+    require_admin(request)
     base = _ensure_base(db_name)
     text_val = s(body.get("text"))
     if text_val == "":
@@ -320,7 +311,7 @@ def add_question(request: Request, body: dict, db_name: str):
 
 
 def edit_question(request: Request, body: dict, db_name: str):
-    _require_admin(request)
+    require_admin(request)
     base = _require_base(db_name)
     question_id = to_int(body.get("id"))
     if question_id <= 0 or not _question_of_base(base["id"], question_id):
@@ -345,7 +336,7 @@ def edit_question(request: Request, body: dict, db_name: str):
 
 
 def delete_question(request: Request, body: dict, db_name: str):
-    _require_admin(request)
+    require_admin(request)
     base = _require_base(db_name)
     question_id = to_int(body.get("id"))
     if question_id <= 0:

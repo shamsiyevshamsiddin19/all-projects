@@ -1,7 +1,18 @@
-"""Parol hashlash, login rate-limit va yozuv endpoint'lari uchun auth gate."""
+"""Parol hashlash, rate-limit, auth gate va xavfsizlik audit jurnali.
+
+Bu modul — ruxsat tekshiruvining YAGONA MANBASI. Ilgari `_require_admin`
+beshta handler'da (quiz, dictionary, misc, language_topics, users) qo'lda
+ko'chirilgan edi, holbuki `google_auth.is_admin_email()` allaqachon mavjud.
+Oqibati: ruxsat mantig'iga har o'zgarish olti joyni talab qilardi va bittasi
+e'tibordan chetda qolsa — oddiy foydalanuvchi admin amalini bajarardi.
+Aynan shunday teshik 2026-09-08 da topilgan (quiz bazalarini o'chirish).
+Endi tekshiruv faqat shu yerda — va shu sababli xavfsizlik logi ham
+avtomatik, har chaqiruv uchun alohida yozilmaydi.
+"""
 
 from __future__ import annotations
 
+import logging
 import time
 from collections import defaultdict, deque
 
@@ -9,7 +20,36 @@ from fastapi import Request
 
 from .config import settings
 from .errors import ApiError
+from .google_auth import is_admin_email
 from .owner import is_authenticated
+
+# --- Xavfsizlik audit jurnali (STRIDE R — Repudiation) ----------------------
+# Ilgari 403/401/429 FAQAT foydalanuvchiga qaytarilardi va hech qayerda iz
+# qolmasdi — ya'ni buzilish bo'lsa "nima bo'lganini" tiklash imkoni yo'q edi.
+# Handler'i `main.py` da ulanadi (`security.log` + journalctl).
+security_logger = logging.getLogger("yordamchi.security")
+
+
+def client_ip(request: Request) -> str:
+    """Haqiqiy mijoz IP'si. nginx proxy ortida `request.client` — localhost."""
+    fwd = (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
+    if fwd:
+        return fwd
+    return request.client.host if request.client else "unknown"
+
+
+def log_security_event(request: Request, event: str, detail: str = "") -> None:
+    """Rad etilgan urinishni jurnalga yozadi: kim, qayerdan, nimaga urindi."""
+    security_logger.warning(
+        "%s ip=%s email=%s role=%s action=%s path=%s%s",
+        event,
+        client_ip(request),
+        (request.session.get("doktor_email") or "-"),
+        (request.session.get("role") or "-"),
+        (request.query_params.get("action") or "-"),
+        request.url.path,
+        f" {detail}" if detail else "",
+    )
 
 # --- Parol hashlash ---------------------------------------------------------
 # bcrypt to'g'ridan-to'g'ri ishlatiladi (passlib 1.7.x bcrypt 4.1+ bilan mos emas edi —
@@ -36,7 +76,7 @@ _login_attempts: dict[str, deque[float]] = defaultdict(deque)
 
 
 def check_login_rate_limit(request: Request) -> None:
-    ip = request.client.host if request.client else "unknown"
+    ip = client_ip(request)
     now = time.time()
     window = settings.LOGIN_WINDOW_SECONDS
     bucket = _login_attempts[ip]
@@ -45,6 +85,8 @@ def check_login_rate_limit(request: Request) -> None:
         bucket.popleft()
 
     if len(bucket) >= settings.LOGIN_MAX_ATTEMPTS:
+        log_security_event(request, "LOGIN_RATE_LIMIT",
+                           f"attempts={len(bucket)} window={window}s")
         raise ApiError(
             "Juda ko'p urinish. Iltimos bir necha daqiqadan so'ng qayta urinib ko'ring.",
             status=429,
@@ -53,7 +95,7 @@ def check_login_rate_limit(request: Request) -> None:
 
 
 def clear_login_rate_limit(request: Request) -> None:
-    ip = request.client.host if request.client else "unknown"
+    ip = client_ip(request)
     _login_attempts.pop(ip, None)
 
 
@@ -71,7 +113,7 @@ def check_request_rate(request: Request) -> None:
     if limit <= 0:
         return
     window = settings.RATE_LIMIT_WINDOW_SECONDS
-    ip = request.client.host if request.client else "unknown"
+    ip = client_ip(request)
     now = time.time()
 
     # Vaqti-vaqti bilan eski IP yozuvlarini tozalaymiz (xotira cheksiz o'smasin)
@@ -85,6 +127,7 @@ def check_request_rate(request: Request) -> None:
         bucket.popleft()
 
     if len(bucket) >= limit:
+        log_security_event(request, "REQUEST_RATE_LIMIT", f"limit={limit}/{window}s")
         raise ApiError("Juda ko'p so'rov yuborildi. Biroz kutib turing.", status=429)
     bucket.append(now)
 
@@ -98,4 +141,34 @@ def require_write_access(request: Request) -> None:
     if not settings.REQUIRE_AUTH:
         return
     if not is_authenticated(request):
+        log_security_event(request, "UNAUTHENTICATED")
         raise ApiError("Bu amal uchun tizimga kirishingiz kerak.", status=401)
+
+
+# --- Admin ruxsati — YAGONA MANBA ------------------------------------------
+
+def is_admin(request: Request) -> bool:
+    """Sessiya admin huquqiga egami.
+
+    Ikki yo'l bilan admin bo'ladi: sessiyadagi `role` (kirish kodi orqali
+    kirganda qo'yiladi) yoki `.env` dagi `ALLOWED_EMAILS` ro'yxati
+    (`is_admin_email`). Ikkinchisi birlamchi: admin `foydalanuvchilar`
+    jadvalida turmaydi.
+    """
+    email = (request.session.get("doktor_email") or "").strip().lower()
+    return request.session.get("role") == "admin" or is_admin_email(email)
+
+
+def require_admin(
+    request: Request,
+    message: str = "Faqat administrator o'zgartira oladi.",
+) -> None:
+    """Admin bo'lmasa 403 va xavfsizlik jurnaliga yozuv.
+
+    Bu funksiya 403 ni log bilan BIRGA beradi — shuning uchun chaqiruv
+    joylarida loglashni takrorlash kerak emas va unutib qo'yish mumkin emas.
+    """
+    if is_admin(request):
+        return
+    log_security_event(request, "UNAUTHORIZED_ADMIN")
+    raise ApiError(message, status=403)
