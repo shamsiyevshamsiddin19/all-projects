@@ -33,14 +33,12 @@ export default class QuickTranslateExtension extends Extension {
         try {
             this._freeze = new FreezeOverlay(
                 text => this._translateText(text),
-                () => this._settings.get_string('ocr-languages')
+                () => this._settings.get_string('ocr-languages'),
+                () => this._settings.get_boolean('glow-enabled')
             );
             // POPUP ham kiritiladi: overlay ochilganda modal POPUP rejimiga
             // o'tadi, shu rejim ro'yxatda bo'lmasa Ctrl+Alt+X qayta bosilganda
             // ishlamay qolar va overlayni faqat Esc bilan yopish mumkin bo'lardi.
-            const keys = this._settings.settings_schema.list_keys();
-            console.warn(`[QuickTranslate] schema kalitlari: ${keys.join(', ')}`);
-
             const action = Main.wm.addKeybinding(
                 'freeze-ocr',
                 this._settings,
@@ -48,8 +46,12 @@ export default class QuickTranslateExtension extends Extension {
                 Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW | Shell.ActionMode.POPUP,
                 () => this._toggleFreeze()
             );
-            console.warn(`[QuickTranslate] freeze-ocr yorlig'i: action=${action} ` +
-                `(0 yoki null — ro'yxatga olinmadi)`);
+            // Jim muvaffaqiyatsizlik ehtimoli bor: schema kaliti ko'rinmasa
+            // addKeybinding istisno tashlamaydi, shunchaki 0 qaytaradi.
+            if (!action) {
+                console.warn('[QuickTranslate] freeze-ocr yorligi royxatga olinmadi ' +
+                    '(Shell eski schemani ishlatayotgan bolishi mumkin — logout/login kerak)');
+            }
         } catch (e) {
             console.error(`[QuickTranslate] Ekranni qotirish yoqilmadi: ${e.message}`);
             this._freeze = null;

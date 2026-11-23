@@ -7,6 +7,14 @@ Ikki yo'l bilan tarjima qiladigan GNOME Shell kengaytmasi:
 | **`Ctrl + Alt + Z`** | Sichqoncha bilan **belgilangan matnni** kursor yonida tarjima qiladi |
 | **`Ctrl + Alt + X`** | Ekranni **qotiradi**, mediani pauzaga qo'yadi va **rasmdagi matnni** (videodagi subtitr, slayd, skrinshot) belgilanadigan matnga aylantiradi |
 
+Qotirish rejimiga kirilganda ekran chetida **gradient halqa** yonadi va u holatni ham aytadi:
+
+| Rang | Ma'nosi |
+| :-- | :-- |
+| 🟠 sariq, tez puls | matn o'qilmoqda |
+| 🔵 ko'k-siyoh, sokin puls | belgilashga tayyor |
+| 🔴 qizil, pulssiz | xato (matn topilmadi yoki OCR yiqildi) |
+
 `Ctrl+Alt+X` — Windows'dagi PowerToys *Text Extractor* yoki macOS *Live Text* ning shu desktopdagi varianti: matn piksel bo'lsa ham brauzerdagidek sudrab belgilanadi.
 
 ---
@@ -45,6 +53,10 @@ gsettings --schemadir $EXT/schemas set org.gnome.shell.extensions.quick-translat
 # Yorliqni o'zgartirish
 gsettings --schemadir $EXT/schemas set org.gnome.shell.extensions.quick-translate \
   freeze-ocr "['<Control><Alt>x']"
+
+# Chetdagi gradient halqani o'chirish (juda sust grafikada)
+gsettings --schemadir $EXT/schemas set org.gnome.shell.extensions.quick-translate \
+  glow-enabled false
 ```
 
 Mavjud tillar: `eng`, `rus`, `uzb`, `uzb_cyrl`, `osd`.
@@ -72,14 +84,16 @@ Qatlamlar ataylab ajratilgan: har bir modul bitta vazifa bajaradi va yuqori qatl
 | `ocr-service.js` | Query | Kadrni PNG'ga yozish, Tesseract'ni chaqirish |
 | `tsv-parser.js` | Sof funksiya | Tesseract TSV → so'zlar; `gi://` import qilmaydi |
 | `media-service.js` | Command | MPRIS2 orqali pauza/davom (D-Bus, `playerctl`siz) |
+| `glow-overlay.js` | Taqdimot | Chetdagi gradient halqa va holat rangi |
 | `translation-service.js` | Query | Gemini / Claude / Google Translate |
 | `popup.js` | Taqdimot | Tarjima oynasi |
 
-Uchta qaror alohida izohga arziydi:
+To'rtta qaror alohida izohga arziydi:
 
 1. **Kadr qayta suratga olinmaydi.** OCR aynan ekranda qotib turgan teksturadan (`composite_to_stream`) olinadi. Aks holda video siljib, so'z koordinatalari ko'rinayotgan tasvirga mos kelmay qolardi.
 2. **Belgilash to'rtburchak kesishishi bilan emas, o'qish tartibi bilan.** Anchor so'zdan joriy so'zgacha oradagi hammasi tanlanadi — shuning uchun ikki satrni qiyshiq sudraganda ham matn uzilmaydi.
-3. **Tesseract, vision model emas.** Live Text uchun har bir so'zning aniq piksel to'rtburchagi kerak; Tesseract `tsv` rejimida shuni beradi, vision modellar esa matnni yaxshi o'qisa-da koordinatani ishonchli bermaydi. Qo'shimcha foyda: oflayn ishlaydi.
+3. **Animatsiya ataylab arzon.** Bu noutbukda qotish muammosi iGPU VRAM'dan (512 MB) kelib chiqadi, shuning uchun halqada blur, soya va to'liq ekran qatlami yo'q — faqat 8 ta ingichka chet chizig'ining `opacity`si o'zgaradi va pulsni `auto_reverse` bilan kompozitorning o'zi yuritadi, JS tomonda har kadrda hech narsa hisoblanmaydi.
+4. **Tesseract, vision model emas.** Live Text uchun har bir so'zning aniq piksel to'rtburchagi kerak; Tesseract `tsv` rejimida shuni beradi, vision modellar esa matnni yaxshi o'qisa-da koordinatani ishonchli bermaydi. Qo'shimcha foyda: oflayn ishlaydi.
 
 Ekranda shaxsiy ma'lumot bo'lishi mumkin, shuning uchun vaqtinchalik PNG `XDG_RUNTIME_DIR` ga `PRIVATE` huquqi bilan yoziladi va OCR tugashi bilan darhol o'chiriladi.
 

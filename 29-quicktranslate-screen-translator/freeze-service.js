@@ -25,6 +25,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {TextSelectionLayer} from './text-layer.js';
 import {MediaPauseService} from './media-service.js';
 import {captureFrozenFrame, deleteFrame, recognizeWords} from './ocr-service.js';
+import {GlowOverlay} from './glow-overlay.js';
 
 const PILL_STYLE =
     'background-color: rgba(0,0,0,0.80); color: #ffffff; ' +
@@ -45,10 +46,12 @@ export class FreezeOverlay {
     /**
      * @param {(text: string) => void} onTranslate  "Tarjima qil" bosilganda chaqiriladi
      * @param {() => string} getLanguages           OCR tillarini qaytaradi, masalan 'rus+eng'
+     * @param {() => boolean} getGlowEnabled        chetdagi gradient halqa yoqilganmi
      */
-    constructor(onTranslate, getLanguages) {
+    constructor(onTranslate, getLanguages, getGlowEnabled) {
         this._onTranslate = onTranslate;
         this._getLanguages = getLanguages;
+        this._getGlowEnabled = getGlowEnabled;
         this._media = new MediaPauseService();
         this._reset();
     }
@@ -66,6 +69,7 @@ export class FreezeOverlay {
         this._framePath = null;
         this._cancellable = null;
         this._pillTimeoutId = 0;
+        this._glow = null;
     }
 
     /**
@@ -117,6 +121,7 @@ export class FreezeOverlay {
             // Kursor shaklini qaytarish muhim emas.
         }
 
+        this._glow?.destroy();
         this._container.destroy();
         this._reset();
         this._media.resume();
@@ -130,6 +135,7 @@ export class FreezeOverlay {
             deleteFrame(this._framePath);
             if (this._grab)
                 Main.popModal(this._grab);
+            this._glow?.destroy();
             this._container.destroy();
             this._reset();
         }
@@ -153,6 +159,10 @@ export class FreezeOverlay {
         const frozen = new St.Widget({x: 0, y: 0, width, height, reactive: false});
         frozen.set_content(content);
         this._container.add_child(frozen);
+
+        // Rejimga kirilgani ko'rinib turishi uchun chetdagi gradient halqa.
+        if (this._getGlowEnabled())
+            this._glow = new GlowOverlay(this._container, width, height);
 
         Main.layoutManager.addTopChrome(this._container);
 
@@ -183,6 +193,7 @@ export class FreezeOverlay {
             if (cancellable.is_cancelled() || !this.isOpen)
                 return;
             if (captureError) {
+                this._glow?.setState('error');
                 this._showPill(captureError);
                 return;
             }
@@ -195,6 +206,7 @@ export class FreezeOverlay {
                 if (cancellable.is_cancelled() || !this.isOpen)
                     return;
                 if (ocrError) {
+                    this._glow?.setState('error');
                     this._showPill(ocrError);
                     return;
                 }
@@ -205,6 +217,7 @@ export class FreezeOverlay {
 
     _attachTextLayer(words, scale, width, height) {
         if (words.length === 0) {
+            this._glow?.setState('error');
             this._showPill('Matn topilmadi. Esc — chiqish.');
             return;
         }
@@ -214,6 +227,11 @@ export class FreezeOverlay {
         this._textLayer.set_size(width, height);
         this._container.add_child(this._textLayer);
         this._textLayer.connect('selection-changed', () => this._onSelectionChanged());
+
+        // Matn qatlami halqani bosib qolmasligi uchun halqa ustga ko'tariladi.
+        // Amal paneli esa keyin qo'shiladi, shuning uchun u halqadan ustda bo'ladi.
+        this._glow?.raiseTop();
+        this._glow?.setState('ready');
 
         try {
             global.display.set_cursor(Meta.Cursor.IBEAM);

@@ -10,6 +10,16 @@
       <default>['&lt;Control&gt;&lt;Alt&gt;x']</default>
       <summary>Freeze the screen and select text from the frozen frame</summary>
     </key>
+    <key name="glow-enabled" type="b">
+      <default>true</default>
+      <summary>Show an animated gradient glow around the screen edge while frozen</summary>
+      <description>
+        Qotirish rejimiga kirilgani ko'rinib turishi uchun ekran chetida
+        gradient halqa yonadi: o'qilayotganda sariq va tez, belgilashga
+        tayyor bo'lganda ko'k-siyoh va sokin, xatoda qizil. Faqat opacity
+        animatsiyasi ishlatiladi, lekin juda sust grafikada o'chirish mumkin.
+      </description>
+    </key>
     <key name="ocr-languages" type="s">
       <default>'rus+eng'</default>
       <summary>Tesseract language codes for screen OCR, joined by +</summary>
