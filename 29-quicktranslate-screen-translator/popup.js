@@ -10,6 +10,21 @@ import {englishLookup} from './example-utils.js';
 import {VocabularyStore, Pronunciation} from './learning-services.js';
 import {fetchDictionaryExample, fetchOne} from './translation-service.js';
 
+/** Karta kengligi — matn uzunligidan QAT'IY NAZAR o'zgarmaydi. */
+const CARD_WIDTH = 480;
+
+/**
+ * Eng kichik balandlik: qisqa matnda karta tanish "bank kartasi" ko'rinishini
+ * saqlaydi. Uzun matnda esa pastga o'sadi.
+ */
+const CARD_MIN_HEIGHT = 300;
+
+/**
+ * Eng katta balandlik — ekranning shu ulushi. Bundan oshsa ichidagi
+ * ScrollView aylantiradi: matn qisqartirilmaydi, shrift kichraytirilmaydi.
+ */
+const CARD_MAX_HEIGHT_RATIO = 0.6;
+
 export class QuickTranslatePopup {
     constructor(pointerX, pointerY, originalText) {
         let mon = Main.layoutManager.primaryMonitor;
@@ -50,22 +65,26 @@ export class QuickTranslatePopup {
             reactive: true,
             can_focus: true,
             track_hover: true,
-            width: 480,
-            height: 300,
+            width: CARD_WIDTH,
         });
-        this.actor.set_size(480, 300);
 
-        // Standard plastic bank card proportions: 480x300 px (1.6:1 aspect ratio), OpenAI dark theme
+        // Balandlik matnga qarab o'sadi: kenglik qat'iy, balandlik moslashuvchan.
+        // Kenglikni matn uzunligiga bog'lash mo'rt bo'lardi — belgi soni
+        // ko'rinadigan kenglikka teng emas va karta kursor yonida sakrab turardi.
+        const monitor = this._monitorForPointer();
+        this._maxHeight = Math.max(
+            CARD_MIN_HEIGHT, Math.round(monitor.height * CARD_MAX_HEIGHT_RATIO));
+
         this.actor.set_style(
             'background-color: #121212; ' +
             'border: 1px solid rgba(255, 255, 255, 0.14); ' +
             'border-radius: 18px; ' +
             'padding: 24px 28px; ' +
             'box-shadow: 0 24px 60px rgba(0, 0, 0, 0.9); ' +
-            'min-width: 480px; ' +
-            'max-width: 480px; ' +
-            'min-height: 300px; ' +
-            'max-height: 300px;'
+            `min-width: ${CARD_WIDTH}px; ` +
+            `max-width: ${CARD_WIDTH}px; ` +
+            `min-height: ${CARD_MIN_HEIGHT}px; ` +
+            `max-height: ${this._maxHeight}px;`
         );
 
         // Header: Pill + Close button
@@ -92,6 +111,19 @@ export class QuickTranslatePopup {
         // Center section: container for translations & original
         let bodyBox = new St.BoxLayout({ vertical: true, y_expand: true, x_expand: true });
 
+        // Tarjima qilinayotgan matn — eng tepada, tarjimadan OLDIN turadi.
+        // Qisqartirilmaydi va "..." qo'yilmaydi: uzun matn satrlarga o'raladi,
+        // karta pastga o'sadi, max-height dan oshsa ScrollView aylantiradi.
+        this.origLabel = new St.Label({
+            text: (this.originalText || '').replace(/\s+/g, ' '),
+            x_expand: true,
+            style: 'color: #71717a; font-size: 13px; line-height: 1.3; margin-bottom: 14px;'
+        });
+        this.origLabel.clutter_text.line_wrap = true;
+        this.origLabel.clutter_text.line_wrap_mode = Pango.WrapMode.WORD_CHAR;
+        this.origLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
+        bodyBox.add_child(this.origLabel);
+
         // Item 1 (Primary / RU)
         this.row1 = new St.BoxLayout({ vertical: false, style: 'margin-bottom: 12px;' });
         this.tag1 = new St.Button({
@@ -111,6 +143,9 @@ export class QuickTranslatePopup {
         this.trans1.clutter_text.line_wrap = true;
         this.trans1.x_expand = true;
         this.trans1.clutter_text.line_wrap_mode = Pango.WrapMode.WORD_CHAR;
+        // Ellipsize line_wrap'dan ustun keladi — aniq o'chiriladi, aks holda
+        // uzun tarjima bitta satrga siqilib "..." bilan kesiladi.
+        this.trans1.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
         this.row1.add_child(this.trans1);
         this.speak1 = this._iconButton('audio-volume-high-symbolic', 'Birinchi tarjimani tinglash',
             () => this._speak(this._items?.[0]));
@@ -136,6 +171,7 @@ export class QuickTranslatePopup {
         this.trans2.clutter_text.line_wrap = true;
         this.trans2.x_expand = true;
         this.trans2.clutter_text.line_wrap_mode = Pango.WrapMode.WORD_CHAR;
+        this.trans2.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
         this.row2.add_child(this.trans2);
         this.speak2 = this._iconButton('audio-volume-high-symbolic', 'Ikkinchi tarjimani tinglash',
             () => this._speak(this._items?.[1]));
@@ -165,18 +201,6 @@ export class QuickTranslatePopup {
         // Body spacer to push original to bottom
         let midSpacer = new St.Widget({ y_expand: true });
         bodyBox.add_child(midSpacer);
-
-        // Original snippet
-        let origSnippet = (this.originalText || '').replace(/\s+/g, ' ');
-        if (origSnippet.length > 80) origSnippet = origSnippet.slice(0, 77) + '...';
-        this.origLabel = new St.Label({
-            text: origSnippet,
-            style: 'color: #71717a; font-size: 13px; line-height: 1.3;'
-        });
-        this.origLabel.clutter_text.line_wrap = true;
-        this.origLabel.clutter_text.line_wrap_mode = Pango.WrapMode.WORD_CHAR;
-        this.origLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END;
-        bodyBox.add_child(this.origLabel);
 
         const scroll = new St.ScrollView({x_expand: true, y_expand: true});
         scroll.set_policy(St.PolicyType.NEVER, St.PolicyType.AUTOMATIC);
@@ -232,18 +256,32 @@ export class QuickTranslatePopup {
         });
     }
 
-    _positionWidget() {
-        let monitor = Main.layoutManager.primaryMonitor;
+    /** Kursor turgan monitor; topilmasa asosiysi. */
+    _monitorForPointer() {
         for (let m of Main.layoutManager.monitors) {
             if (this.pointerX >= m.x && this.pointerX < m.x + m.width &&
                 this.pointerY >= m.y && this.pointerY < m.y + m.height) {
-                monitor = m;
-                break;
+                return m;
             }
         }
+        return Main.layoutManager.primaryMonitor;
+    }
 
-        let w = 480;
-        let h = 300;
+    _positionWidget() {
+        const monitor = this._monitorForPointer();
+
+        const w = CARD_WIDTH;
+        // Balandlik endi qat'iy emas — kartaning haqiqiy talabini so'raymiz,
+        // aks holda o'sgan karta ekran pastidan chiqib ketardi.
+        let h = CARD_MIN_HEIGHT;
+        try {
+            const [, natural] = this.actor.get_preferred_height(w);
+            if (Number.isFinite(natural) && natural > 0)
+                h = natural;
+        } catch (e) {
+            // O'lcham hali hisoblanmagan bo'lsa eng kichik balandlikdan foydalanamiz.
+        }
+        h = Math.min(Math.max(h, CARD_MIN_HEIGHT), this._maxHeight ?? CARD_MIN_HEIGHT);
 
         // Center horizontally on pointer, position right above cursor
         let posX = Math.round(this.pointerX - w / 2);

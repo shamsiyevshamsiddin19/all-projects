@@ -55,7 +55,7 @@ for (const type of [1, 2, 4]) {
 seat = 0;
 assert.equal(new context.Helper(new Actor()).grab({actor: new Actor()}), false);
 assert.equal(pushed, popped, 'No input grab may leak');
-vm.runInContext(source.slice(source.indexOf('class QuickTranslatePopup')) +
+vm.runInContext(source.replace(/^import .*;$/gm, '').replace('export class', 'class') +
     '\nthis.Popup = QuickTranslatePopup;', context);
 const popup = Object.create(context.Popup.prototype);
 let cancelled = 0;

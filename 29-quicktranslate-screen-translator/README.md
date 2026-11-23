@@ -97,6 +97,8 @@ To'rtta qaror alohida izohga arziydi:
 3. **Animatsiya ataylab arzon.** Bu noutbukda qotish muammosi iGPU VRAM'dan (512 MB) kelib chiqadi, shuning uchun halqada blur, soya va to'liq ekran qatlami yo'q — faqat 8 ta ingichka chet chizig'ining `opacity`si o'zgaradi va pulsni `auto_reverse` bilan kompozitorning o'zi yuritadi, JS tomonda har kadrda hech narsa hisoblanmaydi.
 4. **Tesseract, vision model emas.** Live Text uchun har bir so'zning aniq piksel to'rtburchagi kerak; Tesseract `tsv` rejimida shuni beradi, vision modellar esa matnni yaxshi o'qisa-da koordinatani ishonchli bermaydi. Qo'shimcha foyda: oflayn ishlaydi.
 
+**Karta o'lchami.** Kenglik qat'iy (480 px) va matn uzunligiga bog'lanmaydi: belgi soni ko'rinadigan kenglikka teng emas, karta har matnda o'lchamini o'zgartirsa kursor yonida sakrab turardi, va bu uzun matn muammosini faqat kechiktirardi. Buning o'rniga matn satrlarga o'raladi, karta pastga o'sadi (eng kami 300 px), ekran balandligining 60% idan oshsa ichidagi `ScrollView` aylantiradi. Shrift kichraytirilmaydi, matn qisqartirilmaydi, "..." qo'yilmaydi. Tarjima qilinayotgan matn kartaning eng tepasida turadi.
+
 Media pauzasining egasi — qotirish overlayi, lekin uni **tarjima kartasi** bo'shatadi: karta ko'rinib turganda video o'ynab ketmasligi kerak. Shuning uchun `popup.js` da `setOnClosed` ilgagi bor va uni `extension.js` ulaydi — `freeze-service.js` popup haqida hech narsa bilmaydi, bog'liqlik yo'nalishi buzilmaydi.
 
 Ekranda shaxsiy ma'lumot bo'lishi mumkin, shuning uchun vaqtinchalik PNG `XDG_RUNTIME_DIR` ga `PRIVATE` huquqi bilan yoziladi va OCR tugashi bilan darhol o'chiriladi.
@@ -104,9 +106,11 @@ Ekranda shaxsiy ma'lumot bo'lishi mumkin, shuning uchun vaqtinchalik PNG `XDG_RU
 ## Sinovlar
 
 ```bash
-node tests/tsv-parser.cjs     # 14 chegaraviy holat + haqiqiy tesseract integratsiyasi
-node tests/gemini-utils.cjs
-node tests/translation-orchestrator.cjs
+for t in tests/*.cjs; do node "$t" || break; done   # 8 ta to'plam
+
+node tests/tsv-parser.cjs        # 14 chegaraviy holat + haqiqiy tesseract
+node tests/popup-layout.cjs      # manba matn tepada, kesilmaslik, o'lcham qoidalari
+node tests/extension-lifecycle.cjs  # ikki yorliq, media pauzasi
 ```
 
 `tests/tsv-parser.cjs` rasm generatsiya qilib (ImageMagick) uni haqiqiy Tesseract'ga o'qitadi va natijani tekshiradi — ya'ni OCR quvuri Shell'ni ishga tushirmasdan sinaladi.

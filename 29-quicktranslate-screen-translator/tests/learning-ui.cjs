@@ -45,7 +45,7 @@ const context = {
     fetchOne: (text, source, target, callback, request) => translation = {text, source, target, callback, request},
 };
 vm.createContext(context);
-vm.runInContext(source.slice(source.indexOf('class QuickTranslatePopup')) +
+vm.runInContext(source.replace(/^import .*;$/gm, '').replace('export class', 'class') +
     ';this.Popup=QuickTranslatePopup;', context);
 const p = new context.Popup(500, 500, 'sinov');
 p.setResult({src:'UZ',items:[{tag:'RU',text:'тест'},{tag:'EN',text:'test'}]});
