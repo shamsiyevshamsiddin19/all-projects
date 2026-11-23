@@ -101,8 +101,16 @@ export class FreezeOverlay {
         });
     }
 
-    /** Overlayni yopadi, mediani davom ettiradi, vaqtinchalik faylni o'chiradi. */
-    close() {
+    /**
+     * Overlayni yopadi va vaqtinchalik faylni o'chiradi.
+     *
+     * @param {object} [options]
+     * @param {boolean} [options.keepMediaPaused]  media pauzada qoldirilsinmi.
+     *   Tarjima kartasiga o'tilayotganda `true` beriladi: karta ko'rinib
+     *   turganda video o'ynab ketmasligi kerak. Keyin `resumeMedia()`
+     *   chaqirilishi shart, aks holda video pauzada qolib ketadi.
+     */
+    close({keepMediaPaused = false} = {}) {
         if (!this.isOpen)
             return;
 
@@ -124,6 +132,21 @@ export class FreezeOverlay {
         this._glow?.destroy();
         this._container.destroy();
         this._reset();
+
+        if (!keepMediaPaused)
+            this._media.resume();
+    }
+
+    /**
+     * Qotirish uchun to'xtatilgan mediani davom ettiradi.
+     *
+     * Overlay yana ochiq bo'lsa hech narsa qilmaydi: aks holda tarjima
+     * kartasi yopilganda yangi qotirish ortida video o'ynab ketardi.
+     * Yangi overlay o'z navbatida yopilganda mediani o'zi davom ettiradi.
+     */
+    resumeMedia() {
+        if (this.isOpen)
+            return;
         this._media.resume();
     }
 
@@ -273,9 +296,14 @@ export class FreezeOverlay {
             });
             translateButton.connect('clicked', () => {
                 const text = this._textLayer?.getSelectedText() ?? '';
-                this.close();
-                if (text)
-                    this._onTranslate(text);
+                if (!text) {
+                    this.close();
+                    return;
+                }
+                // Media pauzada qoladi — tarjima kartasi yopilganda
+                // `resumeMedia()` orqali davom etadi.
+                this.close({keepMediaPaused: true});
+                this._onTranslate(text);
             });
 
             this._bar.add_child(copyButton);

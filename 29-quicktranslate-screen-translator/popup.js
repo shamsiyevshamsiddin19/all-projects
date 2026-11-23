@@ -635,6 +635,23 @@ export class QuickTranslatePopup {
         }
     }
 
+    /**
+     * Karta yopilganda chaqiriladigan funksiyani belgilaydi.
+     *
+     * Ekranni qotirish rejimi shu orqali bilib turadi: tarjima kartasi
+     * ko'rinib turganda video pauzada qolishi, faqat karta yo'qolganda
+     * davom etishi kerak.
+     */
+    setOnClosed(callback) {
+        // Karta shu chaqiruvdan oldin yopilib qolgan bo'lsa, callback hech
+        // qachon ishlamas va video pauzada qolib ketardi — darhol xabar beramiz.
+        if (this._destroyed) {
+            callback?.();
+            return;
+        }
+        this._onClosed = callback;
+    }
+
     startRequest(request) {
         if (this._destroyed) {
             request.cancel();
@@ -671,6 +688,20 @@ export class QuickTranslatePopup {
         if (this._destroyed) return;
         this._destroyed = true;
         this.state = 'closed';
+
+        // Yopilish boshida xabar beramiz, so'nish animatsiyasini kutmasdan:
+        // foydalanuvchi kartani yopdi — video darhol davom etishi kerak.
+        // Callback'dagi xato kartaning tozalanishini buzmasligi shart.
+        if (this._onClosed) {
+            const notify = this._onClosed;
+            this._onClosed = null;
+            try {
+                notify();
+            } catch (e) {
+                console.error(`[QuickTranslate] onClosed xatosi: ${e.message}`);
+            }
+        }
+
         this._meaningRequest?.cancel();
         if (this._meaningTimer) {
             GLib.source_remove(this._meaningTimer);

@@ -69,6 +69,8 @@ Mavjud tillar: `eng`, `rus`, `uzb`, `uzb_cyrl`, `osd`.
 | `Ctrl + A` | butun ekran matnini belgilash |
 | `Ctrl + C` | nusxalab chiqish |
 | `Esc` / o'ng tugma / `Ctrl+Alt+X` | chiqish (media davom etadi) |
+| **Tarjima qil** | tarjima kartasi chiqadi — media **karta yopilgunicha pauzada qoladi** |
+| **Nusxalash** | matn clipboardga tushadi va media darhol davom etadi |
 
 ---
 
@@ -94,6 +96,8 @@ To'rtta qaror alohida izohga arziydi:
 2. **Belgilash to'rtburchak kesishishi bilan emas, o'qish tartibi bilan.** Anchor so'zdan joriy so'zgacha oradagi hammasi tanlanadi — shuning uchun ikki satrni qiyshiq sudraganda ham matn uzilmaydi.
 3. **Animatsiya ataylab arzon.** Bu noutbukda qotish muammosi iGPU VRAM'dan (512 MB) kelib chiqadi, shuning uchun halqada blur, soya va to'liq ekran qatlami yo'q — faqat 8 ta ingichka chet chizig'ining `opacity`si o'zgaradi va pulsni `auto_reverse` bilan kompozitorning o'zi yuritadi, JS tomonda har kadrda hech narsa hisoblanmaydi.
 4. **Tesseract, vision model emas.** Live Text uchun har bir so'zning aniq piksel to'rtburchagi kerak; Tesseract `tsv` rejimida shuni beradi, vision modellar esa matnni yaxshi o'qisa-da koordinatani ishonchli bermaydi. Qo'shimcha foyda: oflayn ishlaydi.
+
+Media pauzasining egasi — qotirish overlayi, lekin uni **tarjima kartasi** bo'shatadi: karta ko'rinib turganda video o'ynab ketmasligi kerak. Shuning uchun `popup.js` da `setOnClosed` ilgagi bor va uni `extension.js` ulaydi — `freeze-service.js` popup haqida hech narsa bilmaydi, bog'liqlik yo'nalishi buzilmaydi.
 
 Ekranda shaxsiy ma'lumot bo'lishi mumkin, shuning uchun vaqtinchalik PNG `XDG_RUNTIME_DIR` ga `PRIVATE` huquqi bilan yoziladi va OCR tugashi bilan darhol o'chiriladi.
 

@@ -121,6 +121,10 @@ export default class QuickTranslateExtension extends Extension {
     /**
      * OCR natijasini tarjima qiladi: belgilash bosqichi yo'q, matn tayyor.
      * Oyna kursor turgan joyda chiqadi.
+     *
+     * Bu yo'lda overlay mediani pauzada qoldirib yopiladi, shuning uchun
+     * tarjima kartasi yopilgandagina video davom etadi — foydalanuvchi
+     * tarjimani o'qiyotganda video orqada o'ynab ketmaydi.
      */
     _translateText(text) {
         const [x, y] = getTruePointerCoords();
@@ -128,6 +132,7 @@ export default class QuickTranslateExtension extends Extension {
         const request = new Gio.Cancellable();
         this._request = request;
         this._showTranslation(x, y, text, request, 'Matn bo‘sh.');
+        this._popup?.setOnClosed(() => this._freeze?.resumeMedia());
     }
 
     /**
