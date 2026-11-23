@@ -1,0 +1,8 @@
+{
+  "name": "Quick Translate",
+  "description": "Translate selected text at the pointer with Ctrl+Alt+Z.",
+  "uuid": "quick-translate@shamsiddin",
+  "settings-schema": "org.gnome.shell.extensions.quick-translate",
+  "shell-version": ["46", "47", "48", "49", "50"],
+  "version": 1
+}

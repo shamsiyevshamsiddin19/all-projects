@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.quick-translate"
+          path="/org/gnome/shell/extensions/quick-translate/">
+    <key name="toggle-popup" type="as">
+      <default>['&lt;Control&gt;&lt;Alt&gt;z']</default>
+      <summary>Open or close Quick Translate</summary>
+    </key>
+    <key name="freeze-ocr" type="as">
+      <default>['&lt;Control&gt;&lt;Alt&gt;x']</default>
+      <summary>Freeze the screen and select text from the frozen frame</summary>
+    </key>
+    <key name="ocr-languages" type="s">
+      <default>'rus+eng'</default>
+      <summary>Tesseract language codes for screen OCR, joined by +</summary>
+      <description>
+        Mavjud tillar: eng, rus, uzb, uzb_cyrl, osd. Ko'p til qo'shilsa OCR
+        sekinlashadi, shuning uchun faqat kerakli tillar yoziladi.
+      </description>
+    </key>
+  </schema>
+</schemalist>
