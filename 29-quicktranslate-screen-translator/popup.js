@@ -10,20 +10,38 @@ import {englishLookup} from './example-utils.js';
 import {VocabularyStore, Pronunciation} from './learning-services.js';
 import {fetchDictionaryExample, fetchOne} from './translation-service.js';
 
-/** Karta kengligi — matn uzunligidan QAT'IY NAZAR o'zgarmaydi. */
+/** Karta o'lchami qat'iy: matn qancha bo'lishidan qat'i nazar o'zgarmaydi. */
 const CARD_WIDTH = 480;
+const CARD_HEIGHT = 300;
+
+/** Karta ichki bo'shlig'i (CSS padding: 24px 28px). */
+const PADDING_X = 28;
+const PADDING_Y = 24;
 
 /**
- * Eng kichik balandlik: qisqa matnda karta tanish "bank kartasi" ko'rinishini
- * saqlaydi. Uzun matnda esa pastga o'sadi.
+ * Matn kartaga sig'maganda shrift shu qadamda kichrayib boradi.
+ * Sig'ishi bilan to'xtaydi.
  */
-const CARD_MIN_HEIGHT = 300;
+const FONT_SCALE_STEP = 0.05;
 
 /**
- * Eng katta balandlik — ekranning shu ulushi. Bundan oshsa ichidagi
- * ScrollView aylantiradi: matn qisqartirilmaydi, shrift kichraytirilmaydi.
+ * Shriftning pastki chegarasi. Bundan kichrayishiga yo'l qo'yilmaydi —
+ * aks holda juda uzun matnda yozuv o'qib bo'lmas holga kelardi.
+ * Shu chegarada ham sig'masa ichidagi ScrollView aylantiradi.
  */
-const CARD_MAX_HEIGHT_RATIO = 0.6;
+const MIN_FONT_SCALE = 0.55;
+
+/**
+ * Matn uslublari: asosiy shrift o'lchami (px) va qolgan bezaklar.
+ * O'lcham miqyosga ko'paytiriladi, qolgani o'zgarmaydi.
+ */
+const TEXT_STYLES = {
+    origLabel: {size: 13, rest: 'color: #71717a; line-height: 1.3; margin-bottom: 14px;'},
+    trans1: {size: 22, rest: 'color: #ffffff; font-weight: 600; line-height: 1.3;'},
+    trans2: {size: 20, rest: 'color: #e4e4e7; font-weight: 500; line-height: 1.3;'},
+    exampleLabel: {size: 15, rest: 'color: #b4b4b4; margin-top: 8px; margin-bottom: 12px;'},
+    meaningLabel: {size: 12, rest: 'color: #929292; margin-bottom: 10px;'},
+};
 
 export class QuickTranslatePopup {
     constructor(pointerX, pointerY, originalText) {
@@ -66,14 +84,13 @@ export class QuickTranslatePopup {
             can_focus: true,
             track_hover: true,
             width: CARD_WIDTH,
+            height: CARD_HEIGHT,
         });
+        this.actor.set_size(CARD_WIDTH, CARD_HEIGHT);
 
-        // Balandlik matnga qarab o'sadi: kenglik qat'iy, balandlik moslashuvchan.
-        // Kenglikni matn uzunligiga bog'lash mo'rt bo'lardi — belgi soni
-        // ko'rinadigan kenglikka teng emas va karta kursor yonida sakrab turardi.
-        const monitor = this._monitorForPointer();
-        this._maxHeight = Math.max(
-            CARD_MIN_HEIGHT, Math.round(monitor.height * CARD_MAX_HEIGHT_RATIO));
+        // O'lcham qat'iy. Matn sig'masa karta emas, SHRIFT moslashadi —
+        // `_fitTextToCard()` ga qarang.
+        this._fontScale = 1;
 
         this.actor.set_style(
             'background-color: #121212; ' +
@@ -83,8 +100,8 @@ export class QuickTranslatePopup {
             'box-shadow: 0 24px 60px rgba(0, 0, 0, 0.9); ' +
             `min-width: ${CARD_WIDTH}px; ` +
             `max-width: ${CARD_WIDTH}px; ` +
-            `min-height: ${CARD_MIN_HEIGHT}px; ` +
-            `max-height: ${this._maxHeight}px;`
+            `min-height: ${CARD_HEIGHT}px; ` +
+            `max-height: ${CARD_HEIGHT}px;`
         );
 
         // Header: Pill + Close button
@@ -107,13 +124,14 @@ export class QuickTranslatePopup {
         this.closeBtn.connect('clicked', () => this.destroy());
         header.add_child(this.closeBtn);
         this.actor.add_child(header);
+        this._header = header;
 
         // Center section: container for translations & original
         let bodyBox = new St.BoxLayout({ vertical: true, y_expand: true, x_expand: true });
 
         // Tarjima qilinayotgan matn — eng tepada, tarjimadan OLDIN turadi.
-        // Qisqartirilmaydi va "..." qo'yilmaydi: uzun matn satrlarga o'raladi,
-        // karta pastga o'sadi, max-height dan oshsa ScrollView aylantiradi.
+        // Qisqartirilmaydi va "..." qo'yilmaydi: uzun matn satrlarga o'raladi
+        // va `_fitTextToCard()` shriftni kichraytirib kartaga sig'diradi.
         this.origLabel = new St.Label({
             text: (this.originalText || '').replace(/\s+/g, ' '),
             x_expand: true,
@@ -202,11 +220,15 @@ export class QuickTranslatePopup {
         let midSpacer = new St.Widget({ y_expand: true });
         bodyBox.add_child(midSpacer);
 
+        this._bodyBox = bodyBox;
+
         const scroll = new St.ScrollView({x_expand: true, y_expand: true});
         scroll.set_policy(St.PolicyType.NEVER, St.PolicyType.AUTOMATIC);
         scroll.add_child(bodyBox);
         this.actor.add_child(scroll);
         this._mainScroll = scroll;
+
+        this._applyFontScale(1);
 
         this._libraryBody = new St.BoxLayout({vertical: true, x_expand: true});
         this._libraryScroll = new St.ScrollView({visible: false, x_expand: true, y_expand: true});
@@ -248,6 +270,10 @@ export class QuickTranslatePopup {
         }));
         this._overlay.add_child(this.actor);
         Main.layoutManager.addTopChrome(this._overlay);
+
+        // Manba matn uzun bo'lsa, tarjima kelishidan oldin ham sig'dirilsin.
+        this._fitTextToCard();
+
         this.actor.opacity = 0;
         this.actor.ease({
             opacity: 255,
@@ -267,21 +293,86 @@ export class QuickTranslatePopup {
         return Main.layoutManager.primaryMonitor;
     }
 
+    /**
+     * Matn uslublarini berilgan miqyosda qo'llaydi.
+     *
+     * Faqat `font-size` o'zgaradi, rang va bo'shliqlar tegilmaydi —
+     * shuning uchun kichraygan karta ham o'z ko'rinishini saqlaydi.
+     *
+     * @param {number} scale  1 = asl o'lcham
+     */
+    _applyFontScale(scale) {
+        // Yaxlitlanadi: qadamlar yig'ilganda 0.7499999 kabi qiymatlar
+        // paydo bo'lib, uslub va tekshiruvlarni chalkashtirardi.
+        scale = Math.round(scale * 100) / 100;
+        this._fontScale = scale;
+        for (const [name, {size, rest}] of Object.entries(TEXT_STYLES)) {
+            const label = this[name];
+            if (!label)
+                continue;
+            label.set_style(`font-size: ${Math.round(size * scale)}px; ${rest}`);
+        }
+    }
+
+    /** Matn uchun kartada qolgan bo'sh balandlik. */
+    _availableBodyHeight() {
+        const innerWidth = CARD_WIDTH - PADDING_X * 2;
+        let used = 0;
+        for (const part of [this._header, this.bottomRow, this._statusLabel]) {
+            if (!part || part.visible === false)
+                continue;
+            try {
+                const [, natural] = part.get_preferred_height(innerWidth);
+                if (Number.isFinite(natural))
+                    used += natural;
+            } catch (e) {
+                // O'lchov olinmasa shu qismni hisobga olmaymiz.
+            }
+        }
+        return CARD_HEIGHT - PADDING_Y * 2 - used;
+    }
+
+    /**
+     * Matnni kartaga sig'dirish uchun shriftni bosqichma-bosqich kichraytiradi.
+     *
+     * Karta o'lchami qat'iy, shuning uchun moslashadigan narsa — shrift.
+     * Har qadamda matnning haqiqiy balandligi so'raladi va sig'ishi bilan
+     * to'xtaydi, ya'ni qisqa matn asl o'lchamida qoladi.
+     *
+     * MIN_FONT_SCALE dan pastga tushmaydi: juda uzun matnda yozuv o'qib
+     * bo'lmas holga kelmasligi uchun. U chegarada ham sig'masa, ichidagi
+     * ScrollView aylantiradi.
+     */
+    _fitTextToCard() {
+        if (this._destroyed || !this._bodyBox)
+            return;
+
+        const innerWidth = CARD_WIDTH - PADDING_X * 2;
+        const available = this._availableBodyHeight();
+        if (!Number.isFinite(available) || available <= 0)
+            return;
+
+        for (let scale = 1; scale >= MIN_FONT_SCALE - 1e-9; scale -= FONT_SCALE_STEP) {
+            this._applyFontScale(scale);
+
+            let needed;
+            try {
+                [, needed] = this._bodyBox.get_preferred_height(innerWidth);
+            } catch (e) {
+                return; // O'lchov yo'q bo'lsa joriy miqyosda qoldiramiz.
+            }
+            if (!Number.isFinite(needed) || needed <= available)
+                return;
+        }
+        // Eng kichik miqyosda ham sig'madi — ScrollView aylantiradi.
+        this._applyFontScale(MIN_FONT_SCALE);
+    }
+
     _positionWidget() {
         const monitor = this._monitorForPointer();
 
         const w = CARD_WIDTH;
-        // Balandlik endi qat'iy emas — kartaning haqiqiy talabini so'raymiz,
-        // aks holda o'sgan karta ekran pastidan chiqib ketardi.
-        let h = CARD_MIN_HEIGHT;
-        try {
-            const [, natural] = this.actor.get_preferred_height(w);
-            if (Number.isFinite(natural) && natural > 0)
-                h = natural;
-        } catch (e) {
-            // O'lcham hali hisoblanmagan bo'lsa eng kichik balandlikdan foydalanamiz.
-        }
-        h = Math.min(Math.max(h, CARD_MIN_HEIGHT), this._maxHeight ?? CARD_MIN_HEIGHT);
+        const h = CARD_HEIGHT;
 
         // Center horizontally on pointer, position right above cursor
         let posX = Math.round(this.pointerX - w / 2);
@@ -365,6 +456,7 @@ export class QuickTranslatePopup {
             .map(item => item.tag + ': ' + item.text).join('\n');
         this.copyBtn.reactive = Boolean(this._copiedText);
         this._ready = true;
+        this._fitTextToCard();
         this._positionWidget();
         this._startAutoClose(8000);
     }
@@ -385,6 +477,7 @@ export class QuickTranslatePopup {
         this.tag1.visible = false;
         this.trans1.set_text(err || 'Failed to translate');
         this.row2.visible = false;
+        this._fitTextToCard();
         this._positionWidget();
         this._startAutoClose(8000);
     }
@@ -413,6 +506,7 @@ export class QuickTranslatePopup {
             this._exampleTimer = 0;
             this._exampleLoading = false;
             this.exampleLabel.set_text(item.tag + ' — ' + text);
+            this._fitTextToCard();
             if (cache) this._exampleCache.set(item.tag, text);
             if (cache && this._savedCurrent) this._saveWord(true);
             if (cache || this._exampleCache.has(item.tag)) {
@@ -432,6 +526,7 @@ export class QuickTranslatePopup {
         this._exampleLoading = true;
         this._startAutoClose(8000);
         this.exampleLabel.set_text(item.tag + ' — Misol yuklanmoqda…');
+        this._fitTextToCard();
         this._exampleTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 15000, () => {
             this._exampleTimer = 0;
             finish('Misol olinmadi. Qayta bosib urinib ko‘ring.');
@@ -480,6 +575,7 @@ export class QuickTranslatePopup {
             this._meaningTimer = 0;
             this._meaningLoading = false;
             this.meaningLabel.set_text(error ? 'O‘zbekcha tarjima olinmadi. Tilni qayta bosing.' : translation);
+            this._fitTextToCard();
             if (!error) {
                 this._meaningCache.set(key, translation);
                 if (this._savedCurrent) this._saveWord(true);
@@ -490,6 +586,7 @@ export class QuickTranslatePopup {
         if (this._meaningCache.has(key)) { finish(this._meaningCache.get(key), null); return; }
         this._meaningLoading = true;
         this.meaningLabel.set_text('O‘zbekcha ma’nosi yuklanmoqda…');
+        this._fitTextToCard();
         this._startAutoClose(8000);
         this._meaningTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 12000, () => {
             this._meaningTimer = 0;

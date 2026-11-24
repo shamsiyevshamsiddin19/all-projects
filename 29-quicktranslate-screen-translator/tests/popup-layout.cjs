@@ -1,6 +1,5 @@
-// Karta tartibi qoidalari: manba matn tepada, matn hech qachon
-// qisqartirilmaydi, kenglik matn uzunligiga bog'liq emas, balandlik esa
-// ekranga qarab cheklanadi.
+// Karta tartibi qoidalari: o'lcham QAT'IY (480x300), matn sig'masa
+// SHRIFT kichrayadi, manba matn tepada va hech qachon kesilmaydi.
 //
 // Ishga tushirish: node tests/popup-layout.cjs
 
@@ -28,8 +27,11 @@ class Actor {
     grab_key_focus() {}
     contains() { return false; }
     destroy_all_children() { this.children = []; }
-    // Karta o'z balandligini shu orqali so'raydi; sinovda uni boshqarib turamiz.
-    get_preferred_height() { return [0, this._naturalHeight ?? 420]; }
+    // Sinovda balandlikni boshqarib turamiz: `_heightFn` matn balandligini
+    // joriy shrift miqyosiga bog'lash uchun ishlatiladi.
+    get_preferred_height(forWidth) {
+        return [0, this._heightFn ? this._heightFn(forWidth) : (this._naturalHeight ?? 0)];
+    }
 }
 
 class Request { cancel() { this.cancelled = true; } is_cancelled() { return !!this.cancelled; } }
@@ -56,9 +58,13 @@ const context = {
 vm.createContext(context);
 vm.runInContext(source.replace(/^import .*;$/gm, '').replace('export class', 'class') +
     ';this.Popup=QuickTranslatePopup;this.CARD_WIDTH=CARD_WIDTH;' +
-    'this.CARD_MIN_HEIGHT=CARD_MIN_HEIGHT;', context);
+    'this.CARD_HEIGHT=CARD_HEIGHT;this.MIN_FONT_SCALE=MIN_FONT_SCALE;' +
+    'this.PADDING_Y=PADDING_Y;this.TEXT_STYLES=TEXT_STYLES;', context);
 
-const {CARD_WIDTH, CARD_MIN_HEIGHT} = context;
+const {CARD_WIDTH, CARD_HEIGHT, MIN_FONT_SCALE, PADDING_Y, TEXT_STYLES} = context;
+
+/** Matn uchun qoladigan balandlik (sarlavha va pastki qator mockda 0). */
+const AVAILABLE = CARD_HEIGHT - PADDING_Y * 2;
 
 /** bodyBox — ScrollView ichidagi yagona bola. */
 function bodyOf(popup) {
@@ -69,71 +75,97 @@ function bodyOf(popup) {
     throw new Error('bodyBox topilmadi');
 }
 
-// --- 1. Manba matn eng tepada, tarjima satrlaridan OLDIN ---
+/**
+ * Matni berilgan "tabiiy" balandlikka ega karta yasaydi.
+ * Balandlik shrift miqyosiga proporsional — haqiqiy holatdagidek.
+ */
+function popupNeeding(baseHeight, text = 'sinov') {
+    const popup = new context.Popup(500, 500, text);
+    popup._bodyBox._heightFn = () => baseHeight * popup._fontScale;
+    popup._fitTextToCard();
+    return popup;
+}
+
+// --- 1. O'lcham QAT'IY: 480x300, matn uzunligidan qat'i nazar ---
 
 const short = new context.Popup(500, 500, 'Только дыхание переведу.');
-const body = bodyOf(short);
+const longText = ('Господи, души. Они были нашими друзьями и мы должны были защитить их ' +
+    'любой ценой, но всё пошло совсем не так как планировалось. ').repeat(4).trim();
+const long = new context.Popup(500, 500, longText);
 
+for (const [name, p] of [['qisqa', short], ['uzun', long]]) {
+    assert.equal(p.actor.width, CARD_WIDTH, `${name}: kenglik o'zgarmasligi kerak`);
+    assert.equal(p.actor.height, CARD_HEIGHT, `${name}: balandlik o'zgarmasligi kerak`);
+    assert.ok(p.actor.style.includes(`min-height: ${CARD_HEIGHT}px`), `${name}: min-height`);
+    assert.ok(p.actor.style.includes(`max-height: ${CARD_HEIGHT}px`), `${name}: max-height`);
+    assert.ok(p.actor.style.includes(`max-width: ${CARD_WIDTH}px`), `${name}: max-width`);
+}
+
+// --- 2. Manba matn eng tepada va kesilmaydi ---
+
+const body = bodyOf(short);
 assert.equal(body.children[0], short.origLabel,
     'Tarjima qilinayotgan matn kartaning eng tepasida turishi kerak');
 assert.ok(body.children.indexOf(short.row1) > body.children.indexOf(short.origLabel),
     'Birinchi tarjima satri manba matndan KEYIN kelishi kerak');
-assert.ok(body.children.indexOf(short.row2) > body.children.indexOf(short.row1),
-    'Ikkinchi tarjima satri birinchisidan keyin kelishi kerak');
 
-// --- 2. Uzun matn qisqartirilmaydi ---
-
-const longSource = ('Господи, души. Они были нашими друзьями и мы должны были ' +
-    'защитить их любой ценой, но всё пошло совсем не так как планировалось. ').repeat(4).trim();
-assert.ok(longSource.length > 300, 'Sinov matni yetarlicha uzun bo\'lishi kerak');
-
-const long = new context.Popup(500, 500, longSource);
-assert.equal(long.origLabel.text, longSource.replace(/\s+/g, ' '),
+assert.equal(long.origLabel.text, longText.replace(/\s+/g, ' '),
     'Manba matn to\'liq ko\'rsatilishi kerak — kesilmasin va "..." qo\'shilmasin');
-assert.ok(!long.origLabel.text.endsWith('...'),
-    'Matn oxiriga "..." qo\'yilmasligi kerak');
-assert.equal(long.origLabel.clutter_text.ellipsize, context.Pango.EllipsizeMode.NONE,
-    'Manba matnda ellipsize o\'chirilgan bo\'lishi kerak');
-assert.equal(long.origLabel.clutter_text.line_wrap, true,
-    'Manba matn satrlarga o\'ralishi kerak');
+assert.ok(!long.origLabel.text.endsWith('...'), 'Matn oxiriga "..." qo\'yilmasligi kerak');
 
-// --- 3. Tarjima satrlari ham kesilmaydi ---
-// Ellipsize line_wrap'dan ustun keladi, shuning uchun aniq NONE bo'lishi shart.
-
-for (const [name, label] of [['trans1', long.trans1], ['trans2', long.trans2]]) {
+for (const [name, label] of [['origLabel', long.origLabel],
+    ['trans1', long.trans1], ['trans2', long.trans2]]) {
     assert.equal(label.clutter_text.line_wrap, true, `${name}: o'ralishi kerak`);
     assert.equal(label.clutter_text.ellipsize, context.Pango.EllipsizeMode.NONE,
         `${name}: ellipsize o'chirilgan bo'lishi kerak`);
 }
 
-// --- 4. Kenglik matn uzunligiga BOG'LIQ EMAS ---
-// Aks holda karta har matnda o'lchamini o'zgartirib, kursor yonida sakrardi.
+// --- 3. Sig'adigan matnda shrift ASL o'lchamida qoladi ---
 
-assert.equal(short.actor.width, CARD_WIDTH);
-assert.equal(long.actor.width, CARD_WIDTH, 'Uzun matnda ham kenglik o\'zgarmasligi kerak');
-assert.ok(short.actor.style.includes(`max-width: ${CARD_WIDTH}px`));
+const fits = popupNeeding(AVAILABLE - 20);
+assert.equal(fits._fontScale, 1, 'Sig\'adigan matnda shrift kichraymasligi kerak');
 
-// --- 5. Balandlik ekranga qarab cheklanadi, 300px ga qotirilmagan ---
+// Chegaraviy holat: aynan sig'adi.
+const exact = popupNeeding(AVAILABLE);
+assert.equal(exact._fontScale, 1, 'Aynan sig\'adigan matn ham kichraymasligi kerak');
 
-const expectedMax = Math.max(CARD_MIN_HEIGHT, Math.round(MONITOR.height * 0.6));
-assert.equal(long._maxHeight, expectedMax,
-    `Eng katta balandlik monitordan hisoblanishi kerak (${expectedMax}px)`);
-assert.ok(long._maxHeight > CARD_MIN_HEIGHT,
-    'Karta eng kichik balandlikdan o\'sa olishi kerak');
-assert.ok(short.actor.style.includes(`min-height: ${CARD_MIN_HEIGHT}px`));
-assert.ok(short.actor.style.includes(`max-height: ${expectedMax}px`));
-assert.ok(!short.actor.style.includes('max-height: 300px'),
-    'Balandlik 300px ga qotirilmagan bo\'lishi kerak');
+// --- 4. Sig'magan matnda shrift kichrayadi, lekin kerakli miqdorda ---
 
-// --- 6. Joylashuv kartaning HAQIQIY balandligini hisobga oladi ---
-// Qotirilgan 300 bilan hisoblansa, o'sgan karta ekran pastidan chiqib ketardi.
+// Aynan 0.9 miqyosda sig'adigan balandlik: 1.0 da sig'maydi, 0.9 da sig'adi.
+const needs90 = popupNeeding(Math.floor(AVAILABLE / 0.9));
+assert.ok(needs90._fontScale < 1, 'Sig\'magan matnda shrift kichrayishi kerak');
+assert.equal(needs90._fontScale, 0.9,
+    `Kerakli darajadagina kichrayishi kerak (kutilgan 0.9, olingan ${needs90._fontScale})`);
 
-const tall = new context.Popup(960, 1000, 'matn');
-tall.actor._naturalHeight = 900;      // max (648) dan baland
-tall._positionWidget();
-const [, posY] = tall.actor.position;
-assert.ok(posY + expectedMax <= MONITOR.height - 20,
-    `Karta ekran pastidan chiqmasligi kerak (y=${posY}, h=${expectedMax})`);
-assert.ok(posY >= MONITOR.y + 36, 'Karta ekran tepasidan ham chiqmasligi kerak');
+const needs75 = popupNeeding(Math.floor(AVAILABLE / 0.75));
+assert.equal(needs75._fontScale, 0.75,
+    `Kutilgan 0.75, olingan ${needs75._fontScale}`);
 
-console.log('PASS: manba matn tepada, kesilmaydi, kenglik qat\'iy, balandlik moslashuvchan');
+// --- 5. Pastki chegaradan o'tmaydi ---
+// Aks holda juda uzun matnda yozuv o'qib bo'lmas holga kelardi.
+
+const huge = popupNeeding(AVAILABLE * 10);
+assert.equal(huge._fontScale, MIN_FONT_SCALE,
+    `Juda uzun matnda shrift ${MIN_FONT_SCALE} dan pastga tushmasligi kerak`);
+assert.ok(huge._fontScale > 0.4, 'Pastki chegara o\'qilarli bo\'lishi kerak');
+
+// --- 6. Miqyos haqiqatan uslubga qo'llanadi ---
+
+assert.ok(huge.trans1.style.includes(
+    `font-size: ${Math.round(TEXT_STYLES.trans1.size * MIN_FONT_SCALE)}px`),
+    `trans1 uslubida kichraygan shrift bo'lishi kerak: ${huge.trans1.style}`);
+assert.ok(fits.trans1.style.includes(`font-size: ${TEXT_STYLES.trans1.size}px`),
+    'Sig\'adigan matnda asl shrift o\'lchami qolishi kerak');
+// Rang va bo'shliqlar tegilmaydi.
+assert.ok(huge.trans1.style.includes('color: #ffffff'), 'Rang saqlanishi kerak');
+assert.ok(huge.origLabel.style.includes('margin-bottom: 14px'), 'Bo\'shliq saqlanishi kerak');
+
+// --- 7. Joylashuv qat'iy o'lchamga tayanadi va ekrandan chiqmaydi ---
+
+const corner = new context.Popup(1900, 1060, 'matn');
+const [posX, posY] = corner.actor.position;
+assert.ok(posX + CARD_WIDTH <= MONITOR.width - 20, `O'ngdan chiqmasligi kerak (x=${posX})`);
+assert.ok(posY + CARD_HEIGHT <= MONITOR.height - 20, `Pastdan chiqmasligi kerak (y=${posY})`);
+assert.ok(posX >= MONITOR.x + 20 && posY >= MONITOR.y + 36, 'Chap/tepadan ham chiqmasligi kerak');
+
+console.log('PASS: o\'lcham qat\'iy, shrift sig\'guncha kichrayadi, manba matn tepada va kesilmaydi');
