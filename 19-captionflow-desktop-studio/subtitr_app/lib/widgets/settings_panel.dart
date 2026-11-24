@@ -482,10 +482,6 @@ class _TopModeSegmented extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isHardsub = SettingsPanel._hardsubModes.contains(currentMode) ||
-        (!SettingsPanel._videoModes.contains(currentMode) &&
-            !SettingsPanel._softsubModes.contains(currentMode) &&
-            currentMode != 'dubbing');
     final isSoftsub = SettingsPanel._softsubModes.contains(currentMode);
 
     final _PrimaryMode selected;

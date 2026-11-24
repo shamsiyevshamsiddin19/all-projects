@@ -105,6 +105,7 @@ class _BatchQueueDialogState extends State<BatchQueueDialog> {
       child: ReorderableListView.builder(
         buildDefaultDragHandles: false,
         itemCount: _queue.length,
+        // ignore: deprecated_member_use
         onReorder: (oldIndex, newIndex) => setState(() {
           // Standart ReorderableListView qoidasi: agar element pastga surilsa,
           // olib tashlangandan so'ng indeks 1 ga siljiydi.
