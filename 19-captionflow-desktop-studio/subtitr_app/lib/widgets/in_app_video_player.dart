@@ -437,7 +437,7 @@ enum StudioSubtitleTheme {
     shadowOffset: 2.0,
     icon: Icons.contrast_rounded,
     badgeColor: Colors.white,
-    overrideMode: 'force',
+    overrideMode: 'strip',
   ),
   cinemaYellow(
     id: 'cinema_yellow',
@@ -449,7 +449,7 @@ enum StudioSubtitleTheme {
     shadowOffset: 2.0,
     icon: Icons.star_rounded,
     badgeColor: Color(0xFFFFD700),
-    overrideMode: 'force',
+    overrideMode: 'strip',
   ),
   darkBackdrop(
     id: 'dark_backdrop',
@@ -461,7 +461,7 @@ enum StudioSubtitleTheme {
     shadowOffset: 0.0,
     icon: Icons.crop_portrait_rounded,
     badgeColor: Color(0xFF94A3B8),
-    overrideMode: 'force',
+    overrideMode: 'strip',
   ),
   cyberGreen(
     id: 'cyber_green',
@@ -473,7 +473,7 @@ enum StudioSubtitleTheme {
     shadowOffset: 2.0,
     icon: Icons.bolt_rounded,
     badgeColor: Color(0xFF39FF14),
-    overrideMode: 'force',
+    overrideMode: 'strip',
   ),
   skyBlue(
     id: 'sky_blue',
@@ -485,7 +485,19 @@ enum StudioSubtitleTheme {
     shadowOffset: 2.0,
     icon: Icons.water_drop_rounded,
     badgeColor: Color(0xFF38BDF8),
-    overrideMode: 'force',
+    overrideMode: 'strip',
+  ),
+  aslAss(
+    id: 'asl_ass',
+    label: "Asl ASS Dizayni",
+    textColor: "#FFFFFF",
+    borderColor: "#000000",
+    borderSize: 2.0,
+    backColor: "#00000000",
+    shadowOffset: 0.0,
+    icon: Icons.auto_awesome_rounded,
+    badgeColor: Color(0xFF94A3B8),
+    overrideMode: 'scale',
   );
 
   const StudioSubtitleTheme({
@@ -837,6 +849,7 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
           final subs = tracks.subtitle.where((t) => t.id != 'auto' && t.id != 'no').toList();
           if (subs.isNotEmpty) {
             player.setSubtitleTrack(subs.first);
+            _applySubtitleAppearance();
           }
         }
       });
@@ -973,6 +986,7 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
       } else {
         await player.setSubtitleTrack(SubtitleTrack.no());
       }
+      await _applySubtitleAppearance();
       if (mounted) {
         setState(() {
           _ready = true;
@@ -1579,6 +1593,7 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
         } else if (hasInternal) {
           await player.setSubtitleTrack(_realSubtitleTracks.first);
         }
+        await _applySubtitleAppearance();
       } else {
         await player.setSubtitleTrack(SubtitleTrack.no());
       }
@@ -1603,6 +1618,7 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
           _resolvedSubtitlePath = selectedPath;
           _subtitlesEnabled = true;
           await player.setSubtitleTrack(SubtitleTrack.uri(Uri.file(selectedPath).toString()));
+          await _applySubtitleAppearance();
           _showOSD("📁 Subtitr biriktirildi: ${result.files.single.name}", Icons.check_circle_rounded);
           if (mounted) setState(() {});
         }
