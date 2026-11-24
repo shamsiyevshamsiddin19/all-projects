@@ -508,3 +508,80 @@ CREATE TABLE IF NOT EXISTS idempotency_keys (
 );
 
 CREATE INDEX IF NOT EXISTS idx_idempotency_created ON idempotency_keys (created_at);
+
+-- ============================================================================
+-- BAZA CHEKLOVLARI (CHECK CONSTRAINTS) — Konstitutsiya §5 & A-04
+-- ============================================================================
+-- Yaxlitlik kafolati: Manfiy va noto'g'ri qiymatlar baza darajasida taqiqlanadi.
+-- DO $$ ... EXCEPTION WHEN duplicate_object THEN NULL; END $$; bloki orqali
+-- o'ralgan, shuning uchun schema init har qayta ishga tushganda idempotent ishlaydi.
+
+-- 1. activity_log: davomiylik va miqdor manfiy bo'lishi mumkin emas
+DO $$ BEGIN
+    ALTER TABLE activity_log ADD CONSTRAINT chk_activity_duration
+        CHECK (duration_seconds IS NULL OR duration_seconds >= 0);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    ALTER TABLE activity_log ADD CONSTRAINT chk_activity_amount
+        CHECK (amount IS NULL OR amount >= 0);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- 2. quiz_progress: yechilganlik faqat 0 yoki 1 bo'lishi mumkin; xatolar soni manfiy bo'lmasin
+DO $$ BEGIN
+    ALTER TABLE quiz_progress ADD CONSTRAINT chk_quiz_progress_is_solved
+        CHECK (is_solved IN (0, 1));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    ALTER TABLE quiz_progress ADD CONSTRAINT chk_quiz_progress_wrong_count
+        CHECK (wrong_count >= 0);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- 3. quiz_questions: tartib raqami manfiy bo'lmasligi kerak
+DO $$ BEGIN
+    ALTER TABLE quiz_questions ADD CONSTRAINT chk_quiz_questions_sort_order
+        CHECK (sort_order >= 0);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- 4. quiz_results: test natijalari hisoblagichlari manfiy bo'lmasligi va foiz 0..100 oralig'ida bo'lishi
+DO $$ BEGIN
+    ALTER TABLE quiz_results ADD CONSTRAINT chk_quiz_results_counts
+        CHECK (total >= 0 AND correct >= 0 AND wrong >= 0 AND percent >= 0 AND percent <= 100);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- 5. sport_exercises: og'irlik, oshish qadami, set va takrorlar manfiy bo'lmasligi; is_deleted 0 yoki 1
+DO $$ BEGIN
+    ALTER TABLE sport_exercises ADD CONSTRAINT chk_sport_exercises_non_negative
+        CHECK (weight >= 0 AND increase_amount >= 0 AND set_count >= 0 AND rep_count >= 0 AND is_deleted IN (0, 1));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- 6. goals: bajarilganlik holati faqat 0 yoki 1; maqsad hajmi faqat belgilangan turlar
+DO $$ BEGIN
+    ALTER TABLE goals ADD CONSTRAINT chk_goals_completed
+        CHECK (completed IN (0, 1));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    ALTER TABLE goals ADD CONSTRAINT chk_goals_size
+        CHECK (size IN ('kichik', 'orta', 'katta'));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- 7. history: sana maydonlari to'g'ri oraliqda va vazifalar soni manfiy bo'lmasligi
+DO $$ BEGIN
+    ALTER TABLE history ADD CONSTRAINT chk_history_dates_and_counts
+        CHECK (year >= 2020 AND year <= 2100 AND month >= 1 AND month <= 12 AND day >= 1 AND day <= 31 AND total_tasks >= 0 AND completed_tasks >= 0);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- 8. dictionary_mistake_snapshots: so'zlar soni manfiy bo'lmasligi
+DO $$ BEGIN
+    ALTER TABLE dictionary_mistake_snapshots ADD CONSTRAINT chk_dict_snap_word_count
+        CHECK (word_count >= 0);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- 9. quiz_wrong_snapshots: savollar soni manfiy bo'lmasligi
+DO $$ BEGIN
+    ALTER TABLE quiz_wrong_snapshots ADD CONSTRAINT chk_quiz_wrong_snap_question_count
+        CHECK (question_count >= 0);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+

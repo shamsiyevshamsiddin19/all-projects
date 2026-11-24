@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -101,27 +102,85 @@ class tx:
 # --- Schema init (bir martalik) ---------------------------------------------
 
 def _split_statements(sql: str) -> list[str]:
-    """`;` bo'yicha ajratadi. Izohlar OLDIN olib tashlanadi.
+    """`;` bo'yicha bayonotlarni ajratadi.
 
-    Nega shunday: ilgari avval `;` bo'yicha bo'linib, keyin izoh qatorlari
-    filtrlanardi. Agar izoh ichida `;` bo'lsa (o'zbekcha matnda tabiiy),
-    izoh qatori o'rtasidan kesilib, ikkinchi bo'lagi endi `--` bilan
-    boshlanmasdi va SQL deb bajarilardi. Natijada butun schema init
-    sintaksis xatosi bilan yiqilardi — ya'ni ALTER'lar qo'llanmay qolardi.
+    Izohlar (`--`), satr literallari (`'...'`) va dollar-quote bloklari
+    (`$$...$$` yoki `$tag$...$tag$`) ichidagi nuqta-vergullarni hisobga olmaydi.
+    Bu `DO $$ BEGIN ... END $$;` kabi PL/pgSQL bloklarining butun holda
+    bajarilishini ta'minlaydi.
     """
-    lines = []
-    for ln in sql.splitlines():
-        s = ln.strip()
-        if s.startswith("--"):
-            continue                       # butun qator izoh
-        lines.append(ln)
-    clean = "\n".join(lines)
+    stmts: list[str] = []
+    buf: list[str] = []
+    i = 0
+    n = len(sql)
+    dollar_tag: str | None = None
+    in_quote = False
+    in_comment = False
 
-    out: list[str] = []
-    for raw in clean.split(";"):
-        if raw.strip():
-            out.append(raw.strip())
-    return out
+    while i < n:
+        if in_comment:
+            if sql[i] == "\n":
+                in_comment = False
+                buf.append("\n")
+            i += 1
+            continue
+
+        if dollar_tag is not None:
+            if sql.startswith(dollar_tag, i):
+                buf.append(dollar_tag)
+                i += len(dollar_tag)
+                dollar_tag = None
+            else:
+                buf.append(sql[i])
+                i += 1
+            continue
+
+        if in_quote:
+            buf.append(sql[i])
+            if sql[i] == "'":
+                if i + 1 < n and sql[i + 1] == "'":
+                    buf.append("'")
+                    i += 2
+                    continue
+                in_quote = False
+            i += 1
+            continue
+
+        if sql.startswith("--", i):
+            in_comment = True
+            i += 2
+            continue
+
+        if sql[i] == "$":
+            m = re.match(r"\$[a-zA-Z0-9_]*\$", sql[i:])
+            if m:
+                dollar_tag = m.group(0)
+                buf.append(dollar_tag)
+                i += len(dollar_tag)
+                continue
+
+        if sql[i] == "'":
+            in_quote = True
+            buf.append("'")
+            i += 1
+            continue
+
+        if sql[i] == ";":
+            stmt = "".join(buf).strip()
+            if stmt:
+                stmts.append(stmt)
+            buf = []
+            i += 1
+            continue
+
+        buf.append(sql[i])
+        i += 1
+
+    rem = "".join(buf).strip()
+    if rem:
+        stmts.append(rem)
+
+    return stmts
 
 
 def init_schema() -> None:
