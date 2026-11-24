@@ -239,30 +239,42 @@ def toggle_goal(request: Request, body: dict):
     ularni BITTA ish deb hisoblaydi, shuning uchun bittasi belgilansa —
     o'sha nomdagi hammasi birga o'zgaradi. Nom bo'sh joy va katta-kichik
     harf farqisiz solishtiriladi.
+
+    A-10 (Lost Update poygasi bartaraf etildi):
+    Ilgari SELECT completed qilib, keyin Python'da 1 - completed hisoblanib,
+    alohida UPDATE yuborilardi. Ikki parallel bosishda oxirgi holat tasodifiy edi.
+    Endi bitta atomik CTE so'rovi bilan FOR UPDATE qulflanadi va barcha mos nomli
+    maqsadlar ajralmas holda yangilanadi.
     """
     goal_id = to_int(body.get("id"))
     if goal_id <= 0:
         raise ApiError("Maqsad ID kelmadi.")
     ctx = owner_context(request)
 
-    row = db.fetch_one(
-        "SELECT text, completed FROM goals WHERE id = :id AND owner_type = :ot AND owner_key = :ok",
+    sql = """
+        WITH target AS (
+            SELECT lower(btrim(text)) AS target_text, (1 - completed) AS new_completed
+            FROM goals
+            WHERE id = :id AND owner_type = :ot AND owner_key = :ok
+            FOR UPDATE
+        )
+        UPDATE goals
+        SET completed = target.new_completed,
+            completed_at = CASE WHEN target.new_completed = 1 THEN CURRENT_TIMESTAMP ELSE NULL END,
+            updated_at = CURRENT_TIMESTAMP
+        FROM target
+        WHERE goals.owner_type = :ot AND goals.owner_key = :ok
+          AND lower(btrim(goals.text)) = target.target_text
+        RETURNING target.new_completed AS completed
+    """
+    row = db.execute_returning(
+        sql,
         {"id": goal_id, "ot": ctx["owner_type"], "ok": ctx["owner_key"]},
     )
     if not row:
         raise ApiError("Maqsad topilmadi.", 404)
 
-    yangi = 0 if int(row["completed"]) == 1 else 1
-
-    db.execute(
-        "UPDATE goals SET completed = :c, "
-        "completed_at = CASE WHEN :c = 1 THEN CURRENT_TIMESTAMP ELSE NULL END, "
-        "updated_at = CURRENT_TIMESTAMP "
-        "WHERE owner_type = :ot AND owner_key = :ok "
-        "AND lower(btrim(text)) = lower(btrim(:t))",
-        {"c": yangi, "t": row["text"], "ot": ctx["owner_type"], "ok": ctx["owner_key"]},
-    )
-    return success({"completed": yangi})
+    return success({"completed": int(row["completed"])})
 
 
 def edit_goal(request: Request, body: dict):
