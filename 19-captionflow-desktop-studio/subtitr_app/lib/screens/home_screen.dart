@@ -70,6 +70,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String? _activePlayerSubtitle;
   String? _activePlayerTitle;
   bool _isPlayerFullscreen = false;
+  final GlobalKey _embeddedPlayerKey = GlobalKey();
   bool _showLogs = false;
   final List<ProcessLogEntry> _processLogs = [];
   double _videoDuration = 0.0;
@@ -1714,8 +1715,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         onDelete: _deleteHistoryItem,
                       );
 
-                      final rightContent = _activePlayerVideo != null
+                      final playerWidget = _activePlayerVideo != null
                           ? EmbeddedVideoPlayer(
+                              key: _embeddedPlayerKey,
                               videoPath: _activePlayerVideo!,
                               subtitlePath: _activePlayerSubtitle,
                               title: _activePlayerTitle,
@@ -1735,16 +1737,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               onGenerateLiveCaption: _generateLiveCaption,
                               onCancelLiveCaption: () => _service.cancel(),
                             )
-                          : _showHistory
-                              ? historyPanel
-                              : processor;
+                          : null;
 
-                      if (_isPlayerFullscreen && _activePlayerVideo != null) {
+                      if (_isPlayerFullscreen && playerWidget != null) {
                         return Container(
                           color: Colors.black,
-                          child: rightContent,
+                          child: playerWidget,
                         );
                       }
+
+                      final rightContent = playerWidget ??
+                          (_showHistory ? historyPanel : processor);
 
                       final wideRightColumn = Column(
                         children: [
@@ -1787,29 +1790,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             SizedBox(height: 500, child: historyPanel),
                             const SizedBox(height: 16),
                           ],
-                          if (_activePlayerVideo != null) ...[
+                          if (playerWidget != null) ...[
                             SizedBox(
                               height: 440,
-                              child: EmbeddedVideoPlayer(
-                                videoPath: _activePlayerVideo!,
-                                subtitlePath: _activePlayerSubtitle,
-                                title: _activePlayerTitle,
-                                isFullscreen: _isPlayerFullscreen,
-                                onFullscreenChanged: (fs) {
-                                  setState(() => _isPlayerFullscreen = fs);
-                                },
-                                onClose: () {
-                                  setState(() {
-                                    _isPlayerFullscreen = false;
-                                    _activePlayerVideo = null;
-                                    _activePlayerSubtitle = null;
-                                    _activePlayerTitle = null;
-                                  });
-                                },
-                                onOpenExternal: (p) => _service.openPath(p),
-                                onGenerateLiveCaption: _generateLiveCaption,
-                                onCancelLiveCaption: () => _service.cancel(),
-                              ),
+                              child: playerWidget,
                             ),
                             const SizedBox(height: 16),
                           ],

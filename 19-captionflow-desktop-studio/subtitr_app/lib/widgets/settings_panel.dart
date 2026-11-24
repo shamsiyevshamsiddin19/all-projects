@@ -101,10 +101,26 @@ class SettingsPanel extends StatelessWidget {
 
   List<DropdownMenuItem<String>> _softsubModeItems(ThemeData theme) {
     const items = [
-      ('softsub', '2 ta alohida trek (Original + Tarjima CC)', Icons.closed_caption_rounded),
-      ('softsub_dual', 'Ikki qatorli subtitr (Asl matn + Tarjima birgalikda)', Icons.subtitles_rounded),
-      ('softsub_translated', 'Faqat tarjima (Yagona trek CC)', Icons.translate_rounded),
-      ('softsub_original', 'Faqat asl matn (Yagona trek CC)', Icons.text_snippet_rounded),
+      (
+        'softsub',
+        '2 ta alohida trek (Original + Tarjima CC)',
+        Icons.closed_caption_rounded,
+      ),
+      (
+        'softsub_dual',
+        'Ikki qatorli subtitr (Asl matn + Tarjima birgalikda)',
+        Icons.subtitles_rounded,
+      ),
+      (
+        'softsub_translated',
+        'Faqat tarjima (Yagona trek CC)',
+        Icons.translate_rounded,
+      ),
+      (
+        'softsub_original',
+        'Faqat asl matn (Yagona trek CC)',
+        Icons.text_snippet_rounded,
+      ),
     ];
 
     return items.map((item) {
@@ -160,8 +176,11 @@ class SettingsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isHardsub = _hardsubModes.contains(mode) ||
-        (!_videoModes.contains(mode) && !_softsubModes.contains(mode) && mode != 'dubbing');
+    final isHardsub =
+        _hardsubModes.contains(mode) ||
+        (!_videoModes.contains(mode) &&
+            !_softsubModes.contains(mode) &&
+            mode != 'dubbing');
     final isSoftsub = _softsubModes.contains(mode);
     final isDubbing = mode == 'dubbing';
 
@@ -198,10 +217,15 @@ class SettingsPanel extends StatelessWidget {
               _SectionHeader(title: 'Uslub'),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                initialValue: _hardsubModes.contains(mode) || !_videoModes.contains(mode) ? mode : 'dual_vocab',
+                initialValue:
+                    _hardsubModes.contains(mode) || !_videoModes.contains(mode)
+                    ? mode
+                    : 'dual_vocab',
                 decoration: InputDecoration(
                   labelText: 'Kuydirish uslubi',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 12,
@@ -225,7 +249,9 @@ class SettingsPanel extends StatelessWidget {
                 initialValue: _softsubModes.contains(mode) ? mode : 'softsub',
                 decoration: InputDecoration(
                   labelText: 'Yumshoq subtitr uslubi',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 12,
@@ -300,7 +326,10 @@ class SettingsPanel extends StatelessWidget {
                       fillColor: theme.colorScheme.surface,
                     ),
                     items: const [
-                      DropdownMenuItem(value: 'none', child: Text("Tarjimasiz (Faqat asl matn)")),
+                      DropdownMenuItem(
+                        value: 'none',
+                        child: Text("Tarjimasiz (Faqat asl matn)"),
+                      ),
                       DropdownMenuItem(value: 'uz', child: Text("O'zbek")),
                       DropdownMenuItem(value: 'en', child: Text('Ingliz')),
                       DropdownMenuItem(value: 'ru', child: Text('Rus')),
@@ -379,7 +408,9 @@ class SettingsPanel extends StatelessWidget {
                 items: const [
                   DropdownMenuItem(
                     value: 0.18,
-                    child: Text('18% — Tavsiya (Musiqa va effektlar eshitiladi)'),
+                    child: Text(
+                      '18% — Tavsiya (Musiqa va effektlar eshitiladi)',
+                    ),
                   ),
                   DropdownMenuItem(
                     value: 0.10,
@@ -411,7 +442,8 @@ class SettingsPanel extends StatelessWidget {
                 appearance: appearance,
                 enabled: !isRunning,
                 onChanged: onAppearanceChanged,
-                showOrigStyle: mode != 'translated' && mode != 'softsub_translated',
+                showOrigStyle:
+                    mode != 'translated' && mode != 'softsub_translated',
               ),
             ],
 
@@ -439,9 +471,7 @@ class SettingsPanel extends StatelessWidget {
           if (!hasBoundedHeight) {
             return content;
           }
-          return SingleChildScrollView(
-            child: content,
-          );
+          return SingleChildScrollView(child: content);
         }
         return content;
       },
@@ -620,7 +650,9 @@ class _VoiceChoiceCard extends StatelessWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 12.5,
-                      color: isSelected ? Colors.white : const Color(0xFFCCCCCC),
+                      color: isSelected
+                          ? Colors.white
+                          : const Color(0xFFCCCCCC),
                     ),
                   ),
                   Text(
@@ -636,7 +668,11 @@ class _VoiceChoiceCard extends StatelessWidget {
               ),
             ),
             if (isSelected)
-              const Icon(Icons.check_circle_rounded, size: 16, color: activeColor),
+              const Icon(
+                Icons.check_circle_rounded,
+                size: 16,
+                color: activeColor,
+              ),
           ],
         ),
       ),
@@ -698,7 +734,10 @@ class _PresetRow extends StatelessWidget {
                 ),
               ),
               style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -754,10 +793,7 @@ class _PresetRow extends StatelessWidget {
                 for (final p in presets)
                   DropdownMenuItem(
                     value: p.name,
-                    child: Text(
-                      p.name,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    child: Text(p.name, overflow: TextOverflow.ellipsis),
                   ),
             ],
             onChanged: (name) {
@@ -790,13 +826,17 @@ class _PresetRow extends StatelessWidget {
                           child: ListView.separated(
                             shrinkWrap: true,
                             itemCount: presets.length,
-                            separatorBuilder: (_, _) => const Divider(height: 1),
+                            separatorBuilder: (_, _) =>
+                                const Divider(height: 1),
                             itemBuilder: (_, i) {
                               final item = presets[i];
                               return ListTile(
                                 title: Text(item.name),
                                 subtitle: Text('${item.mode} · ${item.target}'),
-                                trailing: const Icon(Icons.delete_forever_rounded, color: Colors.redAccent),
+                                trailing: const Icon(
+                                  Icons.delete_forever_rounded,
+                                  color: Colors.redAccent,
+                                ),
                                 onTap: () => Navigator.pop(ctx, item),
                               );
                             },
@@ -956,10 +996,7 @@ class _MiniDropdown<T> extends StatelessWidget {
       isExpanded: true,
       decoration: InputDecoration(
         labelText: label,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 8,
-          vertical: 10,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       ),
       items: [
@@ -1007,7 +1044,8 @@ class _ModePreview extends StatelessWidget {
       case 'softsub_dual':
       case 'softsub_translated':
       case 'softsub_original':
-        final effectiveSubColor = (subColor == '#39FF14' || subColor == '#94A3B8')
+        final effectiveSubColor =
+            (subColor == '#39FF14' || subColor == '#94A3B8')
             ? const Color(0xFF94A3B8)
             : _subColor;
 
@@ -1057,16 +1095,25 @@ class _ModePreview extends StatelessWidget {
                 top: 14,
                 right: 14,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF0284C7).withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFF0284C7).withValues(alpha: 0.4)),
+                    border: Border.all(
+                      color: const Color(0xFF0284C7).withValues(alpha: 0.4),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.closed_caption_rounded, size: 16, color: Color(0xFF38BDF8)),
+                      const Icon(
+                        Icons.closed_caption_rounded,
+                        size: 16,
+                        color: Color(0xFF38BDF8),
+                      ),
                       const SizedBox(width: 5),
                       Text(
                         badgeTitle,
@@ -1113,7 +1160,9 @@ class _ModePreview extends StatelessWidget {
                             color: Color(0xFFE2E8F0),
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            shadows: [Shadow(blurRadius: 4, color: Colors.black)],
+                            shadows: [
+                              Shadow(blurRadius: 4, color: Colors.black),
+                            ],
                           ),
                         ),
                     if (showOrig && showTrans) const SizedBox(height: 5),
@@ -1125,7 +1174,9 @@ class _ModePreview extends StatelessWidget {
                           color: effectiveSubColor,
                           fontSize: 13.5,
                           fontWeight: FontWeight.w800,
-                          shadows: const [Shadow(blurRadius: 4, color: Colors.black)],
+                          shadows: const [
+                            Shadow(blurRadius: 4, color: Colors.black),
+                          ],
                         ),
                       ),
                   ],
@@ -1162,16 +1213,25 @@ class _ModePreview extends StatelessWidget {
                 top: 14,
                 right: 14,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF7C3AED).withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFF7C3AED).withValues(alpha: 0.4)),
+                    border: Border.all(
+                      color: const Color(0xFF7C3AED).withValues(alpha: 0.4),
+                    ),
                   ),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.record_voice_over_rounded, size: 15, color: Color(0xFFA78BFA)),
+                      Icon(
+                        Icons.record_voice_over_rounded,
+                        size: 15,
+                        color: Color(0xFFA78BFA),
+                      ),
                       SizedBox(width: 5),
                       Text(
                         'Multi-Audio: 2 trek',
@@ -1193,7 +1253,22 @@ class _ModePreview extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        for (final h in [6.0, 12.0, 20.0, 10.0, 28.0, 18.0, 32.0, 22.0, 14.0, 26.0, 16.0, 30.0, 12.0, 7.0])
+                        for (final h in [
+                          6.0,
+                          12.0,
+                          20.0,
+                          10.0,
+                          28.0,
+                          18.0,
+                          32.0,
+                          22.0,
+                          14.0,
+                          26.0,
+                          16.0,
+                          30.0,
+                          12.0,
+                          7.0,
+                        ])
                           Container(
                             margin: const EdgeInsets.symmetric(horizontal: 2),
                             width: 3.5,
@@ -1211,7 +1286,10 @@ class _ModePreview extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF1A1A1E),
                         borderRadius: BorderRadius.circular(20),
@@ -1220,7 +1298,11 @@ class _ModePreview extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.headphones_rounded, size: 12, color: Color(0xFF94A3B8)),
+                          const Icon(
+                            Icons.headphones_rounded,
+                            size: 12,
+                            color: Color(0xFF94A3B8),
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             'Fon: $duckingPct%',
@@ -1232,9 +1314,19 @@ class _ModePreview extends StatelessWidget {
                           ),
                           const Padding(
                             padding: EdgeInsets.symmetric(horizontal: 6),
-                            child: Text('•', style: TextStyle(color: Color(0xFF475569), fontSize: 10)),
+                            child: Text(
+                              '•',
+                              style: TextStyle(
+                                color: Color(0xFF475569),
+                                fontSize: 10,
+                              ),
+                            ),
                           ),
-                          const Icon(Icons.mic_rounded, size: 12, color: Color(0xFFA78BFA)),
+                          const Icon(
+                            Icons.mic_rounded,
+                            size: 12,
+                            color: Color(0xFFA78BFA),
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             voiceName,

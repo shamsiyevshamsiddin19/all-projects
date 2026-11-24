@@ -8,6 +8,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
 import '../models/studio_media_file.dart';
+import '../services/playback_store.dart';
 import 'document_viewer.dart';
 import 'subtitle_player.dart' show playerAvailable;
 
@@ -488,6 +489,7 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
   double _rate = 1.0;
   bool _isMuted = false;
   double _volumeBeforeMute = 100.0;
+  DateTime? _lastPosSaveTime;
 
   // Subtitr va dublyaj sozlamalari
   bool _subtitlesEnabled = true;
@@ -713,6 +715,18 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
             player.seek(_loopA!);
           }
         }
+
+        // Ko'rish vaqtini davriy ravishda saqlab borish (har 2 soniyada)
+        final now = DateTime.now();
+        if (_lastPosSaveTime == null ||
+            now.difference(_lastPosSaveTime!).inSeconds >= 2) {
+          _lastPosSaveTime = now;
+          PlaybackPositionStore.instance.savePosition(
+            widget.videoPath,
+            pos,
+            duration: _duration,
+          );
+        }
       });
       _durSub = player.stream.duration.listen((dur) {
         if (mounted) setState(() => _duration = dur);
@@ -724,6 +738,11 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
             _startControlsHideTimer();
           } else {
             _showControlsPermanently();
+            PlaybackPositionStore.instance.savePosition(
+              widget.videoPath,
+              _position,
+              duration: _duration,
+            );
           }
         }
       });
@@ -773,10 +792,18 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
     final player = _player;
     if (player == null) return;
     try {
+      final savedPos = await PlaybackPositionStore.instance.getSavedPosition(widget.videoPath);
+
       await player.open(
-        Media(Uri.file(widget.videoPath).toString()),
+        Media(
+          Uri.file(widget.videoPath).toString(),
+          start: savedPos,
+        ),
         play: true,
       );
+      if (savedPos != null && savedPos.inSeconds >= 3) {
+        await player.seek(savedPos);
+      }
       final subPath = _resolvedSubtitlePath ?? _resolveSubtitlePath();
       if (subPath != null) _resolvedSubtitlePath = subPath;
 
@@ -795,6 +822,9 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
           _error = null;
         });
         _focusNode.requestFocus();
+        if (savedPos != null && savedPos.inSeconds >= 3) {
+          _showOSD('Qolgan joyidan davom etilmoqda: ${_formatDuration(savedPos)}', Icons.history_rounded);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -815,6 +845,13 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
     _volumeSub?.cancel();
     _rateSub?.cancel();
     _focusNode.dispose();
+    if (_position.inSeconds >= 3) {
+      PlaybackPositionStore.instance.savePosition(
+        widget.videoPath,
+        _position,
+        duration: _duration,
+      );
+    }
     _player?.dispose();
     super.dispose();
   }
