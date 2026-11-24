@@ -160,7 +160,7 @@ def _today_boost_done(ctx: dict) -> list[str]:
     """
     rows = db.fetch_all(
         """
-        SELECT DISTINCT e.name AS name
+        SELECT e.name AS name
           FROM activity_log a
           JOIN sport_exercises e
             ON lower(translate(trim(e.name), :af, :at))
@@ -168,6 +168,8 @@ def _today_boost_done(ctx: dict) -> list[str]:
          WHERE a.owner_type = :ot AND a.owner_key = :ok
            AND a.section IN ('sport', 'boostday')
            AND a.occurred_at >= CURRENT_DATE
+         GROUP BY e.name
+        HAVING COUNT(*) FILTER (WHERE a.unit != 'undo') > COUNT(*) FILTER (WHERE a.unit = 'undo')
         """,
         {"ot": ctx["owner_type"], "ok": ctx["owner_key"], "pfx": _TIME_PREFIX_SQL,
          "af": _APOS_FROM, "at": _APOS_TO},

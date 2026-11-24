@@ -66,9 +66,9 @@ export function parseTsv(tsv, minConfidence = MIN_CONFIDENCE) {
 }
 
 /**
- * Belgilangan so'zlardan matn yig'adi: bir satr ichi bo'sh joy bilan,
- * satrlar orasi yangi qator bilan. `text-layer.js` ham shu qoidadan
- * foydalanadi, shuning uchun mantiq shu yerda, bitta joyda turadi.
+ * So'zlardan matn yig'adi: bir satr ichi bo'sh joy bilan, satrlar orasi
+ * yangi qator bilan. Shunda ikki satrli subtitr ham o'qiladigan
+ * ko'rinishda chiqadi.
  *
  * @param {object[]} words  o'qish tartibidagi so'zlar
  * @returns {string}

@@ -2,13 +2,13 @@
  * OCR xizmati (Query qatlami — ma'lumot qaytaradi, UI'ga tegmaydi).
  *
  * Ikki vazifa:
- *   1. Qotirilgan kadrni PNG faylga yozish (`composite_to_stream`);
- *   2. Tesseract'ni TSV rejimida chaqirib, har bir so'zning matni va
- *      aniq piksel koordinatasini qaytarish.
+ *   1. Qotirilgan kadrdan BELGILANGAN MAYDONNI kesib PNG faylga yozish
+ *      (`composite_to_stream`);
+ *   2. Tesseract'ni TSV rejimida chaqirib, o'qilgan so'zlarni qaytarish.
  *
- * TSV aynan shu maqsad uchun tanlandi: Live Text uslubidagi belgilash
- * uchun har bir so'zning to'rtburchagi kerak, vision modellar esa matnni
- * yaxshi o'qisa-da koordinatani ishonchli bermaydi.
+ * TSV ishlatiladi (oddiy matn emas): u so'zlarni satr va blok bo'yicha
+ * guruhlaydi hamda har biriga ishonch darajasini beradi, shuning uchun
+ * past ishonchli shovqinni tashlab, satrlarni to'g'ri tiklash mumkin.
  */
 
 import Gio from 'gi://Gio';
@@ -21,19 +21,30 @@ import {parseTsv} from './tsv-parser.js';
 const OCR_TIMEOUT_MS = 15000;
 
 /**
- * Qotirilgan stage teksturasini PNG faylga yozadi.
+ * Sahifani bo'laklash rejimi. 6 = "yagona bir jinsli matn bloki".
  *
- * Muhim: rasm aynan ekranda qotib turgan kadrdan olinadi, qayta
- * suratga olinmaydi — aks holda video siljib ketib, so'z koordinatalari
+ * Foydalanuvchi matn turgan joyni o'zi belgilaydi, ya'ni rasmda bitta
+ * matn bloki bo'ladi. To'liq sahifa avtomatikasi (3) bunday kichik
+ * kesilgan bo'lakda satrlarni noto'g'ri ajratishi mumkin.
+ */
+const OCR_PAGE_SEG_MODE = '6';
+
+/**
+ * Qotirilgan kadrning BELGILANGAN MAYDONINI PNG faylga yozadi.
+ *
+ * Muhim: rasm aynan ekranda qotib turgan kadrdan kesiladi, qayta
+ * suratga olinmaydi — aks holda video siljib ketib, o'qilgan matn
  * ekranda ko'rinayotgan tasvirga mos kelmay qolar edi.
+ *
+ * Faqat maydon kesilgani uchun OCR tez ishlaydi va natijaga ekrandagi
+ * boshqa yozuvlar (sarlavha, tugmalar, ism-sharif) aralashmaydi.
  *
  * @param {Clutter.Content} content  screenshot_stage_to_content natijasi
  * @param {number} scale             shu content'ning masshtabi
- * @param {number} width             stage kengligi (mantiqiy piksel)
- * @param {number} height            stage balandligi (mantiqiy piksel)
+ * @param {{x,y,width,height}} region  kesiladigan maydon (stage koordinatasi)
  * @param {(path: string|null, error: string|null) => void} callback
  */
-export function captureFrozenFrame(content, scale, width, height, callback) {
+export function captureFrozenFrame(content, scale, region, callback) {
     let texture;
     try {
         texture = content.get_texture();
@@ -57,9 +68,11 @@ export function captureFrozenFrame(content, scale, width, height, callback) {
     }
 
     // Kursor teksturasi berilmaydi (null): sichqoncha ko'rsatkichi OCR'ni chalg'itmasin.
+    // x/y/w/h stage koordinatasida beriladi, `scale` ni funksiyaning o'zi
+    // qo'llaydi — shuning uchun bu yerda qo'lda masshtablash kerak emas.
     Shell.Screenshot.composite_to_stream(
         texture,
-        0, 0, width, height, scale,
+        region.x, region.y, region.width, region.height, scale,
         null, 0, 0, 1,
         stream,
         (obj, res) => {
@@ -127,7 +140,7 @@ export function recognizeWords(path, languages, callback, cancellable) {
     let proc;
     try {
         proc = Gio.Subprocess.new(
-            ['tesseract', path, 'stdout', '-l', languages, '--psm', '3', 'tsv'],
+            ['tesseract', path, 'stdout', '-l', languages, '--psm', OCR_PAGE_SEG_MODE, 'tsv'],
             Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE);
     } catch (e) {
         callback([], `Tesseract ishga tushmadi: ${e.message}`);

@@ -585,3 +585,27 @@ DO $$ BEGIN
         CHECK (question_count >= 0);
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
+-- ============================================================================
+-- APPEND-ONLY AUDIT JURNALI HIMOYASI — Konstitutsiya §4 & A-05
+-- ============================================================================
+-- activity_log audit jadvalidan hard DELETE qilishni taqiqlovchi trigger.
+-- Barcha bekor qilishlar qarama-qarshi yozuv (compensating / undo) orqali kiritiladi.
+CREATE OR REPLACE FUNCTION prevent_activity_log_delete()
+RETURNS TRIGGER AS $$
+BEGIN
+    RAISE EXCEPTION 'activity_log jadvalidan yozuvlarni o''chirish taqiqlangan! Compensating entry (undo) ishlating.';
+END;
+$$ LANGUAGE plpgsql;
+
+DO $$ BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_trigger WHERE tgname = 'trg_prevent_activity_log_delete'
+    ) THEN
+        CREATE TRIGGER trg_prevent_activity_log_delete
+        BEFORE DELETE ON activity_log
+        FOR EACH ROW
+        EXECUTE FUNCTION prevent_activity_log_delete();
+    END IF;
+END $$;
+
+

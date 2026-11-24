@@ -92,14 +92,11 @@ def log_activity(request: Request, body: dict):
 def unlog_activity(request: Request, body: dict):
     """Bugungi yozuvni BEKOR qiladi (belgilashni olib tashlash).
 
-    Nega kerak: Sport bo'limi "bugun bajarilganmi" degan savolga qisman
-    `activity_log` orqali javob beradi (Telegramdan belgilangani ham
-    hisobga olinsin deb). Yozuvni o'chirish yo'li bo'lmagani uchun bir
-    marta belgilangan mashqni QAYTA OLIB BO'LMASDI — mahalliy ro'yxatdan
-    o'chirilsa ham server yozuvi uni "bajarilgan" deb ko'rsataverardi.
-
-    Nom taqqoslash `sport.py` dagi qoida bilan bir xil: vaqt prefiksi
-    olib tashlanadi, apostrof turlari birxillashtiriladi.
+    A-05: Konstitutsiya §4 va Ustun 5 talabiga ko'ra audit jadvalidan hard DELETE
+    qilish taqiqlanadi (Append-only Ledger). O'chirish o'rniga qarama-qarshi
+    yozuv (compensating entry: unit='undo', meta='{"undo": true}') qo'shiladi.
+    Tarix to'liq saqlanadi, o'qish so'rovlari (get_activity_log va sport._today_boost_done)
+    esa juftlangan undo'larni SQL darajasida chiqarib tashlaydi.
     """
     section = s(body.get("section")).lower()
     if section not in ALLOWED_SECTIONS:
@@ -109,51 +106,91 @@ def unlog_activity(request: Request, body: dict):
         raise ApiError("Nomi berilmadi.", 422)
 
     ctx = owner_context(request)
-    # Sport uchun Boostday orqali yozilgan (vaqt prefiksli) yozuvlar ham o'chadi
-    if section == "sport":
-        from .sport import _TIME_PREFIX_SQL, _APOS_FROM, _APOS_TO
-        n = db.execute(
-            "DELETE FROM activity_log WHERE owner_type = :ot AND owner_key = :ok "
-            "AND section IN ('sport', 'boostday') AND occurred_at >= CURRENT_DATE "
-            "AND lower(translate(trim(regexp_replace(object_name, :pfx, '')), :af, :at)) "
-            "  = lower(translate(trim(:obj), :af, :at))",
-            {"ot": ctx["owner_type"], "ok": ctx["owner_key"], "obj": obj,
-             "pfx": _TIME_PREFIX_SQL, "af": _APOS_FROM, "at": _APOS_TO},
-        )
-    else:
-        n = db.execute(
-            "DELETE FROM activity_log WHERE owner_type = :ot AND owner_key = :ok "
-            "AND section = :sec AND object_name = :obj AND occurred_at >= CURRENT_DATE",
-            {"ot": ctx["owner_type"], "ok": ctx["owner_key"], "sec": section, "obj": obj[:255]},
-        )
-    return success({"removed": n if isinstance(n, int) else None})
+    meta_val = json.dumps({"undo": True}, ensure_ascii=False)
+    db.execute(
+        "INSERT INTO activity_log (owner_type, owner_key, section, object_name, amount, unit, duration_seconds, meta) "
+        "VALUES (:ot, :ok, :sec, :obj, NULL, :unit, NULL, :meta)",
+        {
+            "ot": ctx["owner_type"],
+            "ok": ctx["owner_key"],
+            "sec": section,
+            "obj": obj[:255],
+            "unit": "undo",
+            "meta": meta_val,
+        },
+    )
+    return success({"removed": 1})
 
 
 def get_activity_log(request: Request, body: dict, date_from: str, date_to: str, section: str):
+    """Faoliyat jurnalini o'qiydi.
+
+    A-05: Append-only ledgerdagi juftlangan undo yozuvlari SQL darajasida (CTE orqali)
+    chiqarib tashlanadi — Python siklida $O(N)$ sarflanmaydi.
+    """
     ctx = owner_context(request)
-    sql = (
-        "SELECT section, object_name, amount, unit, duration_seconds, meta, occurred_at "
-        "FROM activity_log WHERE owner_type = :ot AND owner_key = :ok"
-    )
     params: dict = {"ot": ctx["owner_type"], "ok": ctx["owner_key"]}
 
     date_from = (date_from or "").strip()
     date_to = (date_to or "").strip()
     section = (section or "").strip().lower()
 
+    date_filter = ""
     if date_from:
-        sql += " AND occurred_at >= :df"
+        date_filter += " AND a.occurred_at >= :df"
         params["df"] = date_from
     if date_to:
-        # CAST(...) ishlatiladi, `:dt::date` EMAS — SQLAlchemy `::` dan oldingi
-        # nomli parametrni bog'lamaydi va so'rov sintaksis xatosi bilan yiqiladi.
-        sql += " AND occurred_at < (CAST(:dt AS date) + INTERVAL '1 day')"
+        date_filter += " AND a.occurred_at < (CAST(:dt AS date) + INTERVAL '1 day')"
         params["dt"] = date_to
-    if section:
-        sql += " AND section = :sec"
-        params["sec"] = section
 
-    sql += " ORDER BY occurred_at DESC LIMIT 3000"
+    sec_filter = ""
+    if section:
+        if section == "sport":
+            sec_filter = " AND a.section IN ('sport', 'boostday')"
+        else:
+            sec_filter = " AND a.section = :sec"
+            params["sec"] = section
+
+    sql = f"""
+        WITH undos AS (
+            SELECT owner_type, owner_key,
+                   CASE WHEN section IN ('sport', 'boostday') THEN 'sport' ELSE section END AS norm_sec,
+                   lower(translate(trim(regexp_replace(object_name, '^[0-2]?[0-9]:[0-5][0-9]\\\\s*', '')), 'ʻ’`', '''''')) AS norm_obj,
+                   CAST(occurred_at AS date) AS log_date,
+                   COUNT(*) AS undo_count
+            FROM activity_log
+            WHERE owner_type = :ot AND owner_key = :ok AND unit = 'undo'
+            GROUP BY owner_type, owner_key, norm_sec, norm_obj, log_date
+        ),
+        ranked_positives AS (
+            SELECT a.*,
+                   CASE WHEN a.section IN ('sport', 'boostday') THEN 'sport' ELSE a.section END AS norm_sec,
+                   lower(translate(trim(regexp_replace(a.object_name, '^[0-2]?[0-9]:[0-5][0-9]\\\\s*', '')), 'ʻ’`', '''''')) AS norm_obj,
+                   CAST(a.occurred_at AS date) AS log_date,
+                   ROW_NUMBER() OVER (
+                       PARTITION BY a.owner_type, a.owner_key,
+                                    CASE WHEN a.section IN ('sport', 'boostday') THEN 'sport' ELSE a.section END,
+                                    lower(translate(trim(regexp_replace(a.object_name, '^[0-2]?[0-9]:[0-5][0-9]\\\\s*', '')), 'ʻ’`', '''''')),
+                                    CAST(a.occurred_at AS date)
+                       ORDER BY a.occurred_at ASC, a.id ASC
+                   ) AS rn
+            FROM activity_log a
+            WHERE a.owner_type = :ot AND a.owner_key = :ok AND a.unit != 'undo'
+              {date_filter}
+              {sec_filter}
+        )
+        SELECT rp.section, rp.object_name, rp.amount, rp.unit, rp.duration_seconds, rp.meta, rp.occurred_at
+        FROM ranked_positives rp
+        LEFT JOIN undos u
+          ON u.owner_type = rp.owner_type
+         AND u.owner_key = rp.owner_key
+         AND u.norm_sec = rp.norm_sec
+         AND u.norm_obj = rp.norm_obj
+         AND u.log_date = rp.log_date
+        WHERE rp.rn > COALESCE(u.undo_count, 0)
+        ORDER BY rp.occurred_at DESC
+        LIMIT 3000
+    """
     rows = db.fetch_all(sql, params)
     items = [
         {

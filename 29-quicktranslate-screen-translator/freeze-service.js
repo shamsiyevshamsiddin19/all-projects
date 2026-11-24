@@ -1,13 +1,18 @@
 /**
- * Ekranni qotirish va matn ajratish overlayi (Facade — quyi xizmatlarni
- * bitta qulay interfeys ostiga yashiradi).
+ * Ekranni qotirish va maydondan matn o'qish overlayi
+ * (Facade — quyi xizmatlarni bitta qulay interfeys ostiga yashiradi).
  *
  * Ketma-ketlik:
  *   1. Stage tasviri teksturaga olinadi va ekran ustiga qo'yiladi — ekran "qotadi";
  *   2. O'ynayotgan media MPRIS orqali pauzaga tushadi;
- *   3. Shu qotgan kadr PNG'ga yozilib Tesseract'ga beriladi;
- *   4. So'z to'rtburchaklari ustiga Live Text belgilash qatlami qo'yiladi;
- *   5. Esc — overlay yopiladi, media davom etadi, vaqtinchalik rasm o'chiriladi.
+ *   3. Foydalanuvchi sichqoncha bilan MAYDON belgilaydi;
+ *   4. Faqat o'sha maydon PNG'ga kesilib Tesseract'ga beriladi;
+ *   5. Matn topilsa "Nusxalash" va "Tarjima qil" tugmalari chiqadi;
+ *   6. Esc — overlay yopiladi, media davom etadi, vaqtinchalik rasm o'chiriladi.
+ *
+ * Nega butun ekran emas, maydon: butun ekran o'qilganda sarlavha, aktyor
+ * ismlari va boshqa interfeys matni natijaga aralashib ketardi, ustiga
+ * 1920x1080 ni o'qish sekin edi.
  *
  * Tarjima xizmatiga bog'lanmaydi: tarjima `onTranslate` callback'i orqali
  * tashqaridan beriladi (Dependency Inversion) — shuning uchun bu modulni
@@ -22,10 +27,11 @@ import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-import {TextSelectionLayer} from './text-layer.js';
+import {RegionSelector} from './region-selector.js';
 import {MediaPauseService} from './media-service.js';
 import {captureFrozenFrame, deleteFrame, recognizeWords} from './ocr-service.js';
 import {GlowOverlay} from './glow-overlay.js';
+import {joinWords} from './tsv-parser.js';
 
 const PILL_STYLE =
     'background-color: rgba(0,0,0,0.80); color: #ffffff; ' +
@@ -39,7 +45,7 @@ const BUTTON_STYLE =
     'background-color: rgba(255,255,255,0.12); color: #ffffff; ' +
     'border-radius: 7px; padding: 7px 14px; font-size: 13px;';
 
-/** Amal paneli belgilangan matndan shu qadar px pastda turadi. */
+/** Amal paneli belgilangan maydondan shu qadar px pastda turadi. */
 const BAR_GAP = 10;
 
 export class FreezeOverlay {
@@ -63,13 +69,16 @@ export class FreezeOverlay {
     _reset() {
         this._container = null;
         this._grab = null;
-        this._textLayer = null;
+        this._selector = null;
         this._pill = null;
         this._bar = null;
         this._framePath = null;
         this._cancellable = null;
         this._pillTimeoutId = 0;
         this._glow = null;
+        this._content = null;
+        this._scale = 1;
+        this._recognizedText = '';
     }
 
     /**
@@ -168,6 +177,8 @@ export class FreezeOverlay {
     _build(content, scale) {
         const width = global.stage.width;
         const height = global.stage.height;
+        this._content = content;
+        this._scale = scale;
 
         this._container = new St.Widget({
             reactive: true,
@@ -183,9 +194,16 @@ export class FreezeOverlay {
         frozen.set_content(content);
         this._container.add_child(frozen);
 
+        this._selector = new RegionSelector(width, height);
+        this._container.add_child(this._selector);
+        this._selector.connect('region-selected', () => this._onRegionSelected());
+
         // Rejimga kirilgani ko'rinib turishi uchun chetdagi gradient halqa.
-        if (this._getGlowEnabled())
+        if (this._getGlowEnabled()) {
             this._glow = new GlowOverlay(this._container, width, height);
+            // Hali hech narsa o'qilmayapti — maydon kutilmoqda.
+            this._glow.setState('ready');
+        }
 
         Main.layoutManager.addTopChrome(this._container);
 
@@ -203,21 +221,40 @@ export class FreezeOverlay {
             return Clutter.EVENT_PROPAGATE;
         });
 
+        try {
+            global.display.set_cursor(Meta.Cursor.CROSSHAIR);
+        } catch (e) {
+            // Kursor shakli muhim emas — tanlash shundoq ham ishlaydi.
+        }
+
         this._media.pausePlaying();
-        this._showPill("Matn o'qilmoqda…");
-        this._startOcr(content, scale, width, height);
+        this._showPill('Matn turgan joyni sichqoncha bilan belgilang');
     }
 
-    _startOcr(content, scale, width, height) {
+    /** Maydon tanlandi — faqat o'sha bo'lakni o'qiymiz. */
+    _onRegionSelected() {
+        const region = this._selector?.lastRegion;
+        if (!region)
+            return;
+
+        this._bar?.hide();
+        this._recognizedText = '';
+        this._selector.setEnabled(false);
+        this._glow?.setState('reading');
+        this._showPill('O‘qilmoqda…');
+        this._runOcr(region);
+    }
+
+    _runOcr(region) {
+        this._cancellable?.cancel();
         this._cancellable = new Gio.Cancellable();
         const cancellable = this._cancellable;
 
-        captureFrozenFrame(content, scale, width, height, (path, captureError) => {
+        captureFrozenFrame(this._content, this._scale, region, (path, captureError) => {
             if (cancellable.is_cancelled() || !this.isOpen)
                 return;
             if (captureError) {
-                this._glow?.setState('error');
-                this._showPill(captureError);
+                this._failed(captureError);
                 return;
             }
 
@@ -229,53 +266,35 @@ export class FreezeOverlay {
                 if (cancellable.is_cancelled() || !this.isOpen)
                     return;
                 if (ocrError) {
-                    this._glow?.setState('error');
-                    this._showPill(ocrError);
+                    this._failed(ocrError);
                     return;
                 }
-                this._attachTextLayer(words, scale, width, height);
+
+                const text = joinWords(words);
+                if (!text) {
+                    this._failed('Bu maydonda matn topilmadi — boshqa joyni belgilang.');
+                    return;
+                }
+
+                this._recognizedText = text;
+                this._selector.setEnabled(true);
+                this._glow?.setState('ready');
+                this._showPill(`${words.length} so‘z o‘qildi`);
+                this._hidePillLater();
+                this._showBar(region);
             }, cancellable);
         });
     }
 
-    _attachTextLayer(words, scale, width, height) {
-        if (words.length === 0) {
-            this._glow?.setState('error');
-            this._showPill('Matn topilmadi. Esc — chiqish.');
-            return;
-        }
-
-        this._textLayer = new TextSelectionLayer(words, scale);
-        this._textLayer.set_position(0, 0);
-        this._textLayer.set_size(width, height);
-        this._container.add_child(this._textLayer);
-        this._textLayer.connect('selection-changed', () => this._onSelectionChanged());
-
-        // Matn qatlami halqani bosib qolmasligi uchun halqa ustga ko'tariladi.
-        // Amal paneli esa keyin qo'shiladi, shuning uchun u halqadan ustda bo'ladi.
-        this._glow?.raiseTop();
-        this._glow?.setState('ready');
-
-        try {
-            global.display.set_cursor(Meta.Cursor.IBEAM);
-        } catch (e) {
-            // Muhim emas — belgilash shundoq ham ishlaydi.
-        }
-
-        this._showPill(`${words.length} so'z topildi — sudrab belgilang`);
-        this._hidePillLater();
+    /** O'qish muvaffaqiyatsiz: sabab ko'rsatiladi, yangi tanlovga ruxsat beriladi. */
+    _failed(message) {
+        this._recognizedText = '';
+        this._selector?.setEnabled(true);
+        this._glow?.setState('error');
+        this._showPill(message);
     }
 
-    _onSelectionChanged() {
-        const text = this._textLayer?.getSelectedText() ?? '';
-        if (!text) {
-            this._bar?.hide();
-            return;
-        }
-        this._showBar(this._textLayer.getSelectionBounds());
-    }
-
-    _showBar(bounds) {
+    _showBar(region) {
         if (!this._bar) {
             this._bar = new St.BoxLayout({style: BAR_STYLE, vertical: false});
 
@@ -285,7 +304,7 @@ export class FreezeOverlay {
                 can_focus: true,
             });
             copyButton.connect('clicked', () => {
-                this._copySelection();
+                this._copyRecognized();
                 this.close();
             });
 
@@ -295,7 +314,7 @@ export class FreezeOverlay {
                 can_focus: true,
             });
             translateButton.connect('clicked', () => {
-                const text = this._textLayer?.getSelectedText() ?? '';
+                const text = this._recognizedText;
                 if (!text) {
                     this.close();
                     return;
@@ -311,27 +330,28 @@ export class FreezeOverlay {
             this._container.add_child(this._bar);
         }
 
+        // Panel halqadan ustda turishi uchun qayta ko'tariladi.
+        this._container.set_child_above_sibling(this._bar, null);
         this._bar.show();
-        if (!bounds)
+        if (!region)
             return;
 
-        // Panelni belgilangan matn ostiga, ekran chegarasidan chiqmaydigan qilib qo'yamiz.
+        // Panelni maydon ostiga, ekran chegarasidan chiqmaydigan qilib qo'yamiz.
         const [, barWidth] = this._bar.get_preferred_width(-1);
         const [, barHeight] = this._bar.get_preferred_height(-1);
-        let x = bounds.x + bounds.width / 2 - barWidth / 2;
-        let y = bounds.y + bounds.height + BAR_GAP;
+        let x = region.x + region.width / 2 - barWidth / 2;
+        let y = region.y + region.height + BAR_GAP;
 
         x = Math.max(BAR_GAP, Math.min(x, global.stage.width - barWidth - BAR_GAP));
         if (y + barHeight > global.stage.height - BAR_GAP)
-            y = Math.max(BAR_GAP, bounds.y - barHeight - BAR_GAP);
+            y = Math.max(BAR_GAP, region.y - barHeight - BAR_GAP);
 
         this._bar.set_position(Math.round(x), Math.round(y));
     }
 
-    _copySelection() {
-        const text = this._textLayer?.getSelectedText() ?? '';
-        if (text)
-            St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, text);
+    _copyRecognized() {
+        if (this._recognizedText)
+            St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, this._recognizedText);
     }
 
     _showPill(message) {
@@ -339,6 +359,8 @@ export class FreezeOverlay {
             this._pill = new St.Label({style: PILL_STYLE});
             this._container.add_child(this._pill);
         }
+        this._cancelPillTimeout();
+        this._container.set_child_above_sibling(this._pill, null);
         this._pill.set_text(message);
         this._pill.show();
 
@@ -365,12 +387,12 @@ export class FreezeOverlay {
             return Clutter.EVENT_STOP;
         }
         if (ctrl && (symbol === Clutter.KEY_c || symbol === Clutter.KEY_C)) {
-            this._copySelection();
+            this._copyRecognized();
             this.close();
             return Clutter.EVENT_STOP;
         }
         if (ctrl && (symbol === Clutter.KEY_a || symbol === Clutter.KEY_A)) {
-            this._textLayer?.selectAll();
+            this._selector?.selectAll();
             return Clutter.EVENT_STOP;
         }
         return Clutter.EVENT_PROPAGATE;

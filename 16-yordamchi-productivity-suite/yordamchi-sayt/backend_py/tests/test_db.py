@@ -82,9 +82,8 @@ def test_schema_sql_parses_all_do_blocks():
     stmts = _split_statements(sql)
     assert len(stmts) > 70
     do_blocks = [s for s in stmts if s.startswith("DO $$")]
-    assert len(do_blocks) == 12
+    assert len(do_blocks) == 13
     for b in do_blocks:
         assert b.endswith("END $$")
-        assert "ALTER TABLE" in b
-        assert "ADD CONSTRAINT" in b
+        assert "ADD CONSTRAINT" in b or "CREATE TRIGGER" in b
 
