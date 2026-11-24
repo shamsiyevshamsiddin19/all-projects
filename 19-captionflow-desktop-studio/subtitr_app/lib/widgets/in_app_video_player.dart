@@ -682,7 +682,11 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
 
   Future<void> _initPlayer() async {
     try {
-      final player = Player();
+      final player = Player(
+        configuration: const PlayerConfiguration(
+          libass: true,
+        ),
+      );
       final video = VideoController(player);
 
       _tracksSub = player.stream.tracks.listen((tracks) {
@@ -730,13 +734,11 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
         if (mounted) setState(() => _rate = r);
       });
 
-      // 150% ovoz kuchaytirgich limitini ochish + subtitr ko'rsatishni yoqish
+      // 150% ovoz kuchaytirgich limitini ochish
       try {
         if (player.platform is NativePlayer) {
           final np = player.platform as NativePlayer;
           await np.setProperty('volume-max', '150.0');
-          await np.setProperty('blend-subtitles', 'no');
-          await np.setProperty('sub-visibility', 'yes');
         }
       } catch (_) {}
 
@@ -1874,6 +1876,7 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
           controller: _video!,
           controls: NoVideoControls,
           fit: mode.boxFit,
+          subtitleViewConfiguration: const SubtitleViewConfiguration(visible: false),
         ),
       );
     }
@@ -1882,6 +1885,7 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
       controller: _video!,
       controls: NoVideoControls,
       fit: mode.boxFit,
+      subtitleViewConfiguration: const SubtitleViewConfiguration(visible: false),
     );
   }
 
