@@ -462,23 +462,32 @@ Tartib **xatar × mehnat** bo'yicha, konstitutsiyaning 5 bosqichiga moslangan.
 
 ### 1-to'lqin — poydevor (1-2 kun, eng katta foyda)
 
-| № | Ish | Nega birinchi |
-|:-:|---|---|
-| 1 | **A-07** → `security.py` ga yagona `require_admin()`, 6 nusxani almashtirish | A-08 ni 3 qatorga aylantiradi |
-| 2 | **A-08** → `yordamchi.security` logger + har rad etishni yozish | Buzilishni ko'rish imkoniyati paydo bo'ladi |
-| 3 | **A-06** → `REQUIRE_AUTH=True`, `AUTH_MODE="google"` standart | Bir qatorlik o'zgarish, yashirin xavfni yopadi |
-| 4 | **A-15** → `yordamchi.conf` ga CSP (RadioGlobe'dan ko'chirib) | 358 `innerHTML` uchun ikkinchi himoya qatlami |
-| 5 | **A-01** → `quality.yml` ni haqiqiy qilish (`node tests/run.js` dan boshlab) | Yolg'on signal to'xtaydi |
+| № | Ish | Nega birinchi | Holat |
+|:-:|---|---|:-:|
+| 1 | **A-07** → `security.py` ga yagona `require_admin()`, 6 nusxani almashtirish | A-08 ni 3 qatorga aylantiradi | ✅ Bajarildi (`05bf77f`) |
+| 2 | **A-08** → `yordamchi.security` logger + har rad etishni yozish | Buzilishni ko'rish imkoniyati paydo bo'ladi | ✅ Bajarildi (`05bf77f`) |
+| 3 | **A-06** → `REQUIRE_AUTH=True`, `AUTH_MODE="google"` standart | Bir qatorlik o'zgarish, yashirin xavfni yopadi | ✅ Bajarildi (`df26848`) |
+| 4 | **A-15** → `yordamchi.conf` ga CSP (RadioGlobe'dan ko'chirib) | 358 `innerHTML` uchun ikkinchi himoya qatlami | ⏸ Server qaytishini kutmoqda |
+| 5 | **A-01** → `quality.yml` ni haqiqiy qilish (`node tests/run.js` dan boshlab) | Yolg'on signal to'xtaydi | ✅ Bajarildi (`ee2e06c`) |
 
 ### 2-to'lqin — yaxlitlik (2-3 kun)
 
-| № | Ish |
-|:-:|---|
-| 6 | **A-04** → eng muhim 10-15 maydonga `CHECK` (`activity_log`, `quiz_progress`, `sport_exercises`) |
-| 7 | **A-09** → `set_flag` ni `tx()` + `FOR UPDATE` ga o'tkazish (ma'lumot yo'qolishi to'xtaydi) |
-| 8 | **A-10** → `toggle_goal` ni deklarativ bitta `UPDATE` ga aylantirish |
-| 9 | **A-05** → `unlog_activity` ni DELETE'dan compensating-entry'ga o'tkazish |
-| 10 | **A-03** → login/request hisobini bazaga chiqarish (`idempotency_keys` uslubida) |
+| № | Ish | Holat |
+|:-:|---|:-:|
+| 6 | **A-04** → eng muhim 10-15 maydonga `CHECK` (`activity_log`, `quiz_progress`, `sport_exercises`) | ✅ Bajarildi (`a77b630`) |
+| 7 | **A-09** → `set_flag` ni `tx()` + `FOR UPDATE` ga o'tkazish (ma'lumot yo'qolishi to'xtaydi) | ✅ Bajarildi (`b5b2ac9`) |
+| 8 | **A-10** → `toggle_goal` ni deklarativ bitta `UPDATE` ga aylantirish | ✅ Bajarildi (`f27ee90`) |
+| 9 | **A-05** → `unlog_activity` ni DELETE'dan compensating-entry'ga o'tkazish | ✅ Bajarildi (`171c89b`) |
+| 10 | **A-03** → login/request hisobini bazaga chiqarish (`idempotency_keys` uslubida) | ✅ Bajarildi (`e1d864d`) |
+
+### 2-to'lqin ijrosi hisoboti (2026-11-24):
+- **A-01:** CI workflow (`quality.yml`) haqiqiy qilindi — push va PR da `paths:` filtri bilan frontend (Node.js 635 test) va backend (Python 3.12 50 test) avtomatlashtirildi.
+- **A-04:** `schema.sql` ga 12 ta idempotent CHECK cheklovi qo'shildi; `db.py:_split_statements` dollar-quote bloklarini (`$$...$$`) butun saqlaydigan qilib kengaytirildi va testlandi.
+- **A-09:** `quiz.py:set_flag` poyga holati yo'qotildi: dastlabki `SELECT` olib tashlandi, shart to'liq SQL darajasida va bitta `db.tx()` tranzaksiyasida atomik bajariladigan qilindi.
+- **A-10:** `goals.py:toggle_goal` poygasi yo'qotildi: o'qish va yozish bitta CTE so'roviga birlashtirilib, `FOR UPDATE` bilan qulflandi; bir xil nomli maqsadlar birga yangilanishi saqlandi.
+- **A-05:** `activity_log` to'liq append-only audit daftariga aylantirildi. Hard DELETE o'rniga `unit='undo'` compensating yozuv kiritiladi; `get_activity_log` va `sport._today_boost_done` juftlangan undo'larni SQL darajasida chiqarib tashlaydi; `schema.sql` ga DELETE ni taqiqlovchi trigger yozildi.
+- **A-03:** `security.py` dagi global mutable xotira (`_login_attempts`, `_req_hits`) PostgreSQL dagi `rate_limit_hits` jadvaliga chiqarildi; workerlar soni va restartlar cheklovga ta'sir qilmaydi.
+- Jami backend testlari **28 tadan 50 taga** yetkazildi, barcha testlar (50 backend + 635 frontend) 100% yashil.
 
 ### 3-to'lqin — intizom (davomiy)
 
