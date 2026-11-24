@@ -15,23 +15,18 @@
        qo'yadi. Ilgari bu yerda `?v=` bilan fayl yo'li turardi va u YANGILANMASDI —
        brauzer o'sha manzil ostidagi ESKI keshlangan rasmni chizib, keyin JS yangisiga
        almashtirardi (ochilishdagi "eski logo -> yangi logo" miltillashi shundan edi). -->
-  <link rel="icon" data-app-icon href="assets/icons/app-icon.png">
   <!-- Brauzer tab ikonkasi — "sh" monogrammasi, vektor.
-       `data-app-icon` ATAYLAB YO'Q: yuqoridagi inline skript barcha
-       `[data-app-icon]` larni foydalanuvchi yuklagan PNG ga almashtiradi, bu esa
-       SVG ni ham bosib ketardi. Tab ikonkasi doim shu monogramma bo'lib qolsin.
-       Ilova/PWA belgisi (splash, apple-touch, manifest) tegilmagan — u Yordamchi
-       brendi bo'lib qoladi va maskable bo'lishi shart (shaffof glif u yerga yaramaydi).
        SVG tab'ning yorug'/qorong'u rejimiga moslashadi (ichida prefers-color-scheme),
        .ico esa SVG ni qo'llamaydigan eski brauzerlar uchun zaxira. -->
-  <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg?v=20261124-091401">
-  <link rel="alternate icon" type="image/x-icon" href="assets/icons/favicon.ico?v=20261124-091401">
-  <link rel="manifest" href="manifest.webmanifest?v=20261124-091842">
+  <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg?v=20261124-095600">
+  <link rel="alternate icon" type="image/x-icon" href="assets/icons/favicon.ico?v=20261124-095600">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/custom-app-icon-192.png?v=20261124-095600">
+  <link rel="manifest" href="manifest.webmanifest?v=20261124-095600">
   <meta name="theme-color" content="#1a1a1a">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Yordamchi">
-  <link rel="apple-touch-icon" data-app-icon href="assets/icons/app-icon.png">
+  <link rel="apple-touch-icon" data-app-icon href="assets/icons/apple-touch-icon.png?v=20261124-095600">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/app.css?v=20261124-091842">
@@ -47,7 +42,7 @@
   <style>
     #splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);transition:opacity .3s}
     #splash.gone{opacity:0;pointer-events:none}
-    #splash img{width:84px;height:84px;border-radius:22px;object-fit:cover;animation:sp 1.4s ease-in-out infinite}
+    #splash img{width:84px;height:84px;border-radius:24px;object-fit:cover;animation:sp 1.4s ease-in-out infinite;box-shadow:0 12px 32px rgba(0,0,0,0.38);border:1px solid var(--border-soft)}
     #splash span{margin-top:16px;font-size:12px;font-weight:800;letter-spacing:4px;color:var(--hint);text-transform:uppercase}
     @keyframes sp{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.07);opacity:.85}}
   </style>
