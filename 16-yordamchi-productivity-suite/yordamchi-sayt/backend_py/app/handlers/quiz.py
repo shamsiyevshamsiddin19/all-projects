@@ -252,18 +252,36 @@ def set_flag(request: Request, body: dict, db_name: str):
         raise ApiError("Savol ID kelmadi.")
 
     ctx = owner_context(request)
-    existing = db.fetch_one(
-        "SELECT id, is_solved FROM quiz_progress "
-        "WHERE base_id = :b AND question_id = :q AND owner_type = :ot AND owner_key = :ok LIMIT 1",
-        {"b": base["id"], "q": question_id, "ot": ctx["owner_type"], "ok": ctx["owner_key"]},
-    )
+    params = {
+        "b": base["id"],
+        "q": question_id,
+        "ot": ctx["owner_type"],
+        "ok": ctx["owner_key"],
+    }
 
-    if flag_type == "" or flag_type == "none":
-        if existing:
-            if int(existing["is_solved"]) == 1:
-                db.execute("UPDATE quiz_progress SET flag_type = '' WHERE id = :id", {"id": existing["id"]})
-            else:
-                db.execute("DELETE FROM quiz_progress WHERE id = :id", {"id": existing["id"]})
+    if flag_type in ("", "none"):
+        # A-09: Poyga holatidan (Lost Update / tasodifiy DELETE) himoya.
+        # Ilgari SELECT qilinib, keyin Python'da is_solved tekshirilardi. Ikki alohida
+        # so'rov orasida `mark_solved` kelsa, eski SELECT ga ishonib yechilgan savol
+        # bazadan DELETE qilib yuborilardi.
+        # Endi o'qish yo'q — shart to'liq SQL darajasida va bitta tx() tranzaksiyasida:
+        with db.tx() as conn:
+            conn.execute(
+                text(
+                    "UPDATE quiz_progress SET flag_type = '', updated_at = CURRENT_TIMESTAMP "
+                    "WHERE base_id = :b AND question_id = :q AND owner_type = :ot AND owner_key = :ok "
+                    "AND is_solved = 1"
+                ),
+                params,
+            )
+            conn.execute(
+                text(
+                    "DELETE FROM quiz_progress "
+                    "WHERE base_id = :b AND question_id = :q AND owner_type = :ot AND owner_key = :ok "
+                    "AND is_solved = 0"
+                ),
+                params,
+            )
         return success()
 
     db.execute(
@@ -271,7 +289,7 @@ def set_flag(request: Request, body: dict, db_name: str):
         "VALUES (:b, :q, :ot, :ok, 0, :ft) "
         "ON CONFLICT (base_id, question_id, owner_type, owner_key) "
         "DO UPDATE SET flag_type = EXCLUDED.flag_type, updated_at = CURRENT_TIMESTAMP",
-        {"b": base["id"], "q": question_id, "ot": ctx["owner_type"], "ok": ctx["owner_key"], "ft": flag_type},
+        {**params, "ft": flag_type},
     )
     return success()
 
