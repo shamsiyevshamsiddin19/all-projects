@@ -451,11 +451,11 @@ void main() {
     expect(find.textContaining("Shrift o'lchami"), findsOneWidget);
     expect(find.textContaining("Subtitr uslubi"), findsOneWidget);
     expect(find.textContaining("Joylashuv"), findsOneWidget);
-    expect(find.text("Kristall Oq (Konturli)"), findsOneWidget);
-    expect(find.text("Kino Sariq (Netflix)"), findsOneWidget);
+    expect(find.text("Tiniq Oq (Toza, Kontursiz)"), findsOneWidget);
+    expect(find.text("Kino Sariq (Tiniq)"), findsOneWidget);
 
     // Tap on Cinema Yellow theme
-    await tester.tap(find.text("Kino Sariq (Netflix)"));
+    await tester.tap(find.text("Kino Sariq (Tiniq)"));
     await tester.pump();
 
     // Close dialog

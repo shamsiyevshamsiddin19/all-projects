@@ -429,26 +429,41 @@ class _EmbeddedVideoPlayerState extends State<EmbeddedVideoPlayer> {
 enum StudioSubtitleTheme {
   crystalWhite(
     id: 'crystal_white',
-    label: "Kristall Oq (Konturli)",
+    label: "Tiniq Oq (Toza, Kontursiz)",
     textColor: "#FFFFFF",
     borderColor: "#000000",
-    borderSize: 3.6,
+    borderSize: 0.0,
     backColor: "#00000000",
-    shadowOffset: 2.0,
+    shadowOffset: 1.2,
+    shadowColor: "#60000000",
     icon: Icons.contrast_rounded,
     badgeColor: Colors.white,
     overrideMode: 'strip',
   ),
   cinemaYellow(
     id: 'cinema_yellow',
-    label: "Kino Sariq (Netflix)",
+    label: "Kino Sariq (Tiniq)",
     textColor: "#FFE600",
     borderColor: "#000000",
-    borderSize: 3.6,
+    borderSize: 0.0,
     backColor: "#00000000",
-    shadowOffset: 2.0,
+    shadowOffset: 1.2,
+    shadowColor: "#60000000",
     icon: Icons.star_rounded,
     badgeColor: Color(0xFFFFD700),
+    overrideMode: 'strip',
+  ),
+  thinOutline(
+    id: 'thin_outline',
+    label: "Nozik Kontur (0.8px)",
+    textColor: "#FFFFFF",
+    borderColor: "#1A1A1A",
+    borderSize: 0.8,
+    backColor: "#00000000",
+    shadowOffset: 0.0,
+    shadowColor: "#00000000",
+    icon: Icons.border_clear_rounded,
+    badgeColor: Color(0xFFE2E8F0),
     overrideMode: 'strip',
   ),
   darkBackdrop(
@@ -456,33 +471,36 @@ enum StudioSubtitleTheme {
     label: "Qoraytirilgan Fon (Maksimal Kontrast)",
     textColor: "#FFFFFF",
     borderColor: "#000000",
-    borderSize: 2.2,
-    backColor: "#B0000000", // 70% dark translucent box
+    borderSize: 0.0,
+    backColor: "#75000000", // Soft 45% dark translucent plate
     shadowOffset: 0.0,
+    shadowColor: "#00000000",
     icon: Icons.crop_portrait_rounded,
     badgeColor: Color(0xFF94A3B8),
     overrideMode: 'strip',
   ),
   cyberGreen(
     id: 'cyber_green',
-    label: "Kripto Neon",
+    label: "Kripto Neon (Tiniq)",
     textColor: "#39FF14",
     borderColor: "#000000",
-    borderSize: 3.6,
+    borderSize: 0.0,
     backColor: "#00000000",
-    shadowOffset: 2.0,
+    shadowOffset: 1.2,
+    shadowColor: "#60000000",
     icon: Icons.bolt_rounded,
     badgeColor: Color(0xFF39FF14),
     overrideMode: 'strip',
   ),
   skyBlue(
     id: 'sky_blue',
-    label: "Moviy Siyan",
+    label: "Moviy Siyan (Tiniq)",
     textColor: "#38BDF8",
     borderColor: "#000000",
-    borderSize: 3.6,
+    borderSize: 0.0,
     backColor: "#00000000",
-    shadowOffset: 2.0,
+    shadowOffset: 1.2,
+    shadowColor: "#60000000",
     icon: Icons.water_drop_rounded,
     badgeColor: Color(0xFF38BDF8),
     overrideMode: 'strip',
@@ -495,6 +513,7 @@ enum StudioSubtitleTheme {
     borderSize: 2.0,
     backColor: "#00000000",
     shadowOffset: 0.0,
+    shadowColor: "#00000000",
     icon: Icons.auto_awesome_rounded,
     badgeColor: Color(0xFF94A3B8),
     overrideMode: 'scale',
@@ -508,6 +527,7 @@ enum StudioSubtitleTheme {
     required this.borderSize,
     required this.backColor,
     required this.shadowOffset,
+    required this.shadowColor,
     required this.icon,
     required this.badgeColor,
     required this.overrideMode,
@@ -520,6 +540,7 @@ enum StudioSubtitleTheme {
   final double borderSize;
   final String backColor;
   final double shadowOffset;
+  final String shadowColor;
   final IconData icon;
   final Color badgeColor;
   final String overrideMode;
@@ -1233,7 +1254,7 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
         await np.setProperty('sub-ass-vsfilter-blur-compat', 'no');
         await np.setProperty('sub-ass-scale-with-window', 'yes');
         await np.setProperty('sub-ass-hinting', 'native');
-        await np.setProperty('sub-bold', 'yes');
+        await np.setProperty('sub-bold', 'no');
         await np.setProperty('sub-ass-force-margins', 'yes');
         await np.setProperty('secondary-sid', 'no');
         await np.setProperty('sub-ass-override', _subTheme.overrideMode);
@@ -1244,9 +1265,9 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
         }
         await np.setProperty(
           'sub-font',
-          'Montserrat Black, Montserrat, Inter, Roboto, sans-serif',
+          'Inter, Roboto, Montserrat, Noto Sans, sans-serif',
         );
-        await np.setProperty('sub-font-size', '48');
+        await np.setProperty('sub-font-size', '44');
 
         // Uslub va o'lcham parametrlari
         await np.setProperty('sub-scale', _subScale.scale.toStringAsFixed(2));
@@ -1255,7 +1276,7 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
         await np.setProperty('sub-border-size', _subTheme.borderSize.toStringAsFixed(1));
         await np.setProperty('sub-back-color', _subTheme.backColor);
         await np.setProperty('sub-shadow-offset', _subTheme.shadowOffset.toStringAsFixed(1));
-        await np.setProperty('sub-shadow-color', '#B0000000');
+        await np.setProperty('sub-shadow-color', _subTheme.shadowColor);
         await np.setProperty('sub-pos', _subPosition.subPos.toStringAsFixed(1));
         await np.setProperty('sub-margin-y', _subPosition.marginY.toString());
       }

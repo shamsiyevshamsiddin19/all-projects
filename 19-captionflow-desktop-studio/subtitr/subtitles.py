@@ -52,9 +52,8 @@ def layout_for(width: int, height: int, dual: bool, font_scale: float = 1.0) -> 
         "margin_lr": margin_lr,
         "margin_v": max(28, round(height * (0.07 if ar >= 1.0 else 0.15))),
         "cpl": cpl,
-        # Qora kontur matnni fondan ajratadi. 0.078 — 1080p da ~3.5-4 px:
-        # yorug' sahnada ham harflar aniq, tiniq va kontrastli ajralib turadi.
-        "outline": max(2, round(font_size * _env_float("SUB_OUTLINE_RATIO", 0.078))),
+        # Qora kontur matnni fondan ajratadi. 0.045 — nozik va toza kontur (harflar ichi yopilmaydi)
+        "outline": max(2, round(font_size * _env_float("SUB_OUTLINE_RATIO", 0.045))),
         # Sariq quti uchun: ichki bo'shliq va harflar orasi (montaj uslubida
         # matn quti ichida biroz keng joylashadi).
         "box_pad": max(4, round(font_size * 0.16)),
