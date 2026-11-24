@@ -52,12 +52,9 @@ def layout_for(width: int, height: int, dual: bool, font_scale: float = 1.0) -> 
         "margin_lr": margin_lr,
         "margin_v": max(28, round(height * (0.07 if ar >= 1.0 else 0.15))),
         "cpl": cpl,
-        # Qora kontur matnni fondan ajratadi, lekin 0.13 da u haddan tashqari
-        # qalin chiqardi: Montserrat Black o'zi og'ir shrift, ustiga keng
-        # halqa qo'shilsa harflarning ichi (o, a, e) yopilib, matn iflos
-        # ko'rinadi. 0.062 — 1080p da ~3 px: yorug' sahnada ham ajralib
-        # turadi, lekin harf shakli buzilmaydi.
-        "outline": max(2, round(font_size * _env_float("SUB_OUTLINE_RATIO", 0.062))),
+        # Qora kontur matnni fondan ajratadi. 0.078 — 1080p da ~3.5-4 px:
+        # yorug' sahnada ham harflar aniq, tiniq va kontrastli ajralib turadi.
+        "outline": max(2, round(font_size * _env_float("SUB_OUTLINE_RATIO", 0.078))),
         # Sariq quti uchun: ichki bo'shliq va harflar orasi (montaj uslubida
         # matn quti ichida biroz keng joylashadi).
         "box_pad": max(4, round(font_size * 0.16)),
@@ -73,6 +70,11 @@ def layout_for(width: int, height: int, dual: bool, font_scale: float = 1.0) -> 
 # uchun matn ekranda kuchsiz ko'rinardi. Topilmasa Noto Sans'ga qaytamiz.
 FONTS_DIR = ROOT / "fonts"
 _BUNDLED_FONT = FONTS_DIR / "Montserrat-Black.ttf"
+if not _BUNDLED_FONT.exists():
+    _installed = Path(os.path.expanduser("~/.local/share/SubtitrDesktop/fonts/Montserrat-Black.ttf"))
+    if _installed.exists():
+        _BUNDLED_FONT = _installed
+        FONTS_DIR = _installed.parent
 
 
 def subtitle_font_name() -> str:

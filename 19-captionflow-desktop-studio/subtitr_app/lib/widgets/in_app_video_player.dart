@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/studio_media_file.dart';
 import '../services/playback_store.dart';
@@ -424,6 +425,139 @@ class _EmbeddedVideoPlayerState extends State<EmbeddedVideoPlayer> {
   }
 }
 
+/// Subtitr vizual uslubi va ko'rinish mavzulari
+enum StudioSubtitleTheme {
+  crystalWhite(
+    id: 'crystal_white',
+    label: "Kristall Oq (Konturli)",
+    textColor: "#FFFFFF",
+    borderColor: "#000000",
+    borderSize: 3.6,
+    backColor: "#00000000",
+    shadowOffset: 2.0,
+    icon: Icons.contrast_rounded,
+    badgeColor: Colors.white,
+    overrideMode: 'force',
+  ),
+  cinemaYellow(
+    id: 'cinema_yellow',
+    label: "Kino Sariq (Netflix)",
+    textColor: "#FFE600",
+    borderColor: "#000000",
+    borderSize: 3.6,
+    backColor: "#00000000",
+    shadowOffset: 2.0,
+    icon: Icons.star_rounded,
+    badgeColor: Color(0xFFFFD700),
+    overrideMode: 'force',
+  ),
+  darkBackdrop(
+    id: 'dark_backdrop',
+    label: "Qoraytirilgan Fon (Maksimal Kontrast)",
+    textColor: "#FFFFFF",
+    borderColor: "#000000",
+    borderSize: 2.2,
+    backColor: "#B0000000", // 70% dark translucent box
+    shadowOffset: 0.0,
+    icon: Icons.crop_portrait_rounded,
+    badgeColor: Color(0xFF94A3B8),
+    overrideMode: 'force',
+  ),
+  cyberGreen(
+    id: 'cyber_green',
+    label: "Kripto Neon",
+    textColor: "#39FF14",
+    borderColor: "#000000",
+    borderSize: 3.6,
+    backColor: "#00000000",
+    shadowOffset: 2.0,
+    icon: Icons.bolt_rounded,
+    badgeColor: Color(0xFF39FF14),
+    overrideMode: 'force',
+  ),
+  skyBlue(
+    id: 'sky_blue',
+    label: "Moviy Siyan",
+    textColor: "#38BDF8",
+    borderColor: "#000000",
+    borderSize: 3.6,
+    backColor: "#00000000",
+    shadowOffset: 2.0,
+    icon: Icons.water_drop_rounded,
+    badgeColor: Color(0xFF38BDF8),
+    overrideMode: 'force',
+  );
+
+  const StudioSubtitleTheme({
+    required this.id,
+    required this.label,
+    required this.textColor,
+    required this.borderColor,
+    required this.borderSize,
+    required this.backColor,
+    required this.shadowOffset,
+    required this.icon,
+    required this.badgeColor,
+    required this.overrideMode,
+  });
+
+  final String id;
+  final String label;
+  final String textColor;
+  final String borderColor;
+  final double borderSize;
+  final String backColor;
+  final double shadowOffset;
+  final IconData icon;
+  final Color badgeColor;
+  final String overrideMode;
+
+  static StudioSubtitleTheme fromId(String? id) {
+    return StudioSubtitleTheme.values.firstWhere(
+      (t) => t.id == id,
+      orElse: () => StudioSubtitleTheme.crystalWhite,
+    );
+  }
+}
+
+/// Subtitr shrift o'lchami
+enum StudioSubtitleScale {
+  small(0.85, "Kichik (85%)"),
+  normal(1.0, "Standart (100%)"),
+  large(1.2, "Katta (120%)"),
+  huge(1.4, "Ulkan (140%)");
+
+  const StudioSubtitleScale(this.scale, this.label);
+  final double scale;
+  final String label;
+
+  static StudioSubtitleScale fromScale(double? val) {
+    if (val == null) return StudioSubtitleScale.normal;
+    return StudioSubtitleScale.values.reduce(
+      (a, b) => (a.scale - val).abs() < (b.scale - val).abs() ? a : b,
+    );
+  }
+}
+
+/// Subtitrning vertikal joylashuvi
+enum StudioSubtitlePosition {
+  bottom(100.0, 42, "Pastda"),
+  middle(90.0, 85, "Balandroq"),
+  top(10.0, 42, "Tepada");
+
+  const StudioSubtitlePosition(this.subPos, this.marginY, this.label);
+  final double subPos;
+  final int marginY;
+  final String label;
+
+  static StudioSubtitlePosition fromName(String? name) {
+    return StudioSubtitlePosition.values.firstWhere(
+      (p) => p.name == name,
+      orElse: () => StudioSubtitlePosition.bottom,
+    );
+  }
+}
+
 /// Professional darajadagi kino va subtitr ko'rish pleyeri:
 /// - Kadr-ma-kadr ko'rish (Frame stepping: `,` va `.`)
 /// - Tezlikni boshqarish (0.5x - 2.0x va `[` / `]`)
@@ -496,6 +630,9 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
   double _subtitleDelaySec = 0.0;
   bool _isGeneratingLiveCaption = false;
   String _liveCaptionStatus = '';
+  StudioSubtitleTheme _subTheme = StudioSubtitleTheme.crystalWhite;
+  StudioSubtitleScale _subScale = StudioSubtitleScale.normal;
+  StudioSubtitlePosition _subPosition = StudioSubtitlePosition.bottom;
 
   // A-B takrorlash va sikl
   Duration? _loopA;
@@ -665,6 +802,7 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
     super.initState();
     _resolvedSubtitlePath = _resolveSubtitlePath();
     _subtitlesEnabled = !_isBurnedVideo;
+    _loadSubtitlePreferences();
     _initPlayer();
   }
 
@@ -753,11 +891,30 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
         if (mounted) setState(() => _rate = r);
       });
 
-      // 150% ovoz kuchaytirgich limitini ochish
+      // 150% ovoz kuchaytirgich va kristall sifatli subtitr dvijogi
       try {
         if (player.platform is NativePlayer) {
           final np = player.platform as NativePlayer;
           await np.setProperty('volume-max', '150.0');
+
+          // Subtitr sifatini eng yuqori darajaga ko'tarish:
+          await np.setProperty('sub-ass-vsfilter-blur-compat', 'no');
+          await np.setProperty('sub-ass-scale-with-window', 'yes');
+          await np.setProperty('sub-ass-hinting', 'native');
+          await np.setProperty('sub-bold', 'yes');
+          await np.setProperty('sub-ass-override', _subTheme.overrideMode);
+
+          final fontsDir = _findFontsDirectory();
+          if (fontsDir != null) {
+            await np.setProperty('sub-fonts-dir', fontsDir);
+          }
+          await np.setProperty(
+            'sub-font',
+            'Montserrat Black, Montserrat, Inter, Roboto, sans-serif',
+          );
+          await np.setProperty('sub-font-size', '48');
+
+          await _applySubtitleAppearance();
         }
       } catch (_) {}
 
@@ -1002,6 +1159,386 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
     } catch (_) {}
     final sign = delaySec >= 0 ? '+' : '';
     _showOSD("Subtitr sinxroni: $sign${delaySec.toStringAsFixed(2)}s", Icons.sync_rounded);
+  }
+
+  String? _findFontsDirectory() {
+    final candidates = [
+      '${Directory.current.path}/fonts',
+      if (Platform.environment['HOME'] != null)
+        '${Platform.environment['HOME']}/.local/share/SubtitrDesktop/fonts',
+      '/home/shamsiddin/Documents/project/loyihalar/19-captionflow-desktop-studio/fonts',
+      '${File(Platform.resolvedExecutable).parent.parent.path}/fonts',
+      '${File(Platform.resolvedExecutable).parent.path}/fonts',
+    ];
+    for (final dir in candidates) {
+      if (Directory(dir).existsSync()) {
+        final fontFile = File('$dir/Montserrat-Black.ttf');
+        if (fontFile.existsSync()) {
+          return dir;
+        }
+      }
+    }
+    return null;
+  }
+
+  Future<void> _loadSubtitlePreferences() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final themeId = prefs.getString('studio_sub_theme');
+      final scaleVal = prefs.getDouble('studio_sub_scale');
+      final posName = prefs.getString('studio_sub_position');
+
+      if (mounted) {
+        setState(() {
+          if (themeId != null) _subTheme = StudioSubtitleTheme.fromId(themeId);
+          if (scaleVal != null) _subScale = StudioSubtitleScale.fromScale(scaleVal);
+          if (posName != null) _subPosition = StudioSubtitlePosition.fromName(posName);
+        });
+        await _applySubtitleAppearance();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveSubtitlePreferences() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('studio_sub_theme', _subTheme.id);
+      await prefs.setDouble('studio_sub_scale', _subScale.scale);
+      await prefs.setString('studio_sub_position', _subPosition.name);
+    } catch (_) {}
+  }
+
+  Future<void> _applySubtitleAppearance() async {
+    final player = _player;
+    if (player == null) return;
+    try {
+      if (player.platform is NativePlayer) {
+        final np = player.platform as NativePlayer;
+
+        // Kristall aniqlik: VSFilter xiralashtirishi o'chiriladi, to'liq ekran ruxsati qo'llaniladi
+        await np.setProperty('sub-ass-vsfilter-blur-compat', 'no');
+        await np.setProperty('sub-ass-scale-with-window', 'yes');
+        await np.setProperty('sub-ass-hinting', 'native');
+        await np.setProperty('sub-bold', 'yes');
+        await np.setProperty('sub-ass-force-margins', 'yes');
+        await np.setProperty('secondary-sid', 'no');
+        await np.setProperty('sub-ass-override', _subTheme.overrideMode);
+
+        final fontsDir = _findFontsDirectory();
+        if (fontsDir != null) {
+          await np.setProperty('sub-fonts-dir', fontsDir);
+        }
+        await np.setProperty(
+          'sub-font',
+          'Montserrat Black, Montserrat, Inter, Roboto, sans-serif',
+        );
+        await np.setProperty('sub-font-size', '48');
+
+        // Uslub va o'lcham parametrlari
+        await np.setProperty('sub-scale', _subScale.scale.toStringAsFixed(2));
+        await np.setProperty('sub-color', _subTheme.textColor);
+        await np.setProperty('sub-border-color', _subTheme.borderColor);
+        await np.setProperty('sub-border-size', _subTheme.borderSize.toStringAsFixed(1));
+        await np.setProperty('sub-back-color', _subTheme.backColor);
+        await np.setProperty('sub-shadow-offset', _subTheme.shadowOffset.toStringAsFixed(1));
+        await np.setProperty('sub-shadow-color', '#B0000000');
+        await np.setProperty('sub-pos', _subPosition.subPos.toStringAsFixed(1));
+        await np.setProperty('sub-margin-y', _subPosition.marginY.toString());
+      }
+    } catch (_) {}
+  }
+
+  void _cycleSubtitleScale() {
+    final values = StudioSubtitleScale.values;
+    final nextIdx = (values.indexOf(_subScale) + 1) % values.length;
+    final next = values[nextIdx];
+    setState(() => _subScale = next);
+    _applySubtitleAppearance();
+    _saveSubtitlePreferences();
+    _showOSD("🔤 Shrift o'lchami: ${next.label}", Icons.format_size_rounded);
+  }
+
+  void _cycleSubtitleTheme() {
+    final values = StudioSubtitleTheme.values;
+    final nextIdx = (values.indexOf(_subTheme) + 1) % values.length;
+    final next = values[nextIdx];
+    setState(() => _subTheme = next);
+    _applySubtitleAppearance();
+    _saveSubtitlePreferences();
+    _showOSD("🎨 Subtitr uslubi: ${next.label}", next.icon);
+  }
+
+  void _setSubtitleTheme(StudioSubtitleTheme theme) {
+    setState(() => _subTheme = theme);
+    _applySubtitleAppearance();
+    _saveSubtitlePreferences();
+    _showOSD("🎨 Subtitr uslubi: ${theme.label}", theme.icon);
+  }
+
+  void _setSubtitleScale(StudioSubtitleScale scale) {
+    setState(() => _subScale = scale);
+    _applySubtitleAppearance();
+    _saveSubtitlePreferences();
+    _showOSD("🔤 Shrift o'lchami: ${scale.label}", Icons.format_size_rounded);
+  }
+
+  void _setSubtitlePosition(StudioSubtitlePosition pos) {
+    setState(() => _subPosition = pos);
+    _applySubtitleAppearance();
+    _saveSubtitlePreferences();
+    _showOSD("↕️ Subtitr joylashuvi: ${pos.label}", Icons.vertical_align_bottom_rounded);
+  }
+
+  void _showSubtitleSettingsDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF0F172A),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: const BorderSide(color: Color(0xFF334155)),
+              ),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.palette_rounded, color: Color(0xFF38BDF8), size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    "Subtitr ko'rinishi va sozlamalari",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                ],
+              ),
+              content: SizedBox(
+                width: 480,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 1. Shrift o'lchami
+                      const Text(
+                        "🔤 Shrift o'lchami (Tugma: T)",
+                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF94A3B8)),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        children: StudioSubtitleScale.values.map((scale) {
+                          final selected = scale == _subScale;
+                          return ChoiceChip(
+                            label: Text(scale.label),
+                            selected: selected,
+                            onSelected: (val) {
+                              if (val) {
+                                _setSubtitleScale(scale);
+                                setDialogState(() {});
+                              }
+                            },
+                            selectedColor: const Color(0xFF0284C7),
+                            backgroundColor: const Color(0xFF1E293B),
+                            labelStyle: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                              color: selected ? Colors.white : const Color(0xFFCBD5E1),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              side: BorderSide(
+                                color: selected ? const Color(0xFF38BDF8) : const Color(0xFF334155),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 18),
+
+                      // 2. Subtitr uslubi (Mavzusi)
+                      const Text(
+                        "🎨 Subtitr uslubi va kontrasti (Shift + T)",
+                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF94A3B8)),
+                      ),
+                      const SizedBox(height: 8),
+                      ...StudioSubtitleTheme.values.map((theme) {
+                        final selected = theme == _subTheme;
+                        return InkWell(
+                          onTap: () {
+                            _setSubtitleTheme(theme);
+                            setDialogState(() {});
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(vertical: 3),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? theme.badgeColor.withValues(alpha: 0.15)
+                                  : const Color(0xFF1E293B).withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: selected ? theme.badgeColor : const Color(0xFF334155),
+                                width: selected ? 1.5 : 1.0,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(theme.icon, size: 18, color: theme.badgeColor),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    theme.label,
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+                                      color: selected ? Colors.white : const Color(0xFFE2E8F0),
+                                    ),
+                                  ),
+                                ),
+                                if (selected)
+                                  Icon(Icons.check_circle_rounded, size: 16, color: theme.badgeColor),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                      const SizedBox(height: 18),
+
+                      // 3. Joylashuvi
+                      const Text(
+                        "↕️ Joylashuv balandligi",
+                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF94A3B8)),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: StudioSubtitlePosition.values.map((pos) {
+                          final selected = pos == _subPosition;
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 3),
+                              child: OutlinedButton(
+                                onPressed: () {
+                                  _setSubtitlePosition(pos);
+                                  setDialogState(() {});
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  backgroundColor: selected
+                                      ? const Color(0xFF38BDF8).withValues(alpha: 0.2)
+                                      : const Color(0xFF1E293B),
+                                  side: BorderSide(
+                                    color: selected ? const Color(0xFF38BDF8) : const Color(0xFF334155),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                child: Text(
+                                  pos.label,
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                                    color: selected ? const Color(0xFF38BDF8) : const Color(0xFFCBD5E1),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // 4. Sinxronlash va Fayldan yuklash
+                      const Divider(color: Color(0xFF334155)),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                Navigator.of(ctx).pop();
+                                _pickExternalSubtitle();
+                              },
+                              icon: const Icon(Icons.folder_open_rounded, size: 15),
+                              label: const Text("Fayl ochish (.srt / .ass)"),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                textStyle: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
+                                side: const BorderSide(color: Color(0xFF334155)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                foregroundColor: const Color(0xFFE2E8F0),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          if (_subtitleDelaySec != 0.0)
+                            TextButton.icon(
+                              onPressed: () {
+                                _setSubtitleDelay(0.0);
+                                setDialogState(() {});
+                              },
+                              icon: const Icon(Icons.restore_rounded, size: 14),
+                              label: const Text("Sinxronni tiklash (0s)"),
+                              style: TextButton.styleFrom(
+                                foregroundColor: const Color(0xFF38BDF8),
+                                textStyle: const TextStyle(fontSize: 11),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text("Tayyor", style: TextStyle(color: Color(0xFF38BDF8), fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSubtitleAppearanceButton() {
+    return Tooltip(
+      message: "Subtitr ko'rinishi va sozlamalari (T)",
+      child: InkWell(
+        onTap: _showSubtitleSettingsDialog,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.palette_outlined, size: 13, color: _subTheme.badgeColor),
+              const SizedBox(width: 4),
+              const Text(
+                "Uslub",
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFFCBD5E1),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _toggleSubtitles() async {
@@ -1507,6 +2044,8 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
                 _shortcutRow("Backspace", "Tezlikni 1.0x (normal) ga qaytarish"),
                 _shortcutRow("A", "Audio trekni almashtirish (Asl ovoz ↔ Dublyaj)"),
                 _shortcutRow("C / S", "Subtitrni yoqish / o'chirish"),
+                _shortcutRow("T", "Subtitr shrift o'lchami (85% .. 140%)"),
+                _shortcutRow("Shift + T", "Subtitr uslubi (Kristall oq / Kino sariq / Qora fon / Neon)"),
                 _shortcutRow("Z / X", "Subtitr sinxroni (-100ms / +100ms)"),
                 _shortcutRow("R", "A-B takrorlash nuqtalarini belgilash"),
                 _shortcutRow("P", "Joriy kadr suratini saqlash (Snapshot)"),
@@ -1627,6 +2166,14 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
     }
     if (key == LogicalKeyboardKey.keyC || key == LogicalKeyboardKey.keyS) {
       _toggleSubtitles();
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.keyT) {
+      if (HardwareKeyboard.instance.isShiftPressed) {
+        _cycleSubtitleTheme();
+      } else {
+        _cycleSubtitleScale();
+      }
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.keyZ) {
@@ -1991,6 +2538,15 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
 
           // Subtitr tanlash
           _buildSubtitleTrackSelector(),
+          const SizedBox(width: 4),
+
+          // Subtitr ko'rinishi sozlamalari
+          IconButton(
+            tooltip: "Subtitr ko'rinishi va sozlamalari (T)",
+            onPressed: _showSubtitleSettingsDialog,
+            icon: Icon(Icons.palette_outlined, size: 18, color: _subTheme.badgeColor),
+            visualDensity: VisualDensity.compact,
+          ),
           const SizedBox(width: 8),
 
           // Kadr suratini olish (Snapshot)
@@ -2332,7 +2888,7 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
                   padding: const EdgeInsets.all(6),
                 ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 3),
 
               // -10s orqaga
               IconButton(
@@ -2366,12 +2922,12 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
                 visualDensity: VisualDensity.compact,
               ),
 
-              const SizedBox(width: 8),
+              const SizedBox(width: 4),
 
               // Ovoz boshqaruvi va 150% boost
               _buildVolumeControl(),
 
-              const SizedBox(width: 12),
+              const SizedBox(width: 6),
 
               // Vaqt matni
               InkWell(
@@ -2397,19 +2953,23 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
 
               // Yumshoq subtitr (CC) tugmasi — Asl matn
               _buildCCButton(),
-              const SizedBox(width: 6),
+              const SizedBox(width: 3),
+
+              // Subtitr uslubi va sozlamalari
+              _buildSubtitleAppearanceButton(),
+              const SizedBox(width: 3),
 
               // Subtitr sinxronlash popupi
               _buildSubtitleSyncButton(),
-              const SizedBox(width: 6),
+              const SizedBox(width: 3),
 
               // Tezlik menyusi
               _buildSpeedSelector(),
-              const SizedBox(width: 6),
+              const SizedBox(width: 3),
 
               // A-B Takrorlash
               _buildABLoopButton(),
-              const SizedBox(width: 4),
+              const SizedBox(width: 2),
 
               // Video sikli (Loop video)
               IconButton(
@@ -2500,7 +3060,7 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
           visualDensity: VisualDensity.compact,
         ),
         SizedBox(
-          width: 78,
+          width: 52,
           child: SliderTheme(
             data: SliderThemeData(
               trackHeight: 3.0,
