@@ -509,6 +509,21 @@ CREATE TABLE IF NOT EXISTS idempotency_keys (
 
 CREATE INDEX IF NOT EXISTS idx_idempotency_created ON idempotency_keys (created_at);
 
+-- Rate-limit hisoblagichi (A-03: worker'lar va server restartlaridan mustaqil).
+-- Gunicorn worker'lari orasida xotira bo'linmagani sababli cheklov bazaga chiqarildi.
+CREATE TABLE IF NOT EXISTS rate_limit_hits (
+    id BIGSERIAL PRIMARY KEY,
+    bucket VARCHAR(16) NOT NULL,
+    client_ip VARCHAR(64) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_rate_limit_hits_lookup
+    ON rate_limit_hits (bucket, client_ip, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_rate_limit_hits_created
+    ON rate_limit_hits (created_at);
+
 -- ============================================================================
 -- BAZA CHEKLOVLARI (CHECK CONSTRAINTS) — Konstitutsiya §5 & A-04
 -- ============================================================================

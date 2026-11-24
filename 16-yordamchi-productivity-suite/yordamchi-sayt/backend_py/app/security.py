@@ -13,11 +13,11 @@ avtomatik, har chaqiruv uchun alohida yozilmaydi.
 from __future__ import annotations
 
 import logging
-import time
-from collections import defaultdict, deque
+import random
 
 from fastapi import Request
 
+from . import db
 from .config import settings
 from .errors import ApiError
 from .google_auth import is_admin_email
@@ -71,32 +71,65 @@ def verify_password(plain: str, hashed: str | None) -> bool:
         return False
 
 
-# --- Login rate-limit (oddiy in-memory) -------------------------------------
-_login_attempts: dict[str, deque[float]] = defaultdict(deque)
+# --- Rate-limit (PostgreSQL orqali — A-03) ----------------------------------
+# Ilgari _login_attempts va _req_hits jarayon xotirasida (global deque) edi.
+# Gunicorn 2 ta worker bilan ishlagani sababli limit 2 baravar yumshab ketardi
+# (8 o'rniga 16, 300 o'rniga 600), restartda nolga tushardi va worker soni oshsa
+# jimgina ko'payardi. Konstitutsiya global mutable holatni taqiqlaydi.
+# Endi hisob PostgreSQL dagi `rate_limit_hits` jadvalida yuritiladi.
+
+CLEANUP_CHANCE = 0.01  # ~100 ta yozuvda bir marta eski yozuvlar tozalanadi
+
+
+def _cleanup_rate_limits() -> None:
+    try:
+        db.execute(
+            "DELETE FROM rate_limit_hits WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '1 hour'"
+        )
+    except Exception:  # noqa: BLE001
+        security_logger.exception("rate_limit_hits tozalash xatosi")
 
 
 def check_login_rate_limit(request: Request) -> None:
     ip = client_ip(request)
-    now = time.time()
     window = settings.LOGIN_WINDOW_SECONDS
-    bucket = _login_attempts[ip]
+    max_attempts = settings.LOGIN_MAX_ATTEMPTS
+    if max_attempts <= 0:
+        return
 
-    while bucket and now - bucket[0] > window:
-        bucket.popleft()
+    # O'tgan `window` soniya ichidagi urinishlar soni
+    attempts = db.fetch_value(
+        "SELECT COUNT(*) FROM rate_limit_hits "
+        "WHERE bucket = 'login' AND client_ip = :ip "
+        "AND created_at >= CURRENT_TIMESTAMP - (:w * INTERVAL '1 second')",
+        {"ip": ip, "w": window},
+    ) or 0
 
-    if len(bucket) >= settings.LOGIN_MAX_ATTEMPTS:
-        log_security_event(request, "LOGIN_RATE_LIMIT",
-                           f"attempts={len(bucket)} window={window}s")
+    if int(attempts) >= max_attempts:
+        log_security_event(
+            request, "LOGIN_RATE_LIMIT",
+            f"attempts={attempts} max={max_attempts} window={window}s",
+        )
         raise ApiError(
             "Juda ko'p urinish. Iltimos bir necha daqiqadan so'ng qayta urinib ko'ring.",
             status=429,
         )
-    bucket.append(now)
+
+    db.execute(
+        "INSERT INTO rate_limit_hits (bucket, client_ip) VALUES ('login', :ip)",
+        {"ip": ip},
+    )
+    if random.random() < CLEANUP_CHANCE:
+        _cleanup_rate_limits()
 
 
 def clear_login_rate_limit(request: Request) -> None:
+    """Muvaffaqiyatli kirishdan so'ng IP hisoblagichini tozalaydi."""
     ip = client_ip(request)
-    _login_attempts.pop(ip, None)
+    db.execute(
+        "DELETE FROM rate_limit_hits WHERE bucket = 'login' AND client_ip = :ip",
+        {"ip": ip},
+    )
 
 
 # --- Yozuv endpoint'lari uchun gate -----------------------------------------
@@ -104,9 +137,6 @@ def clear_login_rate_limit(request: Request) -> None:
 # --- Umumiy so'rov cheklovi (945MB RAM'li serverni himoya qiladi) --------------
 # Login rate-limit'dan alohida: u faqat parol tanlashga qarshi, bu esa umuman
 # so'rov toshqiniga (bir IP dan minglab so'rov) qarshi.
-_req_hits: dict[str, deque[float]] = defaultdict(deque)
-_last_sweep = [0.0]
-
 
 def check_request_rate(request: Request) -> None:
     limit = settings.RATE_LIMIT_REQUESTS
@@ -114,22 +144,27 @@ def check_request_rate(request: Request) -> None:
         return
     window = settings.RATE_LIMIT_WINDOW_SECONDS
     ip = client_ip(request)
-    now = time.time()
 
-    # Vaqti-vaqti bilan eski IP yozuvlarini tozalaymiz (xotira cheksiz o'smasin)
-    if now - _last_sweep[0] > 300:
-        _last_sweep[0] = now
-        for key in [k for k, v in _req_hits.items() if not v or now - v[-1] > window]:
-            _req_hits.pop(key, None)
+    hits = db.fetch_value(
+        "SELECT COUNT(*) FROM rate_limit_hits "
+        "WHERE bucket = 'req' AND client_ip = :ip "
+        "AND created_at >= CURRENT_TIMESTAMP - (:w * INTERVAL '1 second')",
+        {"ip": ip, "w": window},
+    ) or 0
 
-    bucket = _req_hits[ip]
-    while bucket and now - bucket[0] > window:
-        bucket.popleft()
-
-    if len(bucket) >= limit:
-        log_security_event(request, "REQUEST_RATE_LIMIT", f"limit={limit}/{window}s")
+    if int(hits) >= limit:
+        log_security_event(
+            request, "REQUEST_RATE_LIMIT",
+            f"hits={hits} limit={limit} window={window}s",
+        )
         raise ApiError("Juda ko'p so'rov yuborildi. Biroz kutib turing.", status=429)
-    bucket.append(now)
+
+    db.execute(
+        "INSERT INTO rate_limit_hits (bucket, client_ip) VALUES ('req', :ip)",
+        {"ip": ip},
+    )
+    if random.random() < CLEANUP_CHANCE:
+        _cleanup_rate_limits()
 
 
 def require_write_access(request: Request) -> None:
