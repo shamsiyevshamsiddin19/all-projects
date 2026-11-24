@@ -61,6 +61,13 @@ class _SubtitlePlayerState extends State<SubtitlePlayer> {
     try {
       final player = Player();
       final video = VideoController(player);
+      try {
+        if (player.platform is NativePlayer) {
+          final np = player.platform as NativePlayer;
+          await np.setProperty('blend-subtitles', 'no');
+          await np.setProperty('sub-visibility', 'yes');
+        }
+      } catch (_) {}
       // play: false — ochilganda o'z-o'zidan o'ynamasin; foydalanuvchi
       // qatorni bosganda boshlanadi.
       await player.open(Media(Uri.file(widget.videoPath).toString()), play: false);

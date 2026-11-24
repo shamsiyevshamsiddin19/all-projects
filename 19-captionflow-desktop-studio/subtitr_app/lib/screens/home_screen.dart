@@ -41,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String _batchInfo = ''; // "Video 2/5" — navbat holati
   List<JobPreset> _presets = const [];
   List<BatchResult> _batchResults = const [];
-  final List<_AppNotification> _notifications = [];
+  final List<AppNotificationRecord> _notifications = [];
   int _unreadNotificationCount = 0;
   bool _isDragging = false;
   bool _showHistory = false;
@@ -1199,7 +1199,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
     _notifications.insert(
       0,
-      _AppNotification(message: text, isError: isError, time: DateTime.now()),
+      AppNotificationRecord(message: text, isError: isError, time: DateTime.now()),
     );
     if (_notifications.length > 20) _notifications.removeLast();
     _unreadNotificationCount = (_unreadNotificationCount + 1)
@@ -1211,50 +1211,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     setState(() => _unreadNotificationCount = 0);
     await showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Bildirishnomalar'),
-        content: SizedBox(
-          width: 420,
-          child: _notifications.isEmpty
-              ? const Text('Hali bildirishnoma yo\'q.')
-              : ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: _notifications.length,
-                  separatorBuilder: (_, _) => const Divider(height: 1),
-                  itemBuilder: (_, index) {
-                    final item = _notifications[index];
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(
-                        item.isError
-                            ? Icons.error_outline_rounded
-                            : Icons.info_outline_rounded,
-                        color: item.isError
-                            ? Theme.of(context).colorScheme.error
-                            : Theme.of(context).colorScheme.primary,
-                      ),
-                      title: Text(item.message),
-                      subtitle: Text(
-                        '${item.time.hour.toString().padLeft(2, '0')}:${item.time.minute.toString().padLeft(2, '0')}',
-                      ),
-                    );
-                  },
-                ),
-        ),
-        actions: [
-          if (_notifications.isNotEmpty)
-            TextButton(
-              onPressed: () {
-                setState(_notifications.clear);
-                Navigator.of(context).pop();
-              },
-              child: const Text('Tozalash'),
-            ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Yopish'),
-          ),
-        ],
+      builder: (context) => NotificationsDialog(
+        notifications: _notifications,
+        onClear: () => setState(_notifications.clear),
       ),
     );
   }
@@ -1463,51 +1422,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<void> _showErrorDetail(String message) async {
     await showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        icon: const Icon(Icons.error_outline_rounded),
-        title: const Text('Xato tafsiloti'),
-        content: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560, maxHeight: 420),
-          child: SingleChildScrollView(
-            child: SelectableText(
-              message,
-              style: const TextStyle(fontSize: 13, height: 1.4),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton.icon(
-            onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: message));
-              if (!context.mounted) return;
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Nusxa olindi'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-            icon: const Icon(Icons.copy_rounded, size: 18),
-            label: const Text('Nusxa olish'),
-          ),
-          TextButton.icon(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              try {
-                final dir = await _service.logDir();
-                if (dir.isNotEmpty) await _openPath(dir);
-              } catch (_) {}
-            },
-            icon: const Icon(Icons.folder_open_rounded, size: 18),
-            // To'liq iz (traceback) faqat logda bo'ladi.
-            label: const Text('Loglarni ochish'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Yopish'),
-          ),
-        ],
+      builder: (context) => ErrorDetailDialog(
+        message: message,
+        onOpenLogs: () async {
+          try {
+            final dir = await _service.logDir();
+            if (dir.isNotEmpty) await _openPath(dir);
+          } catch (_) {}
+        },
       ),
     );
   }
@@ -1915,14 +1837,3 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 }
 
-class _AppNotification {
-  const _AppNotification({
-    required this.message,
-    required this.isError,
-    required this.time,
-  });
-
-  final String message;
-  final bool isError;
-  final DateTime time;
-}

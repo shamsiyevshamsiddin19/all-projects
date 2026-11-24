@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../services/desktop_processor_service.dart';
 
@@ -224,3 +225,133 @@ class BatchResultsCard extends StatelessWidget {
     ),
   );
 }
+
+/// Xabar va hodisalar jurnali elementi.
+class AppNotificationRecord {
+  const AppNotificationRecord({
+    required this.message,
+    required this.isError,
+    required this.time,
+  });
+
+  final String message;
+  final bool isError;
+  final DateTime time;
+}
+
+/// Xatolik tafsilotini ko'rsatish va nusxa olish dialogi.
+class ErrorDetailDialog extends StatelessWidget {
+  const ErrorDetailDialog({
+    super.key,
+    required this.message,
+    this.onOpenLogs,
+  });
+
+  final String message;
+  final VoidCallback? onOpenLogs;
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    icon: const Icon(Icons.error_outline_rounded),
+    title: const Text('Xato tafsiloti'),
+    content: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 560, maxHeight: 420),
+      child: SingleChildScrollView(
+        child: SelectableText(
+          message,
+          style: const TextStyle(fontSize: 13, height: 1.4),
+        ),
+      ),
+    ),
+    actions: [
+      TextButton.icon(
+        onPressed: () async {
+          await Clipboard.setData(ClipboardData(text: message));
+          if (!context.mounted) return;
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Nusxa olindi'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        },
+        icon: const Icon(Icons.copy_rounded, size: 18),
+        label: const Text('Nusxa olish'),
+      ),
+      if (onOpenLogs != null)
+        TextButton.icon(
+          onPressed: () {
+            Navigator.of(context).pop();
+            onOpenLogs!();
+          },
+          icon: const Icon(Icons.folder_open_rounded, size: 18),
+          label: const Text('Loglarni ochish'),
+        ),
+      FilledButton(
+        onPressed: () => Navigator.of(context).pop(),
+        child: const Text('Yopish'),
+      ),
+    ],
+  );
+}
+
+/// Tizim bildirishnomalari dialogi.
+class NotificationsDialog extends StatelessWidget {
+  const NotificationsDialog({
+    super.key,
+    required this.notifications,
+    required this.onClear,
+  });
+
+  final List<AppNotificationRecord> notifications;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Bildirishnomalar'),
+    content: SizedBox(
+      width: 420,
+      child: notifications.isEmpty
+          ? const Text('Hali bildirishnoma yo\'q.')
+          : ListView.separated(
+              shrinkWrap: true,
+              itemCount: notifications.length,
+              separatorBuilder: (_, _) => const Divider(height: 1),
+              itemBuilder: (_, index) {
+                final item = notifications[index];
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    item.isError
+                        ? Icons.error_outline_rounded
+                        : Icons.info_outline_rounded,
+                    color: item.isError
+                        ? Theme.of(context).colorScheme.error
+                        : Theme.of(context).colorScheme.primary,
+                  ),
+                  title: Text(item.message),
+                  subtitle: Text(
+                    '${item.time.hour.toString().padLeft(2, '0')}:${item.time.minute.toString().padLeft(2, '0')}',
+                  ),
+                );
+              },
+            ),
+    ),
+    actions: [
+      if (notifications.isNotEmpty)
+        TextButton(
+          onPressed: () {
+            onClear();
+            Navigator.of(context).pop();
+          },
+          child: const Text('Tozalash'),
+        ),
+      FilledButton(
+        onPressed: () => Navigator.of(context).pop(),
+        child: const Text('Yopish'),
+      ),
+    ],
+  );
+}
+

@@ -203,3 +203,60 @@ def clear_cache(what: str = "downloads") -> dict[str, Any]:
         shutil.rmtree(path, ignore_errors=True)
         path.mkdir(parents=True, exist_ok=True)
     return {"freed": freed, "cleared": names, **cache_usage()}
+
+
+def prune_transcript_cache(
+    cache_dir: Path | None = None,
+    max_dirs: int = 300,
+    max_total_bytes: int = 1024 * 1024 * 1024,  # 1 GB
+) -> int:
+    """Eski transkripsiya kesh papkalarini LRU (eng eski mtime) bo'yicha tozalaydi.
+
+    Agar kesh papkalari soni `max_dirs` dan oshsa yoki umumiy hajm `max_total_bytes` dan
+    oshsa, eng eski papkalar o'chiriladi. Bo'shatilgan baytlarni qaytaradi.
+    """
+    cdir = cache_dir or CACHE_DIR
+    if not cdir.is_dir():
+        return 0
+
+    entries: list[tuple[float, int, Path]] = []
+    total_size = 0
+    try:
+        for item in cdir.iterdir():
+            if not item.is_dir():
+                continue
+            try:
+                st = item.stat()
+                sz = _dir_size(item)
+                entries.append((st.st_mtime, sz, item))
+                total_size += sz
+            except OSError:
+                continue
+    except OSError:
+        return 0
+
+    if len(entries) <= max_dirs and total_size <= max_total_bytes:
+        return 0
+
+    # Eng eski mtime bo'yicha tartiblaymiz (LRU)
+    entries.sort(key=lambda x: x[0])
+    freed = 0
+    remaining_count = len(entries)
+    remaining_size = total_size
+
+    for _mtime, sz, item in entries:
+        if remaining_count <= max_dirs and remaining_size <= max_total_bytes:
+            break
+        try:
+            shutil.rmtree(item, ignore_errors=True)
+            if not item.exists():
+                freed += sz
+                remaining_size -= sz
+                remaining_count -= 1
+        except OSError:
+            continue
+
+    if freed > 0:
+        _log.info("Eski transkripsiya keshi tozalandi: %d bayt bo'shatildi", freed)
+    return freed
+

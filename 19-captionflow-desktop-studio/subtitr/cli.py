@@ -4,9 +4,9 @@ from __future__ import annotations
 import argparse
 import traceback
 
-from .cache import cache_usage, clear_cache
-from .core import KINO_DIR, LOG_DIR, OUT_DIR, clean_orphan_tmp, current_log_file, emit, ensure_dirs, init_utf8, install_signal_handlers, log, redact, setup_logging
-from .media import DEFAULT_QUALITY, QUALITY_HEIGHTS, download_video, playlist_entries, scan, update_ytdlp
+from .cache import cache_usage, clear_cache, prune_transcript_cache
+from .core import KINO_DIR, LOG_DIR, OUT_DIR, TMP_DIR, clean_orphan_tmp, current_log_file, emit, ensure_dirs, init_utf8, install_signal_handlers, log, redact, setup_logging
+from .media import DEFAULT_QUALITY, QUALITY_HEIGHTS, download_video, playlist_entries, prune_download_cache, scan, update_ytdlp
 from .pipeline import install_deps, prepare_session, preview_frame, process, render_session, retranslate_session_segment, subtitle_file
 
 
@@ -130,6 +130,11 @@ def main() -> int:
     setup_logging()
     install_signal_handlers()
     clean_orphan_tmp()
+    try:
+        prune_transcript_cache()
+        prune_download_cache(TMP_DIR / "yuklamalar")
+    except Exception as exc:
+        log.debug("avto-tozalash xatosi: %s", exc)
     parser = build_parser()
     args = parser.parse_args()
     # Hech qanday argument qiymati logga tushmaydi (`--video` yo'li tushadi,

@@ -730,11 +730,13 @@ class _StudioVideoPlayerState extends State<StudioVideoPlayer> {
         if (mounted) setState(() => _rate = r);
       });
 
-      // 150% ovoz kuchaytirgich limitini ochish
+      // 150% ovoz kuchaytirgich limitini ochish + subtitr ko'rsatishni yoqish
       try {
         if (player.platform is NativePlayer) {
           final np = player.platform as NativePlayer;
           await np.setProperty('volume-max', '150.0');
+          await np.setProperty('blend-subtitles', 'no');
+          await np.setProperty('sub-visibility', 'yes');
         }
       } catch (_) {}
 
