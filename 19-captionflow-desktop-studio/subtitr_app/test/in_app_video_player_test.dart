@@ -399,4 +399,72 @@ void main() {
     await tester.pumpAndSettle();
     tempDir.deleteSync(recursive: true);
   });
+
+  test('StudioSubtitleTheme and scale model properties and fallbacks', () {
+    expect(StudioSubtitleTheme.fromId('crystal_white'), equals(StudioSubtitleTheme.crystalWhite));
+    expect(StudioSubtitleTheme.fromId('cinema_yellow'), equals(StudioSubtitleTheme.cinemaYellow));
+    expect(StudioSubtitleTheme.fromId('dark_backdrop'), equals(StudioSubtitleTheme.darkBackdrop));
+    expect(StudioSubtitleTheme.fromId('unknown_theme'), equals(StudioSubtitleTheme.crystalWhite));
+
+    expect(StudioSubtitleScale.fromScale(1.0), equals(StudioSubtitleScale.normal));
+    expect(StudioSubtitleScale.fromScale(0.85), equals(StudioSubtitleScale.small));
+    expect(StudioSubtitleScale.fromScale(1.2), equals(StudioSubtitleScale.large));
+    expect(StudioSubtitleScale.fromScale(1.4), equals(StudioSubtitleScale.huge));
+    expect(StudioSubtitleScale.fromScale(null), equals(StudioSubtitleScale.normal));
+
+    expect(StudioSubtitlePosition.fromName('bottom'), equals(StudioSubtitlePosition.bottom));
+    expect(StudioSubtitlePosition.fromName('middle'), equals(StudioSubtitlePosition.middle));
+    expect(StudioSubtitlePosition.fromName('top'), equals(StudioSubtitlePosition.top));
+    expect(StudioSubtitlePosition.fromName('other'), equals(StudioSubtitlePosition.bottom));
+  });
+
+  testWidgets('StudioVideoPlayer renders subtitle appearance button and opens settings dialog', (tester) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    final tempDir = Directory.systemTemp.createTempSync('sub_settings_test');
+    final dummySrt = File('${tempDir.path}/sample.srt')..writeAsStringSync('1\n00:00:01,000 --> 00:00:03,000\nHello\n');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData.dark(),
+        home: Scaffold(
+          body: StudioVideoPlayer(
+            videoPath: '/dummy/movies/sample.mp4',
+            subtitlePath: dummySrt.path,
+            onClose: () {},
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    final subSettingsBtn = find.byTooltip("Subtitr ko'rinishi va sozlamalari (T)");
+    expect(subSettingsBtn, findsAtLeastNWidgets(1));
+
+    await tester.tap(subSettingsBtn.first);
+    await tester.pumpAndSettle();
+
+    expect(find.text("Subtitr ko'rinishi va sozlamalari"), findsOneWidget);
+    expect(find.textContaining("Shrift o'lchami"), findsOneWidget);
+    expect(find.textContaining("Subtitr uslubi"), findsOneWidget);
+    expect(find.textContaining("Joylashuv"), findsOneWidget);
+    expect(find.text("Kristall Oq (Konturli)"), findsOneWidget);
+    expect(find.text("Kino Sariq (Netflix)"), findsOneWidget);
+
+    // Tap on Cinema Yellow theme
+    await tester.tap(find.text("Kino Sariq (Netflix)"));
+    await tester.pump();
+
+    // Close dialog
+    final closeBtn = find.text('Tayyor');
+    expect(closeBtn, findsOneWidget);
+    await tester.tap(closeBtn);
+    await tester.pumpAndSettle();
+
+    expect(find.text("Subtitr ko'rinishi va sozlamalari"), findsNothing);
+    tempDir.deleteSync(recursive: true);
+  });
 }
