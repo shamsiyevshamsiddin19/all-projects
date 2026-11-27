@@ -17,8 +17,17 @@
   var SLOVAR_ROOT = 'Словарь 5000';
   var FC = null; // flashcard session state
 
-    function vocabBadgeHtml(name) {
+  function vocabBadgeHtml(name, folderPath) {
     name = String(name || '').trim();
+
+    if (folderPath === 'Повседневный словарь') {
+      return '<span class="chat-av chat-av-num" aria-hidden="true" style="position:relative">П' +
+        '<span style="position:absolute;inset:0;background:url(assets/img/vocab/povsednevnyy-slovar.webp) center/cover no-repeat"></span></span>';
+    }
+    if (folderPath === 'Кино и сериалы') {
+      return '<span class="chat-av" aria-hidden="true" style="background:var(--accent-soft);color:var(--accent)">' +
+        '<span data-icon="video" data-icon-size="23"></span></span>';
+    }
 
     // Master 1-8000 badge
     if (name === '1-8000') {
@@ -567,7 +576,7 @@
               (doneF ? ' rm-done' : '') + '">' +
               '<button class="chat-row' + magicClass + '" ' + actF +
                 (lockedF ? '' : holdAttrs('dictfolder', path, f.name)) + '>' +
-              avatarHtml(vocabBadgeHtml(f.name), doneF) +
+              avatarHtml(vocabBadgeHtml(f.name, lang === 'russian' ? path : ''), doneF) +
               '<span class="chat-main">' +
                 '<span class="chat-title">' + App.esc(f.name) + titleExtra + '</span>' +
                 '<span class="chat-sub">' + f.items + ' bo\'lim · ' + f.words + ' so\'z' +
