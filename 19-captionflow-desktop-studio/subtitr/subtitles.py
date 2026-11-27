@@ -649,6 +649,7 @@ def attach_soft_subtitles(
     emit("progress", message=f"Softsub trek qo'shilmoqda{suffix_label}", progress=progress_lo)
     cmd = [
         FFMPEG, "-y",
+        "-fflags", "+genpts",
         "-i", str(video),
         "-i", str(ass_path),
     ]
@@ -681,7 +682,7 @@ def attach_soft_subtitles(
             "-metadata:s:s:0", f"title={title1}",
             "-disposition:s:0", "default",
         ]
-    cmd.append(str(out_path))
+    cmd += ["-avoid_negative_ts", "make_zero", str(out_path)]
 
     proc = run(cmd)
     if proc.returncode != 0:
