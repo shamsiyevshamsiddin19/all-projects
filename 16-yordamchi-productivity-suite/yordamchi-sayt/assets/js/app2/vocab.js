@@ -25,8 +25,9 @@
         '<span style="position:absolute;inset:0;background:url(assets/img/vocab/povsednevnyy-slovar.webp) center/cover no-repeat"></span></span>';
     }
     if (folderPath === 'Кино и сериалы') {
-      return '<span class="chat-av" aria-hidden="true" style="background:var(--accent-soft);color:var(--accent)">' +
-        '<span data-icon="video" data-icon-size="23"></span></span>';
+      return '<span class="chat-av" aria-hidden="true" style="position:relative;background:var(--accent-soft);color:var(--accent)">' +
+        '<span data-icon="video" data-icon-size="23"></span>' +
+        '<span style="position:absolute;inset:0;background:url(assets/img/vocab/kino-i-serialy.png) center/160% auto no-repeat"></span></span>';
     }
 
     // Master 1-8000 badge
